@@ -1,0 +1,38 @@
+/**
+
+@page cfgpixie16 The cfgPixie16.txt file
+
+@authors Aaron Chester, Jeromy Tompkins
+@date 7/18/23
+
+@section cfgpixie16_intro Introduction
+@par 
+The cfgPixie16.txt file is a human-readable configuration file for DDAS systems and is required by the `qtscope` and `DDASReadout` programs at startup to specify which modules exist and how to boot them. It also allows the user to override the default firmware or provide firmware information if it is absent. The cfgPixie16.txt file describes the module slot map and DSP settings file for a single crate. For systems containing more than one DDAS crate, one cfgPixie16.txt file is required for each crate. See the documentation for the @ref DAQ::DDAS::ConfigurationParser "ConfigurationParser" and @ref DAQ::DDAS::Configuration "Configuration" classes which read this file and store information about the system configuration.
+
+@section cfgpixie16_format cfgPixie16.txt format
+@par
+The basic format of the cfgPixie16.txt file is as follows:
+@verbatim
+CRATE_ID
+NUM_MODULES
+SLOT_MODULE_0   [Per-module-firmware-map [per-module-set-file]]
+SLOT_MODULE_1   [Per-module-firmware-map [per-module-set-file]]
+...
+SLOT_MODULE_N-1 [Per-module-firmware-map [per-module-set-file]]
+PATH_TO_SETTINGS_FILE
+@endverbatim
+where `CRATE_ID` is a non-negative number, `NUM_MODULES` is a positive number, `SLOT_MODULE_X` is a number greater than or equal to 2, and `PATH_TO_SETTINGS_FILE` is a legitimate path to a DSP settings file. In the top section, the parser will ignore up to 256 characters following the leftmost integer or string found on each line. Because of this, it is customary to add notes on each of these lines. There is no convention for adding notes, though many people like to use a #.
+
+@par
+As an example, consider a PXI crate with two installed Pixie-16 modules: one in slot 2 and one in slot 4. The cfgPixie16.txt for such a system will be:
+@verbatim
+1  # crateID
+2  # number of modules
+2  # slot for mod 0
+4  # slot for mod 1
+/aaron/readout/crate_1/crate_1.set
+@endverbatim
+where `/aaron/readout/crate_1/crate_1.set` specifies the path to my DSP settings file.
+@note An example cfgPixie16.txt file can be found in `$DAQSHARE`/ddasreadout/crate_1/ for FRIBDAQ versions 12.0 and later, and in `$DDAS_SHARE`/readout/crate_1/ for FRIBDAQ versions prior to 12.0 as part of the broken-out installation of DDAS located in /usr/opt/ddas/. The environment variables `DAQSHARE` and `DDAS_SHARE` are set when sourcing the FRIBDAQ daqsetup.bash and ddassetup.bash scripts, respectively.
+
+*/

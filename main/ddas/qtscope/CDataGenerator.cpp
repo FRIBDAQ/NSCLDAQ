@@ -1,6 +1,6 @@
 /**
  * @file CDataGenerator.cpp
- * @brief Implement the offline data generation class.
+ * @brief Implementation of the offline data generation class.
  */
 
 #include "CDataGenerator.h"
@@ -30,7 +30,8 @@ CDataGenerator::~CDataGenerator() {}
  * @param[in] dataSize  How many data points to store.
  * @param[in] binWidth  Histogram bin width in microseconds.
  *
- * @return int  Always 0 (success).
+ * @return int  
+ * @retval 0  Success.
  */
 int
 CDataGenerator::GetTraceData(
@@ -65,7 +66,8 @@ CDataGenerator::GetTraceData(
  * @param[in,out] data  Pointer to the start of the baseline data storarge.
  * @param[in] dataSize  How many data points to store.
  *
- * @return int  Always 0 (success).
+ * @return int  
+ * @retval 0  Success.
  */
 int
 CDataGenerator::GetHistogramData(unsigned int* data, int dataSize)
@@ -102,7 +104,8 @@ CDataGenerator::GetHistogramData(unsigned int* data, int dataSize)
  * @param[in,out] data  Pointer to the start of the baseline data storarge.
  * @param[in] dataSize  How many data points to store.
  *
- * @return int  Always 0 (success).
+ * @return int  
+ * @retval 0  Success.
  */
 int
 CDataGenerator::GetBaselineData(double* data, int dataSize)
@@ -152,4 +155,3 @@ CDataGenerator::SinglePulse(
 
     return pval;
 }
-

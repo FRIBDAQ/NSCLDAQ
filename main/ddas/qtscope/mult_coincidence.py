@@ -328,6 +328,7 @@ class MultCoincidence(QWidget):
                 32, "little"
             )
             mask[xia.MULT_OFFSET:xia.MULT_END] = mult_bits
+            #print(f"Chan. {i} MultiplicityMaskH: 0x{ba2int(tc):08x}")
             mgr.set_chan_par(mod, i, "MultiplicityMaskH", float(ba2int(mask)))
 
     def display_dsp(self, mgr, mod):

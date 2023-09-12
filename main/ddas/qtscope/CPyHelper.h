@@ -5,7 +5,6 @@
 
 #ifndef PYHELPER_HPP
 #define PYHELPER_HPP
-#pragma once
 
 #include <Python.h>
 
@@ -21,6 +20,7 @@ class CPyHelper
 public:
     /**
      * @brief Constructor
+     *
      * Initializes the Python interpreter.
      */
     CPyHelper()
@@ -29,6 +29,7 @@ public:
 	}
     /**
      * @brief Destructor.
+     *
      * Undo initializations, destroy all (sub-)interpreters.
      */
     ~CPyHelper()

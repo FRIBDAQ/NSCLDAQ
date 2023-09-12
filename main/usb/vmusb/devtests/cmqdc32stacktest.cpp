@@ -185,7 +185,7 @@ void cmqdc32stacktest::addWriteThreshold_0()
 void cmqdc32stacktest::addWriteThresholds_0()
 {
   CLoggingReadoutList list;
-  m_module.addWriteThresholds(list, vector<int>(32,2));
+  m_module.addWriteThresholds(list, vector<long int>(32,2));
 
   vector<string> expected = {
     "addWrite16 40004000 09 2",

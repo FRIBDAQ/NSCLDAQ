@@ -16,7 +16,7 @@
 *   it can be copied safely. Similar to a EVB::Fragment
 *   but you don't need to typecast the body to use it.
 */
-struct FragmentInfo
+struct FragmentInfo // A structure containting basic info from the Fragment header --JP
 {
   uint64_t s_timestamp;
   uint32_t s_sourceId;
@@ -56,7 +56,7 @@ class FragmentIndex
   FragmentIndex();
 
   /**! Given the body pointer, index all of the fragmentsa
-   raam a pointer to the first word in the body (this is b/4 the first fragment)
+   * @param a pointer to the first word in the body (this is b/4 the first fragment)
    *
    */
   FragmentIndex(uint16_t* data);
@@ -72,7 +72,7 @@ class FragmentIndex
   FragmentInfo getFragment(size_t i) 
   {
     if (i<m_frags.size() && i>=0) {
-      return m_frags.at(i);
+      return m_frags.at(i); //pointer to ith fragment in the m_frags list --JP
     } else {
       FragmentInfo null;
       null.s_itembody = static_cast<uint16_t*>(0);
@@ -83,9 +83,9 @@ class FragmentIndex
   size_t getNumberFragments() const { return m_frags.size(); }
 
   /**! The indexing algorithm 
-  * This will traverse the range of data in addresses [begin, end)
+  * This will traverse the range of data in addresses [begin, end]
   * and find all of the complete fragments. Every fragment found will be appended to the 
-  * list of fragments. This is very similar to the constructor but differs in the arguments.
+  * list of fragments m_frags. This is very similar to the constructor but differs in the arguments.
   * The constructor expects that the first word of the body is passed, this expects that the
   * pointer to the first fragment is passed. There should be a difference of 32-bits between
   * the two arguments.

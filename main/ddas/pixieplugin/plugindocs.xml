@@ -451,9 +451,8 @@ Successful reply:
                         on the specified digitizer module (by number
                         not slot).
                        </para>
-                    </listitem>
-                   <informalexample>
-                     <programlisting>
+                            <informalexample>
+                           <programlisting>
 Request:
 
 AdjustOffsets 0
@@ -461,8 +460,10 @@ AdjustOffsets 0
 Successful reply:
 
 0
-                     </programlisting>
-                   </informalexample>
+                           </programlisting>
+                        </informalexample>
+                    </listitem>
+                   
                 </varlistentry>
             </variablelist>
         </refsect2>

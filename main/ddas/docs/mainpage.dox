@@ -1,0 +1,41 @@
+/**
+@mainpage
+
+@authors Aaron Chester, Ron Fox, Sean Liddick, Jeromy Tompkins
+@date 7/6/23
+
+@tableofcontents
+
+@section main_intro Introduction
+@par
+Welcome to the documentation page for the FRIB Digital Data Acquisiton System (DDAS). DDAS is a fully digital, general purpose data acquisition system consisting of 16-channel Pixie-16 digitizers based on the Compact PCI/PXI standard manufactured by XIA LLC. The Pixie-16 digitizers combine the ability to capture waveform traces for offline analysis with online pulse-shape analysis and spectroscopy.
+
+@par
+The purpose of this site is to have, in one place:
+1. The infomration necessary to allow a first-time user to configure, run and analyze data from a DDAS system.
+2. Documentation for DDAS software, <a href="annotated.html">classes</a> and <a href="modules.html">libraries</a> which the user may encounter while working with DDAS systems or wish to incorporate into their own analysis codes.
+3. Descriptions of the various pieces of hardware available for use in DDAS systems at FRIB.
+
+@par
+Refer to the <a href="pages.html">DDAS User Guides</a> page to browse the available guides and manual pages.
+
+@par
+DDAS is supported as part of the larger FRIBDAQ software suite. Further information about data acquisition at FRIB can be found on the <a href="https://docs.nscl.msu.edu/daq/newsite/index.php">FRIBDAQ docs page</a> and as part of the <a href="https://docs.nscl.msu.edu/daq/newsite/nscldaq-11.3/index.html">FRIBDAQ User's Guide</a>. Refer all questions, comments, and concerns to daqhelp@frib.msu.edu.
+
+@section main_tutorials Tutorials
+@par
+Useful guide(s) to get up and running with a DDAS system are:
+- @ref single_crate "Single-crate system setup guide"
+- Multi-crate system setup guide
+- Analyzing DDAS data in SpecTcl
+- Converting DDAS data to ROOT format
+- How to write a help ticket
+
+@section main_further Further Reading
+@par
+For more information on DDAS, its applications, and the Pixie-16 modules themselves, please refer to the following resources.
+- <a href="https://www.sciencedirect.com/science/article/pii/S0168900209017392">"Digital Data Acquisition System for experiments with segmented detectors at National Superconducting Cyclotron Laboratory." K. Starosta et al., Nucl. Inst. and Meth. A 610 (2009) 700.</a>
+- <a href="https://www.sciencedirect.com/science/article/pii/S0168900213017488">"Digital data acquisition system implementation at the National Superconducting Cyclotron Laboratory." C. J. Prokop et al., Nucl. Inst. and Meth. A 741 (2014) 163.</a>
+- <a href="https://xia.com/products/pixie-16/">The XIA Pixie-16 product website</a>
+
+*/

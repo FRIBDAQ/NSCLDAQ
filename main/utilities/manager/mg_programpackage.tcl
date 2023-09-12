@@ -246,7 +246,7 @@ proc ::program::_handleContainerInput {container host fd} {
     fconfigure $fd -blocking 0
     read $fd
     if {[eof $fd]} {
-        puts "Container input EOF on $container $host"
+        
         array unset ::program::containeredPrograms ${container}@${host}
         set index [lsearch \
             -exact $::program::activeContainers [list $container $host] \

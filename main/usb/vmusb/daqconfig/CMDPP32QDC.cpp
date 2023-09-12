@@ -190,14 +190,14 @@ CMDPP32QDC::Initialize(CVMUSB& controller)
   uint16_t       triggersource       = m_pConfiguration -> getIntegerParameter("-triggersource");
   uint16_t       triggeroutput       = m_pConfiguration -> getIntegerParameter("-triggeroutput");
 
-  vector<int>    signalwidths        = m_pConfiguration -> getIntegerList("-signalwidth");
-  vector<int>    inputamplitude      = m_pConfiguration -> getIntegerList("-inputamplitude");
-  vector<int>    jumperrange         = m_pConfiguration -> getIntegerList("-jumperrange");
-  vector<int>    qdcjumper           = m_pConfiguration -> getIntegerList("-qdcjumper");
-  vector<int>    intlong             = m_pConfiguration -> getIntegerList("-intlong");
-  vector<int>    intshort            = m_pConfiguration -> getIntegerList("-intshort");
-  vector<int>    threshold           = m_pConfiguration -> getIntegerList("-threshold");
-  vector<int>    resettime           = m_pConfiguration -> getIntegerList("-resettime");
+  auto    signalwidths        = m_pConfiguration -> getIntegerList("-signalwidth");
+  auto    inputamplitude      = m_pConfiguration -> getIntegerList("-inputamplitude");
+  auto    jumperrange         = m_pConfiguration -> getIntegerList("-jumperrange");
+  auto    qdcjumper           = m_pConfiguration -> getIntegerList("-qdcjumper");
+  auto    intlong             = m_pConfiguration -> getIntegerList("-intlong");
+  auto    intshort            = m_pConfiguration -> getIntegerList("-intshort");
+  auto    threshold           = m_pConfiguration -> getIntegerList("-threshold");
+  auto    resettime           = m_pConfiguration -> getIntegerList("-resettime");
   vector<string> gaincorrectionlong  = m_pConfiguration -> getList("-gaincorrectionlong");
   vector<string> gaincorrectionshort = m_pConfiguration -> getList("-gaincorrectionshort");
   bool           isPrintRegisters    = m_pConfiguration -> getBoolParameter("-printregisters");
@@ -615,6 +615,7 @@ CMDPP32QDC::printRegisters(CVMUSB& controller)
   if (status < 0) {
     cerr << "Error in reading register" << endl;
   } else {
+    data = data&0xfff;
     cout << setw(30) << "Pulser amplitude: " << data << " (0x" << std::hex << data << std::dec << ")" << endl;
   }
 

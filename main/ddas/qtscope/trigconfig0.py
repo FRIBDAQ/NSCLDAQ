@@ -179,12 +179,11 @@ class TrigConfig0(QWidget):
         
         for i in range(self.nmodules):
             tc = zeros(32, "little")
-            for j, pdict in self.param_labels.items():
-                
-                # Number of bits for this TrigConfig0 setting:
-                
+            for j, pdict in self.param_labels.items():                
+                # Number of bits for this TrigConfig0 setting:                
                 tc[pdict["bit_low"]:pdict["bit_high"]] = int2ba(int(self.param_grid.itemAtPosition(i+1, j+1).widget().currentIndex()), pdict["bit_high"]-pdict["bit_low"], "little")
 
+            #print(f"Mod. {i} TrigConfig0: 0x{ba2int(tc):08x}")
             mgr.set_mod_par(i, self.param_names[0], ba2int(tc))
         
     def display_dsp(self, mgr, set_state=False):

@@ -1,0 +1,36 @@
+/**
+
+@page modevtlen The modevtlen.txt file
+
+@authors Aaron Chester, Jeromy Tompkins, Ron Fox
+@date 7/18/23
+
+@section modevtlen_intro Introduction
+@par 
+The modevtlen.txt file contains the length of each event in 32-bit words ("longwords") expected from each module in a PXI crate. For each channel on a digitizer, the assumption is that events of equal length will be emitted. This implies that for a single module, all channels must be configured to have the same settings for trace capture, QDC sums, etc. If this is not the case, the `DDASReadout` program will fail. For systems containing multiple DDAS crates, one modevtlen.txt file is required for each crate.
+@attention
+It is an error to have fewer entires in the modevtlen.txt file than there are modules installed in the PXI crate. It is not an error to have more entries than modules.
+
+@section modevtlen_format modevtlen.txt format
+@par
+The format of this file is very simple: there should be one line containing the expected event length in 32-bit words for each module in the system. The minimum allowed value for each line is 4, the minimum event length in longwords which can be output for each channel by the digitizer. Enabling optional features such as trace capture or QDC sums can increase the length of the event expected by the `DDASReadout` program.
+
+@subsection modevtlen_lengths Optional output data sizes
+@par
+The following table summarizes the additional number of 32-bit words added for each additional output data type.
+
+Data type          | 32-bit words
+:----------------- | :-----------
+External timestamp | 2
+Energy sums        | 4
+QDC sums           | 8
+Trace              | variable
+
+@subsection modevtlen_tracelength Calculating the trace length in 32-bit words
+@par
+The length of the trace data in 32-bit words depends on the module type and the trace length set in the DSP settings file. It is given by \f$N_{\text{longwords}} = \text{ceil}(0.5*L*f)\f$ where \f$L\f$ is the trace length in microseconds and \f$f\f$ is the module ADC frequency in MSPS. The factor of 1/2 is included because each 32-bit trace word consists of two 16-bit trace samples. The calculated number of words must be rounded up to the nearest whole number. For example, capturing a 500 nanosecond trace on a 250 MSPS module requires an additional 63 longwords.
+
+@par
+The total number of longwords for an event is 4 plus the sum of the longwords associated with all enabled optional data output. For example, a module with the aforementioned trace capture enabled as well as QDC sums would require a total 4 + 63 + 8 = 75 longwords; this is the value that should be specified in modevtlen.txt for that module. 
+
+*/

@@ -118,7 +118,8 @@ BOOKDIRS = 	@top_srcdir@ \
 	@top_srcdir@/examples \
 	@top_srcdir@/ddas/readoutdriver\
 	@top_srcdir@/ddas/sorter \
-	@top_srcdir@/ddas/pixieplugin
+	@top_srcdir@/ddas/pixieplugin \
+	@top_srcdir@/caen-nextgen
 
 
 

@@ -76,13 +76,20 @@ template<class Controller, class RdoList>
 void CLeCroy4300B<Controller,RdoList>::Initialize(Controller& controller)
 {
     int slot = m_pConfig->getIntegerParameter("-slot"); 
-    std::vector<int> peds = m_pConfig->getIntegerList("-pedestals");
+    std::vector<long int> peds = m_pConfig->getIntegerList("-pedestals");
     uint16_t q=0;
 
     // clear
     execClear(controller);
 
-    writePedestals(controller,peds);
+    // COnvert the pedestals:
+
+    std::vector<int> ipeds;
+    for(auto p : peds) {
+        ipeds.push_back(static_cast<int>(p));
+    }
+
+    writePedestals(controller, ipeds);
 
 //    setCommandRegister(controller);
     configureCommandRegister(controller);

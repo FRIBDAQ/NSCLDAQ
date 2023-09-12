@@ -17,6 +17,12 @@
  * @brief QtScope main.
  *
  * Uses Python C++ API to call main.py to configure and run QtScope.
+ *
+ * @param argc  Number of command line options.
+ * @param argv  The command line options.
+ *
+ * @return int
+ * @retval 0  Success.
  */
 int main(int argc, char *argv[])
 {  

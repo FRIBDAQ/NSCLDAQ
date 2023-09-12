@@ -39,43 +39,83 @@
 package provide ssh 2.0
 package require Wait
 namespace eval  ssh {
+
+	##
+	# _uniquifyList 
+	#   Given a list that may have dups, remove the dups.
+	#   The input list could be empty in which case it returns empty:
+	#
+	proc _uniquifyList list {
+		#  The if is probably not needed as I think [array names] will 
+		#  give an empty list for a nonexistent array.
+		#
+		if {[llength $list] > 0} {
+			foreach item $list {
+				set list_array($item) ""
+			}
+			return [array names list_array]
+		} else {
+			return [list]
+		}
+	}
+
 	#
 	# getSingularityBindings
 	#
-	#   Since we only get these in the container environmen, there are
-	#   two possibilities:
-	#   1.   APPTAINER_BIND is defined - this is the value of the --bind
-	#      option to use.
-	#   2. If not, ~/.singularity_bindpoints contains the bindings.
-	#
+	#   We want to allow for getting the bindings from the environment,
+	#   if possible (APPTAINER_BIND and if that's not defined SINGULARITY_BIND)
+	#   and then retaining ~/.singularity_bindpoints as an additional set of bindings the
+	#   user might want in containers started by ssh.
+	# 
+	#   We also need to unquify source:targets between the various possibilities.
 	#
 	#   @return string
 	#      This is either --bind bind1,bind2,...
 	#      if there are bindings or an empty string if there are none.
 	#
 	proc getSingularityBindings {} {
+
+		# If we can get bindings from APPTAINER_BIND do so:
+
+		set bindings "";                               # so it's defined.
 		if {[array names ::env APPTAINER_BIND] ne ""} {
-			set bindings $::env(APPTAINER_BIND)
-		} else {
-			set bindings [list]
-			set status [catch {file readlink ~/stagearea} value]
-			if {!$status} {
-				lappend bindings $value;                  # stagearea link auto-binds.
-			}
-			if {[file readable ~/.singularity_bindpoints]} {
-				# User has additional bind points:
-				
-				set fd [open ~/.singularity_bindpoints r]
-				while {![eof $fd]} {
-					set line [string trim [gets $fd]]
-					if {$line ne ""} {
-						lappend bindings $line
-					}
-				}
-				
-				close $fd
-			}
+			set bindings $::env(APPTAINER_BIND))
+		} elseif {[array names ::env SINGULARITY_BIND] ne ""} {
+			set bindings $::env(SINGULARITY_BIND)
 		}
+
+
+		#  Turn the bindings from the environment into a Tcl list:
+
+		set bindings [split $bindings ","]
+
+		# Add in the stagearea link as a favor to the users.
+		
+		set status [catch {file readlink ~/stagearea} value]
+		if {!$status} {
+			lappend bindings $value;                  # stagearea link auto-binds.
+		}
+		
+		#  Add in the bindings in the user's ~/.singularity_bindpoints file as well:
+
+		if {[file readable ~/.singularity_bindpoints]} {
+			# User has additional bind points:
+			
+			set fd [open ~/.singularity_bindpoints r]
+			while {![eof $fd]} {
+				set line [string trim [gets $fd]]
+				if {$line ne ""} {
+					lappend bindings $line
+				}
+			}
+			
+			close $fd
+		}
+		# Bindings is now the full list of bindings and may have some dups
+		# 
+
+		set bindings [ssh::_uniquifyList $bindings]
+	
 		# If at the end of this we have any bindings we need to return a --bind
 		# option else an empty string
 		
@@ -100,6 +140,8 @@ namespace eval  ssh {
 	proc getContainerImage {} {
 		if {[array names ::env APPTAINER_CONTAINER] ne ""} {
 			return $::env(APPTAINER_CONTAINER)
+		} elseif {[array names ::env SINGULARITY_CONTAINER] ne ""} {
+			return $::env(SINGULARITY_CONTAINER)
 		}
 		if {[array names ::env SING_IMAGE] ne ""} {
 			return $::env(SING_IMAGE)

@@ -77,7 +77,7 @@ class CSRA(QWidget):
             1: {"label": "ETrS", "tooltip": "Validation trigger from LVDS (=1) or sys. FPGA (=0)"},
             2: {"label": "Good", "tooltip": "Enable (=1) or disable (=0) channel"},
             3: {"label": "CTrS", "tooltip": "Channel validation from LVDS (=1) or sys. FPGA (=0)"},
-            4: {"label": "Sync", "tooltip": "Synchronous (=1) or asynchronous (=0) acquisition"},
+            4: {"label": "Sync", "tooltip": "Disable acquisition in this channel if any channel DPM on this module is full (=1) or only if this channel DPM is full (=0)"},
             5: {"label": "SPol", "tooltip": "Signal polarity (set on AnalogSignal tab)"},
             6: {"label": "Veto", "tooltip": "Enable (=1) or disable (=0) channel veto"},
             7: {"label": "HstE", "tooltip": "Histogram energy (not used)"},

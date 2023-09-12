@@ -109,6 +109,48 @@ snit::widgetadaptor ConnectionParameters {
 #------------------------------------------------------------------------------
 #  Private utility procs.
 
+
+##
+# _startLogging
+#    Start logging data received from the manager to file.
+# @param model - name of the model that accepts data from the manager.
+# @param menu  - menu widget.
+# @param startIndex - our index in the menu.
+# @param stopIndex  - Index of the stop menu entry.
+#
+proc _startLogging {model menu startIndex stopIndex} {
+    # get the log file - if it's not empty then proceed:
+
+    set filename [tk_getSaveFile  \
+        -confirmoverwrite 0 -defaultextension .log \
+        -title {File to append log to:} -filetypes [list \
+            { {Log files}  .log }                        \
+            { {Text files} .txt }                        \
+            { {All files}   *   }                        \
+        ]]
+    if {$filename ne ""} {
+        $model configure -logfile $filename
+        $menu entryconfigure $startIndex -state disabled
+        $menu entryconfigure $stopIndex -state normal
+    }
+}
+
+##
+# _stopLoggging
+#   Disable logging by setting them model's log file to "" and 
+#   ghosting ourselves while enabling the start entry:
+#
+# @param model - name of the model that accepts data from the manager.
+# @param menu  - menu widget.
+# @param startIndex - our index in the menu.
+# @param stopIndex  - Index of the stop menu entry.
+#
+proc _stopLogging {model menu startIndex stopIndex} {
+    $model configure -logfile ""
+    $menu entryconfigure $startIndex -state normal
+    $menu entryconfigure $stopIndex -state disabled
+}
+
 ##
 # _usage
 #    Outputs and error message, the program usage and exits.
@@ -279,6 +321,15 @@ menu .bar.settings -tearoff 0
 .bar.settings add command -label "Connection Settings..." \
     -command [list _cfgConnections model]
 .bar add cascade -label "Settings" -menu .bar.settings
+
+# The logging menu:
+
+menu .bar.logging -tearoff 0
+.bar.logging add command -label {Start Logging} \
+    -command [list _startLogging model .bar.logging 0 1]
+.bar.logging add command -label {Stop Logging} \
+     -command [list _stopLogging model .bar.logging 0 1] -state disabled
+.bar add cascade -label "Logging" -menu .bar.logging
 
 
 

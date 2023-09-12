@@ -122,7 +122,7 @@ namespace MQDC32 {
   }
 
   void CMQDC32StackBuilder::addWriteThresholds(CVMUSBReadoutList& list,
-      vector<int> thrs)
+      vector<long int> thrs)
   {
     for (size_t chan=0; chan<32; ++chan) {
       addWriteThreshold(list, chan, thrs.at(chan));
@@ -182,7 +182,7 @@ namespace MQDC32 {
     list.addRead16(m_base + Reg::GateLimit1, initamod);
   }
 
-  void CMQDC32StackBuilder::addWriteGateLimits(CVMUSBReadoutList& list, vector<int> limits)
+  void CMQDC32StackBuilder::addWriteGateLimits(CVMUSBReadoutList& list, vector<long int> limits)
   {
     addWriteGateLimit0(list,limits.at(0));
     addWriteGateLimit1(list,limits.at(1));
@@ -209,13 +209,13 @@ namespace MQDC32 {
   }
 
 
-  void CMQDC32StackBuilder::addWriteExpTrigDelays(CVMUSBReadoutList& list, vector<int> delays) 
+  void CMQDC32StackBuilder::addWriteExpTrigDelays(CVMUSBReadoutList& list, vector<long int> delays) 
   {
     addWriteExpTrigDelay0(list,delays.at(0));
     addWriteExpTrigDelay1(list,delays.at(1));
   }
 
-  void CMQDC32StackBuilder::addWriteBankOffsets(CVMUSBReadoutList& list, vector<int> values) 
+  void CMQDC32StackBuilder::addWriteBankOffsets(CVMUSBReadoutList& list, vector<long int> values) 
   {
     list.addWrite16(m_base + Reg::BankOffset0, initamod, values.at(0));
     list.addDelay(MQDCDELAY);

@@ -36,19 +36,19 @@
 static const char* FirmwareFileTemplate="FirmwareXXXXXX";
 static const char* DSPParameterFileTemplate="DSPParametersXXXXXX";
 static const char* fwOverrideFileContents =  "\
-[100MSPS]                    \n\
+[Rev0xD-12Bit-100MSPS]                    \n\
 a                            \n\
 b                            \n\
 c                           \n\
 d                           \n\
 2.1 \n\
-[250MSPS] \n\
+[Rev0xF-16Bit-250MSPS] \n\
 e   \n\
 f   \n\
 g \n\
 h \n\
 23.1 \n\
-[500MSPS] \n\
+[Rev0xF-14Bit-500MSPS] \n\
 i \n\
 j  \n\
 k  \n\
@@ -249,7 +249,7 @@ void NewParseTest::bad_1()
     CPPUNIT_ASSERT_THROW(
         m_parser->parseSlotLine(line),
         std::runtime_error
-    );
+	);
     
     
 }
@@ -269,7 +269,7 @@ void NewParseTest::bad_2()
     CPPUNIT_ASSERT_THROW(
         m_parser->parseSlotLine(line),
         std::runtime_error
-    );
+	);
 }
 //////////////////////////////////////////////////////////////////////////////
 
@@ -320,13 +320,13 @@ void NewParseTest::permodule_2()
     ASSERT(
         config.m_moduleFirmwareMaps.find(1) !=
         config.m_moduleFirmwareMaps.end()
-    );
+	);
 }
 // Can add a per module .set file:
 
 void NewParseTest::permodule_3()
 {
-std::string cfgPixie = "\
+    std::string cfgPixie = "\
 1\n\
 3\n\
 2\n\
@@ -347,7 +347,7 @@ std::string cfgPixie = "\
     ASSERT(
         config.m_moduleFirmwareMaps.find(1) !=
         config.m_moduleFirmwareMaps.end()
-    );
+	);
     
     ASSERT(!config.m_moduleSetFileMap.empty());
     ASSERT(config.m_moduleSetFileMap.find(1) != config.m_moduleSetFileMap.end());

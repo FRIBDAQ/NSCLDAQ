@@ -166,11 +166,8 @@ class ModEvtFileParserTest : public CppUnit::TestFixture
         }
 
         EQMSG("Module event length less than 4 is an error", true, threwException);
-
-        EQMSG("ModEvtLen less than 4 error message ",
-              std::string("Failure while reading module event length "
-                          "configuration file. Found event length less than 4."),
-              message);
+	std::string errmsg = "Failure while reading module event length configuration file. Found event length " + content + " less than 4.";
+        EQMSG("ModEvtLen less than 4 error message ", errmsg, message);
 
     }
 

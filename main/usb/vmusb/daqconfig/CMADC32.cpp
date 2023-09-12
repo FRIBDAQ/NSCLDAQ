@@ -346,8 +346,8 @@ CMADC32::Initialize(CVMUSB& controller)
   uint8_t     ivector     = m_pConfiguration->getIntegerParameter("-vector");
   bool        timestamp   = m_pConfiguration->getBoolParameter("-timestamp");
   string      gatemode    = m_pConfiguration->cget("-gatemode");
-  vector<int> holddelays  = m_pConfiguration->getIntegerList("-holddelays");
-  vector<int> holdwidths  = m_pConfiguration->getIntegerList("-holdwidths");
+  vector<long int> holddelays  = m_pConfiguration->getIntegerList("-holddelays");
+  vector<long int> holdwidths  = m_pConfiguration->getIntegerList("-holdwidths");
   //bool        gdg         = m_pConfiguration->getBoolParameter("-gategenerator");
 	int         gdg         = gategenvalues[m_pConfiguration->getEnumParameter("-gategenerator", gategencodes)];
   string      inputrange  = m_pConfiguration->cget("-inputrange");
@@ -356,7 +356,7 @@ CMADC32::Initialize(CVMUSB& controller)
   bool        nimtimeinput= m_pConfiguration->getBoolParameter("-nimtiming");
   string      timesource  = m_pConfiguration->cget("-timingsource");
   int         timedivisor = m_pConfiguration->getIntegerParameter("-timingdivisor");
-  vector<int> thresholds  = m_pConfiguration->getIntegerList("-thresholds");
+  vector<long int> thresholds  = m_pConfiguration->getIntegerList("-thresholds");
   bool        pulser      = m_pConfiguration->getBoolParameter("-pulser");
   bool        multiEvent  = m_pConfiguration->getBoolParameter("-multievent");
   string      resolution  = m_pConfiguration->cget("-resolution");

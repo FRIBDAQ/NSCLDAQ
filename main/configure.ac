@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.61)
 
-AC_INIT(nscldaq,12.0-006, [scientificsoftware@nscl.msu.edu],[], [http://www.sourceforge.net/projects/nscldaq])
+AC_INIT(nscldaq,12.0-007, [scientificsoftware@nscl.msu.edu],[], [http://www.sourceforge.net/projects/nscldaq])
 
 AC_CONFIG_SRCDIR([/base/dataflow/CRingBuffer.h])
 AC_CONFIG_HEADER([config.h])
@@ -65,6 +65,51 @@ else
 	AM_CONDITIONAL([CAENSUPPORT], [false])
 fi
 
+#  CAEN Nextgen digitizer support is also optional  the CAEN support
+#  libraries are awful in that they require installation in
+#  specific locations:
+
+AC_ARG_ENABLE([caen-nextgen], 
+  [AS_HELP_STRING([--enable-caen-nextgen], 
+    [To enable support for CAEN Nextgen digitizers.])],
+    [
+      AC_MSG_CHECKING([Checking for CAEN FElib installed])
+      AC_CHECK_FILE([/usr/local/include/CAEN_FELib.h], 
+        [AC_MSG_RESULT([Found header])], 
+        [AC_MSG_ERROR([Can't find /usr/local/CAEN_FELib.h - install CAEN Nextgen digitizer support libraries])])
+      AC_CHECK_FILES([/usr/local/lib/libCAEN_Dig2.so /usr/local/lib/libCAEN_FELib.so], 
+        [AC_MSG_RESULT([Found CAEN FELib library files])],
+        [AC_MSG_ERROR([Can't fid the /usr/local/lib/{libCAEN_Dig2.so, libCAEN_FELib.so files install CAEN nextgen digitizer support libraries}]
+        )])
+
+      enable_caennextgen="true"  
+
+      ],[enable_caennextgen="false"]
+)
+  
+
+if test "${enable_caennextgen}" = "true"
+then
+  AC_MSG_NOTICE([Enabled support for CAEN Nextgen digitizers])
+
+  #  Set the make file variables:
+
+  CAENNG_CPPFLAGS="-I/usr/local/include"
+  CAENNG_LDFLAGS="-L/usr/local/lib -lCAEN_FELib -lCAEN_Dig2"
+  AC_SUBST([CAENNG_CPPFLAGS])
+  AC_SUBST([CAENNG_LDFLAGS])
+  AM_CONDITIONAL([CAENNEXTGEN], [true])
+else 
+  AC_MSG_NOTICE([Disabled support for  CAEN Nextgen digitizers])
+  AM_CONDITIONAL([CAENNEXTGEN], [false])
+fi
+
+
+# CAEN Nextgen digitizers, if used require jsoncpp:
+
+PKG_CHECK_MODULES([JSON], [jsoncpp])
+
+
 # Pandoc is needed for printed versions of the logbook:
 
 AC_CHECK_PROG(HAVE_PANDOC, [pandoc], [true], [false])
@@ -75,8 +120,6 @@ then
 fi
 
 # Documentation
-
-
 
 AC_ARG_ENABLE([docs],
               AS_HELP_STRING([--enable-docs],[Build the documentation]),
@@ -122,6 +165,39 @@ then
 else
   AM_CONDITIONAL([BUILD_DOCS],[false])
   AC_MSG_NOTICE([Documentation disabled])
+fi
+
+AC_ARG_ENABLE([ddas-docs],
+              AS_HELP_STRING([--enable-ddas-docs],
+	      [Build the DDAS documentation]),
+              [], [enable_ddas_docs=no])
+
+# DDAS documentation
+# DDAS docs are written in Doxygen, so if enabled check to make sure that
+# Doxygen and dot (for graphs) are installed
+
+if test "x$enable_ddas_docs" == "xyes"
+then
+  AC_MSG_NOTICE([DDAS documentation enabled])
+
+  AC_CHECK_PROG(HAVE_DOXYGEN, [doxygen], [true], [false])
+  if test "$HAVE_DOXYGEN" == "false"
+  then
+    AC_MSG_FAILURE([Doxygen is required to build the DDAS documentation but was not found])
+  else
+    AC_SUBST(DOXYGEN,[doxygen])
+  fi
+
+  AC_CHECK_PROG(HAVE_DOT, [dot], [true], [false])
+  if test "$HAVE_DOT" == "false"
+  then
+    AC_MSG_FAILURE([DOT is required by Doxygen to build the DDAS documentation but was not found])
+  fi
+
+  AM_CONDITIONAL([BUILD_DDAS_DOCS],[true])
+else
+  AM_CONDITIONAL([BUILD_DDAS_DOCS],[false])
+  AC_MSG_NOTICE([DDAS documentation disabled])
 fi
 
 AC_CHECK_LIB([X11], [XSetWindowBackground])
@@ -908,6 +984,9 @@ AC_CONFIG_FILES([Makefile
     ddas/qtscope/qtscope
     ddas/simple_setups/Makefile
     ddas/tclconfig/Makefile
+    ddas/docs/Makefile
+    ddas/docs/Doxyfile
+    ddas/docs/DoxygenLayout.xml
     caendigitizers/Makefile
     caendigitizers/dpp-pha/Makefile
     caendigitizers/dpp-pha/skel/Makefile
@@ -915,6 +994,8 @@ AC_CONFIG_FILES([Makefile
     caendigitizers/dpp-psd/skel/Makefile
     caendigitizers/caendump/Makefile
     caendigitizers/tweaker/Makefile
+    caen-nextgen/Makefile
+    caen-nextgen/tclreadout/Makefile
     cookbooks/Makefile
     ])
 

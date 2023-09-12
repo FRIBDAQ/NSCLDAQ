@@ -1,3 +1,15 @@
+/**
+ * @addtogroup libddaschannel libddaschannel.so
+ * @{
+ */
+
+/**
+ * @file LinkDef.h
+ * @brief Tell rootcling to add our custom classes DDASEvent, ddaschannel and 
+ * a std::vector<ddaschannel> object to the dictionary. Necessary for I/O of 
+ * custom classes in ROOT.
+ */
+
 #ifdef __CINT__
 
 #pragma link off all globals;
@@ -8,3 +20,5 @@
 #pragma link C++ class ddaschannel+;
 
 #endif
+
+/** @} */

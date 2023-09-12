@@ -292,13 +292,13 @@ CConfigurableObject::clearConfiguration()
     \retval the integer equivalent of the config paramter.
 
 */
-int
+std::int64_t
 CConfigurableObject::getIntegerParameter(string name)
 {
   string value = cget(name);
 
   char* end;
-  int iValue = strtol(value.c_str(), &end, 0);
+  long long iValue = strtoll(value.c_str(), &end, 0);
   if (end == value.c_str()) {
     string msg = "Expected an integer parameter value for config. parameter ";
     msg += name;
@@ -312,13 +312,13 @@ CConfigurableObject::getIntegerParameter(string name)
   Same as above but for an integer.  Needed because strtol for something
   bigger than MAXINT returns MAXINT.
 */
-unsigned int
+std::uint64_t
 CConfigurableObject::getUnsignedParameter(string name)
 {
   string value = cget(name);
 
   char* end;
-  int iValue = strtoul(value.c_str(), &end, 0);
+  std::uint64_t iValue = strtoull(value.c_str(), &end, 0);
   if (end == value.c_str()) {
     string msg = "Expected an integer parameter value for config. parameter ";
     msg += name;
@@ -372,22 +372,86 @@ CConfigurableObject::getFloatParameter(string name)
   \retval Vector containing the integers in the list.
 
 */
-vector<int>
+vector<int64_t>
 CConfigurableObject::getIntegerList(string name)
 {
   string value = cget(name);
   int argc;
   const char** argv;
-  vector<int> result;
+  vector<int64_t> result;
 
   Tcl_SplitList(NULL, value.c_str(), &argc, &argv);
 
   for (int i =0; i < argc; i++) {
-    result.push_back(static_cast<int>(strtol(argv[i], NULL, 0)));
+    result.push_back(static_cast<int64_t>(strtol(argv[i], NULL, 0)));
   }
   Tcl_Free((char*)argv);
   return result;
 
+}
+
+vector<uint64_t>
+CConfigurableObject::getUnsignedList(string name)
+{
+  string value = cget(name);
+  int argc;
+  const char** argv;
+  vector<uint64_t> result;
+
+  Tcl_SplitList(NULL, value.c_str(), &argc, &argv);
+
+  for (int i =0; i < argc; i++) {
+    result.push_back(static_cast<uint64_t>(strtoul(argv[i], NULL, 0)));
+  }
+  Tcl_Free((char*)argv);
+  return result;
+}
+
+vector<bool>
+CConfigurableObject::getBoolList(string name)
+{
+  string value = cget(name);
+  int argc;
+  const char** argv;
+  vector<bool> result;
+
+  Tcl_SplitList(NULL, value.c_str(), &argc, &argv);
+
+  for (int i =0; i < argc; i++) {
+    result.push_back(strToBool(argv[i]));
+  }
+  Tcl_Free((char*)argv);
+  return result;
+}
+
+/**
+ * getFloatList
+ *    Get a list of values that are doubles.
+ *  @param name - name of the parameter.
+ *  @return std::vector<double> - list values.
+ */
+vector<double>
+CConfigurableObject::getFloatList(string name)
+{
+  string value = cget(name);
+  
+  // bust it up into a  list:
+  
+  int argc;
+  const char** argv;
+  Tcl_SplitList(NULL, value.c_str(), &argc, &argv);
+  
+  // Parse the values intothe result.
+  
+  vector<double> result;
+  for (int i = 0; i < argc; i++) {
+      result.push_back(strtod(argv[i], nullptr));
+  }
+  // Free the parsed list elements:
+  
+  Tcl_Free(reinterpret_cast<char*>(argv));
+  
+  return result;
 }
 
 /**
@@ -452,7 +516,60 @@ CConfigurableObject::getEnumParameter(std::string name, const char** pValues)
   throw msg;
   
 }
-
+/**
+ * getListOfLists
+ *     Return the value of a paramter that is a list of lists.
+ *  @param name -name of the parameter
+ *  @return std::vector<std::vector<std::string>>
+ */
+std::vector<std::vector<std::string>>
+CConfigurableObject::getListOfLists(std::string name)
+{
+  // Get the raw value:
+  
+  auto rawValue = cget(name);          // Throws if nosuch.
+  std::vector<std::vector<std::string>> result;
+  // Break up the outer list and marshall that into a vector of strings
+  // so we can immediately free the result:
+  
+  int argc;
+  const char** argv;
+  if (Tcl_SplitList(nullptr, rawValue.c_str(), &argc, &argv) != TCL_OK) {
+    std::string msg = rawValue;
+    msg += " is not a valid Tcl list";
+    throw msg;
+  
+  }
+  std::vector<std::string> outerList;
+  for (int i =0; i < argc; i++) {
+    outerList.push_back(argv[i]);
+  }
+  Tcl_Free((char*)(argv));
+  
+  // Now split each sublist:
+  
+  for (auto l : outerList) {
+    if (Tcl_SplitList(nullptr, l.c_str(), &argc, &argv) != TCL_OK) {
+      std::string msg = "sublist: " ;
+      msg += l;
+      msg += " is not a valid Tcl list";
+      throw msg;
+      
+    }
+    // Now marshall the sublist into its vector and push it into the result:
+    
+    std::vector<std::string> sublist;
+    for (int i =0; i < argc; i++) {
+      sublist.push_back(argv[i]);
+    }
+    Tcl_Free((char*)(argv));
+    result.push_back(sublist);
+  }
+  
+  return result;
+  
+  
+}
 /** 
  * Add an integer parameter to the configuration that has no limits.
  *
@@ -460,13 +577,13 @@ CConfigurableObject::getEnumParameter(std::string name, const char** pValues)
  * @param defaultVal - Value given the configuration parameter if it is not explicitly configured.
  */
 void
-CConfigurableObject::addIntegerParameter(std::string name, int defaultVal)
+CConfigurableObject::addIntegerParameter(std::string name, std::int64_t defaultVal)
 {
 
 
   // Use the normal creation function.
 
-  addParameter(name, CConfigurableObject::isInteger, NULL, itos(defaultVal));
+  addParameter(name, CConfigurableObject::isInteger, NULL, std::to_string(defaultVal));
 
 }
 /**
@@ -480,7 +597,7 @@ CConfigurableObject::addIntegerParameter(std::string name, int defaultVal)
  *                     low/high range in which case, low is used.
  */
 void
-CConfigurableObject::addIntegerParameter(std::string name, int low, int high, int defaultVal)
+CConfigurableObject::addIntegerParameter(std::string name, std::int64_t low, std::int64_t high, std::int64_t defaultVal)
 {
   // Build the constraint object, and hook it into the autodelete mechanism.
 
@@ -498,10 +615,45 @@ CConfigurableObject::addIntegerParameter(std::string name, int low, int high, in
 
   // Add the parameter:
 
-  addParameter(name, CConfigurableObject::isInteger, pLimit, itos(defaultVal));
+  addParameter(name, CConfigurableObject::isInteger, pLimit, std::to_string(defaultVal));
 
 
 }
+/**
+ * addFloatParameter
+ *    Add a parameter with a floating point type checker.  Overloads support
+ *    range checking as well:
+ *
+ * @param name  - name of the parameter
+ * @param defaultValue -optional default value (defaults to zero).
+ * @param low     - parameter low limit
+ * @param high    - parameter high limit.
+ * @note float parameters  are actually doubles.
+ */
+void
+CConfigurableObject::addFloatParameter(std::string name, double defaultValue)
+{
+    addParameter(name, CConfigurableObject::isFloat, nullptr, std::to_string(defaultValue));
+}
+void
+CConfigurableObject::addFloatParameter(
+      std::string name, double low, double high, double defaultValue
+)
+{
+    // Constraint on value - note we're just going to leak memory since
+    // anticipated lifetime is program lifetime.
+    
+    FloatingLimits& constraint = *(new FloatingLimits);
+    constraint.first.s_checkMe = true;
+    constraint.first.s_value   = low;
+    constraint.second.s_checkMe = true;
+    constraint.second.s_value   = high;
+    
+    addParameter(
+        name, CConfigurableObject::isFloat, &constraint, std::to_string(defaultValue)
+    );
+}
+
 /**
  * Add a boolean parameter to the configuration.
  *
@@ -610,7 +762,7 @@ CConfigurableObject::addBoolListParameter(std::string name, unsigned minLength, 
  * @param defaultVal - Default value given to each element of the list.
  */
 void
-CConfigurableObject::addIntListParameter(std::string name, unsigned size, int defaultVal)
+CConfigurableObject::addIntListParameter(std::string name, unsigned size, std::int64_t defaultVal)
 {
   // This is just a special case of another overload:
 
@@ -627,14 +779,14 @@ CConfigurableObject::addIntListParameter(std::string name, unsigned size, int de
  */
 void
 CConfigurableObject::addIntListParameter(std::string name, unsigned minLength, unsigned maxLength,
-					 int defaultVal, int defaultSize )
+					 std::int64_t defaultVal, int defaultSize )
 {
   // Figure out the actual list size and build the default list.
   // string operations are much simpler than Tcl list ones since each element is an integer.
 
 
   defaultSize = computeDefaultSize(minLength, maxLength, defaultSize);
-  std::string defaultList = simpleList(itos(defaultVal), defaultSize);
+  std::string defaultList = simpleList(std::to_string(defaultVal), defaultSize);
 
   // Build the constraint struct and arrange for it to be freed when this object is
   // destroyed:
@@ -659,16 +811,16 @@ CConfigurableObject::addIntListParameter(std::string name, unsigned minLength, u
  * @param defaultLength - Default list length (minLength if not given).
  */
 void
-CConfigurableObject::addIntListParameter(std::string name, int minValue, int maxValue,
+CConfigurableObject::addIntListParameter(std::string name, std::int64_t minValue, std::int64_t maxValue,
                            unsigned minlength, unsigned maxLength, unsigned defaultSize,
-			   int defaultVal)
+			   std::int64_t defaultVal)
 {
     // Figure out the actual list size and build the default list.
     // string operations are much simpler than Tcl list ones since each element is an integer.
   
   
     defaultSize = computeDefaultSize(minlength, maxLength, defaultSize);
-    std::string defaultList = simpleList(itos(defaultVal), defaultSize);
+    std::string defaultList = simpleList(std::to_string(defaultVal), defaultSize);
   
     // First build the constraint on the values of the list:
     
@@ -699,8 +851,161 @@ CConfigurableObject::addIntListParameter(std::string name, int minValue, int max
   
     addParameter(name, CConfigurableObject::isIntList, pConstraint, defaultList);    
 }
+/**
+ * addFloatList
+ *   Parameter that is a list of validated floats with optional low/high limits
+ *   and optional default (missing default ->0.0).
+ *
+ * @param name - parameter name.
+ * @param minlen - minimum allowed list length.
+ * @param maxlen - maximum allowed list length.
+ * @param defaultsize - default list length.
+ * @param min    - minimum value for each list element.
+ * @param max    - min value for each list element.
+ * @param defaultValue - default value for each element.
+ */
+void
+CConfigurableObject::addFloatListParameter(                                                    
+    std::string name, unsigned minlen, unsigned maxlen, unsigned defaultsize,
+    double defaultValue 
+)
+{
+     // Build the default value string:
+     
+     defaultsize = computeDefaultSize(minlen, maxlen, defaultsize);
+     std::string defaultList =
+        simpleList(std::to_string(defaultValue), defaultsize
+     );
+        
+      // Parameter checker is an isFloatList with a list size constraint
+      
+      ListSizeConstraint* pConstraint = createListConstraint(minlen, maxlen);
+      
+      addParameter(name, CConfigurableObject::isFloatList, pConstraint, defaultList);
+}
+
+void
+CConfigurableObject::addFloatListParameter(                                              
+    std::string name, double low, double high,
+    unsigned minlen, unsigned maxlen, unsigned defaultlen,
+    double defaultValue
+)
+{
+    // Build the default value string:
+     
+    defaultlen = computeDefaultSize(minlen, maxlen, defaultlen);
+    std::string defaultList =
+       simpleList(std::to_string(defaultValue), defaultlen
+    );
+       
+    // First build the value constraint so that it can be applied to the list
+    // constraint:
+    
+    FloatingLimits* range =
+      reinterpret_cast<FloatingLimits*>(malloc(sizeof(FloatingLimits)));
+    range->first.s_checkMe = true;
+    range->first.s_value = low;
+    range->second.s_checkMe = true;
+    range->second.s_value = high;
+    DynamicConstraint c = {                  // Ensure this gets destroyed.
+       free,
+       reinterpret_cast<void*>(range)
+     };
+     m_constraints.push_back(c);
+    
+    // now the list length constraint with the added range constraint:
+    
+    isListParameter* pConstraint =
+      reinterpret_cast<isListParameter*>(malloc(sizeof(isListParameter)));
+    *pConstraint = isListParameter(minlen, maxlen, TypeCheckInfo(isFloat, range));
+      DynamicConstraint l = {
+        free, reinterpret_cast<void*>(pConstraint)
+      };
+      m_constraints.push_back(l);
+    
+     addParameter(name, isFloatList, pConstraint, defaultList);
+}
 
 
+/**
+ * addEnumListParameter
+ *    Add a parameter whose value is a list of validated enumerated values.
+ * @param name - name of the parameter.
+ * @param pValues - null terminated array of valid values.
+ * @param defaultValue - default value if not supplied
+ * @param minlength - minimum allowed length.
+ * @param maxlenth  - maximum allowed length.
+ * @param defaultlen - Default list length (-1 if maxlength).
+ * 
+ */
+void
+CConfigurableObject::addEnumListParameter(
+  std::string name, const char** pValues, const char* defaultValue,
+  unsigned minlength, unsigned maxlength, int defaultSize
+)
+{
+    // figure out the default list of values:
+    
+    defaultSize = computeDefaultSize(minlength, maxlength, defaultSize);
+    std::string defaultList = simpleList(defaultValue, defaultSize);
+    
+    // Create the constraint object:
+    
+    auto validValues = makeEnumSet(pValues);
+    isEnumParameter* pV = new isEnumParameter(validValues);
+    isListParameter* pConstraint =
+       reinterpret_cast<isListParameter*>(malloc(sizeof(isListParameter)));
+    *pConstraint = isListParameter(minlength, maxlength, TypeCheckInfo(isEnum, pV));
+    std::string dList = simpleList(defaultValue, defaultSize);
+    addParameter(name, isList, pConstraint, dList);
+    
+}
+/**
+ * addListOfEnumLists
+ *    This one is needed for the per channel triggers sources:
+ *    The parameter is a list of lists where each sublist is a list of values
+ *    from a set of valid values. For examples [list [list GlobalTrigger SelfTrigger] ...]
+ *    would trigger a channel 0 on the or of its self trigger and the global trigger
+ *    conditions.
+ *    See the companion getListOfLists which fetches the resulting value as
+ *    a vector of vector of strings.  Where the outer vector is the outer string elements
+ *    and each inner vector contains the list for each element.
+ * @param name -parameter name.
+ * @param pValues - the values elements of each of the sublist elements can take.
+ * @param defaultValue - The default value for each list element.
+ * @param minlength - minimum length of the outer list.
+ * @param maxlength - maximum length of the outer list
+ * @param defaultSize - default list size.
+ *
+ * @note there is no constraint on the sublist sizes though the actual device
+ *       parameter may constrain that (e.g. there must be at least one
+ *       trigger condition).
+ */
+void
+CConfigurableObject::addListOfEnumLists(
+    std::string name, const char** pValues, const char* defaultValue,
+     unsigned minlen, unsigned maxlen, int defaultSize
+)
+{
+  // The constraint is really pretty much the same as the enum list but
+  // we use the element type checker isEnumlist which breaks apart the list it
+  // is given and checks each element against the enums rather than its entire argument.
+  
+   // figure out the default list of values:
+    
+    defaultSize = computeDefaultSize(minlen, maxlen, defaultSize);
+    std::string defaultList = simpleList(defaultValue, defaultSize);
+    
+    // Create the constraint object:
+    
+    auto validValues = makeEnumSet(pValues);
+    isEnumParameter* pV = new isEnumParameter(validValues);
+    isListParameter* pConstraint =
+       reinterpret_cast<isListParameter*>(malloc(sizeof(isListParameter)));
+    *pConstraint = isListParameter(minlen, maxlen, TypeCheckInfo(isEnumList, pV));
+    std::string dList = simpleList(defaultValue, defaultSize);
+    addParameter(name, isList, pConstraint, dList);
+}
 /**
  * Add a string parameter whose value is a fixed length array of strings.
  * 
@@ -765,7 +1070,7 @@ CConfigurableObject::isInteger(string name, string value, void* arg)
 
 
   char* end;
-  long lvalue = strtoul(value.c_str(), &end, 0);	// Base allows e.g. 0x.
+  auto lvalue = strtoull(value.c_str(), &end, 0);	// Base allows e.g. 0x.
   if (*end != '\0') {		               // String is not just an integer.
     return false;
   }
@@ -851,6 +1156,46 @@ CConfigurableObject::isEnum(string name, string value, void* values)
 
   return ((validValues.find(value) != validValues.end()) ? true : false);
 
+}
+/**
+ * validate an enumerated list  - This is used by list of enumlists.
+ * in that list each element is a list of enums whose elements must be validated.
+ * We just bust the value up into its elements and pass each one  to isEnum,
+ * requiring them all to validate.
+ *
+ * @param name - name of the parameter.
+ * @param value - value of a list element.
+ * @param values - Passed to isEnum without interpretation.
+ * @return bool - true if all list elements satisfy isEnum, false if even one of them does.
+ * @note we allow a short circuit failure.
+ */
+bool
+CConfigurableObject::isEnumList(std::string name, std::string value, void* arg)
+{
+  // First this must be a valid list:
+  
+  int argc;
+  const char** argv;
+  if (Tcl_SplitList(nullptr, value.c_str(), &argc, &argv) != TCL_OK) {
+    return false;
+  }
+  // To make the failure logic simpler we marshall the strings into a vector
+  // of strings and then free argv: vectors and strings free normally
+  
+  std::vector<std::string> listElements;
+  for (int i =0; i < argc; i++) {
+    listElements.push_back(argv[i]);
+  }
+  Tcl_Free((char*)argv);
+  
+  // Now require each string be valid:
+  
+  for (auto s : listElements) {
+    if (!isEnum(name, s, arg)) return false;    // a failure.
+  }
+  // all passed
+  
+  return true;
 }
 
 /*!
@@ -1063,6 +1408,36 @@ CConfigurableObject::isIntList(string name, string value, void* size)
   }
   return isList(name, value, &validator);
 }
+
+/**
+ * isFloatList
+ *    Check that a proposed list is a valid list of floating point values.
+ *    The values could also be further constrained by range constraints.
+ * @param name - name of the parameter.
+ * @param value - proposed value for the list.
+ * @param checker to a list size constraint which can put constraints on the
+ *                 list sizes and optional value limits as well.
+ * @return bool - true if list passed tests else false.
+ */
+bool
+CConfigurableObject::isFloatList(std::string name, std::string value, void* checker)
+{
+    // we need to build the list validator for isList .first will require
+    // elements be floats.  .second will be the list size contstraint
+    // which can include range limits on the values if provided else
+    // unconstrained.
+    
+    isListParameter validator;
+    validator.s_checker.first = isFloat;
+    validator.s_checker.second = NULL;   // no range requirement.
+    validator.s_allowedSize    = unconstrainedSize;  // if not provided.
+    if  (checker) {
+      ListSizeConstraint& limits(*static_cast<ListSizeConstraint*>(checker));
+      validator.s_allowedSize = limits;
+    }
+    
+    return isList(name, value, &validator);
+}
 /*!
     Check for a string list.  String lists are allowed to have just about anything
     as element values...therefore, if the validSizes parameter is present, we'll
@@ -1097,6 +1472,7 @@ CConfigurableObject::isStringList(string name, string value, void* validSizes)
 
   return isList(name, value, &validator);
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // Other utilities

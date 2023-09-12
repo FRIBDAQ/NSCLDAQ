@@ -1,6 +1,6 @@
 /**
  * @file  CPixieTraceUtilities.cpp
- * @breif Implement the trace manager class.
+ * @brief Implementation of the trace utilities class.
  */
 
 #include "CPixieTraceUtilities.h"
@@ -8,6 +8,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <cmath>
 
 #include <config.h>
 #include <config_pixie16api.h>
@@ -15,16 +16,20 @@
 #include "CDataGenerator.h"
 
 /**
- * @breif Constructor.
+ * @details
+ * The CPixieTraceUtilities class has ownership of a CDataGenerator object 
+ * and is responsible for managing it.
  */
 CPixieTraceUtilities::CPixieTraceUtilities() :
     m_pGenerator(new CDataGenerator),
     m_useGenerator(false),
-    m_trace(MAX_ADC_TRACE_LEN, 0)
+    m_trace(MAX_ADC_TRACE_LEN, 0),
+    m_validAmplitude(20)
 {}
 
 /**
- * @brief Destructor.
+ * @details
+ * Delete the CDataGenerator object owned by this class.
  */
 CPixieTraceUtilities::~CPixieTraceUtilities()
 {
@@ -32,16 +37,16 @@ CPixieTraceUtilities::~CPixieTraceUtilities()
 }
 
 /**
- * @brief Read a validated ADC trace from single channel.
+ * @details
+ * Traces are "validated" (_not_ triggered!) if:
+ * 1. The max/min value exceeds the median value +/- 10*SD where SD is the 
+ *    standard deviation estimated from the median absolute deviation.
+ * 2. The max/min value differs from the median value by at least 
+ *    m_validAmplitude ADC units.
  *
- * @param module   Module number.
- * @param channel  Channel number on module for trace read.
- *
- * @return int
- * @retval  0  Success.
- * @retval -1  XIA API call fails.
- * @retval -2  Acquired trace is empty (median undefined).
- */
+ * @todo (ASC 7/14/23): Shorter, more focused try-catch blocks for acquisiton
+ * and validation rather than wrapping the entire process in one.
+ */ 
 int
 CPixieTraceUtilities::ReadTrace(int module, int channel)
 {
@@ -72,14 +77,16 @@ CPixieTraceUtilities::ReadTrace(int module, int channel)
 	    // 10 standard deviations ought to do it for a good signal. Check
 	    // negative as well in case the signal polarity is wrong.
       
-	    if ((*max > median + 10.0*sigma) ||
-		(*min < median - 10.0*sigma)) {
-		if ((*max - median) > 20) { // Some (small) minimum amplitude.
+	    if ((*max > median + 10.0*sigma) || (*min < median - 10.0*sigma)) {
+		if (
+		    ((*max - median) > m_validAmplitude)
+		    || (std::abs(*min-median) > m_validAmplitude)
+		    ) { // Some (small) minimum amplitude.
 		    goodTrace = true;
 		}
 	    }
       
-	    // Try again:      
+	    // Try again
 	    attempt++;
 	}
 	catch (std::runtime_error& e) {
@@ -96,14 +103,8 @@ CPixieTraceUtilities::ReadTrace(int module, int channel)
 }
 
 /**
- * @brief Read a validated ADC trace from single channel.
- *
- * @param module   Module number.
- * @param channel  Channel number on module for trace read.
- *
- * @return int
- * @retval  0  Success.
- * @retval -1  XIA API call fails.
+ * @details
+ * Read an ADC trace without signal validation.
  */
 int
 CPixieTraceUtilities::ReadFastTrace(int module, int channel)
@@ -119,15 +120,15 @@ CPixieTraceUtilities::ReadFastTrace(int module, int channel)
     return 0;
 }
 
+///
+// Private methods
+//
+
 /**
- * @brief Call to Pixie-16 API to acquire an ADC trace from a single channel.
- *
- * @param module   Module number.
- * @param channel  Channel number on module for trace read.
- *
- * @throws std::runtime_error  If ADC traces cannot be acquired (internal DSP 
- *                             memory fails to fill).
- * @throws std::runtime_error  If trace read fails.
+ * @details
+ * This function is used internally by the public-facing class members to 
+ * manage the internal trace storage, acquire, and read out single channel
+ * ADC traces from the module. All exceptions are raised to the caller.
  */
 void
 CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
@@ -139,7 +140,9 @@ CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
   
     if (retval < 0) {
 	std::stringstream errmsg;
-	errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed to allocate memory for trace in module " << module << " with retval " << retval;
+	errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed";
+	errmsg << " to allocate memory for trace in module " << module
+	       << " with retval " << retval;
 	throw std::runtime_error(errmsg.str());
     }
  
@@ -152,7 +155,10 @@ CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
     
 	    if (retval < 0) {
 		std::stringstream errmsg;
-		errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed to read trace from module " << module << " channel " << channel << " with retval " << retval;	
+		errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed";
+		errmsg << " to read trace from module " << module
+		       << " channel " << channel
+		       << " with retval " << retval;	
 		throw std::runtime_error(errmsg.str());
 	    }
       
@@ -164,7 +170,11 @@ CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
 
 	    if (retval < 0) {
 		std::stringstream errmsg;
-		errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed to read parameter " << pXDT << " from module " << module << " channel " << channel << " with retval " << retval;
+		errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed";
+		errmsg << " to read parameter " << pXDT
+		       << " from module " << module
+		       << " channel " << channel
+		       << " with retval " << retval;
 		throw std::runtime_error(errmsg.str());
 	    }
     
@@ -174,7 +184,10 @@ CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
 
 	    if (retval < 0) {
 		std::stringstream errmsg;
-		errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed to read trace from module " << module << " channel " << channel << " with retval " << retval;
+		errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed";
+		errmsg << "to read trace from module " << module
+		       << " channel " << channel
+		       << " with retval " << retval;
 		throw std::runtime_error(errmsg.str());
 	    }
       
@@ -186,20 +199,19 @@ CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
 }
 
 /**
- * @brief Calculate the median value from a trace.
- *
- * @param v  Input vector of type T.
- *
- * @return double  Median value of the trace.
- *
- * @throws std::invalid_argument  If trace is empty (median is undefined).
+ * @details
+ * By default the trace length is 8192 samples. This function will calculate 
+ * the median value for any trace length, whether or not the number of samples
+ * is even or odd. All exceptions are raised to the caller.
  */
 template<typename T> double
 CPixieTraceUtilities::GetMedianValue(std::vector<T> v)
 {  
     if (v.empty()) {
 	std::stringstream errmsg;
-	errmsg << "CPixieTraceUtilities::GetMedianValue() failed to calculate the median value: the trace is empty and the median is undefined";
+	errmsg << "CPixieTraceUtilities::GetMedianValue() failed";
+	errmsg << "to calculate the median value: the trace is empty";
+	errmsg << "and the median is undefined";
 	throw std::invalid_argument(errmsg.str());
     }
   

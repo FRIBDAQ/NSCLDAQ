@@ -303,7 +303,7 @@ void CMQDC32RdoHdwr::configureThresholds(CVMUSBReadoutList& list) {
     m_logic.addWriteThresholds(list,thresholds);
   } else {
     // set all thresholds to 0 (disables them)
-    m_logic.addWriteThresholds(list,vector<int>(32,0));
+    m_logic.addWriteThresholds(list,vector<long int>(32,0));
     // ignore thresholds. period.
     m_logic.addWriteIgnoreThresholds(list,true);
   }

@@ -99,7 +99,7 @@ class CMQDC32StackBuilder
                            int thresh);
     void addReadThreshold(CVMUSBReadoutList& list, unsigned int chan);
     void addWriteThresholds(CVMUSBReadoutList& list, 
-                            std::vector<int> thrs);
+                            std::vector<long int> thrs);
     void addWriteIgnoreThresholds(CVMUSBReadoutList& list, bool ignore);
     void addReadIgnoreThresholds(CVMUSBReadoutList& list);
                            
@@ -115,15 +115,15 @@ class CMQDC32StackBuilder
     void addReadGateLimit0(CVMUSBReadoutList& list);
     void addWriteGateLimit1(CVMUSBReadoutList& list, uint8_t val);
     void addReadGateLimit1(CVMUSBReadoutList& list);
-    void addWriteGateLimits(CVMUSBReadoutList& list, std::vector<int> limits);
+    void addWriteGateLimits(CVMUSBReadoutList& list, std::vector<long int> limits);
 
     void addWriteExpTrigDelay0(CVMUSBReadoutList& list, uint16_t val);
     void addReadExpTrigDelay0(CVMUSBReadoutList& list);
     void addWriteExpTrigDelay1(CVMUSBReadoutList& list, uint16_t val);
     void addReadExpTrigDelay1(CVMUSBReadoutList& list);
-    void addWriteExpTrigDelays(CVMUSBReadoutList& list, std::vector<int> values);
+    void addWriteExpTrigDelays(CVMUSBReadoutList& list, std::vector<long int> values);
 
-    void addWriteBankOffsets(CVMUSBReadoutList& list, std::vector<int> values);
+    void addWriteBankOffsets(CVMUSBReadoutList& list, std::vector<long int> values);
     void addReadBankOffset0(CVMUSBReadoutList& list);
     void addReadBankOffset1(CVMUSBReadoutList& list);
 

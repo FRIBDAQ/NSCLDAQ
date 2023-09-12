@@ -1,6 +1,6 @@
 /**
  * @file CPixieSystemUtilities.cpp
- * @brief Implement Pixie DAQ system manager class.
+ * @brief Implementation the Pixie DAQ system utilities class.
  */
 
 #include "CPixieSystemUtilities.h"
@@ -16,13 +16,10 @@
 using namespace DAQ::DDAS;
 namespace HR = DAQ::DDAS::HardwareRegistry;
 
-/**
- * @brief Constructor.
- */
 CPixieSystemUtilities::CPixieSystemUtilities() :
     m_bootMode(0), // 1: offline, 0: online
     m_booted(false),
-    m_ovrSetFile(false), // use .set file from cfgPixie16.txt
+    m_ovrSetFile(false), // use settings file from cfgPixie16.txt
     m_numModules(0),
     m_modEvtLength(0),
     m_modADCMSPS(0),
@@ -31,26 +28,18 @@ CPixieSystemUtilities::CPixieSystemUtilities() :
     m_modClockCal(0)
 {}
 
-/**
- * @brief Destructor.
- */
 CPixieSystemUtilities::~CPixieSystemUtilities()
 {}
 
 /**
- * @brief Boot the entire system.
- *
+ * @details
  * Reads in configuration information from cfgPixie16.txt, loads settings file 
  * information, boots modules and saves configuration info.
- * 
- * @return  int 
- * @retval 0   On successful boot.
- * @retval -1  If the boot fails.
  */
 int
 CPixieSystemUtilities::Boot()
 {
-    // If the .set file path has been overwritten pre system boot, use
+    // If the settings file path has been overwritten pre system boot, use
     // the new path. first we grab it, then reset it after initializing
     // the configuration settings below.  
     std::string newSetFile;
@@ -58,13 +47,13 @@ CPixieSystemUtilities::Boot()
 	newSetFile = m_config.getSettingsFilePath();
     }
   
-    // Create a configuration file from the default settings:  
+    // Create a configuration from the default settings:  
     const char* fwFile =  FIRMWARE_FILE; // From $DDAS_SHARE.
     m_config = *(
 	Configuration::generate(fwFile, "cfgPixie16.txt", "modevtlen.txt")
 	);
 
-    // (Re)set the custom .set file path here if used:  
+    // (Re)set the custom settings file path here if used:  
     if (m_ovrSetFile) {
 	m_config.setSettingsFilePath(newSetFile);
     }
@@ -102,15 +91,10 @@ CPixieSystemUtilities::Boot()
 }
 
 /**
- * @brief Save the currently loaded DSP settings to a .set file. 
- *
- * Format depends on what is supported by the version of the XIA API being 
- * used. Version 3+ will save the .set file as a JSON file while in version
+ * @details
+ * File format depends on what is supported by the version of the XIA API being 
+ * used. Version 3+ will save the settings file as a JSON file while in version
  * 2 it is binary.
- * 
- * @param fileName  Name of file to save.
- *
- * @return  0 on success, XIA error code on fail.
  */
 int
 CPixieSystemUtilities::SaveSetFile(char* fileName)
@@ -118,23 +102,20 @@ CPixieSystemUtilities::SaveSetFile(char* fileName)
     int retval = Pixie16SaveDSPParametersToFile(fileName);
     
     if (retval < 0) {
-	std::cerr << "CPixieSystemUtilities::SaveSetFile() failed to save DSP parameter file to: " << fileName << " with retval " << retval;
+	std::cerr << "CPixieSystemUtilities::SaveSetFile() failed";
+	std::cerr << " to save DSP parameter file to: " << fileName
+		  << " with retval " << retval;
     }
   
     return retval;
 }
 
 /**
- * @brief Load a new .set file.
- *
- * Check and see if the system is booted. If so, load the parameters 
- * from the .set file. If not flag that a new .set file path (potentially 
+ * @details
+ * Check and see if the system is booted. If so, load the parameters from 
+ * the settings file. If not flag that a new settings file path (potentially 
  * different from that in the cfgPixie16.txt) has been set. The flag is 
- * checked at boot to load the new .set file.
- * 
- * @param fileName  Settings file name we are attempting to open.
- *
- * @return  0 on success, XIA error code on fail.
+ * checked at boot to load the new settings file.
  */
 int
 CPixieSystemUtilities::LoadSetFile(char* fileName)
@@ -160,9 +141,10 @@ CPixieSystemUtilities::LoadSetFile(char* fileName)
 }
 
 /**
- * @brief Exit the system and release resources from the modules.
- *
- * @returns 0 on success, XIA error code on fail.
+ * @details
+ * If the call to Pixie16ExitSystem() fails for any module, return the error 
+ * code and set the booted state flag to false. The system is likely in a bad 
+ * state.
  */
 int
 CPixieSystemUtilities::ExitSystem()
@@ -173,7 +155,9 @@ CPixieSystemUtilities::ExitSystem()
 	for (int i = 0 ; i < m_numModules; i++) {      
 	    retval = Pixie16ExitSystem(i);      
 	    if (retval < 0) {
-		std::cerr << "CPixieSystemUtilities::ExitSystem() failed to exit " << "module " << i << " with retval = " << retval << std::endl;
+		std::cerr << "CPixieSystemUtilities::ExitSystem() failed";
+		std::cerr <<" to exit " << "module " << i
+			  << " with retval = " << retval << std::endl;
 		m_booted = false;	
 		return retval;
 	    }
@@ -186,13 +170,9 @@ CPixieSystemUtilities::ExitSystem()
 }
 
 /**
- * @brief Get the module ADC sampling rate in MSPS.
- *
- * @returns unsigned short.
- * @retval  ADC MSPS if the module exists.
- * @retval  0 if the number is invalid.
- *
- * @throws std::runtime_error  If the module number is invalid.
+ * @todo (ASC 7/14/23): Would be better to return max(unsigned int) or 
+ * something besides 0 if an exception is raised. Must also be checked 
+ * wherever this return value is used on the Python side.
  */
 unsigned short
 CPixieSystemUtilities::GetModuleMSPS(int module)

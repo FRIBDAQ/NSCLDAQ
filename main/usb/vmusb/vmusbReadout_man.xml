@@ -2227,13 +2227,13 @@ sis3820 config timestamper -timestamp on
                  timestamp extraction library:
                </para>
                <programlisting>
-#include <stdint.h>
-#include <DataFormat.h>
-#include <iostream>
+#include &lt;stdint.h&gt;
+#include &lt;DataFormat.h&gt;
+#include &lt;iostream&gt;
 
 extern "C" {
   uint64_t getEventTimestamp(void* item) {
-    uint16_t *body = reinterpret_cast<uint16_t*>(item);
+    uint16_t *body = reinterpret_cast&lt;uint16_t*&gt;(item);
 
     body++; // Skipping size item
 
@@ -2243,13 +2243,13 @@ extern "C" {
     // LOW1 MID1 LOW2 MID2 HIGH1 HIGH2
     // tstamp1 for Channel 1 and tstamp2 for Channel 17
     tstamp1 |= *body++;
-    tstamp1 |= static_cast<uint64_t>(*body++) << 16;
+    tstamp1 |= static_cast&lt;uint64_t&gt;(*body++) &lt;&lt; 16;
 
     tstamp2 |= *body++;
-    tstamp2 |= static_cast<uint64_t>(*body++) << 16;
+    tstamp2 |= static_cast&lt;uint64_t&gt;(*body++) &lt;&lt; 16;
 
-    tstamp1 |= static_cast<uint64_t>(*body++) << 32;
-    tstamp2 |= static_cast<uint64_t>(*body++) << 32;
+    tstamp1 |= static_cast&lt;uint64_t&gt;(*body++) &lt;&lt; 32;
+    tstamp2 |= static_cast&lt;uint64_t&gt;(*body++) &lt;&lt; 32;
 
     return tstamp1; // or tstamp2
   }
@@ -7859,26 +7859,27 @@ mdpp32qdc cget <replaceable>name</replaceable>
                  <varlistentry>
                      <term><option>-firsthit</option> <replaceable>0 | 1</replaceable></term>
                      <listitem>
-                         <para>
-                             <listitem>
-                                 <variablelist>
-                                     <varlistentry>
-                                         <term><literal>0</literal></term>
-                                         <listitem>
-                                             <para>
-                                                 transmit all hits in the window
-                                             </para>
-                                         </listitem>
-                                         <term><literal>1</literal> (default)</term>
-                                         <listitem>
-                                             <para>
-                                                 only transmit first hit
-                                             </para>
-                                         </listitem>
-                                     </varlistentry>
-                                 </variablelit>
-                             </listitem>
-                        </para>
+                         
+                            <variablelist>
+                                <varlistentry>
+                                    <term><literal>0</literal></term>
+                                    <listitem>
+                                        <para>
+                                            transmit all hits in the window
+                                        </para>
+                                    </listitem>
+                                </varlistentry>
+                                <varlistentry>
+                                    <term><literal>1</literal> (default)</term>
+                                    <listitem>
+                                        <para>
+                                            only transmit first hit
+                                        </para>
+                                    </listitem>
+                                </varlistentry>
+                            </variablelist>
+                    
+                        
                      </listitem>
                  </varlistentry>
                  <varlistentry>

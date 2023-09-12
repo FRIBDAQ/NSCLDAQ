@@ -15,7 +15,7 @@ class Baseline(ChanDSPWidget):
         # Parameter labels for the GUI:
         
         param_labels = [
-            "BaselineCut [us]",
+            "BaselineCut",
             "Baseline %"
         ]
         

@@ -282,7 +282,7 @@ CV1x90::Initialize(CVMUSB& controller)
   string   maxHits         = m_pConfiguration->cget("-maxhits");
   bool     markErrors      = m_pConfiguration->getBoolParameter("-errormark");
   bool     bypassOnError   = m_pConfiguration->getBoolParameter("-errorbypass");
-  vector<int> offset       = m_pConfiguration->getIntegerList("-globaloffset");
+  vector<long int> offset       = m_pConfiguration->getIntegerList("-globaloffset");
 
 
   vector<pair<int, int> > adjusts = getChannelAdjustments();
