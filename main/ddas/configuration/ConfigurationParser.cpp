@@ -15,7 +15,11 @@
 #include "Configuration.h"
 #include "FirmwareVersionFileParser.h"
 
-#define FILENAME_STR_MAXLEN 256 //!< Number of characters to skip when parsing a line. Maximum allowed length of any comment added by a user.
+/**
+ * Number of characters to skip when parsing a line. Maximum allowed length of 
+ * any comment added by a user.
+ */
+#define FILENAME_STR_MAXLEN 256
 
 /**
  * @details
@@ -95,27 +99,14 @@ DAQ::DDAS::ConfigurationParser::parse(
     /**
      * @note (ASC 9/5/23): Deprecated and removed:
      * - Broken check for ".set" extension. The configuration parser does not
-     *   care what (if any) file extension the DSPParFile has. 
-     * - Old [XXXMSPS] tags for reading firmware configurations. Firmware
-     *   configuration tags must follow the expected RevX-YBit-ZMSPS format.
+     *   care what (if any) file extension the settings has. 
+     * - User-defined load paths for firmware listed after the path to the DSP 
+     *   settings file. Default firmware load paths are defined in 
+     *   DDASFirmwareVersions.txt. Custom firmware must be defined on a
+     *   per-module basis using the supported method of supplying a path to a 
+     *   custom firmware version file on the same line as the module 
+     *  (respecting the established formatting of course). 
      */
-
-    while (getline(input, line)) {
-	int revision, adcFreq, adcRes;
-	if (parseHardwareTypeTag(line, revision, adcFreq, adcRes)) {
-	    FirmwareConfiguration fwConfig
-		= extractFirmwareConfiguration(input);
-	    double calibration = extractClockCalibration(input);
-	    int type = HardwareRegistry::createHardwareType(
-		revision, adcFreq, adcRes, calibration
-		);
-	    config.setFirmwareConfiguration(type, fwConfig);
-	} else {
-	    std::string msg("ConfigurationParser::parse() Failed to parse ");
-	    msg += " the hardware tag '" + line + "'";
-	    throw std::runtime_error(msg);
-	}	
-    }
 
     config.setCrateId(CrateNum);
     config.setNumberOfModules(NumModules);

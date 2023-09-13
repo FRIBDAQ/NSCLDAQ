@@ -54,16 +54,6 @@ public:
     CPPUNIT_TEST(parseSlotMap);
     CPPUNIT_TEST(parseSettingsPath);
     CPPUNIT_TEST(parseBadSlotMap);
-    // CPPUNIT_TEST( parseCfgPixieFile_5a );
-    // CPPUNIT_TEST( parseCfgPixieFile_5b );
-    // CPPUNIT_TEST( parseCfgPixieFile_5c );
-    // CPPUNIT_TEST( parseCfgPixieFile_6 );
-    // CPPUNIT_TEST( parseCfgPixieFile_7 );
-    // CPPUNIT_TEST( parseCfgPixieFile_8 );
-    // CPPUNIT_TEST( generate_0 );
-    //CPPUNIT_TEST(parseGeneralTag_0);
-    //CPPUNIT_TEST(parseGeneralTag_1);
-    //CPPUNIT_TEST(parseGeneralTag_2);
     CPPUNIT_TEST_SUITE_END();
 
     vector<string> m_cfgFileContent;

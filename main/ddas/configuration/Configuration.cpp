@@ -256,9 +256,9 @@ DAQ::DDAS::Configuration::generate(
 
     int moduleCount = pConfig->getNumberOfModules();
 
-    // read a configration file to tell Pixie16 how big an event is in
-    // a particular module.  Within one module all channels MUST be set to
-    // the same event length
+    // Read a configration file to tell Pixie16 how big an event is in
+    // a particular module. Within one module all channels MUST be set to
+    // the same event length.
 
     std::ifstream modevt;
     modevt.open(modEvtLenPath.c_str(), std::ios::in);
