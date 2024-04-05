@@ -17,6 +17,7 @@
 
 #include "ringbufint.h"
 #include "testcommon.h"
+#include <os.h>
 
 using namespace std;
 
@@ -240,14 +241,14 @@ StaticRingTest::isring()
 void
 StaticRingTest::ringname()
 {
-  std::string username= getenv("LOGNAME");
+  std::string username= Os::whoami();
   std::string defaultName = CRingBuffer::defaultRing();
   EQ(username, defaultName);
 }
 void
 StaticRingTest::ringUrl()
 {
-  std::string username = getenv("LOGNAME");
+  std::string username = Os::whoami();
   std::string url      = "tcp://localhost/";
   url += username;
   std::string defaultUrl = CRingBuffer::defaultRingUrl();
