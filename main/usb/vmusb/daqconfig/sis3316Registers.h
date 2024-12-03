@@ -90,8 +90,9 @@ struct FpgaRegisters {
     uint32_t  s_vmeadcfpgadlinkstatus;
     uint32_t  s_adcfpgaspibusystatus;
     uint32_t  s_reserved1;
-    uint32_t  s_reserved2;
+    uint32_t  s_plldlpcontrol;
 
+    uint32_t  s_reserved2;
     uint32_t  s_reserved3;
     uint32_t  s_reserved4;
     uint32_t  s_prescalerdivider;
@@ -742,6 +743,124 @@ static const uint32_t TRFEEDBACK_INTERNAL_4(0X00000008);
 static const uint32_t TRFEEDBACK_INTERNAL_3(0X00000004);
 static const uint32_t TRFEEDBACK_INTERNAL_2(0X00000002);
 static const uint32_t TRFEEDBACK_INTERNAL_1(0X00000001);
+
+// The module has internal memory associated with each FADC.
+// to read the module requires transferring data from that memory
+// to the FIFO memory from which the VME can read it out.
+//  This is done using the transfer control registers.  There is one
+// for each of the groups of 4 channels (s_adcnnnndataqxferctl).
+// Within each 4 channel gropu there are three memory spaces.
+// space 0 is the first two channels of the group, space
+// 1 is for the second two channels of the group and 
+// space 3 transfers a set of statistics counters.
+//  The bottom 27 bits represent the address within the space
+//  at which
+// the data transfer should start.
+
+// Command values to or in:
+
+static const uint32_t DATAXFERCTL_RESET(0x00000000);
+static const uint32_t DATAXFERCTL_READ(0X80000000);
+static const uint32_t DATAXFERCTL_WRITE(0xc0000000);
+
+// Address spaces to or in:
+
+static const uint32_t DATAXFERCTL_FIRSTPAIR(0X00000000);
+static const uint32_t DATAXFERCTL_SECONDPAIR(0X10000000);
+static const uint32_t DATAXFERCTL_STATISTICS(0X30000000);
+
+static const uint32_t DATAXFERCTL_ADDRESS_MASK(0X0FFFFFFF);
+static const uint32_t DATAXFERCTL_ADDRESS_SHIFT(0);
+
+// So to read offset 0x10 for the first pair of digitizers one would write:
+// DATAXFERCTL_READ | DATAXFERCTL_FIRSTPAIR | 0x10  
+// not saying this is a reasonable thing to do.  It's just an example.
+
+
+// Each group of four digitizers also has a transfer status register.
+// s_adcnnnndataxfersr. These show the status of any transfer in progress
+// from the ADC FPGA to the fifo.    Presumably the units of the counter
+// field are 32 bit words as there are two fewer bits than the address.
+//
+// All have the same bits:
+
+static const uint32_t DATAXFERSR_BUSY(0X80000000);
+static const uint32_t DATAXFERSR_TOADC(0X40000000);
+static const uint32_t DATAXFERSR_FIFO_ALMOST_FULL(0X10000000);
+
+    // Not sure what the next two bits are about
+    // I'll label them as described but they are bits not fields.
+
+static const uint32_t DATAXFERSR_MAXPENDING(0X08000000);
+static const uint32_t DATAXFERSR_NUMPENDING(0X04000000);
+static const uint32_t DATAXFERSR_COUNTER_MASK(0X03FFFFFF);
+static const uint32_t DATAXFERSR_COUNTER_SHIFT(0);
+
+
+// s_vmeadcfpgalinkstatus
+//   Provides status and the ability to clear latched
+// error bits.  The Error bits are read/write.  Reading
+// show status and writing clears the latched status.
+// e.g. ADCLINKSTAT_FRAME_ERR_1 When read as 1 indicates
+// a latched frame error for ADC FPGA1's data link.
+// When that bit is written, the latched bit is cleared -- until
+// the next occurance of a frame error.
+// Note to make naming harder, there are, what I _think_ are
+// instantaneous error flags as well.  Those are named
+//   ADCLINKSTAT_error_name_NOW_n
+// To distinguish them frolm the latched bits.
+
+        // FPGA4
+static const uint32_t ADCLINKSTAT_FRAME_ERR_4(0X80000000);
+static const uint32_t ADCLINKSTAT_SOFT_ERR_4(0X40000000);
+static const uint32_t ADCLINKSTAT_HARD_ERR_4(0X20000000);
+static const uint32_t ADCLINKSTAT_LANE_UP_4(0X10000000);        //RO.
+static const uint32_t ADCLINKSTAT_CHAN_UP_4(0X08000000);       //RO
+static const uint32_t ADCLINKSTAT_FRAME_ERR_NOW_4(0X04000000); //ro
+static const uint32_t ADCLINKSTAT_SOFT_ERR_NOW_4(0x02000000);  //ro
+static const uint32_t ADCLINKSTAT_HARD_ERR_NOW_4(0x0100000);   // ro
+
+    // FPGA3
+
+static const uint32_t ADCLINKSTAT_FRAME_ERR_3(0X00800000);
+static const uint32_t ADCLINKSTAT_SOFT_ERR_3(0X00400000);
+static const uint32_t ADCLINKSTAT_HARD_ERR_3(0X00200000);
+static const uint32_t ADCLINKSTAT_LANE_UP_3(0X00100000);        //RO.
+static const uint32_t ADCLINKSTAT_CHAN_UP_3(0X00080000);       //RO
+static const uint32_t ADCLINKSTAT_FRAME_ERR_NOW_3(0X00040000); //ro
+static const uint32_t ADCLINKSTAT_SOFT_ERR_NOW_3(0x00020000);  //ro
+static const uint32_t ADCLINKSTAT_HARD_ERR_NOW_3(0x00010000);   // ro
+
+    // FPGA2:
+
+static const uint32_t ADCLINKSTAT_FRAME_ERR_2(0X00008000);
+static const uint32_t ADCLINKSTAT_SOFT_ERR_2(0X00004000);
+static const uint32_t ADCLINKSTAT_HARD_ERR_2(0X00002000);
+static const uint32_t ADCLINKSTAT_LANE_UP_2(0X000001000);        //RO.
+static const uint32_t ADCLINKSTAT_CHAN_UP_2(0X00000800);       //RO
+static const uint32_t ADCLINKSTAT_FRAME_ERR_NOW_2(0X00000400); //ro
+static const uint32_t ADCLINKSTAT_SOFT_ERR_NOW_2(0x00000200);  //ro
+static const uint32_t ADCLINKSTAT_HARD_ERR_NOW_2(0x00000100);   // ro
+
+    // FPGA1
+
+static const uint32_t ADCLINKSTAT_FRAME_ERR_1(0X80);
+static const uint32_t ADCLINKSTAT_SOFT_ERR_1(0X40);
+static const uint32_t ADCLINKSTAT_HARD_ERR_1(0X20);
+static const uint32_t ADCLINKSTAT_LANE_UP_1(0X10);        //RO.
+static const uint32_t ADCLINKSTAT_CHAN_UP_1(0X08);       //RO
+static const uint32_t ADCLINKSTAT_FRAME_ERR_NOW_1(0X04); //ro
+static const uint32_t ADCLINKSTAT_SOFT_ERR_NOW_1(0x02);  //ro
+static const uint32_t ADCLINKSTAT_HARD_ERR_NOW_1(0x01);   // ro
+
+// s_adcfpgaspibusystatus:
+// Bits are readonly:
+
+static const uint32_t ADCFGPGASPISTAT_BUSY_OR(0X80000000);
+static const uint32_t ADCFGPGASPISTAT_BUSY_4(0X8);
+static const uint32_t ADCFGPGASPISTAT_BUSY_3(0X4);
+static const uint32_t ADCFGPGASPISTAT_BUSY_2(0X2);
+static const uint32_t ADCFGPGASPISTAT_BUSY_1(0X1);
 
 
 
