@@ -28,7 +28,7 @@ namespace SIS3316 {
     namespace Registers {
 
 
-const int AMSINBLE=0x0d;   // Single shot operations in Supervisory data.
+const int AMSINGLE=0x0d;   // Single shot operations in Supervisory data.
 const int AMBLOCK=0x0f;    // Block modes in A32 block transfer mode.
 
 
@@ -106,7 +106,7 @@ struct FpgaRegisters {
 // The key registers. Key registers are SIS-speak for registers that 
 // do something if you write to them.. no matter what's written.
 
-static cons uint32_t  KEYOFFSETS(0x400);       // Offset to this struct:
+static const uint32_t  KEYOFFSETS(0x400);       // Offset to this struct:
 
 struct keyRegisters {
     uint32_t s_registerReset;
@@ -135,8 +135,14 @@ struct keyRegisters {
 
 // FPGA Register bases (we number from 0 rather than 1):
 
-static const FPGABASES[4] = {0x1000, 0x2000, 0x3000, 0x4000};
-static const FIFOBASES[4] = {0x1000000, 0x2000000, 0x3000000, 0x4000000};
+static const uint32_t ADCFPGABASES[4] = {0x1000, 0x2000, 0x3000, 0x4000};
+static const uint32_t FIFOBASES[4] = {0x1000000, 0x2000000, 0x3000000, 0x4000000};
+
+// Ther's a special set of offsets to read back the DC Offset value
+// and SPI control registe from the adCFPGARegs:
+
+static const uint32_t DACREADBACKS = {0X1108, 0X2108, 0X3108, 0X4108};
+static const uint32_t ADCSPIREADBACKS = {0X110C, 0X210C, 0X310C, 0X410C};
 
 // there are a few peradc. registers:
 
@@ -153,10 +159,10 @@ struct adcFPGARegisters {
     uint32_t s_DCOffset;
     uint32_t s_SPIControl;
     
-    uint32_t s_eventCOnfig;
+    uint32_t s_eventConfig;
     uint32_t s_channelHeaderId;
     uint32_t s_endThreshold;
-    uint32_t s_trigerGateLenght;
+    uint32_t s_triggerGateLength;
 
     uint32_t s_dataconfig;
     uint32_t s_pupconfig;
@@ -862,6 +868,246 @@ static const uint32_t ADCFGPGASPISTAT_BUSY_3(0X4);
 static const uint32_t ADCFGPGASPISTAT_BUSY_2(0X2);
 static const uint32_t ADCFGPGASPISTAT_BUSY_1(0X1);
 
+// s_plldlpcontrol -Control/status of the PLL chip for the
+// sample clock.
+// SOme bits are read only some are write only as shown
+// in the comments below.
+static const uint32_t PLLDRP_LOCKED(0X40000000);  // ro
+static const uint32_t PLLDRP_CLR_RESET(0x20000000); // wo
+static const uint32_t PLLDRP_RESET(0x02000000);    // rw
+static const uint32_t PLLDRP_ENABLE(0x01000000);   // wo
+static const uint32_t PLLDRP_WR_ENABLE(0x00800000); // wo
+static const uint32_t PLLDRP_ADDRESS(0x007f0000);  // wo
+static const uint32_t PLLDRP_DATA_MASK)0x0000ffff); // rw
+static const uint32_t PLLDRP_DATA_SHIFT(0);
+
+// The s_prescalerdivider is just 32 bit of data.   If 0,
+// the prescale divider is disabled.
+
+// s_prescalerlength is just 32 bits of length.
+// the actual length is (value+1) sample clocks.
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// Registers that control the ADC FPGAs -- there are four of those, one for each
+// four channel ADC group.  See the adcFPGARegisters struct for the layout of the registers relative
+// to each base address.
+
+// s_inputTapDelay
+//    I believe this is a write only register.  Supposedly when the sample clock source or freq
+// has been changed one must issue a calibration tand then write the tap (calibration bit off?).
+// THe meaning of the delay depends on the digitzer type:
+//  for the 3316 it's value * 40s with a maxiumum value of 1/2 clock period.
+// for the 3316-2 it's value * 78ps.  Presumably the same max value given the 1/2 sample bit.
+
+static const uint32_t TAPDELAY_ADD_HALF_SAMPLE_DELAY(0X1000);
+static const uint32_t TAPDELAY_CALIBRATE(0X800);    // not used on 3316-2 delay 20 sample clocks.
+static const uint32_t TAPDELAY_CLR_LINKERRS(0X400);
+static const uint32_t TAPDELAY_SELECT_3_4(0X200);     // Select second pair of channels.
+static const uint32_t TAPDELAY_SELECT_1_2(0X100);     // Select5d first pair of channels.
+static const uint32_t TAPDELAY_DELAY_MASK(0X0FF);     // 4 Bits for a 3316-2.
+static const uint32_t TAPDELAY_DELAY_SHIFT(0);
+
+// s_gainTerminationcontrol
+//   Note that the gain values must be shifted into position for the appropriate channel
+//   to be  meaningful and, on read, maked and shited right to be compared with values.
+//
+//  GTC_ standas for Gain,Termination Control below.
+
+static const uint32_t GTC_1KOHM_4(0X04000000);   // If not set, termination is 50ohms.
+static const uint32_t GTC_GAIN_4_MASK(0X03000000);
+static const uint32_t GTC_GAIN_4_SHIFT(24);      // See gain/range values values below.
+
+static const uint32_t GTC_1KOHM_3(0X040000);   // If not set, termination is 50ohms.
+static const uint32_t GTC_GAIN_3_MASK(0X030000);
+static const uint32_t GTC_GAIN_4_SHIFT(16);      // See gain/range values values below.
+
+static const uint32_t GTC_1KOHM_2(0X0400);   // If not set, termination is 50ohms.
+static const uint32_t GTC_GAIN_2_MASK(0X0300);
+static const uint32_t GTC_GAIN_2_SHIFT(8);      // See gain/range values values below.
+
+static const uint32_t GTC_1KOHM_1(0X04);   // If not set, termination is 50ohms.
+static const uint32_t GTC_GAIN_1_MASK(0X03);
+static const uint32_t GTC_GAIN_1_SHIFT(0);      // See gain/range values values below.
+
+static const uint32_t GTC_RANGE_5V(0);
+static const uint32_t GTC_RANGE_2V(1);
+static const uint32_t GTC_RANGE_1_9V(2);    // Note 3 is also 1.9 V.
+
+// s_DCOffset 
+//    well the DAC register is needlessly  complex.  Rather than just having
+//    a set of values you can write, there are these stupid command and mode
+//    bits... really just 4 DCOffset registers you could write would
+//    be so much simpler.
+
+static const uint32_t DACCTL_MODE_MASK(0XE0000000);
+static const uint32_t DACCTL_MODE_SHIFT(31);
+
+static const uint32_t DACCTL_COMMAND_MASK(0x0F000000);
+static const uint32_t DACCTL_COMMAND_SHIFT(24);
+
+static const uint32_t DACCTL_ADDRESS_MASK(0X00F00000);
+static const uint32_t DACCTL_ADDRESS_SHIFT(20);
+
+static const uint32_t DACCTL_DATA_MASK(0X000FFFF0);   // sigh couldn't just make this the bottom 16 bits.
+static const uint32_t DACCTL_DATA_SHIFT(4);
+
+    // Mode field meanings;  must be shifted into position
+    //  e.g. DACCTL_MODE_LDAC << DACCTL_MODE_SHIFT
+    //
+
+static const uint32_t DACCTL_MODE_WRITE(4);
+static const uint32_t DACCTL_MODE_WRITE_WLOAD(5);
+static const uint32_t DACCTL_LOAD(6);
+static const uint32_t DACCTL_CLEAR(7);
+
+    // command values must be shifted by DAQ_COMMAND_SHIFT
+
+static const uint32_t DACCTL_CMD_WRITE_INPUT(0);
+static const uint32_t DACCTL_CMD_UPDATE(1);
+static const uint32_t DACCTL_CMD_WRITE_AND_UPDATE_ALL(2);
+static const uint32_t DACCTL_CMD_WRITE_UPDATE(3);
+static const uint32_t DACCTL_CMD_POWER_CYCLE(4);
+static const uint32_t DACCTL_CMD_LD_CLEARCODE_REG(5);
+static const uint32_t DACCTL_CMD_LDAC_REG(6);
+static const uint32_t DACCTL_CMD_RESET(7);
+static const uint32_t DACCTL_CMD_SETUP_DCEN(8);
+static const uint32_t DACCTL_CMD_NOOP(9);
+
+    // Adress registser values:
+
+static const uint32_t DACCTL_ADDR_DACA(0); // For adc1.
+static const uint32_t DACCTL_ADDR_DACB(1); // For adc2 etc .
+static const uint32_t DACCTL_ADDR_DACC(2);
+static const uint32_t DACCTL_ADDR_DACD(3);
+static const uint32_t DACCTL_ADDR_ALL(0XF);  // Broadcast to all dacs.
+
+    // THe following are full scale values for the ranges:
+    // The DAC is subtracted from the inputs.
+static const uint32_t DAC_RANGE_5V_MAX(0XFFFF);    // 0 - 5V
+static const uint32_t DAC_RANGE_5V_MID(0X800);     // -2.5 - 2.5V
+static const uint32_t DAC_RANGE_5V_MIN(0);         // -5V - 0
+
+static const uint32_t DAC_RANGE_2V_MAX(5200);      // 0 - 2v
+static const uint32_t DAC_RANGE_2V_MID(0X8000);    // -1 - 1v
+static const uint32_t DAC_RANGE_2V_MIN(1300);      // -2 - 0v
+
+// The DAC readback register is just the DAC value with no need to shift
+// unused bits are defined as zero but:
+
+static const uint32_t DAC_READBACK_MASK(0X0000FFFF);
+static const uint32_t DAC_READBACK_SHIFT(0);
+
+// s_SPIControl.
+//    All bits are read/write.  Operations require 23usec.
+
+static uint32_t ADCSPI_COMMAND_MASK(0xc0000000);
+static uint32_t ADCSPI_COMMAND_SHIFT(30);
+
+static uint32_t ADCSPI_ADCOUT_ENABLE(0X01000000);
+static uint32_t ADCSPI_SEL34(0X00400000);
+static uint32_t ADCSPI_ADDR_MASK(0X0001FF00);
+static uint32_t ADCSPI_ADDR_SHIFT(8);
+static uint32_t ADCSPI_DATA_MASK(0X0000000F);
+static uint32_t ADCSPI_DATA_SHIFT(0);
+
+    // command values must be positioned using ADCSPI_COMMAND_SHIFT
+
+static uint32_t ADCSPI_CMD_WRITE(2);
+static uint32_t ADCSPI_CMD_READ(3);
+
+    // The readback register just has the data:
+
+static uint32_t ADCSPI_READBACK_MASK(0X000000FF);
+static uint32_t ADCSPI_READBACK_SHIFT(0);
+
+
+// s_eventConfig.
+//   Each adc in the group has 8 bits of control information.
+//   we provide definitions of each of the bits and then
+//   mask/shifts for each of the 4 ADCs in an FPGA group.
+
+static const uint32_t ADCCFG_INVERT(1);
+static const uint32_t ADCCFG_SUMTRG_ENABLE(2);
+static const uint32_t ADCCFG_INTERNAL_TRG_ENABLE(4);
+static const uint32_t ADCCFG_EXTERN_TRG_ENABLE(8);
+static const uint32_t ADCCFG_INTERNAL_GATE1_ENABLE(0X10);
+static const uint32_t ADCCFG_INTERNAL_GATE2_ENABLE(0X20);
+static const uint32_t ADCCFG_EXTERNAL_GATE_ENABLE(0X40);
+static const uint32_t ADCCFG_EXTERNAL_VETO_ENABLE(0X80);
+
+static const uint32_t ADCCFG_CH1_MASK(0X000000FF);
+static const uint32_t ADCCFG_CH1_SHIFT(0);
+
+static const uint32_t ADCCFG_CH2_MASK)0X0000FF00);
+static const uint32_t ADCCFG_CH2_SHIFT(8);
+
+static const uint32_t ADCCFG_CH3_MASK(0X00FF0000);
+static const uint32_t ADCCFG_CH3_SHIFT(16);
+
+static const uint32_t ADCCFG_CH4_MASK(0XFF000000);
+static const uint32_t ADCCFG_CH4R_MASK(24);
+
+// For whatever reason the next documented register in the
+// manual is thes_extendedEventconfig Same idea as above
+// but only two meaningful bits:
+
+static const uint32_t ADCEXTCFG_SAVE_RAWFIRST(0X10);
+static const uint32_t ADCEXTCFG_INTERNAL_PUPFIRST(1);
+
+static const uint32_t ADCEXTCFG_CH1_MASK(0X000000FF);
+static const uint32_t ADCEXTCFG_CH1_SHIFT(0);
+
+static const uint32_t ADCEXTCFG_CH2_MASK)0X0000FF00);
+static const uint32_t ADCEXTCFG_CH2_SHIFT(8);
+
+static const uint32_t ADCEXTCFG_CH3_MASK(0X00FF0000);
+static const uint32_t ADCEXTCFG_CH3_SHIFT(16);
+
+static const uint32_t ADCEXTCFG_CH4_MASK(0XFF000000);
+static const uint32_t ADCEXTCFG_CH4R_MASK(24);
+
+// s_chanelHeaderId
+//   This is another typical piece of crap.
+//   Sure, there are a bunch of bits. but really
+//   you _must_ set bits 2-3 to the ADC group number
+//   and bits, 0-1 are set to the channel within the group
+//   What they should do is only give you what are now
+//    bits 4-11 and set the bottom bits for you 
+//    without giving you a chance to set the group bits 
+//    incorrectly or claiming you can set the adc bits.
+//   We'll try to capture that here:
+
+static const uint32_t ID_FREE_MASK(0XFF000000);  // Set these to anything.
+static const uint32_t ID_FREE_SHIFT(24);
+static const uint32_t ID_MBGROUPNO_MASK(0X00C00000); // must be group #
+static const uint32_t ID_MBGROUPNO_SHIFT(22);
+    // Leave the channel bits out of it.
+
+// s_endThreshold - limits data in conjunction with the top bit, and determines when
+//   the address threshold flag is set in the appropriate register.
+
+static const uint32_t ADDRTHRESH_SUPPRESSMORE(0x80000000); 
+static const uint32_t ADDRTHRESH_END_MASK(0X0FFFFFFF);
+static const uint32_t ADDRTHRESH_END_SHIFT(0);
+
+// s_triggerGatelength length of the active trigger gate window.
+// the length is 2+value sampling clocks.
+
+static const uint32_t GATELEN_MASK(0XFFFFFFFF);
+static const uint32_t GATELEN_SHIFT(0);
+
+// s_dataconfig
+//   configures the storage of the raw waveform data.
+//   note that only an even number of samples (0 is even) can be stored
+//   because the path to the memory stores two samples per transfer. Furthermore,
+//   the start index must be even.
+//   twere me I'd ignore those bottom bits and the manual claims that happens
+//    but....(I think?!?).
+
+static const uint32_t DATACFG_LENGTH_MASK(0XFFFF0000);
+static const uint32_t DATACFG_LENGTH_SHIFT(16);
+static const uint32_t DATACFG_START_ADDR_MASK(0X0000FFFF);
+static const uint32_t DATACFG_START_ADDR_SHIFT(0);
 
 
 
@@ -876,6 +1122,74 @@ static const uint32_t SI5325_SPI_WRITE(0X40);    // Write addr/data are te data.
 static const uint32_t SI5325_SPI_WRADDR_INCR(0xc0);  // increment the write address by the data.
 static const uint32_t SI5325_SPI_READ(0X80);     // read from the read address.
 static const uint32_t SI5325_SPI_RDADDR_INCR(0xa0); // Increment the read address by the data.
+
+// s_pupconfig
+//   Specifies the length of the pileup and re-pileup windows.
+
+static const uint32_t PUP_REPILEUP_WIN_MASK(0xffff0000);   // Even values only though.
+static const uint32_t PUP_REPILEUP_WIN_SHIFT(16);
+static const uint32_t PUP_PILEUP_WIN_MASK(0X0000FFFF);     //Even values only.
+static const uint32_t PUP_PILEUP_WIN_SHIFT(0);
+
+
+// s_pretrigger  - register that sets up the pretrigger delay.
+
+static const uint32_t PRETRIG_ADDITIONAL_ENA(0X8000);   // add  "delay of FIR trigger P+G bit"
+static const uint32_t PRETRIG_DELAY_MASK(0x3fff);       // note must be even.
+static const uint32_t PRETRIG_DELAY_SHIFT(0);
+
+// s_averageconfig - configures trace averaging to reduce the signal
+// noise sent to the DPP. 
+// In another rather crappy thing, 
+// This register has compleetly different meaning depdngin on the
+// model number:
+
+
+    // SI3316-125MHz 16Bit meanings:
+
+static const uint32_t AVG_MODE_MASK(0X70000000);
+static const uint32_t AVG_MODE_SHIFT(28);
+static const uint32_t AVG_PRETRIGGER_MASK(0X0FFF0000);
+static const uint32_t AVG_PRETRIGGER_SHIFT(16);
+static const uint32_t AVG_LENGTH_MASK(0X0000FFFF);   // Must be even.
+static const uint32_t AVG_LENGTH_SHIFT(0);
+
+    // Must be shifted in place via AVG_MODE_SHIFT.
+
+static const uint32_t AVG_MODE_DISABLED(0);
+static const uint32_t AVG_MODE_4(1);
+static const uint32_t AVG_MODE_8(2);
+static const uint32_t AVG_MODE_16(3);
+static const uint32_t AVG_MODE_32(4);
+static const uint32_t AVG_MODE_64(5);
+static const uint32_t AVG_MODE_128(6);
+static const uint32_t AVG_MODE_256(7);
+
+    // But wait -- there's more.  For the SIS3316-2 250MHZ 14bit
+    // module thsi register can configure averaging and decimation:
+    // with 5 bits per channel in the group. defined:
+
+static const uint32_t DECIMATION_ENABLE(0X10);  // If clr averaging.
+static const uint32_t DECIMATION_MASK(0XF);
+static const uint32_t DECIMATION_4(0);
+static const uint32_t DECIMATION_8(1);
+static const uint32_t DECIMATION_16(2);
+static const uint32_t DECIMATION_32(3);
+static const uint32_t DECIMATION_64(4);
+static const uint32_t DECIMATION_128(5);
+static const uint32_t DECIMATION_256(6);
+static const uint32_t DECIMATION_512(7);
+static const uint32_t DECIMATION_2(8);    // actually any value  with the 8s bit set.
+
+
+    // Now shift counts for each of the channels:  apply to both
+    // DECIMATION_ENABLE and whatever mode is used:
+
+static const uint32_t DECIMATION_CH4_SHIFT(24);
+static const uint32_t DECIMATION_CH3_SHIFT(16);
+static const uint32_t DECIMATION_CH2_SHIFT(8);
+static const uint32_t DECIMATION_CH1_SHIFT(0);
+
 
 
 #pragma pack (pop)
