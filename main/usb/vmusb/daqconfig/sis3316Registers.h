@@ -174,22 +174,23 @@ struct adcFPGARegisters {
     uint32_t s_internalTrigDelay;
     uint32_t s_internalGateLength;
 
-    adcRegisters s_adcSetup[4];
+    adcRegisters s_adcSetup[5];   // Per ADC and for the sum.
 
     uint32_t s_trgstatmode;
     uint32_t s_peakchargeconfig;
     uint32_t s_extendedbufferconfig;
-    uint32_t s_extendedEventconfig;
+   // uint32_t s_extendedEventconfig;
 
     uint32_t s_accumulatorGateconfig[8];
 
     uint32_t s_FIRenergySetup[4];
-    uint32_t s_histogramSEtup[4];
+    uint32_t s_histogramSetup[4];
     uint32_t s_MAWStartIndexConfig[4];
 
     uint32_t s_test;
     uint32_t s_unused[3];
 
+    uint32_t s_sampleClockPLLDrp;
     uint32_t s_adfpgaVersion;
     uint32_t s_adcfpgastatus;
     uint32_t s_offsetreadback;
@@ -202,7 +203,7 @@ struct adcFPGARegisters {
 
     uint32_t s_testReadback1018;
     uint32_t s_testReadback101c;
-    uint32_t s_sisinternaltest;
+    uint32_t s_sampleClockPLLDrpRead;
 
 
 }
@@ -1189,6 +1190,182 @@ static const uint32_t DECIMATION_CH4_SHIFT(24);
 static const uint32_t DECIMATION_CH3_SHIFT(16);
 static const uint32_t DECIMATION_CH2_SHIFT(8);
 static const uint32_t DECIMATION_CH1_SHIFT(0);
+
+// s_format
+//    Each channel in the group has 
+//    7 bits defined below along with masks and
+//    shifts for each of the four channels in the group. 
+//     The bits determine what each
+//     trigger saves in memory (and hence the FIFO).
+///    note:  MAW:  Moving average window.
+
+    // a note ABOUT EMAW_TESTBIT:
+    // this is not an on/off bit:
+    //  But determines what is selected from the processing
+    //  of the moving average window:
+    // If 0 the FIR trigger is selected.
+    // if 1 the FIR energy is selcted.
+static const uint32_t DFMT_STORE_COUNTER(0X40);
+static const uint32_t DFMT_STORE_EMWAW_TESTBIT(0X20);
+static const uint32_t DFMT_STORE_MAW_TEST_ENABLE(0X10);
+
+static const uint32_t DFMT_STORE_MAW_ENERGIES(0X8);
+static const uint32_t DFMT_STORE_MAW_TRIGGER(0X4);
+static const uint32_t DFMT_STORE_ACCUMULATORS(0X2);
+static const uint32_t DFMT_STORE_PEAKS(0X1);
+
+    // Now the masks and shifts for each
+    // channel in the group
+    
+
+static const uint32_t DFMT_CH4_MASK(0X7F000000);
+static const uint32_t DFMT_CH4_SHIFT(24);
+static const uint32_t DFMT_CH3_MASK(0X007F0000);
+static const uint32_t DFMT_CH3_SHIFT(16);
+static const uint32_t DFMT_CH2_MASK(0X00007F00);
+static const uint32_t DFMT_CH2_SHIFT(8);
+static const uint32_t DFMT_CH1_MASK(0X0000007F);
+static const uint32_t DFMT_CH1_SHIFT(0);
+
+//  s_MAWtestconfig
+//   While the name implies  this is for testing,
+//   It nonetheless seems important:
+//   Values are common for all 4 channels in a group.
+//   One can set pretrigger delays, and lengths of
+//   the MAW test buffer.  These lengths must be
+//   even;  that their bottom bits must be 0.
+
+static const uint32_t MAWTESTCFG_PRETRIG_DELAY_MASK(0x01FF0000);
+static const uint32_t MAWTESTCFG_PRETRIG_DELAY_SHIFT(16);
+static const uint32_t MAWTESTCFG_LENGTH_MASK(0X0000FFFF);
+static const uint32_t MAWTESTCFG_LENGTH_SHIFT(0);
+
+// s_internalTrigDelay:
+//   There are  4x8 bit fields that supply a delay which
+//   is 2 clock cycles * the value:
+
+static const uint32_t INTTRGDELAY_CH4_MASK(0XFF000000);
+static const uint32_t INTTRGDELAY_CH4_SHIFT(24);
+static const uint32_t INTTRGDELAY_CH3_MASK(0X00FF0000);
+static const uint32_t INTTRGDELAY_CH3_SHIFT(16);
+static const uint32_t INTTRGDELAY_CH2_MASK(0X0000FF00);
+static const uint32_t INTTRGDELAY_CH2_SHIFT(8);
+static const uint32_t INTTRGDELAY_CH1_MASK(0X000000FF);
+static const uint32_t INTTRGDELAY_CH1_SHIFT(0);
+
+// s_internalGateLength
+//   There is a common internal gate length for all
+//  4 internal gates as well as an internal coincidence
+//  gate length.  Threa are also enable bits for
+//  the twwo gates that can be fired by the 
+//  internal triggers.
+//  The gate length is 2x value ...ist hat true of the
+//  coincidence widht?  doesn't say so but...?
+
+
+static const uint32_t INTTRGGATE_G2ENA_CH4(0X08000000);
+static const uint32_t INTTRGGATE_G2ENA_CH3(0X04000000);
+static const uint32_t INTTRGGATE_G2ENA_CH2(0X02000000);
+static const uint32_t INTTRGGATE_G2ENA_CH1(0X01000000);
+
+static const uint32_t INTTRGGATE_G1ENA_CH4(0X00800000);
+static const uint32_t INTTRGGATE_G1ENA_CH3(0X00400000);
+static const uint32_t INTTRGGATE_G1ENA_CH2(0X00200000);
+static const uint32_t INTTRGGATE_G1ENA_CH1(0X00100000);
+
+static const uint32_t INTTRGGATE_LENGTH_MASK(0X0000FF00);
+static const uint32_t INTTRGGATE_LENGTH_SHIFT(8);
+static const uint32_t INTTRGGATE_COINC_MASK(0X000000FF);
+static const uint32_t INTTRGGATE_COINC_SHIFT(0);
+
+// Each group has a set of registers in the s_adcSetup
+// array these registers are described below.
+// note there's a fifth one which applies to the
+// sum signal.
+
+
+// s_firTRGsetup:
+//    main use is the gap time and peaking time for the FIR trigger.
+//    note the bottom bits of all fields are ignored making them
+//    an even number of clocks(?).
+static const uint32_t FIR_NIMOUTLEN_MASK(0XFF000000);
+static const uint32_t FIR_NIMOUTLEN_SHIFT(0X24);
+static const uint32_t FIR_GAPTIME_MASK(0X00FFF000)
+static const uint32_t FIR_GAPTIME_SHIFT(12);
+static const uint32_t FIR_PEAKTIME_MASK(0X00000FFF);
+static const uint32_t FIR_PEAKTIME_SHIFT(0);
+
+// s_threshold_a
+//  Trigger thresholds for the FIR trigger.
+//    There are so few CFD modes we just supply
+//     them as values to or in:
+
+static const uint32_t FIRTHRESH_TRGENABLE(0X80000000);
+static const uint32_t FIRTHRESH_HESUPPRESS(0X40000000);
+static const uint32_t FIRTHRESH_CFD_DISABLE(0X00000000);
+static const uint32_t FIRTHRESH_CFD_ZEROCROSS(0X20000000);
+static const uint32_t FIRTHRESH_CFD_50PCT(0X30000000);
+static const uint32_t FIRTHRESH_THRESHOLD_MASK(00FFFFFFF);
+static const uint32_t FIRTHRESH_THRESHOLD_SHIFT(0);
+
+//  s_hethreshold_a
+//    controls the high energy trigger operation:
+//    This includes the thing presented to the trigger mux.
+//    Note that there are only three states for that
+//    again we don't bother with shifts and masks.
+static const uint32_t FIRHETHRESH_BOTH_EDGES(0X80000000);
+static const uint32_t FIRHETHRESH_STRETCHTOMUX(0X40000000);
+static const uint32_t FIRHETHRESH_MUXROUTE_INTTRG(0x00000000;
+static const uint32_t FIRHETHRESH_MUXROUTE_HETRG(0X10000000);
+static const uint32_t FIRHETHRESH_MUXROUTE_PILEUP(0X20000000);
+static const uint32_t FIRHETHRESH_THRESHOLD_MASK(0X0FFFFFFF);
+static const uint32_t FIRHETHRESH_THRESHOLD_SHIFT(0);
+
+// Now back to per group registers.
+
+// s_trgstatmode -- how trigger statistics are read:
+// If TRGSTAT_ONBANKSWITCH is set, then each bank switch
+// latches the trigger statistics counter.
+//
+static const uint32_t TRGSTAT_ONBANKSWITCH(1);
+
+// s_peakchargeconfig
+//   In addition to capturing waveforms,
+//   the digitizer can do waveform analysis extracting
+//   a peak and charge from the trace data.  This register controls
+// that.
+// 
+//  Note again I just enumerate the baseline averaging modes.
+//   so they can be ored in directly without shifts/masks.
+// Note as with many timing constants/sample counts,
+// thebottom bit of the pregate delay is always 0.
+
+static const unint32_t PQCONFIG_ENABLE(0X80000000);
+static const unint32_t PQCONFIG_AVG_MASK(0X3000000); // For extraction
+static const unint32_t PQCONFIG_AVG32(0X00000000);
+static const unint32_t PQCONFIG_AVG64(0X01000000);
+static const unint32_t PQCONFIG_AVG128(0X20000000);
+static const unint32_t PQCONFIG_AVG256(0X30000000)
+
+static const unint32_t PQCONFIG_PREGATE_DELAY_MASK(0X0FFF0000);
+static const unint32_t PQCONFIG_PREGATE_DELAY_SHIFT(16);
+
+// s_extendedbufferconfig 
+//   Yet another way to specify # of samples.
+//    Just a counter so we don't bother to define fields.
+
+
+// s_accumulatorGateConfig
+//
+// Length and start sample of accumulator gates (Q integration?).
+
+static const unint32_t ACQGATE_GATE_LENGTH_MASK(0X7FFF0000);
+static const unint32_t ACQGATE_GATE_LENGTH_SHIFT(16);
+static const unint32_t ACQGATE_GATE_START_MASK(0X0000FFFF);
+static const unint32_t ACQGATE_GATE_START_SHIFT(0);
+
+
+
 
 
 
