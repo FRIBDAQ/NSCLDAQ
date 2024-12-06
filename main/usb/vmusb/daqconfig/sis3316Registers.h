@@ -181,7 +181,7 @@ struct adcFPGARegisters {
     uint32_t s_extendedbufferconfig;
    // uint32_t s_extendedEventconfig;
 
-    uint32_t s_accumulatorGateconfig[8];
+    uint32_t s_accumulatorGateconfig[3];
 
     uint32_t s_FIRenergySetup[4];
     uint32_t s_histogramSetup[4];
@@ -197,12 +197,10 @@ struct adcFPGARegisters {
     uint32_t s_spireadback;
 
     uint32_t s_sampleAddress[4];
-    uint32_t s_prevbankSampel[4];
-    uint32_t s_ppsTimestampHigh;
-    uint32_t s_ppsTimestampLow;
+    uint32_t s_prevbankSample[4];  // to offset 0x130.
 
-    uint32_t s_testReadback1018;
-    uint32_t s_testReadback101c;
+    uint8_t s_unused[0xcb];]    // cb not cc because there's a byte.
+                                // Ad offset 0x1fc
     uint32_t s_sampleClockPLLDrpRead;
 
 
@@ -1358,14 +1356,144 @@ static const unint32_t PQCONFIG_PREGATE_DELAY_SHIFT(16);
 // s_accumulatorGateConfig
 //
 // Length and start sample of accumulator gates (Q integration?).
+// Each group has three of these labeled in order Gate1, Gate2 and
+// Gate8.
 
 static const unint32_t ACQGATE_GATE_LENGTH_MASK(0X7FFF0000);
 static const unint32_t ACQGATE_GATE_LENGTH_SHIFT(16);
 static const unint32_t ACQGATE_GATE_START_MASK(0X0000FFFF);
 static const unint32_t ACQGATE_GATE_START_SHIFT(0);
 
+// s_FIREnergySetup
+//   There is a register for each digitizer in the group.
+//   This register sets up trapezoidal filter parameters
+//   for the energy extraction:
 
+static const uint32_t EFILT_TAU_TBLSEL_MASK(0XC0000000);
+static const uint32_t EFILT_TAU_TBLSEL_SHIFT(30);
+static const uint32_t EFILT_TAU_FACTOR_MASK(0X3F00000);
+static const uint32_t EFILT_TAU_FACTOR_SHIFT(24);
 
+static const uint32_t EFILT_EXTRAFILT_NONE(0X00000000);
+static const uint32_t EFILT_EXTRAFILT_AVG4(0X00400000);
+static const uint32_t EFILT_EXTRAFILT_AVG8(0X00800000);
+static const uint32_t EFILT_EXTRAFILT_AVB16(0X00C00000);
+
+static const uint32_t EFILT_GAPT_MASK(0X0003F000);
+static const uint32_t EFILT_GAPT_SHIFT(12);
+
+static const uint32_t EFILT_PEAKT_MASK(0X00000FFF);
+static const uint32_t EFILT_PEAKT_SHIFT(0);
+
+// s_histogramSetup -  the adc can histogram
+// extracted energy data.   The energy can be scaled
+// and offset  with the bin within the 64kbin histogram
+// computed as value/scale - offset in that order of operations.
+// This is an array of registers for each of the digitizers
+// in a group.
+
+static const uint32_t HIST_HITWRITE_DISABLE(0X80000000);
+static const uint32_t HIST_CLEAR_WITH_TSCLEAR(0X040000000);
+static const uint32_t HIST_SCALE_MASK(0X0FFF0000);
+static const uint32_t HIST_SCALE_SHIFT(16);
+static const uint32_t HIST_OFFSET_MASK(0X0000FF00);
+static const uint32_t HIST_OFFSET_SHIFT(8);
+static const uint32_t HIST_PUP_ENABLE(0X00000002); 
+static const uint32_t HIST_ENABLE(0X00000001);
+
+// s_MAWStartIndexConfig - One per ADC in the group (4 registers).
+// From the manual:
+//  With the value of the “MAW Test Buffer Start Index“, it is possible to delay the start of
+// saving the Trigger or Energy trapezoid into the MAW Test buffer. This can be helpful to save
+// (see) the tail of the Energy trapezoid in case that the sum (Pretiggerdelay + 2*Peaking time +
+// Gap time) is greater than 2048.
+//
+// You can save the Energy value from a defined position (index) of the Energy trapezoidal
+// rather than the maximum value of the trapezoidal with a non zero Energy Pickup Index value.
+// With a zero Energy Pickup Index value the logic will save the maximum value.
+
+static uint32_t MAWSTART_ENERGY_MASK(0XFFFF0000);
+static uint32_t MAWSTART_ENERGY_SHIFT(16);
+static uint32_t MAWSTART_START_MASK(0X0000FFFF);
+static uint32_t MAWSTART_START_SHIFT(0);
+
+// s_test - may have one useful bit after all:
+//
+// If this bit is true, then the internal gate 
+// is set in the bottom bit of trace data.
+// This is essentially a digital probel for the gate.
+// I can see it being useful for debugging timing.
+static unint32_t TEST_SAVE_INTERNAL_GATE(1);
+
+// s_sampleClockPllDrp:
+//   Each FGPA has an associated PLL to synthesize an input
+//   clock into a sampling clock for its ADC.
+// 
+//  Handling this PLL Is another abomination.  If I understand
+//  correctly when writing data to the PLL I write the data bits here
+//  but, if I'm readingm data from the PLL, the read data bits are
+// in s_sampleClockPLLDrpRead
+//
+// I've complained a lot about this module but that uhm... that's
+// uhm....going pretty far.
+// How reset works is also ugly...rather than just twinking a bit
+// and the chip clears I need to set set the reste in one bit and then
+// clear it in another.
+// I'm trying to make this clear by calling the data bits WRITE_DATA
+// as in the manual.
+
+static uint32_t SAMPLEPLL_RESET_CLEAR(0X20000000);
+static uint32_t SAMPLEPLL_RESET_SET(0X02000000);
+static uint32_t SAMPLEPLL_ENABLE(0X01000000);
+static uint32_t SAMPLEPLL_WRITE(0X00800000);
+static uint32_t SAMPLEPLL_ADDR_MASK(0X00780000);
+static uint32_t SAMPLEPLL_ADDR_SHIFT(16);
+static uint32_t SAMPLEPLL_WRITE_DATA_MASK(0X0000FFFF);
+static uint32_t SAMPLEPLL_WRITE_DATA_SHIFT(0);
+
+// s_adcfpgaVersion
+
+static uint32_t FPGAVSN_TYPE_MASK(0XFFFF0000);
+static uint32_t FPGAVSN_TYPE_SHIFT(16);
+static uint32_t FPGAVSN_VERSION_MASK(0X0000FF00);
+static uint32_t FPGAVSN_VERSION_SHIFT(8);
+static uint32_t FPGAVSN_REVISION_MASK(0X000000FF);
+static uint32_t FPGAVSN_REVISION_SHIFT(0);
+static uint32_t FPGAVSN_TYPE_125MHZ(0X0125);
+static uint32_t FPGAVSN_TYPE_250MHZ(0X0250);
+
+// s_adcfgpastatus:
+//
+// According to the manual:
+//  holds the ADC FPGA Status of the Data Link between the ADC FPGA and the
+//  VME FPGA , the Status of the both Memory Controller and the Status of the ADC-Clock
+//  DCM.
+
+static unit32_t FPGASTAT_CLOCKPLL_RESET(0X00200000);
+static unit32_t FPGASTAT_CLOCKPLL_OK(0X00100000);
+
+static unit32_t FPGASTAT_MEMORY2_OK(0X00020000);
+static unit32_t FPGASTAT_MEMORY1_OK(0X00010000);
+static unit32_t FPGASTAT_DLINK_SPEED(0X00000100);
+static unit32_t FPGASTAT_VME_FRAME_ERR(0X00000080);  // Latched errors & status:
+static unit32_t FPGASTAT_VME_SOFT_ERR(0X00000040);
+static unit32_t FPGASTAT_VME_HARD_ERR(0X00000020);
+static unit32_t FPGASTAT_VME_LANE_UP(0X00000010);   //These are continuously updating(?)
+static unit32_t FPGASTAT_VME_CHAN_UP(0X00000008);
+static unit32_t FPGASTAT_VME_FRAME(0x00000004);
+static unit32_t FPGASTAT_VME_SOFT(0X00000002);
+static unit32_t FPGASTAT_VME_HARD(0X00000001);
+
+// s_sampleAddress is just that; no bits of interest.
+// as is s_prevbankSample
+
+// Finaly s_sampleClockPLLDrpRead - the read data and status from 
+// s_sampleClockPllDrp
+//
+
+static unit32_t SAMPLE_PLL_READ_RESET(0X02000000);
+static unit32_t SAMPLE_PLL_READ_DATA_MASK(0XFFFF);
+static unit32_t SAMPLE_PLL_READ_DATA_SHIFT(0);
 
 
 
