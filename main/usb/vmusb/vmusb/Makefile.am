@@ -12,7 +12,7 @@ libVMUSB_la_SOURCES 	=  CVMUSBusb.cpp CVMUSBReadoutList.cpp CVMUSBEthernet.cpp \
 	CVMUSBFactory.cpp \
 	CVMUSB.cpp \
 	CMockVMUSB.cpp \
-	CLoggingReadoutList.cpp
+	CLoggingReadoutList.cpp sis_vmusb_interface.cpp
 
 libVMUSB_la_CPPFLAGS=$(COMPILATION_FLAGS)
 
@@ -31,7 +31,7 @@ noinst_HEADERS		= CVMUSB.h   \
 	CVMUSBFactory.h \
 	CMockVMUSB.h \
 	CLoggingReadoutList.h \
-	vme_interface_class.h
+	vme_interface_class.h sis_vmusb_interface.h
 
 
 libVMUSB_CXXFLAGS=@THREADCXX_FLAGS@ -I@srcdir@/.. -I@top_srcdir@/base/os
