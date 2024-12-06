@@ -18,7 +18,7 @@
 // and PUINT in terms of UINT as it should have
 // originally been. -- rfk
 
-typedef uint8_t CHAR;
+typedef char CHAR;
 typedef uint32_t UINT;
 typedef UINT* PUINT;
 

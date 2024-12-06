@@ -1,7 +1,7 @@
 /**
  *  @file sis_vmusb_interface.h
  *  @brief Define class to rehost the SIS vme interface class on VMUSB.
- * 
+ *  @author Ron Fox<rfoxkendo@gmail.com>
  * Intent of this is to provide a plaform on which the 
  * SIS class for handling the SIS3316 can be ported.
  * 
@@ -16,7 +16,7 @@
 
      Author:
              Ron Fox
-	     NSCL
+	     FRIB
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
@@ -32,7 +32,7 @@ class CVMUSBReadoutList;
  *    This is mostly  just a copy of what's in the base class,
  *   however we add support as well for building lists.
  */
-class sis_vmusb_interface:: public vme_interface_class {
+class sis_vmusb_interface : public vme_interface_class {
 public:
     virtual int vmeopen( void ) ;
 	virtual int vmeclose( void ) ;
@@ -55,7 +55,7 @@ public:
 	virtual int vme_A32_2EVMEFIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
 	virtual int vme_A32_2ESST160FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
 	virtual int vme_A32_2ESST267FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
-	virtual int vme_A32_2ESST320FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32_2ESST320FIFO_read(UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
 
 
 	virtual int vme_A32D32_write( UINT addr, UINT data ) ;
@@ -69,7 +69,7 @@ public:
 
 	virtual int vme_IRQ_Status_read( UINT* data ) ;
 
-    // Operations that support building a list - TODO:
+    // Operations that support building a list - TODO: provide list ops.
 
 };
 
