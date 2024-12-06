@@ -30,7 +30,8 @@ noinst_HEADERS		= CVMUSB.h   \
 	CVMUSBRemote.h       \
 	CVMUSBFactory.h \
 	CMockVMUSB.h \
-	CLoggingReadoutList.h
+	CLoggingReadoutList.h \
+	vme_interface_class.h
 
 
 libVMUSB_CXXFLAGS=@THREADCXX_FLAGS@ -I@srcdir@/.. -I@top_srcdir@/base/os
