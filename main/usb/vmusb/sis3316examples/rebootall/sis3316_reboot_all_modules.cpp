@@ -52,6 +52,7 @@ using namespace std;
 #include <stdlib.h>
 #endif
 
+
 #ifdef WINDOWS
 	#include <iostream>
 	#include <iomanip>
@@ -71,7 +72,9 @@ using namespace std;
 
 #include "vme_interface_class.h"
 
-
+#define ASSERT_REBOOT 0x8000
+#define DEASSERT_REBOOT 0x80000000
+#define DELAY_US 1000   // Ms to reload?
 
 #ifdef ETHERNET_UDP_INTERFACE
 	#include "sis3316_ethernet_access_class.h"
@@ -102,6 +105,30 @@ using namespace std;
 		}
 	#endif
 
+#endif
+#ifdef VMUSB_VME_INTERFACE
+#include <sis_vmusb_interface.h>
+#include <CVMUSB.h>
+#include <CVMUSBFactory.h>
+#include <stdint.h>
+#include<string>
+namespace Globals {
+	CVMUSB* pUSBController(0);
+}
+
+// True if the module at the base address has a readable
+// module id and the id indicates this is a 3316:
+static bool isSIS3316(vme_interface_class& vme, uint32_t base) {
+	UINT idreg;
+	int status = vme.vme_A32D32_read(base+0x04, &idreg);
+
+	// If not status == 0 then it's not a module.
+
+	if (status) return false;
+
+	idreg = (idreg & 0xffff0000) >> 16;
+	return idreg == 0x3316;
+}
 #endif
 
 
@@ -214,17 +241,55 @@ unsigned int i_mod ;
 		sis3316_eth_device[i_mod]->get_vmeopen_messages (char_messages, &nof_found_devices);  // open Vme interface
 	    //printf("get_vmeopen_messages = %s , nof_found_devices %d \n",char_messages, nof_found_devices);
 	}
-#endif
 
+	// RF Depends on Ethernet because of the 
+	// base address of zero thing.
 
 	for (i_mod=0; i_mod<MAX_NOF_SIS3316_ADCS; i_mod++) {
 		usleep(100000);
 		return_code = sis3316_eth_device[i_mod]->vme_A32D32_write(0x0, 0x8000); // reboot
 	}
 
+#endif
+#ifdef VMUSB_VME_INTERFACE
+#define MAX_INTERFACES 256   // based on address switches
+	
+	// Table of potential base addressses:
+
+	uint32_t base_addresses[MAX_INTERFACES];
+	for (uint32_t i =0; i < MAX_INTERFACES; i++) {
+		base_addresses[i] = i << 24;
+	}
+
+	// Open the VMUSB interface:
+
+	try {
+		Globals::pUSBController = 
+			CVMUSBFactory::createUSBController(
+				CVMUSBFactory::local, nullptr
+			);
+	} catch(std::string msg) {
+		std::cerr << "Unable to connect to a VMUSB: " << msg << std::endl;
+		return -1;
+	}
+	// For each address if that's the base address of an sis3316
+	// then assert the boot bit, wait a bit and deassert.
+	//
+
+	sis_vmusb_interface interface;
+	interface.vmeopen();               // Must succeed.
+	for (int i =0; i <MAX_INTERFACES; i++) {
+		auto base = base_addresses[i];
+		if (isSIS3316(interface, base)) {
+			interface.vme_A32D32_write(base, ASSERT_REBOOT);
+			usleep(DELAY_US);
+			interface.vme_A32D32_write(base, DEASSERT_REBOOT);
+	}
+#endif
 
 
 
 		return 0;
 	}
-
+}
+void *gpApplication(0);
