@@ -863,6 +863,8 @@ Makefile
     usb/vmusb/devtests/Makefile
     usb/vmusb/vmusbPackage/Makefile
     usb/vmusb/tclservertests/Makefile
+	usb/vmusb/sis3316examples/Makefile
+	usb/vmusb/sis3316examples/rebootall/Makefile
     usb/ccusb/Makefile
     usb/ccusb/ccusb/Makefile 
     usb/ccusb/core/Makefile

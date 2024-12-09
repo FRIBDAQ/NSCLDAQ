@@ -609,3 +609,6 @@ CAENComm_ErrorCode STDCALL CAENComm_SWRelease(char *SwRel)
 
 }
 void* gpTCLApplication(0);
+namespace Globals {
+  CVMUSB* pUSBController(0);
+}
