@@ -1,6 +1,6 @@
 bin_PROGRAMS=allchans_exttrgtest
 
-exec_prefix=@prefix@/sis3316
+bindir=@prefix@/sis3316
 
 allchans_exttrgtest_SOURCES=get_configuration_parameters.cpp \
     sis3316_cern_root_class.cpp \
