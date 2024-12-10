@@ -20,4 +20,5 @@ noinst_HEADERS=get_configuration_parameters.h \
 
 
 allchans_exttrgtest_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
-allchans_exttrgtest_LDADD=@ROOT_LDFLAGS@
+allchans_exttrgtest_LDADD=@ROOT_LDFLAGS@ @builddir@/../../vmusb/libVMUSB.la \
+    @TCL_LDFLAGS@

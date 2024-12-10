@@ -147,6 +147,32 @@ using namespace std;
 	#endif
 
 #endif
+
+#ifdef VMUSB_INTERFACE
+#include <CVMUSB.h>
+#include <CVMUSBFactory.h>
+#include <string>
+#include <sis_vmusb_interface.h>
+namespace Globals {
+	CVMUSB* pUSBController(0);
+}
+static vme_interface_class*gl_vme_crate(0);
+
+// Create the VMUSB Interface and an sis_vme_interface_class 
+// instance based on it.  Return 0 on succdess.
+static int createInterface() {
+	try {	
+		Globals::pUSBController = CVMUSBFactory::createUSBController(CVMUSBFactory::local, nullptr);
+		gl_vme_crate = new sis_vmusb_interface;
+		gl_vme_crate->vmeopen();
+	} catch (std::string msg) {
+		std::cerr << "Failed to open the VUSB: " << msg << std::endl;
+		return -1;
+	}
+	return 0;
+}
+
+#endif
 /******************************************************************************************************/
 
 
@@ -276,9 +302,18 @@ unsigned int uint_internal_trigger_delay;
 /*  SIS3316 program parameter                                                             */
 /*                                                                                        */
 /******************************************************************************************/
-	module_base_addr = 0x30000000 ;
+	module_base_addr = 0x30000000 ; // <<<<<< VME BASE ADDRESS >>>>>
 	// Ethernet UDP IP address
 	strcpy(gl_cmd_ip_string,"192.168.1.2") ; // SIS3316 IP address
+
+#ifdef VMUSB_INTERFACE
+
+	return_code = createInterface();
+	if (return_code) {
+		return -1;
+	}
+#endif
+
 
 #ifdef ETHERNET_UDP_INTERFACE
 	module_base_addr = 0x0 ;
@@ -848,7 +883,6 @@ USHORT idFpgaFirmwareVersion;
 
 
 #endif
-
 
 /******************************************************************************************/
 #ifdef WINDOWS
