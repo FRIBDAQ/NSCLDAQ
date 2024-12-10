@@ -1,5 +1,7 @@
 bin_PROGRAMS=sis3316_rebootall
 
+exec_prefix=@prefix@/sis3316
+
 sis3316_rebootall_SOURCES=sis3316_class.cpp \
 sis3316_ethernet_access_class.cpp \
 sis3316_reboot_all_modules.cpp
