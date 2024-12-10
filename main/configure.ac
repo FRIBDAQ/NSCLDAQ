@@ -866,6 +866,7 @@ Makefile
 	usb/vmusb/sis3316examples/Makefile
 	usb/vmusb/sis3316examples/rebootall/Makefile
 	usb/vmusb/sis3316examples/ch1_to_ch16_external_trigger_test/Makefile
+	usb/vmusb/sis3316examples/internaltrigger_externalgate_dt/Makefile
     usb/ccusb/Makefile
     usb/ccusb/ccusb/Makefile 
     usb/ccusb/core/Makefile
