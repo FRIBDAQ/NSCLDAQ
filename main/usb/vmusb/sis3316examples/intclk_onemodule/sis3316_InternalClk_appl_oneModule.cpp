@@ -151,6 +151,41 @@ typedef int BOOL ;
 
 #endif
 
+
+#ifdef VMUSB_INTERFACE
+#include <CVMUSBFactory.h>
+#include <CVMUSB.h>
+#include <sis_vmusb_interface.h>
+#include <stdint.h>
+#include <string>
+namespace Globals {
+        CVMUSB* pUSBController;
+}
+vme_interface_class* gl_vme_crate;
+/**
+ *  Connect to the fist VMUSB and
+ *  set that as Globals::pUSBController and instantiate
+ * a sis_vmusb_interface -> gl_vme_crate.
+ * We open the crate though I think that might be done 
+ * elsewhere it's harmless to do more than once (vmeopen).
+ */
+static int connectVME() {
+        try {
+                Globals::pUSBController =
+                        CVMUSBFactory::createUSBController(
+							CVMUSBFactory::local, nullptr);
+                gl_vme_crate = new sis_vmusb_interface;
+                gl_vme_crate->vmeopen();
+        }
+        catch (std::string msg) {
+                std::cerr << "Unable to connect to a VMUSB:  "
+ << msg << std::endl;
+                return -1;             // Fail.
+        }
+        return 0;    // Success
+}
+
+#endif
 /******************************************************************************************************/
 
 
@@ -357,7 +392,12 @@ unsigned int uint_udp_nofPacketsPerRequest;
 	uint_WriteData_to_MultipleFiles_Flag = 0 ;
 	sprintf(char_WriteData_to_File_initialize_filename,"sis3316_test_data") ;
 
-
+#ifdef VMUSB_INTERFACE
+	int openstat = connectVME();
+	if (openstat) {
+		return -1;    // Failed to open the VME.
+	}
+#endif
 /******************************************************************************************/
 /*                                                                                        */
 /*  SIS3316 default program parameter                                                     */
@@ -1054,7 +1094,9 @@ USHORT idFpgaFirmwareVersion;
 
 /******************************************************************************************/
 
+#ifdef ETHERNET_UDP_INTERFACE
 	return_code = gl_vme_crate->udp_reset_cmd();
+#endif
 
 
 	return_code = gl_vme_crate->vme_A32D32_read ( module_base_addr + SIS3316_MODID, &data);
@@ -1117,10 +1159,11 @@ USHORT idFpgaFirmwareVersion;
 
 
 	// set UDP option/mode
+#ifdef ETHERNET_UDP_INTERFACE$	
 	if(uint_udp_jumbo_mode == 0) { gl_vme_crate->set_UdpSocketDisableJumboFrame() ; }
 	if(uint_udp_jumbo_mode == 1) { gl_vme_crate->set_UdpSocketEnableJumboFrame() ; }
 	gl_vme_crate->set_UdpSocketReceiveNofPackagesPerRequest(uint_udp_nofPacketsPerRequest);
-
+#endif
 	sis3316_adc  *sis3316_adc1 ;
 	sis3316_adc1 = new sis3316_adc( gl_vme_crate, module_base_addr);
 

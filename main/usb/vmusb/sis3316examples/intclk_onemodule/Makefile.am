@@ -9,7 +9,8 @@ intclk_onemodule_SOURCES=get_configuration_parameter_appl.cpp \
     sis3316_InternalClk_appl_oneModule.cpp 
 
 intclk_onemodule_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
-intclk_onemodule_LDADD=@ROOT_LDFLAGS@
+intclk_onemodule_LDADD=@ROOT_LDFLAGS@ \
+    @builddir@/../../vmusb/libVMUSB.la @TCL_LDFLAGS@
 
 noinst_HEADERS=get_configuration_parameter_appl.h \
     project_interface_define.h \
