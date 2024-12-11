@@ -868,6 +868,7 @@ Makefile
 	usb/vmusb/sis3316examples/ch1_to_ch16_external_trigger_test/Makefile
 	usb/vmusb/sis3316examples/internaltrigger_externalgate_dt/Makefile
 	usb/vmusb/sis3316examples/intclk_onemodule/Makefile
+	usb/vmusb/sis3316examples/FPBUS_threads_allmodules/Makefile
     usb/ccusb/Makefile
     usb/ccusb/ccusb/Makefile 
     usb/ccusb/core/Makefile
