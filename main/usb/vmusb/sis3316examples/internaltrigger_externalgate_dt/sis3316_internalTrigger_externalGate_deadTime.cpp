@@ -161,7 +161,38 @@ typedef int BOOL ;
 	#endif
 
 #endif
+#ifdef VMUSB_INTERFACE
+#include <CVMUSBFactory.h>
+#include <CVMUSB.h>
+#include <sis_vmusb_interface.h>
+#include <stdint.h>
+#include <string>
+namespace Globals {
+	CVMUSB* pUSBController;
+}
+vme_interface_class* gl_vme_crate;
+/**
+ *  Connect to the fist VMUSB and
+ *  set that as Globals::pUSBController and instantiate
+ * a sis_vmusb_interface -> gl_vme_crate.
+ * We open the crate though I think that might be done 
+ * elsewhere it's harmless to do more than once (vmeopen).
+ */
+static int connectVME() {
+	try {
+		Globals::pUSBController =
+			CVMUSBFactory::createUSBController(CVMUSBFactory::local, nullptr);
+		gl_vme_crate = new sis_vmusb_interface;
+		gl_vme_crate->vmeopen();
+	}
+	catch (std::string msg) {
+		std::cerr << "Unable to connect to a VMUSB:  " << msg << std::endl;
+		return -1;             // Fail.
+	}
+	return 0;    // Success
+}
 
+#endif
 /******************************************************************************************************/
 
 
@@ -336,7 +367,12 @@ unsigned int uint_channel_external_trigger_enable_flag[16];
 unsigned int uint_channel_internal_trigger_enable_flag[16];
 unsigned int uint_fpag_config_reg_value[4];
 
-
+#ifdef VMUSB_INTERFACE
+	int open_status = connectVME();
+	if (open_status) {
+		return open_status;
+	}
+#endif
 /******************************************************************************************/
 /*                                                                                        */
 /*  SIS3316 program parameter                                                             */
