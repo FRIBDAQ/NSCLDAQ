@@ -3,4 +3,5 @@ SUBDIRS=rebootall \
     internaltrigger_externalgate_dt \
     intclk_onemodule \
     FPBUS_threads_allmodules \
-    FPBUS_read_temps
+    FPBUS_read_temps \
+    FPBUS_external_trigger
