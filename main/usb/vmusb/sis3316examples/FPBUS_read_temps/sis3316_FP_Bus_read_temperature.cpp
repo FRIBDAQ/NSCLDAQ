@@ -28,7 +28,7 @@
 
 
 //#define MAX_NOF_SIS3316_ADCS			1
-#define MAX_NOF_SIS3316_ADCS			3
+static int MAX_NOF_SIS3316_ADCS(3);  // For VMUSB this will be # modules found.
 //#define MAX_NOF_SIS3316_ADCS			13
 
 #include "project_system_define.h"		//define LINUX or WINDOWS
@@ -113,6 +113,58 @@ BOOL CtrlHandler( DWORD ctrlType );
 #endif
 /*===========================================================================*/
 
+#ifdef VMUSB_INTERFACE
+#ifdef VMUSB_INTERFACE
+#include <CVMUSBFactory.h>
+#include <CVMUSB.h>
+#include <sis_vmusb_interface.h>
+#include <stdint.h>
+#include <string>
+#include <vector>
+namespace Globals {
+        CVMUSB* pUSBController;
+}
+vme_interface_class* gl_vme_crate;
+/**
+ *  Connect to the fist VMUSB and
+ *  set that as Globals::pUSBController and instantiate
+ * a sis_vmusb_interface -> gl_vme_crate.
+ * We open the crate though I think that might be done 
+ * elsewhere it's harmless to do more than once (vmeopen).
+ */
+static int connectVME() {
+        try {
+                Globals::pUSBController =
+                        CVMUSBFactory::createUSBController(
+                          CVMUSBFactory::local, nullptr);
+                gl_vme_crate = new sis_vmusb_interface;
+                gl_vme_crate->vmeopen();
+        }
+        catch (std::string msg) {
+                std::cerr << "Unable to connect to a VMUSB:  "
+                          << msg << std::endl;
+                return -1;             // Fail.
+        }
+        return 0;    // Success
+}
+/**
+ @brief  Determine if a module is an SIS3316 module.
+ @param crate  - interface class to the VME crate.
+ @param base   - Module base address.
+ @return bool - true if it's an SIS3316.
+*/
+static bool isSIS3316(vme_interface_class* crate, uint32_t base) {
+        uint32_t value;
+        int status = crate->vme_A32D32_read(base + SIS3316_MODID, &value);
+        if (status ) return false;    // Read failed probably bus error.
+        value = (value & 0xffff0000) >> 16;
+        return value == 0x3316;          // Correct module id.
+}
+
+#endif
+
+#endif
+
 int main(int argc, char *argv[])
 {
   volatile int return_code ;
@@ -192,7 +244,8 @@ int main(int argc, char *argv[])
   if(MAX_NOF_SIS3316_ADCS >= 12) { 	strcpy(sis3316_ip_addr_string[11],"192.168.2.103") ; } // SIS3316 IP address
   if(MAX_NOF_SIS3316_ADCS >= 13) { 	strcpy(sis3316_ip_addr_string[12],"192.168.2.104") ; } // SIS3316 IP address
 
-#endif
+
+
 
   // default
   vme_base_address = 0x00000000 ;
@@ -251,7 +304,21 @@ int main(int argc, char *argv[])
   for (i_mod=0; i_mod<MAX_NOF_SIS3316_ADCS; i_mod++) {
     sis3316_adc_array[i_mod] = new sis3316_adc( sis3316_eth_device[i_mod], i_mod * 0x01000000); // base address (i_mod * 0x01000000) is used for header information !
   }
+#endif
+#ifdef VMUSB_INTERFACE
+  if(connectVME()) {
+    return -1;                         // Failed to open the VME interface.
+  }
+  std::vector<sis3316_adc*> sis3316_adc_array;
+  for (unsigned i = 0; i < 256; i++) {
+    uint32_t base = i << 24;          // Potential base address:
 
+    if (isSIS3316(gl_vme_crate, base)) {
+      sis3316_adc_array.push_back(new sis3316_adc(gl_vme_crate, base));
+    }
+    MAX_NOF_SIS3316_ADCS = sis3316_adc_array.size();
+  }
+#endif
   do {
     for (i_mod=0; i_mod<MAX_NOF_SIS3316_ADCS; i_mod++) {
       return_code = sis3316_adc_array[i_mod]->register_read(0x4, &data);
