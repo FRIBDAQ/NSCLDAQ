@@ -1,4 +1,5 @@
 bin_PROGRAMS=FPBUS_threads_allmodules
+bindir = @prefix@/sis3316
 
 FPBUS_threads_allmodules_SOURCES=get_configuration_parameter_appl.cpp \
     sis3316_cern_root_class.cpp \
@@ -6,7 +7,8 @@ FPBUS_threads_allmodules_SOURCES=get_configuration_parameter_appl.cpp \
     sis3316_ethernet_access_class.cpp \
     sis3316_FP_BUS_Threads_appl_allModules.cpp
 FPBUS_threads_allmodules_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
-FPBUS_threads_allmodules_LDADD=@ROOT_LDFLAGS@
+FPBUS_threads_allmodules_LDADD=@ROOT_LDFLAGS@ \
+    @builddir@/../../vmusb/libVMUSB.la @TCL_LDFLAGS@
 
 
 noinst_HEADERS=get_configuration_parameter_appl.h \
