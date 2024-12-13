@@ -871,7 +871,8 @@ Makefile
 	usb/vmusb/sis3316examples/FPBUS_threads_allmodules/Makefile
 	usb/vmusb/sis3316examples/FPBUS_external_trigger/Makefile
 	usb/vmusb/sis3316examples/FPBUS_read_temps/Makefile
-	usb/vmusb/sis3316examples/FPBUS_appl_allmods/Makefile	
+	usb/vmusb/sis3316examples/FPBUS_appl_allmods/Makefile
+	usb/vmusb/sis3316examples/register_rw/Makefile
     usb/ccusb/Makefile
     usb/ccusb/ccusb/Makefile 
     usb/ccusb/core/Makefile
