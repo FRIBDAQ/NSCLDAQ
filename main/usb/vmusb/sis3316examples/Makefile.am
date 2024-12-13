@@ -6,4 +6,5 @@ SUBDIRS=rebootall \
     FPBUS_read_temps \
     FPBUS_external_trigger \
     FPBUS_appl_allmods \
-    register_rw
+    register_rw \
+    fwupdate
