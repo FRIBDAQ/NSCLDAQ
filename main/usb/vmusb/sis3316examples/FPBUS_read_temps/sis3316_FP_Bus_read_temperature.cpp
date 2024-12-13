@@ -114,7 +114,7 @@ BOOL CtrlHandler( DWORD ctrlType );
 /*===========================================================================*/
 
 #ifdef VMUSB_INTERFACE
-#ifdef VMUSB_INTERFACE
+
 #include <CVMUSBFactory.h>
 #include <CVMUSB.h>
 #include <sis_vmusb_interface.h>
@@ -163,7 +163,7 @@ static bool isSIS3316(vme_interface_class* crate, uint32_t base) {
 
 #endif
 
-#endif
+
 
 int main(int argc, char *argv[])
 {
