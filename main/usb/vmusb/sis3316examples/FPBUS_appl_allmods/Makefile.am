@@ -1,4 +1,7 @@
 bin_PROGRAMS=FP_BUS_appl_allmods
+
+bindir=@prefix@/sis3316
+
 FP_BUS_appl_allmods_SOURCES=get_configuration_parameter_appl.cpp \
     sis3316_cern_root_class.cpp \
     sis3316_class.cpp \
