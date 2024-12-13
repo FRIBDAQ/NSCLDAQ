@@ -4,4 +4,5 @@ SUBDIRS=rebootall \
     intclk_onemodule \
     FPBUS_threads_allmodules \
     FPBUS_read_temps \
-    FPBUS_external_trigger
+    FPBUS_external_trigger \
+    FPBUS_appl_allmods
