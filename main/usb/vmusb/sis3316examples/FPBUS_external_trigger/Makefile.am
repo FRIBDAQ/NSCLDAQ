@@ -15,5 +15,4 @@ noinst_HEADERS=project_interface_define.h \
     sis3316_cern_root_class.h \
     sis3316_class.h \
     sis3316_ethernet_access_class.h \
-    sis3316.h \
-    vme_interface_class.h
+    sis3316.h 
