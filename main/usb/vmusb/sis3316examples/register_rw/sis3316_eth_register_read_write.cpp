@@ -97,6 +97,44 @@ typedef int BOOL ;
 	#endif
 
 #endif
+
+#ifdef VMUSB_INTERFACE
+#include <CVMUSBFactory.h>
+#include <CVMUSB.h>
+#include <sis_vmusb_interface.h>
+#include <stdint.h>
+#include <string>
+#include <vector>
+namespace Globals {
+        CVMUSB* pUSBController;
+}
+vme_interface_class* gl_virtual_vme_crate;
+/**
+ *  Connect to the fist VMUSB and
+ *  set that as Globals::pUSBController and instantiate
+ * a sis_vmusb_interface -> gl_vme_crate.
+ * We open the crate though I think that might be done 
+ * elsewhere it's harmless to do more than once (vmeopen).
+ */
+static int connectVME() {
+        try {
+                Globals::pUSBController =
+                        CVMUSBFactory::createUSBController(
+                          CVMUSBFactory::local, nullptr);
+                gl_virtual_vme_crate = new sis_vmusb_interface;
+                gl_virtual_vme_crate->vmeopen();
+        }
+        catch (std::string msg) {
+                std::cerr << "Unable to connect to a VMUSB:  "
+                          << msg << std::endl;
+                return -1;             // Fail.
+        }
+        return 0;    // Success
+}
+
+#endif
+
+
 /******************************************************************************************************/
 
 
@@ -117,6 +155,7 @@ typedef int BOOL ;
 /*===========================================================================*/
 
 char gl_cmd_ip_string[64];
+
 
 
 /*===========================================================================*/
@@ -260,7 +299,14 @@ unsigned int sis3316_not_OK;
 
 #endif
 
+#ifdef VMUSB_INTERFACE
+	// Really the program is a VME read/write not register read write,
+	// when used with the VMUSB_INTERFACE as there is no module object.
 
+	if (connectVME()) {
+		return -1;     // COnnection failed.  connectVME output why to stderr.
+	}
+#endif
 
 
 // open Vme Interface device
