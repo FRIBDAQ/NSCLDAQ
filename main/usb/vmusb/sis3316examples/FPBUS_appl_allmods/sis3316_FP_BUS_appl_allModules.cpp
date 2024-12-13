@@ -35,7 +35,7 @@
 /***************************************************************************/
 
 
-#define MAX_NOF_SIS3316_ADCS			3
+static int MAX_NOF_SIS3316_ADCS(3);
 //#define MAX_NOF_SIS3316_ADCS			13
 //#define MAX_NOF_SIS3316_ADCS			1
 
@@ -95,6 +95,7 @@ typedef int BOOL ;
 //	#include "wingetopt.h" 
 #endif
 
+#include "sis3316_class.h"
 
 
 
@@ -130,7 +131,57 @@ typedef int BOOL ;
 #endif
 
 
-#include "sis3316_class.h"
+
+#ifdef VMUSB_INTERFACE
+#include <CVMUSBFactory.h>
+#include <CVMUSB.h>
+#include <sis_vmusb_interface.h>
+#include <stdint.h>
+#include <string>
+#include <vector>
+namespace Globals {
+        CVMUSB* pUSBController;
+}
+vme_interface_class* gl_vme_crate;
+/**
+ *  Connect to the fist VMUSB and
+ *  set that as Globals::pUSBController and instantiate
+ * a sis_vmusb_interface -> gl_vme_crate.
+ * We open the crate though I think that might be done 
+ * elsewhere it's harmless to do more than once (vmeopen).
+ */
+static int connectVME() {
+        try {
+                Globals::pUSBController =
+                        CVMUSBFactory::createUSBController(
+                          CVMUSBFactory::local, nullptr);
+                gl_vme_crate = new sis_vmusb_interface;
+                gl_vme_crate->vmeopen();
+        }
+        catch (std::string msg) {
+                std::cerr << "Unable to connect to a VMUSB:  "
+                          << msg << std::endl;
+                return -1;             // Fail.
+        }
+        return 0;    // Success
+}
+/**
+ @brief  Determine if a module is an SIS3316 module.
+ @param crate  - interface class to the VME crate.
+ @param base   - Module base address.
+ @return bool - true if it's an SIS3316.
+*/
+static bool isSIS3316(vme_interface_class* crate, uint32_t base) {
+        uint32_t value;
+        int status = crate->vme_A32D32_read(base + SIS3316_MODID, &value);
+        if (status ) return false;    // Read failed probably bus error.
+        value = (value & 0xffff0000) >> 16;
+        return value == 0x3316;          // Correct module id.
+}
+
+#endif
+
+
 #include "sis3316.h"
 #include "get_configuration_parameter_appl.h"
 
@@ -1050,8 +1101,58 @@ unsigned int uint_udp_nofPacketsPerRequest;
 
 
 #endif
+// VMUSB port
+ #ifdef VMUSB_INTERFACE
+	// Access the device and give up right now if we can't
 
- 
+	if(connectVME()) {
+		return -1;                // connectVME already output the error.
+	}
+	// Locate all of the modules in the crate; output their serial # and temp.
+	// This will fill sis3316_adc_array with module objec pointers
+	// and reste MAX_NOF__SIS3316_ADCS to be the number we actually found.
+	// There are two nybbles of address we can set so there are a max of 256
+	// modules to look for:
+
+	std::vector<sis3316_adc*>  sis3316_adc_array;
+	for (i_mod = 0; i_mod < 256; i_mod++) {  
+		uint32_t base = static_cast<uint32_t>(i) << 24;
+		if (isSIS3316(gl_vme_crate, base)) {
+			sis3316_adc_array.push_back(new sis3316_adc(gl_vme_crate, base));
+
+			// since used i_mod as the index above we can copy the serial# and
+			// temp code fromt he Ethernet section.
+
+			return_code = sis3316_adc_array[i_mod]->register_read(SIS3316_SERIAL_NUMBER_REG, &serial_no);
+			if (return_code) {
+				std::cerr << "Could not read serial# register from base: " 
+					<< std::hex << base << std::dec << std::endl;
+			}
+			printf("Serial number   = %d  \t", serial_no&0xffff);
+			printf("module ID/VME FPGA version = 0x%08X \t", data);
+			sis3316_adc_array[i_mod]->register_read(0x1100, &data);
+			printf("ADC FPGA version = 0x%08X \n", data);
+
+			return_code = sis3316_adc_array[i_mod]->register_read(SIS3316_INTERNAL_TEMPERATURE_REG, &data);
+			if (return_code) {
+				std::cerr << "Could not read temperature register from base: " 
+					<< std::hex << base << std::dec << std::endl;
+			}
+			signed short signed_short_temperature ;
+			float float_temperature_c, float_temperature_f ;
+			signed_short_temperature =  ((signed short) (data&0xffff) ) ;
+			float_temperature_c =  (float) (signed_short_temperature) / 4.0 ;
+			float_temperature_f =  32.0 + (float_temperature_c * 1.8) ;
+			printf("Temperature     = %2.2f C    %3.2f F \n", float_temperature_c, float_temperature_f );
+			printf("\n");
+		}
+	}
+	MAX_NOF_SIS3316_ADCS = sis3316_adc_array.size();
+	// He sleeps so we will as well:
+
+	usleep(500000) ;
+	printf("\n\n\n\n");
+ #endif
 
 
 	

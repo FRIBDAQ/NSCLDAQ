@@ -9,7 +9,8 @@ FP_BUS_appl_allmods_SOURCES=get_configuration_parameter_appl.cpp \
     sis3316_FP_BUS_appl_allModules.cpp 
 
 FP_BUS_appl_allmods_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
-FP_BUS_appl_allmods_LDADD=@ROOT_LDFLAGS@
+FP_BUS_appl_allmods_LDADD=@ROOT_LDFLAGS@ \
+    ../../vmusb/libVMUSB.la @TCL_LDFLAGS@
 
 noinst_HEADERS=get_configuration_parameter_appl.h \
     project_interface_define.h \
