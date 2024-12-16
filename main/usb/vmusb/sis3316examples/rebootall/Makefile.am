@@ -6,7 +6,8 @@ sis3316_rebootall_SOURCES=sis3316_class.cpp \
 sis3316_ethernet_access_class.cpp \
 sis3316_reboot_all_modules.cpp
 
-sis3316_rebootall_CXXFLAGS=-I@srcdir@/../../vmusb
+sis3316_rebootall_CXXFLAGS=-I@srcdir@/../../vmusb \
+    -I@top_srcdir@/base/thread
 sis3316_rebootall_LDADD=@builddir@/../../vmusb/libVMUSB.la \
     @TCL_LDFLAGS@
 

@@ -10,5 +10,6 @@ noinst_HEADERS=project_interface_define.h \
     sis3316_ethernet_access_class.h \
     sis3316.h 
 
-fwupdate_CPPFLAGS=-I@srcdir@/../../vmusb
+fwupdate_CPPFLAGS=-I@srcdir@/../../vmusb \
+    -I@top_srcdir@/base/thread
 fwupdate_LDADD=@builddir@/../../vmusb/libVMUSB.la @TCL_LDFLAGS@

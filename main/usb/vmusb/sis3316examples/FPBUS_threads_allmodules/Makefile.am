@@ -6,7 +6,8 @@ FPBUS_threads_allmodules_SOURCES=get_configuration_parameter_appl.cpp \
     sis3316_class.cpp \
     sis3316_ethernet_access_class.cpp \
     sis3316_FP_BUS_Threads_appl_allModules.cpp
-FPBUS_threads_allmodules_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
+FPBUS_threads_allmodules_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb \
+    -I@top_srcdir@/base/thread
 FPBUS_threads_allmodules_LDADD=@ROOT_LDFLAGS@ \
     @builddir@/../../vmusb/libVMUSB.la @TCL_LDFLAGS@
 

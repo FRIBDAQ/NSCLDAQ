@@ -15,6 +15,7 @@ noinst_HEADERS=project_interface_define.h \
     sis3316_cern_root_class.h
 
 
-inttrig_extgate_dt_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
+inttrig_extgate_dt_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb \
+    -I@top_srcdir@/base/thread
 inttrig_extgate_dt_LDADD=@ROOT_LDFLAGS@ \
     @builddir@/../../vmusb/libVMUSB.la @TCL_LDFLAGS@

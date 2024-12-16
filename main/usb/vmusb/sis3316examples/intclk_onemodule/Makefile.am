@@ -8,7 +8,8 @@ intclk_onemodule_SOURCES=get_configuration_parameter_appl.cpp \
     sis3316_ethernet_access_class.cpp \
     sis3316_InternalClk_appl_oneModule.cpp 
 
-intclk_onemodule_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
+intclk_onemodule_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb \
+    -I@top_srcdir@/base/thread
 intclk_onemodule_LDADD=@ROOT_LDFLAGS@ \
     @builddir@/../../vmusb/libVMUSB.la @TCL_LDFLAGS@
 

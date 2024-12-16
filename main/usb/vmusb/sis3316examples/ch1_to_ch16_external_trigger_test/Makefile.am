@@ -19,6 +19,7 @@ noinst_HEADERS=get_configuration_parameters.h \
     sis3316.h 
 
 
-allchans_exttrgtest_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
+allchans_exttrgtest_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb \
+    -I@top_srcdir@/base/thread
 allchans_exttrgtest_LDADD=@ROOT_LDFLAGS@ @builddir@/../../vmusb/libVMUSB.la \
     @TCL_LDFLAGS@

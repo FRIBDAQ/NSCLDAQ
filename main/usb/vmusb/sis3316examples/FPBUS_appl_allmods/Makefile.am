@@ -8,7 +8,8 @@ FP_BUS_appl_allmods_SOURCES=get_configuration_parameter_appl.cpp \
     sis3316_ethernet_access_class.cpp \
     sis3316_FP_BUS_appl_allModules.cpp 
 
-FP_BUS_appl_allmods_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
+FP_BUS_appl_allmods_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb \
+    -I@top_srcdir@/base/thread
 FP_BUS_appl_allmods_LDADD=@ROOT_LDFLAGS@ \
     ../../vmusb/libVMUSB.la @TCL_LDFLAGS@
 

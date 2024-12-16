@@ -5,7 +5,8 @@ FP_readtemps_SOURCES=sis3316_class.cpp \
     sis3316_ethernet_access_class.cpp \
     sis3316_FP_Bus_read_temperature.cpp
 
-FP_readtemps_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
+FP_readtemps_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb \
+    -I@top_srcdir@/base/thread
 FP_readtemps_LDADD=@ROOT_LDFLAGS@ \
     @builddir@/../../vmusb/libVMUSB.la @TCL_LDFLAGS@
 
