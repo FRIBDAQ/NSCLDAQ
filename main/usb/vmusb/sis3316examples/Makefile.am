@@ -8,4 +8,6 @@ SUBDIRS=rebootall \
     FPBUS_appl_allmods \
     register_rw \
     fwupdate \
-    access_rate
+    access_rate \
+    rootgui
+
