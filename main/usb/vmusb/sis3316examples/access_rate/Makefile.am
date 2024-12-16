@@ -1,7 +1,7 @@
-bin_PROGRAMS=access_rate
+bin_PROGRAMS=ethernet_access_rate
 bindir=@prefix@/sis3316
 
-access_rate_SOURCES=sis3316_class.cpp \
+ethernet_access_rate_SOURCES=sis3316_class.cpp \
     sis3316_eth_access_rate_test.cpp \
     sis3316_ethernet_access_class.cpp
 
@@ -10,8 +10,8 @@ noinst_HEADERS=project_interface_define.h \
     rootIncludes.h \
     sis3316_class.h \
     sis3316_ethernet_access_class.h \
-    sis3316.h \
-    vme_interface_class.h
+    sis3316.h
 
-access_rate_CPPFLAGS=@ROOT_CFLAGS@
-access_rate_LDADD=@ROOT_LDFLAGS@
+
+ethernet_access_rate_CPPFLAGS=@ROOT_CFLAGS@ -I@srcdir@/../../vmusb
+ethernet_access_rate_LDADD=@ROOT_LDFLAGS@
