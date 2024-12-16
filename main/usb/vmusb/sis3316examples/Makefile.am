@@ -7,4 +7,5 @@ SUBDIRS=rebootall \
     FPBUS_external_trigger \
     FPBUS_appl_allmods \
     register_rw \
-    fwupdate
+    fwupdate \
+    access_rate
