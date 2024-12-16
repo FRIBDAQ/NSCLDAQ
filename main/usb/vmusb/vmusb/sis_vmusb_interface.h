@@ -23,6 +23,7 @@
 
 #ifndef SIS_VMUSB_INTERFACE_H
 #define SIS_VMUSB_INTERFACE_H
+#include <CMutex.h>
 #include "vme_interface_class.h"
 
 class CVMUSBReadoutList;
@@ -31,8 +32,16 @@ class CVMUSBReadoutList;
  *  @class sis_vmusb_interface
  *    This is mostly  just a copy of what's in the base class,
  *   however we add support as well for building lists.
+ * 
+ * Note that this is threadsafe to the extent that bracketing all
+ * VMUSB operations in a critical section is threadsafe.
+ * Clearly it's possible for interleaved accesses on the same
+ * module to fail in some way.  It's also the
+ * caller's responsibility to ensure that prior to calling any methods,
+ * the interface is not in autonomous data taking mode.
  */
 class sis_vmusb_interface : public vme_interface_class {
+	static CMutex m_monitor;     // Critical section monitor.
 public:
     virtual int vmeopen( void ) ;
 	virtual int vmeclose( void ) ;

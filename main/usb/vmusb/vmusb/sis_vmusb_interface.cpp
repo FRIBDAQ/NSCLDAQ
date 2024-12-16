@@ -31,7 +31,10 @@
 
 #define VME sis_vmusb_interface
 
+// Static storage - a class level mutex used to
+// serialize access to the controller.
 
+CMutex VME::m_monitor;
 
 /**
  * vmeopen
@@ -87,6 +90,7 @@ VME::get_vmeopen_messages(CHAR* messages, UINT* nof_found_devices) {
 int 
 VME::vme_A32D32_read(UINT addr, UINT* data) {
     if (Globals::pUSBController) {
+        CriticalSection s(m_monitor);
         return Globals::pUSBController->vmeRead32(
             addr, CVMUSBReadoutList::a32UserData, data
         );
@@ -112,6 +116,7 @@ VME::vme_A32DMA_D32_read(
     // note the sizes are size_t in the VMUSB library.
 
     if (Globals::pUSBController) {
+        CriticalSection s(m_monitor);
         size_t xfercount(0);
         int result = Globals::pUSBController->vmeBlockRead(
             addr, CVMUSBReadoutList::a32UserData,
@@ -141,6 +146,7 @@ VME::vme_A32BLT32_read(
 // note the sizes are size_t in the VMUSB library.
 
     if (Globals::pUSBController) {
+        CriticalSection s(m_monitor);
         size_t xfercount(0);
         int result = Globals::pUSBController->vmeBlockRead(
             addr, CVMUSBReadoutList::a32UserBlock,
@@ -172,6 +178,7 @@ VME::vme_A32MBLT64_read(
 // note the sizes are size_t in the VMUSB library.
 
     if (Globals::pUSBController) {
+        CriticalSection s(m_monitor);
         size_t xfercount(0);
         int result = Globals::pUSBController->vmeBlockRead(
             addr, 0xc,
@@ -224,6 +231,7 @@ VME::vme_A32_2ESST320_read (UINT addr, UINT* data, UINT request_nof_words, UINT*
 int
 VME::vme_A32DMA_D32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
     if (Globals::pUSBController) {
+        CriticalSection s(m_monitor);
         size_t got;
         int result = Globals::pUSBController->vmeFifoRead(
             addr, CVMUSBReadoutList::a32UserData, data, request_nof_words, &got
@@ -251,6 +259,7 @@ VME::vme_A32DMA_D32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UIN
 int
 VME::vme_A32BLT32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
     if (Globals::pUSBController) {
+        CriticalSection s(m_monitor);
         size_t got;
         int result = Globals::pUSBController->vmeFifoRead(
             addr, CVMUSBReadoutList::a32UserBlock, data, request_nof_words, &got
@@ -272,6 +281,7 @@ VME::vme_A32BLT32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT*
 int
 VME::vme_A32MBLT64FIFO_read(UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
     if (Globals::pUSBController) {
+        CriticalSection s(m_monitor);
         size_t got;
         int result = Globals::pUSBController->vmeFifoRead(
             addr, 0xc, data, request_nof_words, &got
@@ -320,6 +330,7 @@ VME::vme_A32_2ESST320FIFO_read(UINT addr, UINT* data, UINT request_nof_words, UI
 int
 VME::vme_A32D32_write( UINT addr, UINT data ) {
     if(Globals::pUSBController) {
+        CriticalSection s(m_monitor);
         return Globals::pUSBController->vmeWrite32(addr, CVMUSBReadoutList::a32UserData, data);
     } else {
         // no open controller
@@ -345,6 +356,7 @@ VME::vme_A32D32_write( UINT addr, UINT data ) {
 int
 VME::vme_A32DMA_D32_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words ) {
     // assumption:  UINT is uint32_t or some such.
+
 
     *written_nof_words = 0;
     for (int i =0; i < request_nof_words; i++) {
