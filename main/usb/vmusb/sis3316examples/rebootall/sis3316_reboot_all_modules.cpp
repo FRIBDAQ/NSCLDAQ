@@ -284,12 +284,12 @@ unsigned int i_mod ;
 			interface.vme_A32D32_write(base, ASSERT_REBOOT);
 			usleep(DELAY_US);
 			interface.vme_A32D32_write(base, DEASSERT_REBOOT);
+		}
 	}
 #endif
 
 
 
 		return 0;
-	}
-}
+}	
 void *gpApplication(0);
