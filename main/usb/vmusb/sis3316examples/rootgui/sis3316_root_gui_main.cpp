@@ -245,8 +245,22 @@ enum ETestCommandIdentifiers {
    M_UDP_DHCP_MENUE,
    M_HELP_ABOUT,
 };
+/** static function to locate an image.
+ *   In the FRIB build, -DIMAGSE_DIR provides 
+ * a string which is the path to the images.
+ * 
+ * @parameter img  - filename for the image.
+ * @return std::string  - String contaning the full path.
+ */
+static std::string
+imageFile(const char* img) {
+	std::string path = IMAGES_DIR;   // preprocessor symbol
+	path += "/";                     // path separator.
+	path += img;                     // filename.
+	return path;
+}
 
-
+///
 
 class TestMainFrame  : public TGMainFrame {
 
@@ -351,7 +365,7 @@ TestMainFrame::TestMainFrame(const TGWindow* p, UInt_t w, UInt_t h, char* char_i
 	// use hierarchical cleaning
 	this->SetCleanup(kDeepCleanup);
     this->SetWindowName("SIS3316 Test Menu");
-	this->SetIconPixmap("sis1_sis3316.png");
+	this->SetIconPixmap(imageFile("sis1_sis3316.png").c_str());
 
 
 	// open menueWindows
@@ -424,7 +438,7 @@ TestMainFrame::TestMainFrame(const TGWindow* p, UInt_t w, UInt_t h, char* char_i
 	//main_frameh1->SetBackgroundColor(0xee0000); //
 	this->AddFrame(main_frameh1, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
 
-	TGIcon *fIcon1341 = new TGIcon(main_frameh1, "sislogo.bmp");
+	TGIcon *fIcon1341 = new TGIcon(main_frameh1, imageFile("sislogo.bmp").c_str());
 	fIcon1341->SetName("fIcon1341");
 	main_frameh1->AddFrame(fIcon1341, new TGLayoutHints(kLHintsLeft | kLHintsTop, 5, 5, 15, 15));
 
