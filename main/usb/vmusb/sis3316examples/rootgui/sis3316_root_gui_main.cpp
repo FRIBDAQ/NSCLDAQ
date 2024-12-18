@@ -186,6 +186,49 @@ sis1100 *gl_vme_crate ;
 
 #include "sis3316_class.h"
 
+#ifdef VMUSB_INTERFACE
+#include <CVMUSB.h>
+#include <CVMUSBFactory.h>
+#include <string>
+#include <sis_vmusb_interface.h>
+namespace Globals {
+        CVMUSB* pUSBController(0);
+}
+static vme_interface_class* vme_crate(0);
+vme_interface_class* gl_vme_crate(0);    // *sigh*
+// Create the VMUSB Interface and an sis_vme_interface
+
+// instance based on it.  Return 0 on succdess.
+static int createInterface() {
+        try {
+                Globals::pUSBController = CVMUSBFactory::createUSBController(
+					CVMUSBFactory::local, nullptr
+				);
+
+                vme_crate = new sis_vmusb_interface;
+                vme_crate->vmeopen();
+        } catch (std::string msg) {
+                std::cerr << "Failed to open the VUSB:" 
+					<< msg << std::endl;
+                return -1;
+        }
+        return 0;
+}
+// True if the module at the base address has a readable
+// module id and the id indicates this is a 3316:
+static bool isSIS3316(vme_interface_class& vme, uint32_t base) {
+        UINT idreg;
+        int status = vme.vme_A32D32_read(base+0x04, &idreg);
+
+        // If not status == 0 then it's not a module.
+
+        if (status) return false;
+
+        idreg = (idreg & 0xffff0000) >> 16;
+        return idreg == 0x3316;
+}
+#endif
+
 sis3316_adc* gl_sis3316_adc1;
 
 
@@ -651,7 +694,12 @@ TestMainFrame::TestMainFrame(const TGWindow* p, UInt_t w, UInt_t h, char* char_i
 	sis3153eth(&vme_crate, gl_sis3153_ip_addr_string);
 #endif 
 
+#ifdef VMUSB_INTERFACE
+	if (createInterface()) {
+		exit(EXIT_FAILURE);
+	}
 	
+#endif	
 	// open Vme Interface device
 	return_code = vme_crate->vmeopen ();  // open Vme interface
 	vme_crate->get_vmeopen_messages (char_messages, &nof_found_devices);  // open Vme interface
@@ -663,10 +711,10 @@ TestMainFrame::TestMainFrame(const TGWindow* p, UInt_t w, UInt_t h, char* char_i
 	}
 #endif
 
+
 	fLabel_main_frameh1[0]->SetText(char_messages);
 	sprintf(s,"-- found %d vme interface device(s)",nof_found_devices);
 	fLabel_main_frameh1[1]->SetText(s);
-
 
 	//printf("\n%s    (found %d vme interface device[s])\n\n",char_messages, nof_found_devices);
 
