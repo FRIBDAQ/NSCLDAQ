@@ -711,11 +711,15 @@ TestMainFrame::TestMainFrame(const TGWindow* p, UInt_t w, UInt_t h, char* char_i
 	}
 #endif
 
-
+#ifdef VMUSB_INTERFACE
+	fLabel_main_frameh1[0]->SetText("VMUSB connected");
+	sprintf(s,"-- found %d vme interface device(s)",nof_found_devices);
+	fLabel_main_frameh1[1]->SetText(Globals::pUSBController->getSerialNumber().c_str());
+#else
 	fLabel_main_frameh1[0]->SetText(char_messages);
 	sprintf(s,"-- found %d vme interface device(s)",nof_found_devices);
 	fLabel_main_frameh1[1]->SetText(s);
-
+#endif
 	//printf("\n%s    (found %d vme interface device[s])\n\n",char_messages, nof_found_devices);
 
 
