@@ -11,3 +11,5 @@ SUBDIRS=rebootall \
     access_rate \
     rootgui
 
+EXTRA_DIST=sis3316_examples.xml
+

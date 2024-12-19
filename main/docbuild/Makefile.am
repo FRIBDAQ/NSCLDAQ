@@ -119,7 +119,8 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/ddas/readout\
 	@top_srcdir@/ddas/pixieplugin \
 	@top_srcdir@/caen-nextgen \
-	@top_srcdir@/utilities/ringdiagnostics
+	@top_srcdir@/utilities/ringdiagnostics \
+	@top_srcdir@/usb/vmusb/sis3316examples
 
 daq.html: daq.xml
 	- rm -rf html
