@@ -5,7 +5,7 @@
  */
 
 #include <iostream>
-#include <CVUSBFactory.h>
+#include <CVMUSBFactory.h>
 #include <CVMUSB.h>
 #include <sis_vmusb_interface.h>
 #include <sis3316_class.h>
@@ -35,18 +35,18 @@ namespace Globals {
 // @return sis3316_adc*  
 // @retval nullptr - if the base is not an SIS 3316 module.
 static sis3316_adc*
-isSIS3316(vme_interface_class* interface, uint32_t base) {
+isSIS3316(vme_interface_class& interface, uint32_t base) {
     // The module ID register should have the top 16 bits
     // 0x3316:
     uint32_t idreg(0);
-    if (interface->vme_A32D32_read(base + SIS3316_MODID, &idreg)) {
+    if (interface.vme_A32D32_read(base + SIS3316_MODID, &idreg)) {
         // read failed e.g. bus error:
 
         return nullptr;
     }
     uint32_t id = idreg >> 16;      // Right justify the module type:
     if (id == SIS3316_MODULE_TYPE) {
-        return 
+        return new sis3316_adc(&interface, base);
     } else {
         return nullptr;
     }
@@ -84,7 +84,7 @@ dumpModuleInfo(uint32_t base, sis3316_adc* pModule) {
     }
 
     uint32_t serialno;
-    if (pModule->register_read(SIS3316_SIS3316_SERIAL_NUMBER_REG, &serialno)) {
+    if (pModule->register_read(SIS3316_SERIAL_NUMBER_REG, &serialno)) {
         std::cerr << "Failed to read the serial no. register\n";
         exit(EXIT_FAILURE);
     }
@@ -107,7 +107,7 @@ dumpModuleInfo(uint32_t base, sis3316_adc* pModule) {
     std::string modType = pModule->device_variant ? "SIS3316-2" : "SIS3316";
     uint32_t pcbversion = hwversion & 0xf;
 
-    uint32_t mbytes = (serial_no & 00800000) ? 512 : 256;
+    uint32_t mbytes = (serialno & 0x800000) ? 512 : 256;
 
     // here we go:
 
@@ -139,13 +139,13 @@ int main(int argc, char** argv) {
         std::cerr << "Failed to attach a VMUSB controller: " << msg << std::endl;
         exit(EXIT_FAILURE);
     }
-    sis_vmusb_interface interface();
+    sis_vmusb_interface interface;
     interface.vmeopen();
     // There can be at most 256 controllers with addresses of the form
     // 0xnn000000
 
     for (uint32_t i = 0; i < 256; i++)  {
-        uint32_t base = i << 0x24;     // Candidate base address:
+        uint32_t base = i << 24;     // Candidate base address:
 
         sis3316_adc* pModule = isSIS3316(interface, base);
         if (pModule) {
@@ -154,7 +154,7 @@ int main(int argc, char** argv) {
         delete pModule;                // delete 0 is a no-op.
 
     }
-    eixt(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 }
 
 
