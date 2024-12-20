@@ -9,7 +9,8 @@ SUBDIRS=rebootall \
     register_rw \
     fwupdate \
     access_rate \
-    rootgui
+    rootgui \
+    inventory
 
 EXTRA_DIST=sis3316_examples.xml
 
