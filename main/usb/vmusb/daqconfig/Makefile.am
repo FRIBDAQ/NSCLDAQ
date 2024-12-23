@@ -124,7 +124,8 @@ noinst_HEADERS		=	CADCCommand.h  		\
 				CMDPPQDC.h \
 				CMDPP16QDC.h \
 				CMDPP32QDC.h \
-				CMDPP32SCP.h
+				CMDPP32SCP.h \
+				sis3316Registers.h
 
 
 libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@

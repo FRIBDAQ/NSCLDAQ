@@ -19,6 +19,8 @@
 * VMUSBReadout
     -  In 'adc' module add -inputs option so SpecTcl can distinguish N modules and handle channel numbers properly.
     -  Fix errors in documentation that made docbook fail.7
+== 12.1-004 ==
+
 == 12.1-002 ==
 
 == 12.1-001 ==

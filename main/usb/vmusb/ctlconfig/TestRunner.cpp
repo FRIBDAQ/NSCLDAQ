@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <CVMUSB.h>
 using namespace std;
 
 int main(int argc, char** argv)
@@ -30,14 +31,12 @@ int main(int argc, char** argv)
 
 class CConfiguration;
 
-class Globals
+namespace Globals
 {
-public:
-  static int pConfig;
-  static int scalerPeriod;
+  int pConfig(0);
+  int scalerPeriod(0);
+  CVMUSB* pUSBController(0);
 };
 
-int Globals::pConfig(0);
-int Globals::scalerPeriod(0);
 
 void* gpTCLApplication(0);

@@ -863,6 +863,20 @@ Makefile
     usb/vmusb/devtests/Makefile
     usb/vmusb/vmusbPackage/Makefile
     usb/vmusb/tclservertests/Makefile
+	usb/vmusb/sis3316examples/Makefile
+	usb/vmusb/sis3316examples/rebootall/Makefile
+	usb/vmusb/sis3316examples/ch1_to_ch16_external_trigger_test/Makefile
+	usb/vmusb/sis3316examples/internaltrigger_externalgate_dt/Makefile
+	usb/vmusb/sis3316examples/intclk_onemodule/Makefile
+	usb/vmusb/sis3316examples/FPBUS_threads_allmodules/Makefile
+	usb/vmusb/sis3316examples/FPBUS_external_trigger/Makefile
+	usb/vmusb/sis3316examples/FPBUS_read_temps/Makefile
+	usb/vmusb/sis3316examples/FPBUS_appl_allmods/Makefile
+	usb/vmusb/sis3316examples/register_rw/Makefile
+	usb/vmusb/sis3316examples/fwupdate/Makefile
+	usb/vmusb/sis3316examples/access_rate/Makefile
+	usb/vmusb/sis3316examples/rootgui/Makefile
+	usb/vmusb/sis3316examples/inventory/Makefile
     usb/ccusb/Makefile
     usb/ccusb/ccusb/Makefile 
     usb/ccusb/core/Makefile

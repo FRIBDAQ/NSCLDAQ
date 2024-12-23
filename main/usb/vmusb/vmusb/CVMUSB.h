@@ -157,7 +157,9 @@ private:
 public:
 
     virtual CVMUSBReadoutList* createReadoutList() const { return new CVMUSBReadoutList(); }
-
+    virtual std::string getSerialNumber() {
+      return std::string("Unavailable");
+    }
 
     virtual bool     reconnect(); /* Drop USB/open USb. */
 

@@ -95,7 +95,9 @@ private:
     int operator!=(const CVMUSBusb& rhs) const;
 public:
     virtual bool reconnect();
-
+    virtual std::string getSerialNumber() {
+      return serialNo(m_device);
+    }
     // List operations.
 
 public:
