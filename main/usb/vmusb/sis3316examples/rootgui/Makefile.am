@@ -60,3 +60,10 @@ install-exec-local:
 
 
 EXTRA_DIST=$(IMAGES) $(CFGFILES)
+
+#  This program does not properly run with the optimizer. Blame Tino i guess.
+# but starting sampling then segfauls.
+
+
+CFLAGS=-g -O0
+CXXFLAGS=-g -O0
