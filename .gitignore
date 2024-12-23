@@ -50,3 +50,6 @@ main/base/dataflow/ringtostdoutsw.h
 main/base/dataflow/stdintoring
 main/base/dataflow/stdintoringsw.c
 main/base/dataflow/stdintoringsw.h
+main/daq/evbtools/evblite/evbtagger
+main/daq/evbtools/evblite/evbtagger.cpp
+main/daq/evbtools/evblite/evbtagger.h
