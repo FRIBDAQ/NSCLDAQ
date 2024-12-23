@@ -113,9 +113,9 @@ dumpModuleInfo(uint32_t base, sis3316_adc* pModule) {
 
     std::cout << "\n------------------------------------------------------------------\n";
     std::cout << "Module at    : 0x" << std::hex << base << std::dec << std::endl;
-    std::cout << "Serial number: " << pModule->serial_number << std::endl;
+    std::cout << "Serial number: " << (pModule->serial_number & 0X7FFF) << std::endl;
     std::cout << "Module type  : " << modType << std::endl;
-    std::cout << "Hardware rev : " << major_rev << "." << minor_rev << std::endl;
+    std::cout << "VME FW rev   : " << major_rev << "." << minor_rev << std::endl;
     std::cout << "PCB version  : " << pcbversion << std::endl;
     std::cout << "Memory MB    : " << mbytes << std::endl;
     std::cout << "ADC FPGA CSR : 0x" << std::hex << adcfpgacsr << std::endl;
