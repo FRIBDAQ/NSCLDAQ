@@ -32,7 +32,7 @@ root_gui_CPPFLAGS=@ROOT_CFLAGS@ \
 	-DIMAGES_DIR=\"$(IMAGES_DIR)\"
 
 root_gui_LDADD=@ROOT_LDFLAGS@ @builddir@/../../vmusb/libVMUSB.la \
-    @TCL_LDFLAGS@ 
+    @TCL_LDFLAGS@ -lfftw3 -lm
 
 IMAGES=sis1_sis3316.	png  sislogo.bmp
 CFGFILES=sis3316_MultiEvent_10000_ExternalTrigger_with_Ch1_InternalTrigger_Feedback_record_ch1_3_5_6.ini \
