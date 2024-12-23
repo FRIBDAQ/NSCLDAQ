@@ -31,9 +31,16 @@ jobs:
       packaging: true
       dist-packaging: ${{ startsWith(github.ref, 'refs/tags') }}
     secrets: inherit
+  bookworm:
+    uses: ./.github/workflows/build.yml
+    with:
+      os-version: bookworm
+      packaging: true
+      dist-packaging: ${{ startsWith(github.ref, 'refs/tags') }}
+    secrets: inherit
   release:
     if: ${{ startsWith(github.ref, 'refs/tags') }}
-    needs: [bullseye]
+    needs: [bullseye, bookworm]
     uses: ./.github/workflows/release.yml
     with:
       tag: ${{ github.ref_name }}

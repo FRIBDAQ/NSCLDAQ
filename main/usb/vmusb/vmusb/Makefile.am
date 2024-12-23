@@ -12,7 +12,7 @@ libVMUSB_la_SOURCES 	=  CVMUSBusb.cpp CVMUSBReadoutList.cpp CVMUSBEthernet.cpp \
 	CVMUSBFactory.cpp \
 	CVMUSB.cpp \
 	CMockVMUSB.cpp \
-	CLoggingReadoutList.cpp
+	CLoggingReadoutList.cpp sis_vmusb_interface.cpp
 
 libVMUSB_la_CPPFLAGS=$(COMPILATION_FLAGS)
 
@@ -30,7 +30,8 @@ noinst_HEADERS		= CVMUSB.h   \
 	CVMUSBRemote.h       \
 	CVMUSBFactory.h \
 	CMockVMUSB.h \
-	CLoggingReadoutList.h
+	CLoggingReadoutList.h \
+	vme_interface_class.h sis_vmusb_interface.h
 
 
 libVMUSB_CXXFLAGS=@THREADCXX_FLAGS@ -I@srcdir@/.. -I@top_srcdir@/base/os
@@ -60,11 +61,12 @@ bin_PROGRAMS = tests
 tests_SOURCES = @srcdir@/TestRunner.cpp \
 		@srcdir@/regTests.cpp \
 		@srcdir@/vmeTests.cpp \
+		@srcdir@/../Globals.cpp \
 		@srcdir@/Asserts.h
 
 
 tests_CPPFLAGS = -std=c++11 -g -I@prefix@/include -I@top_srcdir@/base/thread \
-		$(CPPUNIT_INCLUDES)  @PIXIE_CPPFLAGS@
+		$(CPPUNIT_INCLUDES)  @PIXIE_CPPFLAGS@ @TCL_FLAGS@
 tests_LDADD = @top_builddir@/base/thread/libdaqthreads.la \
 		$(CPPUNIT_LDFLAGS) \
 		@builddir@/libVMUSB.la \
@@ -91,13 +93,14 @@ remotetests: $(REMOTE_TEST_MODULES)
 UNITTEST_MODULES = @srcdir@/TestRunner.cpp \
 		@srcdir@/vmusbrdolisttests.cpp \
 		@srcdir@/loggingrdolisttests.cpp \
+		@srcdir@/../Globals.cpp \
 		@srcdir@/mockvmusbtests.cpp
 
 noinst_PROGRAMS = unittests
 unittests_SOURCES = $(UNITTEST_MODULES)
 
 unittests_CPPFLAGS = -I@srcdir@ -I@prefix@/include \
-	$(CPPUNIT_INCLUDES)  @PIXIE_CPPFLAGS@
+	$(CPPUNIT_INCLUDES)  @PIXIE_CPPFLAGS@ @TCL_FLAGS@
 unittests_LDADD = $(CPPUNIT_LDFLAGS) \
 	 	@builddir@/libVMUSB.la  \
 		@TCL_LDFLAGS@ @LIBTCLPLUS_LDFLAGS@

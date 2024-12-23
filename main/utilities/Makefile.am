@@ -25,7 +25,8 @@ SUBDIRS = 				common	\
 					manager \
 					readoutREST \
 					udpBroker \
-					ringdiagnostics
+					ringdiagnostics \
+					managercontrol
 
 # scalerdisplay - removed in favor of newscaler
 
