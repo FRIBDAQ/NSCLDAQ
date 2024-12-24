@@ -1,3 +1,6 @@
+== 12.1-005 ==
+* Issue #230  initial resolution - provide the SIS3316 sample software ported to
+the VMUSB interface.
 == 12.1-004 ==
 *  Add a better GUi for the managed experiment environment.
 *  Fix client hang when sending a transition SHUTDOWN when already SHUTDOWN in managed experiment environment
