@@ -98,13 +98,18 @@ class AcquisitionToolBar(QToolBar):
         
         selection_box = QGroupBox("Channel selection")
         selection_layout = QHBoxLayout()
+
+        # See issue #216: Configure the spin box widgets with two digits
+        # to ensure they are created "big enough" to correctly size the
+        # main window on creation. Number of modules and number of channels
+        # per module are assumed no larger than two digits.
         
         self.current_mod = QSpinBox()
         self.current_mod.setPrefix("Mod. ")
-        self.current_mod.setRange(0,0) # Setup after booting.
+        self.current_mod.setRange(0, 99) # Set when booting system.
         self.current_chan = QSpinBox()
         self.current_chan.setPrefix("Chan. ")        
-        self.current_chan.setRange(0,0) # Setup after booting.
+        self.current_chan.setRange(0, 99) # Set when booting system.
         self.read_all = QCheckBox("Read all")
 
         selection_layout.addWidget(self.current_mod)
