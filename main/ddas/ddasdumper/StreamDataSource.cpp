@@ -24,6 +24,8 @@
 
 #include <RingItemFactoryBase.h>
 
+using namespace ufmt;
+
 StreamDataSource::StreamDataSource(
     RingItemFactoryBase* pFactory, std::istream& str
     ) :

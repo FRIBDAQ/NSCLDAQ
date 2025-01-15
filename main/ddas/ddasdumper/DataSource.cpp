@@ -17,17 +17,19 @@
 
 /** 
  * @file  DataSource.cpp
- * @brief Implementation of the non pure vir. methods of DataSource.
+ * @brief Implementation of the non pure virtual methods of DataSource.
  */
 
 #include "DataSource.h"
 
 #include <RingItemFactoryBase.h>
 
+using namespace ufmt;
+
 /**
  * @details
- * Just saves the factory pointer - note that we gain ownershp of the factory 
- * and, therefore, it's deleted on our destruction.
+ * Just saves the factory pointer - note that the format factory selector
+ * maintains ownership of the factory.
  */
 DataSource::DataSource(RingItemFactoryBase* pFactory) :
     m_pFactory(pFactory)
@@ -35,22 +37,11 @@ DataSource::DataSource(RingItemFactoryBase* pFactory) :
 
 /**
  * @details
- * Destroys the factory.
- */
-DataSource::~DataSource()
-{
-    delete m_pFactory;
-}
-
-/**
- * @details
- * Pretty simple:
- * - Delete the current factory.
- * - Set a new factory e.g. if the format changes.
+ * Pretty simple: Set a new factory e.g., if the format changes. Note that 
+ * since we do not own the factory we do not delete the old one.
  */
 void
 DataSource::setFactory(RingItemFactoryBase* pFactory)
 {
-    delete m_pFactory;
     m_pFactory = pFactory;
 }
