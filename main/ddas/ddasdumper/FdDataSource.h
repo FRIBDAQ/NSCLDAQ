@@ -26,8 +26,6 @@
 
 #include "DataSource.h"
 
-using namespace ufmt;
-
 /**
  * @class FdDataSource
  * @brief A class taking the file descriptor as a data source. Most commonly 
@@ -46,7 +44,7 @@ public:
      * @param fd File descriptor open on the data source. The caller owns this,
      *   we don't close it on destruction.
      */
-    FdDataSource(RingItemFactoryBase* pFactory, int fd);
+    FdDataSource(ufmt::RingItemFactoryBase* pFactory, int fd);
     /** @brief Destructor. */
     virtual ~FdDataSource();
     /** 
@@ -55,7 +53,7 @@ public:
      * @return Pointer to the next ring item from the stream.
      * @retval nullptr If none.
      */
-    virtual CRingItem* getItem();
+    virtual ufmt::CRingItem* getItem();
 };
 
 #endif

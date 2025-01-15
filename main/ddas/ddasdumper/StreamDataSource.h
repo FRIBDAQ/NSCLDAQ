@@ -43,7 +43,7 @@ public:
      * @param pFactory Pointer to the ring item factory.
      * @param str References the stream from which to get ring items.
      */
-    StreamDataSource(RingItemFactoryBase* pFactory, std::istream& str);
+    StreamDataSource(ufmt::RingItemFactoryBase* pFactory, std::istream& str);
     /** @brief Destructor. */
     virtual ~StreamDataSource();
     /** 
@@ -52,7 +52,7 @@ public:
      * @return Pointer to the next ring item from the stream.
      * @retval nullptr If none.
      */
-    virtual CRingItem* getItem();
+    virtual ufmt::CRingItem* getItem();
 };
 
 
