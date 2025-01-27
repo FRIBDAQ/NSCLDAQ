@@ -24,11 +24,11 @@
  * @brief Works with factories to provide a data source for undifferentiated 
  * ring items.
  */
+
 namespace ufmt {
     class CRingItem;
     class RingItemFactoryBase;
 }
-using namespace ufmt;
 
 /**
  * @class DataSource
@@ -47,21 +47,24 @@ using namespace ufmt;
 
 class DataSource {
 protected:
-    RingItemFactoryBase* m_pFactory; //!< Pointer to our ring item factory.
+    ufmt::RingItemFactoryBase* m_pFactory; //!< Ptr to our ring item factory.
     
 public:
-    /** @brief Constructor. */
-    DataSource(RingItemFactoryBase* pFactory);
+    /** 
+     * @brief Constructor. 
+     * @param pFactory Pointer to concrete ring item factory. 
+     */
+    DataSource(ufmt::RingItemFactoryBase* pFactory);
     /** @brief Destructor. */
-    virtual ~DataSource();
+    virtual ~DataSource() = default;
     /** 
      * @brief Pure-virtual method to access a ring item from the data source. 
      * Must be implemented in derived classes.
      * @return Pointer to the next ring item from the source.
      */
-    virtual CRingItem* getItem() = 0;
+    virtual ufmt::CRingItem* getItem() = 0;
     /** @brief Set a new factory. */
-    void setFactory(RingItemFactoryBase* pFactory);
+    void setFactory(ufmt::RingItemFactoryBase* pFactory);
 };
 
 

@@ -176,11 +176,10 @@ class MainWindow(QMainWindow):
         
         self.addToolBar(self.sys_toolbar)
         self.addToolBarBreak()
-        self.addToolBar(self.acq_toolbar)
-        
-        # Central widget for the main window:
-        
+        self.addToolBar(self.acq_toolbar)     
         self.setCentralWidget(self.mplplot)
+        
+        self.adjustSize()
         
         ##
         # Signal connections
@@ -204,7 +203,7 @@ class MainWindow(QMainWindow):
         self.acq_toolbar.binning.currentTextChanged.connect(
             lambda bw: self.mplplot.rebin(int(bw))
         )
-
+        
     ##
     # Public methods
     #
@@ -243,19 +242,15 @@ class MainWindow(QMainWindow):
                 running=[self.sys_toolbar.disable, self.acq_toolbar.disable],
                 finished=[self._on_boot]
             )
+            
+        self.adjustSize()
 
     # @todo (ASC 10/31/23): Module MSPS information should be easily accessible
     # to other parts of the program, most notably the trace analyzer to set the
     # CFD values.
     def _on_boot(self):
         """Configure the system following a successful boot."""
-        if self.sys_utils.get_boot_status() == True:
-            
-            # Enable the toolbars only if the boot is successful:
-            
-            self.sys_toolbar.enable()
-            self.acq_toolbar.enable()
-            
+        if self.sys_utils.get_boot_status() == True:            
             # Populate list of module MSPS. Length of list == number of
             # installed modules in the crate:
             
@@ -276,6 +271,9 @@ class MainWindow(QMainWindow):
             self.sys_toolbar.b_boot.setStyleSheet(colors.GREEN)
             self.acq_toolbar.current_mod.setRange(0, len(msps_list)-1)
             self.acq_toolbar.current_chan.setRange(0, 15)
+            
+            self.sys_toolbar.enable()
+            self.acq_toolbar.enable()            
             self.mplplot.toolbar.enable()
 
             print("QtScope system configuration complete!")

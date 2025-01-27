@@ -19,8 +19,12 @@
  * @file FdDataSource.cpp
  * @brief Implementation of the file descriptor data source.
  */
+
 #include "FdDataSource.h"
+
 #include <RingItemFactoryBase.h>
+
+using namespace ufmt;
 
 FdDataSource::FdDataSource(RingItemFactoryBase* pFactory, int fd) :
     DataSource(pFactory), m_fd(fd)
