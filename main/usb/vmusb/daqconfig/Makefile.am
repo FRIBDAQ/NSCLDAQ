@@ -58,7 +58,8 @@ libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CDeviceCommand.cpp \
 				CMDPP16QDC.cpp \
 				CMDPP32QDC.cpp \
-				CMDPP32SCP.cpp
+				CMDPP32SCP.cpp \
+				sis3316_class.cpp
 
 
 
@@ -125,7 +126,8 @@ noinst_HEADERS		=	CADCCommand.h  		\
 				CMDPP16QDC.h \
 				CMDPP32QDC.h \
 				CMDPP32SCP.h \
-				sis3316Registers.h
+				sis3316Registers.h \
+				sis3316_class.h
 
 
 libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@
