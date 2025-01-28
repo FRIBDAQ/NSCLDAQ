@@ -8,7 +8,7 @@
  * 
  *\verbatim
  *  -base - module base addresss on VME bus.
- *  -clock - Clock source one of "fp", "250MHz" or "125Mhz"
+ *  -clock - Clock source one of "fp", "250MHz","125Mhz, 50MHz 25Mhz or 12.5MHz"
  *  -samples - Number of trace samples to acquire 0-65536 - 4 values 0-65535
  *     These apply to banks of four digitizers
  *  -id - ID put in header (0-4095) list of four values, one per bank.
@@ -62,15 +62,16 @@ private:
 
 // canonicals:
 
-CSIS3316();
-CSIS3316(const CSIS3316& rhs);
-CSIS3316& operator=(const CSIS3316& rhs) const;
+    CSIS3316();
+    virtual ~CSIS3316();
+    CSIS3316(const CSIS3316& rhs);
+    CSIS3316& operator=(const CSIS3316& rhs) const;
 
-// Comparison makes no real sense.
-private:
-int operator==(const CSIS3316& rhs) const;
-int operator!=(const CSIS3316& rhs) const;
-// Readout hardware API
+    // Comparison makes no real sense.
+    private:
+    int operator==(const CSIS3316& rhs) const;
+    int operator!=(const CSIS3316& rhs) const;
+    // Readout hardware API
 
     virtual void onAttach(CReadoutModule& configuration);
     virtual void Initialize(CVMUSB& controller);
