@@ -19,14 +19,14 @@
 #include "CReadoutModule.h"
 #include "CVMUSB.h"
 #include "CVMUSBReadoutList.h"
-#include "sis3316_adc.h"
+#include "sis3316_class.h"
 #include <sis_vmusb_interface.h>
 #include "sis3316.h"                   // Register definitions.
 
 #include <sstream>
 #include <unistd.h>
 #include <assert.h>
-#include <vector>
+
 
 // Parameter constraints:
 
@@ -35,8 +35,6 @@
 static const char* ClockSources[] = {
     "fp", "250MHz","125Mhz", "50MHz", "25Mhz", "12.5MHz", NULL
 };
-static XXUSB::ConfigurableObject::isEnumParameter
-    ClockSourceValues(XXUSB::CConfigurableObject::makeEnumSet(ClockSources));
 
 static const uint64_t Zero(0);    // Shared low limit for many things.
 static const uint64_t MaxSamples(65535);
@@ -93,8 +91,8 @@ CSIS3316::operator=(const CSIS3316& rhs) {
         m_pConfiguration = rhs.m_pConfiguration ?
             new CReadoutModule(*rhs.m_pConfiguration) :
             nullptr;
-        m_pVmeBus = rhs.m_pVmeBusj ?
-            new sis_vmusb_inhterface(*rhs.m_pVmeBus) :
+        m_pVmeBus = rhs.m_pVmeBus ?
+            new sis_vmusb_interface(*rhs.m_pVmeBus) :
             nullptr;
         m_pModule = rhs.m_pModule ?
             new sis3316_adc(*rhs.m_pModule) :
@@ -122,11 +120,13 @@ CSIS3316::onAttach(CReadoutModule& configuration) {
     // Describe the configurable parameters:
 
     m_pConfiguration->addIntegerParameter("-base", 0);
-    m_pConfiguration->addEnumParameter("-clock", ClockSourceValues, "250MHz" );
-    m_pConfiguration->addIntListParameter("-samples", Zero, MaxSamples, 4,4,4);
-    m_pConfiguration->addIntegerParameter("-id", 0,  MaxSamples, MaxSamples/4);
-    m_pConfiguration->addIntListParameter("-pretrigger", Zero, MaxPretrigger, Zero);
-    m_pConfiguration->addBoolListParameter("-enable", 16);
+    m_pConfiguration->addEnumParameter("-clock", ClockSources, "250MHz" );
+    m_pConfiguration->addIntListParameter(
+        "-samples",  Zero, MaxSamples, 4,4,4, MaxSamples);
+    m_pConfiguration->addIntegerParameter("-id", 0,  127, 0);
+    m_pConfiguration->addIntListParameter(
+        "-pretrigger",  0, MaxPretrigger ,4,4,4, MaxPretrigger/4 );
+    m_pConfiguration->addBoolListParameter("-enable", 16, true);
 
 }
 /**
@@ -159,9 +159,9 @@ CSIS3316::Initialize(CVMUSB& controller) {
     delete m_pModule;
     m_pModule  = nullptr;
     delete m_pVmeBus;
-    delete m_pVmeBus = nullptr;
+    m_pVmeBus = nullptr;
 
-    m_pVmeBus = new sis_vme_interface;  // Gets the controller from Globals.
+    m_pVmeBus = new sis_vmusb_interface;  // Gets the controller from Globals.
     m_pModule = new sis3316_adc(m_pVmeBus, m_pConfiguration->getIntegerParameter("-base"));
 
     // Let's make sure we really have an SIS3316:
@@ -186,7 +186,7 @@ CSIS3316::Initialize(CVMUSB& controller) {
     m_pModule->register_write(SIS3316_KEY_ADC_FPGA_RESET, 0);  // Reset the FPGAs.
     usleep(5*1000);                                   // Wait for it.
     m_pModule->register_write(SIS3316_KEY_DISARM, 0); // Keep disarmed.
-    m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR); 
+    m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR, 0); 
 
     // Set up the clock source:
 
@@ -202,33 +202,34 @@ CSIS3316::Initialize(CVMUSB& controller) {
         
         // Now set the sample freq:
 
-        std::string freq = ClockSources[whichClock]
-        int hs_div, n1div, fft_freq;
+        std::string freq = ClockSources[whichClock];
+        unsigned int hs_div, n1div;
+        double fft_freq;
         if (freq == "250MHz") {
-            sis3316_adc::get_SI570_oscillator_hs_div_and_n1_div_values(
-                SIS::ADC::SIS3316::SAMPLERAGE_250MSPS, 
+            m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
+                SIS::ADC::SIS3316::SAMPLERATE_250MSPS, 
                 &hs_div, &n1div, &fft_freq
             );
         } else if (freq == "125MHz") {
-            sis3316_adc::get_SI570_oscillator_hs_div_and_n1_div_values(
+            m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
                 SIS::ADC::SIS3316::SAMPLERATE_125MSPS, 
                 &hs_div, &n1div, &fft_freq
             );
 
         } else if (freq == "50MHz") {
-            sis3316_adc::get_SI570_oscillator_hs_div_and_n1_div_values(
+            m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
                 SIS::ADC::SIS3316::SAMPLERATE_50MSPS, 
                 &hs_div, &n1div, &fft_freq
             );
 
         } else if (freq == "25MHz") {
-            sis3316_adc::get_SI570_oscillator_hs_div_and_n1_div_values(
+            m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
                 SIS::ADC::SIS3316::SAMPLERATE_25MSPS, 
                 &hs_div, &n1div, &fft_freq
             );
             
         } else if (freq == "12.5MHz") {
-            sis3316_adc::get_SI570_oscillator_hs_div_and_n1_div_values(
+            m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
                 SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS, 
                 &hs_div, &n1div, &fft_freq
             );
@@ -236,7 +237,7 @@ CSIS3316::Initialize(CVMUSB& controller) {
         } else {
             std::stringstream strmsg;
             strmsg << freq << " Is not a supported clock frequency\n";
-            thow strmsg;
+            throw strmsg;
         }
         // Set up the header ids for the ADC groups:
 
@@ -254,7 +255,7 @@ CSIS3316::Initialize(CVMUSB& controller) {
             // adc within the group.  Note that
             // all of this is shifted 20 bits up in to the register. 
             // See the manual:  6.47
-            m_pModule->register_write(idregs[i], ids[i] << 24 | (i << 22);
+            m_pModule->register_write(idregs[i], ids[i] << 24 | (i << 22));
         }
         // Set the trace lengths for each group.
         // Note this also sets th raw buffer start indices -> 0.
@@ -280,9 +281,9 @@ CSIS3316::Initialize(CVMUSB& controller) {
             SIS3316_ADC_CH9_12_PRE_TRIGGER_DELAY_REG,
             SIS3316_ADC_CH13_16_PRE_TRIGGER_DELAY_REG
         };
-        assert(pretriggers.size() =- 4);
+        assert(pretriggers.size() == 4);
         for (int i=0; i < 4; i++) {
-            m_pModule->register_write(pretrigregs[i], pretriggers[i])
+            m_pModule->register_write(pretrigregs[i], pretriggers[i]); 
         }
         // Set each ADC group in 'single-event' mode.
         // starting address 0.
@@ -376,7 +377,7 @@ CSIS3316::Initialize(CVMUSB& controller) {
  */
 void
 CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
-    auto base = m_pModule->getUnsignedParameter("-base");
+    auto base = m_pConfiguration->getUnsignedParameter("-base");
     auto amod = CVMUSBReadoutList::a32UserData;
 
     // Disarm:
@@ -398,9 +399,9 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
         SIS3316_FPGA_ADC4_MEM_BASE
     };
     auto enables = m_pConfiguration->getBoolList("-enables");
-    auto samples = m_pConfiguration->gettUnsignedList("-samples");
+    auto samples = m_pConfiguration->getUnsignedList("-samples");
     for (int i =0; i < xferRegisters.size(); i++) {
-        int size = groupSize(i, enables);
+        int size = sizeGroup(i, enables);
         if (size) {      // There are enabled ADCs:
             auto xferReg = base+xferRegisters[i];
             auto fifo = base + fifoBases[i];   // Fifo for this group.
@@ -436,8 +437,7 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
     }
 
     // Reset the starts and sizes and rearm.
-
-    auto samples = m_pConfiguration->getUnsignedList("-samples");
+    // samples has been fetched a while back ...
     std::vector<int> bufregs = {
         SIS3316_ADC_CH1_4_RAW_DATA_BUFFER_CONFIG_REG,
         SIS3316_ADC_CH5_8_RAW_DATA_BUFFER_CONFIG_REG,
@@ -446,12 +446,27 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
     };
     assert(samples.size() == 4);
     for (int i =0; i < 4; i++) {
-        list.addWrite32(base+bufregs[i], samples[i] << 16);
+        list.addWrite32(base+bufregs[i], amod,  samples[i] << 16);
     }
 
-    list.addWrite32(base+SIS3316_KEY_DISARM_AND_ARM_BANK1, 0);
+    list.addWrite32(base+SIS3316_KEY_DISARM_AND_ARM_BANK1, amod,  0);
 }
 
+/**
+ *  clone
+ * 
+ * Make a clone of ourself.
+ * @return CReadoutHardware* - pointer to the newly cloned object that was
+ * creaetd via "new"
+ * 
+ */
+CReadoutHardware*
+CSIS3316::clone() const {
+    auto result = new CSIS3316(*this);
+
+    return result;
+    
+}
 /////////////////////////////// private utilities ///////////////////
 
 /**
@@ -465,7 +480,7 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
  */
 int
 CSIS3316::sizeGroup(int groupNum, std::vector<bool>&enables)  {
-    int firstChan = gropuNum*4;
+    int firstChan = groupNum*4;
     int result(0);
     auto samples = m_pConfiguration->getUnsignedList("-samples");
     for (int i =0; i < 4; i++) {

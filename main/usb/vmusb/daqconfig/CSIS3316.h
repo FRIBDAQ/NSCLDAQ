@@ -46,7 +46,7 @@
 #define CSIS3316_H
 
 #include "CReadoutHardware.h"
-
+#include <vector>
 
 // Forward class definitions.
 class CReadoutModule;
@@ -73,7 +73,7 @@ private:
     CSIS3316();
     virtual ~CSIS3316();
     CSIS3316(const CSIS3316& rhs);
-    CSIS3316& operator=(const CSIS3316& rhs) const;
+    CSIS3316& operator=(const CSIS3316& rhs);
 
     // Comparison makes no real sense.
     private:
