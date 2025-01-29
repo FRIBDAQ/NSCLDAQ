@@ -121,7 +121,7 @@
 /*                                                                                              */
 /*  http://www.struck.de                                                                        */
 /*                                                                                              */
-/*  © 2024                                                                                      */
+/*  ï¿½ 2024                                                                                      */
 /*                                                                                              */  
 /************************************************************************************************/
 
@@ -639,7 +639,7 @@
 
 #define SIS3316_FPGA_ADC_REG_OFFSET					  					0x1000	  
 
-
+// Actually the below are group FIFOS.
 
 #define SIS3316_FPGA_ADC1_MEM_BASE					  					0x100000	  
 #define SIS3316_FPGA_ADC2_MEM_BASE					  					0x200000	  
