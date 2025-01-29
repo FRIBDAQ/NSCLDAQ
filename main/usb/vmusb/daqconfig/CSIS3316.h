@@ -11,11 +11,19 @@
  *  -clock - Clock source one of "fp", "250MHz","125Mhz, 50MHz 25Mhz or 12.5MHz"
  *  -samples - Number of trace samples to acquire 0-65536 - 4 values 0-65535
  *     These apply to banks of four digitizers
- *  -id - ID put in header (0-4095) list of four values, one per bank.
+ *  -id - top bits of the ID put in header header of the data.
  *  -pretrigger - value of pre-trigger delay registers list of 4 integers 0-65535
  *      These apply to banks of four digitizers.
  *  -enable (16 bools true means a channel is enabled).
  * \endverbatim
+ * 
+ * Data format:
+ * 
+ * Each channel will be preceded by a 32 bit marker containing the channel
+ * number.  this is then followed by a 3 word header after which are the
+ * samples.  I _believe_ each sample is bottom justified in a 32 bit word.
+ * See section 4.6 the manual with format bits all zero and the MAW test data 
+ * are not present so only the  waveform is present.
  */
 
 /**
@@ -77,6 +85,11 @@ private:
     virtual void Initialize(CVMUSB& controller);
     virtual void addReadoutList(CVMUSBReadoutList& list);
     virtual CReadoutHardware* clone() const;
+    
+    // Utilities:
+private:
+    int sizeGroup(int groupNum, std::vector<bool>& enables);
+
 };
 
 #endif
