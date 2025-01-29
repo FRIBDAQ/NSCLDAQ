@@ -3186,10 +3186,10 @@ int sis3316_adc::get_SI570_oscillator_hs_div_and_n1_div_values(unsigned int enum
 		*hs_div_val = 5;
 		*double_get_frequency = 25000000.0;
 		break;
-	case SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS  // 12.5MHz bet guess RF.
+	case SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS:  // 12.5MHz bet guess RF.
 		*n1_div_val = 80;
 		*hs_div_val = 5;
-		*double_get_frequence = 25000000.0;
+		*double_get_frequency = 25000000.0;
 		break;
 	default:     // 125.000 MHz
 		*n1_div_val = 8;
