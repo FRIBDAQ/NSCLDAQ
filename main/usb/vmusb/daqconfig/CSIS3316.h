@@ -69,7 +69,7 @@ private:
     sis_vmusb_interface* m_pVmeBus;
 
 // canonicals:
-
+public:
     CSIS3316();
     virtual ~CSIS3316();
     CSIS3316(const CSIS3316& rhs);
@@ -80,7 +80,7 @@ private:
     int operator==(const CSIS3316& rhs) const;
     int operator!=(const CSIS3316& rhs) const;
     // Readout hardware API
-
+public:
     virtual void onAttach(CReadoutModule& configuration);
     virtual void Initialize(CVMUSB& controller);
     virtual void addReadoutList(CVMUSBReadoutList& list);
