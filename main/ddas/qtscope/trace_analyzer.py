@@ -1,8 +1,10 @@
 import inspect
 import logging
 import math
+from dataclasses import dataclass
+import timeit
+
 import numpy as np
-from dataclasses import dataclass    
 
 # @todo This class needs to know the module MSPS so it can set the fixed values
 # for the CFD parameters. Probably the easiest way is to have some module
@@ -101,7 +103,7 @@ class TraceAnalyzer:
         ValueError
             If the stored trace is empty.
         """        
-        if not self.trace:
+        if not self.trace.size:
             raise ValueError("Trace is empty, cannot compute filters")
         
         filter_params = self._get_filter_parameters(mod, chan)
@@ -126,20 +128,29 @@ class TraceAnalyzer:
         fp : FilterParameters
             Filter parameters for this channel.
         """        
-        self.fast_filter = [0.0] * len(self.trace)
-        
+        self.fast_filter = np.zeros(len(self.trace))
+
         # Calculate fast filter. See Pixie-16 User's Manual Sec. 3.3.8.1,
         # Eq. 3-1 for details.
-       
-        for i, _ in enumerate(self.trace):
-            s0 = 0  # Trailing sum.
-            s1 = 0  # Leading sum.
-            if i - 2*fp.fast_risetime - fp.fast_gap + 1 >= 0:
-                # +1 on high limit for inclusive sum:
-                s0 = np.sum(self.trace[i-2*fp.fast_risetime-fp.fast_gap+1:i-fp.fast_risetime-fp.fast_gap+1])
-                s1 = np.sum(self.trace[i-fp.fast_risetime+1:i+1])
-                self.fast_filter[i] = s1 - s0
-                    
+        FL = fp.fast_risetime
+        FG = fp.fast_gap
+
+        # Running sum for filter, first index by hand. The high limit of the
+        # trace slice contains a +1 since the slice is not inclusive.
+        i0 = 2*FL + FG - 1
+        s0 = np.sum(self.trace[i0-2*FL-FG+1:i0-FL-FG+1])
+        s1 = np.sum(self.trace[i0-FL+1:i0+1])        
+        self.fast_filter[i0] = s1 - s0
+        
+        # Then run over the rest of the trace. Note that we can drop the +1s
+        # on both indices since we start at i0+1 and do not take slices:
+        for i in range(i0+1, len(self.trace)):
+            s0 -= self.trace[i-2*FL-FG]
+            s0 += self.trace[i-FL-FG]
+            s1 -= self.trace[i-FL]
+            s1 += self.trace[i]
+            self.fast_filter[i] = s1 - s0
+                            
     def _compute_cfd(self, fp):
         """Compute the CFD.
 
@@ -150,28 +161,12 @@ class TraceAnalyzer:
         fp : FilterParameters
             Filter parameters for this channel.
         """        
-        self.cfd = [0.0] * len(self.fast_filter)
-        
-        # Compute the CFD from the raw trace. See Pixie-16 User's Manual
-        # Sec. 3.3.8.2. This method is preferred because some derived
-        # parameters are fixed for 500 MSPS modules. See Eq. 3-5.
-
-        # Adopting the Manual convention:
-        w = 1 - fp.cfd_scale/8
-        L = fp.fast_risetime - 1
-        B = fp.fast_risetime + fp.fast_gap
+        n = len(self.fast_filter)
+        self.cfd = np.zeros(n)
+        w = 1.0 - 0.125*fp.cfd_scale
         D = fp.cfd_delay
-
-        for i, _ in enumerate(self.trace):
-            s0, s1, s2, s3 = 0, 0, 0, 0
-            k = i + D - L
-            if ((k - D - B) >= 0) and ((k + L) < len(self.trace)):
-                # +1 on high limit for inclusive sum:
-                s0 = np.sum(self.trace[k:k+L+1])
-                s1 = np.sum(self.trace[k-B:k-B+L+1])
-                s2 = np.sum(self.trace[k-D:k-D+L+1])
-                s3 = np.sum(self.trace[k-D-B:k-D-B+L+1])
-                self.cfd[k] = w*(s0 - s1) - (s2 - s3)                
+        
+        self.cfd[D:] = self.fast_filter[D:] - self.fast_filter[:n-D]
 
     def _compute_slow_filter(self, fp):
         """Compute the slow filter output.
@@ -192,55 +187,44 @@ class TraceAnalyzer:
         fp : FilterParameters
             Filter parameters for this channel.
         """        
-        self.slow_filter = [0] * len(self.trace)
-
+        self.slow_filter = np.zeros(len(self.trace))
+    
         # Guess a baseline value by averaging 5 samples at the start and end
         # of the trace and taking the minimum value:        
         baseline = min(np.mean(self.trace[:5]), np.mean(self.trace[-5:]))
 
-        self.logger.debug(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Estimated baseline {baseline}")
-
+        FL = fp.slow_risetime
+        FG = fp.slow_gap
+        
         # Using notation from Tan unless otherwise noted, with time in samples:
         b1 = math.exp(-1/fp.tau)  # Ratio for geometric series sum Eq. 1.
-        bL = math.pow(b1, fp.slow_risetime)
+        bL = math.pow(b1, FL)
         
         # Coefficients of the inverse matrix Eq. 2 (example matrix elements
         # given on the bottom of pg. 1542):        
         a0 = bL/(bL - 1)
         ag = 1
         a1 = 1/(1 - bL)
-
-        self.logger.debug(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Ratio {b1:.3f}, coefficients {a0:.3f} {ag:.3f} {a1:.3f}")
-
-        for i, _ in enumerate(self.trace):
-            s0 = 0  # Trailing sum.
-            sg = 0  # Gap sum.
-            s1 = 0  # Leading sum.
-            ilow = i - 2*fp.slow_risetime - fp.slow_gap + 1
-            ihigh = ilow + fp.slow_risetime
-
-            # ihigh+1 since sums are inclusive:
+        
+        # Running sum for filter, first index by hand. The high limit of the
+        # trace slice contains a +1 since the slice is not inclusive.
+        i0 = 2*FL + FG -1
+        s0 = np.sum(self.trace[i0-2*FL-FG+1:i0-FL-FG+1]-baseline) # Trailing
+        sg = np.sum(self.trace[i0-FL-FG+1:i0-FL+1]-baseline)      # Gap
+        s1 = np.sum(self.trace[i0-FL+1:i0+1]-baseline)            # Leading
+        self.slow_filter[i0] = a0*s0 + ag*sg + a1*s1
+        
+        for i in range(i0+1, len(self.trace)):
+            s0 -= self.trace[i-2*FL-FG]
+            s0 += self.trace[i-FL-FG]
+            sg -= self.trace[i-FL-FG]
+            sg += self.trace[i-FL]
+            s1 -= self.trace[i-FL]
+            s1 += self.trace[i]
+            self.slow_filter[i] = a0*s0 + ag*sg + a1*s1
             
-            if ilow >= 0:
-                s0 = sum(self.trace[ilow:ihigh+1]-baseline)
-                
-                # If the trailing sum is computed, compute the gap and leading
-                # sums if they do not run off the end of the trace:
-                ilow = ihigh
-                ihigh = ilow + fp.slow_gap                
-                if ihigh < len(self.trace):
-                    sg = sum(self.trace[ilow:ihigh+1] - baseline)
-                    
-                ilow = ihigh
-                ihigh = ilow + fp.slow_risetime
-                if ihigh < len(self.trace):
-                    s1 = sum(self.trace[ilow:ihigh+1] - baseline)
-                    # Compute the filter value if we have not run off the end
-                    # of the trace for the leading sum:                    
-                    self.slow_filter[i] = a0*s0 + ag*sg + a1*s1
-
-                if i == len(self.trace)/2:
-                    self.logger.debug(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Sums {s0:.1f} {sg:.1f} {s1:.1f} filter {self.slow_filter[i]:.1f}")
+            if i == len(self.trace)/2:
+                self.logger.debug(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Sums {s0:.1f} {sg:.1f} {s1:.1f} filter {self.slow_filter[i]:.1f}")
 
     def _get_filter_parameters(self, mod, chan):
         """Read the filter parameters from the module, convert them to the nearest integer value in samples, pack them into a FilterParameters class object and return it.

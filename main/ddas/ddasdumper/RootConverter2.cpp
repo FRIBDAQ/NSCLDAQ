@@ -19,6 +19,8 @@
 #include <RingItemFactoryBase.h>
 #include <memory>
 
+using namespace ufmt;
+
 RootConverter2::RootConverter2(RingItemFactoryBase* pFact) 
 :   Converter(),
     m_pFactory(pFact),

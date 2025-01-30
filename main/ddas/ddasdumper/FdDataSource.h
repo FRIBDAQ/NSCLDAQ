@@ -27,9 +27,9 @@ class FdDataSource : public DataSource
 private:
     int m_fd;                         // File descrpitor data source.
 public:
-    FdDataSource(RingItemFactoryBase* pFactory, int fd);
+    FdDataSource(ufmt::RingItemFactoryBase* pFactory, int fd);
     virtual ~FdDataSource();
-    virtual CRingItem* getItem();
+    virtual ufmt::CRingItem* getItem();
 };
 
 #endif

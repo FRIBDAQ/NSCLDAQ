@@ -21,6 +21,7 @@
 #include "StreamDataSource.h"
 #include <RingItemFactoryBase.h>
 
+using namespace ufmt;
 
 /**
  * constructor
