@@ -13,9 +13,12 @@
 
 class TFile;
 class TTree;
-class CRingItem;
-class CPhysicsEventItem;
 
+namespace ufmt {
+    class CRingItem;
+    class CPhysicsEventItem;
+}
+    
 /** \class Converter
  * \brief Base class for all converter objects
  *
@@ -88,7 +91,7 @@ class Converter
          *
          *  @param item is a reference to the data
          */
-        virtual void DumpData(const CPhysicsEventItem& item) = 0;
+    virtual void DumpData(const ufmt::CPhysicsEventItem& item) = 0;
 
         /** \brief Close ROOT file
          * 

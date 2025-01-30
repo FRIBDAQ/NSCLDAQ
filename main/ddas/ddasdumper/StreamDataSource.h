@@ -27,9 +27,9 @@ class StreamDataSource : public DataSource
 private:
     std::istream& m_str;
 public:
-    StreamDataSource(RingItemFactoryBase* pFactory, std::istream& str);
+    StreamDataSource(ufmt::RingItemFactoryBase* pFactory, std::istream& str);
     virtual ~StreamDataSource();
-    virtual CRingItem* getItem();
+    virtual ufmt::CRingItem* getItem();
 };
 
 

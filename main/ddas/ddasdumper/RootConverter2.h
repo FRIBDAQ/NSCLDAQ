@@ -13,9 +13,12 @@
 
 class DDASEvent;
 class ddaschannel;
-class CPhysicsEventItem;
-class RingItemFactoryBase;
 
+namespace ufmt {
+    class CPhysicsEventItem;
+    class RingItemFactoryBase;
+}
+    
 /// \class RootConverter2
 /** \brief Converter for data formats : NSCLDAQ 10.2-00x
  *
@@ -54,14 +57,14 @@ class RootConverter2 : public Converter
 {
 
   private:
-      RingItemFactoryBase* m_pFactory;    // Turns bodies into ring items.
+    ufmt::RingItemFactoryBase* m_pFactory;    // Turns bodies into ring items.
       DDASEvent *m_ddasevent;  /**< pointer to current DDASEvent object */
 
   public:
       /** \brief Default constructor
        * Constructs the DDASEvent object. @see Converter::Converter()
        */
-      RootConverter2(RingItemFactoryBase* pFact);
+    RootConverter2(ufmt::RingItemFactoryBase* pFact);
 
       /** \brief Default destructor
         * Calls the parent destructor and also deletes the object pointed
@@ -91,7 +94,7 @@ class RootConverter2 : public Converter
        *
        * @param item is the CRingItem (that should always be of type PHYSICS_EVENT)
        */
-      virtual void DumpData(const CPhysicsEventItem& item);
+    virtual void DumpData(const ufmt::CPhysicsEventItem& item);
 
   private:
 
