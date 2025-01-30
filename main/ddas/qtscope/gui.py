@@ -702,7 +702,6 @@ class MainWindow(QMainWindow):
                     "module": module,
                     "channel": channel
                 })
-                print(f"gui trace type {type(self.trace_info)}")
             elif module != self.trace_info["module"]:                
                 # Module number changed between acquisition and
                 # analysis, user needs to acquire new trace for
