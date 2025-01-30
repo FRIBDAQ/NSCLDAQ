@@ -335,10 +335,24 @@ class Plot(QWidget):
             self._set_yscale(ax)
             self.canvas.draw_idle()
 
-    def get_subplot_data(self, idx):
+    def get_subplot_data(self, chan):
+        """Get data from a subplot (channel).
+
+        Arguments
+        ---------
+        chan : int
+            Channel number.
+
+        Returns
+        -------
+        NumPy array
+            Data on the subplot or empty if none.
+        """
+        # If there are more than one set of data on the plot this probably
+        # does not work as intended, but that should be impossible (hopefully)
         axs = self.figure.get_axes()
-        if axs[idx].get_lines():
-            return np.array(axs[idx].lines[0].get_ydata())
+        if axs[chan].get_lines():
+            return np.array(axs[chan].lines[0].get_ydata())
         else:
             return np.empty(0)  
             
