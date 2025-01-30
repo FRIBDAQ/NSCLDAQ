@@ -1,7 +1,8 @@
 import inspect
 import logging
 import math
-from dataclasses import dataclass    
+from dataclasses import dataclass
+import timeit
 
 import numpy as np
 
@@ -102,7 +103,7 @@ class TraceAnalyzer:
         ValueError
             If the stored trace is empty.
         """        
-        if not self.trace:
+        if not self.trace.size:
             raise ValueError("Trace is empty, cannot compute filters")
         
         filter_params = self._get_filter_parameters(mod, chan)
@@ -127,7 +128,7 @@ class TraceAnalyzer:
         fp : FilterParameters
             Filter parameters for this channel.
         """        
-        self.fast_filter = [0.0] * len(self.trace)
+        self.fast_filter = np.zeros(len(self.trace))
 
         # Calculate fast filter. See Pixie-16 User's Manual Sec. 3.3.8.1,
         # Eq. 3-1 for details.
@@ -161,11 +162,11 @@ class TraceAnalyzer:
             Filter parameters for this channel.
         """        
         n = len(self.fast_filter)
-        self.cfd = [0.0] * n
+        self.cfd = np.zeros(n)
         w = 1.0 - 0.125*fp.cfd_scale
         D = fp.cfd_delay
-
-        self.cfd[D:] = w * self.fast_filter[D:] - self.fast_filter[:n-D]
+        
+        self.cfd[D:] = self.fast_filter[D:] - self.fast_filter[:n-D]
 
     def _compute_slow_filter(self, fp):
         """Compute the slow filter output.
@@ -186,14 +187,17 @@ class TraceAnalyzer:
         fp : FilterParameters
             Filter parameters for this channel.
         """        
-        self.slow_filter = [0] * len(self.trace)
+        self.slow_filter = np.zeros(len(self.trace))
     
         # Guess a baseline value by averaging 5 samples at the start and end
         # of the trace and taking the minimum value:        
         baseline = min(np.mean(self.trace[:5]), np.mean(self.trace[-5:]))
+
+        FL = fp.slow_risetime
+        FG = fp.slow_gap
         
         # Using notation from Tan unless otherwise noted, with time in samples:
-        b1 = math.exp(-1/tau)  # Ratio for geometric series sum Eq. 1.
+        b1 = math.exp(-1/fp.tau)  # Ratio for geometric series sum Eq. 1.
         bL = math.pow(b1, FL)
         
         # Coefficients of the inverse matrix Eq. 2 (example matrix elements
@@ -204,8 +208,6 @@ class TraceAnalyzer:
         
         # Running sum for filter, first index by hand. The high limit of the
         # trace slice contains a +1 since the slice is not inclusive.
-        FL = fp.slow_risetime
-        FG = fp.slow_gap
         i0 = 2*FL + FG -1
         s0 = np.sum(self.trace[i0-2*FL-FG+1:i0-FL-FG+1]-baseline) # Trailing
         sg = np.sum(self.trace[i0-FL-FG+1:i0-FL+1]-baseline)      # Gap

@@ -6,6 +6,7 @@ import inspect
 import copy
 from time import sleep
 import logging
+import numpy as np
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCloseEvent
@@ -146,7 +147,7 @@ class MainWindow(QMainWindow):
         
         self.trace_analyzer = TraceAnalyzer(self.dsp_mgr)
         self.trace_info = {
-            "trace": None,
+            "trace": np.empty(0),
             "module": None,
             "channel": None
         }
@@ -630,8 +631,8 @@ class MainWindow(QMainWindow):
                         "module": module,
                         "channel": channel
                     })
-                    
-            self.mplplot.update_canvas()   
+
+            self.mplplot.update_canvas()
         else: # Read single channel.
             if self.acq_toolbar.fast_acq.isChecked():
                 self.trace_utils.read_fast_trace(module, channel)
@@ -679,7 +680,6 @@ class MainWindow(QMainWindow):
             If the channel number for a single-channel read is changed 
             between acquisition and analysis.
         """        
-        self.mplplot.figure.clear()
         module = self.acq_toolbar.current_mod.value()
         channel = self.acq_toolbar.current_chan.value()
         
@@ -690,7 +690,7 @@ class MainWindow(QMainWindow):
         # Below we handle the various cases:
         
         try: 
-            if not self.trace_info["trace"]:
+            if not self.trace_info["trace"].size:
                 # If there is no trace data, acquire a new trace: 
                 if self.acq_toolbar.fast_acq.isChecked():
                     self.trace_utils.read_fast_trace(module, channel)
@@ -702,6 +702,7 @@ class MainWindow(QMainWindow):
                     "module": module,
                     "channel": channel
                 })
+                print(f"gui trace type {type(self.trace_info)}")
             elif module != self.trace_info["module"]:                
                 # Module number changed between acquisition and
                 # analysis, user needs to acquire new trace for
@@ -741,7 +742,8 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 self.logger.exception("Error analyzing acquired trace")
                 print(e)
-            else:                
+            else:
+                self.mplplot.figure.clear()
                 self.mplplot.draw_analyzed_trace(
                     self.trace_info["trace"],
                     self.trace_analyzer.fast_filter,
@@ -751,7 +753,7 @@ class MainWindow(QMainWindow):
             finally:                
                 # Reset the single channel trace information:            
                 self.trace_info.update({
-                    "trace": None,
+                    "trace": np.empty(0),
                     "module": None,
                     "channel": None 
                 })            

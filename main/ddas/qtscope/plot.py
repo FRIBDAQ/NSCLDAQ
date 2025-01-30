@@ -334,7 +334,14 @@ class Plot(QWidget):
                 self._plot_histogram(ax, idx, nbins)
             self._set_yscale(ax)
             self.canvas.draw_idle()
-        
+
+    def get_subplot_data(self, idx):
+        axs = self.figure.get_axes()
+        if axs[idx].get_lines():
+            return np.array(axs[idx].lines[0].get_ydata())
+        else:
+            return np.empty(0)  
+            
     def draw_test_data(self):
         """Draw test data. 
 
