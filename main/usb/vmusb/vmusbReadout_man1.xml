@@ -9449,7 +9449,192 @@ v1495sc cget <replaceable>name</replaceable>
 
       </refentry>
         
+    <refentry>
+        <refentryinfo>
+            <author>
+                <personname>
+                <firstname>Ron</firstname>
+                <surname>Fox</surname>
+                </personname>
+                <personblurb><para></para></personblurb>
+            </author>
+            <productname>FRIBDAQ</productname>
+            <productnumber>12.1-005 and later</productnumber>
+        </refentryinfo>
+        <refmeta>
+            <refentrytitle>sis3316</refentrytitle>
+            <manvolnum>3vmusb</manvolnum>
+        </refmeta>
+        <refnamediv>
+            <refname>sis3316</refname>
+            <refpurpose>Support for the SIS3316 digitizer</refpurpose>
+        </refnamediv>
 
+        <refsynopsisdiv>
+	  <cmdsynopsis>
+	  <command>
+sis3316 create <replaceable>name ?options?</replaceable>
+	   </command>
+	  </cmdsynopsis>
+	  <cmdsynopsis>
+	       <command>
+sis3316 create <replaceable>name ?options...?</replaceable>
+	       </command>
+	  </cmdsynopsis>
+	  <cmdsynopsis>
+	       <command>
+sis3316 cget <replaceable>name</replaceable>
+	       </command>
+	  </cmdsynopsis>
+	  
+
+	</refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The SIS3316 digitizer is a complex module that supports wave form acquisition
+            as well as digital pulse processing.  It can support pulse height
+            analysis using the usual trapezoidal filter tricks as well as pulse shape
+            analysis with 8 integration regions. See section 4.6 of the SIS3316 manual
+            for the data format.
+        </para>
+        <para>
+            Initial support, described by this manpage only provides support for
+            waveform acquisition.  In the diagram  referenced that results in 
+            the data format for format code 0.  Furthermore, MAW test data are
+            not acquired so the MAW test flag in the third word of the hit
+            data will be 0.
+        </para>
+        <para>
+            Finally, module to module timestamp synchronization is not done with
+            several module and only front panel triggering is supported.
+        </para>
+        <para>
+            Given how few of the module capabilities are supported it is not
+            totally unlikely that this support will evolve over time as needs
+            arise.  The email address <literal>helpme at frib.msu.edu</literal>
+            can  be used to request additional functional support.
+        </para>
+        <para>
+            The internal organization of the digitizer uses an FPGA for
+            every four input channels.  In the description in this page,
+            the word <firstterm>group</firstterm> is used to describe
+            one of these four channel digitizer groups.  This is because
+            some configuraton parameters are common to all four digitizers in the
+            group.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <para>
+            <variablelist>
+                <varlistentry>
+                    <term><option>-base</option> <replaceable>base-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            Specifies the VME base address of the module.
+                        </para>
+                    </listitem>
+                </varlistentry>
+                
+                <varlistentry>
+                    <term><option>-clock</option> <replaceable>clock-specifier</replaceable></term>
+                    <listitem>
+                        <para>
+                            Specifies the clock frequency or source for the digitizers
+                            valid values are <literal>fp</literal> which selects
+                            the front panel input for the clock, and
+                            <literal>250MHz, 125MHz, 50Mhz, 25MHz</literal> or
+                            <literal>12.5MHz</literal>.  Note the internal module
+                            parameters for the 12.5MHz clock have been guessed from
+                            the parameter patterns for the other clock frequencies.
+                            Please advise if this was done incorrectly.
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><option>-id</option> <replaceable>integer</replaceable></term>
+                    <listitem>
+                        <para>
+                            Specifies the top 7 bits of the id word in the 
+                            event header.  The remaining bits are set from the
+                            ADC group and ADC channel within the group to fully 
+                            identify the channel.  The value configured here allows you
+                            to distinguish between the modules in a multi-module setup.
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><option>-pretrigger</option> <replaceable>4 element list</replaceable></term>
+                    <listitem>
+                        <para>
+                          Each element of the list must be an integer in the range
+                          [0, 65535] and specfies the pretrigger value for the corresponding
+                          ADC group (e.g. element 0 for channels 0-3 etc.).
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><option>-samples</option> <replaceable>4 element list</replaceable></term>
+                    <listitem>
+                        <para>
+                            Each element of the list must be an positive integer in the range
+                            [0-65535] and specifies the number of samples that will be acquired
+                            in the four ADCs in the corresponding group of four ADCs.
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><option>-enable</option> <replaceable>16 element list</replaceable></term>
+                    <listitem>
+                        <para>
+                            Each element of the list must be a boolean which is true if the corresponding
+                            digitizer channel is enabled to store data.  List elmeent 0 enables or disables
+                            channel 0 and so on.
+                        </para>
+                    </listitem>
+                </varlistentry>
+            </variablelist>
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>EXAMPLE</title>
+        <informalexample><programlisting>
+sis3316 create waves -base 0x23000000
+sis3316 config waves -clock 50MHz -samples [lrepeat 4 500] 
+sis3316 config waves -id 6 -pretrigger [lrepeat 4 250]
+sis3316 config waves -enable [lrepeat 16 true]
+        </programlisting></informalexample>
+        <para>
+            When <literal>waves</literal> is added to an event stack,
+            the digitizer is programmed to 50MHz to take 500 samples on 
+            all of the channels with the samples centered on the trigger.
+            All channels are enabled.
+        </para>
+        <para>
+            Note the use of the Tcl <literal>lrepeat</literal> command to
+            construct the lists.  The first parameter to <literal>lrepeat</literal>
+            is the size of a list to create and the second the value with which to populate
+            the list.  This can, of course be combined with other Tcl commands e.g
+        </para>
+        <informalexample>
+            <programlisting>
+sis3316 config waves -enable [list {*}[lrepeat 8 true] {*}[lrepeat 8 false]]
+            </programlisting>
+        </informalexample>
+        <para>
+        enables only the first 8 channnels.  Picking this apart, 
+        <command>list</command> creates a list of its parameters.   <command>lrepeat</command>
+        we've already seen.  The new element is the <literal>{*}</literal> prefix
+        which takes the list that follows and unwraps it into individual parameters.
+        So  rather than making a  list of the two lists created by the
+        <command>lrepeat</command> the <command>list</command> creates a 16 
+        element list, the first 8 elements of which are 
+        <literal>true</literal> and last 8 of which
+        are <literal>false</literal>
+        </para>
+    </refsect1>
+    </refentry>
 
 <!-- /manpage -->
 <!-- manpage 5vmusb -->
@@ -9584,7 +9769,7 @@ mon <replaceable>module-name</replaceable>
        </refsect1>
 
     </refentry>
-
+    
 
         
 
