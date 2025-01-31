@@ -9565,7 +9565,7 @@ sis3316 cget <replaceable>name</replaceable>
                     </listitem>
                 </varlistentry>
                 <varlistentry>
-                    <term><option>-pretrigger</option> <replaceable>4 element list</replaceable></term>
+                    <term><option>-pretrigger</option> <replaceable>4-element-list</replaceable></term>
                     <listitem>
                         <para>
                           Each element of the list must be an integer in the range
@@ -9575,7 +9575,7 @@ sis3316 cget <replaceable>name</replaceable>
                     </listitem>
                 </varlistentry>
                 <varlistentry>
-                    <term><option>-samples</option> <replaceable>4 element list</replaceable></term>
+                    <term><option>-samples</option> <replaceable>4-element-list</replaceable></term>
                     <listitem>
                         <para>
                             Each element of the list must be an positive integer in the range
@@ -9585,7 +9585,7 @@ sis3316 cget <replaceable>name</replaceable>
                     </listitem>
                 </varlistentry>
                 <varlistentry>
-                    <term><option>-enable</option> <replaceable>16 element list</replaceable></term>
+                    <term><option>-enable</option> <replaceable>16-element-list</replaceable></term>
                     <listitem>
                         <para>
                             Each element of the list must be a boolean which is true if the corresponding
