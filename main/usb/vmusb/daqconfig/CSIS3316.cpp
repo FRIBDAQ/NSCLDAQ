@@ -33,7 +33,7 @@
 // CLock sources:
 
 static const char* ClockSources[] = {
-    "fp", "250MHz","125Mhz", "50MHz", "25Mhz", "12.5MHz", NULL
+    "fp", "250MHz","125Mhz", "50MHz", "25MHz", "12.5MHz", NULL
 };
 
 static const uint64_t Zero(0);    // Shared low limit for many things.
@@ -59,7 +59,7 @@ CSIS3316::~CSIS3316() {
 
     delete m_pModule;
     delete m_pVmeBus;
-    delete m_pConfiguration;
+    // delete m_pConfiguration;
 }
 /**
  *  Copy constructor = might actually be illegal we'll see.
@@ -70,7 +70,7 @@ CSIS3316::CSIS3316(const CSIS3316& rhs) :
     m_pConfiguration(nullptr), m_pModule(nullptr), m_pVmeBus(nullptr)
 {
     if (rhs.m_pConfiguration) {
-        m_pConfiguration = new CReadoutModule(*rhs.m_pConfiguration);
+        m_pConfiguration = rhs.m_pConfiguration;
     }
     if (rhs.m_pVmeBus) {
         m_pVmeBus = new sis_vmusb_interface(*rhs.m_pVmeBus);
@@ -88,9 +88,7 @@ CSIS3316::CSIS3316(const CSIS3316& rhs) :
 CSIS3316&
 CSIS3316::operator=(const CSIS3316& rhs) {
     if (this != &rhs) {            // Else noop.,
-        m_pConfiguration = rhs.m_pConfiguration ?
-            new CReadoutModule(*rhs.m_pConfiguration) :
-            nullptr;
+        m_pConfiguration = rhs.m_pConfiguration;
         m_pVmeBus = rhs.m_pVmeBus ?
             new sis_vmusb_interface(*rhs.m_pVmeBus) :
             nullptr;
