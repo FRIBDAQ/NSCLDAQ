@@ -29,6 +29,7 @@ from mult_coincidence import MultCoincidenceBuilder
 from timing_control import TimingControlBuilder
 from baseline import BaselineBuilder
 from qdclen import QDCLenBuilder
+from histogram import HistogramBuilder
 
 from crate_id import CrateIDBuilder
 from csrb import CSRBBuilder
