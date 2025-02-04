@@ -239,21 +239,21 @@ CSIS3316::Initialize(CVMUSB& controller) {
         }
         // Set up the header ids for the ADC groups:
 
-        auto ids = m_pConfiguration->getUnsignedList("-id");
+        auto id = m_pConfiguration->getUnsignedParameter("-id");
         std::vector<int> idregs = {
             SIS3316_ADC_CH1_4_CHANNEL_HEADER_REG,
             SIS3316_ADC_CH5_8_CHANNEL_HEADER_REG,
             SIS3316_ADC_CH9_12_CHANNEL_HEADER_REG,
             SIS3316_ADC_CH13_16_CHANNEL_HEADER_REG
         };
-        assert(ids.size() == 4);
+
         for (int i =0; i < 4; i++) {
             // We get to write bits 4-11 if the id and
             // bits 2,3 are the group.  The bottom 2 bits are the
             // adc within the group.  Note that
             // all of this is shifted 20 bits up in to the register. 
             // See the manual:  6.47
-            m_pModule->register_write(idregs[i], ids[i] << 24 | (i << 22));
+            m_pModule->register_write(idregs[i], id << 24 | (i << 22));
         }
         // Set the trace lengths for each group.
         // Note this also sets th raw buffer start indices -> 0.
