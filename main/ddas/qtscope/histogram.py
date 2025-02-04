@@ -53,8 +53,8 @@ class Histogram(ChanDSPWidget):
         mod : int 
             Module number.
         """        
-        col1 = self.param_names.index("EMin") + 1
-        col2 = self.param_names.index("BinFactor") + 1        
+        col1 = self.param_names.index("EMIN") + 1
+        col2 = self.param_names.index("BINFACTOR") + 1        
         for row in range(1, self.nchannels+1):
             w1 = self.param_grid.itemAtPosition(row, col1).widget()
             w1.setValidator(QIntValidator(0, 65535))
