@@ -34,7 +34,8 @@ class ChanDSPLayout(QTabWidget):
             "CSRA",
             "Baseline",
             "MultCoincidence",
-            "TimingControl"
+            "TimingControl",
+            "Histogram"
         ]
 
         # Define layout:

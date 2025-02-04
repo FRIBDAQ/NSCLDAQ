@@ -124,6 +124,7 @@ def create_chan_dsp_factory():
     factory.register_builder("TimingControl", TimingControlBuilder())
     factory.register_builder("Baseline", BaselineBuilder())
     factory.register_builder("QDCLen", QDCLenBuilder())
+    factory.register_builder("Histogram", HistogramBuilder())
 
     return factory
 
