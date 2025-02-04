@@ -159,7 +159,7 @@ DAQ::DDAS::SystemBooter::bootModuleByIndex(
     int retval = Pixie16BootModule(
 	Pixie16_Com_FPGA_File, Pixie16_SP_FPGA_File, Pixie16_Trig_FPGA_File,
 	Pixie16_DSP_Code_File, DSPParFile, Pixie16_DSP_Var_File,
-        modIndex, computeBootMask(type)
+	modIndex, computeBootMask(type)
 	);
     if (retval < 0) {	
 	std::string msg = "Boot failed module " + std::to_string(modIndex);

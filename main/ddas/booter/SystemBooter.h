@@ -96,6 +96,17 @@ namespace DAQ {
 		int modIndex, Configuration& config, BootType type
 		);
 	    /**
+	     * @brief Boot a single module in offline mode.
+	     * @param modIndex Index of the module in the system.
+	     * @param m_config The system configuration.
+	     * @param type Boot style (load firmware or settings only).
+	     * @throw std::runtime_error If hardware type is unknown.
+	     * @throw CDDASException If Pixie16BootModule returns an error.
+	     */
+	    void bootModuleByIndexOffline(
+		int modIndex, Configuration& config, BootType type
+		);
+	    /**
 	     * @brief Enable or disable verbose output
 	     * @param enable Enables output messages if true.
 	     */

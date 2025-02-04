@@ -69,6 +69,13 @@
 @dspdir@/Pixie16_current_16b250m.var
 8
 
+[Rev0xH-14Bit-250MSPS]
+@firmwaredir@/syspixie16_current_14b250m.bin
+@firmwaredir@/fippixie16_current_14b250m.bin
+@dspdir@/Pixie16_current_14b250m.ldr
+@dspdir@/Pixie16_current_14b250m.var
+8
+
 [Rev0xF-12Bit-500MSPS]
 @firmwaredir@/syspixie16_current_12b500m.bin
 @firmwaredir@/fippixie16_current_12b500m.bin
