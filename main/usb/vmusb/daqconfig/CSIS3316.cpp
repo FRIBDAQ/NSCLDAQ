@@ -396,7 +396,7 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
         SIS3316_FPGA_ADC3_MEM_BASE,
         SIS3316_FPGA_ADC4_MEM_BASE
     };
-    auto enables = m_pConfiguration->getBoolList("-enables");
+    auto enables = m_pConfiguration->getBoolList("-enable");
     auto samples = m_pConfiguration->getUnsignedList("-samples");
     for (int i =0; i < xferRegisters.size(); i++) {
         int size = sizeGroup(i, enables);
