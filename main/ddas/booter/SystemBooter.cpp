@@ -17,7 +17,7 @@
 #include <Configuration.h>
 #include <CXIAException.h>
 
-const size_t FILENAME_STR_MAXLEN = 256;
+const size_t FILENAME_STR_MAXLEN = 256; //!< Max size of full path for FW.
 
 /**
  * @details
