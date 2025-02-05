@@ -303,7 +303,7 @@ CSIS3316::Initialize(CVMUSB& controller) {
         // Set external trigger (I think) 0x80 set trigger function for TI,
         // 0x10 is NIM input TI as trigger enable.
 
-        m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x90);
+        m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
         
 
         // Note 0x100 is FP trigger enable (I think)
