@@ -237,6 +237,10 @@ CSIS3316::Initialize(CVMUSB& controller) {
             strmsg << freq << " Is not a supported clock frequency\n";
             throw strmsg;
         }
+	// Set the clock frequency:
+
+	m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
+	
         // Set up the header ids for the ADC groups:
 
         auto id = m_pConfiguration->getUnsignedParameter("-id");
@@ -327,10 +331,10 @@ CSIS3316::Initialize(CVMUSB& controller) {
         assert(enables.size() == 16);
         for (int i = 0; i < enableRegs.size(); i++) {
             uint32_t mask(0);          // Defaults are non enabled.
-            int firstchan = i*4;       // offset to ch 0 in the register.
+            int firstchan = i*4;       // offset to ch 0 in the enables array
             for(int ch = 0; ch < 4; ch++) {
-                if (enableRegs[ch]) {
-                    mask |= 2 << (ch*8);    // Enable trigger response
+                if (enables[firstchan+ch]) {
+                    mask |= 8 << (ch*8);    // Enable trigger response
                 }
             }
             // mask has the full register value:
@@ -349,7 +353,19 @@ CSIS3316::Initialize(CVMUSB& controller) {
             m_pModule->register_write(evformatRegs[i], 0);
         }
     }
+    // Reset the transfer FSMs.
+    
+    std::vector<int> xferRegisters = {
+        SIS3316_DATA_TRANSFER_CH1_4_CTRL_REG,
+        SIS3316_DATA_TRANSFER_CH5_8_CTRL_REG,
+        SIS3316_DATA_TRANSFER_CH9_12_CTRL_REG,
+        SIS3316_DATA_TRANSFER_CH13_16_CTRL_REG
+    };
+    // Reset the transfer state machines:
 
+    for (auto r: xferRegisters) {
+	m_pModule->register_write(r, 0);
+    }
     // I think I can arm bank 1 and go:
 
     m_pModule->register_write(SIS3316_KEY_DISARM_AND_ARM_BANK1, 0);
@@ -390,11 +406,18 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
         SIS3316_DATA_TRANSFER_CH9_12_CTRL_REG,
         SIS3316_DATA_TRANSFER_CH13_16_CTRL_REG
     };
+        
     std::vector<int> fifoBases = {
         SIS3316_FPGA_ADC1_MEM_BASE,
         SIS3316_FPGA_ADC2_MEM_BASE,
         SIS3316_FPGA_ADC3_MEM_BASE,
         SIS3316_FPGA_ADC4_MEM_BASE
+    };
+    std::vector<int> statusReg = {
+	SIS3316_DATA_TRANSFER_ADC1_4_STATUS_REG,
+	SIS3316_DATA_TRANSFER_ADC5_8_STATUS_REG,
+	SIS3316_DATA_TRANSFER_ADC9_12_STATUS_REG,
+	SIS3316_DATA_TRANSFER_ADC13_16_STATUS_REG
     };
     auto enables = m_pConfiguration->getBoolList("-enable");
     auto samples = m_pConfiguration->getUnsignedList("-samples");
@@ -423,8 +446,10 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
                     }
                     list.addWrite32(xferReg, amod, value);
                     list.addDelay(0xff);   //3.18usec
+		    list.addDelay(0xff);   // 3usec showed a busy transfer!
+		    list.addDelay(0xff);
                     // transfer resets the FIFO so we need to read now:
-                
+		    list.addRead32(base+statusReg[off], amod);  // Transfer status for debugging.
                     list.addFifoRead32(fifo, amod, xfers);
                 }
                 ch++;
