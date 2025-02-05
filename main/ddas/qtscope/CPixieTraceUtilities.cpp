@@ -23,8 +23,18 @@
  */
 CPixieTraceUtilities::CPixieTraceUtilities() :
     m_useGenerator(false),
-    m_validAmplitude(20)
+    m_validAmplitude(20),
+    m_pGenerator(new CDataGenerator)
 {}
+
+/**
+ * @details
+ * Destroy the data generator object we're managing.
+ */
+CPixieTraceUtilities::~CPixieTraceUtilities()
+{
+    delete m_pGenerator;
+}
 
 /**
  * @details

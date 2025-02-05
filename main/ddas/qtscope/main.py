@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-import sys
+import logging
 import os
+import sys
 
 sys.path.append(str(os.environ.get("DAQROOT"))+"/ddas/qtscope")
 os.environ['NO_PROXY'] = ""
 os.environ['XDG_RUNTIME_DIR'] = os.environ.get("PWD")
-
-import logging
-
 logging.basicConfig(
     filename="qtscope.log",
     format="%(levelname)s - %(asctime)s: %(message)s"
@@ -15,30 +13,30 @@ logging.basicConfig(
 
 from PyQt5 import QtWidgets, QtCore
 
-from widget_factory import WidgetFactory
 from fit_factory import FitFactory
+from widget_factory import WidgetFactory
 
-from analog_signal import AnalogSignalBuilder
-from trigger_filter import TriggerFilterBuilder
-from energy_filter import EnergyFilterBuilder
-from cfd import CFDBuilder
 from adc_trace import TraceBuilder
-from tau import TauBuilder
-from csra import CSRABuilder
-from mult_coincidence import MultCoincidenceBuilder
-from timing_control import TimingControlBuilder
+from analog_signal import AnalogSignalBuilder
 from baseline import BaselineBuilder
-from qdclen import QDCLenBuilder
+from cfd import CFDBuilder
+from csra import CSRABuilder
+from energy_filter import EnergyFilterBuilder
 from histogram import HistogramBuilder
+from mult_coincidence import MultCoincidenceBuilder
+from qdclen import QDCLenBuilder
+from tau import TauBuilder
+from timing_control import TimingControlBuilder
+from trigger_filter import TriggerFilterBuilder
 
 from crate_id import CrateIDBuilder
 from csrb import CSRBBuilder
 from trigconfig0 import TrigConfig0Builder
 
-from system_toolbar import SystemToolBarBuilder
 from acquisition_toolbar import AcquisitionToolBarBuilder
 from dsp_toolbar import DSPToolBarBuilder
-from plot_toolbar import PlotToolBarBuilder 
+from plot_toolbar import PlotToolBarBuilder
+from system_toolbar import SystemToolBarBuilder
 
 from fit_exp_creator import ExpFitBuilder
 from fit_gauss_creator import GaussFitBuilder

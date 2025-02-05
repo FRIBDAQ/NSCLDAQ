@@ -1,5 +1,6 @@
-from fit_function import FitFunction
 import numpy as np
+
+from fit_function import FitFunction
 
 class GaussP1Fit(FitFunction):
     """Gaussian fitting function class used by QtScope.

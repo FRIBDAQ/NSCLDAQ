@@ -40,6 +40,8 @@ private:
 public:
     /** @brief Constructor. */
     CPixieTraceUtilities();
+    /** @brief Destructor. */
+    ~CPixieTraceUtilities();
     
     /**
      * @brief Read a validated ADC trace from single channel.

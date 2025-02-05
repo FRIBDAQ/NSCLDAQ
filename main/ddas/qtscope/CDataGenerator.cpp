@@ -8,13 +8,15 @@
 #include <iostream>
 #include <cmath>
 
-std::mt19937 CDataGenerator::m_engine(std::random_device{}());
-std::uniform_real_distribution<double> CDataGenerator::m_C(1000, 2000);
-std::uniform_real_distribution<double> CDataGenerator::m_A(100, 10000);
-std::normal_distribution<double> CDataGenerator::m_rise(0.5, 0.05);
-std::normal_distribution<double> CDataGenerator::m_decay(5, 0.05);
-std::uniform_real_distribution<double> CDataGenerator::m_baseline(4500, 5500);
-std::normal_distribution<double> CDataGenerator::m_noise(0, 10);
+/**
+ * @details
+ * Create all distributions that are independent of the data size.
+ */
+CDataGenerator::CDataGenerator() :
+    m_engine(std::random_device{}()),  m_C(1000, 2000), m_A(100, 10000),
+    m_rise(0.5, 0.05), m_decay(5.0, 0.05), m_baseline(4500, 5500),
+    m_noise(0, 10)
+{}
 
 /**
  * @details

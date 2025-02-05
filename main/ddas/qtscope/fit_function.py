@@ -1,7 +1,8 @@
-import numpy as np
-from scipy.optimize import minimize
 import logging
 import warnings
+
+import numpy as np
+from scipy.optimize import minimize
 
 np.seterr(all='ignore')
 

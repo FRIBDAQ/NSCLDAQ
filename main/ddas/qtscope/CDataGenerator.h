@@ -31,19 +31,18 @@
 class CDataGenerator
 {
 private:
-    // Previous 12.x versions had the engine as a non-static member.
-    // I cannot quite figure out why but initialization of non-static
-    // engine fails and the program hangs when generating random numbers.
-    // Possibly related to threading??? Anyway, this works:
-    static std::mt19937 m_engine; //!< Random number generator engine.
-    static std::uniform_real_distribution<double> m_C; //!< Trace offset.
-    static std::uniform_real_distribution<double> m_A; //!< Trace amplitude.
-    static std::normal_distribution<double> m_rise; //!< Trace exp. rise.
-    static std::normal_distribution<double> m_decay; //!< Trace exp. decay.
-    static std::normal_distribution<double> m_noise; //!< Trace noise.
-    static std::uniform_real_distribution<double> m_baseline; //!< Baseline run.
+    std::mt19937 m_engine; //!< Random number generator engine.
+    std::uniform_real_distribution<double> m_C; //!< Trace offset.
+    std::uniform_real_distribution<double> m_A; //!< Trace amplitude.
+    std::normal_distribution<double> m_rise; //!< Trace exponential rise.
+    std::normal_distribution<double> m_decay; //!< Trace exponential decay.
+    std::normal_distribution<double> m_noise; //!< Trace random noise.
+    std::uniform_real_distribution<double> m_baseline; //!< Baseline run data.
     
-public:   
+public:
+    /** @brief Constructor. */
+    CDataGenerator();
+    
     /**
      * @brief Generate test trace data.
      * @param[in,out] data Pointer to the start of the trace data storage.
