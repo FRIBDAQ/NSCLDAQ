@@ -38,7 +38,7 @@ static const char* ClockSources[] = {
 
 static const uint64_t Zero(0);    // Shared low limit for many things.
 static const uint64_t MaxSamples(65535);
-static const uint64_t MaxId(128);
+static const uint64_t MaxId(127);
 static const uint64_t MaxPretrigger(0x3fff);   // 14 bits of pre-trigger.
 
 
