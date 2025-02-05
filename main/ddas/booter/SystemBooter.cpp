@@ -33,10 +33,15 @@ DAQ::DDAS::SystemBooter::SystemBooter() :
  * contains the firmware files for each hardware type, the slot map, and the 
  * number of modules. During the course of booting, the hardware will be 
  * queried as well to determine the the serial number, revision, ADC 
- * frequency, and resolution. The revision, adc frequency, and resolution 
+ * frequency, and resolution. The revision, ADC frequency, and resolution 
  * will all be parsed and the information will be stored in the configuration
  * as a HardwareRegistry::HardwareType.
-*/
+ *
+ * XIA's "offline mode" consists of an emulated crate containing, at the 
+ * moment, 4 modules of "common" type, including a 32-channel module in the 
+ * last slot. If offline mode is enabled, the crate simulation is started, 
+ * otherwise attempt to boot physical hardware.
+ */
 void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
 {
     if (m_offlineMode) {
@@ -57,7 +62,7 @@ void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
 
 	char parFile[FILENAME_STR_MAXLEN];
 	for (int i = 0; i < nModules; i++) {
-	    std::cout << "\nBooting simulation module #" << i << std::endl;
+	    std::cout << "\nBooting simulated module #" << i << std::endl;
 	    strcpy(parFile, config.getSettingsFilePath(i).c_str());
 	    retval = Pixie16BootModule("sys.bin", "fippi.bin", nullptr,
 				       "dsp.ldr", parFile, "dsp.var", i,
@@ -67,7 +72,7 @@ void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
 				    "Pixie16BootModule()", retval);
 	    }
 	}
-	std::cout << "All modules ok " << std::endl;
+	std::cout << "Crate simulation: all modules ok" << std::endl;
     } else {    
 	std::cout << "---------------------------\n";
 	std::cout << "Initializing PXI access... \n";
@@ -82,7 +87,7 @@ void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
 		"SystemBooter::boot() failed", "Pixie16InitSystem()", retval
 		);
 	} else {
-	    std::cout << "System initialized successfully. " << std::endl;
+	    std::cout << "System initialized successfully." << std::endl;
 	}
 
 	// Give the system some time to settle after initialization.
@@ -95,7 +100,7 @@ void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
 	}
 
 	if (m_verbose) {
-	    std::cout << "All modules ok " << std::endl;
+	    std::cout << "All modules ok" << std::endl;
 	}
     }
 }
