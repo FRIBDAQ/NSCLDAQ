@@ -327,10 +327,10 @@ CSIS3316::Initialize(CVMUSB& controller) {
         assert(enables.size() == 16);
         for (int i = 0; i < enableRegs.size(); i++) {
             uint32_t mask(0);          // Defaults are non enabled.
-            int firstchan = i*4;       // offset to ch 0 in the register.
+            int firstchan = i*4;       // offset to ch 0 in the enables array
             for(int ch = 0; ch < 4; ch++) {
-                if (enableRegs[ch]) {
-                    mask |= 2 << (ch*8);    // Enable trigger response
+                if (enables[firstchan+ch]) {
+                    mask |= 8 << (ch*8);    // Enable trigger response
                 }
             }
             // mask has the full register value:
