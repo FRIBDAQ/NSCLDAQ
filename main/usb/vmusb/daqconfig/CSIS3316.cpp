@@ -33,7 +33,7 @@
 // CLock sources:
 
 static const char* ClockSources[] = {
-    "fp", "250MHz","125Mhz", "50MHz", "25Mhz", "12.5MHz", NULL
+    "fp", "250MHz","125Mhz", "50MHz", "25MHz", "12.5MHz", NULL
 };
 
 static const uint64_t Zero(0);    // Shared low limit for many things.
@@ -59,7 +59,7 @@ CSIS3316::~CSIS3316() {
 
     delete m_pModule;
     delete m_pVmeBus;
-    delete m_pConfiguration;
+    // delete m_pConfiguration;
 }
 /**
  *  Copy constructor = might actually be illegal we'll see.
@@ -70,7 +70,7 @@ CSIS3316::CSIS3316(const CSIS3316& rhs) :
     m_pConfiguration(nullptr), m_pModule(nullptr), m_pVmeBus(nullptr)
 {
     if (rhs.m_pConfiguration) {
-        m_pConfiguration = new CReadoutModule(*rhs.m_pConfiguration);
+        m_pConfiguration = rhs.m_pConfiguration;
     }
     if (rhs.m_pVmeBus) {
         m_pVmeBus = new sis_vmusb_interface(*rhs.m_pVmeBus);
@@ -88,9 +88,7 @@ CSIS3316::CSIS3316(const CSIS3316& rhs) :
 CSIS3316&
 CSIS3316::operator=(const CSIS3316& rhs) {
     if (this != &rhs) {            // Else noop.,
-        m_pConfiguration = rhs.m_pConfiguration ?
-            new CReadoutModule(*rhs.m_pConfiguration) :
-            nullptr;
+        m_pConfiguration = rhs.m_pConfiguration;
         m_pVmeBus = rhs.m_pVmeBus ?
             new sis_vmusb_interface(*rhs.m_pVmeBus) :
             nullptr;
@@ -241,21 +239,21 @@ CSIS3316::Initialize(CVMUSB& controller) {
         }
         // Set up the header ids for the ADC groups:
 
-        auto ids = m_pConfiguration->getUnsignedList("-id");
+        auto id = m_pConfiguration->getUnsignedParameter("-id");
         std::vector<int> idregs = {
             SIS3316_ADC_CH1_4_CHANNEL_HEADER_REG,
             SIS3316_ADC_CH5_8_CHANNEL_HEADER_REG,
             SIS3316_ADC_CH9_12_CHANNEL_HEADER_REG,
             SIS3316_ADC_CH13_16_CHANNEL_HEADER_REG
         };
-        assert(ids.size() == 4);
+
         for (int i =0; i < 4; i++) {
             // We get to write bits 4-11 if the id and
             // bits 2,3 are the group.  The bottom 2 bits are the
             // adc within the group.  Note that
             // all of this is shifted 20 bits up in to the register. 
             // See the manual:  6.47
-            m_pModule->register_write(idregs[i], ids[i] << 24 | (i << 22));
+            m_pModule->register_write(idregs[i], id << 24 | (i << 22));
         }
         // Set the trace lengths for each group.
         // Note this also sets th raw buffer start indices -> 0.
@@ -305,7 +303,7 @@ CSIS3316::Initialize(CVMUSB& controller) {
         // Set external trigger (I think) 0x80 set trigger function for TI,
         // 0x10 is NIM input TI as trigger enable.
 
-        m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x90);
+        m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
         
 
         // Note 0x100 is FP trigger enable (I think)
@@ -398,7 +396,7 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
         SIS3316_FPGA_ADC3_MEM_BASE,
         SIS3316_FPGA_ADC4_MEM_BASE
     };
-    auto enables = m_pConfiguration->getBoolList("-enables");
+    auto enables = m_pConfiguration->getBoolList("-enable");
     auto samples = m_pConfiguration->getUnsignedList("-samples");
     for (int i =0; i < xferRegisters.size(); i++) {
         int size = sizeGroup(i, enables);
