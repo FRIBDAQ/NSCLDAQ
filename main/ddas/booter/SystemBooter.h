@@ -144,7 +144,7 @@ namespace DAQ {
 	     * @param ModADCMSPS ADC frequency (MSPS).
 	     */
 	    void logModuleInfo(
-		int modIndex, unsigned short ModRev, unsigned short ModSerNum,
+		int modIndex, unsigned short ModRev, unsigned int ModSerNum,
 		unsigned short ModADCBits, unsigned short ModADCMSPS
 		);
 	    /**

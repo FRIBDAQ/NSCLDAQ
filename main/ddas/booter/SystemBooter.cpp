@@ -58,11 +58,12 @@ void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
 		      << std::endl;
 	}
 
+	config.setNumberOfModules(nModules);
 	populateHardwareMap(config);
 
 	char parFile[FILENAME_STR_MAXLEN];
 	for (int i = 0; i < nModules; i++) {
-	    std::cout << "\nBooting simulated module #" << i << std::endl;
+	    std::cout << "Booting simulated module #" << i << std::endl;
 	    strcpy(parFile, config.getSettingsFilePath(i).c_str());
 	    retval = Pixie16BootModule("sys.bin", "fippi.bin", nullptr,
 				       "dsp.ldr", parFile, "dsp.var", i,
@@ -238,35 +239,27 @@ void DAQ::DDAS::SystemBooter::populateHardwareMap(Configuration &config)
     unsigned int   ModSerNum;
     unsigned short ModADCBits;
     unsigned short ModADCMSPS;
-    unsigned short nchannels;
-
+    
     int NumModules = config.getNumberOfModules();
     std::vector<int> hdwrMapping(NumModules);
-
-    /** 
-     * @todo (ASC 12/14/23): For the API transition we want to read the 
-     * module_config struct. We may not even need to log it (just put them 
-     * in a vector) 
-     */
-    for(unsigned short i = 0; i < NumModules; i++) {
-	int retval = Pixie16ReadModuleInfo(
-	    i, &ModRev, &ModSerNum, &ModADCBits, &ModADCMSPS
-	    );
-	if (retval < 0)
-	{
-	    std::string msg = "Failed to read hardware variant module " + i;
-	    throw CXIAException(msg, "Pixie16ReadModuleInfo()", retval);
-	} else {
-	    if (m_verbose) {
-		logModuleInfo(i, ModRev, ModSerNum, ModADCBits, ModADCMSPS);
-	    }
-	    auto type = HardwareRegistry::computeHardwareType(
-		ModRev, ModADCMSPS, ModADCBits
-		);
-	    hdwrMapping[i] = type;
+    
+    for (unsigned short i = 0; i < NumModules; i++) {
+	module_config cfg;
+	int retval = PixieGetModuleInfo(i, &cfg);
+	if (retval < 0) {
+	    std::string msg = "Failed to read module info " + i;
+	    throw CXIAException(msg, "PixieGetModuleInfo()", retval);
 	}
+	if (m_verbose) {
+	    logModuleInfo(i, cfg.revision, cfg.serial_number,
+			  cfg.adc_bit_resolution, cfg.adc_sampling_frequency);
+	}
+	auto type = HardwareRegistry::computeHardwareType(
+	    cfg.revision, cfg.adc_sampling_frequency, cfg.adc_bit_resolution
+	    );
+	hdwrMapping[i] = type;
     }
-
+    
     // Store the hardware map in the configuration so other components of the
     // program can understand more about the hardware being used.
     config.setHardwareMap(hdwrMapping);
@@ -277,11 +270,10 @@ void DAQ::DDAS::SystemBooter::populateHardwareMap(Configuration &config)
 //
 
 /**
- * @todo (ASC 7/7/23): Lots of arguments to this function. Can we pack info 
- * into a struct and pass it around that way?
+ * @todo (ASC 7/7/23): Nice if this takes the config object or a pointer to it.
  */
 void DAQ::DDAS::SystemBooter::logModuleInfo(
-    int modIndex, unsigned short ModRev, unsigned short ModSerNum,
+    int modIndex, unsigned short ModRev, unsigned int ModSerNum,
     unsigned short ModADCBits, unsigned short ModADCMSPS
     )
 {
