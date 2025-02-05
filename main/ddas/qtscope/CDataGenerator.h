@@ -31,12 +31,19 @@
 class CDataGenerator
 {
 private:
-    std::mt19937 m_engine; //!< Random number generator engine.
+    // Previous 12.x versions had the engine as a non-static member.
+    // I cannot quite figure out why but initialization of non-static
+    // engine fails and the program hangs when generating random numbers.
+    // Possibly related to threading??? Anyway, this works:
+    static std::mt19937 m_engine; //!< Random number generator engine.
+    static std::uniform_real_distribution<double> m_C; //!< Trace offset.
+    static std::uniform_real_distribution<double> m_A; //!< Trace amplitude.
+    static std::normal_distribution<double> m_rise; //!< Trace exp. rise.
+    static std::normal_distribution<double> m_decay; //!< Trace exp. decay.
+    static std::normal_distribution<double> m_noise; //!< Trace noise.
+    static std::uniform_real_distribution<double> m_baseline; //!< Baseline run.
     
-public:
-    /** @brief Constructor. */
-    CDataGenerator() : m_engine((std::random_device())()) {};
-
+public:   
     /**
      * @brief Generate test trace data.
      * @param[in,out] data Pointer to the start of the trace data storage.
@@ -63,6 +70,7 @@ public:
     int GetBaselineData(double* data, int dataSize);
   
 private:
+    
     /**
      * @brief Analytical function for a single pulse with exponential rise and 
      * decay constants.

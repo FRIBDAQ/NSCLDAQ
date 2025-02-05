@@ -8,6 +8,14 @@
 #include <iostream>
 #include <cmath>
 
+std::mt19937 CDataGenerator::m_engine(std::random_device{}());
+std::uniform_real_distribution<double> CDataGenerator::m_C(1000, 2000);
+std::uniform_real_distribution<double> CDataGenerator::m_A(100, 10000);
+std::normal_distribution<double> CDataGenerator::m_rise(0.5, 0.05);
+std::normal_distribution<double> CDataGenerator::m_decay(5, 0.05);
+std::uniform_real_distribution<double> CDataGenerator::m_baseline(4500, 5500);
+std::normal_distribution<double> CDataGenerator::m_noise(0, 10);
+
 /**
  * @details
  * Params are a pointer to the start of the data storage and a size, as is 
@@ -18,20 +26,17 @@ CDataGenerator::GetTraceData(
     unsigned short* data, int dataSize, double binWidth
     )
 {
-    std::uniform_real_distribution<double> C(1000, 2000);
-    std::uniform_real_distribution<double> A(100, 10000);
-    std::uniform_real_distribution<double> t0(0.05*dataSize, 0.95*dataSize);
-    std::normal_distribution<double> rise(0.5, 0.05);
-    std::normal_distribution<double> decay(5, 0.05);
+    // Depends on dataSize, must be local:
+    std::uniform_real_distribution<double> dt0(0.05*dataSize, 0.95*dataSize);
+    
+    double C = m_C(m_engine);         // ADC units.
+    double A = m_A(m_engine);         // ADC units.
+    double t0 = dt0(m_engine);       // Sample number.
+    double rise = m_rise(m_engine);   // Microseconds.
+    double decay = m_decay(m_engine); // Microseconds.
 
-    double myC = C(m_engine);         // ADC units.
-    double myA = A(m_engine);         // ADC units.
-    double myT0 = t0(m_engine);       // Sample number.
-    double myRise = rise(m_engine);   // Microseconds.
-    double myDecay = decay(m_engine); // Microseconds.
-  
     for (int i = 0; i < dataSize; i++) {
-	data[i] = SinglePulse(myC, myA, myT0, myRise, myDecay, i, binWidth);
+	data[i] = SinglePulse(C, A, t0, rise, decay, i, binWidth);
     }
   
     return 0;
@@ -46,10 +51,12 @@ CDataGenerator::GetTraceData(
 int
 CDataGenerator::GetHistogramData(unsigned int* data, int dataSize)
 {
-    std::normal_distribution<double> gaus(dataSize/4, 10); // Mean, stddev.    
+    // Depends on dataSize, must be local:
+    std::normal_distribution<double> dgaus(dataSize/4, 10); // Mean, stddev.    
     int ene = 0; // Event energy.
+    
     for (int i = 0; i < 10000; i++) {
-	ene = static_cast<unsigned int>(gaus(m_engine));
+	ene = static_cast<unsigned int>(dgaus(m_engine));
 	data[ene]++;	
     }  
 
@@ -63,10 +70,9 @@ CDataGenerator::GetHistogramData(unsigned int* data, int dataSize)
  */
 int
 CDataGenerator::GetBaselineData(double* data, int dataSize)
-{
-    std::uniform_real_distribution<double> dist(4500, 5500); // range
+{    
     for (int i = 0; i < dataSize; i++) {
-	data[i] = dist(m_engine);
+	data[i] = m_baseline(m_engine);
     }
 
     return 0;  
@@ -82,15 +88,13 @@ CDataGenerator::SinglePulse(
     // channel parameter value:
   
     double dt = (sample - t0)*binWidth;
-  
-    std::normal_distribution<double> noise(0, 10); // Mean, stddev.
-    unsigned short pval = 0;  
+    unsigned short pval = 0; // Pulse value for current sample
   
     if (sample < t0) {
-	pval =  static_cast<unsigned short>(C + noise(m_engine));
+	pval =  static_cast<unsigned short>(C + m_noise(m_engine));
     } else {
 	pval =  static_cast<unsigned short>(
-	    C + A*(1-std::exp(-dt/rise))*std::exp(-dt/decay) + noise(m_engine)
+	    C + A*(1-std::exp(-dt/rise))*std::exp(-dt/decay) + m_noise(m_engine)
 	    );
     }
 

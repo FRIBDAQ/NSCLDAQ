@@ -17,6 +17,8 @@
 #include <Configuration.h>
 #include <CXIAException.h>
 
+const size_t FILENAME_STR_MAXLEN = 256;
+
 /**
  * @details
  * Enables verbose output by default.
@@ -37,35 +39,65 @@ DAQ::DDAS::SystemBooter::SystemBooter() :
 */
 void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
 {
-    std::cout << "---------------------------\n";
-    std::cout << "Initializing PXI access... \n";
-    std::cout.flush();
+    if (m_offlineMode) {
+	std::cout << "---------------------------\n";
+	std::cout << "Initializing Pixie crate simulation... \n";
+	std::cout.flush();
+	int nModules = 4;
+	int retval = Pixie16InitSystem(nModules, nullptr, 1);
+	if (retval < 0) {
+	    throw CXIAException("SystemBooter::boot() failed",
+				"Pixie16InitSystem()", retval);
+	} else {
+	    std::cout << "Crate simulation initialized successfully."
+		      << std::endl;
+	}
 
-    int NumModules = config.getNumberOfModules();
-    int retval = Pixie16InitSystem(
-	NumModules, config.getSlotMap().data(), m_offlineMode
-	);
-    if (retval < 0) {
-	throw CXIAException(
-	    "SystemBooter::boot() failed", "Pixie16InitSystem()", retval
-	    );
-    } else {
-	std::cout << "System initialized successfully. " << std::endl;
-    }
+	populateHardwareMap(config);
 
-    // Give the system some time to settle after initialization.
-    usleep(1000);
-
-    populateHardwareMap(config);
-
-    for (int index = 0; index < NumModules; ++index) {
-	bootModuleByIndex(index, config, type);
-    }
-
-    if (m_verbose) {
+	char parFile[FILENAME_STR_MAXLEN];
+	for (int i = 0; i < nModules; i++) {
+	    std::cout << "\nBooting simulation module #" << i << std::endl;
+	    strcpy(parFile, config.getSettingsFilePath(i).c_str());
+	    retval = Pixie16BootModule("sys.bin", "fippi.bin", nullptr,
+				       "dsp.ldr", parFile, "dsp.var", i,
+				       computeBootMask(type));
+	    if (retval < 0) {
+		throw CXIAException("SystemBooter::boot() failed",
+				    "Pixie16BootModule()", retval);
+	    }
+	}
 	std::cout << "All modules ok " << std::endl;
-    }
+    } else {    
+	std::cout << "---------------------------\n";
+	std::cout << "Initializing PXI access... \n";
+	std::cout.flush();
 
+	int NumModules = config.getNumberOfModules();
+	int retval = Pixie16InitSystem(
+	    NumModules, config.getSlotMap().data(), 0
+	    );
+	if (retval < 0) {
+	    throw CXIAException(
+		"SystemBooter::boot() failed", "Pixie16InitSystem()", retval
+		);
+	} else {
+	    std::cout << "System initialized successfully. " << std::endl;
+	}
+
+	// Give the system some time to settle after initialization.
+	usleep(1000);
+
+	populateHardwareMap(config);
+
+	for (int index = 0; index < NumModules; ++index) {
+	    bootModuleByIndex(index, config, type);
+	}
+
+	if (m_verbose) {
+	    std::cout << "All modules ok " << std::endl;
+	}
+    }
 }
 
 /**
@@ -80,10 +112,9 @@ void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
  */
 void
 DAQ::DDAS::SystemBooter::bootModuleByIndex(
-    int modIndex, Configuration& m_config, BootType type
+    int modIndex, Configuration& config, BootType type
     )
 {
-    const size_t FILENAME_STR_MAXLEN = 256;
     char Pixie16_Com_FPGA_File[FILENAME_STR_MAXLEN];
     char Pixie16_SP_FPGA_File[FILENAME_STR_MAXLEN];
     char Pixie16_DSP_Code_File[FILENAME_STR_MAXLEN];
@@ -92,7 +123,7 @@ DAQ::DDAS::SystemBooter::bootModuleByIndex(
     char DSPParFile[FILENAME_STR_MAXLEN];
 
     // Select firmware and dsp files based on hardware variant
-    std::vector<int> hdwrMap = m_config.getHardwareMap();
+    std::vector<int> hdwrMap = config.getHardwareMap();
     if (hdwrMap[modIndex] == HardwareRegistry::Unknown) {
 	std::stringstream errmsg;
 	errmsg << "Cannot boot module " << modIndex
@@ -107,7 +138,7 @@ DAQ::DDAS::SystemBooter::bootModuleByIndex(
     // module firmware configuration which will default to the global config
     // if not specified.
     
-    FirmwareConfiguration fwConfig = m_config.getModuleFirmwareConfiguration(
+    FirmwareConfiguration fwConfig = config.getModuleFirmwareConfiguration(
 	hdwrMap[modIndex], modIndex
 	);
 
@@ -120,7 +151,7 @@ DAQ::DDAS::SystemBooter::bootModuleByIndex(
 
     // daqdev/DDAS#106 - modified as above to get a per module setfile:
     
-    strcpy(DSPParFile, m_config.getSettingsFilePath(modIndex).c_str());
+    strcpy(DSPParFile, config.getSettingsFilePath(modIndex).c_str());
 
     if (m_verbose) {
 	if (type == FullBoot) {
