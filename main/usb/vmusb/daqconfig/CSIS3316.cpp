@@ -393,7 +393,7 @@ void
 CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
     auto base = m_pConfiguration->getUnsignedParameter("-base");
     auto amod = CVMUSBReadoutList::a32UserData;
-
+    auto blockAmod = CVMUSBReadoutList::a32UserBlock;
     // Disarm:
 
     list.addWrite32(base+SIS3316_KEY_DISARM, amod, 0);
@@ -450,7 +450,7 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
 		    list.addDelay(0xff);
                     // transfer resets the FIFO so we need to read now:
 		    list.addRead32(base+statusReg[off], amod);  // Transfer status for debugging.
-                    list.addFifoRead32(fifo, amod, xfers);
+                    list.addFifoRead32(fifo, blockAmod, xfers);
                 }
                 ch++;
             }
