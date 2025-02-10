@@ -33,7 +33,13 @@ namespace XXUSB {
 class sis_vmusb_interface;
 class sis3316_adc;
 
-
+/**
+ * @class CSIS3316EventSegment
+ *    The event segment for reading out a single SIS3316.
+ * To be properly configured, this _must_ be part of a 
+ * CSIS3316CompoundEventSegment, as that's what does the
+ * configuration.
+ */
 class CSIS3316EventSegment : public  CEventSegment {
 private
     std::string                 m_name;              // Name as per configuration.
@@ -44,7 +50,7 @@ private
     // Public canonicals:
 public:
     CSIS3316EventSegment(const char* name);
-    ~CSIS3316EventSegment();                        // though never invoked I think.
+    virtual ~CSIS3316EventSegment();                 // though never invoked I think.
 
     // Forbidden canonicals:
 private:
@@ -53,6 +59,11 @@ private:
 
     int operator==(const CSIS3316EventSegment& rhs) const;
     int operator!=(const CSIS3316EventSegment& rhs) const;
+
+    // Selectors:
+
+    XXUSB::CConfigurableObject* getConfiguration();
+    std::string                 getName() const;
 
     // virtual entry points:
 
@@ -74,6 +85,11 @@ private:
     void setTimestamp(uint64_t stamp);
     void setSourceId(uint32_tr id);
     uint32_t getSourceId();
+
+    // Utilitye methods:
+
+private:
+    void setupConfiguration();
 };
 
 
