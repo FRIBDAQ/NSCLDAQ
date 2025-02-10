@@ -27,3 +27,18 @@ and the VMUSB interface support in ../vmusb.
 We'll try to retain Tcl script based configuration of the set of SIS3316
 modules available.  However, each module will be an event segment and
 each module event segment will have its own configuration script.
+
+### How to use it.
+
+This directory will install an enhanced Readout skeleton.  The skeleton will work
+just like ano other SBS readout skeleton, however, there are two key classes:
+
+* CSIS316EventSegment which should be instantiated for each module.
+* CSIS3316CompountEventSegment which defines a configuration script for the modules
+that are defined in it.  The configuration is exactly the same as a typical VMUSBReadout
+daqconfig script but:
+    *   Only the sis3316 command is defined.
+    *   Only the config and cget subcommands are defined as modules are programmatically  created.
+
+
+
