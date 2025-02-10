@@ -256,7 +256,7 @@ class MainWindow(QMainWindow):
             msps_list = []
             for i in range(self.sys_utils.get_num_modules()):
                 msps_list.append(self.sys_utils.get_module_msps(i))
-
+                
             # Configure DSP and managers. Performs first time load of DSP
             # settings from the Pixie modules.
             

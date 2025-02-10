@@ -48,7 +48,7 @@ void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
 	std::cout << "---------------------------\n";
 	std::cout << "Initializing Pixie crate simulation... \n";
 	std::cout.flush();
-	int nModules = 4;
+	int nModules = 3;
 	int retval = Pixie16InitSystem(nModules, nullptr, 1);
 	if (retval < 0) {
 	    throw CXIAException("SystemBooter::boot() failed",
@@ -73,6 +73,7 @@ void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
 				    "Pixie16BootModule()", retval);
 	    }
 	}
+
 	std::cout << "Crate simulation: all modules ok" << std::endl;
     } else {    
 	std::cout << "---------------------------\n";

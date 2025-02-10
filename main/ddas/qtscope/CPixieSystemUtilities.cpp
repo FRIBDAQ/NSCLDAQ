@@ -91,10 +91,7 @@ CPixieSystemUtilities::Boot()
 	return -1;
     }
 
-    m_bootMode ? m_numModules = 4 : m_numModules
-	= m_config.getNumberOfModules();
-       
-    //m_numModules = m_config.getNumberOfModules();
+    m_numModules = m_config.getNumberOfModules();
     m_modEvtLength = m_config.getModuleEventLengths();
     
     // The hardware map is set up during boot time:
