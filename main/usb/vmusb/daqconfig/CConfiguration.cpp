@@ -56,7 +56,6 @@
 #include "CMDPP16QDC.h"
 #include "CMDPP32QDC.h"
 #include "CMDPP32SCP.h"
-#include "CSIS3316.h"
 
 #include <CReadoutModule.h>
 #include <TCLInterpreter.h>
@@ -130,7 +129,7 @@ CConfiguration::CConfiguration() :
   m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "mdpp32qdc", new CMDPP32QDC));
   m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "mdpp32scp", new CMDPP32SCP));
 
-  m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "sis3316", new CSIS3316));
+  
 
   // Add hybrid drivers
   typedef CCBD8210CrateController Ctlr;
