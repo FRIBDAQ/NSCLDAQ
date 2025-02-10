@@ -68,28 +68,15 @@ private:
     // virtual entry points:
 
     virtual void initialize();
-    virtual void clear();
     virtual void disable();
     virtual size_t read(void* pBuffer, size_t maxwords);
-    virtual void onBegin();
-    virtual void onEnd();
-    virtual void onPause();
-    virtual void onResume();
     
-    virtual const bool isComposite();
-
-    void reject();
-    void rejectImmediately();
-    void keep();
-    const CEventSegment::AcceptState getAcceptState();
-    void setTimestamp(uint64_t stamp);
-    void setSourceId(uint32_tr id);
-    uint32_t getSourceId();
-
     // Utilitye methods:
 
 private:
     void setupConfiguration();
+    size_t computeTotalWords();
+    size_t sizeGroup(int group);
 };
 
 
