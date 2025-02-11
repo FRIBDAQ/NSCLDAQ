@@ -1,7 +1,7 @@
 /**
  * @file CSIS3316CompoundEventSegment.h
  * @author Ron Fox <fox at frib dot msu dot edu>
- * @brief Heaeder file for the compound event segement that contains CSIS3316EventSegment objects.
+ * @brief Header file for the compound event segement that contains CSIS3316EventSegment objects.
  * 
  *  This software is Copyright by the Board of Trustees of Michigan
  *  State University (c) Copyright 2025
@@ -28,7 +28,7 @@
 
 class CTCLInterpreter;
 class CTCLObject;
-
+class CSIS3316EventSegment;
 
 /**
  *  @class CSIS3316CompoundEventSegment
@@ -50,12 +50,26 @@ class CTCLObject;
  class CSIS3316CompoundEventSegment : public CCompoundEventSegment {
     // Nested class for the sis3316 for the configuration script processing.
 
-    class CSIS3316Command {
+    class CSIS3316Command : public CTCLObjectProcessor {
         CSIS3316CompoundEventSegment* m_pSegment;
     public:
         CSIS3316Command(CTCLInterpreter& interp, CSIS3316CompoundEventSegment& segment);
         virtual ~CSIS3316Command();
-        virtual int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        virtal int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+    private:
+        void create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        void config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        void cget(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+
+        void config1(
+            CSIS3316EventSegment* pModule, 
+            std::vector<CTCLObject>& objv, int optionIndex
+        );
+        CSIS3316EventSegment* findSegment(const char* name);
+        void throwException(
+            CTCLInterpreter& interp, const char* reason, 
+            std::vector<CTCLObject>& objv
+        );
     };
 private:
     std::string m_configFile;                        // Name of configuration file.
