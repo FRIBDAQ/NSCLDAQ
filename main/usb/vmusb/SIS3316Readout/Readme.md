@@ -33,12 +33,16 @@ each module event segment will have its own configuration script.
 This directory will install an enhanced Readout skeleton.  The skeleton will work
 just like ano other SBS readout skeleton, however, there are two key classes:
 
-* CSIS316EventSegment which should be instantiated for each module.
-* CSIS3316CompountEventSegment which defines a configuration script for the modules
+* CSIS316EventSegment which should not be instantiated.
+* CSIS3316CompountEventSegment which defines a configuration script for the module
 that are defined in it.  The configuration is exactly the same as a typical VMUSBReadout
-daqconfig script but:
-    *   Only the sis3316 command is defined.
-    *   Only the config and cget subcommands are defined as modules are programmatically  created.
+daqconfig script only the sis3316 command is defined.
+    
 
+On initialize will empty out the sub segments and run the configuration
+script:
+*   create creaes a new module object and adds it to the contained sub-segments.
+*   config - locates the module object and configures it.
+*   cget - locates the module and configure it.
 
 
