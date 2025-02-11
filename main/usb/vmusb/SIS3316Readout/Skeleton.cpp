@@ -18,7 +18,10 @@
 #include <CExperiment.h>
 #include <TCLInterpreter.h>
 #include <CTimedTrigger.h>
-
+#include <CConfigurableCompoundEventSegment.h>
+#include <stdlib.h>
+#include <iostream>
+#include <CVMUSB.h>
 /*
 /*
 ** This file is a skeleton for the production readout software for
@@ -52,6 +55,32 @@
 */
 
 ////////////////////////////////////////////////////////////////////////////////////////
+
+/* These globals are neede by the VMUSB version of the SIS vme class:*/
+/* the only member that matters is the pUSBController member */
+/* They drag over from the VMUSBReadout */
+class CConfiguration;
+class CVMUSB;
+class TclServer;
+class CTCLInterpreter;
+class CTheApplication;
+
+
+namespace Globals {
+  CConfiguration*    pConfig(0);
+  string             configurationFilename;
+  string             controlConfigFilename;
+  CVMUSB*            pUSBController(0);
+  bool               running(false);
+  TclServer*         pTclServer(0);     
+  unsigned           scalerPeriod(0);
+  size_t             usbBufferSize(0);
+  unsigned           sourceId = 0;
+  char*              pTimestampExtractor = 0;
+  Tcl_ThreadId           mainThreadId = 0;
+  CTCLInterpreter*       pMainInterpreter = 0;
+  CTheApplication*   pApplication(0);
+};
 
 /*
 ** Application frameworks require an 'entry point' object instance.  This
@@ -93,13 +122,58 @@ Skeleton::SetupReadout(CExperiment* pExperiment)
 {
   CReadoutMain::SetupReadout(pExperiment);
 
+  // Probably have to increase the event buffer in 
+  // pExperiment for the FADCs e.g.:
+  //
+
+  size_t MaxEventSize = 1024*1024;     // May need even bigger?
+  pExperiment->setBufferSize(MaxEventSize);
+
+  // Set up access to the VMUSB -- the first one we find:
+  // One could also iterate over controllers and use
+  // CVMUSB::serialNo to find a specific one instead.
+  // E.g. (untested but probably ok):
+  //    CVMUSB* pUSB(0);
+  //    for(auto c: controllers) {
+  //       if (CVMUSB::seralNo(c) == TheOneIWantString) {
+  //           pUSB = new CVMUSB(c);
+  //       }
+  //    }
+  //    if (!pUSB) .... some error..and exit.
+  //    Globals::pUSBController = pUSB;
+  //
+  auto controllers = CVMUSB::enumerate();
+  if (controllers.size() == 0) {
+    std::cerr << "There are no VMUSB controllers connected to the system\n";
+    exit(EXIT_FAILURE);
+  }
+  Globals::pUSBController = new CVMUSB(controllers[0]);
+
   // Establish your trigger here by creating a trigger object
   // and establishing it.
 
   // Create and add your event segments here, by creating them and invoking CExperiment's 
   // AddEventSegment
-
   
+
+  /*
+  *  The code below makes a compound event segment that can create and configure 
+  *  modules via a config file.  The config file name
+  * (feel free to change this); is gotten from the environment variable
+  *   DAQCONFIG
+  *   Add more event segments as you choose.
+  */
+  const char* sis_configfile = getenv("DAQCONFIG");
+  if (!daq_configfile) {
+    std::cerr << 
+       "********************************* FATAL ***************************\n"
+      << "The environment variable DAQCONFIG must be set to the Tcl config file\n"
+      <<"and has not\nExiting";
+      exit(EXIT_FAILURE);
+  }
+  auto pSegment = new CConfigurabvleCompoundEventSegment(daq_configfle);
+  pExperiment->AddEventSegment(pSegment);
+
 }
 
 /*!
@@ -129,6 +203,9 @@ Skeleton::SetupScalers(CExperiment* pExperiment)
   pExperiment->setScalerTrigger(pTrigger);
 
   // Create and add your scaler modules here.
+
+  // Adding a sample CSIS3820.... you'll probaby need to
+  // change the base address and maybe have more than one.
 
 
 }
