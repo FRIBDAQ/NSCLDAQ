@@ -1,5 +1,5 @@
 /**
- * @file CSIS3316CompoundEventSegment.cpp
+ * @file CConfigurableCompoundEventSegment.cpp
  * @author Ron Fox <fox at frib dot msu dot edu>
  * @brief Implementation file for the compound event segement that contains CSIS3316EventSegment objects.
  * 
@@ -18,7 +18,7 @@
 *            East Lansing, MI 48824-1321
 *
  */
-#include "CSIS3316CompoundEventSegment.h"
+#include "CConfigurableCompoundEventSegment.h"
 #include "CSIS3316EventSegment.h"
 #include <TCLInterpreter.h>
 #include <TCLOBject.h>
@@ -33,14 +33,14 @@
  *  constructor
  *    @param pFilename - name of the configuration file that will be interpreted by initialize.
  */
-CSIS3316CompoundEventSegment::CSIS3316CompoundEventSegment(const char* pFilename) :
+CConfigurableCompoundEventSegment::CConfigurableCompoundEventSegment(const char* pFilename) :
     m_confrigFile(pFilename)
 {}
 
 /** 
  * destructor is a no-op for now:
  */
-CSIS3316CompoundEventSegment::~CSIS3316CompoundEventSegment() {}
+CConfigurableCompoundEventSegment::~CConfigurableCompoundEventSegment() {}
 
 
 /**
@@ -49,7 +49,7 @@ CSIS3316CompoundEventSegment::~CSIS3316CompoundEventSegment() {}
  * 
  */
 void
-CSIS3316CompoundEventSegment::initialize() {
+CConfigurableCompoundEventSegment::initialize() {
 
     // Clear the event segments .. configureModules will make the appropriate set:
 
@@ -63,18 +63,7 @@ CSIS3316CompoundEventSegment::initialize() {
     CCompoundEventSegment::initialize();
 }
 
-/**
- * AddEventSegment
- *    Ensure the event segment is actually a CSIS3316EventSegment then use the base class:alignas
- * 
- * @param pSegment - event segment to add.
- */
-void
-CSIS3316CompoundEventSegment::AddSegment(CEventSegment* pSegment) {
-    if (dynamic_cast<CSIS3316EventSegment*>(pSegment) == nullptr) {
-        throw std::bad_cast();
-    }
-}
+
 
 /**
  * configureModules 
@@ -86,7 +75,7 @@ CSIS3316CompoundEventSegment::AddSegment(CEventSegment* pSegment) {
  * 
  */
 void
-CSIS3316CompoundEventSegment::configureModules() {
+CConfigurableCompoundEventSegment::configureModules() {
     CTCLInterpreter interp;
     auto pCommand = new CSIS3316Command(intepr, this);
 
@@ -95,12 +84,12 @@ CSIS3316CompoundEventSegment::configureModules() {
     delete pCommand;
 }
 
-// Implement the configuration command (CSIS3316CompoundEventSegment::CSIS3316Command).
+// Implement the configuration command (CConfigurableCompoundEventSegment::CSIS3316Command).
 //
 
 // Syntactical compression:
 
-#define CMDCLASS CSIS3316CompoundEventSegment::CSIS3316Command
+#define CMDCLASS CConfigurableCompoundEventSegment::CSIS3316Command
 
 /**
  * constructor:
@@ -108,7 +97,7 @@ CSIS3316CompoundEventSegment::configureModules() {
  *    @param segment - the compound event segment that will be handling us.
  */
 CMDCLASS::CMDCLASS(
-    CTCLInterpreter& interp, CSIS3316CompoundEventSegment& segment
+    CTCLInterpreter& interp, CConfigurableCompoundEventSegment& segment
 ) : CTCLObjectProcessor(interp, "sis3316", true),
     m_pSegment(&segment)
 {

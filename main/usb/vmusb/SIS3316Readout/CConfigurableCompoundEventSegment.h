@@ -1,5 +1,5 @@
 /**
- * @file CSIS3316CompoundEventSegment.h
+ * @file CConfigurableCompoundEventSegment.h
  * @author Ron Fox <fox at frib dot msu dot edu>
  * @brief Header file for the compound event segement that contains CSIS3316EventSegment objects.
  * 
@@ -19,8 +19,8 @@
 *
  */
 
- #ifndef CSIS3316COMPOUNDEVENTSEGMENT_H
- #define CSIS3316COMPOUNDEVENTSEGMENT_H
+ #ifndef CCONFIGURABLECOMPOUNDEVENTSEGMENT_H
+ #define CCONFIGURABLECOMPOUNDEVENTSEGMENT_H
 #include <CCompoundEventSegment.h>
 #include <TCLObjectProcessor.h>
 #include <string>
@@ -31,11 +31,9 @@ class CTCLObject;
 class CSIS3316EventSegment;
 
 /**
- *  @class CSIS3316CompoundEventSegment
+ *  @class CConfigurableCompoundEventSegment
  * 
- * This is a compound event segment that contains CSIS3316EventSegment only.
- * Adding other event segment types that are not at least derived from it
- * results in std::bad_cast exceptions being thrown.alignas
+ * This is a compound event segment that is Tcl configurable.
  * 
  * The other thing that associates this event segment from the normal
  * CCompoundEventSegment is that it will at initialize time, construct
@@ -47,13 +45,13 @@ class CSIS3316EventSegment;
  * 
  */
 
- class CSIS3316CompoundEventSegment : public CCompoundEventSegment {
+ class CConfigurableCompoundEventSegment : public CCompoundEventSegment {
     // Nested class for the sis3316 for the configuration script processing.
 
     class CSIS3316Command : public CTCLObjectProcessor {
-        CSIS3316CompoundEventSegment* m_pSegment;
+        CConfigurableCompoundEventSegment* m_pSegment;
     public:
-        CSIS3316Command(CTCLInterpreter& interp, CSIS3316CompoundEventSegment& segment);
+        CSIS3316Command(CTCLInterpreter& interp, CConfigurableCompoundEventSegment& segment);
         virtual ~CSIS3316Command();
         virtal int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
     private:
@@ -74,20 +72,19 @@ class CSIS3316EventSegment;
 private:
     std::string m_configFile;                        // Name of configuration file.
 public:
-    CSIS3316CompoundEventSegment(const char* pFilename);
-    virtual ~CSIS3316CompoundEventSegment();
+    CConfigurableCompoundEventSegment(const char* pFilename);
+    virtual ~CConfigurableCompoundEventSegment();
 private:
-    CSIS3316CompoundEventSegment(const CSIS3316CompoundEventSegment& rhs);
-    CSIS3316CompoundEventSegment& operator=(CSIS3316CompoundEventSegment& rhs);
-    int operator==(CSIS3316CompoundEventSegment& rhs) const;
-    int operator!=(CSIS3316CompoundEventSegment& rhs) const;
+    CConfigurableCompoundEventSegment(const CConfigurableCompoundEventSegment& rhs);
+    CConfigurableCompoundEventSegment& operator=(CConfigurableCompoundEventSegment& rhs);
+    int operator==(CConfigurableCompoundEventSegment& rhs) const;
+    int operator!=(CConfigurableCompoundEventSegment& rhs) const;
 
 
     // We need to override AddEventSegment to validate the type and
     // initialize to configure before initializing.
 public:
     virtual void initialize();
-    virtual void AddEventSegment(CEventSegment* pSegment);
 
     // Utilities:
 
