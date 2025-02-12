@@ -221,8 +221,8 @@ CMDCLASS::config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     std::string name = objv[2];
     auto pModule = findSegment(name.c_str());
 
-    if(!pModule) {
-        throwException(interp, "The module named does not exist", objv);
+    if(!pModule || (!dynamic_cast<CSIS3316EventSegment*>(pModule))) {
+        throwException(interp, "The module named does not exist or is not an SIS3316", objv);
     }
     if((objv.size() % 2) == 0) {
         throwException(
@@ -257,8 +257,8 @@ void
 CMDCLASS::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
     std::string name = objv[2];
     auto pModule = findSegment(name.c_str());
-    if (!pModule) {
-        throwException(interp, "No such module", objv);
+    if (!pModule || (!dynamic_cast<CSIS3316EventSegment*>(pModule))) {
+        throwException(interp, "No such SIS3316 module", objv);
     }
 
     if (objv.size() == 4) {
