@@ -31,12 +31,19 @@ each module event segment will have its own configuration script.
 ### How to use it.
 
 This directory will install an enhanced Readout skeleton.  The skeleton will work
-just like ano other SBS readout skeleton, however, there are two key classes:
+just like ano other SBS readout skeleton, however, there are several key classes:
 
 * CSIS316EventSegment which should not be instantiated.
-* CSIS3316CompountEventSegment which defines a configuration script for the module
+* CV977Eventsegment which should not be defined.
+* CSIS3820Event segment which can read an SIS scaler in timestamp mode.
+* CVMUSBScalersEventSegment which can configure inputs and read the VMUSB scalers.
+* CSIS3820ScalerBank which can read an SIS scaler as a scaler
+* CConfigurableCompoundEventSegment which defines a configuration script for the module
 that are defined in it.  The configuration is exactly the same as a typical VMUSBReadout
-daqconfig script only the sis3316 command is defined.
+daqconfig script commands defined are:
+    *  sis3316
+    *  v977
+* CConfigurableScalerBank - which is for scaler banks what CConfigurableEventSegment is for events.
     
 
 On initialize will empty out the sub segments and run the configuration
@@ -46,3 +53,4 @@ script:
 *   cget - locates the module and configure it.
 
 
+### The trigger and busy...

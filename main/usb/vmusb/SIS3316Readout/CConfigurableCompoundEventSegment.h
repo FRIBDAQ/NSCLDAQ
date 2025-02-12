@@ -42,7 +42,13 @@ class CSIS3316EventSegment;
  * script setting the configuration of the members of the segment before
  * iterating over the initialize members of the members (via the base class initialize member).alignas
  * 
- * 
+ * @todo   
+ *    The various command processors could actually be derived from a base class
+ * with a virtual 'validate' method to determine if the event segment located
+ * was of the right type... since as it is there is a defect it is possible
+ * to create two identically named event segments as long as they are of different types.
+ * This is actually properly handled with the dynamic casts being doin in findSegment.
+ * All this would get us closer to DRY.
  */
 
  class CConfigurableCompoundEventSegment : public CCompoundEventSegment {
@@ -69,8 +75,31 @@ class CSIS3316EventSegment;
             std::vector<CTCLObject>& objv
         );
     };
-    // Add more classes here for specific device support e.g. SIS scaler,
     // CAEN pattern register.
+    class Cv977Command : public CTCLObjectProcessor {
+        CConfigurableCompoundEventSegment* m_pSegment;
+    public:
+        Cv977Command(CTCLInterpreter& interp, CConfigurableCompoundEventSegment& segment);
+        virtual ~Cv977Command();
+        virtal int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+    private:
+        void create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        void config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        void cget(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+
+        void config1(
+            CV977EventSegment* pModule, 
+            std::vector<CTCLObject>& objv, int optionIndex
+        );
+        CV977EventSegment* findSegment(const char* name);
+        void throwException(
+            CTCLInterpreter& interp, const char* reason, 
+            std::vector<CTCLObject>& objv
+        );
+    }; 
+   
+    // Add more classes here for specific device support e.g. SIS scaler,
+    
     
 private:
     std::string m_configFile;                        // Name of configuration file.
