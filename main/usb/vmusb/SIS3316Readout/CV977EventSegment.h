@@ -70,7 +70,7 @@ private:
     std::string getName() const;
 
     // Virtual entry points.
-
+public:
     virtual void initialize();
     virtual size_t read(void* pBuffer, size_t maxwords);
     
