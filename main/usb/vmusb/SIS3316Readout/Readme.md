@@ -35,8 +35,9 @@ just like ano other SBS readout skeleton, however, there are several key classes
 
 * CSIS316EventSegment which should not be instantiated.
 * CV977Eventsegment which should not be defined.
-* CSIS3820Event segment which can read an SIS scaler in timestamp mode.
+* CSIS3820TimestampEventSegment which can read an SIS scaler in timestamp mode.
 * CVMUSBScalersEventSegment which can configure inputs and read the VMUSB scalers.
+* CMarkerEventSegment - drop a single marker word into the event.
 * CSIS3820ScalerBank which can read an SIS scaler as a scaler
 * CConfigurableCompoundEventSegment which defines a configuration script for the module
 that are defined in it.  The configuration is exactly the same as a typical VMUSBReadout
