@@ -69,6 +69,9 @@ class CSIS3316EventSegment;
             std::vector<CTCLObject>& objv
         );
     };
+    // Add more classes here for specific device support e.g. SIS scaler,
+    // CAEN pattern register.
+    
 private:
     std::string m_configFile;                        // Name of configuration file.
 public:
