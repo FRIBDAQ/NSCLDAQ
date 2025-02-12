@@ -22,6 +22,7 @@
  */
 #include "CSIS3316EventSegment.h"
 #include <XXUSBConfigurableObject.h>
+#include <sis_vmusb_interface.h>
 #include "sis3316.h"
 #include "sis3316_class.h
 #include "CVMUSB.h"
@@ -65,7 +66,7 @@ CSIS3316EventSegment::CSIS3316EventSegment(const char* name) :
 }
 /**
  *  destructor
- *     Probably not ever called but I think this is the right idea:
+ *     
  * 
  */
 CSIS3316EventSegment::~CSIS3316EventSegment() {
