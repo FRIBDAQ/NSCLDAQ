@@ -14,7 +14,7 @@ namespace XXUSB {
     class CConfigurableObject;
 }
 
-class sis_vmusb_interface;    // Because why not use it.
+
 
 /**
  *  @class CV977EventSegemnt
@@ -31,9 +31,8 @@ class sis_vmusb_interface;    // Because why not use it.
  */
 class CV977EventSegment : public CEventSegment {
 private:
-    std::string name;
+    std::string                 m_name;
     XXUSB::CConfigurableObject* m_pConfiguration;
-    sis_vmusb_interface*        m_pVME;
 
         // public canonicals:
 public:
@@ -57,7 +56,6 @@ private:
     // Virtual entry points.
 
     virtual void initialize();
-    virtual void disable();
     virtual size_t read(void* pBuffer, size_t maxwords);
     
     // Utilitye methods:
