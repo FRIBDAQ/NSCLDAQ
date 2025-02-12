@@ -27,7 +27,7 @@
 #include "Exception.h"
 #include <sstream>
 #include <XXUSBConfigurableObject.h>
-
+#include <memory>
 // Implement the event segment
 
 /**
