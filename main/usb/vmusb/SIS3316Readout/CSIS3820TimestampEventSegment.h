@@ -69,8 +69,7 @@ public:
 
     // Implement virtual entries we care about.
 
-    virtual void initialize();
-    virtual void clear();        // Clears the timestamp.
+    virtual void initialize();+
     virtual size_t read(void* pBuffer, size_t maxwords);
     
     // Utilitye methods:
