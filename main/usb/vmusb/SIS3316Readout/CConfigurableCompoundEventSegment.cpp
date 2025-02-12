@@ -221,7 +221,7 @@ CMDCLASS::config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     std::string name = objv[2];
     auto pModule = findSegment(name.c_str());
 
-    if(!pModule || (!dynamic_cast<CSIS3316EventSegment*>(pModule))) {
+    if(!pModule) {
         throwException(interp, "The module named does not exist or is not an SIS3316", objv);
     }
     if((objv.size() % 2) == 0) {
@@ -257,7 +257,7 @@ void
 CMDCLASS::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
     std::string name = objv[2];
     auto pModule = findSegment(name.c_str());
-    if (!pModule || (!dynamic_cast<CSIS3316EventSegment*>(pModule))) {
+    if (!pModule ) {
         throwException(interp, "No such SIS3316 module", objv);
     }
 
@@ -330,8 +330,9 @@ CMDCLASS::findSegment(const char* name) {
     // I think this works since m_pSegment has iterators...
 
     for (auto p : *m_pSegment) {
-        if (p->getName() == n) {
-            return p;
+        CSIS3316EventSegment* pSeg = dynamic_cast<CSIS3316EventSegment*>(p);
+        if (pSeg && pSeg->getName() == n) {
+            return pSeg;
         }
     }
     return nullptr;
