@@ -22,6 +22,8 @@
  * 
  * Specifically we don't support interrupts.
  */
+#ifndef CV977EVENTSEGMENT_H
+#define CV977EVENTSEGMENT_H
 #include "CEventSegment.h"
 #include <string>
 namespace XXUSB {
@@ -78,3 +80,5 @@ private:
     void setupConfiguration();
     
 };
+
+#endif
