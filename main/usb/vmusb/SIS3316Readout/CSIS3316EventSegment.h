@@ -55,7 +55,7 @@ public:
     // Forbidden canonicals:
 private:
     CSIS3316EventSegment(const CSIS3316EventSegment& rhs);
-    CSIS3316& operator=(const CSIS3316EventSegment& rhs);
+    CSIS3316EventSegment& operator=(const CSIS3316EventSegment& rhs);
 
     int operator==(const CSIS3316EventSegment& rhs) const;
     int operator!=(const CSIS3316EventSegment& rhs) const;
