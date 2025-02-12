@@ -94,6 +94,21 @@ CV977EventSegment::~CV977EventSegment() {
     delete m_pConfiguration;
 
 }
+// selectors:
+
+/**
+ * @return CConfigurableObject* - the configuration object.
+ */
+XXUSB::CConfigurableObject*
+CV977EventSegment::getConfiguration() {
+    return m_pConfiguration;
+}
+/**
+ * @return std::string - objedt name.
+ */
+std::string getName() const {
+    return m_name;
+}
 
 /**
  * initialize
