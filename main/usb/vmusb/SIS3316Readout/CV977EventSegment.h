@@ -65,7 +65,7 @@ private:
     int operator!=(const CV977EventSegment& rhs) const;   //  ""
 
     // selectors:
-
+public:
     XXUSB::CConfigurableObject* getConfiguration();
     std::string getName() const;
 
