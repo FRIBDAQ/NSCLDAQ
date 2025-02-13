@@ -104,7 +104,8 @@ CExperiment::CExperiment(string ringName,
   m_nDefaultSourceId(0),
   m_useBarriers(barriers),
   m_fWantZeroCopy(false),                // by default.
-  m_fNeedVmeLock(false)
+  m_fNeedVmeLock(false),
+  m_incrementalScalers(true)           // By default.
 
 {
   try {
@@ -172,6 +173,17 @@ size_t
 CExperiment::getBufferSize() const
 {
   return m_nDataBufferSize;
+}
+
+// Control scaler incremental flag in ring scaler items:
+
+bool 
+CExperiment::isIncremental() const {
+  return m_incrementalScalers;
+}
+void
+CExperiment::setIncremental(bool state) {
+  m_incrementalScalers = state;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -629,7 +641,7 @@ CExperiment::readScalers()
 
     CRingScalerItem  item(
       timestamp, srcid, BARRIER_NOTBARRIER, startTime, endTime, now,
-			scalers, 1000
+			scalers, 1000, m_incrementalScalers
     );
     
     item.commitToRing(*m_pRing);

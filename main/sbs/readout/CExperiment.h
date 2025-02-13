@@ -101,6 +101,7 @@ private:
 	CElapsedTime            m_runTime;
 	
 	Statistics             m_statistics;
+  bool                   m_incrementalScalers;
 
   // Canonicals:
 
@@ -128,6 +129,8 @@ public:
   void   setDefaultSourceId(unsigned sourceId);
   void   setBufferSize(size_t newSize);
   size_t getBufferSize() const;
+  bool   isIncremental() const;
+  void   setIncremental(bool state);
   void   Start(bool resume=false);
   void   Stop(bool pause=false);
   void   AddEventSegment(CEventSegment*    pSegment);
