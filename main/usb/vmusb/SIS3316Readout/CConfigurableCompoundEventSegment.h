@@ -29,6 +29,8 @@
 class CTCLInterpreter;
 class CTCLObject;
 class CSIS3316EventSegment;
+class CSIS3820TimestampEventSegment;
+class CVMUSBEventSegment;
 
 /**
  *  @class CConfigurableCompoundEventSegment
@@ -76,11 +78,11 @@ class CSIS3316EventSegment;
         );
     };
     // CAEN pattern register.
-    class Cv977Command : public CTCLObjectProcessor {
+    class CV977Command : public CTCLObjectProcessor {
         CConfigurableCompoundEventSegment* m_pSegment;
     public:
-        Cv977Command(CTCLInterpreter& interp, CConfigurableCompoundEventSegment& segment);
-        virtual ~Cv977Command();
+        CV977Command(CTCLInterpreter& interp, CConfigurableCompoundEventSegment& segment);
+        virtual ~CV977Command();
         virtal int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
     private:
         void create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
@@ -97,9 +99,53 @@ class CSIS3316EventSegment;
             std::vector<CTCLObject>& objv
         );
     }; 
-   
+    class C3820Command : public CTCLObjectProcessor {
+        CConfigurableCompoundEventSegment* m_pSegment;
+    public:
+        C3820Command(CTLInterpreter& interp, const char* name);
+        virtual ~C3820Comand();
+
+    public:
+        int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+    private:
+        void create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        void config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        void cget(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+
+        void config1(
+            C3820EventSegment* pModule, 
+            std::vector<CTCLObject>& objv, int optionIndex
+        );
+        C3820EventSegment* findSegment(const char* name);
+        void throwException(
+            CTCLInterpreter& interp, const char* reason, 
+            std::vector<CTCLObject>& objv
+        );
+    };
     // Add more classes here for specific device support e.g. SIS scaler,
-    
+    class CVMUSBCommand : public CTCLObjectProcessor {
+        CConfigurableCompoundEventSegment* m_pSegment;
+    public:
+        CVMUSBCommand(CTLInterpreter& interp, const char* name);
+        virtual ~CVMUSBCommand();
+
+    public:
+        int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+    private:
+        void create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        void config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        void cget(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+
+        void config1(
+            CVMUSBCommandEventSegment* pModule, 
+            std::vector<CTCLObject>& objv, int optionIndex
+        );
+        CVMUSBCommandEventSegment* findSegment(const char* name);
+        void throwException(
+            CTCLInterpreter& interp, const char* reason, 
+            std::vector<CTCLObject>& objv
+        );
+    };
     
 private:
     std::string m_configFile;                        // Name of configuration file.
