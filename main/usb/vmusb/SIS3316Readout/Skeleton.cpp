@@ -19,6 +19,7 @@
 #include <TCLInterpreter.h>
 #include <CTimedTrigger.h>
 #include <CConfigurableCompoundEventSegment.h>
+#include <CSISScalerBankk.h>
 #include <stdlib.h>
 #include <iostream>
 #include <CVMUSBusb.h>
@@ -207,8 +208,15 @@ Skeleton::SetupScalers(CExperiment* pExperiment)
 
   // Create and add your scaler modules here.
 
-  // Adding a sample CSIS3820.... you'll probaby need to
-  // change the base address and maybe have more than one.
+  // Add a CSISScalerBank - which can configure multiple scalers....the env SISSCALERCONFIG
+  // points to the scaler configuration file:
+
+  const char* pConfigFile = getenv("SISSCALERCONFIG");
+  if(!pConfigFile) {
+    std::cerr << "***** ERROR the SISSCALERCONFIG environment variable needs to be defined and \n";
+    std::cerr << "***** and must point to a scaler configuration file\n";
+    exit(EXIT_FAILURE); 
+  }
 
 
 }
