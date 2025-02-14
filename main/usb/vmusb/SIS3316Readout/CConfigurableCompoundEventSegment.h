@@ -166,6 +166,9 @@ public:
 
     // Utilities:
 
+public:
+    bool any3316Readable();
+
 private:
     void configureModules();
 
