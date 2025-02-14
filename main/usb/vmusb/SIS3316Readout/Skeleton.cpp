@@ -20,6 +20,7 @@
 #include <CTimedTrigger.h>
 #include <CConfigurableCompoundEventSegment.h>
 #include <CSISScalerBank.h>
+#include <CSIS3316Trigger.h>
 #include <CVMUSBBusy.h>
 #include <stdlib.h>
 #include <iostream>
@@ -178,6 +179,7 @@ Skeleton::SetupReadout(CExperiment* pExperiment)
   }
   auto pSegment = new CConfigurabvleCompoundEventSegment(daq_configfle);
   pExperiment->AddEventSegment(pSegment);
+  pExperiment->EstablishTrigger(new CSIS3316Trigger(pSegment));
   pExperiment->EstablishBusy(new CVMUSBBusy);
 }
 
