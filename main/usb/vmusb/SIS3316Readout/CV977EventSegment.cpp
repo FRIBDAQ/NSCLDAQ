@@ -22,7 +22,7 @@
 #include <Globals.h>
 
 #includu <CVMUSB.h>
-#incldue <CVMUSBReadoutList.h>
+#include <CVMUSBReadoutList.h>
 
 ///////////////////////////////////   register offsets  ////////////////////////////////
 
