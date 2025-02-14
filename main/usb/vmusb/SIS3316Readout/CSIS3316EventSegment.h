@@ -71,7 +71,9 @@ private:
     virtual void disable();
     virtual size_t read(void* pBuffer, size_t maxwords);
     
-    // Utilitye methods:
+    // Utility methods:
+
+    bool readable();
 
 private:
     void setupConfiguration();

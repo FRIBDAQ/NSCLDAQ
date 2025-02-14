@@ -65,7 +65,29 @@ CConfigurableCompoundEventSegment::initialize() {
     configureModules()
     CCompoundEventSegment::initialize();
 }
-
+/**
+ * any3316Readable
+ *    This can be used to determine if any of the SIS3316 modules contained by us are readable.
+ * 
+ * @return bool - true if at least one 3316 module an be read.
+ * 
+ * This is true if:
+ *    There is at least one CSIS3316EventSegment in our segment list
+ *    AND - amongst those segments, at least one has the OR of its memory address segment set in the 
+ *    acquisition control/status register.
+ *    AND sampling is off in that module.
+ */
+bool
+CConfigurableCompoundEventSegment::any3316Readable() {
+    for (auto p: *this) {
+        CSIS3316EventSegment* pSegment = dynamic_cast<CSIS33186EventSegment*>(p) {
+            if (pSegment->readable()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 
 /**

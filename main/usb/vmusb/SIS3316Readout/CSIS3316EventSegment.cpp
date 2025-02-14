@@ -459,6 +459,20 @@ CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
 
     return nRead * 2;                      // 16 bit words.
 }
+/**
+ *  readable
+ *    @return true - if the module is readable.
+ */
+bool
+CSIS3316EventSegment::readable() {
+    if (!m_pModule) return false;        // no module so not readable.
+    uint32_t acqreg;
+    m_pModule->register_read(SIS3316_ACQUISITION_CONTROL_STATUS, &acreg);
+
+    thresh = acqreg & 0x00080000;    // Threshold made.
+    sampling = acqreg & 0x00040000;
+    return (thresh != 0) && (sampling == 0);
+}
 ///////////////////////////////// Private Utilities //////////////////////////////////////////////
 
 /**
