@@ -21,7 +21,7 @@
 #include <CConfigurableCompoundEventSegment.h>
 #include <stdlib.h>
 #include <iostream>
-#include <CVMUSB.h>
+#include <CVMUSBusb.h>
 /*
 /*
 ** This file is a skeleton for the production readout software for
@@ -136,18 +136,21 @@ Skeleton::SetupReadout(CExperiment* pExperiment)
   //    CVMUSB* pUSB(0);
   //    for(auto c: controllers) {
   //       if (CVMUSB::seralNo(c) == TheOneIWantString) {
-  //           pUSB = new CVMUSB(c);
+  //           pUSB = new CVMUSBusb(c);
   //       }
   //    }
   //    if (!pUSB) .... some error..and exit.
   //    Globals::pUSBController = pUSB;
   //
-  auto controllers = CVMUSB::enumerate();
+
+  // We're only doing local VMUSB modules not ethernet served ones.
+  
+  auto controllers = CVMUSBusb::enumerate();
   if (controllers.size() == 0) {
     std::cerr << "There are no VMUSB controllers connected to the system\n";
     exit(EXIT_FAILURE);
   }
-  Globals::pUSBController = new CVMUSB(controllers[0]);
+  Globals::pUSBController = new CVMUSBusb(controllers[0]);
 
   // Establish your trigger here by creating a trigger object
   // and establishing it.
