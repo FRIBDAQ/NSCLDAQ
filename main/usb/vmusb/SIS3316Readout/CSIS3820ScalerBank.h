@@ -48,6 +48,10 @@ class CSIS3820ScalerBank {
         virtual ~CSIS3820Command();
 
         int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+
+
+    private:
+        bool exists(const std::string& name);
     };
 private:
     std::string m_configFile;
