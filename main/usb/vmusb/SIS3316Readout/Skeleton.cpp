@@ -19,7 +19,8 @@
 #include <TCLInterpreter.h>
 #include <CTimedTrigger.h>
 #include <CConfigurableCompoundEventSegment.h>
-#include <CSISScalerBankk.h>
+#include <CSISScalerBank.h>
+#include <CVMUSBBusy.h>
 #include <stdlib.h>
 #include <iostream>
 #include <CVMUSBusb.h>
@@ -177,7 +178,7 @@ Skeleton::SetupReadout(CExperiment* pExperiment)
   }
   auto pSegment = new CConfigurabvleCompoundEventSegment(daq_configfle);
   pExperiment->AddEventSegment(pSegment);
-
+  pExperiment->EstablishBusy(new CVMUSBBusy);
 }
 
 /*!
@@ -217,7 +218,8 @@ Skeleton::SetupScalers(CExperiment* pExperiment)
     std::cerr << "***** and must point to a scaler configuration file\n";
     exit(EXIT_FAILURE); 
   }
-
+  auto pBank = new CSIS3820ScalerBank(pConfigFile);
+  pExperiment->addScalerModule(pBank);
 
 }
 /*!
