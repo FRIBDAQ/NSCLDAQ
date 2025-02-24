@@ -61,7 +61,7 @@ private:
     int operator!=(const CSIS3316EventSegment& rhs) const;
 
     // Selectors:
-
+public:
     XXUSB::CConfigurableObject* getConfiguration();
     std::string                 getName() const;
 
