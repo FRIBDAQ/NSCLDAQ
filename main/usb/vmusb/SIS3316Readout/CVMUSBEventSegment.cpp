@@ -23,7 +23,7 @@
 #include <Globals.h>
 #include <CVMUSB.h>
 
-#inclue <map>
+#include <map>
 
 // Validation information:
 
@@ -33,7 +33,7 @@ static const char* ScalerAInputs[] = {       // Things that make Scaler A count.
 
 // Map scaler A inputs to bits in dev select register.
 
-static std::map<std::string, uint32_t> ScalerAMap = {
+static std::map<std::string, uint32_t> scalerAMap = {
     {"dgga", 0 << CVMUSB::DeviceSourceRegister::scalerAShift}, 
     {"nimi1", 1 << CVMUSB::DeviceSourceRegister::scalerAShift}, 
     {"nimi2", 2 << CVMUSB::DeviceSourceRegister::scalerAShift}
@@ -44,7 +44,7 @@ static const char* ScalerBInputs[] = {       // Things that make Scaler B count.
 };
 
 // Map Scaler A inputs to bits in dev select register:
-static std::map<std::sttring, uint32_t> scalerBMap = {
+static std::map<std::string, uint32_t> scalerBMap = {
     {"carry", 0 << CVMUSB::DeviceSourceRegister::scalerBShift}, 
     {"nimi1", 1 << CVMUSB::DeviceSourceRegister::scalerBShift},
     {"nimi2", 2 << CVMUSB::DeviceSourceRegister::scalerBShift}
@@ -58,7 +58,7 @@ static std::map<std::sttring, uint32_t> scalerBMap = {
 CVMUSBEventSegment::CVMUSBEventSegment(const char* pName) :
     m_name(pName), m_pConfiguration(nullptr)
 {
-    m_pConfiguration = new XXUSB::ConfigurableObject(m_name);
+    m_pConfiguration = new XXUSB::CConfigurableObject(m_name);
     defineConfiguration();                   // Set up options and their validations.
 }
 /**
@@ -96,8 +96,8 @@ void
 CVMUSBEventSegment::initialize() {
     CVMUSB& controller = *Globals::pUSBController;
 
-    uint32_t scalera = scalerAMap[getParameter("-scalera")];
-    uint32_t scalerb = scalserBMap[getParameter("-scalerb")];
+    uint32_t scalera = scalerAMap[m_pConfiguration->cget("-scalera")];
+    uint32_t scalerb = scalerBMap[m_pConfiguration->cget("-scalerb")];
 
     uint32_t scalerdevsrc = scalera | scalerb 
         | CVMUSB::DeviceSourceRegister::scalerAEnable 
@@ -105,11 +105,11 @@ CVMUSBEventSegment::initialize() {
 
     // Clear the enable:
 
-    controller->writeDeviceSource(
+    controller.writeDeviceSource(
         scalerdevsrc 
         | CVMUSB::DeviceSourceRegister::scalerAReset
         | CVMUSB::DeviceSourceRegister::scalerBReset);
-    controller->writeDeviceSource(scalerdevsrc);   // Scaler  counting. with appropriate inputs
+    controller.writeDeviceSource(scalerdevsrc);   // Scaler  counting. with appropriate inputs
 }
 /**
  *  readout
@@ -119,20 +119,20 @@ CVMUSBEventSegment::initialize() {
  */
 size_t
 CVMUSBEventSegment::read(void* pBuffer, size_t maxwords) {
-    CVMUSB& controller = *Globals::pUsbController;
+    CVMUSB& controller = *Globals::pUSBController;
     if (maxwords < 4) {
         throw std::string("Need 4 words to read the VME scalers into an event - not enough left");
     }
 
-    uint32_t* p = reinterpret_cast<uin32_t*>(pBuffer);
+    uint32_t* p = reinterpret_cast<uint32_t*>(pBuffer);
     *p++ = controller.readScalerA();
-    *p   = controllser.readScalerB();   // Marginally faster without autoinc...maybe.
+    *p   = controller.readScalerB();   // Marginally faster without autoinc...maybe.
 
     if (m_pConfiguration->getBoolParameter("-incremental")) {
         // Getting bits fromt he config has to be faster than getting them from
         // the device .. I think.
-        uint32_t scalera = scalerAMap[getParameter("-scalera")];
-        uint32_t scalerb = scalserBMap[getParameter("-scalerb")];
+        uint32_t scalera = scalerAMap[cget("-scalera")];
+        uint32_t scalerb = scalserBMap[cget("-scalerb")];
 
         uint32_t scalerdevsrc = scalera | scalerb 
             | CVMUSB::DeviceSourceRegister::scalerAEnable 
