@@ -31,7 +31,8 @@ class CTCLObject;
 class CSIS3316EventSegment;
 class CSIS3820TimestampEventSegment;
 class CVMUSBEventSegment;
-
+class CV977EventSegment;
+class C3820EventSegment;
 /**
  *  @class CConfigurableCompoundEventSegment
  * 
@@ -61,7 +62,7 @@ class CVMUSBEventSegment;
     public:
         CSIS3316Command(CTCLInterpreter& interp, CConfigurableCompoundEventSegment& segment);
         virtual ~CSIS3316Command();
-        virtal int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        virtual int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
     private:
         void create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
         void config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
@@ -83,7 +84,7 @@ class CVMUSBEventSegment;
     public:
         CV977Command(CTCLInterpreter& interp, CConfigurableCompoundEventSegment& segment);
         virtual ~CV977Command();
-        virtal int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
+        virtual int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
     private:
         void create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
         void config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
@@ -102,8 +103,8 @@ class CVMUSBEventSegment;
     class C3820Command : public CTCLObjectProcessor {
         CConfigurableCompoundEventSegment* m_pSegment;
     public:
-        C3820Command(CTLInterpreter& interp, const char* name);
-        virtual ~C3820Comand();
+        C3820Command(CTCLInterpreter& interp, const char* name);
+        virtual ~C3820Command();
 
     public:
         int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
@@ -126,7 +127,7 @@ class CVMUSBEventSegment;
     class CVMUSBCommand : public CTCLObjectProcessor {
         CConfigurableCompoundEventSegment* m_pSegment;
     public:
-        CVMUSBCommand(CTLInterpreter& interp, const char* name);
+        CVMUSBCommand(CTCLInterpreter& interp, const char* name);
         virtual ~CVMUSBCommand();
 
     public:
@@ -137,10 +138,10 @@ class CVMUSBEventSegment;
         void cget(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
 
         void config1(
-            CVMUSBCommandEventSegment* pModule, 
+            CVMUSBEventSegment* pModule, 
             std::vector<CTCLObject>& objv, int optionIndex
         );
-        CVMUSBCommandEventSegment* findSegment(const char* name);
+        CVMUSBEventSegment* findSegment(const char* name);
         void throwException(
             CTCLInterpreter& interp, const char* reason, 
             std::vector<CTCLObject>& objv
