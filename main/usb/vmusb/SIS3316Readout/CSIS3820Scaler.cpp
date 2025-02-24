@@ -130,7 +130,7 @@ CSIS3820Scaler::name() const {
  *    - Input mode will be inhiobit banks of four counters.
  */
 void
-CIS3820Scaler::initialize() {
+CSIS3820Scaler::initialize() {
     // the controller better have been built by now:
 
     CVMUSB& controller = *Globals::pUSBController;
@@ -155,18 +155,18 @@ CIS3820Scaler::initialize() {
   int status = controller.vmeRead32(base+ModuleID,  CVMUSBReadoutList::a32UserData,
 				    &id);
   if (status) {
-    throw string("C3820::Initialize Single shot vme to read id register failed");
+    throw std::string("C3820::Initialize Single shot vme to read id register failed");
   }
   if ((id & idMask) != idValue) {
     char msg[1000];
     sprintf(msg, "C3820::Initialized, module @ 0x%08x is not an SIS3820 scaler",
 	    base);
-    throw string(msg);
+    throw std::string(msg);
   }
   status = controller.vmeWrite32(base+KeyReset, CVMUSBReadoutList::a32UserData, 
 				static_cast<uint32_t>(0));
   if(status) {
-    throw string("C3820::Initialize single shot write to key-reset faileed");
+    throw std::string("C3820::Initialize single shot write to key-reset faileed");
   }
 
 
@@ -206,7 +206,7 @@ CIS3820Scaler::initialize() {
   status = controller.executeList(initList,
 				      &inBuffer, sizeof(inBuffer), &bytesRead);
   if (status < 0) {
-    throw string("C3820::Could not initialize via executeList.");
+    throw std::string("C3820::Could not initialize via executeList.");
   }
 }
 /**
@@ -220,7 +220,7 @@ CSIS3820Scaler::read() {
     std::vector<uint32_t> result;
     result.resize(32);        // # scalers that can be read.
     uint32_t base = m_base;
-    CVMUSB& controller = *Globals::pUsbController;
+    CVMUSB& controller = *Globals::pUSBController;
     size_t junk;
 
     controller.vmeWrite32(base+KeyLNE, CVMUSBReadoutList::a32UserData, (uint32_t)0); // latch the scalers.
