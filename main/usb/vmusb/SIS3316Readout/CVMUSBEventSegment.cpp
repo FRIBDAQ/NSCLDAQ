@@ -131,8 +131,8 @@ CVMUSBEventSegment::read(void* pBuffer, size_t maxwords) {
     if (m_pConfiguration->getBoolParameter("-incremental")) {
         // Getting bits fromt he config has to be faster than getting them from
         // the device .. I think.
-        uint32_t scalera = scalerAMap[cget("-scalera")];
-        uint32_t scalerb = scalserBMap[cget("-scalerb")];
+        uint32_t scalera = scalerAMap[m_pConfiguration->cget("-scalera")];
+        uint32_t scalerb = scalerBMap[m_pConfiguration->cget("-scalerb")];
 
         uint32_t scalerdevsrc = scalera | scalerb 
             | CVMUSB::DeviceSourceRegister::scalerAEnable 
