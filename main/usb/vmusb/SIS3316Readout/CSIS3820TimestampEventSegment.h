@@ -22,7 +22,7 @@
 #define     CSIS3820TIMESTAMPEVENTSEGMENT_H
 #include <CEventSegment.h>
 #include <string>
-namespacde XXUSB {
+namespace XXUSB {
     class CConfigurableObject;
 }
 
@@ -69,7 +69,7 @@ public:
 
     // Implement virtual entries we care about.
 
-    virtual void initialize();+
+    virtual void initialize();
     virtual size_t read(void* pBuffer, size_t maxwords);
     
     // Utilitye methods:

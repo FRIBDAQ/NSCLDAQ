@@ -41,7 +41,7 @@ class sis3316_adc;
  * configuration.
  */
 class CSIS3316EventSegment : public  CEventSegment {
-private
+private:
     std::string                 m_name;              // Name as per configuration.
     XXUSB::CConfigurableObject* m_pConfiguration;    // Module configuration.
     sis_vmusb_interface*        m_pVMe;              // VME interface object for SIS support.
