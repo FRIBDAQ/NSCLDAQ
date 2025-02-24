@@ -39,13 +39,14 @@ class CTCLObject;
  * The nexted class CSIS3820Command implements a Tcl extension that 
  * knows how to create the scalers in the bank.
  */
-class CSIS3820ScalerBank {
+class CSIS3820ScalerBank : public CScalerBank {
+public:
     class CSIS3820Command : public CTCLObjectProcessor {
     private:
         CSIS3820ScalerBank* m_pBank;
     public:
-        SIS3820Command(CTCLInterpreter& interp, CSIS3820ScalerBank* container);
-        virtual ~CSIS3820Command();
+        CSIS3820Command (CTCLInterpreter& interp, CSIS3820ScalerBank* container);
+        virtual ~CSIS3820Command ();
 
         int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
 

@@ -44,7 +44,7 @@ private:
     // Public canonicals:
 public:
     CSIS3820Scaler(const char* pName, uint32_t base);
-    virtual CSIS3820Scaler();
+    virtual ~CSIS3820Scaler();
 
     // Disallowed canonicals:
 private:
@@ -54,7 +54,7 @@ private:
     int operator!=(const CSIS3820Scaler& rhs) const;
 
     // Selectors:
-
+public:
     uint32_t base() const;
     std::string name() const;
 

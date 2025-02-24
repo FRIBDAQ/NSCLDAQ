@@ -25,7 +25,7 @@
 #include <memory>
 #include <TCLException.h>
 
-typedef CMDCLASS CSIS3820ScalerBank::CSIS3820Command;    // Mabye better than #defines- for shorthand.
+typedef CSIS3820ScalerBank::CSIS3820Command CMDCLASS; 
 
 //////////////////////////////////// CSIS3820ScalerBank implementation ///////////////////////////
 /**
@@ -33,7 +33,7 @@ typedef CMDCLASS CSIS3820ScalerBank::CSIS3820Command;    // Mabye better than #d
  *    @param pConfigFilename - name of the configuration file that is interpreted at initialization time.
  */
 CSIS3820ScalerBank::CSIS3820ScalerBank(const char* pConfigFilename) :
-    m_configFile(pCOnfigFilename) {}
+    m_configFile(pConfigFilename) {}
 
 /**
  *  destructor:
@@ -56,7 +56,7 @@ CSIS3820ScalerBank::initialize() {
     // Clear the ban of modules:
 
     while (begin() != end()) {
-        CScaler* p = *begin();   // Should be a pointer.
+        CScaler* p = reinterpret_cast<CScaler*>(*begin());   // Should be a pointer.
         DeleteScaler(p);
         delete p;                // our scalers are made with new.
     }
@@ -80,12 +80,13 @@ CSIS3820ScalerBank::initialize() {
  *    @param interp - the intepreter we will be registered on.
  *    @param container - pointer to the scaler bank we will configure.
  */
-CMDCLASS::CMDCLASS(CTCLInterpeter& interp, CSIS3820ScalerBank* containr) :
-    CTCLObjectProcessor(interp, "sis3820", true), m_pBank(container) {}
+CMDCLASS::CSIS3820Command(CTCLInterpreter& interp, CSIS3820ScalerBank* container) :
+    CTCLObjectProcessor(interp, "sis3820"), m_pBank(container) 
+{}
 /**
  * destructor.
  */
-CMDCLASS::~CMDCLASS() {}
+CMDCLASS::~CSIS3820Command() {}
 
 /**
  *  operator()
@@ -102,7 +103,7 @@ CMDCLASS::~CMDCLASS() {}
  */
 int
 CMDCLASS::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
-    BindAll(interp, objv);      // Bind thewords to the interpreter.
+    bindAll(interp, objv);      // Bind thewords to the interpreter.
 
     try {
         requireExactly(objv, 3, "Incorrect number of command parameters");
@@ -113,7 +114,7 @@ CMDCLASS::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
         if (exists(name)) {
             throw std::string("Scaler already exists");
         }
-        m_pBank->AddScaler(new CSIS3316Scaler(name.c_str(), base));
+        m_pBank->AddScalerModule(new CSIS3820Scaler(name.c_str(), base));
     }
     catch(std::string msg) {
         throw CTCLException(interp, TCL_ERROR, msg.c_str());   // Our caller handles that.
@@ -129,7 +130,8 @@ CMDCLASS::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
 bool
 CMDCLASS::exists(const std::string& name) {
     for (auto p : *m_pBank) {         // I think this works since we scaler banks have the iterator protocol.
-        if(p->name() == name) return true;
+        CSIS3820Scaler* pBank = dynamic_cast<CSIS3820Scaler*>(p);
+        if(pBank && pBank->name() == name) return true;
     
     }
     return false;
