@@ -18,7 +18,7 @@
 *
 *
  */
-#include "CSIS3820TimestampEventProcessor.h"
+#include "CSIS3820TimestampEventSegment.h"
 #include <XXUSBConfigurableObject.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
@@ -158,7 +158,7 @@ CSIS3820TimestampEventSegment::initialize() {
 
     // First figure out our base address:
 
-  uint32_t base = m_pConfiguaration->getIntegerParameter("-base");
+  uint32_t base = m_pConfiguration->getIntegerParameter("-base");
   uint32_t    inputMode       = acqInpLNEInhLNE;      // Suitable for timestamp.
   std::string outputModeStr   = m_pConfiguration->cget("-outputmode");
   uint32_t    outputMode      = outputModeValues[outputModeStr];
@@ -176,18 +176,18 @@ CSIS3820TimestampEventSegment::initialize() {
   int status = controller.vmeRead32(base+ModuleID,  CVMUSBReadoutList::a32UserData,
 				    &id);
   if (status) {
-    throw string("C3820::Initialize Single shot vme to read id register failed");
+    throw std::string("C3820::Initialize Single shot vme to read id register failed");
   }
   if ((id & idMask) != idValue) {
     char msg[1000];
     sprintf(msg, "C3820::Initialized, module @ 0x%08x is not an SIS3820 scaler",
 	    base);
-    throw string(msg);
+    throw std::string(msg);
   }
   status = controller.vmeWrite32(base+KeyReset, CVMUSBReadoutList::a32UserData, 
 				static_cast<uint32_t>(0));
   if(status) {
-    throw string("C3820::Initialize single shot write to key-reset faileed");
+    throw std::string("C3820::Initialize single shot write to key-reset faileed");
   }
 
 
@@ -229,7 +229,7 @@ CSIS3820TimestampEventSegment::initialize() {
     status = controller.executeList(initList,
                         &inBuffer, sizeof(inBuffer), &bytesRead);
     if (status < 0) {
-        throw string("C3820::Could not initialize via executeList.");
+        throw std::string("C3820::Could not initialize via executeList.");
     }
 }
 
@@ -247,7 +247,7 @@ CSIS3820TimestampEventSegment::read(void* pBuffer, size_t maxwords) {
     if (maxwords < 6) {
         throw std::string("Too few words left in the buffer to read the timestamp module.");
     }
-    base = m_pConfiguration->getIntegerParameter("-base");
+    uint32_t base = m_pConfiguration->getIntegerParameter("-base");
 
     uint32_t low0;               // low bits of counter 0.
     uint32_t low16;              // low bits of counter 16
@@ -267,13 +267,13 @@ CSIS3820TimestampEventSegment::read(void* pBuffer, size_t maxwords) {
         uint32_t* pLong;
         uint16_t* pShort;
     }  pointer;
-    pointer.pLong = reinterpret_cast<uin32_t*>(pBuffer);
+    pointer.pLong = reinterpret_cast<uint32_t*>(pBuffer);
 
     // 48 bits of counter 0:
 
     *pointer.pLong++ = low0;
     *pointer.pShort++ = (highbits & 0xffff);    
-    *pointer.pLongt++ = low16;
+    *pointer.pLong++ = low16;
     *pointer.pShort++ = (highbits >> 16) & 0xffff;
 
 
@@ -287,6 +287,6 @@ CSIS3820TimestampEventSegment::read(void* pBuffer, size_t maxwords) {
  */
 void
 CSIS3820TimestampEventSegment::setupConfiguration() {
-    m_pConfiguration->addIntegerParameters("-base");
+    m_pConfiguration->addIntegerParameter("-base");
     m_pConfiguration->addEnumParameter("-outputmode", outputModeStrings,"clock50Mhz");
 }
