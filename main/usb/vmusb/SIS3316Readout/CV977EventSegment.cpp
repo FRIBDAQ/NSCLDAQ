@@ -234,9 +234,10 @@ CV977EventSegment::read(void* pBuffer, size_t maxwords) {
 
  void
  CV977EventSegment::setupConfiguration() {
+    XXUSB::CConfigurableObject& configuration(*m_pConfiguration);
     configuration.addIntegerParameter("-base");
     configuration.addIntegerParameter("-inputmask", 0, 0xffff, 0);
-    configuration.addEnumParameter("-readmode", ReadmodeValues, "singlehit");
+    configuration.addEnumParameter("-readmode", ReadModeValues, "singlehit");
     configuration.addIntegerParameter("-outputmask",0, 0xffff, 0);
     configuration.addBooleanParameter("-readandclear",true);
     configuration.addBooleanParameter("-pattern", false);
