@@ -24,7 +24,7 @@
 #include <XXUSBConfigurableObject.h>
 #include <sis_vmusb_interface.h>
 #include "sis3316.h"
-#include "sis3316_class.h
+#include "sis3316_class.h"
 #include "CVMUSB.h"
 #include <CVMUSBReadoutList.h>
 #include <Globals.h>                  // THE VMUSB controller will be there:
@@ -61,7 +61,7 @@ static const uint64_t MaxPretrigger(0x3fff);   // 14 bits of pre-trigger.
 CSIS3316EventSegment::CSIS3316EventSegment(const char* name) :
     m_name(name), m_pConfiguration(nullptr), m_pVME(nullptr), m_pModule(nullptr)
 {
-    m_pConfiguratition = new XXUSB::CConfigurableObject(m_name);
+    m_pConfiguration = new XXUSB::CConfigurableObject(m_name);
     setupConfiguration();                         // Set up our configuration parameters.
 }
 /**
@@ -72,7 +72,7 @@ CSIS3316EventSegment::CSIS3316EventSegment(const char* name) :
 CSIS3316EventSegment::~CSIS3316EventSegment() {
     delete m_pConfiguration;
     delete m_pModule;                   // Module before VME.
-    delete m_pVme;
+    delete m_pVME;
 }
 
 ///////////////////////// Selector implementation ////////////////////////
@@ -111,10 +111,10 @@ CSIS3316EventSegment::initialize() {
     // WE can build the module and controller:
 
     delete m_pModule;
-    delete m_pVme;
-    m_pVme = new sis_vmusb_interface;          // Fishes the VMUSB from Globals.
+    delete m_pVME;
+    m_pVME = new sis_vmusb_interface;          // Fishes the VMUSB from Globals.
     m_pModule = new sis3316_adc(
-        m_pVMe, m_pConfiguration->getUnsignedParameter("base")  // Our base was configured.
+        m_pVME, m_pConfiguration->getUnsignedParameter("base")  // Our base was configured.
     );
 
 
@@ -335,7 +335,7 @@ CSIS3316EventSegment::initialize() {
  * 
  */
 void
-CSIS3316EventSegment::diable() {
+CSIS3316EventSegment::disable() {
     m_pModule->register_write(SIS3316_KEY_DISARM, 0);
 }
 /**
@@ -358,14 +358,14 @@ CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
         std::stringstream strMsg;
         strMsg << m_name << " wants to read out "  << totalWords
             << " that's  more than the remaining buffer words which are: " << maxwords;
-        std::string msg(strMSg.str());
+        std::string msg(strMsg.str());
         throw std::length_error(msg);
     }
     // Some of the stuff we do must be done without the help of the adc class:
 
-    auto base = m_pCOnfiguration->getUnsignedParamter("-base");
+    auto base = m_pConfiguration->getUnsignedParameter("-base");
     auto amod = CVMUSBReadoutList::a32UserData;
-    auto blockAmod = CVMUSBReadoutList::132UserBlock;
+    auto blockAmod = CVMUSBReadoutList::a32UserBlock;
 
     // Module should now be disarmed but...
 
@@ -404,7 +404,7 @@ CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
         if (groupLongs > 0) {                                         // Group has enabled channels.
             auto xferReg = xferRegisters[group];              // group xfer control register.
             auto status = statusReg[group];
-            auto fifo    = base + fifobases[group];                  // FIFO address for the group.  
+            auto fifo    = base + fifoBases[group];                  // FIFO address for the group.  
             for(int i = 0; i < 4; i++) {                          // Loop over channels:
                 int chan = firstchan+i;                           // Absolute channel #.
 
@@ -423,7 +423,7 @@ CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
                     // Spin for it to finish:
 
                     while (true) {
-                        int datum;
+                        UINT datum;
 
                         m_pModule->register_read(status, &datum);
                         if ((datum & 0x80000000) == 0)   break;  // done.
@@ -434,7 +434,7 @@ CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
                     size_t nTransferred;
                     pController->vmeFifoRead(fifo, blockAmod, pLongBuf, numToRead, &nTransferred);
                     pLongBuf+= nTransferred;
-                    nRead ++ nTransferred;
+                    nRead += nTransferred;
 
                 }
 
@@ -467,10 +467,10 @@ bool
 CSIS3316EventSegment::readable() {
     if (!m_pModule) return false;        // no module so not readable.
     uint32_t acqreg;
-    m_pModule->register_read(SIS3316_ACQUISITION_CONTROL_STATUS, &acreg);
+    m_pModule->register_read(SIS3316_ACQUISITION_CONTROL_STATUS, &acqreg);
 
-    thresh = acqreg & 0x00080000;    // Threshold made.
-    sampling = acqreg & 0x00040000;
+    uint32_t thresh = acqreg & 0x00080000;    // Threshold made.
+    uint32_t sampling = acqreg & 0x00040000;
     return (thresh != 0) && (sampling == 0);
 }
 ///////////////////////////////// Private Utilities //////////////////////////////////////////////

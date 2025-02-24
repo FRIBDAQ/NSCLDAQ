@@ -44,7 +44,7 @@ class CSIS3316EventSegment : public  CEventSegment {
 private:
     std::string                 m_name;              // Name as per configuration.
     XXUSB::CConfigurableObject* m_pConfiguration;    // Module configuration.
-    sis_vmusb_interface*        m_pVMe;              // VME interface object for SIS support.
+    sis_vmusb_interface*        m_pVME;              // VME interface object for SIS support.
     sis3316_adc*                m_pModule;           // SIS sis3316 support class.
 
     // Public canonicals:
