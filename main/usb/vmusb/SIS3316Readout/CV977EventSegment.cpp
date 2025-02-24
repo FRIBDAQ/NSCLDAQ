@@ -21,8 +21,10 @@
 #include <XXUSBConfigurableObject.h>
 #include <Globals.h>
 
-#includu <CVMUSB.h>
+#include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
+
+#include <string.h>
 
 ///////////////////////////////////   register offsets  ////////////////////////////////
 
@@ -82,7 +84,7 @@ static const char* ReadModeValues[] = {
  * @param name - the name of this object.
  */
 CV977EventSegment::CV977EventSegment(const char* name) :
-    m_name(name), m_pConfiguration(nullptr), m_pVME(nullptr)
+    m_name(name), m_pConfiguration(nullptr)
 {
     m_pConfiguration = new XXUSB::CConfigurableObject(m_name);
     setupConfiguration();
@@ -106,7 +108,8 @@ CV977EventSegment::getConfiguration() {
 /**
  * @return std::string - objedt name.
  */
-std::string getName() const {
+std::string 
+CV977EventSegment::getName() const {
     return m_name;
 }
 
@@ -164,7 +167,7 @@ CV977EventSegment::initialize() {
 				      &bytesRead);
   if (status < 0) {                           // List execution failed.
     int errorValue = errno;
-    string message = "CV977::Initialization list execution failed on: ";
+    std::string message = "CV977::Initialization list execution failed on: ";
     if (status == -1) {
       message += " usb_bulk_write ";
     }
@@ -194,7 +197,7 @@ CV977EventSegment::read(void* pBuffer, size_t maxwords) {
     // Need some config info:
 
     uint32_t base     = m_pConfiguration->getUnsignedParameter("-base");
-    string   mode     = m_pConfiguration->cget("-readmode");
+    std:: string   mode     = m_pConfiguration->cget("-readmode");
     bool     rdclear  = m_pConfiguration->getBoolParameter("-readandclear");
 
     // figure out the offset:
@@ -214,9 +217,10 @@ CV977EventSegment::read(void* pBuffer, size_t maxwords) {
         }
         else {
             offset = MultiHitRead;
+        }
     }
-
-    Globals::pUSBController->vmeRead16(base + offset, amod, pBuffer);   // Read the register.
+    uint16_t* p = reinterpret_cast<uint16_t*>(pBuffer);
+    Globals::pUSBController->vmeRead16(base + offset, amod, p);   // Read the register.
 
     return 1;
 }
