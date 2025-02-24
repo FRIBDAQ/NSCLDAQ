@@ -38,6 +38,6 @@ m_pSegment(pSeg) {}
  * @return bool -true if triggered.
  */
 bool
-CSIS3316Trigger::operator() {
+CSIS3316Trigger::operator()() {
     return m_pSegment->any3316Readable();
 }

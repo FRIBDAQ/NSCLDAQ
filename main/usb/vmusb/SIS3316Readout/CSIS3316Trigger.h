@@ -23,7 +23,7 @@
 #ifndef CSIS3316TRIGGER_H
 #define  CSIS3316TRIGGER_H
 
-#include <CTrigger.h>
+#include <CEventTrigger.h>
 class CConfigurableCompoundEventSegment;
 
 
@@ -31,14 +31,14 @@ class CConfigurableCompoundEventSegment;
  * @class CSIS3316Trigger
  *   COntains a configurable compound event segment and check its any3316Readable method.
  */
-class CSIS3316Trigger : public CTrigger {
+class CSIS3316Trigger : public CEventTrigger {
 private:
     CConfigurableCompoundEventSegment* m_pSegment;
-public
+public:
     CSIS3316Trigger(CConfigurableCompoundEventSegment* pSeg);
 
-    virtual bool operator();
-}
+    virtual bool operator()();
+};
 
 
 #endif
