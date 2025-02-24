@@ -22,7 +22,7 @@
 #include "CSIS3316EventSegment.h"
 #include "CV977EventSegment.h"
 #include "CSIS3820TimestampEventSegment.h"
-#include "CVMUSBEventSegment.H"
+#include "CVMUSBEventSegment.h"
 #include <TCLInterpreter.h>
 #include <TCLOBject.h>
 #include <typeinfo>
