@@ -34,5 +34,6 @@ include_HEADERS=CConfigurableCompoundEventSegment.h
 VMUSBnostackReadout_CPPFLAGS=-I@srcdir@/../vmusb -I@srcdir@/.. \
     -I@top_srcdir@/sbs/readout @LIBTCLPLUS_CFLAGS@ @TCL_CPPFLAGS@
 
-VMUSBnostackReadout_LDADD=@top_builddir@/sbs/readout/libSBSProductionReazdout \
-    @builddir@/../VMUSB @LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
+VMUSBnostackReadout_LDADD=@top_builddir@/sbs/readout/libSBSProductionReadout.la \
+    @builddir@/../../common/configurableobject/libConfigurableObject.la \
+    @builddir@/../vmusb/libVMUSB.la @LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@

@@ -19,7 +19,7 @@
 #include <TCLInterpreter.h>
 #include <CTimedTrigger.h>
 #include <CConfigurableCompoundEventSegment.h>
-#include <CSISScalerBank.h>
+#include <CSIS3820ScalerBank.h>
 #include <CSIS3316Trigger.h>
 #include <CVMUSBBusy.h>
 #include <stdlib.h>
@@ -71,8 +71,8 @@ class CTheApplication;
 
 namespace Globals {
   CConfiguration*    pConfig(0);
-  string             configurationFilename;
-  string             controlConfigFilename;
+  std::string             configurationFilename;
+  std::string             controlConfigFilename;
   CVMUSB*            pUSBController(0);
   bool               running(false);
   TclServer*         pTclServer(0);     
@@ -169,7 +169,7 @@ Skeleton::SetupReadout(CExperiment* pExperiment)
   *   DAQCONFIG
   *   Add more event segments as you choose.
   */
-  const char* sis_configfile = getenv("DAQCONFIG");
+  const char* daq_configfile = getenv("DAQCONFIG");
   if (!daq_configfile) {
     std::cerr << 
        "********************************* FATAL ***************************\n"
@@ -177,7 +177,7 @@ Skeleton::SetupReadout(CExperiment* pExperiment)
       <<"and has not\nExiting";
       exit(EXIT_FAILURE);
   }
-  auto pSegment = new CConfigurabvleCompoundEventSegment(daq_configfle);
+  auto pSegment = new CConfigurableCompoundEventSegment(daq_configfile);
   pExperiment->AddEventSegment(pSegment);
   pExperiment->EstablishTrigger(new CSIS3316Trigger(pSegment));
   pExperiment->EstablishBusy(new CVMUSBBusy);
@@ -221,7 +221,7 @@ Skeleton::SetupScalers(CExperiment* pExperiment)
     exit(EXIT_FAILURE); 
   }
   auto pBank = new CSIS3820ScalerBank(pConfigFile);
-  pExperiment->addScalerModule(pBank);
+  pExperiment->AddScalerModule(pBank);
 
 }
 /*!
