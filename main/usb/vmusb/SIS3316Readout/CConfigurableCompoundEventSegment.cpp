@@ -24,7 +24,7 @@
 #include "CSIS3820TimestampEventSegment.h"
 #include "CVMUSBEventSegment.h"
 #include <TCLInterpreter.h>
-#include <TCLOBject.h>
+#include <TCLObject.h>
 #include <typeinfo>
 #include "Exception.h"
 #include <sstream>
@@ -37,7 +37,7 @@
  *    @param pFilename - name of the configuration file that will be interpreted by initialize.
  */
 CConfigurableCompoundEventSegment::CConfigurableCompoundEventSegment(const char* pFilename) :
-    m_confrigFile(pFilename)
+    m_configFile(pFilename)
 {}
 
 /** 
@@ -57,12 +57,12 @@ CConfigurableCompoundEventSegment::initialize() {
     // Clear the event segments .. configureModules will make the appropriate set:
 
     while(size()) {                // Loop until all are deleted.
-        auto pSegment = *(begin()); // Delete the first one....
+        auto pSegment = reinterpret_cast<CEventSegment*>(*begin()); // Delete the first one....
         DeleteEventSegment(pSegment);
         delete pSegment;
     }
 
-    configureModules()
+    configureModules();
     CCompoundEventSegment::initialize();
 }
 /**
@@ -80,13 +80,12 @@ CConfigurableCompoundEventSegment::initialize() {
 bool
 CConfigurableCompoundEventSegment::any3316Readable() {
     for (auto p: *this) {
-        CSIS3316EventSegment* pSegment = dynamic_cast<CSIS33186EventSegment*>(p) {
-            if (pSegment->readable()) {
-                return true;
-            }
+        CSIS3316EventSegment* pSegment = dynamic_cast<CSIS3316EventSegment*>(p);
+        if (pSegment && pSegment->readable()) {    // It's a 3316 and it's readable....
+            return true;
         }
     }
-    return false;
+    return false; 
 }
 
 
@@ -102,10 +101,10 @@ CConfigurableCompoundEventSegment::any3316Readable() {
 void
 CConfigurableCompoundEventSegment::configureModules() {
     CTCLInterpreter interp;
-    std::unique_ptr<CSIS3316Command> pSIS3316Command(new CSIS3316Command(interp, this));
-    std::unique_ptr<CV977Command>    pv977Command(new CV977Command(interp, this)); 
-    std::unique_ptr<C3820Command>    pTsCommand(new C3820COmmand(interp, this));
-    std::unique_ptr<CVMUSBCommand    pVMUSBCOmmand(new CVMUSBCOmmand(interp, this));
+    std::unique_ptr<CSIS3316Command> pSIS3316Command(new CSIS3316Command(interp, *this));
+    std::unique_ptr<CV977Command>    pv977Command(new CV977Command(interp, *this)); 
+    std::unique_ptr<C3820Command>    pTsCommand(new C3820Command(interp, *this));
+    std::unique_ptr<CVMUSBCommand>    pVMUSBCommand(new CVMUSBCommand(interp, *this));
 
     interp.EvalFile(m_configFile);
 
@@ -126,7 +125,7 @@ CConfigurableCompoundEventSegment::configureModules() {
  *    @param interp - interpreter on which the sis3316 command is registered.
  *    @param segment - the compound event segment that will be handling us.
  */
-CMDCLASS::CMDCLASS(
+CMDCLASS::CSIS3316Command(
     CTCLInterpreter& interp, CConfigurableCompoundEventSegment& segment
 ) : CTCLObjectProcessor(interp, "sis3316", true),
     m_pSegment(&segment)
@@ -136,7 +135,7 @@ CMDCLASS::CMDCLASS(
 /**
  *  destructor is null.
  */
-CMDCLASS::~CMDCLASS() {
+CMDCLASS::~CSIS3316Command() {
 
 }
 
@@ -167,7 +166,7 @@ CMDCLASS::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
             create(interp, objv);
         } else if (subcommand == "config") {
             config(interp, objv);
-        } else if (subcommmand == "cget") {
+        } else if (subcommand == "cget") {
             cget(interp, objv);
         } else {                       // Invalid subcommand:
             throwException(interp, "Invalid subcommand", objv);
@@ -178,7 +177,7 @@ CMDCLASS::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
         strmsg << msg << std::endl;
         strmsg << "While executing \n";
         for(auto o : objv) {
-            strmsg << std::string(objv) << " " ;
+            strmsg << std::string(o) << " " ;
         }       
         strmsg << std::endl;
 
@@ -209,7 +208,7 @@ CMDCLASS::create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     // We already are assured there's a name:
 
     std::string name = objv[2];
-    if(findSegment(name.c_str()) {
+    if(findSegment(name.c_str())) {
         throwException(interp, "This digitizer already exists", objv);
     }
 
@@ -230,7 +229,7 @@ CMDCLASS::create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     // If we got here everything worked so we can add the module to the
     // compound segement:
 
-    m_pSegment->AddSegment(pModule);
+    m_pSegment->AddEventSegment(pModule);
     interp.setResult(name);           // Result is the name of the created module.
 
 }
@@ -260,7 +259,7 @@ CMDCLASS::config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
             "At least one configuration option does not have a value", objv
         );  
     }
-    for (optidx = 3; optidx < objv.size(); optidx += 2) {
+    for (int optidx = 3; optidx < objv.size(); optidx += 2) {
         config1(pModule, objv, optidx);
     }
     // Everything worked if we got here:
@@ -284,7 +283,7 @@ CMDCLASS::config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
  * @param objv   - The command words encapsulated in CTCLObject's.
  */
 void
-CMDCLASS::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
+CMDCLASS::cget(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     std::string name = objv[2];
     auto pModule = findSegment(name.c_str());
     if (!pModule ) {
@@ -303,13 +302,13 @@ CMDCLASS::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
         CTCLObject result;
         result.Bind(interp);
         for (auto optval : fullConfig) {
-            CTCLObject option; option.Bind();
+            CTCLObject option; option.Bind(interp);
             option = std::string(optval.first);
 
-            CTCLObject value; value.Bind();
+            CTCLObject value; value.Bind(interp);
             value = std::string(optval.second);
 
-            CTCLObject element; element.Bind();
+            CTCLObject element; element.Bind(interp);
             element += option; 
             element += value;
 
@@ -338,7 +337,7 @@ CMDCLASS::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
 void
 CMDCLASS::config1(
     CSIS3316EventSegment* pModule, 
-    std::vector<CCLObject>& objv, int optionIndex) 
+    std::vector<CTCLObject>& objv, int optionIndex) 
 {
     std::string option = objv[optionIndex];
     std::string value  = objv[optionIndex + 1];   // String rep is fine:
@@ -372,7 +371,7 @@ CMDCLASS::findSegment(const char* name) {
 
 
 #undef CMDCLASS
-#define CMDCLASS CConfigurableCompoundEventSegment::Cv977Command
+#define CMDCLASS CConfigurableCompoundEventSegment::CV977Command
 
 
 /**
@@ -380,7 +379,7 @@ CMDCLASS::findSegment(const char* name) {
  *    @param interp - interpreter on which the sis3316 command is registered.
  *    @param segment - the compound event segment that will be handling us.
  */
-CMDCLASS::CMDCLASS(
+CMDCLASS::CV977Command(
     CTCLInterpreter& interp, CConfigurableCompoundEventSegment& segment
 ) : CTCLObjectProcessor(interp, "v977", true),
     m_pSegment(&segment)
@@ -390,7 +389,7 @@ CMDCLASS::CMDCLASS(
 /**
  *  destructor is null.
  */
-CMDCLASS::~CMDCLASS() {
+CMDCLASS::~CV977Command() {
 
 }
 
@@ -421,7 +420,7 @@ CMDCLASS::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
             create(interp, objv);
         } else if (subcommand == "config") {
             config(interp, objv);
-        } else if (subcommmand == "cget") {
+        } else if (subcommand == "cget") {
             cget(interp, objv);
         } else {                       // Invalid subcommand:
             throwException(interp, "Invalid subcommand", objv);
@@ -432,7 +431,7 @@ CMDCLASS::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
         strmsg << msg << std::endl;
         strmsg << "While executing \n";
         for(auto o : objv) {
-            strmsg << std::string(objv) << " " ;
+            strmsg << std::string(o) << " " ;
         }       
         strmsg << std::endl;
 
@@ -463,7 +462,7 @@ CMDCLASS::create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     // We already are assured there's a name:
 
     std::string name = objv[2];
-    if(findSegment(name.c_str()) {
+    if(findSegment(name.c_str())) {
         throwException(interp, "This digitizer already exists", objv);
     }
 
@@ -484,7 +483,7 @@ CMDCLASS::create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     // If we got here everything worked so we can add the module to the
     // compound segement:
 
-    m_pSegment->AddSegment(pModule);
+    m_pSegment->AddEventSegment(pModule);
     interp.setResult(name);           // Result is the name of the created module.
 
 }
@@ -514,7 +513,7 @@ CMDCLASS::config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
             "At least one configuration option does not have a value", objv
         );  
     }
-    for (optidx = 3; optidx < objv.size(); optidx += 2) {
+    for (int optidx = 3; optidx < objv.size(); optidx += 2) {
         config1(pModule, objv, optidx);
     }
     // Everything worked if we got here:
@@ -538,7 +537,7 @@ CMDCLASS::config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
  * @param objv   - The command words encapsulated in CTCLObject's.
  */
 void
-CMDCLASS::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
+CMDCLASS::cget(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     std::string name = objv[2];
     auto pModule = findSegment(name.c_str());
     if (!pModule ) {
@@ -557,13 +556,13 @@ CMDCLASS::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
         CTCLObject result;
         result.Bind(interp);
         for (auto optval : fullConfig) {
-            CTCLObject option; option.Bind();
+            CTCLObject option; option.Bind(interp);
             option = std::string(optval.first);
 
-            CTCLObject value; value.Bind();
+            CTCLObject value; value.Bind(interp);
             value = std::string(optval.second);
 
-            CTCLObject element; element.Bind();
+            CTCLObject element; element.Bind(interp);
             element += option; 
             element += value;
 
@@ -592,7 +591,7 @@ CMDCLASS::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
 void
 CMDCLASS::config1(
     CV977EventSegment* pModule, 
-    std::vector<CCLObject>& objv, int optionIndex) 
+    std::vector<CTCLObject>& objv, int optionIndex) 
 {
     std::string option = objv[optionIndex];
     std::string value  = objv[optionIndex + 1];   // String rep is fine:
@@ -623,7 +622,7 @@ CMDCLASS::findSegment(const char* name) {
 }
 ////////////////////////////////////////////// C3820Command implementation ///////////////////////////
 
-typedef C3820Command CConfigurableCompoundEventSegment::C3820Command;
+typedef  CConfigurableCompoundEventSegment::C3820Command C3820Command;
 /**
  * constructor:
  *    @param interp - interpreter on which the sis3316 command is registered.
@@ -670,7 +669,7 @@ C3820Command::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv)
             create(interp, objv);
         } else if (subcommand == "config") {
             config(interp, objv);
-        } else if (subcommmand == "cget") {
+        } else if (subcommand == "cget") {
             cget(interp, objv);
         } else {                       // Invalid subcommand:
             throwException(interp, "Invalid subcommand", objv);
@@ -681,7 +680,7 @@ C3820Command::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv)
         strmsg << msg << std::endl;
         strmsg << "While executing \n";
         for(auto o : objv) {
-            strmsg << std::string(objv) << " " ;
+            strmsg << std::string(o) << " " ;
         }       
         strmsg << std::endl;
 
@@ -712,7 +711,7 @@ C3820Command::create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     // We already are assured there's a name:
 
     std::string name = objv[2];
-    if(findSegment(name.c_str()) {
+    if(findSegment(name.c_str())) {
         throwException(interp, "This digitizer already exists", objv);
     }
 
@@ -733,7 +732,7 @@ C3820Command::create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     // If we got here everything worked so we can add the module to the
     // compound segement:
 
-    m_pSegment->AddSegment(pModule);
+    m_pSegment->AddEventSegment(pModule);
     interp.setResult(name);           // Result is the name of the created module.
 
 }
@@ -763,7 +762,7 @@ C3820Command::config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
             "At least one configuration option does not have a value", objv
         );  
     }
-    for (optidx = 3; optidx < objv.size(); optidx += 2) {
+    for (int optidx = 3; optidx < objv.size(); optidx += 2) {
         config1(pModule, objv, optidx);
     }
     // Everything worked if we got here:
@@ -787,7 +786,7 @@ C3820Command::config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
  * @param objv   - The command words encapsulated in CTCLObject's.
  */
 void
-C3820Command::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
+C3820Command::cget(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     std::string name = objv[2];
     auto pModule = findSegment(name.c_str());
     if (!pModule ) {
@@ -806,13 +805,13 @@ C3820Command::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
         CTCLObject result;
         result.Bind(interp);
         for (auto optval : fullConfig) {
-            CTCLObject option; option.Bind();
+            CTCLObject option; option.Bind(interp);
             option = std::string(optval.first);
 
-            CTCLObject value; value.Bind();
+            CTCLObject value; value.Bind(interp);
             value = std::string(optval.second);
 
-            CTCLObject element; element.Bind();
+            CTCLObject element; element.Bind(interp);
             element += option; 
             element += value;
 
@@ -840,8 +839,8 @@ C3820Command::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
  */
 void
 C3820Command::config1(
-    CSIS3820Timestamp+EventSegment* pModule, 
-    std::vector<CCLObject>& objv, int optionIndex) 
+    CSIS3820TimestampEventSegment* pModule, 
+    std::vector<CTCLObject>& objv, int optionIndex) 
 {
     std::string option = objv[optionIndex];
     std::string value  = objv[optionIndex + 1];   // String rep is fine:
@@ -863,7 +862,7 @@ C3820Command::findSegment(const char* name) {
     // I think this works since m_pSegment has iterators...
 
     for (auto p : *m_pSegment) {
-        CVSIS3820TimestampEventSegment* pSeg = dynamic_cast<CSIS3820TimestampEventSegment*>(p);
+        CSIS3820TimestampEventSegment* pSeg = dynamic_cast<CSIS3820TimestampEventSegment*>(p);
         if (pSeg && pSeg->getName() == n) {
             return pSeg;
         }
@@ -873,7 +872,7 @@ C3820Command::findSegment(const char* name) {
 
 //////////////////////////// Implement CVMUSBCommand
 
-typedef CVMUSBComand CConfigurableCompoundEventSegment::CVMUSBCOmmand;
+typedef  CConfigurableCompoundEventSegment::CVMUSBCommand CVMUSBCommand;
 
 /**
  * constructor:
@@ -921,7 +920,7 @@ CVMUSBCommand::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv
             create(interp, objv);
         } else if (subcommand == "config") {
             config(interp, objv);
-        } else if (subcommmand == "cget") {
+        } else if (subcommand == "cget") {
             cget(interp, objv);
         } else {                       // Invalid subcommand:
             throwException(interp, "Invalid subcommand", objv);
@@ -932,7 +931,7 @@ CVMUSBCommand::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv
         strmsg << msg << std::endl;
         strmsg << "While executing \n";
         for(auto o : objv) {
-            strmsg << std::string(objv) << " " ;
+            strmsg << std::string(o) << " " ;
         }       
         strmsg << std::endl;
 
@@ -963,7 +962,7 @@ CVMUSBCommand::create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     // We already are assured there's a name:
 
     std::string name = objv[2];
-    if(findSegment(name.c_str()) {
+    if(findSegment(name.c_str())) {
         throwException(interp, "This digitizer already exists", objv);
     }
 
@@ -984,7 +983,7 @@ CVMUSBCommand::create(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     // If we got here everything worked so we can add the module to the
     // compound segement:
 
-    m_pSegment->AddSegment(pModule);
+    m_pSegment->AddEventSegment(pModule);
     interp.setResult(name);           // Result is the name of the created module.
 
 }
@@ -1014,7 +1013,7 @@ CVMUSBCommand::config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
             "At least one configuration option does not have a value", objv
         );  
     }
-    for (optidx = 3; optidx < objv.size(); optidx += 2) {
+    for (int optidx = 3; optidx < objv.size(); optidx += 2) {
         config1(pModule, objv, optidx);
     }
     // Everything worked if we got here:
@@ -1038,7 +1037,7 @@ CVMUSBCommand::config(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
  * @param objv   - The command words encapsulated in CTCLObject's.
  */
 void
-CVMUSBCommand::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
+CVMUSBCommand::cget(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     std::string name = objv[2];
     auto pModule = findSegment(name.c_str());
     if (!pModule ) {
@@ -1057,13 +1056,13 @@ CVMUSBCommand::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
         CTCLObject result;
         result.Bind(interp);
         for (auto optval : fullConfig) {
-            CTCLObject option; option.Bind();
+            CTCLObject option; option.Bind(interp);
             option = std::string(optval.first);
 
-            CTCLObject value; value.Bind();
+            CTCLObject value; value.Bind(interp);
             value = std::string(optval.second);
 
-            CTCLObject element; element.Bind();
+            CTCLObject element; element.Bind(interp);
             element += option; 
             element += value;
 
@@ -1091,8 +1090,8 @@ CVMUSBCommand::cget(CTCLInterpreter& interp, std::vector<CTCLOjbect>& objv) {
  */
 void
 CVMUSBCommand::config1(
-    CSIS3820Timestamp+EventSegment* pModule, 
-    std::vector<CCLObject>& objv, int optionIndex) 
+    CVMUSBEventSegment* pModule, 
+    std::vector<CTCLObject>& objv, int optionIndex) 
 {
     std::string option = objv[optionIndex];
     std::string value  = objv[optionIndex + 1];   // String rep is fine:

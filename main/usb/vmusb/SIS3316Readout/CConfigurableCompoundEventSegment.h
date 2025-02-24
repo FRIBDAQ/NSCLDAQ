@@ -32,7 +32,7 @@ class CSIS3316EventSegment;
 class CSIS3820TimestampEventSegment;
 class CVMUSBEventSegment;
 class CV977EventSegment;
-class C3820EventSegment;
+
 /**
  *  @class CConfigurableCompoundEventSegment
  * 
@@ -54,9 +54,9 @@ class C3820EventSegment;
  * All this would get us closer to DRY.
  */
 
- class CConfigurableCompoundEventSegment : public CCompoundEventSegment {
+class CConfigurableCompoundEventSegment : public CCompoundEventSegment {
     // Nested class for the sis3316 for the configuration script processing.
-
+public:
     class CSIS3316Command : public CTCLObjectProcessor {
         CConfigurableCompoundEventSegment* m_pSegment;
     public:
@@ -103,7 +103,7 @@ class C3820EventSegment;
     class C3820Command : public CTCLObjectProcessor {
         CConfigurableCompoundEventSegment* m_pSegment;
     public:
-        C3820Command(CTCLInterpreter& interp, const char* name);
+        C3820Command(CTCLInterpreter& interp, CConfigurableCompoundEventSegment& pSeg);
         virtual ~C3820Command();
 
     public:
@@ -114,10 +114,10 @@ class C3820EventSegment;
         void cget(CTCLInterpreter& interp, std::vector<CTCLObject>& objv);
 
         void config1(
-            C3820EventSegment* pModule, 
+            CSIS3820TimestampEventSegment* pModule, 
             std::vector<CTCLObject>& objv, int optionIndex
         );
-        C3820EventSegment* findSegment(const char* name);
+        CSIS3820TimestampEventSegment* findSegment(const char* name);
         void throwException(
             CTCLInterpreter& interp, const char* reason, 
             std::vector<CTCLObject>& objv
@@ -127,7 +127,7 @@ class C3820EventSegment;
     class CVMUSBCommand : public CTCLObjectProcessor {
         CConfigurableCompoundEventSegment* m_pSegment;
     public:
-        CVMUSBCommand(CTCLInterpreter& interp, const char* name);
+        CVMUSBCommand(CTCLInterpreter& interp, CConfigurableCompoundEventSegment& pSeg);
         virtual ~CVMUSBCommand();
 
     public:
