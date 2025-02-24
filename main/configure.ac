@@ -877,6 +877,7 @@ Makefile
 	usb/vmusb/sis3316examples/access_rate/Makefile
 	usb/vmusb/sis3316examples/rootgui/Makefile
 	usb/vmusb/sis3316examples/inventory/Makefile
+	usb/vmusb/SIS3316Readout/Makefile
     usb/ccusb/Makefile
     usb/ccusb/ccusb/Makefile 
     usb/ccusb/core/Makefile
