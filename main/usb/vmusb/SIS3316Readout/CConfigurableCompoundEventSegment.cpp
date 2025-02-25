@@ -26,6 +26,7 @@
 #include <TCLInterpreter.h>
 #include <TCLObject.h>
 #include <typeinfo>
+#include "TCLException.h"
 #include "Exception.h"
 #include <sstream>
 #include <XXUSBConfigurableObject.h>
@@ -366,7 +367,39 @@ CMDCLASS::findSegment(const char* name) {
     }
     return nullptr;
 }
+/**
+ * throwException
+ *    Throws a CTCLException.  The result contains
+ * a reason for the exception and the command that caused the 
+ * exception to fire.
+ * 
+ *  @param interp - the interpreter in which we'll throw the exception.
+ *  @param reason - the error message part of the text.
+ *  @param objv   - The command words.
+ *  @throw CTCLException.
+ */
+void
+CMDCLASS::throwException(
+    CTCLInterpreter& interp, const char* reason, 
+    std::vector<CTCLObject>& objv
+ )  {
+    // construct the error string:
 
+    std::stringstream strError;
+    strError << reason << std::endl;
+    strError << "Command was: \n";
+    for (auto& word : objv) {
+        strError << std::string(word) << " ";
+    }
+    strError << std::endl;
+
+    std::string error = strError.str();
+
+    throw CTCLException(
+        interp, TCL_ERROR, error
+    );
+
+ }
 ////////////////////////////////////////   Implement Cv977Command /////////////////////////////////////
 
 
@@ -620,6 +653,39 @@ CMDCLASS::findSegment(const char* name) {
     }
     return nullptr;
 }
+/**
+ * throwException
+ *    Throws a CTCLException.  The result contains
+ * a reason for the exception and the command that caused the 
+ * exception to fire.
+ * 
+ *  @param interp - the interpreter in which we'll throw the exception.
+ *  @param reason - the error message part of the text.
+ *  @param objv   - The command words.
+ *  @throw CTCLException.
+ */
+void
+CMDCLASS::throwException(
+    CTCLInterpreter& interp, const char* reason, 
+    std::vector<CTCLObject>& objv
+ )  {
+    // construct the error string:
+
+    std::stringstream strError;
+    strError << reason << std::endl;
+    strError << "Command was: \n";
+    for (auto& word : objv) {
+        strError << std::string(word) << " ";
+    }
+    strError << std::endl;
+
+    std::string error = strError.str();
+
+    throw CTCLException(
+        interp, TCL_ERROR, error
+    );
+
+ }
 ////////////////////////////////////////////// C3820Command implementation ///////////////////////////
 
 typedef  CConfigurableCompoundEventSegment::C3820Command C3820Command;
@@ -869,7 +935,39 @@ C3820Command::findSegment(const char* name) {
     }
     return nullptr;
 }
+/**
+ * throwException
+ *    Throws a CTCLException.  The result contains
+ * a reason for the exception and the command that caused the 
+ * exception to fire.
+ * 
+ *  @param interp - the interpreter in which we'll throw the exception.
+ *  @param reason - the error message part of the text.
+ *  @param objv   - The command words.
+ *  @throw CTCLException.
+ */
+void
+C3820Command::throwException(
+    CTCLInterpreter& interp, const char* reason, 
+    std::vector<CTCLObject>& objv
+ )  {
+    // construct the error string:
 
+    std::stringstream strError;
+    strError << reason << std::endl;
+    strError << "Command was: \n";
+    for (auto& word : objv) {
+        strError << std::string(word) << " ";
+    }
+    strError << std::endl;
+
+    std::string error = strError.str();
+
+    throw CTCLException(
+        interp, TCL_ERROR, error
+    );
+
+ }
 //////////////////////////// Implement CVMUSBCommand
 
 typedef  CConfigurableCompoundEventSegment::CVMUSBCommand CVMUSBCommand;
@@ -1120,3 +1218,36 @@ CVMUSBCommand::findSegment(const char* name) {
     }
     return nullptr;
 }
+/**
+ * throwException
+ *    Throws a CTCLException.  The result contains
+ * a reason for the exception and the command that caused the 
+ * exception to fire.
+ * 
+ *  @param interp - the interpreter in which we'll throw the exception.
+ *  @param reason - the error message part of the text.
+ *  @param objv   - The command words.
+ *  @throw CTCLException.
+ */
+void
+CVMUSBCommand::throwException(
+    CTCLInterpreter& interp, const char* reason, 
+    std::vector<CTCLObject>& objv
+ )  {
+    // construct the error string:
+
+    std::stringstream strError;
+    strError << reason << std::endl;
+    strError << "Command was: \n";
+    for (auto& word : objv) {
+        strError << std::string(word) << " ";
+    }
+    strError << std::endl;
+
+    std::string error = strError.str();
+
+    throw CTCLException(
+        interp, TCL_ERROR, error
+    );
+
+ }
