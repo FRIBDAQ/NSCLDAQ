@@ -114,7 +114,7 @@ CSIS3316EventSegment::initialize() {
     delete m_pVME;
     m_pVME = new sis_vmusb_interface;          // Fishes the VMUSB from Globals.
     m_pModule = new sis3316_adc(
-        m_pVME, m_pConfiguration->getUnsignedParameter("base")  // Our base was configured.
+        m_pVME, m_pConfiguration->getUnsignedParameter("-base")  // Our base was configured.
     );
 
 
