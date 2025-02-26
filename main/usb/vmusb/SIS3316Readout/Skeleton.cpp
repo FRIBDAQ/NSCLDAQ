@@ -214,9 +214,9 @@ Skeleton::SetupScalers(CExperiment* pExperiment)
   // Add a CSISScalerBank - which can configure multiple scalers....the env SISSCALERCONFIG
   // points to the scaler configuration file:
 
-  const char* pConfigFile = getenv("SISSCALERCONFIG");
+  const char* pConfigFile = getenv("SCALERCONFIGFILE");
   if(!pConfigFile) {
-    std::cerr << "***** ERROR the SISSCALERCONFIG environment variable needs to be defined and \n";
+    std::cerr << "***** ERROR the SCALERCONFIGFILE environment variable needs to be defined and \n";
     std::cerr << "***** and must point to a scaler configuration file\n";
     exit(EXIT_FAILURE); 
   }
