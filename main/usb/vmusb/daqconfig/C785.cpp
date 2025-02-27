@@ -273,17 +273,19 @@ C785::addToChain(CVMUSB& controller,
    values  The parameters that have default values are:
 
 \verbatim
-   Parameter        Default
-   -thresholds      list of 32 0's.
-   -smallthresholds false
-   -ipl             6 (interrupt 6 is expected by the rdo thread.
-   -vector          0x80
-   -highwater       MEBDepth*3/4  (3/4 full event buffer).
-   -fastclear       0
-   -supressrange    true
-   -timescale       600 (ns).  (775 only)
-   -commonstop      false      (775 only)
-   -iped            180        (QDC's only).
+   Parameter                 Default
+   -thresholds               list of 32 0's.
+   -smallthresholds          false
+   -ipl                      6 (interrupt 6 is expected by the rdo thread.
+   -vector                   0x80
+   -highwater                MEBDepth*3/4  (3/4 full event buffer).
+   -fastclear                0
+   -supressrange             true
+   -supressunderthreshold    true
+   -supressoverflow          true
+   -timescale                600 (ns).  (775 only)
+   -commonstop               false      (775 only)
+   -iped                     180        (QDC's only).
 \endverbatim
 
    All others have no default values.   If, during initialization one of those
@@ -326,6 +328,10 @@ C785::onAttach(CReadoutModule& configuration)
 				 &fcRange, "0");
   m_pConfiguration->addParameter("-supressrange", XXUSB::CConfigurableObject::isBool,
 				 NULL, "true");
+  m_pConfiguration->addParameter("-supressunderthreshold", XXUSB::CConfigurableObject::isBool,
+				 NULL, "false");
+  m_pConfiguration->addParameter("-supressoverflow", XXUSB::CConfigurableObject::isBool,
+				 NULL, "false");
   m_pConfiguration->addParameter("-timescale", XXUSB::CConfigurableObject::isInteger,
 				 &tsRange, "600");
 
@@ -444,11 +450,33 @@ C785::Initialize(CVMUSB& controller)
 
   bool supressed = getBoolParameter("-supressrange");
   if (!supressed) {		// Set means disable checks.
-    controller.vmeWrite16(base+BSet2, initamod, (uint16_t)0x38);
+    controller.vmeWrite16(base+BSet2, initamod, (uint16_t)0x18);
   }
   else {
-    controller.vmeWrite16(base+BClear2, initamod, (uint16_t)0x38);
+    controller.vmeWrite16(base+BClear2, initamod, (uint16_t)0x18);
   }
+
+	if (!supressed) {
+		// Set the supression of under threshold.
+
+		bool underthresholdsupressed = getBoolParameter("-supressunderthreshold");
+		if (!underthresholdsupressed) {		// Set means disable checks.
+			controller.vmeWrite16(base+BSet2, initamod, (uint16_t)0x10);
+		}
+		else {
+			controller.vmeWrite16(base+BClear2, initamod, (uint16_t)0x10);
+		}
+
+		// Set the supression of overflow.
+
+		bool overflowsupressed = getBoolParameter("-supressoverflow");
+		if (!overflowsupressed) {		// Set means disable checks.
+			controller.vmeWrite16(base+BSet2, initamod, (uint16_t)0x8);
+		}
+		else {
+			controller.vmeWrite16(base+BClear2, initamod, (uint16_t)0x8);
+		}
+	}
 
   // If the user chooses to require data even if the module
   // is 'empty' take care of that too:

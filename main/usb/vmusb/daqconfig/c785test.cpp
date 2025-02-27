@@ -53,15 +53,17 @@ CPPUNIT_TEST_SUITE_REGISTRATION(c785test);
 // cause the right configuration entries and defaults to be made.
 //
 void c785test::attach() {
-  string base       = m_pConfig->cget("-base");
-  string geo        = m_pConfig->cget("-geo");
-  string thresholds = m_pConfig->cget("-thresholds");
-  string issmall    = m_pConfig->cget("-smallthresholds");
-  string ipl        = m_pConfig->cget("-ipl");
-  string vector     = m_pConfig->cget("-vector");
-  string highwater  = m_pConfig->cget("-highwater");
-  string fastclear  = m_pConfig->cget("-fastclear");
-  string suppress    = m_pConfig->cget("-supressrange");
+  string base                   = m_pConfig->cget("-base");
+  string geo                    = m_pConfig->cget("-geo");
+  string thresholds             = m_pConfig->cget("-thresholds");
+  string issmall                = m_pConfig->cget("-smallthresholds");
+  string ipl                    = m_pConfig->cget("-ipl");
+  string vector                 = m_pConfig->cget("-vector");
+  string highwater              = m_pConfig->cget("-highwater");
+  string fastclear              = m_pConfig->cget("-fastclear");
+  string suppress               = m_pConfig->cget("-supressrange");
+  string suppressunderthreshold = m_pConfig->cget("-supressunderthreshold");
+  string suppressoverflow       = m_pConfig->cget("-supressoverflow");
 
   // These don't have defaults and therefore should be blank:
 
@@ -79,7 +81,9 @@ void c785test::attach() {
   EQMSG("vector", string("0"), vector);
   EQMSG("highwater", string("24"), highwater);
   EQMSG("fastclear", string("0"), fastclear);
-  EQMSG("supress", string("true"), suppress);
+  EQMSG("supress", string("false"), suppress);
+  EQMSG("supressunderthreshold", string("true"), suppressunderthreshold);
+  EQMSG("supressoverflow", string("false"), suppressoverflow);
 }
 // Configure the module: -base = baseString
 //                       -geo  - 1
@@ -103,6 +107,9 @@ void c785test::init()
 "0 1  2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31");
   m_pConfig->configure("-smallthresholds", "on");
   m_pConfig->configure("-fastclear", "12");
+  m_pConfig->configure("-supressrange", true);
+  m_pConfig->configure("-supressunderthreshold", true);
+  m_pConfig->configure("-supressoverflow", false);
 
   vector<struct usb_device*> interfaces = CVMUSB::enumerate();
   CVMUSB vme(interfaces[0]);	// We assume there's at least one.
@@ -128,7 +135,7 @@ void c785test::init()
   vme.vmeRead16(base+0x1032, CVMUSBReadoutList::a32UserData, &value);
   EQMSG("Small thresholds", 0x100,  0x100 & value);
 
-  EQMSG("supression", 0x38, value & 0x38);
+  EQMSG("supression", 0x10, value & 0x18);
 
   // IPL == vector == 0:
 
@@ -151,7 +158,7 @@ void c785test::init()
   // Bitset 2 register should have all supression bits set.
 
   vme.vmeRead16(base+0x1032, CVMUSBReadoutList::a32UserData, &value);
-  EQMSG("supression", 0x38, value & 0x38);
+  EQMSG("supression", 0x10, value & 0x18);
 
   // Control register must have 0x24:
 
