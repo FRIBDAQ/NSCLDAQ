@@ -1,4 +1,7 @@
-== 12.1-005 ==
+== 12.1-007 ==
+== 12.1-007 ==
+
+== 12.1-006 ==
 * Add -supressunderthreshold and -supressoverflow options.
      - The options are valid only when -supressrange is false.
 == 12.1-006 ==
