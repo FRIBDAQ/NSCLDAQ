@@ -260,13 +260,13 @@ CSIS3316EventSegment::initialize() {
         }
 
 
-        // Set external trigger (I think) 0x80 set trigger function for TI,
-        // 0x10 is NIM input TI as trigger enable.
+        // Set external trigger  bit 4 is NIM INPUT as trigger enable (actuall
+        // Trigger function).
 
         m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
         
 
-        // Note 0x100 is FP trigger enable (I think)
+        // Note 0x100 is FP trigger enable according to Tino.
         // The write to the T0 select register allows a stretched trigger-> ADCFPGA
         // to be monitored on TO
         // The write to U0 select makes it monitor sample logic  ready.

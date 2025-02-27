@@ -96,8 +96,7 @@ public:
         );
         CV977EventSegment* findSegment(const char* name);
         void throwException(
-            CTCLInterpreter& interp, const char* reason, 
-            std::vector<CTCLObject>& objv
+            
         );
     }; 
     class C3820Command : public CTCLObjectProcessor {
