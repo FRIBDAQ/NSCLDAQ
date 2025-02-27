@@ -32,7 +32,7 @@
 #include <assert.h>
 #include <stdexcept>
 #include <sstream>
-
+#include <unistd.h>
 
 // Static data:
 //   The parameter constraints:
@@ -40,7 +40,7 @@
 // CLock sources:
 
 static const char* ClockSources[] = {
-    "fp", "250MHz","125Mhz", "50MHz", "25MHz", "12.5MHz", NULL
+    "fp", "250MHz","125MHz", "50MHz", "25MHz", "12.5MHz", NULL
 };
 
 static const uint64_t Zero(0);    // Shared low limit for many things.
@@ -136,9 +136,9 @@ CSIS3316EventSegment::initialize() {
     // and very likely it's true.
 
     m_pModule->register_write(SIS3316_KEY_RESET, 0);  // Module reset.
-    usleep(5*1000);                                   // wait. for it
+    usleep(10*1000);                                   // wait. for it
     m_pModule->register_write(SIS3316_KEY_ADC_FPGA_RESET, 0);  // Reset the FPGAs.
-    usleep(5*1000);                                   // Wait for it.
+    usleep(10*1000);                                   // Wait for it.
     m_pModule->register_write(SIS3316_KEY_DISARM, 0); // Keep disarmed.
     m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR, 0); 
 
@@ -263,7 +263,7 @@ CSIS3316EventSegment::initialize() {
         // Set external trigger  bit 4 is NIM INPUT as trigger enable (actuall
         // Trigger function).
 
-        m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
+        m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x90);
         
 
         // Note 0x100 is FP trigger enable according to Tino.
@@ -271,7 +271,7 @@ CSIS3316EventSegment::initialize() {
         // to be monitored on TO
         // The write to U0 select makes it monitor sample logic  ready.
 
-        m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
+        m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x8000);
         m_pModule->register_write(SIS3316_LEMO_OUT_TO_SELECT_REG, 0x02000000);
         m_pModule->register_write(SIS3316_LEMO_OUT_UO_SELECT_REG, 0x100);
         
