@@ -37,10 +37,17 @@
 #include <iostream>
 #include <cstdio>
 
+
+
+
 void usleep(unsigned int uint_usec);
+
 
 using namespace std;
 #endif
+
+static const unsigned  I2CSPIN_MAX(2000);                 // Max times for i2c busy poll.
+
 
 namespace SIS {
 	namespace ADC {
@@ -1448,10 +1455,10 @@ int sis3316_adc::I2cStart(uint32_t base)
 			return rc;
 		}
 		i++;
-	} while ((tmp & (1 << I2C_BUSY)) && (i < 1000));
+	} while ((tmp & (1 << I2C_BUSY)) && (i < I2CSPIN_MAX));
 
 	// register access problem
-	if (i == 1000)
+	if (i == I2CSPIN_MAX)
 	{
 		return -100;
 	}
@@ -1483,10 +1490,10 @@ int sis3316_adc::I2cStop(uint32_t base)
 			return rc;
 		}
 		i++;
-	} while ((tmp & (1 << I2C_BUSY)) && (i < 1000));
+	} while ((tmp & (1 << I2C_BUSY)) && (i < I2CSPIN_MAX));
 
 	// register access problem
-	if (i == 1000)
+	if (i == I2CSPIN_MAX)
 	{
 		return -100;
 	}
@@ -1518,10 +1525,10 @@ int sis3316_adc::I2cWriteByte(uint32_t base, unsigned char data, char* ack)
 			return rc;
 		}
 		i++;
-	} while ((tmp & (1 << I2C_BUSY)) && (i < 1000));
+	} while ((tmp & (1 << I2C_BUSY)) && (i < I2CSPIN_MAX));
 
 	// register access problem
-	if (i == 1000)
+	if (i == I2CSPIN_MAX)
 	{
 		return -100;
 	}
@@ -1563,10 +1570,10 @@ int sis3316_adc::I2cReadByte(uint32_t base, unsigned char* data, char ack)
 			return rc;
 		}
 		i++;
-	} while ((tmp & (1 << I2C_BUSY)) && (i < 1000));
+	} while ((tmp & (1 << I2C_BUSY)) && (i < I2CSPIN_MAX));
 
 	// register access problem
-	if (i == 1000)
+	if (i == I2CSPIN_MAX)
 	{
 		return -100;
 	}
