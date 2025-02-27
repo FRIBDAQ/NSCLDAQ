@@ -1,0 +1,211 @@
+<!-- chapter usr-guide -->
+<chapter>
+    <title>Non stack VMUSB Readout framwork <command>$DAQBIN/VMUSBnostackReadout</command></title>
+    <para>
+        This framework became available with NSCLDAQ-12.1-006.  
+        There are modules whose readout cannot be anaged via the set of
+        instructions the VMUSB can autonomously execute.  The specific
+        module that motivated this development is the SIS 3316 digitizer
+        module.
+    </para>
+    <para>
+        The architecture of that module consists of FPGAs associted with blocks of four
+        digitizer channels.  These ADCS digitizer into memory that is not visible from the VME.
+        When a readout is desired, the module must be told to begin transferring memory to the
+        VME FPGA's FIFO.  Readout can only proceed, when the transfer is complete.
+        This wait for the completion bits to be set cannot be done in the VMUSB stack,
+        and delays cannot be computed for this process either.
+    </para>
+    <para>
+        The approach taken, therefore was to develop a special version of th SBSReadout
+        framworks that uses the VM-USB only as a controller, without ever starting it in autonomous mode.
+        Configuring this readout is almost like configuring a VMUSBReadout, however there is no stack,
+        and only a few modules are supported:
+    </para>
+    <itemizedlist>
+        <listitem><para> SIS3316 digitizer (the motivation for this after all) </para></listitem>
+        <listitem><para> SIS3820 module as a timestamper.</para>/</listitem>
+        <listitem><para> CAEN V977 as a bit register (pattern register).</para></listitem>
+        <listitem><para> The VMUSB as a timestamp module</para></listitem>
+        <listitem><para> SIS3820 module as a scaler module
+
+    </itemizedlist>
+    <para>
+       Should this framework be more generally useful, more module can be added to it on request.
+    </para>
+    <section>
+        <title>Running the VMUSB no stack readout program</title>
+        <para>
+            This is a reference page for the VMUSB no stack readout program.
+        </para>
+        <refentry>
+            <refmeta>
+                <refentrytitle>VMUSBnostackReadout</refentrytitle>
+                <manvolnum>1daq</manvolnum>
+            </refmeta>
+            <refnamediv>
+                <refname>VMUSBnostackReadout</refname>
+                <refpurpose>Use VMUSB in non-atonomous mode in readout</refpurpose>
+            </refnamediv>
+            <refsynopsisdiv>
+                <cmdsynopsis><command>
+$DAQBIN/VMUSBnostackReadout <optional>option...</optional>
+                </command><cmdsynopsis>
+            </refsynopsisdiv>
+            <refsect1>
+                <title>ENVIRONMENT VARIABLES</title>
+                <para>
+                    The program requires two configuration files, One of them
+                    identifies the event modules to be read out in response to a trigger.
+                    The other describes the scaler modules to read.
+                </para>
+                <para>
+                    The SBSReadout framework VMUSBnostackReadout is based on does not have 
+                    options to specify these files.  Therefore the following two environment variable
+                    must be set:
+                </para>
+                <variablelist>
+                    <varlistentry>
+                        <term><literal>DAQCONFIG</literal></term>
+                        <listitem><para>
+                            Path to the event configuration file.  See
+                            <literal>EVENT CONFIGURATION FILE</literal> for the contents of this file.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><literal>SCALERCONFIGFILE</literal></term>
+                        <listitem><para>
+                            Path to the scaler configuratino file.  See <literal>SCALER CONFIGURATION</literal>
+                            for the contents of this.
+                        </para></listitem>
+                    </varlistentry>
+                </variablelist>
+            </refsect1>
+            <refsect1>
+                <title>PROGRAM OPTIONS</title>
+                <variablelist>
+                    <varlistentry>
+                        <term><option>--help</option> </term>
+                        <listitem><para>
+                            Prints out the program options and their meanings.  The program then exits without
+                            doing anything else useful.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--version</option> </term>
+                        <listitem><para>
+                            Prints out the version of the SBSreadout framework used.   The program then exits
+                            without doing anything else useful.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--port</option> <replaceable>string</replaceable></term>
+                        <listitem><para>
+                            Enables the Tcl server built into the SBS readout framework.  If the parameter is an integer
+                            is is the port number the server will listen on.  If a string the port is allocated by the port
+                            manager and advertised by it with the string.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--ring</option> <replaceable>name</replaceable></term>
+                        <listitem><para>
+                          Specifies the name (not URI) of the ringbuffer into which data are put.  Note that
+                          if not supplied the user name will be used for the ring name..
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--sourcdeid</option> <replaceable>integer</replaceable> </term>
+                        <listitem><para>
+                            provides the source id to be associated with this readout in the event builder.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--init-script</option> <replaceable>path</replacdeable></term>
+                        <listitem><para>
+                        If provided this must be the path to a Tcl script that will be run when the program
+                        starts. Defaults to 0.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--log</option> <replaceable>path</replaceable></term>
+                        <listitem><para>
+                            If present, provides the path to a log file for logging output.  If not,
+                            supplied, no logging is done.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--debug</option> <replaceable>0 | 1 | 2</replaceable></term>
+                        <listitem><para>
+                          Describes the verbosity level of logging. 0 logs the least amount of stuff 2 the most.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--no-barriers</option> </term>
+                        <listitem><para>
+                        If present, run state change items will not participate in barrier synchronization.  All
+                        readouts must use this or none. 
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--vme-lock</option> </term>
+                        <listitem><para>
+                        Should be used - serializes access to the VME bus between threads.
+                        </para></listitem>
+                    </varlistentry>
+                </variablelist>
+            </refsect1>
+            <refsect1>
+                <title>EVENT CONFIGURATION FILE</title>
+                <para>
+                  This section describes the general format of the Event configuration file.  For specific
+                  module commands, see  <literal>Supported Event Modules</literal> after the man page.
+                  The event configuration file is processed whenever  a run starts.
+                </para>
+                    The event configuration file is specified by defining the environment variable
+                    <literal>DAQCONFIG</literal> to be a path to it.
+                    It is Tcl script and all Tcl core commands are available.  additional
+                    module commands are defined (see <literal>Supported Event Modules</literal>).
+                    Each module command is a comman ensemble with the subcommands:
+                </para>
+                <variablelist>
+                    <varlistentry>
+                        <term><command>create</command></term>
+                        <listitem><para>
+                            Defines a new module.  This command will take a module name, which must be 
+                            unique.  Optional configuration parameters are also allowed.
+                            The temporal order in which modules are created determines the readout order.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><command>config</command></term>
+                        <listitem><para>
+                            Configures a modules.   This command will take the name of a module that has been
+                            created and configuration parameters.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><command>cget</command></term>
+                        <listitem><para>
+                         Fetches configuration infoirmation.  This commanne takes the name of a module
+                         that has already been created and optionally a configuration option.
+                         If an option is supplied, the value of that option is returned, if not a Tcl list
+                         of two element sublists containing the option names and values of all configuration options
+                         for that module type.
+                        </para></listitem>
+                    </varlistentry>
+                </variablelist>
+            </refsect1>
+            <refsect1>
+                <title>SCALER CONFIGURATION</title>
+            </refsect1>
+        </refentry>
+    </section>
+    <section>
+        <title>Supported Event Modules</title>
+    </section>
+    <section>
+        <title>Supported Scaler modules</title>
+    </section>
+</chapter>
+
+<!-- /chapter -->
