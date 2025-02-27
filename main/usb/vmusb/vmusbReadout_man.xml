@@ -266,14 +266,15 @@ caenv956 cget <replaceable>name</replaceable>
             <term><command>-supressunderthreshold</command> <replaceable>bool</replaceable></term>
             <listitem>
                <para>
-								 If <literal>true</literal> when <command>-supressrange</command> is
+								 If <literal>false</literal> when <command>-supressrange</command> is
 								 <literal>false</literal>, the module will only suppress under threshold
 								 conversion. If not all channels over threshold will supply data for an
-								 event. In most cases, this should be set to <literal>false</literal>.
-								 This defaults to <literal>false</literal>
+								 event. In most cases, this should be set to <literal>true</literal>.
+								 This defaults to <literal>false</literal> because this is in effect
+								 when <command>-supressrange</command> is set <literal>false</literal>.
                </para>
 							 <para>
-								 When enabled, 13th bit of a data word will be set 1 if the data is
+								 When enabled, 13th bit (0x2000) of a data word will be set 1 if the data is
 								 under threshold.
 							 </para>
 							 <para>
@@ -286,14 +287,15 @@ caenv956 cget <replaceable>name</replaceable>
             <term><command>-supressoverflow</command> <replaceable>bool</replaceable></term>
             <listitem>
                <para>
-								 If <literal>true</literal> when <command>-supressrange</command> is
+								 If <literal>false</literal> when <command>-supressrange</command> is
 								 <literal>false</literal>, the module will only suppress overflow
 								 conversion. If not all channels over threshold will supply data for an
-								 event. In most cases, this should be set to <literal>false</literal>.
-								 This defaults to <literal>false</literal>
+								 event. In most cases, this should be set to <literal>true</literal>.
+								 This defaults to <literal>false</literal> because this is in effect
+								 when <command>-supressrange</command> is set <literal>false</literal>.
                </para>
 							 <para>
-								 When enabled, 12th bit of a data word will be set 1 if the data is
+								 When enabled, 12th bit (0x1000) of a data word will be set 1 if the data is
 								 overflow.
 							 </para>
 							 <para>
