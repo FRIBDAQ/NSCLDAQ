@@ -270,10 +270,14 @@ CSIS3316EventSegment::initialize() {
         // The write to the T0 select register allows a stretched trigger-> ADCFPGA
         // to be monitored on TO
         // The write to U0 select makes it monitor sample logic  ready.
+        // TO - trigger signal (stretched).
+        // C0 - Sampling clock.
+        // U0 - sample logic ready.
 
         m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
         m_pModule->register_write(SIS3316_LEMO_OUT_TO_SELECT_REG, 0x02000000);
         m_pModule->register_write(SIS3316_LEMO_OUT_UO_SELECT_REG, 0x100);
+        m_pModule->register_write(SIS3316_LEMO_OUT_CO_SELECT_REG, 1);
         
         // Set the enables for each ADC.
 
