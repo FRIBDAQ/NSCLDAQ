@@ -8,6 +8,7 @@
     *   Provide VMUSBnostackReadout = VMUSBReadout framework without stacks.
     simplest way to debug the SIS3316 Readout.
     *   Provide sis3316 configurable module for VMUSBReadout.
+* Use tomli Python package instead of tomllib in Bullseye
 == 12.1-007 ==
 
 == 12.1-006 ==
@@ -29,6 +30,8 @@ the VMUSB interface.
 *  Add configuration option to support tossing a -j to the makes for incorporated pacakges
 *  Adjust timestamp DDAS simulator CFD computations when the ns timestamp is exa tly betwween two ticks.
 * Put the correct barrier flags on the state change items in the DDAS Simulator.
+== 12.1-004 ==
+
 == 12.1-003 ==
 * Use DDASFormat 1.1-002, ddasfmt namespace for DDASHit, DDASHitUnpacker
 * Update QtScope fitting to use Poisson or Gaussian MLE
@@ -42,7 +45,7 @@ the VMUSB interface.
 * VMUSBReadout
     -  In 'adc' module add -inputs option so SpecTcl can distinguish N modules and handle channel numbers properly.
     -  Fix errors in documentation that made docbook fail.7
-== 12.1-004 ==
+== 12.1-003 ==
 
 == 12.1-002 ==
 == 12.1-002 ==
