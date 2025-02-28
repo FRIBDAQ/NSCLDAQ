@@ -57,6 +57,7 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/usb/usb1 \
 	@top_srcdir@/usb/vmusb \
 	@top_srcdir@/usb/ccusb \
+	@top_srcdir@/usb/vmusb/SIS3316Readout \
 	@top_srcdir@/daq/readoutgui \
 	@top_srcdir@/utilities/logbook \
 	@top_srcdir@/daq/eventbuilder \

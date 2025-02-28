@@ -37,3 +37,5 @@ VMUSBnostackReadout_CPPFLAGS=-I@srcdir@/../vmusb -I@srcdir@/.. \
 VMUSBnostackReadout_LDADD=@top_builddir@/sbs/readout/libSBSProductionReadout.la \
     @builddir@/../../common/configurableobject/libConfigurableObject.la \
     @builddir@/../vmusb/libVMUSB.la @LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
+
+EXTRA_DIST=VMUSBnostackReadout.xml

@@ -1,4 +1,4 @@
-<!-- chapter usr-guide -->
+<!-- chapter user-guide -->
 <chapter>
     <title>Non stack VMUSB Readout framwork <command>$DAQBIN/VMUSBnostackReadout</command></title>
     <para>
@@ -24,10 +24,10 @@
     </para>
     <itemizedlist>
         <listitem><para> SIS3316 digitizer (the motivation for this after all) </para></listitem>
-        <listitem><para> SIS3820 module as a timestamper.</para>/</listitem>
+        <listitem><para> SIS3820 module as a timestamper.</para></listitem>
         <listitem><para> CAEN V977 as a bit register (pattern register).</para></listitem>
         <listitem><para> The VMUSB as a timestamp module</para></listitem>
-        <listitem><para> SIS3820 module as a scaler module
+        <listitem><para> SIS3820 module as a scaler module</para></listitem>
 
     </itemizedlist>
     <para>
@@ -50,7 +50,7 @@
             <refsynopsisdiv>
                 <cmdsynopsis><command>
 $DAQBIN/VMUSBnostackReadout <optional>option...</optional>
-                </command><cmdsynopsis>
+                </command></cmdsynopsis>
             </refsynopsisdiv>
             <refsect1>
                 <title>ENVIRONMENT VARIABLES</title>
@@ -120,7 +120,7 @@ $DAQBIN/VMUSBnostackReadout <optional>option...</optional>
                         </para></listitem>
                     </varlistentry>
                     <varlistentry>
-                        <term><option>--init-script</option> <replaceable>path</replacdeable></term>
+                        <term><option>--init-script</option> <replaceable>path</replaceable></term>
                         <listitem><para>
                         If provided this must be the path to a Tcl script that will be run when the program
                         starts. Defaults to 0.
@@ -161,6 +161,7 @@ $DAQBIN/VMUSBnostackReadout <optional>option...</optional>
                   module commands, see  <literal>Supported Event Modules</literal> after the man page.
                   The event configuration file is processed whenever  a run starts.
                 </para>
+                <para>
                     The event configuration file is specified by defining the environment variable
                     <literal>DAQCONFIG</literal> to be a path to it.
                     It is Tcl script and all Tcl core commands are available.  additional
@@ -205,16 +206,16 @@ $DAQBIN/VMUSBnostackReadout <optional>option...</optional>
                   Therefore the general form of scaler commands in the scaler configuration file is:
                 </para>
                 <informalexample>
-                <command>
+                <cmdsynopsis><command>
 <replaceable>scaler-type unique-name base-address</replaceable>
-            </command>
+            </command></cmdsynopsis>
             </informalexample>
             <para>
                 Where:
             </para>
             <variablelist>
                 <varlistentry>
-                    <term><replaceable>scaler-type</replacable></term>
+                    <term><replaceable>scaler-type</replaceable></term>
                     <listitem><para>
                         Is the type of scaler being added to the scaler read list.  See
                         the section <literal>Supported Scaler modules</literal> for the set of 
@@ -222,7 +223,7 @@ $DAQBIN/VMUSBnostackReadout <optional>option...</optional>
                     </para></listitem>
                 </varlistentry>
                 <varlistentry>
-                    <term><replaceable>unique-name</replacable></term>
+                    <term><replaceable>unique-name</replaceable></term>
                     <listitem><para>
                         A name for the scaler.  This must be unique within all of the scalers defined.
                         Names can be duplicates of names in the Event configuration file, if you have a
@@ -231,7 +232,7 @@ $DAQBIN/VMUSBnostackReadout <optional>option...</optional>
                     </para></listitem>
                 </varlistentry>
                 <varlistentry>
-                    <term><replaceable>base-address</replacable></term>
+                    <term><replaceable>base-address</replaceable></term>
                     <listitem><para>
                         The VME base address for the module.
                     </para></listitem>
@@ -256,7 +257,7 @@ $DAQBIN/VMUSBnostackReadout <optional>option...</optional>
             <title>SIS3820 scaler as a timestamp module</title>
             <refentry>
                 <refmeta>
-                    <refentrytitle>sis3820</reentrytitle>
+                    <refentrytitle>sis3820</refentrytitle>
                     <manvolnum>1vmusbnostack</manvolnum>
                 </refmeta>
                 <refnamediv>
@@ -295,7 +296,7 @@ sis3820 cget <replaceable>name ?option?</replaceable>
                         bits zero), followed by the same for channel 16:
                     </para>
                     <informalexample>
-                    <literal>
+                    <literallayout>
 
 +------------------------------------------------+
 | Least significant 32 bits of ch 0              |
@@ -308,7 +309,7 @@ sis3820 cget <replaceable>name ?option?</replaceable>
 +-----------------------+------------------------+
 |    0                  | top 16 bits of ch 16   |
 +-----------------------+------------------------+
-                    </literal>
+                    </literallayout>
                     </informalexample>
                 </refsect1>
                 <refsect1>
@@ -337,16 +338,16 @@ sis3820 cget <replaceable>name ?option?</replaceable>
                                     <listitem><para>
                                         <literal>clock2x10Mhz</literal> - Output 5 is the latch, outputs 6 and 7 are a
                                         10MHz clock, while output 8 is the application LED.
-                                    </para></listitem>>
+                                    </para></listitem>
                                     <listitem><para>
                                         <literal>clock1x10Mhz</literal> - Output 5 is the latch, Output 6 is a 10MHz
                                         clock.  The other outputs are not used.
                                     </para></listitem>
                                 </itemizedlist>
-                            </para></listitem>
-                            <para>
+        
                                 The default value for this option is <literal>clock50Mhz</literal>
-                            </para>
+                            </para></listitem>
+
                         </varlistentry>
 
                     </variablelist>
@@ -423,7 +424,7 @@ sis3316 cget <replaceable>name ?option?</replaceable>
                                 Specifies the sampling clock.   This can defaults to <literal>125MHz</literal>
                                 It can be one of:
                             <itemizedlist>
-                                <listitem><para><literal>fp</litersl> - clock is from the front panel.</para></listitem>
+                                <listitem><para><literal>fp</literal> - clock is from the front panel.</para></listitem>
                                 <listitem><para><literal>250MHz</literal>- clock is 250MHz.  Note that not all SIS3316 modules
                                     are 250MHz capable.
                                 </para></listitem>
@@ -432,7 +433,7 @@ sis3316 cget <replaceable>name ?option?</replaceable>
                                 <listitem><para><literal>25MHz</literal></para></listitem>
                                 <listitem><para><literal>12.5MHz</literal></para></listitem>
                             </itemizedlist>
-                            <para>
+                            
                                 This software does not verify the module capabilities.  If you select
                                 <literal>250MHz</literal> you must know if the module is capable of 
                                 sampling at that frequency.
@@ -475,7 +476,7 @@ sis3316 cget <replaceable>name ?option?</replaceable>
                         </varlistentry>
                     </variablelist>
                 </refsect1>
-            </refentry
+            </refentry>
             <refentry>
                 <refmeta>
                     <refentrytitle>vmusb</refentrytitle>
@@ -500,7 +501,7 @@ vmusb config <replaceable>name  option value ?...?</replaceable>
 vmusb cget <replaceable>name ?option?</replaceable>
                         </command>
                     </cmdsynopsis>                
-                </refsynosisdiv>
+                </refsynopsisdiv>
                 <refsect1>
                     <title>DESCRIPTION</title>
                     <para>
@@ -508,14 +509,14 @@ vmusb cget <replaceable>name ?option?</replaceable>
                         VMUSB module.  This contributes the following two 32 bit words to the event:
                     </para>
                     <informalexample>
-                    <literal>
+                    <literallayout>
 +---------------------+
 |     Scaler A value  |
 +---------------------+
 |     Scaler B value  |
 +---------------------+
 
-                    </literal>
+                    </literallayout>
                     </informalexample>
                 </refsect1>
                 <refsect1>
@@ -524,14 +525,14 @@ vmusb cget <replaceable>name ?option?</replaceable>
                     </para>
                     <variablelist>
                         <varlistentry>
-                            <term><option>-scalera </option> <replaceble>input-spec </replacable> </term>
+                            <term><option>-scalera </option> <replaceable>input-spec </replaceable> </term>
                             <listitem><para>
                                 Determines what increments scaler A.  This can be one of
                                 <literal>dgga</literal>, <literal>nimi1</literal>, and
                                 <literal>nimi2</literal>  <literal>dgga</literal> at present
                                 is not useful, but is provided in case, in the future, access
                                 to internal delay and gate generators is addeed.
-                            </listitem></para>
+                            </para></listitem>
                         </varlistentry>
                         <varlistentry>
                             <term><option>-scalerb</option> <replaceable> input-pec</replaceable></term>
@@ -546,11 +547,11 @@ vmusb cget <replaceable>name ?option?</replaceable>
                             </para></listitem>
                         </varlistentry>
                     </variablelist>
-                    
+                </refsect1>
             </refentry>
             <refentry>
                 <refmeta>
-                    <refentrytitle>v977</literal>
+                    <refentrytitle>v977</refentrytitle>
                     <manvolnum>1vmusbnostack</manvolnum>
                 </refmeta>
                 <refnamediv>
@@ -572,7 +573,7 @@ v977 config <replaceable>name  option value ?...?</replaceable>
 v977 cget <replaceable>name ?option?</replaceable>
                         </command>
                     </cmdsynopsis>                
-                </refsynopsis>
+                </refsynopsisdiv>
                 <refsect1>
                     <title>DESCRIPTION</title>
                     <para>
@@ -652,9 +653,9 @@ v977 cget <replaceable>name ?option?</replaceable>
             scaler configuration file definition is
         </para>
         <informalexample>
-        <literal>
+        <literallayout>
 scaler-type unique-name  base-address
-        </literal>
+        </literallayout>
         </informalexample>
         <para>
           The only scaler supported is the SIS 3820 latching scaler.
