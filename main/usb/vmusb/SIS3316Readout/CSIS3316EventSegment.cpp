@@ -276,11 +276,15 @@ CSIS3316EventSegment::initialize() {
         // C0 - Sampling clock.
         // U0 - sample logic ready.
 
-        m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
+        
         m_pModule->register_write(SIS3316_LEMO_OUT_TO_SELECT_REG, 0x04000000);
         m_pModule->register_write(SIS3316_LEMO_OUT_UO_SELECT_REG, 0x100);
         m_pModule->register_write(SIS3316_LEMO_OUT_CO_SELECT_REG, 1);
-        
+        m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
+        std::cerr << " After acqcsr write: \n";
+        dumpSetup();
+        std::cerr << "------------------\n";
+
         // Set the enables for each ADC.
 
         auto enables = m_pConfiguration->getBoolList("-enable");
