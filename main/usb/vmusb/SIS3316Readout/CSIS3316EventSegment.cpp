@@ -194,8 +194,8 @@ CSIS3316EventSegment::initialize() {
             throw strmsg;
         }
 	// Set the clock frequency:
-
-	m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
+        // Disabled for now.
+	// m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
 	
         // Set up the header ids for the ADC groups:
 
@@ -493,6 +493,9 @@ CSIS3316EventSegment::setupConfiguration() {
     m_pConfiguration->addIntListParameter(
         "-pretrigger",  0, MaxPretrigger ,4,4,4, MaxPretrigger/4 );
     m_pConfiguration->addBoolListParameter("-enable", 16, true);
+    m_pConfiguration->addIntListParameter(
+        "-dcoffset", 0, 0xffff, 16,16,16, 0    // Each chan has a DC offset. 
+    );
 }
 
 /**
