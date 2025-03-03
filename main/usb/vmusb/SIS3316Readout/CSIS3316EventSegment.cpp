@@ -142,6 +142,10 @@ CSIS3316EventSegment::initialize() {
     m_pModule->register_write(SIS3316_KEY_ADC_FPGA_RESET, 0);  // Reset the FPGAs.
     usleep(10*1000);                                   // Wait for it.
     m_pModule->register_write(SIS3316_KEY_DISARM, 0); // Keep disarmed.
+    if (debug) {
+        std::cerr << "After write to key_disarm regiser\n";
+        dumpSetup();
+    }
     m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR, 0); 
 
     // Set up the clock source:
