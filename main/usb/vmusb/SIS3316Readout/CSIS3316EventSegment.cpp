@@ -340,6 +340,10 @@ CSIS3316EventSegment::initialize() {
     for (auto r: xferRegisters) {
 	    m_pModule->register_write(r, 0);
     }
+    // Re do the trigger routing?
+
+    m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
+    m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
     // I think I can arm bank 1 and go:
     if (debug) dumpSetup();
     m_pModule->register_write(SIS3316_KEY_DISARM_AND_ARM_BANK1, 0);
