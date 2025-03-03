@@ -280,11 +280,15 @@ CSIS3316EventSegment::initialize() {
         m_pModule->register_write(SIS3316_LEMO_OUT_TO_SELECT_REG, 0x04000000);
         m_pModule->register_write(SIS3316_LEMO_OUT_UO_SELECT_REG, 0x100);
         m_pModule->register_write(SIS3316_LEMO_OUT_CO_SELECT_REG, 1);
-        m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
-        std::cerr << " After acqcsr write: \n";
-        dumpSetup();
-        std::cerr << "------------------\n";
-
+        int status = m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
+        if (debug) {
+            if (status) {
+                std::cerr << "ACQCSR write failed: " << status << std::endl;
+            }
+            std::cerr << " After acqcsr write: \n";
+            dumpSetup();
+            std::cerr << "------------------\n";
+        }
         // Set the enables for each ADC.
 
         auto enables = m_pConfiguration->getBoolList("-enable");
