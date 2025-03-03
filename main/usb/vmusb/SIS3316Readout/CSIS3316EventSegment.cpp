@@ -35,6 +35,8 @@
 #include <unistd.h>
 
 // Static data:
+static const bool debug(true);
+
 //   The parameter constraints:
 
 // CLock sources:
@@ -324,10 +326,10 @@ CSIS3316EventSegment::initialize() {
     // Reset the transfer state machines:
 
     for (auto r: xferRegisters) {
-	m_pModule->register_write(r, 0);
+	    m_pModule->register_write(r, 0);
     }
     // I think I can arm bank 1 and go:
-
+    if (debug) dumpSetup();
     m_pModule->register_write(SIS3316_KEY_DISARM_AND_ARM_BANK1, 0);
 }
 /**
@@ -534,4 +536,45 @@ CSIS3316EventSegment::sizeGroup(int group) {
         ch++;
     }
     return result;
+}
+
+/**
+ * dump the setup:
+ */
+void
+CSIS3316EventSegment::dumpSetup() {
+    
+    std::cout << std::hex;                       // Output registers in x
+    std::cout << "NIM_INPUT_CONTROL  : 0x" << readRegister(SIS3316_NIM_INPUT_CONTROL_REG) 
+        << std::endl;
+    std::cout << "ACQUISITION_CSR    : 0x" << readRegister(SIS3316_ACQUISITION_CONTROL_STATUS)
+        << std::endl;
+
+    std::cout << "ADC_CH1_4_EVT_CFG  : 0x" << readRegister(SIS3316_ADC_CH1_4_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "ADC_CH5_8_EVT_CFG  : 0x" << readRegister(SIS3316_ADC_CH5_8_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "ADC_CH9_12_EVT_CFG : 0x" << readRegister(SIS3316_ADC_CH9_12_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "ADC_CH13_16_EVT_CFG: 0x" << readRegister(SIS3316_ADC_CH13_16_EVENT_CONFIG_REG)
+        << std::endl;
+
+    std::cout << std::dec;                       // back to default.
+}
+
+/**
+ *  Read a  regiser value:
+ *    @param  offset - register offset.
+ *    @return unit32_t - value.
+ */
+uint32_t
+CSIS3316EventSegment::readRegister(unsigned offset) {
+    unsigned value;
+    int s;
+    s = m_pModule->register_read(offset, &value);
+    if (s) {
+        std::cerr << "Failed to read register " << std::hex 
+            << offset <<  std::dec << " code: " << s << std::endl;
+    }
+    return value;
 }

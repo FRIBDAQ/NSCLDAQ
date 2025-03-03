@@ -79,6 +79,8 @@ private:
     void setupConfiguration();
     size_t computeTotalWords();
     size_t sizeGroup(int group);
+    void dumpSetup();
+    uint32_t readRegister(unsigned offset);
 };
 
 
