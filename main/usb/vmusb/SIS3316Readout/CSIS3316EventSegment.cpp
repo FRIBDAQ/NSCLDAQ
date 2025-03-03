@@ -582,6 +582,10 @@ void
 CSIS3316EventSegment::dumpSetup() {
     
     std::cout << std::hex;                       // Output registers in x
+    std::cout << "Module ID          : 0x" << readRegister(SIS3316_MODID)
+        << std::endl;
+    std::cout << "HW VERSION         : 0x" << readRegister( SIS3316_HARDWARE_VERSION)
+        << std::endl;
     std::cout << "NIM_INPUT_CONTROL  : 0x" << readRegister(SIS3316_NIM_INPUT_CONTROL_REG) 
         << std::endl;
     std::cout << "ACQUISITION_CSR    : 0x" << readRegister(SIS3316_ACQUISITION_CONTROL_STATUS)
