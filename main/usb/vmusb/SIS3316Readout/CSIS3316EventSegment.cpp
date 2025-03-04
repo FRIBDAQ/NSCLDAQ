@@ -586,11 +586,31 @@ CSIS3316EventSegment::dumpSetup() {
         << std::endl;
     std::cout << "HW VERSION         : 0x" << readRegister( SIS3316_HARDWARE_VERSION)
         << std::endl;
+    std::cout << "Arbitration control: 0x" << readRegister(SIS3316_INTERFACE_ACCESS_ARBITRATION_CONTROL)
+        << std::endl;
+    std::cout << "FPGA ADC BOOT csr  : 0x" << readRegister(SIS3316_ADC_FPGA_BOOT_CSR)
+        << std::endl;
+    std::cout << "ADC Grp1 firmware  : 0x" << readRegister(SIS3316_ADC_CH1_4_FIRMWARE_REG)
+        << std::endl;
+    std::cout << "ADC Grp2 firmware  : 0x" << readRegister(SIS3316_ADC_CH5_8_FIRMWARE_REG)
+        << std::endl;
+    std::cout << "ADC Grp3 firmware  : 0x" << readRegister(SIS3316_ADC_CH9_12_FIRMWARE_REG)
+        << std::endl;
+    std::cout << "ADC Grp4 firmware  : 0x" << readRegister(SIS3316_ADC_CH13_16_FIRMWARE_REG)
+        << std::endl;
+
+    std::cout << "ADC Grp 1 status   : 0x" << readRegister(SIS3316_ADC_CH1_4_STATUS_REG)
+        << std::endl;
+    std::cout << "ADC Grp 2 status   : 0x" << readRegister(SIS3316_ADC_CH5_8_STATUS_REG)
+        << std::endl;    
+    std::cout << "ADC Grp 3 status   : 0x" << readRegister(SIS3316_ADC_CH9_12_STATUS_REG)
+        << std::endl;
+    std::cout << "ADC Grp 4 status   : 0x" << readRegister(SIS3316_ADC_CH13_16_STATUS_REG)
+        << std::endl;   
     std::cout << "NIM_INPUT_CONTROL  : 0x" << readRegister(SIS3316_NIM_INPUT_CONTROL_REG) 
         << std::endl;
     std::cout << "ACQUISITION_CSR    : 0x" << readRegister(SIS3316_ACQUISITION_CONTROL_STATUS)
         << std::endl;
-
     std::cout << "ADC_CH1_4_EVT_CFG  : 0x" << readRegister(SIS3316_ADC_CH1_4_EVENT_CONFIG_REG)
         << std::endl;
     std::cout << "ADC_CH5_8_EVT_CFG  : 0x" << readRegister(SIS3316_ADC_CH5_8_EVENT_CONFIG_REG)
