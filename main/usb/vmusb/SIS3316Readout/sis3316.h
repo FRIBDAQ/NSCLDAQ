@@ -145,7 +145,7 @@
 #define SIS3316_ONE_WIRE_CONTROL_REG       		   		    			0x24      /* read/write; D32, only SIS3316  */
 #define SIS3316_REG_I2C_PERIPHERAL_BASE									0x24	  /* read/write; D32, only SIS3316-2 */
 #define SIS3316_SERIAL_NUMBER_REG       		   		    			0x28      /* read only; D32 */
-
+#define SIS3316_ADC_FPGA_BOOT_CSR                                       0x30   /* r/w; D32 */
 #define SIS3316_EXTERNAL_VETO_GATE_DELAY_REG       		   		   		0x3C      /* read only; D32 */
 
 #define SIS3316_ADC_CLK_OSC_I2C_REG				      	    			0x40      /* read/write; D32 */
