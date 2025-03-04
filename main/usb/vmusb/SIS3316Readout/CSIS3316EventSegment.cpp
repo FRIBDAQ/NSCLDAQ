@@ -137,16 +137,16 @@ CSIS3316EventSegment::initialize() {
     // We're going to assum all our operatons actually work - because I'm lazy
     // and very likely it's true.
 
+    m_pModule->register_write(SIS3316_KEY_DISARM, 0); // Keep disarmed.
     m_pModule->register_write(SIS3316_KEY_RESET, 0);  // Module reset.
     usleep(10*1000);                                   // wait. for it
-    m_pModule->register_write(SIS3316_KEY_ADC_FPGA_RESET, 0);  // Reset the FPGAs.
-    usleep(10*1000);                                   // Wait for it.
-    m_pModule->register_write(SIS3316_KEY_DISARM, 0); // Keep disarmed.
+    
     if (debug) {
-        std::cerr << "After write to key_disarm regiser\n";
+        std::cerr << "After write to key_reset regiser\n";
         dumpSetup();
     }
-    m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR, 0); 
+    m_pModule->adc_spi_reg_enable_adc_outputs();    // Tino says this is needed.
+
 
     // Set up the clock source:
 
@@ -200,9 +200,15 @@ CSIS3316EventSegment::initialize() {
             throw strmsg;
         }
 	// Set the clock frequency:
-        // Disabled for now.
-	// m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
+        
+	    m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
+        m_pModule->configure_adc_fpga_iob_delays(
+            m_pModule->adc_125MHz_flag == 0 ?
+                0x1002 : 0x1020
+        );                              // Tino says this is needed too.
     }
+
+    m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR, 0); 
     // Set up the header ids for the ADC groups:
 
     
