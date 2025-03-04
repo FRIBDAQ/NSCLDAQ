@@ -294,12 +294,6 @@ CSIS3316EventSegment::initialize() {
     }
 
 
-    // Set external trigger  bit 4 is NIM INPUT as trigger enable (actuall
-    // Trigger function).
-
-    m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
-    
-
     // Note 0x100 is FP trigger enable according to Tino.
     // The write to the T0 select register allows a stretched trigger-> ADCFPGA
     // to be monitored on TO
@@ -307,11 +301,9 @@ CSIS3316EventSegment::initialize() {
     // TO - trigger signal (unstretched).
     // C0 - Sampling clock.
     // U0 - sample logic ready.
-
+    // Moved the order to what Tino suggested.
     
-    m_pModule->register_write(SIS3316_LEMO_OUT_TO_SELECT_REG, 0x04000000);
-    m_pModule->register_write(SIS3316_LEMO_OUT_UO_SELECT_REG, 0x100);
-    m_pModule->register_write(SIS3316_LEMO_OUT_CO_SELECT_REG, 1);
+    
     int status = m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
     if (debug) {
         if (status) {
@@ -321,6 +313,16 @@ CSIS3316EventSegment::initialize() {
         dumpSetup();
         std::cerr << "------------------\n";
     }
+
+    // Set external trigger  bit 4 is NIM INPUT as trigger enable (actuall
+    // Trigger function).
+
+    m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
+    m_pModule->register_write(SIS3316_LEMO_OUT_TO_SELECT_REG, 0x04000000);
+    m_pModule->register_write(SIS3316_LEMO_OUT_UO_SELECT_REG, 0x100);
+    m_pModule->register_write(SIS3316_LEMO_OUT_CO_SELECT_REG, 1);
+
+    
     // Set the enables for each ADC.
 
     auto enables = m_pConfiguration->getBoolList("-enable");
