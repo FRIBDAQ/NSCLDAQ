@@ -521,7 +521,7 @@ CSIS3316EventSegment::readable() {
     m_pModule->register_read(SIS3316_ACQUISITION_CONTROL_STATUS, &acqreg);
 
     uint32_t thresh = acqreg & 0x00080000;    // Threshold made.
-    uint32_t sampling = acqreg & 0x00040000;
+    uint32_t sampling = 0;  //? acqreg & 0x00040000;
     return (thresh != 0) && (sampling == 0);
 }
 ///////////////////////////////// Private Utilities //////////////////////////////////////////////
