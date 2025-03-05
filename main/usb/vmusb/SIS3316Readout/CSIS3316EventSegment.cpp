@@ -627,7 +627,16 @@ CSIS3316EventSegment::dumpSetup() {
         << std::endl;
     std::cout << "ADC_CH13_16_EVT_CFG: 0x" << readRegister(SIS3316_ADC_CH13_16_EVENT_CONFIG_REG)
         << std::endl;
-
+    std::cout << "PRETRIGGER 1-4       0x" << readRegister(SIS3316_ADC_CH1_4_PRE_TRIGGER_DELAY_REG)
+        << std::endl;
+    std::cout << "PRETRIGGER 5-8       0x" << readRegister(SIS3316_ADC_CH5_8_PRE_TRIGGER_DELAY_REG)
+        << std::endl;
+    std::cout << "PRETRIGGER 9-12      0x" << readRegister(SIS3316_ADC_CH9_12_PRE_TRIGGER_DELAY_REG)
+        << std::endl;
+    std::cout << "PRETRIGGER 13-16     0x" << readRegister(SIS3316_ADC_CH13_16_PRE_TRIGGER_DELAY_REG)
+        << std::endl;
+    
+        
     std::cout << std::dec;                       // back to default.
 }
 
