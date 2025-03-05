@@ -216,24 +216,11 @@ CSIS3316EventSegment::initialize() {
 
     auto offsets = m_pConfiguration->getUnsignedList("-dcoffset");
     assert(offsets.size() == 16);
-    std::vector<int> dcoregs = {
-        SIS3316_ADC_CH1_4_DAC_OFFSET_CTRL_REG,
-        SIS3316_ADC_CH5_8_DAC_OFFSET_CTRL_REG,
-        SIS3316_ADC_CH9_12_DAC_OFFSET_CTRL_REG,
-        SIS3316_ADC_CH13_16_DAC_OFFSET_CTRL_REG 
-    };
-    for (int ch = 0; ch < 16; ch++) {
-        int group = ch/4;         // Channel group. 
-        int grpch = ch %4;        // Ch wthin the group.
-
-        // Construct a write & load of the correct dac:
-
-        uint32_t value = 0x80000000    // write
-            | 0x2000000                //  write  & update all.
-            | (grpch << 20)            // Select the ch in the group.
-            | (dcoregs[ch] << 4);      // DAC Value we want.
-        m_pModule->register_write(dcoregs[group], value);
+    for (int i =0; i < 16; i++) {
+        m_pModule->adc_dac_offset_ch_array[i] = offsets[i];
     }
+    m_pModule->write_all_adc_dac_offsets();
+    m_pModule->configure_all_adc_dac_offsets();
 
     auto id = m_pConfiguration->getUnsignedParameter("-id");
         std::vector<int> idregs = {
@@ -404,7 +391,7 @@ size_t
 CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
     size_t totalWords = computeTotalWords();
     uint32_t*   pLongBuf = reinterpret_cast<uint32_t*>(pBuffer);   
-    size_t      nRead(0);
+    size_t      nRead(0);     // Total longs read.
     CVMUSB*    pController = Globals::pUSBController;
     if (totalWords*2 > maxwords) {
         std::stringstream strMsg;
@@ -426,75 +413,27 @@ CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
     // We need to figure out what to do for each enabled channel, notiing that the channels
     // are arranged in groups of 4 (per ADC FPGA) and therefore share registers.
 
-    std::vector<int> xferRegisters = {
-        SIS3316_DATA_TRANSFER_CH1_4_CTRL_REG,
-        SIS3316_DATA_TRANSFER_CH5_8_CTRL_REG,
-        SIS3316_DATA_TRANSFER_CH9_12_CTRL_REG,
-        SIS3316_DATA_TRANSFER_CH13_16_CTRL_REG
-    };
-        
-    std::vector<int> fifoBases = {
-        SIS3316_FPGA_ADC1_MEM_BASE,
-        SIS3316_FPGA_ADC2_MEM_BASE,
-        SIS3316_FPGA_ADC3_MEM_BASE,
-        SIS3316_FPGA_ADC4_MEM_BASE
-    };
-    std::vector<int> statusReg = {
-	SIS3316_DATA_TRANSFER_ADC1_4_STATUS_REG,
-	SIS3316_DATA_TRANSFER_ADC5_8_STATUS_REG,
-	SIS3316_DATA_TRANSFER_ADC9_12_STATUS_REG,
-	SIS3316_DATA_TRANSFER_ADC13_16_STATUS_REG
-    };
+    
     auto enables = m_pConfiguration->getBoolList("-enable");          // 16 of these.
     auto samples = m_pConfiguration->getUnsignedList("-samples");    // 4 of these
 
-    // Loop over the groups:
-
-    for (int group = 0; group < 4; group++) {
-        int firstchan = group*4;                                  // Init to first chan in group.
-        int groupLongs = sizeGroup(group);                        // Total longs to read in group:
-        if (groupLongs > 0) {                                         // Group has enabled channels.
-            auto xferReg = xferRegisters[group];              // group xfer control register.
-            auto status = statusReg[group];
-            auto fifo    = base + fifoBases[group];                  // FIFO address for the group.  
-            for(int i = 0; i < 4; i++) {                          // Loop over channels:
-                int chan = firstchan+i;                           // Absolute channel #.
-
-                // set up and start the transfer:
-                unsigned value (0x80000000);                     // Code to start a transfer.
-                if (enables[chan]) {                              // need to read the channel.
-                    if (i < 2) {
-                        value |= i * 0x03000000;                 // Offset in address space 0.
-                    } else  {
-                        value |= 0x10000000;                     // Space select 1.
-                        value |= (i -2) * 0x03000000;            // offset.
-                    }
-                    // Start the transfer:
-
-                    m_pModule->register_write(xferReg, value);  // Start the transfer -> fifo.
-                    // Spin for it to finish:
-
-                    while (true) {
-                        UINT datum;
-
-                        m_pModule->register_read(status, &datum);
-                        if ((datum & 0x80000000) == 0)   break;  // done.
-                    }
-                    // Read the FIF into the buffer.
-
-                    size_t numToRead = samples[group] + 3;       // Total words to read.
-                    size_t nTransferred;
-                    pController->vmeFifoRead(fifo, blockAmod, pLongBuf, numToRead, &nTransferred);
-                    pLongBuf+= nTransferred;
-                    nRead += nTransferred;
-
-                }
-
+    for (int i =0; i < enables.size(); i++) {
+        if(enables[i]) {
+            unsigned got(0);
+            int rdstat = m_pModule->read_DMA_Channel_PreviousBankDataBuffer(
+                0,
+                i, samples[i/4], &got, pLongBuf
+            );
+            if (rdstat) {
+                std::cerr << "Read failed with status: " << rdstat << std::endl;
+                std::cerr << "Got = " << got << std::endl;
+            } else {
+                pLongBuf += got;
+                nRead += got;
             }
         }
     }
-    // Reset the offsets to zero reset the sample counts nad re-arm:
-
+    
     std::vector<int> bufregs = {
         SIS3316_ADC_CH1_4_RAW_DATA_BUFFER_CONFIG_REG,
         SIS3316_ADC_CH5_8_RAW_DATA_BUFFER_CONFIG_REG,
@@ -507,9 +446,9 @@ CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
     }
 
     m_pModule->register_write(SIS3316_KEY_DISARM_AND_ARM_BANK1, 0);
+    
 
-
-    return nRead * 2;                      // 16 bit words.
+    return nRead / 2;                      // 16 bit words.
 }
 /**
  *  readable
