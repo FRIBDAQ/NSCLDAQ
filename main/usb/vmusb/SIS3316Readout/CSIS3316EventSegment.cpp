@@ -215,6 +215,7 @@ CSIS3316EventSegment::initialize() {
     // Set the DC offset registers:
 
     auto offsets = m_pConfiguration->getUnsignedList("-dcoffset");
+    assert(offsets.size() == 16);
     std::vector<int> dcoregs = {
         SIS3316_ADC_CH1_4_DAC_OFFSET_CTRL_REG,
         SIS3316_ADC_CH5_8_DAC_OFFSET_CTRL_REG,
