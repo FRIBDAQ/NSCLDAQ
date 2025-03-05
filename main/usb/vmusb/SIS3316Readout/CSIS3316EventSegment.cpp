@@ -590,31 +590,7 @@ void
 CSIS3316EventSegment::dumpSetup() {
     
     std::cout << std::hex;                       // Output registers in x
-    std::cout << "Module ID          : 0x" << readRegister(SIS3316_MODID)
-        << std::endl;
-    std::cout << "HW VERSION         : 0x" << readRegister( SIS3316_HARDWARE_VERSION)
-        << std::endl;
-    std::cout << "Arbitration control: 0x" << readRegister(SIS3316_INTERFACE_ACCESS_ARBITRATION_CONTROL)
-        << std::endl;
-    std::cout << "FPGA ADC BOOT csr  : 0x" << readRegister(SIS3316_ADC_FPGA_BOOT_CSR)
-        << std::endl;
-    std::cout << "ADC Grp1 firmware  : 0x" << readRegister(SIS3316_ADC_CH1_4_FIRMWARE_REG)
-        << std::endl;
-    std::cout << "ADC Grp2 firmware  : 0x" << readRegister(SIS3316_ADC_CH5_8_FIRMWARE_REG)
-        << std::endl;
-    std::cout << "ADC Grp3 firmware  : 0x" << readRegister(SIS3316_ADC_CH9_12_FIRMWARE_REG)
-        << std::endl;
-    std::cout << "ADC Grp4 firmware  : 0x" << readRegister(SIS3316_ADC_CH13_16_FIRMWARE_REG)
-        << std::endl;
-
-    std::cout << "ADC Grp 1 status   : 0x" << readRegister(SIS3316_ADC_CH1_4_STATUS_REG)
-        << std::endl;
-    std::cout << "ADC Grp 2 status   : 0x" << readRegister(SIS3316_ADC_CH5_8_STATUS_REG)
-        << std::endl;    
-    std::cout << "ADC Grp 3 status   : 0x" << readRegister(SIS3316_ADC_CH9_12_STATUS_REG)
-        << std::endl;
-    std::cout << "ADC Grp 4 status   : 0x" << readRegister(SIS3316_ADC_CH13_16_STATUS_REG)
-        << std::endl;   
+    
     std::cout << "NIM_INPUT_CONTROL  : 0x" << readRegister(SIS3316_NIM_INPUT_CONTROL_REG) 
         << std::endl;
     std::cout << "ACQUISITION_CSR    : 0x" << readRegister(SIS3316_ACQUISITION_CONTROL_STATUS)
@@ -627,15 +603,14 @@ CSIS3316EventSegment::dumpSetup() {
         << std::endl;
     std::cout << "ADC_CH13_16_EVT_CFG: 0x" << readRegister(SIS3316_ADC_CH13_16_EVENT_CONFIG_REG)
         << std::endl;
-    std::cout << "PRETRIGGER 1-4       0x" << readRegister(SIS3316_ADC_CH1_4_PRE_TRIGGER_DELAY_REG)
+    std::cout << "End Addr thr 1:      0x" << readRegister(SIS3316_ADC_CH1_4_ADDRESS_THRESHOLD_REG)
         << std::endl;
-    std::cout << "PRETRIGGER 5-8       0x" << readRegister(SIS3316_ADC_CH5_8_PRE_TRIGGER_DELAY_REG)
+    std::cout << "End Addr thr 2:      0x" << readRegister(SIS3316_ADC_CH5_8_ADDRESS_THRESHOLD_REG)
         << std::endl;
-    std::cout << "PRETRIGGER 9-12      0x" << readRegister(SIS3316_ADC_CH9_12_PRE_TRIGGER_DELAY_REG)
+    std::cout << "End Addr thr 3:      0x" << readRegister(SIS3316_ADC_CH9_12_ADDRESS_THRESHOLD_REG)
         << std::endl;
-    std::cout << "PRETRIGGER 13-16     0x" << readRegister(SIS3316_ADC_CH13_16_PRE_TRIGGER_DELAY_REG)
+    std::cout << "End Addr thr 4:      0x" << readRegister(SIS3316_ADC_CH13_16_ADDRESS_THRESHOLD_REG)
         << std::endl;
-    
         
     std::cout << std::dec;                       // back to default.
 }
