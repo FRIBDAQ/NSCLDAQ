@@ -4458,7 +4458,9 @@ int sis3316_adc::read_DMA_Channel_PreviousBankDataBuffer(unsigned int bank2_read
 			}
 			if (retry_counter > 1)
 			{
-				printf("Info: retry_counter = %d \n", retry_counter);
+				// Don't want every evcent that needs a retry to
+				// piss and moan.
+				//printf("Info: retry_counter = %d \n", retry_counter);
 			}
 		}
 

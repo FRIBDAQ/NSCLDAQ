@@ -123,7 +123,7 @@ VME::vme_A32DMA_D32_read(
             data, req_nof_words, &xfercount
         );
         *got_nof_words = xfercount;
-        return result;
+        return result < 0 ? result : 0;
     } else {
         *got_nof_words = 0;
         return -1;
@@ -153,7 +153,7 @@ VME::vme_A32BLT32_read(
             data, req_nof_words, &xfercount
         );
         *got_nof_words = xfercount;
-        return result;
+        return result < 0 ? result : 0;
     } else {
         *got_nof_words = 0;
         return -1;
@@ -185,7 +185,7 @@ VME::vme_A32MBLT64_read(
             data, req_nof_words, &xfercount
         );
         *got_nof_words = xfercount;
-        return result;
+        return result < 0 ? result : 0;
     } else {
         *got_nof_words = 0;
         return -1;
@@ -237,7 +237,7 @@ VME::vme_A32DMA_D32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UIN
             addr, CVMUSBReadoutList::a32UserData, data, request_nof_words, &got
         );
         *got_nof_words = got;
-        return result;
+        return result < 0 ? result : 0;
 
     } else {
         *got_nof_words =0;
@@ -265,7 +265,7 @@ VME::vme_A32BLT32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT*
             addr, CVMUSBReadoutList::a32UserBlock, data, request_nof_words, &got
         );
         *got_nof_words = got;
-        return result;
+        return result < 0 ? result : 0;
 
     } else {
         *got_nof_words =0;
@@ -287,7 +287,7 @@ VME::vme_A32MBLT64FIFO_read(UINT addr, UINT* data, UINT request_nof_words, UINT*
             addr, 0xc, data, request_nof_words, &got
         );
         *got_nof_words = got;
-        return result;
+        return result < 0 ? result : 0;
 
     } else {
         *got_nof_words =0;
