@@ -193,7 +193,7 @@ VME::vme_A32MBLT64_read(
 }
 
 /**
- * The remainig types of block read transfers are not supported
+ * The remaining types of block read transfers are not supported
  * by the VMUSB and just become MBLT64 transfers.
  */
 int
@@ -380,7 +380,10 @@ VME::vme_A32BLT32_write (UINT addr, UINT* data, UINT request_nof_words, UINT* wr
 
 int
 VME::vme_A32MBLT64_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words ) {
-    return vme_A32DMA_D32_write(addr, data, request_nof_words, written_nof_words);
+    int status =  vme_A32DMA_D32_write(addr, data, request_nof_words*2, written_nof_words);
+    *written_nof_words /=2;
+
+    return status;
 }
 
 
