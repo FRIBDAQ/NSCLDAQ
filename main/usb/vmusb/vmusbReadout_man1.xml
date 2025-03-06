@@ -3292,6 +3292,677 @@ bool myTypeChecker(std::string name, std::string value, void* arg)
             </para>
         </refsect1>
        </refentry>
+       <refentry>
+        <refentryinfo>
+            <author>
+                <personname>
+                    <firstname>Ron</firstname>
+                    <surname>Fox</surname>
+                </personname>
+                <personblurb><para></para></personblurb>
+            </author>
+            <productname>NSCLDAQ</productname>
+            <productnumber></productnumber>
+        </refentryinfo> 
+        <refmeta>
+        
+            <refentrytitle>sis_vmusb_interface</refentrytitle>
+            <manvolnum>3vmusb</manvolnum>
+        </refmeta>
+        <refnamediv>
+            <refname>sis_vmusb_interface</refname>
+            <refpurpose>Use SIS module software over VMUSB</refpurpose>
+        </refnamediv>
+        <refsynopsisdiv>
+            <programlisting>
+#include &lt;sis_vmusb_interface.h&gt;
+
+class sis_vmusb_interface : public vme_interface_class {
+public:
+    virtual int vmeopen( void ) ;
+	virtual int vmeclose( void ) ;
+
+	virtual int get_vmeopen_messages( CHAR* messages, UINT* nof_found_devices ) ;
+
+	virtual int vme_A32D32_read( UINT addr, UINT* data ) ;
+
+	virtual int vme_A32DMA_D32_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32BLT32_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32MBLT64_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32_2EVME_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32_2ESST160_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32_2ESST267_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32_2ESST320_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+
+	virtual int vme_A32DMA_D32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32BLT32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32MBLT64FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32_2EVMEFIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32_2ESST160FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32_2ESST267FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+	virtual int vme_A32_2ESST320FIFO_read(UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) ;
+
+
+	virtual int vme_A32D32_write( UINT addr, UINT data ) ;
+	virtual int vme_A32DMA_D32_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words ) ;
+	virtual int vme_A32BLT32_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words ) ;
+	virtual int vme_A32MBLT64_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words ) ;
+
+	virtual int vme_A32DMA_D32FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words ) ;
+	virtual int vme_A32BLT32FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words ) ;
+	virtual int vme_A32MBLT64FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words ) ;
+
+	virtual int vme_IRQ_Status_read( UINT* data ) ;
+
+
+};
+
+
+            </programlisting>
+        </refsynopsisdiv>
+        <refsect1>
+            <title>DESCRIPTION</title>
+            <para>
+                Some Struck (SIS) modules have support provided in the form of a class that
+                performs VME operations via a class derived from <classname>vme_interface_class</classname>.
+                <classname>sis_vmusb_interface</classname> provides a version of that class built on top of
+                <classname>CVMUSB</classname>.  To use this class, the variable:
+                <varname>Globals::pUSBController</varname> must be a pointer to an instance of a
+                <classname>CVMUSB</classname> object.  In the VMUSBReadout skeleton, when the program is
+                connected to a VMUSB, this will be the case.  If using this class outside that
+                framework, you software will need to take care of this requirement.
+            </para>
+            <para>
+                All methods of this class return <literal>0</literal> on success and some negative
+                value on failure.  Some methods are no-ops but provided to satisfy the requirements
+                of the class interface.
+            </para>
+        </refsect1>
+        <refsect1>
+            <title>METHODS</title>
+            <variablelist>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vmeopen
+                            </methodname>
+                            <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        This, rather than opening a connection to the VMUSB, will, instead, return
+                        0 if there's already a non-null pointer in <varname>Globals::pVMUSBController</varname>.
+                        If that pointer  is null, -1 is returned.
+                    </para></listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vmeclose
+                            </methodname>
+                            <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        This method is a no-op that always return success (0).
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>get_vmeopen_messages
+                            </methodname>
+                            <methodparam>
+                                <type>char*</type><parameter>messages</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>nof_found_devices</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        It's not actually clear what this is supposed to do in the SIS base class (that class
+                        is completely undocumented), however what <emphasis>we</emphasis> do is:
+                        <itemizedlist>
+                            <listitem><para>always return 0</para></listitem>
+                            <listitem><para>If <varname>Globals::pUSBController</varname> is not null,
+                                set the value of <varname>*nof_found_devices</varname> to 1 and copy the
+                                string <literal>Open will succeed</literal> to <varname>*messages</varname>.
+                                If <varname>Globals::pUSBController</varname> is null, sets the value of
+                                <varname>*nof_found_devicdes</varname> to 0 and <varname>*messages</varname>
+                                to <literal>There's no underlying VMUSB object to use</literal>
+                            </para></listitem>
+                        </itemizedlist>
+                        </para>
+                        <para>
+                            This method can, therefore, be used to determine if a call to 
+                            <methodname>vmeopen</methodname> will succeed.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32D32_read
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        Does a 32 bit read from the VME bus at <parameter>addr</parameter>.  The read is done
+                        with the address modifier <varname>CVMUSBReadoutList::a32UserData</varname>.
+                        On success the return value  is 0 and the data read are stored into <varname>*data</varname>
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32DMA_D32_read</methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>req_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        Peforms a block transfer starting from <parameter>addr</parameter> on the VME bus.
+                        The size of each transfer is 32 bits and the transfer is done with the
+                        <varname>CVMUSBReadoutList::a32UserBlock</varname> address modifier.
+                        Data read are stored sequentially in <parameter>data</parameter>. <parameter>data</parameter>
+                        Must point to a block of storage that is at least <parameter>req_nof_words</parameter> 
+                        <type>uint32_t</type> units long.   The transfer terminates when either
+                        <parameter>req_nof_words</parameter> 32 bit items are transferred or a bus error occurs,
+                        whichever is first.  The actual number of transfers is stored into <parameter>*got_nof_words</parameter>
+                    </para><para>
+                        The method returns success (0), if any data are transferred.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32BLT32_read
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>req_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        In this implementation, this is synonymous with <methodname>vme_A32DMA_D32_read</methodname>.
+                        I imagine the reason for the differencde in the original class was to support block transfers without
+                        BLT address modifiers.  The VMUSB, however only does block reads if tiven a block transfer address.
+                        modifier.  If required, in the future, <methodname>vme_A32DMA_D32_read</methodname> can be re-implemented
+                        as a single transfer loop.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32MBLT64_read
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>req_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        Peforms 64 bit block transfers (supposedly supported by the VMUSB).  These are
+                        done using address modifier <literal>0x0c</literal> which is  a64 bit BLT user space
+                        transfer.  All of the parameters are the same as the 32 bit transfer but the transfer
+                        unit is <type>uint64_t</type>.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32_2EVME_read 
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32_2ESST160_read
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32_2ESST320_read
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32_2ESST267_read
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        These methods represent 64 bit high speed transfer methods that are not
+                        supported by the VMUSB.  As such, they are synonyms for 
+                        <methodname>vme_a32MBLT64_read</methodname>
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32DMA_D32FIFO_read
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        Peforms a 32 bit read from a FIFO.  This acts identically to 
+                        a block transfer, however the address is not incremented after each read.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32BLT32FIFO_read
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        Peforms a 32 bit read from a FIFO.  This acts identically to 
+                        a block transfer, however the address is not incremented after each read.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32MBLT64FIFO_read
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        Peforms a 64 bit read from a FIFO.  This acts identically to 
+                        a block transfer, however the address is not incremented after each read.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32_2EVMEFIFO_read
+                            </methodname>
+                             <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32_2ESST160FIFO_read
+                            </methodname>
+                             <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32_2ESST267FIFO_read
+                            </methodname>
+                             <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32_2ESST320FIFO_read
+                            </methodname>
+                             <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>got_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        These are FIFO reads that are unsupported by the VMUSB.  They are implemented
+                        as calls to <methodname>vme_A32MBLT64FIFO_read</methodname>
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32D32_write
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>data</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        Performs a 32 bit write
+                        of <parameter>data</parameter to <parameter>addr</parameter>.
+                        The address modifier used is 
+                        <varname>CVMUSBReadoutList::a32UserData</varname>
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32DMA_D32_write
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>written_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32BLT32__write
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>written_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32MBLT64_write
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>written_nof_words</parameter>
+                            </methodparam>
+                            <!-- methodparams or <void />-->
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        The <classname>CVMUSB</classname> class does not support block transfer writes.
+                        These methods are implemented in <methodname>vme_A32DMA_D32_writre</methodname> as a
+                        write loop and the other methods are implemented as calls to that method.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32DMA_D32FIFO_write
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>written_nof_words</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32BLT32FIFO_write
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>written_nof_words</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_A32MBLT64FIFO_write
+                            </methodname>
+                            <methodparam>
+                                <type>UINT</type><parameter>addr</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT</type><parameter>request_nof_words</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>UINT*</type><parameter>written_nof_words</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        Does block writes to a FIFO, that is the address of the write does not
+                        increment after each write.   Note that since <classname>CVMUSB</classname> does
+                        not implement FIFO write operations, these are implemented as individual writes in a 
+                        loop to the same address.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type>
+                            <methodname>vme_IRQ_Status_read
+                            </methodname>
+                            <methodparam>
+                                <type>UINT*</type><parameter>data</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem><para>
+                        Reaing the VME interrupt status is not supported by the VMUSB, 
+                        therefore, this method throws an <classname>std::runtim_error</classname>
+                        when called.
+                    </para></listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect1>
+
+       </refentry>
 
       <refentry id="vmusb3-cvmusb-swig">
 	<refentryinfo>
