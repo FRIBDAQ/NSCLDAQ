@@ -419,7 +419,8 @@ int
 VME::vme_A32MBLT64FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words )  {
     int status = vme_A32DMA_D32FIFO_read(addr, data, request_nof_words*2, written_nof_words);
     *written_nof_words /= 2;
-    return status;
+    return status;!push
+
     
 }
 
@@ -431,3 +432,6 @@ int
 VME::vme_IRQ_Status_read(UINT* data) {
     throw std::runtime_error("VMUSB does not support vme_IRQ_Status_read operations");
 }
+
+
+
