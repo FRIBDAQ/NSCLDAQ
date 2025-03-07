@@ -47,6 +47,7 @@
 
 #include "CReadoutHardware.h"
 #include <vector>
+#include <stdint.h>
 
 // Forward class definitions.
 class CReadoutModule;
@@ -89,7 +90,8 @@ public:
     // Utilities:
 private:
     int sizeGroup(int groupNum, std::vector<bool>& enables);
-
+    void dumpSetup();
+    uint32_t readRegister(unsigned offset);
 };
 
 #endif

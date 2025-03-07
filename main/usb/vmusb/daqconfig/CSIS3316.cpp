@@ -27,10 +27,9 @@
 #include <unistd.h>
 #include <assert.h>
 
-
 // Parameter constraints:
 
-// CLock sources:
+// Clock sources:
 
 static const char* ClockSources[] = {
     "fp", "250MHz","125Mhz", "50MHz", "25MHz", "12.5MHz", NULL
@@ -41,7 +40,7 @@ static const uint64_t MaxSamples(65535);
 static const uint64_t MaxId(127);
 static const uint64_t MaxPretrigger(0x3fff);   // 14 bits of pre-trigger.
 
-
+static const bool debug(true);
 /**
  *  constructor:
  *      JUst needs to initialize the pointers to null; and create the bus object.
@@ -125,6 +124,9 @@ CSIS3316::onAttach(CReadoutModule& configuration) {
     m_pConfiguration->addIntListParameter(
         "-pretrigger",  0, MaxPretrigger ,4,4,4, MaxPretrigger/4 );
     m_pConfiguration->addBoolListParameter("-enable", 16, true);
+    m_pConfiguration->addIntListParameter(
+        "-dcoffset", 0, 0xffff, 16,16,16, 0    // Each chan has a DC offset. 
+    );
 
 }
 /**
@@ -179,12 +181,16 @@ CSIS3316::Initialize(CVMUSB& controller) {
     // We're going to assum all our operatons actually work - because I'm lazy
     // and very likely it's true.
 
-    m_pModule->register_write(SIS3316_KEY_RESET, 0);  // Module reset.
-    usleep(5*1000);                                   // wait. for it
-    m_pModule->register_write(SIS3316_KEY_ADC_FPGA_RESET, 0);  // Reset the FPGAs.
-    usleep(5*1000);                                   // Wait for it.
     m_pModule->register_write(SIS3316_KEY_DISARM, 0); // Keep disarmed.
-    m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR, 0); 
+    m_pModule->register_write(SIS3316_KEY_RESET, 0);  // Module reset.
+    usleep(10*1000);                                   // wait. for it
+    
+    if (debug) {
+        std::cerr << "After write to key_reset regiser\n";
+        dumpSetup();
+    }
+    m_pModule->adc_spi_reg_enable_adc_outputs();    // Tino says this is needed.
+
 
     // Set up the clock source:
 
@@ -238,120 +244,149 @@ CSIS3316::Initialize(CVMUSB& controller) {
             throw strmsg;
         }
 	// Set the clock frequency:
+        
+	    m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
+        m_pModule->configure_adc_fpga_iob_delays(
+            m_pModule->adc_125MHz_flag == 0 ?
+                0x1002 : 0x1020
+        );                              // Tino says this is needed too.
+    }
 
-	m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
-	
-        // Set up the header ids for the ADC groups:
+    m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR, 0); 
+    // Set up the header ids for the ADC groups:
 
-        auto id = m_pConfiguration->getUnsignedParameter("-id");
+    
+    // Set the DC offset registers:
+
+    auto offsets = m_pConfiguration->getUnsignedList("-dcoffset");
+    assert(offsets.size() == 16);
+    for (int i =0; i < 16; i++) {
+        m_pModule->adc_dac_offset_ch_array[i] = offsets[i];
+    }
+    m_pModule->write_all_adc_dac_offsets();
+    m_pModule->configure_all_adc_dac_offsets();
+
+    auto id = m_pConfiguration->getUnsignedParameter("-id");
         std::vector<int> idregs = {
             SIS3316_ADC_CH1_4_CHANNEL_HEADER_REG,
             SIS3316_ADC_CH5_8_CHANNEL_HEADER_REG,
             SIS3316_ADC_CH9_12_CHANNEL_HEADER_REG,
             SIS3316_ADC_CH13_16_CHANNEL_HEADER_REG
         };
+    for (int i =0; i < 4; i++) {
+        // We get to write bits 4-11 if the id and
+        // bits 2,3 are the group.  The bottom 2 bits are the
+        // adc within the group.  Note that
+        // all of this is shifted 20 bits up in to the register. 
+        // See the manual:  6.47
+        m_pModule->register_write(idregs[i], id << 24 | (i << 22));
+    }
+    // Set the trace lengths for each group.
+    // Note this also sets th raw buffer start indices -> 0.
 
-        for (int i =0; i < 4; i++) {
-            // We get to write bits 4-11 if the id and
-            // bits 2,3 are the group.  The bottom 2 bits are the
-            // adc within the group.  Note that
-            // all of this is shifted 20 bits up in to the register. 
-            // See the manual:  6.47
-            m_pModule->register_write(idregs[i], id << 24 | (i << 22));
+    auto samples = m_pConfiguration->getUnsignedList("-samples");
+    std::vector<int> bufregs = {
+        SIS3316_ADC_CH1_4_RAW_DATA_BUFFER_CONFIG_REG,
+        SIS3316_ADC_CH5_8_RAW_DATA_BUFFER_CONFIG_REG,
+        SIS3316_ADC_CH9_12_RAW_DATA_BUFFER_CONFIG_REG,
+        SIS3316_ADC_CH13_16_RAW_DATA_BUFFER_CONFIG_REG
+    };
+    assert(samples.size() == 4);
+    for (int i =0; i < 4; i++) {
+        m_pModule->register_write(bufregs[i], samples[i] << 16);
+    }
+
+    // Set the pre-triger for each group.
+
+    auto pretriggers = m_pConfiguration->getUnsignedList("-pretrigger");
+    std::vector<int> pretrigregs = {
+        SIS3316_ADC_CH1_4_PRE_TRIGGER_DELAY_REG,
+        SIS3316_ADC_CH5_8_PRE_TRIGGER_DELAY_REG,
+        SIS3316_ADC_CH9_12_PRE_TRIGGER_DELAY_REG,
+        SIS3316_ADC_CH13_16_PRE_TRIGGER_DELAY_REG
+    };
+    assert(pretriggers.size() == 4);
+    for (int i=0; i < 4; i++) {
+        m_pModule->register_write(pretrigregs[i], pretriggers[i]); 
+    }
+    // Set each ADC group in 'single-event' mode.
+    // starting address 0.
+    // We set the end threshold registesr to 1 and disable storing hits
+    // after full:
+
+    std::vector<int> endAddressRegisters = {
+        SIS3316_ADC_CH1_4_ADDRESS_THRESHOLD_REG,
+        SIS3316_ADC_CH5_8_ADDRESS_THRESHOLD_REG,
+        SIS3316_ADC_CH9_12_ADDRESS_THRESHOLD_REG,
+        SIS3316_ADC_CH13_16_ADDRESS_THRESHOLD_REG
+    };
+    // Even a single write will make the threshold.
+    for (int i = 0; i < endAddressRegisters.size(); i++) {
+        m_pModule->register_write(endAddressRegisters[i], 0x80000001);
+    }
+
+
+    // Note 0x100 is FP trigger enable according to Tino.
+    // The write to the T0 select register allows a stretched trigger-> ADCFPGA
+    // to be monitored on TO
+    // The write to U0 select makes it monitor sample logic  ready.
+    // TO - trigger signal (unstretched).
+    // C0 - Sampling clock.
+    // U0 - sample logic ready.
+    // Moved the order to what Tino suggested.
+    
+    
+    int status = m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
+    if (debug) {
+        if (status) {
+            std::cerr << "ACQCSR write failed: " << status << std::endl;
         }
-        // Set the trace lengths for each group.
-        // Note this also sets th raw buffer start indices -> 0.
+        std::cerr << " After acqcsr write: \n";
+        dumpSetup();
+        std::cerr << "------------------\n";
+    }
 
-        auto samples = m_pConfiguration->getUnsignedList("-samples");
-        std::vector<int> bufregs = {
-            SIS3316_ADC_CH1_4_RAW_DATA_BUFFER_CONFIG_REG,
-            SIS3316_ADC_CH5_8_RAW_DATA_BUFFER_CONFIG_REG,
-            SIS3316_ADC_CH9_12_RAW_DATA_BUFFER_CONFIG_REG,
-            SIS3316_ADC_CH13_16_RAW_DATA_BUFFER_CONFIG_REG
-        };
-        assert(samples.size() == 4);
-        for (int i =0; i < 4; i++) {
-            m_pModule->register_write(bufregs[i], samples[i] << 16);
-        }
+    // Set external trigger  bit 4 is NIM INPUT as trigger enable (actuall
+    // Trigger function).
 
-        // Set the pre-triger for each group.
+    m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
+    m_pModule->register_write(SIS3316_LEMO_OUT_TO_SELECT_REG, 0x04000000);
+    m_pModule->register_write(SIS3316_LEMO_OUT_UO_SELECT_REG, 0x100);
+    m_pModule->register_write(SIS3316_LEMO_OUT_CO_SELECT_REG, 1);
 
-        auto pretriggers = m_pConfiguration->getUnsignedList("-pretrigger");
-        std::vector<int> pretrigregs = {
-            SIS3316_ADC_CH1_4_PRE_TRIGGER_DELAY_REG,
-            SIS3316_ADC_CH5_8_PRE_TRIGGER_DELAY_REG,
-            SIS3316_ADC_CH9_12_PRE_TRIGGER_DELAY_REG,
-            SIS3316_ADC_CH13_16_PRE_TRIGGER_DELAY_REG
-        };
-        assert(pretriggers.size() == 4);
-        for (int i=0; i < 4; i++) {
-            m_pModule->register_write(pretrigregs[i], pretriggers[i]); 
-        }
-        // Set each ADC group in 'single-event' mode.
-        // starting address 0.
-        // We set the end threshold registesr to 1 and disable storing hits
-        // after full:
+    
+    // Set the enables for each ADC.
 
-        std::vector<int> endAddressRegisters = {
-            SIS3316_ADC_CH1_4_ADDRESS_THRESHOLD_REG,
-            SIS3316_ADC_CH5_8_ADDRESS_THRESHOLD_REG,
-            SIS3316_ADC_CH9_12_ADDRESS_THRESHOLD_REG,
-            SIS3316_ADC_CH13_16_ADDRESS_THRESHOLD_REG
-        };
-        // Even a single write will make the threshold.
-        for (int i = 0; i < endAddressRegisters.size(); i++) {
-            m_pModule->register_write(endAddressRegisters[i], 0x80000001);
-        }
-
-
-        // Set external trigger (I think) 0x80 set trigger function for TI,
-        // 0x10 is NIM input TI as trigger enable.
-
-        m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
-        
-
-        // Note 0x100 is FP trigger enable (I think)
-        // The write to the T0 select register allows a stretched trigger-> ADCFPGA
-        // to be monitored on TO
-        // The write to U0 select makes it monitor sample logic  ready.
-
-        m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
-        m_pModule->register_write(SIS3316_LEMO_OUT_TO_SELECT_REG, 0x02000000);
-        m_pModule->register_write(SIS3316_LEMO_OUT_UO_SELECT_REG, 0x100);
-        
-        // Set the enables for each ADC.
-
-        auto enables = m_pConfiguration->getBoolList("-enable");
-        std::vector<int> enableRegs = {
-            SIS3316_ADC_CH1_4_EVENT_CONFIG_REG,  
-            SIS3316_ADC_CH5_8_EVENT_CONFIG_REG,
-            SIS3316_ADC_CH9_12_EVENT_CONFIG_REG,
-            SIS3316_ADC_CH13_16_EVENT_CONFIG_REG
-        };
-        assert(enables.size() == 16);
-        for (int i = 0; i < enableRegs.size(); i++) {
-            uint32_t mask(0);          // Defaults are non enabled.
-            int firstchan = i*4;       // offset to ch 0 in the enables array
-            for(int ch = 0; ch < 4; ch++) {
-                if (enables[firstchan+ch]) {
-                    mask |= 8 << (ch*8);    // Enable trigger response
-                }
+    auto enables = m_pConfiguration->getBoolList("-enable");
+    std::vector<int> enableRegs = {
+        SIS3316_ADC_CH1_4_EVENT_CONFIG_REG,  
+        SIS3316_ADC_CH5_8_EVENT_CONFIG_REG,
+        SIS3316_ADC_CH9_12_EVENT_CONFIG_REG,
+        SIS3316_ADC_CH13_16_EVENT_CONFIG_REG
+    };
+    assert(enables.size() == 16);
+    for (int i = 0; i < enableRegs.size(); i++) {
+        uint32_t mask(0);          // Defaults are non enabled.
+        int firstchan = i*4;       // offset to ch 0 in the enables array
+        for(int ch = 0; ch < 4; ch++) {
+            if (enables[firstchan+ch]) {
+                mask |= 8 << (ch*8);    // Enable trigger response
             }
-            // mask has the full register value:
-
-            m_pModule->register_write(enableRegs[i], mask);
         }
-        // Don't save anything but the waveforms:
+        // mask has the full register value:
 
-        std::vector<int> evformatRegs = {
-            SIS3316_ADC_CH1_4_DATAFORMAT_CONFIG_REG,
-            SIS3316_ADC_CH5_8_DATAFORMAT_CONFIG_REG,
-            SIS3316_ADC_CH9_12_DATAFORMAT_CONFIG_REG,
-            SIS3316_ADC_CH13_16_DATAFORMAT_CONFIG_REG
-        };
-        for (int i = 0; i < evformatRegs.size(); i++) {
-            m_pModule->register_write(evformatRegs[i], 0);
-        }
+        m_pModule->register_write(enableRegs[i], mask);
+    }
+    // Don't save anything but the waveforms:
+
+    std::vector<int> evformatRegs = {
+        SIS3316_ADC_CH1_4_DATAFORMAT_CONFIG_REG,
+        SIS3316_ADC_CH5_8_DATAFORMAT_CONFIG_REG,
+        SIS3316_ADC_CH9_12_DATAFORMAT_CONFIG_REG,
+        SIS3316_ADC_CH13_16_DATAFORMAT_CONFIG_REG
+    };
+    for (int i = 0; i < evformatRegs.size(); i++) {
+        m_pModule->register_write(evformatRegs[i], 0);
     }
     // Reset the transfer FSMs.
     
@@ -364,10 +399,14 @@ CSIS3316::Initialize(CVMUSB& controller) {
     // Reset the transfer state machines:
 
     for (auto r: xferRegisters) {
-	m_pModule->register_write(r, 0);
+	    m_pModule->register_write(r, 0);
     }
-    // I think I can arm bank 1 and go:
+    // Re do the trigger routing?
 
+    m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
+    m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
+    // I think I can arm bank 1 and go:
+    if (debug) dumpSetup();
     m_pModule->register_write(SIS3316_KEY_DISARM_AND_ARM_BANK1, 0);
 }
 /**
@@ -413,50 +452,45 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
         SIS3316_FPGA_ADC3_MEM_BASE,
         SIS3316_FPGA_ADC4_MEM_BASE
     };
-    std::vector<int> statusReg = {
-	SIS3316_DATA_TRANSFER_ADC1_4_STATUS_REG,
-	SIS3316_DATA_TRANSFER_ADC5_8_STATUS_REG,
-	SIS3316_DATA_TRANSFER_ADC9_12_STATUS_REG,
-	SIS3316_DATA_TRANSFER_ADC13_16_STATUS_REG
-    };
+    
     auto enables = m_pConfiguration->getBoolList("-enable");
     auto samples = m_pConfiguration->getUnsignedList("-samples");
-    for (int i =0; i < xferRegisters.size(); i++) {
-        int size = sizeGroup(i, enables);
-        if (size) {      // There are enabled ADCs:
-            auto xferReg = base+xferRegisters[i];
-            auto fifo = base + fifoBases[i];   // Fifo for this group.
-            // See 4.6 of SIS manual.
-            // the three extra words are:
-            //   High bits of timestampid and format bits.
-            //   Low bits of the timestamp
-            //   Sample count etc.
-            auto xfers = samples[i] +  3; 
-            int ch = i*4;             // First chan of group.
-            for (int off = 0; off < 4; off++) {   // over an adc in the group
-                if (enables[ch]) {
-                    // Have to tranfer and read out:
-                    unsigned value(0x80000000);   // Start read xfer.
-                    if (off < 2) {      // Space select 0.
-                        value |= off * 0x03000000;
-                    } else {       
-                        value |= 0x10000000;   // Space select 1:
-                        value |= (off-2) * 0x03000000;   // address in space1.
+    // Ok I think that will read the data properly
 
-                    }
-                    list.addWrite32(xferReg, amod, value);
-                    list.addDelay(0xff);   //3.18usec
-		    list.addDelay(0xff);   // 3usec showed a busy transfer!
-		    list.addDelay(0xff);
-                    // transfer resets the FIFO so we need to read now:
-		    list.addRead32(base+statusReg[off], amod);  // Transfer status for debugging.
-                    list.addFifoRead32(fifo, blockAmod, xfers);
-                }
-                ch++;
-            }
-            
+    // For each channel that is enabled, we need to 
+    // start a data transfer for that channel,
+    // read that channel's fifo as the transfer is a flow through.
+    // the FIFO to VME.  The number of 32 bit transfers we need to do is:
+    // samples/2 + 3.  The three are for the header and samples header.
+    //
+    // Per Tino, we don't need to synchronize with the FIFO as long
+    // as the bus timeout is > 2usec as that's about what the first
+    // read takes to make it into the fifo.  To be sure of all this,
+    // we put a 2usec delay in the stack between starting the transfer and
+    // reading the FIFO.
+
+    for (int ch = 0; ch < 16; ch++) {
+        if (enables[ch]) {
+            int group = ch/4;     // Group number - selects the transfer register & FIFO.
+            int grpchan = ch%4;   // Channel within the group.
+            int space   = ch/2;   // 2 channels per memory space.
+            int base    = (ch%2) * 0x2000000;  // WHere in the space bank 1 is for that channel.
+
+            // figure out the value to write to xferRegisters[group] to start the transfer:
+
+            uint32_t xferstart = (2 << 30) |              // Read transfer.
+                (space << 28)              |              // select appropriate memory space.
+                base;
+            list.addWrite32(xferRegisters[group], amod, xferstart);  // Add start transfer to the list.
+            list.addDelay(10);                           // delay for the fifo to start fillling.
+
+            // Figure out how much data we'll have to read and add a block read for it:
+
+            unsigned readSize = samples[ch] / 2 + 3;    // Transfer in units of u32.
+
+            list.addBlockRead32(fifoBases[group], blockAmod, readSize);
+
         }
-        // Ok I think that will read the data properly.
     }
 
     // Reset the starts and sizes and rearm.
@@ -512,4 +546,52 @@ CSIS3316::sizeGroup(int groupNum, std::vector<bool>&enables)  {
         }
     }
     return result;
+}
+/**
+ * dump the setup:
+ */
+void
+CSIS3316::dumpSetup() {
+    
+    std::cout << std::hex;                       // Output registers in x
+    
+    std::cout << "NIM_INPUT_CONTROL  : 0x" << readRegister(SIS3316_NIM_INPUT_CONTROL_REG) 
+        << std::endl;
+    std::cout << "ACQUISITION_CSR    : 0x" << readRegister(SIS3316_ACQUISITION_CONTROL_STATUS)
+        << std::endl;
+    std::cout << "ADC_CH1_4_EVT_CFG  : 0x" << readRegister(SIS3316_ADC_CH1_4_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "ADC_CH5_8_EVT_CFG  : 0x" << readRegister(SIS3316_ADC_CH5_8_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "ADC_CH9_12_EVT_CFG : 0x" << readRegister(SIS3316_ADC_CH9_12_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "ADC_CH13_16_EVT_CFG: 0x" << readRegister(SIS3316_ADC_CH13_16_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "End Addr thr 1:      0x" << readRegister(SIS3316_ADC_CH1_4_ADDRESS_THRESHOLD_REG)
+        << std::endl;
+    std::cout << "End Addr thr 2:      0x" << readRegister(SIS3316_ADC_CH5_8_ADDRESS_THRESHOLD_REG)
+        << std::endl;
+    std::cout << "End Addr thr 3:      0x" << readRegister(SIS3316_ADC_CH9_12_ADDRESS_THRESHOLD_REG)
+        << std::endl;
+    std::cout << "End Addr thr 4:      0x" << readRegister(SIS3316_ADC_CH13_16_ADDRESS_THRESHOLD_REG)
+        << std::endl;
+        
+    std::cout << std::dec;                       // back to default.
+}
+
+/**
+ *  Read a  regiser value:
+ *    @param  offset - register offset.
+ *    @return unit32_t - value.
+ */
+uint32_t
+CSIS3316::readRegister(unsigned offset) {
+    unsigned value;
+    int s;
+    s = m_pModule->register_read(offset, &value);
+    if (s) {
+        std::cerr << "Failed to read register " << std::hex 
+            << offset <<  std::dec << " code: " << s << std::endl;
+    }
+    return value;
 }
