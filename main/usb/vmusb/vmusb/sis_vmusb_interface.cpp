@@ -419,7 +419,7 @@ int
 VME::vme_A32MBLT64FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words )  {
     int status = vme_A32DMA_D32FIFO_read(addr, data, request_nof_words*2, written_nof_words);
     *written_nof_words /= 2;
-    return status;!push
+    return status;
 
     
 }

@@ -134,13 +134,14 @@ noinst_HEADERS		=	CADCCommand.h  		\
 				sis3316Registers.h
 
 
-libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@
+libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@ 
 
 libVMUSBDaqConfig_la_CPPFLAGS = -I@top_srcdir@/usb/common/devices	\
 				-I@top_srcdir@/usb/common/configurableobject \
 				-I@top_srcdir@/usb/vmusb		\
 				-I@top_srcdir@/usb/vmusb/vmusb		\
 				-I@top_srcdir@/usb/common/devices	\
+				-I@top_srcdir@/base/thread              \
 				@LIBTCLPLUS_CFLAGS@			\
 				-I@top_srcdir@/base/headers		\
 				-I@top_srcdir@/base/os		\
@@ -150,6 +151,7 @@ libVMUSBDaqConfig_la_CPPFLAGS = -I@top_srcdir@/usb/common/devices	\
 libVMUSBDaqConfig_la_LIBADD	= \
 				@top_builddir@/usb/vmusb/vmusb/libVMUSB.la \
 				@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
+				@top_builddir@/base/thread/libdaqthreads.la \
 				@LIBTCLPLUS_LDFLAGS@	\
 				$(TCL_LDFLAGS) @THREADLD_FLAGS@
 
