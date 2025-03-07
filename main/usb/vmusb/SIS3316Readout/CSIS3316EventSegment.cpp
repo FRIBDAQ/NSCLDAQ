@@ -35,7 +35,7 @@
 #include <unistd.h>
 
 // Static data:
-static const bool debug(true);
+static const bool debug(false);
 
 //   The parameter constraints:
 
