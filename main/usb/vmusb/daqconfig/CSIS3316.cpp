@@ -432,7 +432,7 @@ void
 CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
     auto base = m_pConfiguration->getUnsignedParameter("-base");
     auto amod = CVMUSBReadoutList::a32UserData;
-    auto blockAmod = CVMUSBReadoutList::a32UserBlock;
+    auto blockAmod = CVMUSBReadoutList::a32UserBlock;           // D64 mblt transfer.
     // Disarm:
 
     list.addWrite32(base+SIS3316_KEY_DISARM, amod, 0);
@@ -486,9 +486,8 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
 
             // Figure out how much data we'll have to read and add a block read for it:
 
-            unsigned readSize = samples[ch] / 2 + 3;    // Transfer in units of u32.
-
-            list.addBlockRead32(fifoBases[group], blockAmod, readSize);
+            unsigned readSize = samples[ch] / 2 + 3;    // Transfer in units of u32
+            list.addFifoRead32(fifoBases[group], blockAmod, readSize);
 
         }
     }
