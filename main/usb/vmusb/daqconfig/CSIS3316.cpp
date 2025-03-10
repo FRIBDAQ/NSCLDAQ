@@ -378,7 +378,7 @@ CSIS3316::Initialize(CVMUSB& controller) {
         SIS3316_ADC_CH13_16_ANALOG_CTRL_REG,
     };
     auto gains = m_pConfiguration->getList("-range");
-    auto terminations = m_pConfiguration->getBoolList("-term50ohm");
+    auto terminations = m_pConfiguration->getBoolList("-term1Kohm");
 
     for (int group = 0; group < 4; group++) {
         int firstchan = group*4;
@@ -387,7 +387,7 @@ CSIS3316::Initialize(CVMUSB& controller) {
 
         uint32_t regvalue = 0;
         for (int i =0; i < 4; i++) {
-            auto gainval = RangeMap[Ranges[firstchan + i]];
+            auto gainval = RangeMap[gains[firstchan + i]];
             auto termbit = terminations[firstchan + i] ? 1: 0;
             regvalue |= (gainval | (termbit << 2)) << (i*8);
         }
