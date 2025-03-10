@@ -32,7 +32,7 @@
 // Clock sources:
 
 static const char* ClockSources[] = {
-    "fp", "250MHz","125Mhz", "50MHz", "25MHz", "12.5MHz", NULL
+    "fp", "250MHz","125MHz", "50MHz", "25MHz", "12.5MHz", NULL
 };
 
 static const uint64_t Zero(0);    // Shared low limit for many things.
