@@ -481,13 +481,15 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
             uint32_t xferstart = (2 << 30) |              // Read transfer.
                 (space << 28)              |              // select appropriate memory space.
                 base;
-            list.addWrite32(xferRegisters[group], amod, xferstart);  // Add start transfer to the list.
+
+            
+            list.addWrite32(xferRegisters[group] + base, amod, xferstart);  // Add start transfer to the list.
             list.addDelay(10);                           // delay for the fifo to start fillling.
 
             // Figure out how much data we'll have to read and add a block read for it:
 
             unsigned readSize = samples[ch] / 2 + 3;    // Transfer in units of u32
-            list.addFifoRead32(fifoBases[group], blockAmod, readSize);
+            list.addFifoRead32(fifoBases[group] + base, blockAmod, readSize);
 
         }
     }
