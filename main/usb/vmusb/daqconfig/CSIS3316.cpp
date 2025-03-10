@@ -23,6 +23,7 @@
 #include <sis_vmusb_interface.h>
 #include "sis3316.h"                   // Register definitions.
 
+#include <iostream>
 #include <sstream>
 #include <unistd.h>
 #include <assert.h>
@@ -40,7 +41,7 @@ static const uint64_t MaxSamples(65535);
 static const uint64_t MaxId(127);
 static const uint64_t MaxPretrigger(0x3fff);   // 14 bits of pre-trigger.
 
-static const bool debug(true);
+static const bool debug(false);
 /**
  *  constructor:
  *      JUst needs to initialize the pointers to null; and create the bus object.
@@ -474,21 +475,25 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
             int group = ch/4;     // Group number - selects the transfer register & FIFO.
             int grpchan = ch%4;   // Channel within the group.
             int space   = ch/2;   // 2 channels per memory space.
-            int base    = (ch%2) * 0x2000000;  // WHere in the space bank 1 is for that channel.
+            int chbase    = (ch%2) * 0x2000000;  // WHere in the space bank 1 is for that channel.
 
             // figure out the value to write to xferRegisters[group] to start the transfer:
 
             uint32_t xferstart = (2 << 30) |              // Read transfer.
                 (space << 28)              |              // select appropriate memory space.
-                base;
+                chbase;
 
-            
+	    std::cerr << std::hex << "Will start transfer writing to : "
+		      << xferRegisters[group] + base
+		      << " value " << xferstart << std::endl;
             list.addWrite32(xferRegisters[group] + base, amod, xferstart);  // Add start transfer to the list.
             list.addDelay(10);                           // delay for the fifo to start fillling.
 
             // Figure out how much data we'll have to read and add a block read for it:
 
             unsigned readSize = samples[ch] / 2 + 3;    // Transfer in units of u32
+	    std::cerr << " Will read from " <<  base + fifoBases[group] <<
+		std::dec << " long count: "<<  readSize << std::endl;
             list.addFifoRead32(fifoBases[group] + base, blockAmod, readSize);
 
         }
