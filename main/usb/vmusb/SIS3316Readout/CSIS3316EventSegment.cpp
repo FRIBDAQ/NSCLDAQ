@@ -45,6 +45,18 @@ static const char* ClockSources[] = {
     "fp", "250MHz","125MHz", "50MHz", "25MHz", "12.5MHz", NULL
 };
 
+// valid input ranges values:
+
+static const char* Ranges[] = {
+    "5V", "2V", "1.9V", NULL
+};
+// Map ranges -> gain bits
+
+static std::map<std::string, int> RangeMap= {
+    {"5V", 0}, {"2V", 1}, {"1.9V", 2}
+};
+
+
 static const uint64_t Zero(0);    // Shared low limit for many things.
 static const uint64_t MaxSamples(65535);
 static const uint64_t MaxId(127);
@@ -310,7 +322,34 @@ CSIS3316EventSegment::initialize() {
     m_pModule->register_write(SIS3316_LEMO_OUT_UO_SELECT_REG, 0x100);
     m_pModule->register_write(SIS3316_LEMO_OUT_CO_SELECT_REG, 1);
 
-    
+    // Set the range and termination registers:
+    // registeroffsets (will use m_pModule->register_write for base).
+
+    std::vector<int> gaintermRegisters = {
+        SIS3316_ADC_CH1_4_ANALOG_CTRL_REG,
+        SIS3316_ADC_CH5_8_ANALOG_CTRL_REG,
+        SIS3316_ADC_CH9_12_ANALOG_CTRL_REG,
+        SIS3316_ADC_CH13_16_ANALOG_CTRL_REG,
+    };
+    auto gains = m_pConfiguration->getList("-range");
+    auto terminations = m_pConfiguration->getBoolList("-term1Kohm");
+
+    for (int group = 0; group < 4; group++) {
+        int firstchan = group*4;
+
+        // Over channels within the group:
+
+        uint32_t regvalue = 0;
+        for (int i =0; i < 4; i++) {
+            auto gainval = RangeMap[gains[firstchan + i]];
+            auto termbit = terminations[firstchan + i] ? 1: 0;
+            regvalue |= (gainval | (termbit << 2)) << (i*8);
+        }
+        std::cerr << " Writing gain/term " << std::hex << regvalue 
+            << " to " << gaintermRegisters[group]
+            << std::dec << std::endl;
+        m_pModule->register_write(gaintermRegisters[group], regvalue);
+    }
     // Set the enables for each ADC.
 
     auto enables = m_pConfiguration->getBoolList("-enable");
@@ -483,6 +522,8 @@ CSIS3316EventSegment::setupConfiguration() {
     m_pConfiguration->addIntListParameter(
         "-dcoffset", 0, 0xffff, 16,16,16, 0    // Each chan has a DC offset. 
     );
+    m_pConfiguration->addEnumListParameter("-range", Ranges, "5V", 16, 16, 16);
+    m_pConfiguration->addBoolListParameter("-term1Kohm", 16,  true);
 }
 
 /**
