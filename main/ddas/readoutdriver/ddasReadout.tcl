@@ -17,6 +17,7 @@ exec tclsh "$0" ${1+"$@"}
 #    Authors:
 #            Ron Fox
 #            Giordano Cerriza
+#            Aaron Chester
 #	     NSCL
 #	     Michigan State University
 #	     East Lansing, MI 48824-1321
@@ -122,7 +123,8 @@ set options {
     {window.arg          10 "Sorting window in seconds."}
     {port.arg        "" "Enable DDASReadout TclServer functionality on specified port"}
     {init-script.arg "" "DDASReadout initialization script run in the main interpreter"}
-    {log.arg   "" "DDASReadout log file"}
+    {log.arg         "" "DDASReadout log file"}
+    {fastboot.arg "off" "Enable/disable settings-only boot [on/off]"}
     {debug.arg  0 "DDASReadout debug level [0-2]: higher numbers set more debugging output"}
 }
 
@@ -162,7 +164,7 @@ set infinity      [dict get $parsed infinity]
 set clkmult       [dict get $parsed clockmultiplier]
 set scalerSecs    [dict get $parsed scalerseconds]
 set rawRing       [dict get $parsed readoutring]
-
+set fastboot      [dict get $parsed fastboot]
 
 if {$infinity} {
     set infstring "INFINITY_CLOCK=1"
@@ -170,7 +172,13 @@ if {$infinity} {
     set infstring ""
 }
 
-set readoutCmd "$infstring SCALER_SECONDS=$scalerSecs FIFO_THRESHOLD=$fifoThreshold EVENT_BUFFER_SIZE=$bufferSize $readoutCmd"
+if {$fastboot} {
+    set fbstring "DDAS_BOOT_WHEN_REQUESTED=1"
+} else {
+    set fbstring ""
+}
+
+set readoutCmd "$infstring $fbstring SCALER_SECONDS=$scalerSecs FIFO_THRESHOLD=$fifoThreshold EVENT_BUFFER_SIZE=$bufferSize $readoutCmd"
 
 foreach optMapEntry $ddasOptionMap {
     set opt [lindex $optMapEntry 0]
