@@ -828,6 +828,7 @@ class TraceUtilities:
         lib.CPixieTraceUtilities_delete.argtypes = [POINTER(c_char)]
 
         self.obj = lib.CPixieTraceUtilities_new()
+        self.logger = logging.getLogger("qtscope_logger")
     
     def read_trace(self, module, channel):
         """Wrapper to read a trace from a single channel.
