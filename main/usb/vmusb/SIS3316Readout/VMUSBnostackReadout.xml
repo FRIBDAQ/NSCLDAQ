@@ -463,8 +463,7 @@ sis3316 cget <replaceable>name ?option?</replaceable>
                             <term><option>-pretrigger </option> <replaceable>four-element-list </replaceable> </term>
                             <listitem><para>
                                 The pretrigger in units of samples for each for each of the 
-                                ADC FPGAs.   THis defaults to  16386 which is probably not a good
-                                value for most applications.
+                                ADC FPGAs.   THis defaults to  0.
                             </para></listitem>
                         </varlistentry>
                         <varlistentry>
