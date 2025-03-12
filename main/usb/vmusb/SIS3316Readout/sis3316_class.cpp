@@ -3233,6 +3233,7 @@ int sis3316_adc::get_adc_fpga_iob_delay_value(unsigned int enum_sample_rate, uns
 				case SIS::ADC::SIS3316::SAMPLERATE_62M5SPS: *iob_delay_value = 0x1060; break;
 				case SIS::ADC::SIS3316::SAMPLERATE_50MSPS:  *iob_delay_value = 0x20;   break;
 				case SIS::ADC::SIS3316::SAMPLERATE_25MSPS:  *iob_delay_value = 0x20;   break;
+				case SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS: *iob_delay_value = 0x20; break;  // Wait on tino?
 				default:     return -11;  // unknown or invalid sample_rate type
 					break;
 			}
