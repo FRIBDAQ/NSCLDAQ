@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <map>
 
+
 // Parameter constraints:
 
 // Clock sources:
@@ -47,6 +48,19 @@ static const char* Ranges[] = {
 
 static std::map<std::string, int> RangeMap= {
     {"5V", 0}, {"2V", 1}, {"1.9V", 2}
+};
+
+// Decimation values..and their meanings in the SIS3316_ADC_CHN_M_AVERAGE_CONFIGURATION_REG
+
+static const char* Decimations[] = {
+    "off", "2", "4", "8", "16", "32", "64", "128", "256", "512"
+};
+//Shifted into place, these are the decimation register values that go with
+// the decimation selection strings:
+static std::map<std::string, unsigned> DecimationValues = {
+    {"off", 0}, {"2", 0x18}, {"4", 0x10}, {"8", 0x11},
+    {"16", 0x12}, {"32", 0x13}, {"64", 0x14}, 
+    {"128", 0x15}, {"256", 0x16}, {"256", 17}
 };
 
 static const uint64_t Zero(0);    // Shared low limit for many things.
@@ -144,6 +158,7 @@ CSIS3316::onAttach(CReadoutModule& configuration) {
     m_pConfiguration->addEnumListParameter("-range", Ranges, "5V", 16, 16, 16);
     m_pConfiguration->addBoolListParameter("-term1Kohm", 16,  true);
     m_pConfiguration->addIntegerParameter("-adcdelaytap", 0x02);   // 250MHz.
+    m_pConfiguration->addEnumListParameter("-decimations", Decimations, "off", 16,16,16);
 
 }
 /**
@@ -425,6 +440,25 @@ CSIS3316::Initialize(CVMUSB& controller) {
     for (int i = 0; i < evformatRegs.size(); i++) {
         m_pModule->register_write(evformatRegs[i], 0);
     }
+    // Set the decimations:
+
+    auto decimations = m_pConfiguration->getList("-decimations");
+    std::vector<int> decimationRegisters = {
+        SIS3316_ADC_CH1_4_AVERAGE_CONFIGURATION_REG,
+        SIS3316_ADC_CH5_8_AVERAGE_CONFIGURATION_REG,
+        SIS3316_ADC_CH9_12_AVERAGE_CONFIGURATION_REG,
+        SIS3316_ADC_CH13_16_AVERAGE_CONFIGURATION_REG
+    };
+    int firstchan =0;
+    for (auto reg : decimationRegisters) {
+        int32_t value(0);
+        for (int i = 0; i < 4; i++) {
+            value |= (DecimationValues[decimations[firstchan + i]] << (i*8)); // Or in the firstchan + i channel decimation.
+        }
+        m_pModule->register_write(reg, value);               
+        firstchan += 4;                   // next 4 chans.
+    }
+
     // Reset the transfer FSMs.
     
     std::vector<int> xferRegisters = {
