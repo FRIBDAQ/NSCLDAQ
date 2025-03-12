@@ -44,7 +44,9 @@ static const bool debug(false);
 // know how to set the delays so we ignore that for now.
 static const char* ClockSources[] = {
     "fp", 
-    "250MHz","125MHz", "50MHz", "25MHz", "12.5MHz", NULL
+    "250MHz","125MHz", "50MHz", "25MHz", 
+    // "12.5MHz",     // For now can't give 12.5MHz clock.
+    NULL
 };
 
 // valid input ranges values:

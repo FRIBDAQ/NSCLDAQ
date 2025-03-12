@@ -37,10 +37,17 @@
 #include <iostream>
 #include <cstdio>
 
+
+
+
 void usleep(unsigned int uint_usec);
+
 
 using namespace std;
 #endif
+
+static const unsigned  I2CSPIN_MAX(2000);                 // Max times for i2c busy poll.
+
 
 namespace SIS {
 	namespace ADC {
@@ -1448,10 +1455,10 @@ int sis3316_adc::I2cStart(uint32_t base)
 			return rc;
 		}
 		i++;
-	} while ((tmp & (1 << I2C_BUSY)) && (i < 1000));
+	} while ((tmp & (1 << I2C_BUSY)) && (i < I2CSPIN_MAX));
 
 	// register access problem
-	if (i == 1000)
+	if (i == I2CSPIN_MAX)
 	{
 		return -100;
 	}
@@ -1483,10 +1490,10 @@ int sis3316_adc::I2cStop(uint32_t base)
 			return rc;
 		}
 		i++;
-	} while ((tmp & (1 << I2C_BUSY)) && (i < 1000));
+	} while ((tmp & (1 << I2C_BUSY)) && (i < I2CSPIN_MAX));
 
 	// register access problem
-	if (i == 1000)
+	if (i == I2CSPIN_MAX)
 	{
 		return -100;
 	}
@@ -1518,10 +1525,10 @@ int sis3316_adc::I2cWriteByte(uint32_t base, unsigned char data, char* ack)
 			return rc;
 		}
 		i++;
-	} while ((tmp & (1 << I2C_BUSY)) && (i < 1000));
+	} while ((tmp & (1 << I2C_BUSY)) && (i < I2CSPIN_MAX));
 
 	// register access problem
-	if (i == 1000)
+	if (i == I2CSPIN_MAX)
 	{
 		return -100;
 	}
@@ -1563,10 +1570,10 @@ int sis3316_adc::I2cReadByte(uint32_t base, unsigned char* data, char ack)
 			return rc;
 		}
 		i++;
-	} while ((tmp & (1 << I2C_BUSY)) && (i < 1000));
+	} while ((tmp & (1 << I2C_BUSY)) && (i < I2CSPIN_MAX));
 
 	// register access problem
-	if (i == 1000)
+	if (i == I2CSPIN_MAX)
 	{
 		return -100;
 	}
@@ -3226,6 +3233,7 @@ int sis3316_adc::get_adc_fpga_iob_delay_value(unsigned int enum_sample_rate, uns
 				case SIS::ADC::SIS3316::SAMPLERATE_62M5SPS: *iob_delay_value = 0x1060; break;
 				case SIS::ADC::SIS3316::SAMPLERATE_50MSPS:  *iob_delay_value = 0x20;   break;
 				case SIS::ADC::SIS3316::SAMPLERATE_25MSPS:  *iob_delay_value = 0x20;   break;
+				case SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS: *iob_delay_value = 0x20; break;  // Wait on tino?
 				default:     return -11;  // unknown or invalid sample_rate type
 					break;
 			}
@@ -3243,6 +3251,7 @@ int sis3316_adc::get_adc_fpga_iob_delay_value(unsigned int enum_sample_rate, uns
 				case SIS::ADC::SIS3316::SAMPLERATE_62M5SPS:    *iob_delay_value = 0x20;    break;
 				case SIS::ADC::SIS3316::SAMPLERATE_50MSPS:     *iob_delay_value = 0x30;    break;
 				case SIS::ADC::SIS3316::SAMPLERATE_25MSPS:     *iob_delay_value = 0x30;    break;
+				case SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS:   *iob_delay_value = 0x30;    break;  // tino?
 				default: 	return -11;  // unknown or invalid sample_rate type
 					break;
 				
@@ -4451,7 +4460,9 @@ int sis3316_adc::read_DMA_Channel_PreviousBankDataBuffer(unsigned int bank2_read
 			}
 			if (retry_counter > 1)
 			{
-				printf("Info: retry_counter = %d \n", retry_counter);
+				// Don't want every evcent that needs a retry to
+				// piss and moan.
+				//printf("Info: retry_counter = %d \n", retry_counter);
 			}
 		}
 
