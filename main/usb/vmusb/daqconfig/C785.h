@@ -60,21 +60,23 @@ class CVMUSBReadoutList;
    Configuration parameters are:
 
    \verbatim
-   Parameter      Value type          Value meaning.
-   -base          integer             Base address of the module.
-   -geo           integer             Geographical address programmed into the module
-   -thresholds    integer[32]         32 threshold values that manage the 0 supression
-   -smallthresholds bool              True if 'small' thresholds used.
-   -ipl           integer             Interrupt priority level
-   -vector        integer             Interrupt vector.
-   -highwater     integer             Number of events needed to fire interrupt.
-   -fastclear     integer             Fast clear interval values are in units of
-                                      1/32 of a usec.
-   -supressrange  bool                true to supress out of range data.
-   -timescale     int                 The full scale range in ns.  Note there is
-                                      a granularity of 35ps to the range.
-                                      this must be an integer between 140 and 1200.
-                                      Defaults to 600ns.
+   Parameter               Value type          Value meaning.
+   -base                   integer             Base address of the module.
+   -geo                    integer             Geographical address programmed into the module
+   -thresholds             integer[32]         32 threshold values that manage the 0 supression
+   -smallthresholds        bool                True if 'small' thresholds used.
+   -ipl                    integer             Interrupt priority level
+   -vector                 integer             Interrupt vector.
+   -highwater              integer             Number of events needed to fire interrupt.
+   -fastclear              integer             Fast clear interval values are in units of
+                                               1/32 of a usec.
+   -supressrange           bool                true to supress out of range data.
+   -supresseunderthreshold bool                true to supress under threshold
+   -supresseoverflow       bool                true to supress overflow
+   -timescale              int                 The full scale range in ns.  Note there is
+                                               a granularity of 35ps to the range.
+                                               this must be an integer between 140 and 1200.
+                                               Defaults to 600ns.
    \endverbatim
 
    These will also have reasonable defaults programmed into them.. see
