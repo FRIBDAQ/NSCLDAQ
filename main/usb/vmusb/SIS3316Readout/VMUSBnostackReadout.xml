@@ -470,7 +470,33 @@ sis3316 cget <replaceable>name ?option?</replaceable>
                             <term><option>-enable </option> <replaceable>16-elment-boolean-list </replaceable> </term>
                             <listitem><para>
                                 Each element of the list, when true, enables a channel, when false,
-                                disables it.  the first element is channel 0 and so on .
+                                disables it.  the first element is channel 0 and so on.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-range</option> <replaceable>|5V | 2V | 1.2V</replaceable></term>
+                            <listitem><para>
+                                Sets the ADC input range to one of the above allowed values.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-term1Kohm</option> <replaceable>boolean</replaceable></term>
+                            <listitem><para>
+                                If true, the input terminations are set to 1KOhm, if false, 50Ohm.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-adcdelaytap</option> <replaceable>value</replaceable></term>
+                            <listitem><para>
+                                The SIS3316 timings for internal data transfer depend on the sampling clock.
+                                If the front panel clock is seleted (<option>--clock</option> <literal>fp</literal>),
+                                The user must supply the correct value for the delay line tap selection.
+                                Refer to section 6.39 of the manual which includes a table of delay line settings.
+                                If a half sample delay is required, your value must have bit <literal>0x1000</literal>
+                                set.  E.g. the correct value for an external 100MHz clock and a 250MHz digitizer is 
+                                <literal>0x1020</literal>.
+                            </para><para>
+                                If you get this delay value wrong, your data will be corrupted.
                             </para></listitem>
                         </varlistentry>
                     </variablelist>

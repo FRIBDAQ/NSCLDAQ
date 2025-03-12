@@ -3813,7 +3813,7 @@ public:
                     </term>
                     <listitem><para>
                         Performs a 32 bit write
-                        of <parameter>data</parameter to <parameter>addr</parameter>.
+                        of <parameter>data</parameter> to <parameter>addr</parameter>.
                         The address modifier used is 
                         <varname>CVMUSBReadoutList::a32UserData</varname>
                     </para></listitem>
