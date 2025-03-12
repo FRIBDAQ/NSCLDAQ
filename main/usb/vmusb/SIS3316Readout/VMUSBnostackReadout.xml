@@ -431,7 +431,6 @@ sis3316 cget <replaceable>name ?option?</replaceable>
                                 <listitem><para><literal>125MHz</literal></para></listitem>
                                 <listitem><para><literal>50MHz</literal></para></listitem>
                                 <listitem><para><literal>25MHz</literal></para></listitem>
-                                <listitem><para><literal>12.5MHz</literal></para></listitem>
                             </itemizedlist>
                             
                                 This software does not verify the module capabilities.  If you select
@@ -497,6 +496,25 @@ sis3316 cget <replaceable>name ?option?</replaceable>
                                 <literal>0x1020</literal>.
                             </para><para>
                                 If you get this delay value wrong, your data will be corrupted.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-decimations</option> <replaceable>16-element-list</replaceable></term>
+                            <listitem><para>
+                                The value of this parameter is a list of 16 decimation selectors, one for each
+                                ADC channel.  The legal values for each element are:
+                                <literal>off, 2, 4, 8, 16, 32, 64, 128, 256, 512</literal>.
+                                <literal>off</literal> disables decimation for that channel.
+                                Other values specify the decimation factor (the SIS3316 does decimation by averaging).
+                                So, for example, the value <literal>4</literal> means that each sample value in 
+                                the event, represents the average of four consecutive ADC sample values for that channel.
+                                The default value is a list of 16 <literal>off</literal> values.  
+                            </para><para>
+                                Decimation can be used to get effective clock speeds (on a per channel basis) 
+                                that are slower than the actual selected clock.  For example
+                                selecting a decimation of <literal>4</literal> with a clock selection of
+                                <literal>50MHz</literal> produces an effective clock of 12.5MHz which is
+                                not directly supported by the code.
                             </para></listitem>
                         </varlistentry>
                     </variablelist>
