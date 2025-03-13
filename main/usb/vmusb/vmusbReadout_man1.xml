@@ -10221,6 +10221,12 @@ sis3316 cget <replaceable>name</replaceable>
                             the parameter patterns for the other clock frequencies.
                             Please advise if this was done incorrectly.
                         </para>
+                        <para>
+                            If you use the front panel clock (<literal>fp</literal>), you must supply
+                            the correct value for the <option>-adcdelaytap</option> or else the
+                            data read from the module will be corrupted.  See the 
+                            <option>-adcdelaytap</option> below.
+                        </para>
                     </listitem>
                 </varlistentry>
                 <varlistentry>
@@ -10265,6 +10271,70 @@ sis3316 cget <replaceable>name</replaceable>
                         </para>
                     </listitem>
                 </varlistentry>
+                <varlistentry>
+                    <term><option>-range</option>  <replaceable>16-element-list</replaceable> </term>
+                    <listitem><para>
+                        Sets the attenuation circuits in each of the ADC channels to define the full scale
+                        range for the channel.  Each of the 16 elements of the list can  be one of:
+                        <literal>5V</literal>, <literal>2V</literal>,  or <literal>1.9V</literal>.  The range
+                        for each channel can be set independently.   If not specified, <literal>5V</literal>
+                        is selected for all channels.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><option>-term1Kohm</option>  <replaceable>16-element-boolean-list</replaceable> </term>
+                    <listitem><para>
+                        Each element of the list determines the input impedence.  A <literal>true</literal> selects
+                        1KOhm termination. <literal>false</literal>, the default, selects 50Ohm input termination.
+                        The default is a 16 element list of <literal>false</literal> specifying 50Ohm termination for
+                        all channels.   The input impedance an be selected independently for each channel.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><option>-adcdelaytap</option>  <replaceable>integer</replaceable> </term>
+                    <listitem><para>
+                        Refer to sections 2.5.3 and 6.39 of the manual.
+                        The timing of data transfer from ADC to its associated FPGA depends on the digitization clock
+                        frequency.   This timing is set programmatically via delay line taps.
+                        If you select an internal, programmable clock with the <option>clock</option>,
+                        the software determines the correct values for the input tap delay registers and this option is 
+                        ignored.
+                    </para><para>
+                        Obviously, with an external, clock (<literal>fp</literal>) the software cannot know the correct values for these delays.
+                        you must therefore use <option>-adcdelaytap</option> to tell the software how to set this value.
+                        Refer to the tabls in section 6.39 of the manual.  In your value for this parameter, you must not
+                        set the channel select bits but you might need to set the 1/2 clock delay bit.  For example,
+                        with a 100MHz input clock on a 250MHz ADC module, you must set the value 
+                        <literal>0x1020</literal>  where 
+                        <literal>0x20</literal> is the
+                        delay value and <literal>0x1000</literal> is the 1/2 sample delay bit.  For an external 125MHz clock, you must use
+                        <literal>0x50</literal>, as that clock frequency does not require an additional 1/2 sample delay.
+                    </para><para>
+                        <warning>
+                            <title>WARNING</title>
+                            <para>
+                                Using a front panel, external clock with an incorrect value for <option>-adcdelaytap</option>
+                                will result in corrupted trace data.
+                            </para>
+                        </warning>
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><option>-decimations</option>  <replaceable>16-element-list</replaceable> </term>
+                    <listitem><para>
+                        Sets the averaging decimation for each channel.  You can use decimation to effectively 
+                        lower the sampling clock frequency.  If decimation is enabled, each sample in the returned
+                        waveform is the average of several consecutive samples.
+                        Valid values for each list element are:
+                        <literal>off, 2, 4, 8, 16, 32, 64, 128, 256, 512</literal>
+                    </para><para>
+                        <literal>off</literal> which is the default value for all channes if this is not specified
+                        disables decimation;  each waveform value is one sample from the ADC.    The other values
+                        specify the number of adc samples that are averaged to produce the trace in the event.
+                        Note that this averaging is not done with a sliding window; if you select 2, for example the first trace element will be
+                        the average of samples 0, 1 and the second the average of 2, 3.
+                    </para></listitem>
+                </varlistentry>
             </variablelist>
         </para>
     </refsect1>
@@ -10273,13 +10343,12 @@ sis3316 cget <replaceable>name</replaceable>
         <informalexample><programlisting>
 sis3316 create waves -base 0x23000000
 sis3316 config waves -clock 50MHz -samples [lrepeat 4 500] 
-sis3316 config waves -id 6 -pretrigger [lrepeat 4 250]
 sis3316 config waves -enable [lrepeat 16 true]
         </programlisting></informalexample>
         <para>
             When <literal>waves</literal> is added to an event stack,
             the digitizer is programmed to 50MHz to take 500 samples on 
-            all of the channels with the samples centered on the trigger.
+            all of the channels.
             All channels are enabled.
         </para>
         <para>
