@@ -226,56 +226,8 @@ CSIS3316::Initialize(CVMUSB& controller) {
 
     // Set up the clock source:
 
-    int whichClock = m_pConfiguration->getEnumParameter("-clock", ClockSources);
-    if (std::string("fp") == ClockSources[whichClock]) {
-        // Set up for NIM clock input:
-
-        m_pModule->register_write(SIS3316_SAMPLE_CLOCK_DISTRIBUTION_CONTROL, 3);
-        // The delay line settings must be providec by the user:
-
-        m_pModule->configure_adc_fpga_iob_delays(m_pConfiguration->getIntegerParameter("-adcdelaytap"));
-    } else {
-        // internal clock:
-
-        m_pModule->register_write(SIS3316_SAMPLE_CLOCK_DISTRIBUTION_CONTROL, 0);
-        
-        // Now set the sample freq:
-
-        std::string freq = ClockSources[whichClock];
-        unsigned int hs_div, n1div;
-        double fft_freq;
-        int samplerate_enum;
-        if (freq == "250MHz") {
-            
-            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_250MSPS;
-        } else if (freq == "125MHz") {
-            
-            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_125MSPS;
-        } else if (freq == "50MHz") {
-            
-            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_50MSPS;
-        } else if (freq == "25MHz") {
-                        
-        } else if (freq == "12.5MHz") {
-            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS;
-            
-        } else {
-            std::stringstream strmsg;
-            strmsg << freq << " Is not a supported clock frequency\n";
-            throw strmsg;
-        }
-	// Set the clock frequency:
-        
-        m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
-            samplerate_enum,
-            &hs_div, &n1div, &fft_freq);
-        m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
-        unsigned int iobdelay;
-        m_pModule->get_adc_fpga_iob_delay_value(samplerate_enum, &iobdelay);
-        m_pModule->configure_adc_fpga_iob_delays(
-            iobdelay
-        );                              // Tino says this is needed too.
-    }
+    setClock();
+    
     m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR, 0); 
     // Set up the header ids for the ADC groups:
 
@@ -673,4 +625,60 @@ CSIS3316::readRegister(unsigned offset) {
             << offset <<  std::dec << " code: " << s << std::endl;
     }
     return value;
+}
+/**
+ *  do al the fal-de-ral needed to set the clock source.
+ */
+void CSIS3316::setClock() {
+    int whichClock = m_pConfiguration->getEnumParameter("-clock", ClockSources);
+    
+    if (std::string("fp") == ClockSources[whichClock]) {
+        // Set up for NIM clock input:
+
+        m_pModule->register_write(SIS3316_SAMPLE_CLOCK_DISTRIBUTION_CONTROL, 3);
+        // The delay line settings must be providec by the user:
+
+        m_pModule->configure_adc_fpga_iob_delays(m_pConfiguration->getIntegerParameter("-adcdelaytap"));
+    } else {
+        // internal clock:
+
+        m_pModule->register_write(SIS3316_SAMPLE_CLOCK_DISTRIBUTION_CONTROL, 0);
+        
+        // Now set the sample freq:
+
+        std::string freq = ClockSources[whichClock];
+        unsigned int hs_div, n1div;
+        double fft_freq;
+        int samplerate_enum;
+        if (freq == "250MHz") {
+            
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_250MSPS;
+        } else if (freq == "125MHz") {
+            
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_125MSPS;
+        } else if (freq == "50MHz") {
+            
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_50MSPS;
+        } else if (freq == "25MHz") {
+                        
+        } else if (freq == "12.5MHz") {
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS;
+            
+        } else {
+            std::stringstream strmsg;
+            strmsg << freq << " Is not a supported clock frequency\n";
+            throw strmsg;
+        }
+	// Set the clock frequency:
+        
+        m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
+            samplerate_enum,
+            &hs_div, &n1div, &fft_freq);
+        m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
+        unsigned int iobdelay;
+        m_pModule->get_adc_fpga_iob_delay_value(samplerate_enum, &iobdelay);
+        m_pModule->configure_adc_fpga_iob_delays(
+            iobdelay
+        );                              // Tino says this is needed too.
+    }
 }

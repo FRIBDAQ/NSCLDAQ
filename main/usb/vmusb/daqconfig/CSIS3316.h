@@ -92,6 +92,7 @@ private:
     int sizeGroup(int groupNum, std::vector<bool>& enables);
     void dumpSetup();
     uint32_t readRegister(unsigned offset);
+    void setClock();
 };
 
 #endif
