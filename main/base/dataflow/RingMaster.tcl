@@ -837,12 +837,9 @@ setLoggingVerbosity $verbosityLevel
 #
 #
 set allocator [portAllocator new]
-#
-#  Entry point. We get our listen port from the NSCL Port manage.  This 
-#  also registers us for lookup by clients.
-#
-#
-set allocator [portAllocator new]
+
+# DOn't start twice.  Issue #252
+
 
 set services [$allocator listPorts]
 foreach service $services {
