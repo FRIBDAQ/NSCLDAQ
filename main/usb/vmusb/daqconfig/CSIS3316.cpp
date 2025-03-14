@@ -545,8 +545,8 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
         if (enables[ch]) {
             int group = ch/4;     // Group number - selects the transfer register & FIFO.
             int grpchan = ch%4;   // Channel within the group.
-            int space   = ch/2;   // 2 channels per memory space.
-            int chbase    = (ch%2) * 0x2000000;  // WHere in the space bank 1 is for that channel.
+            int space   = grpchan/2;   // 2 channels per memory space.
+            int chbase    = (grpchan%2) * 0x2000000;  // WHere in the space bank 1 is for that channel.
 
             // figure out the value to write to xferRegisters[group] to start the transfer:
 
