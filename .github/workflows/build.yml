@@ -109,6 +109,7 @@ jobs:
         working-directory: ./main/oot
         run: |
           make -j2 dist
+          mv nscldaq-${{ github.ref_name }}.tar.gz nscldaq-${{ github.ref_name }}-dist.tar.gz
       - name: Complete source distribution package
         if: ${{ inputs.packaging == true && inputs.dist-packaging == true}}
         uses: actions/upload-artifact@v4
