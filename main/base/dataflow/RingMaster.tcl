@@ -72,7 +72,7 @@ exec tclsh ${0} ${@}
 
 set libdir [file join [file dirname [info script]] .. TclLibs]
 set libdir [file normalize $libdir]
-
+set ServiceName "RingMaster"
 lappend auto_path $libdir
 package require removetcllibpath;   # Probably not a problem except in testing.
 package require portAllocator
@@ -837,9 +837,23 @@ setLoggingVerbosity $verbosityLevel
 #
 #
 set allocator [portAllocator new]
+#
+#  Entry point. We get our listen port from the NSCL Port manage.  This 
+#  also registers us for lookup by clients.
+#
+#
+set allocator [portAllocator new]
+
+set services [$allocator listPorts]
+foreach service $services {
+  if {[lindex $service 1] eq $ServiceName} {
+    puts stderr "The ringmaster is already running!"
+    exit -1
+  }
+}
 
 while {1} {
-    if {[catch {set listenPort [$allocator allocatePort "RingMaster"]}] == 0} {
+    if {[catch {set listenPort [$allocator allocatePort $ServiceName]}] == 0} {
 	break
     }
     after 1000;			# Retry connection in a second.
