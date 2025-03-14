@@ -93,6 +93,7 @@ private:
     void dumpSetup();
     uint32_t readRegister(unsigned offset);
     void setClock();
+    void setClockParameters(int samplerate_enum);
 };
 
 #endif

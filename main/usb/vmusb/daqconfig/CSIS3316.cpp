@@ -647,8 +647,7 @@ void CSIS3316::setClock() {
         // Now set the sample freq:
 
         std::string freq = ClockSources[whichClock];
-        unsigned int hs_div, n1div;
-        double fft_freq;
+        
         int samplerate_enum;
         if (freq == "250MHz") {
             
@@ -669,16 +668,29 @@ void CSIS3316::setClock() {
             strmsg << freq << " Is not a supported clock frequency\n";
             throw strmsg;
         }
-	// Set the clock frequency:
-        
-        m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
-            samplerate_enum,
-            &hs_div, &n1div, &fft_freq);
-        m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
-        unsigned int iobdelay;
-        m_pModule->get_adc_fpga_iob_delay_value(samplerate_enum, &iobdelay);
-        m_pModule->configure_adc_fpga_iob_delays(
-            iobdelay
-        );                              // Tino says this is needed too.
+	
     }
+}
+/**
+ *  setClockParameters
+ *     GIven a clock enum, do what's needed to actually set the internal clock.
+ * @param samplerate_enum - the enum value e.g. SIS::ADC::SIS3316::SAMPLERATE_...
+ * 
+ * This could be in sis3316_class - and proably should be.
+ */
+void
+CSIS3316::setClockParameters(int samplerate_enum) {
+    // Set the clock frequency:
+    
+    unsigned int hs_div, n1div;
+    double fft_freq;
+    m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
+        samplerate_enum,
+        &hs_div, &n1div, &fft_freq);
+    m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
+    unsigned int iobdelay;
+    m_pModule->get_adc_fpga_iob_delay_value(samplerate_enum, &iobdelay);
+    m_pModule->configure_adc_fpga_iob_delays(
+        iobdelay
+    );                              // Tino says this is needed too.
 }
