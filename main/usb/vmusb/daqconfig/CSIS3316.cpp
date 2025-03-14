@@ -426,7 +426,8 @@ CSIS3316::Initialize(CVMUSB& controller) {
             }
         }
         // mask has the full register value:
-
+        std::cerr << "Writing enable mask " << std::hex << mask 
+            << " to config reg  " << enableRegs[i] << std::dec << std::endl;
         m_pModule->register_write(enableRegs[i], mask);
     }
     // Don't save anything but the waveforms:
@@ -553,14 +554,19 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
                 (space << 28)              |              // select appropriate memory space.
                 chbase;
 
-	    
+            
+            std::cerr << std::hex
+                << "Setting up data transfer: " << xferstart << " register: " << xferRegisters[group] + base
+                << std::dec << std::endl;
             list.addWrite32(xferRegisters[group] + base, amod, xferstart);  // Add start transfer to the list.
             list.addDelay(10);                           // delay for the fifo to start fillling.
 
             // Figure out how much data we'll have to read and add a block read for it:
 
             unsigned readSize = samples[ch] / 2 + 3;    // Transfer in units of u32
-	    
+            std::cerr << std::hex
+                << "Setting up FIFORead from  " << fifoBases[group] + base 
+                << std::dec << std::endl;
             list.addFifoRead32(fifoBases[group] + base, blockAmod, readSize);
 
         }
