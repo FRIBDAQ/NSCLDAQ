@@ -463,9 +463,9 @@ CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
                 std::cerr << "Read failed with status: " << rdstat << std::endl;
                 std::cerr << "Got = " << got << std::endl;
             } 
-            // Got is in units of d64
-            pLongBuf += got*2;    // Units of d32
-            nRead += got*4;       // units of d16
+            // Got is in units of d32
+            pLongBuf += got;    // Units of d32
+            nRead += got*2;       // units of d16
             
         }
     }
@@ -484,7 +484,7 @@ CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
     m_pModule->register_write(SIS3316_KEY_DISARM_AND_ARM_BANK1, 0);
     
 
-    return nRead / 2;                      // 16 bit words.
+    return nRead;                      // 16 bit words.
 }
 /**
  *  readable
