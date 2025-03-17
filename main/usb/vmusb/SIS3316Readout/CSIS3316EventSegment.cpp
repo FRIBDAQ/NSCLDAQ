@@ -463,8 +463,9 @@ CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
                 std::cerr << "Read failed with status: " << rdstat << std::endl;
                 std::cerr << "Got = " << got << std::endl;
             } 
-            pLongBuf += got;
-            nRead += got;
+            // Got is in units of d64
+            pLongBuf += got*2;    // Units of d32
+            nRead += got*4;       // units of d16
             
         }
     }
