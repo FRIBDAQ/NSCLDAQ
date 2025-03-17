@@ -1,3 +1,11 @@
+== 12.0-023 ==
+* added `fastboot` option to ddasReadout for settings-only boot (Issue #253)
+* Pixieserver and pixieplugin updates for 12.x (Issue #255)
+* install example pixieserver.tcl script in share/ddasreadout
+* added `--with-build-incorp-cores` option for parallel build of libtcl, unifiedformat
+
+== 12.0-023 ==
+
 == 12.0-022 ==
 * Use MLE for QtScope fitting.
 * Fix memory leaks in the orderer stage of the event builder.

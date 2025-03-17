@@ -7,7 +7,7 @@
    </refmeta>
    <refnamediv>
       <refname>pixieplugin</refname>
-      <refpurpose>Suport dynamic configuration of Pixie16 modules via DDASReadout Server.</refpurpose>
+      <refpurpose>Support dynamic configuration of Pixie-16 modules via DDASReadout Server.</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
         <synopsis>
@@ -475,18 +475,6 @@ Successful reply:
             of the Tcl intepreter at the time the plugin package is loaded:
         </para>
         <variablelist>
-            <varlistentry>
-               <term><filename>pxisys.ini</filename></term>
-               <listitem>
-                   <para>
-                    A file that describes the slot mapping in terms of the PCI
-                    resources on the PXI backplane.  The contents of this file
-                    depend on the vendor that produced the backplane. We currently
-                    have versions of this file for several crate types stored in
-                    <filename>$DDAS_ROOT/share/crateconfigs</filename>.
-                   </para>
-                </listitem>
-            </varlistentry>
             <varlistentry>
                <term><filename>cfgPixie16.txt</filename></term>
                <listitem>

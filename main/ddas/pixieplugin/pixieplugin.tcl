@@ -40,10 +40,11 @@ source [file join $here definitions.tcl]
 #  @note this directory must havea a pxisys.ini and cfgPixie16.txt file.
 #         else the pixieserver package will fail to load.
 #
-set DDASTclPackages [file join $DDAS_INSTDIR TclLibs]
-set DAQTclPackages  [file join $DAQ_INSTDIR TclLibs]
+#set DDASTclPackages [file join $DDAS_INSTDIR TclLibs]
+#set DAQTclPackages  [file join $DAQ_INSTDIR TclLibs]
 
-lappend auto_path $DDASTclPackages $DAQTclPackages
+#lappend auto_path $DDASTclPackages $DAQTclPackages
+lappend auto_path [file join $DAQ_INSTDIR TclLibs]
 package require removetcllibpath
 package require pixieserver
 package require portAllocator
