@@ -518,7 +518,7 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
 
             // Figure out how much data we'll have to read and add a block read for it:
 
-            unsigned readSize = samples[ch] / 2 + 3;    // Transfer in units of u32
+            unsigned readSize = samples[group] / 2 + 3;    // Transfer in units of u32
             std::cerr << std::hex
                 << "Setting up FIFORead from  " << fifoBases[group] + base 
                 << std::dec << " Read size is " << readSize
