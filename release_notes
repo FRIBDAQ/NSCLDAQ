@@ -1,3 +1,9 @@
+==12.1-006==
+* Issue #230:
+    *   Provide VMUSBnostackReadout = VMUSBReadout framework without stacks.
+    simplest way to debug the SIS3316 Readout.
+    *   Provide sis3316 configurable module for VMUSBReadout.
+* #Issue 252   Don't start ringmaster if one is already advertised by the portman else chaos ensues
 == 12.1-005 ==
 * Issue #230  initial resolution - provide the SIS3316 sample software ported to
 the VMUSB interface.
