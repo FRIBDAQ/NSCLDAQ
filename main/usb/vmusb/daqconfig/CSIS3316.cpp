@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <map>
 
+static const bool debug(false); // controls copious debugginog output.
 
 // Parameter constraints:
 
@@ -68,7 +69,7 @@ static const uint64_t MaxSamples(65535);
 static const uint64_t MaxId(127);
 static const uint64_t MaxPretrigger(0x3fff);   // 14 bits of pre-trigger.
 
-static const bool debug(false);
+
 /**
  *  constructor:
  *      JUst needs to initialize the pointers to null; and create the bus object.
@@ -353,9 +354,12 @@ CSIS3316::Initialize(CVMUSB& controller) {
             auto termbit = terminations[firstchan + i] ? 1: 0;
             regvalue |= (gainval | (termbit << 2)) << (i*8);
         }
-        std::cerr << " Writing gain/term " << std::hex << regvalue 
-            << " to " << gaintermRegisters[group]
-            << std::dec << std::endl;
+        if (debug) {
+            std::cerr << " Writing gain/term " << std::hex << regvalue 
+                << " to " << gaintermRegisters[group]
+                << std::dec << std::endl;
+            
+        }
         m_pModule->register_write(gaintermRegisters[group], regvalue);
     }
     
@@ -378,9 +382,14 @@ CSIS3316::Initialize(CVMUSB& controller) {
             }
         }
         // mask has the full register value:
-        std::cerr << "Writing enable mask " << std::hex << mask 
-            << " to config reg  " << enableRegs[i] << std::dec << std::endl;
+
+        if (debug) {
+            
+            std::cerr << "Writing enable mask " << std::hex << mask 
+                << " to config reg  " << enableRegs[i] << std::dec << std::endl;
+        }
         m_pModule->register_write(enableRegs[i], mask);
+        
     }
     // Don't save anything but the waveforms:
 
@@ -408,9 +417,11 @@ CSIS3316::Initialize(CVMUSB& controller) {
         for (int i = 0; i < 4; i++) {
             value |= (DecimationValues[decimations[firstchan + i]] << (i*8)); // Or in the firstchan + i channel decimation.
         }
-        std::cerr << "Writing decimation register "
-            << std::hex << reg << " with " << value
-            << std::dec << std::endl;
+        if (debug) {
+            std::cerr << "Writing decimation register "
+                << std::hex << reg << " with " << value
+                << std::dec << std::endl;
+        }
         m_pModule->register_write(reg, value);               
         firstchan += 4;                   // next 4 chans.
     }
@@ -509,20 +520,23 @@ CSIS3316::addReadoutList(CVMUSBReadoutList& list) {
                 (space << 28)              |              // select appropriate memory space.
                 chbase;
 
-            
-            std::cerr << std::hex
-                << "Setting up data transfer: " << xferstart << " register: " << xferRegisters[group] + base
-                << std::dec << std::endl;
+            if (debug) {
+                std::cerr << std::hex
+                    << "Setting up data transfer: " << xferstart << " register: " << xferRegisters[group] + base
+                    << std::dec << std::endl;
+            }
             list.addWrite32(xferRegisters[group] + base, amod, xferstart);  // Add start transfer to the list.
             list.addDelay(10);                           // delay for the fifo to start fillling.
 
             // Figure out how much data we'll have to read and add a block read for it:
 
             unsigned readSize = samples[group] / 2 + 3;    // Transfer in units of u32
-            std::cerr << std::hex
-                << "Setting up FIFORead from  " << fifoBases[group] + base 
-                << std::dec << " Read size is " << readSize
-                << std::endl;
+            if (debug) {
+                std::cerr << std::hex
+                    << "Setting up FIFORead from  " << fifoBases[group] + base 
+                    << std::dec << " Read size is " << readSize
+                    << std::endl;
+            }
             list.addFifoRead32(fifoBases[group] + base, blockAmod, readSize);
 
         }
