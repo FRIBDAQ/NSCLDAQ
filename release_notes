@@ -2,6 +2,8 @@
 * Pixieserver and pixieplugin updates for 12.x (Issue #255)
 * install example pixieserver.tcl script in share/ddasreadout
 * Fix `make dist` issues for ddasdumper (Issue #257)
+* QtScope uses XIA parameter for binning histogram data
+* Offline mode for XIA API 4
 == 12.1-007 ==
 
 == 12.1-006 ==
