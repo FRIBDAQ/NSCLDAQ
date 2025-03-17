@@ -10,7 +10,8 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
+	     Aaron Chester
+	     NSCL/FRIB
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
@@ -25,8 +26,6 @@
  *  - provide the package so pkg_mkIndex does the right thing.
  *  - check the existence of the cfgPixie16.txt file in the current
  *    directory without which we can't function.
- *  - check the existence of the pxisys.ini file in the current directory
- *    again without which we cannnot run.
  *  - Create a configuration object (if modevtlen is required for this
  *    we'll need to require it as well above).
  *  - register the package commands.
@@ -59,7 +58,6 @@ DAQ::DDAS::Configuration crateConfiguration;
 
 static const char* pkgVersion = "1.1";   // Tcl package version.
 static const char* configFile="cfgPixie16.txt"; // Crate config
-static const char* pxiConfig="pxisys.ini";  // PXI to PCI Mapping.
 
 /**
  * setErrnoResult
@@ -93,8 +91,6 @@ setErrnoResult(Tcl_Interp* pInterp, const char* message)
  *  - provide the package so pkg_mkIndex does the right thing.
  *  - check the existence of the cfgPixie16.txt file in the current
  *    directory without which we can't function.
- *  - check the existence of the pxisys.ini file in the current directory
- *    again without which we cannnot run.
  *  - Create a configuration object (if modevtlen is required for this
  *    we'll need to require it as well above).
  *  - register the package commands.
@@ -113,21 +109,12 @@ extern "C" {
         int status = Tcl_PkgProvide(pInterp, "pixie16", pkgVersion);
         if (status != TCL_OK) return status;
         
-        // Check for the CfgPixie16.txt and pxisys.ini files in
-        // the current directory. Both of which are needed for the
-        // configuration parse. Fail if one or the other isn't readable
+        // Check for the CfgPixie16.txt file in the current directory.
         
         status = access(configFile, R_OK);
         if (status < 0) {
             setErrnoResult(
                 pInterp, "Unable to read cfgPixie16.txt in current directory "
-            );
-            return TCL_ERROR;
-        }
-        status = access( pxiConfig, R_OK);
-        if (status < 0) {
-            setErrnoResult(
-                pInterp, "Unable to read pxisys.ini in current directory "
             );
             return TCL_ERROR;
         }

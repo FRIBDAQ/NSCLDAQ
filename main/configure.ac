@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.61)
 
-AC_INIT(nscldaq,12.0-022, [scientificsoftware@nscl.msu.edu],[], [http://www.sourceforge.net/projects/nscldaq])
+AC_INIT(nscldaq,12.0-023, [scientificsoftware@nscl.msu.edu],[], [http://www.sourceforge.net/projects/nscldaq])
 
 AC_CONFIG_SRCDIR([/base/dataflow/CRingBuffer.h])
 AC_CONFIG_HEADER([config.h])
@@ -26,6 +26,14 @@ AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 
 AX_CXX_COMPILE_STDCXX_11([noext])
+
+# Set parallel build for incorps:
+
+AC_ARG_WITH([incorp-build-cores],
+	AC_HELP_STRING([--with-incorp-build-cores=N], [Number of cores used to build incorporated packages (default=1)]),
+	[incorp_cores=$withval],
+	[incorp_cores=1])
+AC_MSG_NOTICE([Building incorporated packages with ${incorp_cores} cores])
 
 # MPI defined/usable to build MPI chunks:
 
@@ -391,7 +399,7 @@ else
   	then
       AC_MSG_RESULT([Need to build local tagged copy])
       AC_CHECK_FILE([${srcdir}/libtcl/configure], [havelibtcldir="yes"], [havelibtcldir="no"])
-		  (cd ${srcdir}/libtcl; ./configure --prefix=${prefix}; make clean install)
+		  (cd ${srcdir}/libtcl; ./configure --prefix=${prefix}; make clean ; make -j ${incorp_cores} all ; make install)
 	  else
 		  AC_MSG_ERROR([I seem to be missing libtcl, please use tcl++incorp.sh to fill it with a tagged release of libtclplus])
 	  fi
@@ -412,7 +420,7 @@ AC_CHECK_FILE([${srcdir}/libtcl], [havelibtcldir="yes"], [havelibtcldir="no"])
 if test $havelibtcldir = "yes"
 then
   AC_MSG_RESULT([Need to build local tagged copy])
-  (cd ${srcdir}/libtcl; ./configure --prefix=${prefix}; make clean install)
+  (cd ${srcdir}/libtcl; ./configure --prefix=${prefix}; make clean ; make -j ${incorp_cores} all ; make install)
 
   LIBTCLPLUS_CFLAGS="-I${prefix}/include"
   LIBEXCEPTION_LDFLAGS="-L${prefix}/lib -lException -Wl,\"-rpath=${prefix}/lib\""
@@ -438,7 +446,7 @@ tcl_configdir="/usr/lib/$tcl_basename"
 tcl_incdir="/usr/include/$tcl_basename"
 
 (cd ${srcdir}/tclhttpd3.5.1; ./configure --prefix=${prefix}/share/tclhttpd --enable-gcc --with-tclinclude=$tcl_incdir --with-tcl=$tcl_configdir)
-(cd ${srcdir}/tclhttpd3.5.1; make all install)
+(cd ${srcdir}/tclhttpd3.5.1; make -j ${incorp_cores} all ; make install)
 
 
 # Epics
@@ -612,7 +620,7 @@ then
 		[rm -rf unifiedformat/build
 		mkdir -p unifiedformat/build
 		sourcedir="`realpath ${srcdir}`"
-		(cd unifiedformat/build; cmake ${sourcedir}/unifiedformat -DCMAKE_INSTALL_PREFIX=${prefix}/unifiedformat; make all test install)
+		(cd unifiedformat/build; cmake ${sourcedir}/unifiedformat -DCMAKE_INSTALL_PREFIX=${prefix}/unifiedformat; make -j ${incorp_cores} all && make test && make install)
 		UFMT_CPPFLAGS="-I${prefix}/unifiedformat/include"
 		UFMT_LDFLAGS="-L${prefix}/unifiedformat/lib -lNSCLDAQFormat -lAbstractFormat -lV10Format -lV11Format -lV12Format -Wl,-rpath=${prefix}/unifiedformat/lib"
 		AC_SUBST(UFMT_CPPFLAGS)
@@ -965,6 +973,7 @@ AC_CONFIG_FILES([Makefile
     ddas/nscope/nscope
     ddas/readout/Makefile
     ddas/readout/DDASFirmwareVersions.txt
+    ddas/readout/pixieserver.tcl
     ddas/sorter/Makefile
     ddas/readoutdriver/Makefile
     ddas/pixieplugin/Makefile

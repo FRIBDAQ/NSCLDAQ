@@ -57,7 +57,8 @@ install-exec-hook:
 	$(mkinstalldirs) $(SHAREDIR)
 	$(mkinstalldirs) $(SHAREDIR)/crate_1
 	$(INSTALL_DATA) DDASFirmwareVersions.txt $(SHAREDIR)
+	$(INSTALL_DATA) pixieserver.tcl $(SHAREDIR)
 	$(INSTALL_DATA) @srcdir@/crate_1/* $(SHAREDIR)/crate_1
 	$(INSTALL_DATA) @srcdir@/envset $(SHAREDIR)
 
-EXTRA_DIST=DDASFirmwareVersions.txt.in envset README crate_1
+EXTRA_DIST=DDASFirmwareVersions.txt.in envset README crate_1 pixieserver.tcl.in
