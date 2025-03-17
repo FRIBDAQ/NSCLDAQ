@@ -150,7 +150,7 @@ CSIS3316::onAttach(CReadoutModule& configuration) {
         "-samples",  Zero, MaxSamples, 4,4,4, MaxSamples);
     m_pConfiguration->addIntegerParameter("-id", 0,  127, 0);
     m_pConfiguration->addIntListParameter(
-        "-pretrigger",  0, MaxPretrigger ,4,4,4, MaxPretrigger/4 );
+        "-pretrigger",  0, MaxPretrigger ,4,4,4, 0 );
     m_pConfiguration->addBoolListParameter("-enable", 16, true);
     m_pConfiguration->addIntListParameter(
         "-dcoffset", 0, 0xffff, 16,16,16, 0    // Each chan has a DC offset. 
@@ -343,7 +343,7 @@ CSIS3316::Initialize(CVMUSB& controller) {
     auto terminations = m_pConfiguration->getBoolList("-term1Kohm");
 
     for (int group = 0; group < 4; group++) {
-        int firstchan = group*4;
+        int firstchan = group/4;
 
         // Over channels within the group:
 
@@ -408,6 +408,9 @@ CSIS3316::Initialize(CVMUSB& controller) {
         for (int i = 0; i < 4; i++) {
             value |= (DecimationValues[decimations[firstchan + i]] << (i*8)); // Or in the firstchan + i channel decimation.
         }
+        std::cerr << "Writing decimation register "
+            << std::hex << reg << " with " << value
+            << std::dec << std::endl;
         m_pModule->register_write(reg, value);               
         firstchan += 4;                   // next 4 chans.
     }
