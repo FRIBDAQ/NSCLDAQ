@@ -668,6 +668,7 @@ void CSIS3316::setClock() {
             strmsg << freq << " Is not a supported clock frequency\n";
             throw strmsg;
         }
+        setClockParameters(samplerate_enum);
 	
     }
 }
