@@ -81,6 +81,8 @@ private:
     size_t sizeGroup(int group);
     void dumpSetup();
     uint32_t readRegister(unsigned offset);
+    void setClock();
+    void setClockParameters(int samplerate_enum);
 };
 
 

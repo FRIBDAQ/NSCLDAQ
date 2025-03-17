@@ -180,57 +180,8 @@ CSIS3316EventSegment::initialize() {
 
     // Set up the clock source:
 
-    int whichClock = m_pConfiguration->getEnumParameter("-clock", ClockSources);
-    if (std::string("fp") == ClockSources[whichClock]) {
-        // Set up for NIM clock input:
-
-        m_pModule->register_write(SIS3316_SAMPLE_CLOCK_DISTRIBUTION_CONTROL, 3);
-
-        // The delay line settings must be providec by the user:
-
-        m_pModule->configure_adc_fpga_iob_delays(m_pConfiguration->getIntegerParameter("-adcdelaytap"));
-    } else {
-        // internal clock:
-
-        m_pModule->register_write(SIS3316_SAMPLE_CLOCK_DISTRIBUTION_CONTROL, 0);
-        
-        // Now set the sample freq:
-
-        std::string freq = ClockSources[whichClock];
-        unsigned int hs_div, n1div;
-        double fft_freq;
-        int samplerate_enum;
-        if (freq == "250MHz") {
-            
-            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_250MSPS;
-        } else if (freq == "125MHz") {
-            
-            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_125MSPS;
-        } else if (freq == "50MHz") {
-            
-            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_50MSPS;
-        } else if (freq == "25MHz") {
-                        
-        } else if (freq == "12.5MHz") {
-            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS;
-            
-        } else {
-            std::stringstream strmsg;
-            strmsg << freq << " Is not a supported clock frequency\n";
-            throw strmsg;
-        }
-	// Set the clock frequency:
-        m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
-            samplerate_enum,
-            &hs_div, &n1div, &fft_freq);
-	    m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
-        unsigned int iobdelay;
-        m_pModule->get_adc_fpga_iob_delay_value(samplerate_enum, &iobdelay);
-        m_pModule->configure_adc_fpga_iob_delays(
-            iobdelay
-        );                              // Tino says this is needed too.
-    }
-
+    setClock();
+    
     m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR, 0); 
     // Set up the header ids for the ADC groups:
 
@@ -346,7 +297,7 @@ CSIS3316EventSegment::initialize() {
     auto terminations = m_pConfiguration->getBoolList("-term1Kohm");
 
     for (int group = 0; group < 4; group++) {
-        int firstchan = group*4;
+        int firstchan = group/4;
 
         // Over channels within the group:
 
@@ -356,11 +307,15 @@ CSIS3316EventSegment::initialize() {
             auto termbit = terminations[firstchan + i] ? 1: 0;
             regvalue |= (gainval | (termbit << 2)) << (i*8);
         }
-        std::cerr << " Writing gain/term " << std::hex << regvalue 
-            << " to " << gaintermRegisters[group]
-            << std::dec << std::endl;
+        if (debug) {
+            std::cerr << " Writing gain/term " << std::hex << regvalue 
+                << " to " << gaintermRegisters[group]
+                << std::dec << std::endl;
+            
+        }
         m_pModule->register_write(gaintermRegisters[group], regvalue);
     }
+    
     // Set the enables for each ADC.
 
     auto enables = m_pConfiguration->getBoolList("-enable");
@@ -381,7 +336,13 @@ CSIS3316EventSegment::initialize() {
         }
         // mask has the full register value:
 
+        if (debug) {
+            
+            std::cerr << "Writing enable mask " << std::hex << mask 
+                << " to config reg  " << enableRegs[i] << std::dec << std::endl;
+        }
         m_pModule->register_write(enableRegs[i], mask);
+        
     }
     // Don't save anything but the waveforms:
 
@@ -394,6 +355,8 @@ CSIS3316EventSegment::initialize() {
     for (int i = 0; i < evformatRegs.size(); i++) {
         m_pModule->register_write(evformatRegs[i], 0);
     }
+    // Set the decimations:
+
     auto decimations = m_pConfiguration->getList("-decimations");
     std::vector<int> decimationRegisters = {
         SIS3316_ADC_CH1_4_AVERAGE_CONFIGURATION_REG,
@@ -406,6 +369,11 @@ CSIS3316EventSegment::initialize() {
         int32_t value(0);
         for (int i = 0; i < 4; i++) {
             value |= (DecimationValues[decimations[firstchan + i]] << (i*8)); // Or in the firstchan + i channel decimation.
+        }
+        if (debug) {
+            std::cerr << "Writing decimation register "
+                << std::hex << reg << " with " << value
+                << std::dec << std::endl;
         }
         m_pModule->register_write(reg, value);               
         firstchan += 4;                   // next 4 chans.
@@ -545,7 +513,7 @@ CSIS3316EventSegment::setupConfiguration() {
         "-samples",  Zero, MaxSamples, 4,4,4, MaxSamples);
     m_pConfiguration->addIntegerParameter("-id", 0,  127, 0);
     m_pConfiguration->addIntListParameter(
-        "-pretrigger",  0, MaxPretrigger ,4,4,4, MaxPretrigger/4 );
+        "-pretrigger",  0, MaxPretrigger ,4,4,4, 0);
     m_pConfiguration->addBoolListParameter("-enable", 16, true);
     m_pConfiguration->addIntListParameter(
         "-dcoffset", 0, 0xffff, 16,16,16, 0    // Each chan has a DC offset. 
@@ -641,4 +609,74 @@ CSIS3316EventSegment::readRegister(unsigned offset) {
             << offset <<  std::dec << " code: " << s << std::endl;
     }
     return value;
+}
+/**
+ *  do al the fal-de-ral needed to set the clock source.
+ */
+void 
+CSIS3316EventSegment::setClock() {
+    int whichClock = m_pConfiguration->getEnumParameter("-clock", ClockSources);
+    
+    if (std::string("fp") == ClockSources[whichClock]) {
+        // Set up for NIM clock input:
+
+        m_pModule->register_write(SIS3316_SAMPLE_CLOCK_DISTRIBUTION_CONTROL, 3);
+        // The delay line settings must be providec by the user:
+
+        m_pModule->configure_adc_fpga_iob_delays(m_pConfiguration->getIntegerParameter("-adcdelaytap"));
+    } else {
+        // internal clock:
+
+        m_pModule->register_write(SIS3316_SAMPLE_CLOCK_DISTRIBUTION_CONTROL, 0);
+        
+        // Now set the sample freq:
+
+        std::string freq = ClockSources[whichClock];
+        
+        int samplerate_enum;
+        if (freq == "250MHz") {
+            
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_250MSPS;
+        } else if (freq == "125MHz") {
+            
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_125MSPS;
+        } else if (freq == "50MHz") {
+            
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_50MSPS;
+        } else if (freq == "25MHz") {
+                        
+        } else if (freq == "12.5MHz") {
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS;
+            
+        } else {
+            std::stringstream strmsg;
+            strmsg << freq << " Is not a supported clock frequency\n";
+            throw strmsg;
+        }
+        setClockParameters(samplerate_enum);
+	
+    }
+}
+/**
+ *  setClockParameters
+ *     GIven a clock enum, do what's needed to actually set the internal clock.
+ * @param samplerate_enum - the enum value e.g. SIS::ADC::SIS3316::SAMPLERATE_...
+ * 
+ * This could be in sis3316_class - and proably should be.
+ */
+void
+CSIS3316EventSegment::setClockParameters(int samplerate_enum) {
+    // Set the clock frequency:
+    
+    unsigned int hs_div, n1div;
+    double fft_freq;
+    m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
+        samplerate_enum,
+        &hs_div, &n1div, &fft_freq);
+    m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
+    unsigned int iobdelay;
+    m_pModule->get_adc_fpga_iob_delay_value(samplerate_enum, &iobdelay);
+    m_pModule->configure_adc_fpga_iob_delays(
+        iobdelay
+    );                              // Tino says this is needed too.
 }
