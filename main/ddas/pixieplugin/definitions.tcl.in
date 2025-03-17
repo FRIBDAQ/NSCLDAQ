@@ -37,5 +37,4 @@ exec tclsh "$0" ${1+"$@"}
 # associated with this NSCLDAQ build in using autoconf:
 #
 
-set DDAS_INSTDIR @DDAS_INSTDIR@
-set DAQ_INSTDIR @prefix
+set DAQ_INSTDIR @prefix@
