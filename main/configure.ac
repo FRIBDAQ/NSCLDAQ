@@ -346,7 +346,7 @@ AC_CHECK_FILE([${srcdir}/libtcl/configure.ac],
 		[AC_MSG_NOTICE([Incorporating tcl++ for you])
 		${srcdir}/tcl++incorp])
 AC_MSG_NOTICE([Building and installing tcl++])
-(cd libtcl; ./configure --prefix=${prefix}; make clean && make -j ${incorp_cores} install)
+(cd libtcl; autoreconf -if ; ./configure --prefix=${prefix}; make clean && make -j ${incorp_cores} install)
 result=$?
 AS_VAR_IF([result], [0], [], AC_MSG_ERROR([Failed to build and install tcl++ with result: ${result}]))
 LIBTCLPLUS_CFLAGS="-I${prefix}/include"
@@ -364,7 +364,7 @@ tcl_basename=tcl${TCL_VERSION}
 tcl_configdir="/usr/lib/$tcl_basename"
 tcl_incdir="/usr/include/$tcl_basename"
 
-(cd ${srcdir}/tclhttpd3.5.1; ./configure --prefix=${prefix}/share/tclhttpd --enable-gcc --with-tclinclude=$tcl_incdir --with-tcl=$tcl_configdir)
+(cd ${srcdir}/tclhttpd3.5.1;autoreconf -if  ./configure --prefix=${prefix}/share/tclhttpd --enable-gcc --with-tclinclude=$tcl_incdir --with-tcl=$tcl_configdir)
 (cd ${srcdir}/tclhttpd3.5.1; make clean && make -j ${incorp_cores} install)
 
 # Epics
