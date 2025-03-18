@@ -1,0 +1,43 @@
+bin_PROGRAMS=VMUSBnostackReadout
+
+includedir=@prefix@/include/vmusbnostack
+
+VMUSBnostackReadout_SOURCES=CConfigurableCompoundEventSegment.cpp \
+CSIS3316EventSegment.cpp \
+CSIS3316EventSegment.h \
+CSIS3316Trigger.cpp \
+CSIS3316Trigger.h \
+CSIS3820ScalerBank.cpp \
+CSIS3820ScalerBank.h \
+CSIS3820Scaler.cpp \
+CSIS3820Scaler.h \
+CSIS3820TimestampEventSegment.cpp \
+CSIS3820TimestampEventSegment.h \
+CV977EventSegment.cpp \
+CV977EventSegment.h \
+CVMUSBBusy.cpp \
+CVMUSBBusy.h \
+CVMUSBEventSegment.cpp \
+CVMUSBEventSegment.h \
+sis3316_class.cpp \
+sis3316_class.h \
+sis3316.h \
+sis3316Registers.h \
+Skeleton.cpp \
+Skeleton.h
+
+
+include_HEADERS=CConfigurableCompoundEventSegment.h
+
+## Compilation and link stuff:
+
+VMUSBnostackReadout_CPPFLAGS=-I@srcdir@/../vmusb -I@srcdir@/.. \
+	-I@top_srcdir@/usb/common/configurableobject \
+	-I@top_srcdir@/base/thread -I@top_srcdir@/base/os \
+    -I@top_srcdir@/sbs/readout @LIBTCLPLUS_CFLAGS@ @TCL_CPPFLAGS@
+
+VMUSBnostackReadout_LDADD=@top_builddir@/sbs/readout/libSBSProductionReadout.la \
+    @builddir@/../../common/configurableobject/libConfigurableObject.la \
+    @builddir@/../vmusb/libVMUSB.la @LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
+
+EXTRA_DIST=VMUSBnostackReadout.xml

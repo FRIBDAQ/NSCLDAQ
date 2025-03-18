@@ -8,7 +8,8 @@ SUBDIRS = 	vmusb 		\
 		devtests	\
 		vmusbPackage \
 		tclservertests \
-		sis3316examples
+		sis3316examples \
+		SIS3316Readout 
 
 
 bin_PROGRAMS = VMUSBReadout

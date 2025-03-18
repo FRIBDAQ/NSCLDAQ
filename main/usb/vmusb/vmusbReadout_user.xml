@@ -3943,59 +3943,6 @@ watch monitored                   <co id='watchexample-monitorscalar' />
         </section>
     </section>
 
-<!--  
-    <section>
-        <title>Using VMUSBReadout with the state/boot managers</title>
-        <para>
-            For background on the state and boot managers as well as
-            the experiment configuration editor, see:
-            <link linkend='chap.boot' endterm='chap.boot.title' />,
-            <link linkend='chap.statemgr' endterm='chap.statemgr.title' /> and
-            <link linkend='chap.expconfig' endterm='chap.expconfig.title' />.
-        </para>
-        <para>
-            To make the VMUSBReadout run under the state/boot managers you must:
-        </para>
-        <itemizedlist>
-            <listitem>
-                <para>
-                    Write a small script to incorporate the
-                    <literal>ReadoutStateHook</literal> package into the
-                    VMUSBReadout's main interpreter.
-                </para>
-            </listitem>
-            <listitem>
-                <para>
-                    Configure the VMUSBReadout to use the
-                    -<option>-init-script </option> option to specify this
-                    script.
-                </para>
-            </listitem>
-        </itemizedlist>
-        <para>
-            Here's a sample of the script you need to write:
-        </para>
-        <example>
-            <title>Script to incoprorate <literal>ReaodutStateHook</literal> into
-            VMUSBReadout</title>
-            <programlisting>
-set pkgDirs [file join $env(DAQROOT) TclLibs]
-lappend auto_path $pkgDirs
-
-package require ReadoutStateHook                   
-            </programlisting>
-        </example>
-        <para>
-            Note that the <literal>DAQROOT</literal> environment variable gets
-            defined by the boot manager for all of the programs it manages.
-            Other environment variables get defined as well that describe to
-            the <literal>ReadoutStateHook</literal> how to connect to the
-            state manager.
-        </para>
-        
-    </section> 
--->
-
 </chapter>
 
 <!-- /chapter -->

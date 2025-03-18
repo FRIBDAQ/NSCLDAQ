@@ -61,8 +61,8 @@ public:
 
   // Type-safe adaptor to CComposite:
 
-  void AddEventSegment(CEventSegment*    pSegment);
-  void DeleteEventSegment(CEventSegment* pSegment);
+  virtual void AddEventSegment(CEventSegment*    pSegment);
+  virtual void DeleteEventSegment(CEventSegment* pSegment);
   EventSegmentIterator begin();
   EventSegmentIterator end();
   virtual bool isComposite() const;

@@ -4,12 +4,17 @@
 * Fix `make dist` issues for ddasdumper (Issue #257)
 * QtScope uses XIA parameter for binning histogram data
 * Offline mode for XIA API 4
+* Issue #230:
+    *   Provide VMUSBnostackReadout = VMUSBReadout framework without stacks.
+    simplest way to debug the SIS3316 Readout.
+    *   Provide sis3316 configurable module for VMUSBReadout.
 == 12.1-007 ==
 
 == 12.1-006 ==
 * Add -supressunderthreshold and -supressoverflow options.
      - The options are valid only when -supressrange is false.
-== 12.1-006 ==
+* #Issue 252   Don't start ringmaster if one is already advertised by the portman else chaos en
+== 12.1-006
 
 == 12.1-005 ==
 * Issue #230  initial resolution - provide the SIS3316 sample software ported to

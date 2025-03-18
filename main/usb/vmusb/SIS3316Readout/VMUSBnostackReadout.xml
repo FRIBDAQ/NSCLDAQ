@@ -1,0 +1,709 @@
+<!-- chapter user-guide -->
+<chapter>
+    <title>Non stack VMUSB Readout framwork <command>$DAQBIN/VMUSBnostackReadout</command></title>
+    <para>
+        This framework became available with NSCLDAQ-12.1-006.  
+        There are modules whose readout cannot be anaged via the set of
+        instructions the VMUSB can autonomously execute.  The specific
+        module that motivated this development is the SIS 3316 digitizer
+        module.
+    </para>
+    <para>
+        The architecture of that module consists of FPGAs associted with blocks of four
+        digitizer channels.  These ADCS digitizer into memory that is not visible from the VME.
+        When a readout is desired, the module must be told to begin transferring memory to the
+        VME FPGA's FIFO.  Readout can only proceed, when the transfer is complete.
+        This wait for the completion bits to be set cannot be done in the VMUSB stack,
+        and delays cannot be computed for this process either.
+    </para>
+    <para>
+        The approach taken, therefore was to develop a special version of th SBSReadout
+        framworks that uses the VM-USB only as a controller, without ever starting it in autonomous mode.
+        Configuring this readout is almost like configuring a VMUSBReadout, however there is no stack,
+        and only a few modules are supported:
+    </para>
+    <itemizedlist>
+        <listitem><para> SIS3316 digitizer (the motivation for this after all) </para></listitem>
+        <listitem><para> SIS3820 module as a timestamper.</para></listitem>
+        <listitem><para> CAEN V977 as a bit register (pattern register).</para></listitem>
+        <listitem><para> The VMUSB as a timestamp module</para></listitem>
+        <listitem><para> SIS3820 module as a scaler module</para></listitem>
+
+    </itemizedlist>
+    <para>
+       Should this framework be more generally useful, more module can be added to it on request.
+    </para>
+    <section>
+        <title>Running the VMUSB no stack readout program</title>
+        <para>
+            This is a reference page for the VMUSB no stack readout program.
+        </para>
+        <refentry>
+            <refmeta>
+                <refentrytitle>VMUSBnostackReadout</refentrytitle>
+                <manvolnum>1daq</manvolnum>
+            </refmeta>
+            <refnamediv>
+                <refname>VMUSBnostackReadout</refname>
+                <refpurpose>Use VMUSB in non-atonomous mode in readout</refpurpose>
+            </refnamediv>
+            <refsynopsisdiv>
+                <cmdsynopsis><command>
+$DAQBIN/VMUSBnostackReadout <optional>option...</optional>
+                </command></cmdsynopsis>
+            </refsynopsisdiv>
+            <refsect1>
+                <title>ENVIRONMENT VARIABLES</title>
+                <para>
+                    The program requires two configuration files, One of them
+                    identifies the event modules to be read out in response to a trigger.
+                    The other describes the scaler modules to read.
+                </para>
+                <para>
+                    The SBSReadout framework VMUSBnostackReadout is based on does not have 
+                    options to specify these files.  Therefore the following two environment variable
+                    must be set:
+                </para>
+                <variablelist>
+                    <varlistentry>
+                        <term><literal>DAQCONFIG</literal></term>
+                        <listitem><para>
+                            Path to the event configuration file.  See
+                            <literal>EVENT CONFIGURATION FILE</literal> for the contents of this file.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><literal>SCALERCONFIGFILE</literal></term>
+                        <listitem><para>
+                            Path to the scaler configuratino file.  See <literal>SCALER CONFIGURATION</literal>
+                            for the contents of this.
+                        </para></listitem>
+                    </varlistentry>
+                </variablelist>
+            </refsect1>
+            <refsect1>
+                <title>PROGRAM OPTIONS</title>
+                <variablelist>
+                    <varlistentry>
+                        <term><option>--help</option> </term>
+                        <listitem><para>
+                            Prints out the program options and their meanings.  The program then exits without
+                            doing anything else useful.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--version</option> </term>
+                        <listitem><para>
+                            Prints out the version of the SBSreadout framework used.   The program then exits
+                            without doing anything else useful.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--port</option> <replaceable>string</replaceable></term>
+                        <listitem><para>
+                            Enables the Tcl server built into the SBS readout framework.  If the parameter is an integer
+                            is is the port number the server will listen on.  If a string the port is allocated by the port
+                            manager and advertised by it with the string.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--ring</option> <replaceable>name</replaceable></term>
+                        <listitem><para>
+                          Specifies the name (not URI) of the ringbuffer into which data are put.  Note that
+                          if not supplied the user name will be used for the ring name..
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--sourcdeid</option> <replaceable>integer</replaceable> </term>
+                        <listitem><para>
+                            provides the source id to be associated with this readout in the event builder.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--init-script</option> <replaceable>path</replaceable></term>
+                        <listitem><para>
+                        If provided this must be the path to a Tcl script that will be run when the program
+                        starts. Defaults to 0.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--log</option> <replaceable>path</replaceable></term>
+                        <listitem><para>
+                            If present, provides the path to a log file for logging output.  If not,
+                            supplied, no logging is done.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--debug</option> <replaceable>0 | 1 | 2</replaceable></term>
+                        <listitem><para>
+                          Describes the verbosity level of logging. 0 logs the least amount of stuff 2 the most.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--no-barriers</option> </term>
+                        <listitem><para>
+                        If present, run state change items will not participate in barrier synchronization.  All
+                        readouts must use this or none. 
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--vme-lock</option> </term>
+                        <listitem><para>
+                        Should be used - serializes access to the VME bus between threads.
+                        </para></listitem>
+                    </varlistentry>
+                </variablelist>
+            </refsect1>
+            <refsect1>
+                <title>EVENT CONFIGURATION FILE</title>
+                <para>
+                  This section describes the general format of the Event configuration file.  For specific
+                  module commands, see  <literal>Supported Event Modules</literal> after the man page.
+                  The event configuration file is processed whenever  a run starts.
+                </para>
+                <para>
+                    The event configuration file is specified by defining the environment variable
+                    <literal>DAQCONFIG</literal> to be a path to it.
+                    It is Tcl script and all Tcl core commands are available.  additional
+                    module commands are defined (see <literal>Supported Event Modules</literal>).
+                    Each module command is a comman ensemble with the subcommands:
+                </para>
+                <variablelist>
+                    <varlistentry>
+                        <term><command>create</command></term>
+                        <listitem><para>
+                            Defines a new module.  This command will take a module name, which must be 
+                            unique.  Optional configuration parameters are also allowed.
+                            The temporal order in which modules are created determines the readout order.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><command>config</command></term>
+                        <listitem><para>
+                            Configures a modules.   This command will take the name of a module that has been
+                            created and configuration parameters.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><command>cget</command></term>
+                        <listitem><para>
+                         Fetches configuration infoirmation.  This commanne takes the name of a module
+                         that has already been created and optionally a configuration option.
+                         If an option is supplied, the value of that option is returned, if not a Tcl list
+                         of two element sublists containing the option names and values of all configuration options
+                         for that module type.
+                        </para></listitem>
+                    </varlistentry>
+                </variablelist>
+            </refsect1>
+            <refsect1>
+                <title>SCALER CONFIGURATION</title>
+                <para>
+                  The scaler configuration file is pointed to by the <literal>SCALERCONFIGFILE</literal>
+                  environment variable.   It is a Tcl script.  In addition to the core Tcl commands, a 
+                  command was added for each scaler module type.  In general, scalers are not configurable.
+                  They read non-incrementally (cleared only at the start of the run).  
+                  Therefore the general form of scaler commands in the scaler configuration file is:
+                </para>
+                <informalexample>
+                <cmdsynopsis><command>
+<replaceable>scaler-type unique-name base-address</replaceable>
+            </command></cmdsynopsis>
+            </informalexample>
+            <para>
+                Where:
+            </para>
+            <variablelist>
+                <varlistentry>
+                    <term><replaceable>scaler-type</replaceable></term>
+                    <listitem><para>
+                        Is the type of scaler being added to the scaler read list.  See
+                        the section <literal>Supported Scaler modules</literal> for the set of 
+                        available scaler-type values.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><replaceable>unique-name</replaceable></term>
+                    <listitem><para>
+                        A name for the scaler.  This must be unique within all of the scalers defined.
+                        Names can be duplicates of names in the Event configuration file, if you have a
+                        burning need for that.  The name <emphasis>may</emphasis> be used in the future
+                        if modules are added that require additional configuration.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><replaceable>base-address</replaceable></term>
+                    <listitem><para>
+                        The VME base address for the module.
+                    </para></listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                As with the event configuration file, scalers are read out in the temporal order in which they
+                are defined.
+            </para>
+                
+            </refsect1>
+        </refentry>
+    </section>
+    <section>
+        <title>Supported Event Modules</title>
+        <para>
+            This is the set of modules supported by the VMUSBnostackReadout program at the time this
+            is being written.  If additional module types are required, contact
+            <literal>daqhelp at frib dot msu dot edu</literal>.
+        </para>
+        <section>
+            <title>SIS3820 scaler as a timestamp module</title>
+            <refentry>
+                <refmeta>
+                    <refentrytitle>sis3820</refentrytitle>
+                    <manvolnum>1vmusbnostack</manvolnum>
+                </refmeta>
+                <refnamediv>
+                    <refname>sis3820</refname>
+                    <refpurpose>Use an sis3820 in timestamp mode.</refpurpose>
+                </refnamediv>
+                <refsynopsisdiv>
+                    <cmdsynopsis>
+                        <command>
+sis3820 create <replaceable>name</replaceable> ?<replaceable>option value ...</replaceable>?
+                        </command>
+                    </cmdsynopsis>
+                    <cmdsynopsis>
+                        <command>
+sis3820 config <replaceable>name  option value ?...?</replaceable>
+                        </command>
+                    </cmdsynopsis>
+                    <cmdsynopsis>
+                        <command>
+sis3820 cget <replaceable>name ?option?</replaceable>
+                        </command>
+                    </cmdsynopsis>
+                </refsynopsisdiv>
+                <refsect1>
+                    <title>DESCRIPTION</title>
+                    <para>
+                        The SIS3820 scalers has the ability to run two channels (0 and 16) as 48 bit
+                        counters this, along with their external latching function, makes them suitable
+                        as event timestamp modules.  The modules can also output a clock train and, therefore,
+                        provide a common clock input both to themselves and other sources of a multi-source
+                        system.
+                    </para>
+                    <para>
+                        When used, the module contributes four longwords to the event when read.
+                        The low 32 bit of channel zero, followed by its high 16 bits (in a long word with the top 16
+                        bits zero), followed by the same for channel 16:
+                    </para>
+                    <informalexample>
+                    <literallayout>
+
++------------------------------------------------+
+| Least significant 32 bits of ch 0              |
++-----------------------+------------------------+
+|    0                  | top 16 bits of ch 0    |
++-----------------------+------------------------+
+
++------------------------------------------------+
+| Least significant 32 bits of ch 16             |
++-----------------------+------------------------+
+|    0                  | top 16 bits of ch 16   |
++-----------------------+------------------------+
+                    </literallayout>
+                    </informalexample>
+                </refsect1>
+                <refsect1>
+                    <title>OPTIONS</title>
+                    <para>Configuration options are:</para>
+                    <variablelist>
+                        <varlistentry>
+                            <term><option>-base </option><replaceable>base-address</replaceable> </term>
+                            <listitem><para>
+                                Specifies the base address of the module in VME space.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option> -outputmode</option><replaceable>output-mode</replaceable> </term>
+                            <listitem><para>
+                                Specifies the meaning of the outputs of the module.  This can be one of:
+                                <itemizedlist>
+                                    <listitem><para>
+                                        <literal>clock50MHz</literal> - Output 5 echoes the latch signal.
+                                        Ouptut 7 is a 50MHz clock.k
+                                    <</para></listitem>
+                                    <listitem><para>
+                                        <literal>LNEandLed</literal> - Output5 echos the latch signal and output 8
+                                        application specific LED.  The user has no control over the LED in this software.
+                                    </para></listitem>
+                                    <listitem><para>
+                                        <literal>clock2x10Mhz</literal> - Output 5 is the latch, outputs 6 and 7 are a
+                                        10MHz clock, while output 8 is the application LED.
+                                    </para></listitem>
+                                    <listitem><para>
+                                        <literal>clock1x10Mhz</literal> - Output 5 is the latch, Output 6 is a 10MHz
+                                        clock.  The other outputs are not used.
+                                    </para></listitem>
+                                </itemizedlist>
+        
+                                The default value for this option is <literal>clock50Mhz</literal>
+                            </para></listitem>
+
+                        </varlistentry>
+
+                    </variablelist>
+                </refsect1>
+            </refentry>
+            <refentry>
+                <refmeta>
+                    <refentrytitle>sis3316</refentrytitle>
+                    <manvolnum>1vmusbnostack</manvolnum>
+                </refmeta>
+                <refnamediv>
+                    <refname>sis3316</refname>
+                    <refpurpose>Read data from an SIS3316 Digitizer</refpurpose>
+                </refnamediv>
+                <refsynopsisdiv>
+                    <cmdsynopsis>
+                        <command>
+sis3316 create <replaceable>name</replaceable> ?<replaceable>option value ...</replaceable>?
+                        </command>
+                    </cmdsynopsis>
+                    <cmdsynopsis>
+                        <command>
+sis3316 config <replaceable>name  option value ?...?</replaceable>
+                        </command>
+                    </cmdsynopsis>
+                    <cmdsynopsis>
+                        <command>
+sis3316 cget <replaceable>name ?option?</replaceable>
+                        </command>
+                    </cmdsynopsis>
+                </refsynopsisdiv>
+                <refsect1>
+                    <title>DESCRIPTION</title>
+                    <para>
+                        The <command>sis3316</command> supports adding SIS3316 digitizers to the
+                        event data.  While this module is capable of a lot of digital signal analysis
+                        (PHA, PSD, digital CFD based timing), and channel based triggering, we only 
+                        support waveform capture for externally triggered events.
+                    </para>
+                    <para>
+                        The  module channnels can be individually enabled, and only enabled channels will
+                        contribute data.  See section 4.6 of the manual. That page shows the data each individual,
+                        enabled channel will contribute to the event.
+                        Note that all format bits described
+                        ont that page are zero and MAW test data are disabled.  Thus, for each enabled channel, you
+                        can expect a 3 longword header folowed by the captured waveform, with two samples packed into each 
+                        32 bit value.
+                    </para>
+                </refsect1>
+                <refsect1>
+                    <title>OPTIONS</title>
+                    <para>
+                        To understand the choices of the configuration option values, it's important to
+                        know that groups of four channels are controlled by an ADC FPGA.  Some parameters
+                        are common to the ADC FPGA that controls its channels.   THe Tcl <command>lrepeat</command>
+                        can be used to generate these lists if all groups should have the ame value.
+                        See <ulink url='https://www.tcl-lang.org/man/tcl8.6/TclCmd/lrepeat.htm' />
+                    </para>
+                    <para>
+                        The configuration options for the sis3316 command/module are as follows:
+                    </para>
+                    <variablelist>
+                        <varlistentry>
+                            <term><option>-base </option><replaceable> base-address </replaceable></term>
+                            <listitem><para>
+                                Specifies the module base address.  Not the program
+                                <literal>$DAQROOT/sis3316/inventory</literal> will probe the VME bus and list
+                                the SIS3316 modules plugged in along with their base addresses and a few other things.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-clock </option><replaceable>clock-source </replaceable></term>
+                            <listitem><para>
+                                Specifies the sampling clock.   This can defaults to <literal>125MHz</literal>
+                                It can be one of:
+                            <itemizedlist>
+                                <listitem><para><literal>fp</literal> - clock is from the front panel.</para></listitem>
+                                <listitem><para><literal>250MHz</literal>- clock is 250MHz.  Note that not all SIS3316 modules
+                                    are 250MHz capable.
+                                </para></listitem>
+                                <listitem><para><literal>125MHz</literal></para></listitem>
+                                <listitem><para><literal>50MHz</literal></para></listitem>
+                                <listitem><para><literal>25MHz</literal></para></listitem>
+                            </itemizedlist>
+                            
+                                This software does not verify the module capabilities.  If you select
+                                <literal>250MHz</literal> you must know if the module is capable of 
+                                sampling at that frequency.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-samples </option><replaceable> four-element-list</replaceable></term>
+                            <listitem><para>
+                                Sets the number of samples that will be acquired for each of the four ADC FPGAs.
+                                Thererfore, the parameter for this option is a four element Tcl list that
+                                provides the number of samples for each FPGA.
+                                The default value is the equivalent of <command>[lrepeat 4 65535]</command>.
+                                <literal>65535</literal> is also the largest number of samples that can be specified in 
+                                any single channel group.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-id </option> <replaceable>integer </replaceable> </term>
+                            <listitem><para>
+                                Value between 0 and 127.  This will become the top bits of the id
+                                in the data from the digitizer.  The bottom four bits will identify
+                                the channel (two bits for ADCFPGA number and two bits for the channel
+                                within the ADC FPGA).  Default value is 0.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-pretrigger </option> <replaceable>four-element-list </replaceable> </term>
+                            <listitem><para>
+                                The pretrigger in units of samples for each for each of the 
+                                ADC FPGAs.   THis defaults to  0.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-enable </option> <replaceable>16-elment-boolean-list </replaceable> </term>
+                            <listitem><para>
+                                Each element of the list, when true, enables a channel, when false,
+                                disables it.  the first element is channel 0 and so on.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-range</option> <replaceable>|5V | 2V | 1.2V</replaceable></term>
+                            <listitem><para>
+                                Sets the ADC input range to one of the above allowed values.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-term1Kohm</option> <replaceable>boolean</replaceable></term>
+                            <listitem><para>
+                                If true, the input terminations are set to 1KOhm, if false, 50Ohm.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-adcdelaytap</option> <replaceable>value</replaceable></term>
+                            <listitem><para>
+                                The SIS3316 timings for internal data transfer depend on the sampling clock.
+                                If the front panel clock is seleted (<option>--clock</option> <literal>fp</literal>),
+                                The user must supply the correct value for the delay line tap selection.
+                                Refer to section 6.39 of the manual which includes a table of delay line settings.
+                                If a half sample delay is required, your value must have bit <literal>0x1000</literal>
+                                set.  E.g. the correct value for an external 100MHz clock and a 250MHz digitizer is 
+                                <literal>0x1020</literal>.
+                            </para><para>
+                                If you get this delay value wrong, your data will be corrupted.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-decimations</option> <replaceable>16-element-list</replaceable></term>
+                            <listitem><para>
+                                The value of this parameter is a list of 16 decimation selectors, one for each
+                                ADC channel.  The legal values for each element are:
+                                <literal>off, 2, 4, 8, 16, 32, 64, 128, 256, 512</literal>.
+                                <literal>off</literal> disables decimation for that channel.
+                                Other values specify the decimation factor (the SIS3316 does decimation by averaging).
+                                So, for example, the value <literal>4</literal> means that each sample value in 
+                                the event, represents the average of four consecutive ADC sample values for that channel.
+                                The default value is a list of 16 <literal>off</literal> values.  
+                            </para><para>
+                                Decimation can be used to get effective clock speeds (on a per channel basis) 
+                                that are slower than the actual selected clock.  For example
+                                selecting a decimation of <literal>4</literal> with a clock selection of
+                                <literal>50MHz</literal> produces an effective clock of 12.5MHz which is
+                                not directly supported by the code.
+                            </para></listitem>
+                        </varlistentry>
+                    </variablelist>
+                </refsect1>
+            </refentry>
+            <refentry>
+                <refmeta>
+                    <refentrytitle>vmusb</refentrytitle>
+                    <manvolnum>1vmusbnostack</manvolnum>
+                </refmeta>
+                <refnamediv>
+                    <refname>vmusb</refname>
+                    <refpurpose>Provide access to the VMUSB scalers</refpurpose>
+                </refnamediv>
+                <refsynopsisdiv>
+                    <cmdsynopsis><command>
+vmusb create <replaceable>name</replaceable> ?<replaceable>option value ...</replaceable>?
+                        </command>
+                    </cmdsynopsis>
+                    <cmdsynopsis>
+                        <command>
+vmusb config <replaceable>name  option value ?...?</replaceable>
+                        </command>
+                    </cmdsynopsis>
+                    <cmdsynopsis>
+                        <command>
+vmusb cget <replaceable>name ?option?</replaceable>
+                        </command>
+                    </cmdsynopsis>                
+                </refsynopsisdiv>
+                <refsect1>
+                    <title>DESCRIPTION</title>
+                    <para>
+                        This command provides the ability to read the two 32 bit counters (scalers) in the
+                        VMUSB module.  This contributes the following two 32 bit words to the event:
+                    </para>
+                    <informalexample>
+                    <literallayout>
++---------------------+
+|     Scaler A value  |
++---------------------+
+|     Scaler B value  |
++---------------------+
+
+                    </literallayout>
+                    </informalexample>
+                </refsect1>
+                <refsect1>
+                    <title>OPTIONS</title>
+                    <para>The configuration options for he <command>vmusb</command> are:
+                    </para>
+                    <variablelist>
+                        <varlistentry>
+                            <term><option>-scalera </option> <replaceable>input-spec </replaceable> </term>
+                            <listitem><para>
+                                Determines what increments scaler A.  This can be one of
+                                <literal>dgga</literal>, <literal>nimi1</literal>, and
+                                <literal>nimi2</literal>  <literal>dgga</literal> at present
+                                is not useful, but is provided in case, in the future, access
+                                to internal delay and gate generators is addeed.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-scalerb</option> <replaceable> input-pec</replaceable></term>
+                            <listitem><para>
+                                Determines what increments scaler B.  This can be one of:
+
+                                <literal>carry</literal>, <literal>nimi1</literal> or <literal>nimi2</literal>
+                                the <literal>carry </literal> increments Scaler B when Scaler A overflows
+                                back to zero, effectively making the two 32 bit scalers a single 64 bit
+                                scaler with the Scaler B as the most significant bits.  Note that the
+                                readout order, in this case, is that of a little endian 64 bit number.
+                            </para></listitem>
+                        </varlistentry>
+                    </variablelist>
+                </refsect1>
+            </refentry>
+            <refentry>
+                <refmeta>
+                    <refentrytitle>v977</refentrytitle>
+                    <manvolnum>1vmusbnostack</manvolnum>
+                </refmeta>
+                <refnamediv>
+                    <refname>v977</refname>
+                    <refpurpose>Read a CAEN V977 bit register</refpurpose>
+                </refnamediv>
+                <refsynopsisdiv>
+                <cmdsynopsis><command>
+v977 create <replaceable>name</replaceable> ?<replaceable>option value ...</replaceable>?
+                        </command>
+                    </cmdsynopsis>
+                    <cmdsynopsis>
+                        <command>
+v977 config <replaceable>name  option value ?...?</replaceable>
+                        </command>
+                    </cmdsynopsis>
+                    <cmdsynopsis>
+                        <command>
+v977 cget <replaceable>name ?option?</replaceable>
+                        </command>
+                    </cmdsynopsis>                
+                </refsynopsisdiv>
+                <refsect1>
+                    <title>DESCRIPTION</title>
+                    <para>
+                        Provides access to the CAEN V977 bit register in the event readout.
+                        This module will add a single 16 bit word to the event that containsthe pattern.
+                    </para>
+                </refsect1>
+                <refsect1>
+                    <title>OPTIONS</title>
+                    <para>
+                        The configration options for this module are (see the CAEN V977 manual for
+                        more information).  The manual can be downloaded from CAEN's website as  PDF.
+                        At this tim eit's also available online directly at
+                        <ulink url='https://nuchem.iucf.indiana.edu/Instrumentation/Elec_Manual/Electronic_pdfs/IOreg_V977.pdf'/>
+                    </para>
+                    <variablelist>
+                        <varlistentry>
+                            <term><option>-base </option> <replaceable>base-address </replaceable></term>
+                            <listitem><para>
+                                Specifies the base address of the module on the VME buse.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-inputmask </option> <replaceable> 16-bit-mask</replaceable></term>
+                            <listitem><para>
+                              Sets the module's input mask.
+                            </para></listitem>
+                        </varlistentry>           
+                        <varlistentry>
+                            <term><option> -readmode</option> <replaceable> singlehit | multihit </replaceable></term>
+                            <listitem><para>
+                                Determines if the single hit or multi hit register is read for each event.
+                                The default is <literal>singlehit</literal>
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option> -outputmask</option> <replaceable> 16-bit-mask </replaceable></term>
+                            <listitem><para>
+                            sets the module's output maskk.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-readandcler </option> <replaceable>boolean </replaceable></term>
+                            <listitem><para>
+                            If true, the module is read and cleared othewrise it's non-destructively read.
+                            the default is true and is normally what you want.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-pattern </option> <replaceable>boolean </replaceable></term>
+                            <listitem><para>
+                            If true pattern register mode is used.  The default is <literal>false</literal>
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-gate </option> <replaceable>boolean </replaceable></term>
+                            <listitem><para>
+                            Enables gated mode where the pattern only updates whenthe gate input is 
+                            asserted.  This defaults to <literal>true</literal>
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><option>-ormask </option> <replaceable> boolean</replaceable></term>
+                            <listitem><para>
+                            If true the or mask bit is set in the module CSR. The default is <literal>false</literal>
+                            </para></listitem>
+                        </varlistentry>
+                    </variablelist>
+                </refsect1>
+            </refentry>
+        </section>
+    </section>
+    <section>
+        <title>Supported Scaler modules</title>
+        <para>
+            As described above, scler modules don't have configuration options.  The form of a
+            scaler configuration file definition is
+        </para>
+        <informalexample>
+        <literallayout>
+scaler-type unique-name  base-address
+        </literallayout>
+        </informalexample>
+        <para>
+          The only scaler supported is the SIS 3820 latching scaler.
+        </para>
+    </section>
+</chapter>
+
+<!-- /chapter -->

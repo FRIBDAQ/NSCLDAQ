@@ -1,0 +1,683 @@
+/**
+ * @file CSIS3316EventSegment.cpp
+ * @brief implements the event segment that will readout a single SIS3316.
+ * @author Ron Fox <fox at frib dot msu dot edu>
+ * 
+ * 
+ *  This software is Copyright by the Board of Trustees of Michigan
+ *  State University (c) Copyright 2025
+*
+*  You may use this software under the terms of the GNU public license
+*   (GPL).  The terms of this license are described at:
+*
+*    http://www.gnu.org/licenses/gpl.txt
+*
+*    Author:
+*            Ron Fox
+*            Facility for Rare Isotop Beams
+*            Michigan State University
+*            East Lansing, MI 48824-1321
+*
+ * 
+ */
+#include "CSIS3316EventSegment.h"
+#include <XXUSBConfigurableObject.h>
+#include <sis_vmusb_interface.h>
+#include "sis3316.h"
+#include "sis3316_class.h"
+#include "CVMUSB.h"
+#include <CVMUSBReadoutList.h>
+#include <Globals.h>                  // THE VMUSB controller will be there:
+#include <vector>
+#include <assert.h>
+#include <stdexcept>
+#include <sstream>
+#include <unistd.h>
+
+// Static data:
+static const bool debug(false);
+
+//   The parameter constraints:
+
+// CLock sources:
+// Note that a front panel clock will require that the user
+// know how to set the delays so we ignore that for now.
+static const char* ClockSources[] = {
+    "fp", 
+    "250MHz","125MHz", "50MHz", "25MHz", 
+    // "12.5MHz",     // For now can't give 12.5MHz clock.
+    NULL
+};
+
+// valid input ranges values:
+
+static const char* Ranges[] = {
+    "5V", "2V", "1.9V", NULL
+};
+// Map ranges -> gain bits
+
+static std::map<std::string, int> RangeMap= {
+    {"5V", 0}, {"2V", 1}, {"1.9V", 2}
+};
+
+
+// Decimation values..and their meanings in the SIS3316_ADC_CHN_M_AVERAGE_CONFIGURATION_REG
+
+static const char* Decimations[] = {
+    "off", "2", "4", "8", "16", "32", "64", "128", "256", "512"
+};
+//Shifted into place, these are the decimation register values that go with
+// the decimation selection strings:
+static std::map<std::string, unsigned> DecimationValues = {
+    {"off", 0}, {"2", 0x18}, {"4", 0x10}, {"8", 0x11},
+    {"16", 0x12}, {"32", 0x13}, {"64", 0x14}, 
+    {"128", 0x15}, {"256", 0x16}, {"256", 17}
+};
+
+
+static const uint64_t Zero(0);    // Shared low limit for many things.
+static const uint64_t MaxSamples(65535);
+static const uint64_t MaxId(127);
+static const uint64_t MaxPretrigger(0x3fff);   // 14 bits of pre-trigger.
+
+
+///////////////////////// Canonical implementations ////////////////////////////
+
+/**
+ * Constructor:
+ *    @param name - name given to both the configuration and the module.
+ * 
+ *  Null out pointers to the VME and module objects but save the name and
+ * make a new configuration to save.
+ */
+CSIS3316EventSegment::CSIS3316EventSegment(const char* name) :
+    m_name(name), m_pConfiguration(nullptr), m_pVME(nullptr), m_pModule(nullptr)
+{
+    m_pConfiguration = new XXUSB::CConfigurableObject(m_name);
+    setupConfiguration();                         // Set up our configuration parameters.
+}
+/**
+ *  destructor
+ *     
+ * 
+ */
+CSIS3316EventSegment::~CSIS3316EventSegment() {
+    delete m_pConfiguration;
+    delete m_pModule;                   // Module before VME.
+    delete m_pVME;
+}
+
+///////////////////////// Selector implementation ////////////////////////
+
+/**
+ *  getConfiguration
+ * 
+ * @return XXUSB::CConfigurableObject* - pointer to our configuration.
+ * 
+ * This is going to allow the Tcl interpreter to configure us.
+ */
+XXUSB::CConfigurableObject*
+CSIS3316EventSegment::getConfiguration() {
+    return m_pConfiguration;
+}
+/**
+ *  getName
+ *     @return std::string - copy of our name
+ */
+std::string
+CSIS3316EventSegment::getName() const {
+    return m_name;
+}
+/////////////////////////////////// Implementation methods ///////////////////////////////////////
+
+/**
+ * Initialize 
+ *     Initialize the module.  The configuration has been set up by the 
+ * compound event segment prior to being called so everything in m_pConfiguration 
+ * matches the the desired module configuration.
+ * At this point the VMUSB controller will have been set up as well.
+ */
+void
+CSIS3316EventSegment::initialize() {
+
+    // WE can build the module and controller:
+
+    delete m_pModule;
+    delete m_pVME;
+    m_pVME = new sis_vmusb_interface;          // Fishes the VMUSB from Globals.
+    m_pModule = new sis3316_adc(
+        m_pVME, m_pConfiguration->getUnsignedParameter("-base")  // Our base was configured.
+    );
+
+
+    // Let's make sure we really have an SIS3316:
+
+    UINT value;              // Thing read:
+
+    m_pModule->register_read(SIS3316_MODID, &value);
+    if ((value >> 16) != 0x3316) {
+        std::stringstream strMsg;
+        strMsg << m_pConfiguration->getIntegerParameter("-base") 
+            << " Is not an SIS3316 module!\n";
+        strMsg << "You can use $DAQROOT/sis3316/inventory to list the SIS3316 modules in the crate\n";
+        std::string msg = strMsg.str();
+        throw msg;
+    }
+
+    // We're going to assum all our operatons actually work - because I'm lazy
+    // and very likely it's true.
+
+    m_pModule->register_write(SIS3316_KEY_DISARM, 0); // Keep disarmed.
+    m_pModule->register_write(SIS3316_KEY_RESET, 0);  // Module reset.
+    usleep(10*1000);                                   // wait. for it
+    
+    if (debug) {
+        std::cerr << "After write to key_reset regiser\n";
+        dumpSetup();
+    }
+    m_pModule->adc_spi_reg_enable_adc_outputs();    // Tino says this is needed.
+
+
+    // Set up the clock source:
+
+    setClock();
+    
+    m_pModule->register_write(SIS3316_KEY_TIMESTAMP_CLEAR, 0); 
+    // Set up the header ids for the ADC groups:
+
+    
+    // Set the DC offset registers:
+
+    auto offsets = m_pConfiguration->getUnsignedList("-dcoffset");
+    assert(offsets.size() == 16);
+    for (int i =0; i < 16; i++) {
+        m_pModule->adc_dac_offset_ch_array[i] = offsets[i];
+    }
+    m_pModule->write_all_adc_dac_offsets();
+    m_pModule->configure_all_adc_dac_offsets();
+
+    auto id = m_pConfiguration->getUnsignedParameter("-id");
+        std::vector<int> idregs = {
+            SIS3316_ADC_CH1_4_CHANNEL_HEADER_REG,
+            SIS3316_ADC_CH5_8_CHANNEL_HEADER_REG,
+            SIS3316_ADC_CH9_12_CHANNEL_HEADER_REG,
+            SIS3316_ADC_CH13_16_CHANNEL_HEADER_REG
+        };
+    for (int i =0; i < 4; i++) {
+        // We get to write bits 4-11 if the id and
+        // bits 2,3 are the group.  The bottom 2 bits are the
+        // adc within the group.  Note that
+        // all of this is shifted 20 bits up in to the register. 
+        // See the manual:  6.47
+        m_pModule->register_write(idregs[i], id << 24 | (i << 22));
+    }
+    // Set the trace lengths for each group.
+    // Note this also sets th raw buffer start indices -> 0.
+
+    auto samples = m_pConfiguration->getUnsignedList("-samples");
+    std::vector<int> bufregs = {
+        SIS3316_ADC_CH1_4_RAW_DATA_BUFFER_CONFIG_REG,
+        SIS3316_ADC_CH5_8_RAW_DATA_BUFFER_CONFIG_REG,
+        SIS3316_ADC_CH9_12_RAW_DATA_BUFFER_CONFIG_REG,
+        SIS3316_ADC_CH13_16_RAW_DATA_BUFFER_CONFIG_REG
+    };
+    assert(samples.size() == 4);
+    for (int i =0; i < 4; i++) {
+        m_pModule->register_write(bufregs[i], samples[i] << 16);
+    }
+
+    // Set the pre-triger for each group.
+
+    auto pretriggers = m_pConfiguration->getUnsignedList("-pretrigger");
+    std::vector<int> pretrigregs = {
+        SIS3316_ADC_CH1_4_PRE_TRIGGER_DELAY_REG,
+        SIS3316_ADC_CH5_8_PRE_TRIGGER_DELAY_REG,
+        SIS3316_ADC_CH9_12_PRE_TRIGGER_DELAY_REG,
+        SIS3316_ADC_CH13_16_PRE_TRIGGER_DELAY_REG
+    };
+    assert(pretriggers.size() == 4);
+    for (int i=0; i < 4; i++) {
+        m_pModule->register_write(pretrigregs[i], pretriggers[i]); 
+    }
+    // Set each ADC group in 'single-event' mode.
+    // starting address 0.
+    // We set the end threshold registesr to 1 and disable storing hits
+    // after full:
+
+    std::vector<int> endAddressRegisters = {
+        SIS3316_ADC_CH1_4_ADDRESS_THRESHOLD_REG,
+        SIS3316_ADC_CH5_8_ADDRESS_THRESHOLD_REG,
+        SIS3316_ADC_CH9_12_ADDRESS_THRESHOLD_REG,
+        SIS3316_ADC_CH13_16_ADDRESS_THRESHOLD_REG
+    };
+    // Even a single write will make the threshold.
+    for (int i = 0; i < endAddressRegisters.size(); i++) {
+        m_pModule->register_write(endAddressRegisters[i], 0x80000001);
+    }
+
+
+    // Note 0x100 is FP trigger enable according to Tino.
+    // The write to the T0 select register allows a stretched trigger-> ADCFPGA
+    // to be monitored on TO
+    // The write to U0 select makes it monitor sample logic  ready.
+    // TO - trigger signal (unstretched).
+    // C0 - Sampling clock.
+    // U0 - sample logic ready.
+    // Moved the order to what Tino suggested.
+    
+    
+    int status = m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
+    if (debug) {
+        if (status) {
+            std::cerr << "ACQCSR write failed: " << status << std::endl;
+        }
+        std::cerr << " After acqcsr write: \n";
+        dumpSetup();
+        std::cerr << "------------------\n";
+    }
+
+    // Set external trigger  bit 4 is NIM INPUT as trigger enable (actuall
+    // Trigger function).
+
+    m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
+    m_pModule->register_write(SIS3316_LEMO_OUT_TO_SELECT_REG, 0x04000000);
+    m_pModule->register_write(SIS3316_LEMO_OUT_UO_SELECT_REG, 0x100);
+    m_pModule->register_write(SIS3316_LEMO_OUT_CO_SELECT_REG, 1);
+
+    // Set the range and termination registers:
+    // registeroffsets (will use m_pModule->register_write for base).
+
+    std::vector<int> gaintermRegisters = {
+        SIS3316_ADC_CH1_4_ANALOG_CTRL_REG,
+        SIS3316_ADC_CH5_8_ANALOG_CTRL_REG,
+        SIS3316_ADC_CH9_12_ANALOG_CTRL_REG,
+        SIS3316_ADC_CH13_16_ANALOG_CTRL_REG,
+    };
+    auto gains = m_pConfiguration->getList("-range");
+    auto terminations = m_pConfiguration->getBoolList("-term1Kohm");
+
+    for (int group = 0; group < 4; group++) {
+        int firstchan = group/4;
+
+        // Over channels within the group:
+
+        uint32_t regvalue = 0;
+        for (int i =0; i < 4; i++) {
+            auto gainval = RangeMap[gains[firstchan + i]];
+            auto termbit = terminations[firstchan + i] ? 1: 0;
+            regvalue |= (gainval | (termbit << 2)) << (i*8);
+        }
+        if (debug) {
+            std::cerr << " Writing gain/term " << std::hex << regvalue 
+                << " to " << gaintermRegisters[group]
+                << std::dec << std::endl;
+            
+        }
+        m_pModule->register_write(gaintermRegisters[group], regvalue);
+    }
+    
+    // Set the enables for each ADC.
+
+    auto enables = m_pConfiguration->getBoolList("-enable");
+    std::vector<int> enableRegs = {
+        SIS3316_ADC_CH1_4_EVENT_CONFIG_REG,  
+        SIS3316_ADC_CH5_8_EVENT_CONFIG_REG,
+        SIS3316_ADC_CH9_12_EVENT_CONFIG_REG,
+        SIS3316_ADC_CH13_16_EVENT_CONFIG_REG
+    };
+    assert(enables.size() == 16);
+    for (int i = 0; i < enableRegs.size(); i++) {
+        uint32_t mask(0);          // Defaults are non enabled.
+        int firstchan = i*4;       // offset to ch 0 in the enables array
+        for(int ch = 0; ch < 4; ch++) {
+            if (enables[firstchan+ch]) {
+                mask |= 8 << (ch*8);    // Enable trigger response
+            }
+        }
+        // mask has the full register value:
+
+        if (debug) {
+            
+            std::cerr << "Writing enable mask " << std::hex << mask 
+                << " to config reg  " << enableRegs[i] << std::dec << std::endl;
+        }
+        m_pModule->register_write(enableRegs[i], mask);
+        
+    }
+    // Don't save anything but the waveforms:
+
+    std::vector<int> evformatRegs = {
+        SIS3316_ADC_CH1_4_DATAFORMAT_CONFIG_REG,
+        SIS3316_ADC_CH5_8_DATAFORMAT_CONFIG_REG,
+        SIS3316_ADC_CH9_12_DATAFORMAT_CONFIG_REG,
+        SIS3316_ADC_CH13_16_DATAFORMAT_CONFIG_REG
+    };
+    for (int i = 0; i < evformatRegs.size(); i++) {
+        m_pModule->register_write(evformatRegs[i], 0);
+    }
+    // Set the decimations:
+
+    auto decimations = m_pConfiguration->getList("-decimations");
+    std::vector<int> decimationRegisters = {
+        SIS3316_ADC_CH1_4_AVERAGE_CONFIGURATION_REG,
+        SIS3316_ADC_CH5_8_AVERAGE_CONFIGURATION_REG,
+        SIS3316_ADC_CH9_12_AVERAGE_CONFIGURATION_REG,
+        SIS3316_ADC_CH13_16_AVERAGE_CONFIGURATION_REG
+    };
+    int firstchan =0;
+    for (auto reg : decimationRegisters) {
+        int32_t value(0);
+        for (int i = 0; i < 4; i++) {
+            value |= (DecimationValues[decimations[firstchan + i]] << (i*8)); // Or in the firstchan + i channel decimation.
+        }
+        if (debug) {
+            std::cerr << "Writing decimation register "
+                << std::hex << reg << " with " << value
+                << std::dec << std::endl;
+        }
+        m_pModule->register_write(reg, value);               
+        firstchan += 4;                   // next 4 chans.
+    }
+
+    // Reset the transfer FSMs.
+    
+    std::vector<int> xferRegisters = {
+        SIS3316_DATA_TRANSFER_CH1_4_CTRL_REG,
+        SIS3316_DATA_TRANSFER_CH5_8_CTRL_REG,
+        SIS3316_DATA_TRANSFER_CH9_12_CTRL_REG,
+        SIS3316_DATA_TRANSFER_CH13_16_CTRL_REG
+    };
+    // Reset the transfer state machines:
+
+    for (auto r: xferRegisters) {
+	    m_pModule->register_write(r, 0);
+    }
+    // Re do the trigger routing?
+
+    m_pModule->register_write(SIS3316_NIM_INPUT_CONTROL_REG, 0x10);
+    m_pModule->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, 0x100);
+    // I think I can arm bank 1 and go:
+    if (debug) dumpSetup();
+    m_pModule->register_write(SIS3316_KEY_DISARM_AND_ARM_BANK1, 0);
+}
+/**
+ * disable
+ *    Turn off the module.... Done by disarming.  The 
+ * configuration is assumed to be loaded as is the VMUSB controller.... in fact
+ * we assume that initialize() has also been called alread.ACCUMULATOR_MAX_LENGTH
+ * 
+ * 
+ */
+void
+CSIS3316EventSegment::disable() {
+    m_pModule->register_write(SIS3316_KEY_DISARM, 0);
+}
+/**
+ * read
+ *    Read out the module into the buffer we're pointed at.  Only the enabled
+ * channels will be read.  The ony identifying information will be what the
+ * module provides in data headers.
+ * 
+ * @param pBuffer -  pointer to where data should be stored.
+ * @param maxwords - Maximum number of 16 bit words that will fit in the buffer.
+ * @return size_t - Number of 16 bit words that were read (or is it 8 bit bytes?).
+ */
+size_t
+CSIS3316EventSegment::read(void* pBuffer, size_t maxwords) {
+    size_t totalWords = computeTotalWords();
+    uint32_t*   pLongBuf = reinterpret_cast<uint32_t*>(pBuffer);   
+    size_t      nRead(0);     // Total longs read.
+    CVMUSB*    pController = Globals::pUSBController;
+    if (totalWords*2 > maxwords) {
+        std::stringstream strMsg;
+        strMsg << m_name << " wants to read out "  << totalWords
+            << " that's  more than the remaining buffer words which are: " << maxwords;
+        std::string msg(strMsg.str());
+        throw std::length_error(msg);
+    }
+    // Some of the stuff we do must be done without the help of the adc class:
+
+    auto base = m_pConfiguration->getUnsignedParameter("-base");
+    auto amod = CVMUSBReadoutList::a32UserData;
+    auto blockAmod = CVMUSBReadoutList::a32UserBlock;
+
+    // Module should now be disarmed but...
+
+    m_pModule->register_write(SIS3316_KEY_DISARM, 0);
+
+    // We need to figure out what to do for each enabled channel, notiing that the channels
+    // are arranged in groups of 4 (per ADC FPGA) and therefore share registers.
+
+    
+    auto enables = m_pConfiguration->getBoolList("-enable");          // 16 of these.
+    auto samples = m_pConfiguration->getUnsignedList("-samples");    // 4 of these
+
+    for (int i =0; i < enables.size(); i++) {
+        if(enables[i]) {
+            unsigned got(0);
+            int rdstat = m_pModule->read_DMA_Channel_PreviousBankDataBuffer(
+                0,
+                i, samples[i/4], &got, pLongBuf
+            );
+            if (rdstat) {
+                std::cerr << "Read failed with status: " << rdstat << std::endl;
+                std::cerr << "Got = " << got << std::endl;
+            } 
+            // Got is in units of d32
+            pLongBuf += got;    // Units of d32
+            nRead += got*2;       // units of d16
+            
+        }
+    }
+    
+    std::vector<int> bufregs = {
+        SIS3316_ADC_CH1_4_RAW_DATA_BUFFER_CONFIG_REG,
+        SIS3316_ADC_CH5_8_RAW_DATA_BUFFER_CONFIG_REG,
+        SIS3316_ADC_CH9_12_RAW_DATA_BUFFER_CONFIG_REG,
+        SIS3316_ADC_CH13_16_RAW_DATA_BUFFER_CONFIG_REG
+    };
+    assert(samples.size() == 4);
+    for (int i =0; i < 4; i++) {
+        m_pModule->register_write(bufregs[i],  samples[i] << 16);
+    }
+
+    m_pModule->register_write(SIS3316_KEY_DISARM_AND_ARM_BANK1, 0);
+    
+
+    return nRead;                      // 16 bit words.
+}
+/**
+ *  readable
+ *    @return true - if the module is readable.
+ */
+bool
+CSIS3316EventSegment::readable() {
+    if (!m_pModule) return false;        // no module so not readable.
+    uint32_t acqreg;
+    m_pModule->register_read(SIS3316_ACQUISITION_CONTROL_STATUS, &acqreg);
+
+    uint32_t thresh = acqreg & 0x00080000;    // Threshold made.
+    uint32_t sampling = 0;  //? acqreg & 0x00040000;
+    return (thresh != 0) && (sampling == 0);
+}
+///////////////////////////////// Private Utilities //////////////////////////////////////////////
+
+/**
+ * setupConfiguration
+ *    Interact with m_pConfiguration to setup the configuration parameters and their constraints.
+ */
+void
+CSIS3316EventSegment::setupConfiguration() {
+    m_pConfiguration->addIntegerParameter("-base", 0);
+    m_pConfiguration->addEnumParameter("-clock", ClockSources, "250MHz" );
+    m_pConfiguration->addIntListParameter(
+        "-samples",  Zero, MaxSamples, 4,4,4, MaxSamples);
+    m_pConfiguration->addIntegerParameter("-id", 0,  127, 0);
+    m_pConfiguration->addIntListParameter(
+        "-pretrigger",  0, MaxPretrigger ,4,4,4, 0);
+    m_pConfiguration->addBoolListParameter("-enable", 16, true);
+    m_pConfiguration->addIntListParameter(
+        "-dcoffset", 0, 0xffff, 16,16,16, 0    // Each chan has a DC offset. 
+    );
+    m_pConfiguration->addEnumListParameter("-range", Ranges, "5V", 16, 16, 16);
+    m_pConfiguration->addBoolListParameter("-term1Kohm", 16,  true);
+    m_pConfiguration->addIntegerParameter("-adcdelaytap", 0x02);   // 250MHz.
+    m_pConfiguration->addEnumListParameter("-decimations", Decimations, "off", 16,16,16);
+}
+
+/**
+ *  computeTotalWords
+ *     Compute the total number of 32 bit words we'll readout
+ * 
+ * @return size_t
+ */
+size_t
+CSIS3316EventSegment::computeTotalWords() {
+    size_t result(0);
+    for (int i = 0; i < 4; i++) {
+        result += sizeGroup(i);
+    }
+
+    return result;
+}
+/**
+ *  sizeGroup
+ *    For each channel enabled in the group, the number of longs read is the sample size + 3 header
+ * longs.
+ * @param group - 4 channel group number (0-3).  Up to the caller to get this right.
+ * @return size_t - number of 32 bit words that will be read from a 4 channel group.
+ */
+size_t
+CSIS3316EventSegment::sizeGroup(int group) {
+    unsigned samples = m_pConfiguration->getUnsignedList("-samples")[group];  // Samples are a per group thing.
+    auto enables = m_pConfiguration->getBoolList("-enable");
+
+    int ch = group*4;      // First channel in group.
+    size_t result(0);
+    for (int i = 0 ; i < 4; i++) {                  // loop over chans in group.
+        if (enables[ch]) {
+            result += samples+3;                    // Contribution of an enabled channel.
+        }
+        ch++;
+    }
+    return result;
+}
+
+/**
+ * dump the setup:
+ */
+void
+CSIS3316EventSegment::dumpSetup() {
+    
+    std::cout << std::hex;                       // Output registers in x
+    
+    std::cout << "NIM_INPUT_CONTROL  : 0x" << readRegister(SIS3316_NIM_INPUT_CONTROL_REG) 
+        << std::endl;
+    std::cout << "ACQUISITION_CSR    : 0x" << readRegister(SIS3316_ACQUISITION_CONTROL_STATUS)
+        << std::endl;
+    std::cout << "ADC_CH1_4_EVT_CFG  : 0x" << readRegister(SIS3316_ADC_CH1_4_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "ADC_CH5_8_EVT_CFG  : 0x" << readRegister(SIS3316_ADC_CH5_8_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "ADC_CH9_12_EVT_CFG : 0x" << readRegister(SIS3316_ADC_CH9_12_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "ADC_CH13_16_EVT_CFG: 0x" << readRegister(SIS3316_ADC_CH13_16_EVENT_CONFIG_REG)
+        << std::endl;
+    std::cout << "End Addr thr 1:      0x" << readRegister(SIS3316_ADC_CH1_4_ADDRESS_THRESHOLD_REG)
+        << std::endl;
+    std::cout << "End Addr thr 2:      0x" << readRegister(SIS3316_ADC_CH5_8_ADDRESS_THRESHOLD_REG)
+        << std::endl;
+    std::cout << "End Addr thr 3:      0x" << readRegister(SIS3316_ADC_CH9_12_ADDRESS_THRESHOLD_REG)
+        << std::endl;
+    std::cout << "End Addr thr 4:      0x" << readRegister(SIS3316_ADC_CH13_16_ADDRESS_THRESHOLD_REG)
+        << std::endl;
+        
+    std::cout << std::dec;                       // back to default.
+}
+
+/**
+ *  Read a  regiser value:
+ *    @param  offset - register offset.
+ *    @return unit32_t - value.
+ */
+uint32_t
+CSIS3316EventSegment::readRegister(unsigned offset) {
+    unsigned value;
+    int s;
+    s = m_pModule->register_read(offset, &value);
+    if (s) {
+        std::cerr << "Failed to read register " << std::hex 
+            << offset <<  std::dec << " code: " << s << std::endl;
+    }
+    return value;
+}
+/**
+ *  do al the fal-de-ral needed to set the clock source.
+ */
+void 
+CSIS3316EventSegment::setClock() {
+    int whichClock = m_pConfiguration->getEnumParameter("-clock", ClockSources);
+    
+    if (std::string("fp") == ClockSources[whichClock]) {
+        // Set up for NIM clock input:
+
+        m_pModule->register_write(SIS3316_SAMPLE_CLOCK_DISTRIBUTION_CONTROL, 3);
+        // The delay line settings must be providec by the user:
+
+        m_pModule->configure_adc_fpga_iob_delays(m_pConfiguration->getIntegerParameter("-adcdelaytap"));
+    } else {
+        // internal clock:
+
+        m_pModule->register_write(SIS3316_SAMPLE_CLOCK_DISTRIBUTION_CONTROL, 0);
+        
+        // Now set the sample freq:
+
+        std::string freq = ClockSources[whichClock];
+        
+        int samplerate_enum;
+        if (freq == "250MHz") {
+            
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_250MSPS;
+        } else if (freq == "125MHz") {
+            
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_125MSPS;
+        } else if (freq == "50MHz") {
+            
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_50MSPS;
+        } else if (freq == "25MHz") {
+                        
+        } else if (freq == "12.5MHz") {
+            samplerate_enum = SIS::ADC::SIS3316::SAMPLERATE_12P5MSPS;
+            
+        } else {
+            std::stringstream strmsg;
+            strmsg << freq << " Is not a supported clock frequency\n";
+            throw strmsg;
+        }
+        setClockParameters(samplerate_enum);
+	
+    }
+}
+/**
+ *  setClockParameters
+ *     GIven a clock enum, do what's needed to actually set the internal clock.
+ * @param samplerate_enum - the enum value e.g. SIS::ADC::SIS3316::SAMPLERATE_...
+ * 
+ * This could be in sis3316_class - and proably should be.
+ */
+void
+CSIS3316EventSegment::setClockParameters(int samplerate_enum) {
+    // Set the clock frequency:
+    
+    unsigned int hs_div, n1div;
+    double fft_freq;
+    m_pModule->get_SI570_oscillator_hs_div_and_n1_div_values(
+        samplerate_enum,
+        &hs_div, &n1div, &fft_freq);
+    m_pModule->change_frequency_HSdiv_N1div(0, hs_div, n1div);
+    unsigned int iobdelay;
+    m_pModule->get_adc_fpga_iob_delay_value(samplerate_enum, &iobdelay);
+    m_pModule->configure_adc_fpga_iob_delays(
+        iobdelay
+    );                              // Tino says this is needed too.
+}

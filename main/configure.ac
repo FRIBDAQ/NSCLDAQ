@@ -346,6 +346,7 @@ AC_CHECK_FILE([${srcdir}/libtcl/configure.ac],
 		[AC_MSG_NOTICE([Incorporating tcl++ for you])
 		${srcdir}/tcl++incorp])
 AC_MSG_NOTICE([Building and installing tcl++])
+
 (cd libtcl; ./configure --prefix=${prefix}; make clean ; make -j ${incorp_cores} all ; make install)
 result=$?
 AS_VAR_IF([result], [0], [], AC_MSG_ERROR([Failed to build and install tcl++ with result: ${result}]))
@@ -363,6 +364,7 @@ AC_SUBST(LIBEXCEPTION_LDFLAGS)
 tcl_basename=tcl${TCL_VERSION}
 tcl_configdir="/usr/lib/$tcl_basename"
 tcl_incdir="/usr/include/$tcl_basename"
+
 
 (cd ${srcdir}/tclhttpd3.5.1; ./configure --prefix=${prefix}/share/tclhttpd --enable-gcc --with-tclinclude=$tcl_incdir --with-tcl=$tcl_configdir)
 (cd ${srcdir}/tclhttpd3.5.1; make clean ; make -j ${incorp_cores} all ; make install)
@@ -877,6 +879,7 @@ Makefile
 	usb/vmusb/sis3316examples/access_rate/Makefile
 	usb/vmusb/sis3316examples/rootgui/Makefile
 	usb/vmusb/sis3316examples/inventory/Makefile
+	usb/vmusb/SIS3316Readout/Makefile
     usb/ccusb/Makefile
     usb/ccusb/ccusb/Makefile 
     usb/ccusb/core/Makefile

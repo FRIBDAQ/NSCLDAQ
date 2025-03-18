@@ -10,7 +10,7 @@ TARGET="libtcl"
 
 if [[ ! $TAG ]]
 then
-  TAG="libtclplus-v4.3-003"
+  TAG="libtclplus-v4.3-004"
 fi
 
 rm -rf $TARGET
