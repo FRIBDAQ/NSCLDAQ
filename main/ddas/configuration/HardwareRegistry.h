@@ -84,6 +84,7 @@ namespace DAQ {
 		RevF_500MHz_12Bit=9,
 		RevF_500MHz_14Bit=10,
 		RevF_500MHz_16Bit=11,
+		RevH_250MHz_14Bit=12,
 		Unknown=0
 	    };
 

@@ -1,11 +1,13 @@
-import sys
-import os
-import pandas as pd
-import json
-import inspect
 import copy
-from time import sleep
+import inspect
+import json
 import logging
+import os
+import sys
+from time import sleep
+
+import numpy as np
+import pandas as pd
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCloseEvent
@@ -13,15 +15,15 @@ from PyQt5.QtWidgets import (
     QMainWindow, QVBoxLayout, QWidget, QApplication, QFileDialog
 )
 
-from pixie_utilities import SystemUtilities, RunUtilities, TraceUtilities
-from dsp_manager import DSPManager
-from plot import Plot
-from thread_pool_manager import ThreadPoolManager
 from chan_dsp_gui import ChanDSPGUI 
+import colors
+from dsp_manager import DSPManager
 from mod_dsp_gui import ModDSPGUI
+from pixie_utilities import SystemUtilities, RunUtilities, TraceUtilities
+from plot import Plot
 from run_type import RunType
 from trace_analyzer import TraceAnalyzer
-import colors
+from thread_pool_manager import ThreadPoolManager
 
 # @todo Would like to run the system as per custom DSP parameter formatted
 # text file output -- as currently implemented the save DSP settings do not
@@ -145,7 +147,7 @@ class MainWindow(QMainWindow):
         
         self.trace_analyzer = TraceAnalyzer(self.dsp_mgr)
         self.trace_info = {
-            "trace": None,
+            "trace": np.empty(0),
             "module": None,
             "channel": None
         }
@@ -200,9 +202,6 @@ class MainWindow(QMainWindow):
         self.acq_toolbar.b_analyze_trace.clicked.connect(self._analyze_trace)
         self.acq_toolbar.b_read_data.clicked.connect(self._read_data)
         self.acq_toolbar.b_run_control.clicked.connect(self._run_control)
-        self.acq_toolbar.binning.currentTextChanged.connect(
-            lambda bw: self.mplplot.rebin(int(bw))
-        )
         
     ##
     # Public methods
@@ -257,7 +256,7 @@ class MainWindow(QMainWindow):
             msps_list = []
             for i in range(self.sys_utils.get_num_modules()):
                 msps_list.append(self.sys_utils.get_module_msps(i))
-
+                
             # Configure DSP and managers. Performs first time load of DSP
             # settings from the Pixie modules.
             
@@ -575,7 +574,6 @@ class MainWindow(QMainWindow):
         self.mplplot.figure.clear()
         module = self.acq_toolbar.current_mod.value()
         channel = self.acq_toolbar.current_chan.value()
-        bin_width = int(self.acq_toolbar.binning.currentText())
 
         # Read from module and get data, then draw:
         
@@ -583,16 +581,12 @@ class MainWindow(QMainWindow):
             for i in range(16):
                 self.run_utils.read_data(module, i, self.active_type)
                 data = self.run_utils.get_data(self.active_type)
-                self.mplplot.draw_run_data(
-                    data, self.active_type, bin_width, 4, 4, i+1
-                )
+                self.mplplot.draw_run_data(data, self.active_type, 4, 4, i+1)
             self.mplplot.update_canvas()
         else:           
             self.run_utils.read_data(module, channel, self.active_type)
             data = self.run_utils.get_data(self.active_type)
-            self.mplplot.draw_run_data(
-                data, self.active_type, bin_width
-            )
+            self.mplplot.draw_run_data(data, self.active_type)
             
     def _read_trace_data(self):
         """Read trace data.
@@ -676,7 +670,6 @@ class MainWindow(QMainWindow):
             If the channel number for a single-channel read is changed 
             between acquisition and analysis.
         """        
-        self.mplplot.figure.clear()
         module = self.acq_toolbar.current_mod.value()
         channel = self.acq_toolbar.current_chan.value()
         
@@ -687,7 +680,7 @@ class MainWindow(QMainWindow):
         # Below we handle the various cases:
         
         try: 
-            if not self.trace_info["trace"]:
+            if not self.trace_info["trace"].size:
                 # If there is no trace data, acquire a new trace: 
                 if self.acq_toolbar.fast_acq.isChecked():
                     self.trace_utils.read_fast_trace(module, channel)
@@ -738,7 +731,8 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 self.logger.exception("Error analyzing acquired trace")
                 print(e)
-            else:                
+            else:
+                self.mplplot.figure.clear()
                 self.mplplot.draw_analyzed_trace(
                     self.trace_info["trace"],
                     self.trace_analyzer.fast_filter,
@@ -748,7 +742,7 @@ class MainWindow(QMainWindow):
             finally:                
                 # Reset the single channel trace information:            
                 self.trace_info.update({
-                    "trace": None,
+                    "trace": np.empty(0),
                     "module": None,
                     "channel": None 
                 })            

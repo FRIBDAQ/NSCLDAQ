@@ -87,7 +87,7 @@ namespace DAQ {
 	    FirmwareMap m_fwMap; //!< Map of firmware for hardware types.
 	    std::vector<int> m_hardwareMap; //!< Map of HardwareRegistry types.
     
-	    // These additions support per module firmware maps and .set files:
+	    // These additions support per module firmware maps and set files:
 
 	    /** Per-module firmware maps */
 	    std::map<int, FirmwareMap> m_moduleFirmwareMaps;

@@ -8,8 +8,8 @@ else:
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QCheckBox, QWidget, QHBoxLayout
 
-import xia_constants as xia
 from chan_dsp_widget import ChanDSPWidget
+import xia_constants as xia
 
 class Trace(ChanDSPWidget):
     """Trace DSP tab (ChanDSPWidget)."""

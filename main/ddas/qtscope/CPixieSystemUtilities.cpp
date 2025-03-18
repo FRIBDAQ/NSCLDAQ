@@ -91,11 +91,9 @@ CPixieSystemUtilities::Boot()
 	return -1;
     }
 
-    // Get number of modules and set event lengths based on modevtlen file:
-    
     m_numModules = m_config.getNumberOfModules();
     m_modEvtLength = m_config.getModuleEventLengths();
-  
+    
     // The hardware map is set up during boot time:
     
     std::vector<int> hdwrMap = m_config.getHardwareMap();
@@ -106,9 +104,9 @@ CPixieSystemUtilities::Boot()
 	m_modRev.push_back(spec.s_hdwrRevision);
 	m_modClockCal.push_back(spec.s_clockCalibration);
     }
-  
+
     m_booted = true;
-  
+
     return 0;
 }
 
