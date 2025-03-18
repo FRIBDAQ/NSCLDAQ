@@ -9,6 +9,8 @@
 
 #include <vector>
 
+class CDataGenerator;
+
 /**
  * @addtogroup utilities libPixieUtilities.so
  * @{ 
@@ -30,6 +32,7 @@
 class CPixieTraceUtilities
 {
 private:
+    CDataGenerator* m_pGenerator; //!< The offline data generator.
     bool m_useGenerator; //!< True if using generated data, else online data.
     std::vector<unsigned short> m_trace; //!< Single channel trace data.
     double m_validAmplitude; //!< Minimum amplitude for a validated trace.
@@ -37,6 +40,8 @@ private:
 public:
     /** @brief Constructor. */
     CPixieTraceUtilities();
+    /** @brief Destructor. */
+    ~CPixieTraceUtilities();
     
     /**
      * @brief Read a validated ADC trace from single channel.

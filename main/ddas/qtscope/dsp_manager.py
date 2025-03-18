@@ -1,6 +1,7 @@
-import logging
-import pandas as pd
 import inspect
+import logging
+
+import pandas as pd
 
 from pixie_utilities import DSPUtilities
 import xia_constants as xia

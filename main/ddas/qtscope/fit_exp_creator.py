@@ -1,5 +1,6 @@
-from fit_function import FitFunction
 import numpy as np
+
+from fit_function import FitFunction
 
 class ExpFit(FitFunction):
     """Exponential fitting function class used by QtScope.

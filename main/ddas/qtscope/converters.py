@@ -1,5 +1,6 @@
-import sys
 from ctypes import create_string_buffer
+import sys
+
 from bitarray import bitarray, bits2bytes
 
 """

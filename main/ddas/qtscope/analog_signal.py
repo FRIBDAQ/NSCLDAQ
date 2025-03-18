@@ -1,11 +1,10 @@
-import numpy as np
-
 import bitarray as ba
 ver = [int(i) for i in ba.__version__.split(".")]
 if bool(ver[0] >= 1 or (ver[0] == 1 and ver[1] >= 6)):
     from bitarray.util import ba2int, int2ba
 else:
     from converters import ba2int, int2ba
+import numpy as np
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDoubleValidator

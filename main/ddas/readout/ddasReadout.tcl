@@ -180,7 +180,7 @@ if {$fastboot} {
     set fbstring ""
 }
 
-set readoutCmd "$fbstring $infstring SCALER_SECONDS=$scalerSecs FIFO_THRESHOLD=$fifoThreshold EVENT_BUFFER_SIZE=$bufferSize $readoutCmd"
+set readoutCmd "$infstring $fbstring SCALER_SECONDS=$scalerSecs FIFO_THRESHOLD=$fifoThreshold EVENT_BUFFER_SIZE=$bufferSize $readoutCmd"
 
 foreach optMapEntry $ddasOptionMap {
     set opt [lindex $optMapEntry 0]

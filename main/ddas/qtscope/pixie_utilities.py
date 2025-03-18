@@ -1,11 +1,12 @@
-import sys
 from ctypes import *
 import inspect
 import logging
+import sys
+
 import numpy as np
 
-from run_type import RunType
 from converters import str2char
+from run_type import RunType
 import xia_constants as xia
 
 """pixie_utilities.py
@@ -828,7 +829,8 @@ class TraceUtilities:
         lib.CPixieTraceUtilities_delete.argtypes = [POINTER(c_char)]
 
         self.obj = lib.CPixieTraceUtilities_new()
-    
+        self.logger = logging.getLogger("qtscope_logger")
+
     def read_trace(self, module, channel):
         """Wrapper to read a trace from a single channel.
 

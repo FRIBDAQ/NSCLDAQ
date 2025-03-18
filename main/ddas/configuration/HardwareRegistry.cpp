@@ -44,6 +44,7 @@ setUpRegistry(Registry& registry) {
     registry[HR::RevF_500MHz_12Bit] = {500, 12, 15, 10. };
     registry[HR::RevF_500MHz_14Bit] = {500, 14, 15, 10. };
     registry[HR::RevF_500MHz_16Bit] = {500, 16, 15, 10. };
+    registry[HR::RevH_250MHz_14Bit] = {250, 14, 17, 8. };
 }
 
 // Create a new registry and set default values
