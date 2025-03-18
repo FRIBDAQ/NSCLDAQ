@@ -123,7 +123,7 @@ VME::vme_A32DMA_D32_read(
             data, req_nof_words, &xfercount
         );
         *got_nof_words = xfercount;
-        return result;
+        return result < 0 ? result : 0;
     } else {
         *got_nof_words = 0;
         return -1;
@@ -153,7 +153,7 @@ VME::vme_A32BLT32_read(
             data, req_nof_words, &xfercount
         );
         *got_nof_words = xfercount;
-        return result;
+        return result < 0 ? result : 0;
     } else {
         *got_nof_words = 0;
         return -1;
@@ -185,7 +185,7 @@ VME::vme_A32MBLT64_read(
             data, req_nof_words, &xfercount
         );
         *got_nof_words = xfercount;
-        return result;
+        return result < 0 ? result : 0;
     } else {
         *got_nof_words = 0;
         return -1;
@@ -193,7 +193,7 @@ VME::vme_A32MBLT64_read(
 }
 
 /**
- * The remainig types of block read transfers are not supported
+ * The remaining types of block read transfers are not supported
  * by the VMUSB and just become MBLT64 transfers.
  */
 int
@@ -237,7 +237,7 @@ VME::vme_A32DMA_D32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UIN
             addr, CVMUSBReadoutList::a32UserData, data, request_nof_words, &got
         );
         *got_nof_words = got;
-        return result;
+        return result < 0 ? result : 0;
 
     } else {
         *got_nof_words =0;
@@ -265,7 +265,7 @@ VME::vme_A32BLT32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT*
             addr, CVMUSBReadoutList::a32UserBlock, data, request_nof_words, &got
         );
         *got_nof_words = got;
-        return result;
+        return result < 0 ? result : 0;
 
     } else {
         *got_nof_words =0;
@@ -287,7 +287,7 @@ VME::vme_A32MBLT64FIFO_read(UINT addr, UINT* data, UINT request_nof_words, UINT*
             addr, 0xc, data, request_nof_words, &got
         );
         *got_nof_words = got;
-        return result;
+        return result < 0 ? result : 0;
 
     } else {
         *got_nof_words =0;
@@ -380,7 +380,10 @@ VME::vme_A32BLT32_write (UINT addr, UINT* data, UINT request_nof_words, UINT* wr
 
 int
 VME::vme_A32MBLT64_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words ) {
-    return vme_A32DMA_D32_write(addr, data, request_nof_words, written_nof_words);
+    int status =  vme_A32DMA_D32_write(addr, data, request_nof_words*2, written_nof_words);
+    *written_nof_words /=2;
+
+    return status;
 }
 
 
@@ -414,7 +417,10 @@ VME::vme_A32BLT32FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UINT
 
 int
 VME::vme_A32MBLT64FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words )  {
-    return vme_A32DMA_D32FIFO_read(addr, data, request_nof_words, written_nof_words);
+    int status = vme_A32DMA_D32FIFO_read(addr, data, request_nof_words*2, written_nof_words);
+    *written_nof_words /= 2;
+    return status;
+
     
 }
 
@@ -426,3 +432,6 @@ int
 VME::vme_IRQ_Status_read(UINT* data) {
     throw std::runtime_error("VMUSB does not support vme_IRQ_Status_read operations");
 }
+
+
+

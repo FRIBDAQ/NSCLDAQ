@@ -1,8 +1,9 @@
+from dataclasses import dataclass    
 import inspect
 import logging
 import math
+
 import numpy as np
-from dataclasses import dataclass    
 
 # @todo This class needs to know the module MSPS so it can set the fixed values
 # for the CFD parameters. Probably the easiest way is to have some module

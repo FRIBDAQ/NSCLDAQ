@@ -80,7 +80,9 @@ CHAN_PARS = [
     "MultiplicityMaskH",
     "ExternDelayLen",
     "FtrigoutDelay",
-    "ChanTrigStretch"
+    "ChanTrigStretch",
+    "BINFACTOR",
+    "EMIN"
 ]
 
 # XIA module parameter names:

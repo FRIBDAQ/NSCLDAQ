@@ -9,6 +9,8 @@
 
 #include <vector>
 
+class CDataGenerator;
+
 /**
  * @addtogroup utilities libPixieUtilities.so
  * @{ 
@@ -34,10 +36,13 @@ private:
     std::vector<std::vector<unsigned int>> m_genHistograms;
     bool m_runActive;    //!< True when running.
     bool m_useGenerator; //!< True to use generator test data.
+    CDataGenerator* m_pGenerator; //!< Generator for synthetic data.
     
 public:
     /** @brief Constructor. */
     CPixieRunUtilities();
+    /** @brief Destructor. */
+    ~CPixieRunUtilities();
 
     /**
      * @brief Begin a histogram (MCA) run for a single module. Explicitly sets 

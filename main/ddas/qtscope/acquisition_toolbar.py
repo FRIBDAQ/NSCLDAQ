@@ -23,9 +23,6 @@ class AcquisitionToolBar(QToolBar):
         Button to begin and end runs.
     run_type : QComboBox
         Selection box for run type, list-mode histogram or baseline.
-    binning : QComboBox
-        Selection box for histogram binning. N ADC units/bin where N is the 
-        value displayed in this box.
     current_mod : QSpinBox 
         Module selection for acquisition.
     current_chan : QSpinBox 
@@ -78,10 +75,6 @@ class AcquisitionToolBar(QToolBar):
         self.b_run_control = QPushButton("Begin run")
         self.b_run_control.setStyleSheet(colors.CYAN)
 
-        self.binning = QComboBox()
-        self.binning.insertItems(0, ["1", "2", "4", "8", "16"])
-        label = QLabel("ADC units/bin")
-        
         self.run_type = QComboBox()
         self.run_type.insertItem(RunType.HISTOGRAM.value, "Energy hist.")
         self.run_type.insertItem(RunType.BASELINE.value, "Baseline")
@@ -89,8 +82,6 @@ class AcquisitionToolBar(QToolBar):
         run_control_layout.addWidget(self.b_read_data)
         run_control_layout.addWidget(self.b_run_control)
         run_control_layout.addWidget(self.run_type)
-        run_control_layout.addWidget(self.binning)
-        run_control_layout.addWidget(label)
         
         run_control_box.setLayout(run_control_layout)
 

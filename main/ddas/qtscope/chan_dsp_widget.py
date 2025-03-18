@@ -1,5 +1,6 @@
-import numpy as np
 import logging
+
+import numpy as np
 
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import (

@@ -15,7 +15,7 @@ class CFD(ChanDSPWidget):
         Configure the CFD display. Overridden from the base class.
     display_dsp(mgr, mod) 
         Display DSP settings from the dataframe. Overridden from base class.
-    """    
+    """
     def __init__(self, *args, **kwargs):
         """CFD class constructor."""
         

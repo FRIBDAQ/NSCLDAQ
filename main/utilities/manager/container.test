@@ -201,7 +201,7 @@ tcltest::test container_activate_2 {Minimal definition should be able to see it.
 } \
 -body {
     set fd [container::activate db test localhost]
-    after 300;               # Wait image start.
+    after 1000;               # Wait image start. tuned to work on WSL even.
     catch {exec ssh localhost singularity instance list | grep test} result
     set pid [pid $fd]
     exec kill {*}$pid

@@ -32,11 +32,17 @@ class CDataGenerator
 {
 private:
     std::mt19937 m_engine; //!< Random number generator engine.
+    std::uniform_real_distribution<double> m_C; //!< Trace offset.
+    std::uniform_real_distribution<double> m_A; //!< Trace amplitude.
+    std::normal_distribution<double> m_rise; //!< Trace exponential rise.
+    std::normal_distribution<double> m_decay; //!< Trace exponential decay.
+    std::normal_distribution<double> m_noise; //!< Trace random noise.
+    std::uniform_real_distribution<double> m_baseline; //!< Baseline run data.
     
 public:
     /** @brief Constructor. */
-    CDataGenerator() : m_engine((std::random_device())()) {};
-
+    CDataGenerator();
+    
     /**
      * @brief Generate test trace data.
      * @param[in,out] data Pointer to the start of the trace data storage.
@@ -63,6 +69,7 @@ public:
     int GetBaselineData(double* data, int dataSize);
   
 private:
+    
     /**
      * @brief Analytical function for a single pulse with exponential rise and 
      * decay constants.

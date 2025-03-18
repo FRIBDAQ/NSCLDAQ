@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import QPushButton
 
 from chan_dsp_widget import ChanDSPWidget
-
 import colors
 
 class TimingControl(ChanDSPWidget):

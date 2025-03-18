@@ -1263,7 +1263,9 @@ USHORT idFpgaFirmwareVersion;
 		data = data + 0x4000 ; // Select Internal Trigger Feedback as External Trigger Enable
 	}
 	return_code = sis3316_adc1->register_write(SIS3316_ACQUISITION_CONTROL_STATUS, data );  
-	
+	printf("Write 0x%0x to acqcsr", data);
+	sis3316_adc1->register_read(SIS3316_ACQUISITION_CONTROL_STATUS, &data );
+	printf("Read back: 0x%0x", data);
 
 	printf("Start Multievent \n");
 

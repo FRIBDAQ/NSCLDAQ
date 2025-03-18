@@ -1,4 +1,3 @@
-import numpy as np
 import inspect
 import logging
 
@@ -8,7 +7,8 @@ if bool(ver[0] >= 1 or (ver[0] == 1 and ver[1] >= 6)):
     from bitarray.util import ba2int, int2ba, zeros
 else:
     from converters import ba2int, int2ba, zeros
-
+import numpy as np
+    
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QRadioButton, QButtonGroup,
@@ -16,8 +16,8 @@ from PyQt5.QtWidgets import (
     QPushButton
 )
 
-import xia_constants as xia
 import colors
+import xia_constants as xia
 
 class MultCoincidence(QWidget):
     """Multiplicity and coincidence tab widget.
