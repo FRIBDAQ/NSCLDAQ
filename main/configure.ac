@@ -927,6 +927,7 @@ Makefile
     ddas/qtscope/qtscope
     ddas/utilities/Makefile
     ddas/utilities/simulator/Makefile
+    ddas/tclconfig/Makefile
     ddas/docs/Makefile
     ddas/docs/Doxyfile
     ddas/docs/DoxygenLayout.xml
