@@ -1,7 +1,7 @@
 if USING_XIAAPI_V2
 SUBDIRS = configuration xiatest booter format ddasdumper nscope readout sorter readoutdriver pixieplugin simple_setups qtscope dumpsetfile xml/tinyxml xml tclconfig
 else
-SUBDIRS = configuration xiatest booter format ddasdumper readout sorter readoutdriver pixieplugin simple_setups qtscope
+SUBDIRS = configuration xiatest booter format ddasdumper readout sorter readoutdriver pixieplugin simple_setups qtscope tclconfig
 endif
 
 if BUILD_DDAS_DOCS
