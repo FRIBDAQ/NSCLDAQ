@@ -493,52 +493,6 @@ then
 	AC_SUBST(PIXIE_CPPFLAGS)
 	AC_SUBST(PIXIE_LDFLAGS)
 
-	# Specify the location of the PLX installation. This will default to
-	# /usr/opt/plx or $(prefix)/../../plx if no argument is provided.
-	# Since we know its must be version 8+ to support XIA API 4+, the
-	# correct install directory can be inferred from the presence of the
-	# shared library.
-
-	AC_ARG_WITH([plx-sdk],
-		[  --with-plx-sdk=path - Path to the PLX software installation. Required if DDAS support is enabled.],
-		[PLX_SDK_DIR=$withval], [PLX_SDK_DIR=""])
-
-	# Check the default install locations. If no arg is supplied and the
-	# installation directory isn't in the default search paths,
-	# PLX_SDK_DIR is "":
-
-	if test -z "$PLX_SDK_DIR"
-	then
-		for d in /usr/opt/plx $(prefix)/../../plx
-		do
-			if test -z "$PLX_SDK_DIR"
-			then
-				AC_CHECK_FILE([$d/PlxApi/Library/PlxApi.so],
-					[PLX_SDK_DIR="$d"],
-					[PLX_SDK_DIR=""])
-			fi
-		done
-	fi
-
-	#  If PLX_SDK_DIR is still "" then we toss an error:
-
-	if test -z "$PLX_SDK_DIR"
-	then
-		AC_MSG_FAILURE([Could not locate the PLX SDK directory, specify the correct path using --with-plx-sdk])
-	fi
-
-	PLX_CPPFLAGS="-I${PLX_SDK_DIR}/Include -I${PLX_SDK_DIR}/PlxApi"
-
-	# For PLX SDK 8+ we're looking for the shared library:
-
-  	AC_CHECK_FILE([${PLX_SDK_DIR}/PlxApi/Library/PlxApi.so],
-		[PLX_LDFLAGS="-L${PLX_SDK_DIR}/PlxApi/Library -l:PlxApi.so -Wl,-rpath=${PLX_SDK_DIR}/PlxApi/Library"],
-		[AC_MSG_ERROR(invalid PLX SDK installation directory, specify the correct path using --with-plx-sdk)])
-
-	AC_SUBST(PLX_SDK_DIR)
-	AC_SUBST(PLX_CPPFLAGS)
-	AC_SUBST(PLX_LDFLAGS)
-
 	# Also need to know where the Pixie firmware is installed:
 
 	AC_ARG_WITH([firmwaredir],
@@ -566,8 +520,6 @@ then
 	fi
 
 	AC_SUBST(dspdir)
-
- 	
 
 	# Check for ROOT. Use rootcling to add ROOT flags and linker options
 	# to the Makefile macro set:

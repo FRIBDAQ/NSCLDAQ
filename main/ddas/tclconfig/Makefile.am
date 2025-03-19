@@ -16,15 +16,15 @@ libpixie16_la_SOURCES = Pixie16Package.cpp \
 	IsActive.h IsActive.cpp            \
 	CAdjustOffsets.h CAdjustOffsets.cpp
 
-libpixie16_la_CXXFLAGS = @TCL_CPPFLAGS@     \
-	-I@top_srcdir@/ddas/configuration    \
-	-I@top_builddir@/ddas                 \
-	@PIXIE_CPPFLAGS@                    \
-	-g                                  \
+libpixie16_la_CXXFLAGS = @TCL_CPPFLAGS@    \
+	-I@top_srcdir@/ddas/configuration  \
+	-I@top_builddir@/ddas              \
+	@PIXIE_CPPFLAGS@                   \
+	-g                                 \
 	-DFIRMWARE_FILE=\"${SHAREDIR}/DDASFirmwareVersions.txt\"
 
-libpixie16_la_LDFLAGS = @top_builddir@/ddas/configuration/libConfiguration.la \
-	@PIXIE_LDFLAGS@ @PLX_LDFLAGS@ @TCL_LIBS@                              \
+libpixie16_la_LDFLAGS = @top_builddir@/ddas/configuration/libConfiguration.la 	\
+	@PIXIE_LDFLAGS@ @TCL_LIBS@                              		\
 	-Wl,-rpath=@libdir@ -g
 
 install-exec-hook:
