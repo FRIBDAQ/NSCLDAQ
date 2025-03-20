@@ -453,12 +453,7 @@ AC_SUBST(DDASFMT_LDFLAGS)
 # PIXIE_API_DIR    - Installation directory of the XIA Pixie API
 # PIXIE_CPPFLAGS   - Compiler flags for Pixie API
 # PIXIE_LDFLAGS    - Linker flags for Pixie API
-# PLX_SDK_DIR      - Installation directory of the PLX API library
-# PLX_CPPFLAGS     - Compiler flags for PLX API
-# PLX_LDFLAGS      - Linker flags for PLX API
 # firmwaredir      - Pixie firmware installation directory
-# dspdir           - Pixie DSP load image installaion directory
-
 # ROOTSYS          - ROOT installation to compile e.g. ddasdumper against
 # ROOT_CFLAGS      - ROOT cflags (automatically generated from ROOT config)
 # ROOT_LDFLAGS     - ROOT libraries (automatically generated from ROOT config)
@@ -505,21 +500,6 @@ then
 	fi
 
 	AC_SUBST(firmwaredir)
-
-	# Establish the dsp load image directory. These files are also not
-	# redistributable so the user must have licensed them and installed
-	# them somewhere.
-
-	AC_ARG_WITH([dspdir],
-		[  --with-dspdir=path - Specify path to the DSP software directory tree. Required if DDAS support is enabled.],
-		[dspdir=$withval])
-
-	if test x$dspdir = x
-	then
-		AC_MSG_ERROR([specifying a firmware install directory using --with-dspdir is a mandatory option if DDAS support is enabled])
-	fi
-
-	AC_SUBST(dspdir)
 
 	# Check for ROOT. Use rootcling to add ROOT flags and linker options
 	# to the Makefile macro set:
