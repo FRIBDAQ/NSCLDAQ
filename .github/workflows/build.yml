@@ -84,7 +84,6 @@ jobs:
                        --enable-ddas-docs=yes \
                        --with-incorp-build-cores=2 \
                        --with-xiaapidir=`cat /usr/opt/XIAAPI_PATH` \
-                       --with-plx-sdk=`cat /usr/opt/PLX_PATH` \
                        --with-firmwaredir=`cat /usr/opt/DDASFIRMWARE_PATH` \
                        --with-dspdir=`cat /usr/opt/DDASDSP_PATH` \
                        --with-rootsys=`cat /usr/opt/ROOT_PATH` \

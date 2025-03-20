@@ -1,8 +1,8 @@
 bin_PROGRAMS = boot boot_extcl
 lib_LTLIBRARIES = libSystemBooter.la
 SHAREDIR=@prefix@/share/ddasreadout
-
 include_HEADERS = SystemBooter.h
+
 libSystemBooter_la_SOURCES = SystemBooter.cpp
 libSystemBooter_la_CPPFLAGS = -I@top_srcdir@/ddas/configuration \
 	@PIXIE_CPPFLAGS@ \
@@ -10,7 +10,7 @@ libSystemBooter_la_CPPFLAGS = -I@top_srcdir@/ddas/configuration \
 	-I@top_srcdir@/ddas/exception @LIBTCLPLUS_CFLAGS@
 libSystemBooter_la_LIBADD = \
 	@top_builddir@/ddas/configuration/libConfiguration.la \
-	@PIXIE_LDFLAGS@ @PLX_LDFLAGS@ \
+	@PIXIE_LDFLAGS@  \
 	@top_builddir@/ddas/exception/libDDASException.la @LIBEXCEPTION_LDFLAGS@
 
 boot_SOURCES = boot.cpp
@@ -21,7 +21,7 @@ boot_CPPFLAGS = -I@srcdir@ -I@top_builddir@/ddas \
 boot_LDADD = @builddir@/libSystemBooter.la \
 	@top_builddir@/ddas/configuration/libConfiguration.la \
 	@PIXIE_LDFLAGS@ \
-	@PLX_LDFLAGS@ -ldl
+	 -ldl
 
 boot_extcl_SOURCES = boot.cpp
 boot_extcl_CPPFLAGS = -I@srcdir@ -I@top_srcdir@/ddas/configuration \
@@ -30,7 +30,7 @@ boot_extcl_CPPFLAGS = -I@srcdir@ -I@top_srcdir@/ddas/configuration \
 boot_extcl_LDADD = @builddir@/libSystemBooter.la \
 	@top_builddir@/ddas/configuration/libConfiguration.la \
 	@PIXIE_LDFLAGS@ \
-	@PLX_LDFLAGS@ -ldl
+	 -ldl
 
 # unit tests are disabled until they can be updated for the API transition
 

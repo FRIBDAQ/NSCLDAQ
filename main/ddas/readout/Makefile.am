@@ -36,7 +36,6 @@ DDASReadout_LDFLAGS= \
 	@top_builddir@/ddas/booter/libSystemBooter.la		\
 	@top_builddir@/ddas/exception/libDDASException.la 	\
 	@PIXIE_LDFLAGS@						\
-	@PLX_LDFLAGS@ 						\
 	@LIBTCLPLUS_LDFLAGS@ 					\
 	@TCL_LDFLAGS@						\
 	@LIBEXCEPTION_LDFLAGS@
