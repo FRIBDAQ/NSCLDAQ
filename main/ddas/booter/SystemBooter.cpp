@@ -17,216 +17,149 @@
 #include <Configuration.h>
 #include <CXIAException.h>
 
-const size_t FILENAME_STR_MAXLEN = 256; //!< Max size of full path for FW.
+using namespace DAQ::DDAS;
+
+PIXIE_BOOT_MODE
+static inline getBootMode(SystemBooter::BootType type) {
+    if (type == SystemBooter::FullBoot) {
+	return PIXIE_BOOT_RESET_LOAD;
+    } else {
+	return PIXIE_BOOT_SETTINGS_LOAD;
+    }
+}
 
 /**
  * @details
- * Enables verbose output by default.
+ * Default settings: verbose output enabled, boot in online mode.
  */
 DAQ::DDAS::SystemBooter::SystemBooter() :
     m_verbose(true), m_offlineMode(0)
 {}
 
-/**
- * @details
- * Provided a configuration, all modules will be booted. The configuration 
- * contains the firmware files for each hardware type, the slot map, and the 
- * number of modules. During the course of booting, the hardware will be 
- * queried as well to determine the the serial number, revision, ADC 
- * frequency, and resolution. The revision, ADC frequency, and resolution 
- * will all be parsed and the information will be stored in the configuration
- * as a HardwareRegistry::HardwareType.
- *
- * XIA's "offline mode" consists of an emulated crate containing, at the 
- * moment, 4 modules of "common" type, including a 32-channel module in the 
- * last slot. If offline mode is enabled, the crate simulation is started, 
- * otherwise attempt to boot physical hardware.
- */
-void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type)
+void
+DAQ::DDAS::SystemBooter::boot(Configuration& config, BootType type)
 {
     if (m_offlineMode) {
-	std::cout << "---------------------------\n";
-	std::cout << "Initializing Pixie crate simulation... \n";
-	std::cout.flush();
-	int nModules = 3;
-	int retval = Pixie16InitSystem(nModules, nullptr, 1);
-	if (retval < 0) {
-	    throw CXIAException("SystemBooter::boot() failed",
-				"Pixie16InitSystem()", retval);
+	initSystemOffline(config, type);
+	usleep(1000); // Wait to ensure initialized.
+	offlineBoot(config, type);
+    } else {
+	initSystem(config, type);	
+	usleep(1000); // Wait to ensure initialized.
+	if (!config.getModuleSetFileMap().empty()) {
+	    // serial boot
 	} else {
-	    std::cout << "Crate simulation initialized successfully."
-		      << std::endl;
+	    parallelBoot(config, type);
 	}
-
-	config.setNumberOfModules(nModules);
-	populateHardwareMap(config);
-
-	char parFile[FILENAME_STR_MAXLEN];
-	for (int i = 0; i < nModules; i++) {
-	    std::cout << "Booting simulated module #" << i << std::endl;
-	    strcpy(parFile, config.getSettingsFilePath(i).c_str());
-	    retval = Pixie16BootModule("sys.bin", "fippi.bin", nullptr,
-				       "dsp.ldr", parFile, "dsp.var", i,
-				       computeBootMask(type));
-	    if (retval < 0) {
-		throw CXIAException("SystemBooter::boot() failed",
-				    "Pixie16BootModule()", retval);
-	    }
-	}
-
-	std::cout << "Crate simulation: all modules ok" << std::endl;
-    } else {    
-	std::cout << "---------------------------\n";
-	std::cout << "Initializing PXI access... \n";
-	std::cout.flush();
-
-	int NumModules = config.getNumberOfModules();
-	int retval = Pixie16InitSystem(
-	    NumModules, config.getSlotMap().data(), 0
-	    );
-	if (retval < 0) {
-	    throw CXIAException(
-		"SystemBooter::boot() failed", "Pixie16InitSystem()", retval
-		);
-	} else {
-	    std::cout << "System initialized successfully." << std::endl;
-	}
-
-	// Give the system some time to settle after initialization.
-	usleep(1000);
-
-	populateHardwareMap(config);
-
-	for (int index = 0; index < NumModules; ++index) {
-	    bootModuleByIndex(index, config, type);
-	}
-
-	if (m_verbose) {
-	    std::cout << "All modules ok" << std::endl;
-	}
+	std::cout << "All modules ok" << std::endl;
     }
+
+    Pixie16ExitSystem(config.getNumberOfModules());
+    std::cout << "Exiting...\n";
 }
 
-/**
- * @details
- * The system is booted into a usable state. The mechanics of booting involve
- * either loading firmware and settings or just settings, depending on the type
- * parameter that was passed as a second argument to the method. If the user
- * chooses to boot with a firmware load, the firmware files stored in the
- * configuration associated with the hardware will be used. The settings
- * file that will be used in any boot type, will be the path stored in the
- * configuration.
- */
+///
+// Private functions
+//
+
 void
-DAQ::DDAS::SystemBooter::bootModuleByIndex(
-    int modIndex, Configuration& config, BootType type
-    )
+DAQ::DDAS::SystemBooter::initSystem(Configuration& config, BootType type)
 {
-    char Pixie16_Com_FPGA_File[FILENAME_STR_MAXLEN];
-    char Pixie16_SP_FPGA_File[FILENAME_STR_MAXLEN];
-    char Pixie16_DSP_Code_File[FILENAME_STR_MAXLEN];
-    char Pixie16_DSP_Var_File[FILENAME_STR_MAXLEN];
-    char Pixie16_Trig_FPGA_File[FILENAME_STR_MAXLEN];
-    char DSPParFile[FILENAME_STR_MAXLEN];
+    std::cout << "---------------------------\n";
+    std::cout << "Initializing PXI access... \n";
+    std::cout.flush();
 
-    // Select firmware and dsp files based on hardware variant
-    std::vector<int> hdwrMap = config.getHardwareMap();
-    if (hdwrMap[modIndex] == HardwareRegistry::Unknown) {
-	std::stringstream errmsg;
-	errmsg << "Cannot boot module " << modIndex
-	       << ", hardware type not recognized." << std::endl;
-	throw std::runtime_error(errmsg.str());
+    int rv = Pixie16InitSystem(config.getNumberOfModules(),
+			       config.getSlotMap().data(), 0);
+    if (rv < 0) {
+	throw CXIAException("SystemBooter::initSystem() failed",
+			    "Pixie16InitSystem()", rv);
+    } else {
+	std::cout << "System initialized successfully." << std::endl;
     }
-
-    // Because the Pixie16BootModule takes char* strings, we have to copy our
-    // beautiful std::strings into the character arrays. Note that there is
-    // no check at the moment to ensure that the firmware file paths are no
-    // more than 256 characters. daqdev/DDAS#106 - modified to get the per
-    // module firmware configuration which will default to the global config
-    // if not specified.
-    
-    FirmwareConfiguration fwConfig = config.getModuleFirmwareConfiguration(
-	hdwrMap[modIndex], modIndex
-	);
-
-    checkFWPathLengths(fwConfig, FILENAME_STR_MAXLEN);
-    
-    strcpy(Pixie16_Com_FPGA_File, fwConfig.s_ComFPGAConfigFile.c_str());
-    strcpy(Pixie16_SP_FPGA_File,  fwConfig.s_SPFPGAConfigFile.c_str());
-    strcpy(Pixie16_DSP_Code_File, fwConfig.s_DSPCodeFile.c_str());
-    strcpy(Pixie16_DSP_Var_File,  fwConfig.s_DSPVarFile.c_str());
-
-    // daqdev/DDAS#106 - modified as above to get a per module setfile:
-    
-    strcpy(DSPParFile, config.getSettingsFilePath(modIndex).c_str());
-
-    if (m_verbose) {
-	if (type == FullBoot) {
-	    std::cout << "\nBooting Pixie-16 module #"
-		      << modIndex << std::endl;
-	    std::cout << "\tComFPGAConfigFile:  "
-		      << Pixie16_Com_FPGA_File << std::endl;
-	    std::cout << "\tSPFPGAConfigFile:   "
-		      << Pixie16_SP_FPGA_File << std::endl;
-	    std::cout << "\tDSPCodeFile:        "
-		      << Pixie16_DSP_Code_File << std::endl;
-	    std::cout << "\tDSPVarFile:         "
-		      << Pixie16_DSP_Var_File << std::endl;
-	    std::cout << "\tDSPParFile:         "
-		      << DSPParFile << std::endl;
-	    std::cout
-		<< "------------------------------------------------------";
-	    std::cout << "\n\n";
-	} else {
-	    std::cout << "\nEstablishing communication parameters "
-		      << "with module #" << modIndex << std::endl;
-	    std::cout << "\tSkipping firmware load." << std::endl;
-	}
-    }
-
-    // Arguments are:
-    // 0) Name of communications FPGA config. file
-    // 1) Name of signal processing FPGA config. file
-    // 2) Placeholder name of trigger FPGA configuration file
-    // 3) Name of executable code file for digital signal processor (DSP)
-    // 4) Name of DSP parameter file
-    // 5) Name of DSP variable names file
-    // 6) Pixie module number
-    // 7) Fast boot pattern bitmask
-
-    int retval = Pixie16BootModule(
-	Pixie16_Com_FPGA_File, Pixie16_SP_FPGA_File, Pixie16_Trig_FPGA_File,
-	Pixie16_DSP_Code_File, DSPParFile, Pixie16_DSP_Var_File,
-	modIndex, computeBootMask(type)
-	);
-    if (retval < 0) {	
-	std::string msg = "Boot failed module " + std::to_string(modIndex);
-	throw CXIAException(msg, "Pixie16BootModule()", retval);
-    }
+    populateHardwareMap(config);
 }
 
-/**
- * @details
- * By default, the output verbosity setting is enabled. If it is disabled,
- * there will be no output printed to the terminal.
- */
-void DAQ::DDAS::SystemBooter::setVerbose(bool enable)
+void
+DAQ::DDAS::SystemBooter::initSystemOffline(Configuration& config,
+						 BootType type)
 {
-    m_verbose = enable;
+    std::cout << "---------------------------\n";
+    std::cout << "Initializing PXI access... \n";
+    std::cout.flush();
+    int nModules = 3; // 4th simulated module is 32 channels, exclude for now.
+    int rv = Pixie16InitSystem(nModules, nullptr, 1);
+    if (rv < 0) {
+	throw CXIAException("SystemBooter::initSystemOffline() failed",
+			    "Pixie16InitSystem()", rv);
+    } else {
+	std::cout << "Crate simulation initialized successfully."
+		  << std::endl;
+    }
+    config.setNumberOfModules(nModules);
+    populateHardwareMap(config);
 }
 
-/**
- * @details
- * By default, the boot mode is set to online mode. If it is set
- * to offline mode, calls to the API functions can still be tested
- * with no modules present.
- */
-void DAQ::DDAS::SystemBooter::setOfflineMode(unsigned short mode)
+void
+DAQ::DDAS::SystemBooter::parallelBoot(Configuration& config, BootType type)
 {
-    m_offlineMode = mode;
+    std::cout << "Attempting parallel boot for Pixie crate..." << std::endl;
+    std::cout << "Looking for module firmware..." << std::endl;
+    int rv = Pixie16LoadModuleFirmware(FIRMWARE_PATH);
+    if (rv < 0) {
+	throw CXIAException("SystemBooter::parallelBoot() failed",
+			    "Pixie16LoadModuleFirmware()", rv);
+    } else {
+	std::cout << "Found module firmware in " << FIRMWARE_PATH
+		  << std::endl;
+    }
+
+    std::cout << "Checking for per-module firmware..." << std::endl;
+    auto perModMaps = config.getModuleFirmwareMaps();
+    for (const auto modMap : perModMaps) {
+	////
+	// if any modules have a fw map, get the paths and override default
+	//
+	int modNum = modMap.first;
+	std::cout << "Found FW map for module " << modNum << std::endl;
+    }
+    
+    rv = PixieBootCrate(config.getSettingsFilePath().c_str(),
+			getBootMode(type));
+    if (rv < 0) {
+	throw CXIAException("SystemBooter::boot() failed",
+			    "PixieBootCrate()", rv);
+    }
+
+    std::cout << "Loading per-module settings..." << std::endl;
+    ////
+    // check setfile map and settings-only boot module fw for each entry
+    //
+
+    logModuleInfo(config);
 }
 
-/**
+void
+DAQ::DDAS::SystemBooter::serialBoot(Configuration& config, BootType type)
+{
+    // implement
+}
+
+void
+DAQ::DDAS::SystemBooter::offlineBoot(Configuration& config, BootType type)
+{
+    char parFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    strcpy(parFile, config.getSettingsFilePath().c_str());
+    int rv = PixieBootCrate(parFile, getBootMode(type));
+    if (rv < 0) {
+	throw CXIAException("SystemBooter::offlineBoot() failed",
+			    "PixieBootCrate()", rv);
+    }
+    logModuleInfo(config);
+    std::cout << "Crate simulation: all modules ok" << std::endl;
+}
+
+**
  * @details
  * To retrieve information about all of the modules in the system, 
  * Pixie16ReadModuleInfo is called for each module index. The resulting 
@@ -236,20 +169,15 @@ void DAQ::DDAS::SystemBooter::setOfflineMode(unsigned short mode)
  */
 void DAQ::DDAS::SystemBooter::populateHardwareMap(Configuration &config)
 {
-    unsigned short ModRev;
-    unsigned int   ModSerNum;
-    unsigned short ModADCBits;
-    unsigned short ModADCMSPS;
-    
-    int NumModules = config.getNumberOfModules();
+    int nModules = config.getNumberOfModules();
     std::vector<int> hdwrMapping(NumModules);
     
-    for (unsigned short i = 0; i < NumModules; i++) {
+    for (unsigned short i = 0; i < nModules; i++) {
 	module_config cfg;
-	int retval = PixieGetModuleInfo(i, &cfg);
-	if (retval < 0) {
+	int rv = PixieGetModuleInfo(i, &cfg);
+	if (rv < 0) {
 	    std::string msg = "Failed to read module info " + i;
-	    throw CXIAException(msg, "PixieGetModuleInfo()", retval);
+	    throw CXIAException(msg, "PixieGetModuleInfo()", rv);
 	}
 	if (m_verbose) {
 	    logModuleInfo(i, cfg.revision, cfg.serial_number,
@@ -266,59 +194,39 @@ void DAQ::DDAS::SystemBooter::populateHardwareMap(Configuration &config)
     config.setHardwareMap(hdwrMapping);
 }
 
-///
-// Private methods
-//
-
-/**
- * @todo (ASC 7/7/23): Nice if this takes the config object or a pointer to it.
- */
-void DAQ::DDAS::SystemBooter::logModuleInfo(
-    int modIndex, unsigned short ModRev, unsigned int ModSerNum,
-    unsigned short ModADCBits, unsigned short ModADCMSPS
-    )
+void
+DAQ::DDAS::SystemBooter::logModuleInfo(Configuration& config)
 {
-    std::cout << "Found Pixie-16 module #" << modIndex;
-    std::cout << ", Rev = " << ModRev;
-    std::cout << ", S/N = " << ModSerNum << ", Bits = " << ModADCBits;
-    std::cout << ", MSPS = " << ModADCMSPS;
-    std::cout << std::endl;
-}
-
-/**
- * @details
- * The bootmask is ultimately used in the Pixie16BootModule function.
- */
-unsigned int DAQ::DDAS::SystemBooter::computeBootMask(BootType type)
-{
-    if (type == FullBoot) {
-	return 0x7f;
-    } else {
-	return 0x70;
-    }
-}
-
-/**
- * @details
- * Fails on first bad path length encountered.
- *
- * @todo (ASC 5/23/24): Unit test needed.
- */
-void DAQ::DDAS::SystemBooter::checkFWPathLengths(
-    FirmwareConfiguration& fwConfig, const size_t maxLen
-    ) {
-
-    std::vector<std::string> paths = {
-	fwConfig.s_ComFPGAConfigFile, fwConfig.s_SPFPGAConfigFile,
-	fwConfig.s_DSPCodeFile, fwConfig.s_DSPVarFile
-    };
-
-    for (const auto& path : paths) {
-	if (path.size() > maxLen) {
+    int nModules = config.getNumberOfModules();
+    for (int i = 0; i < nModules; i++) {
+	module_config cfg;
+	int rv = PixieGetModuleInfo(i, &cfg);
+	if (rv < 0) {
 	    std::stringstream msg;
-	    msg << "FW file path " << path << " must be less than "
-		<< maxLen << " characters but is " << path.size();
-	    throw std::length_error(msg.str());
+	    msg << "SystemBooter::logModuleInfo() failed to read module "
+		<< "configuration for module " << i;
+	    throw CXIAException(msg.str(), "PixieGetModuleInfo", rv);
 	}
+	std::cout << "----- Module " << cfg.number << " -----" << std::endl;
+	std::cout << "ADC resolution : " << cfg.adc_bit_resolution
+		  << std::endl;
+	std::cout << "ADC MSPS       : " << cfg.adc_sampling_frequency
+		  << std::endl;
+	std::cout << "Number         : " << cfg.number << std::endl;
+	std::cout << "Channels       : " << cfg.number_of_channels
+		  << std::endl;
+	std::cout << "Revision       : " << cfg.revision << std::endl;
+	std::cout << "Serial No.     : " << cfg.serial_number << std::endl;
+	std::cout << "Slot           : " << cfg.slot << std::endl;
+	std::cout << "FW revision    : " << cfg.fw_revision << std::endl;
+	std::cout << "FW tag         : " << cfg.fw_tag << std::endl;
+	std::cout << "FW type        : " << cfg.fw_type << std::endl;
+	for (int i = 0; i < PIXIE16_API_MOD_CONFIG_MAX_DEVICES-2; i++) {
+	    std::cout << "FW device " << i << "    : " << cfg.fw_device[i]
+		      << std::endl;
+	    std::cout << "FW file   " << i << "    : "
+		      << cfg.fw_device_file[i] << std::endl;
+	}
+	std::cout << std::endl;
     }
 }

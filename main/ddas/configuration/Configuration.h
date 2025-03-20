@@ -238,6 +238,12 @@ namespace DAQ {
 	     * @return A copy of hardware map vector.
 	     */
 	    std::vector<int> getHardwareMap() const { return m_hardwareMap; };
+	    
+	    std::map<int, FirmwareMap> getModuleFirmwareMaps() const
+		{ return m_moduleFirmwareMaps; };
+	    std::map<int, std::string> getModuleSetFileMap() const
+		{ return m_moduleSetFileMap; };
+	    
 	    /**
 	     * @brief Print brief line of information for cfgPixie16.txt
 	     * @param stream The ostream to write to.

@@ -7,7 +7,8 @@ libSystemBooter_la_SOURCES = SystemBooter.cpp
 libSystemBooter_la_CPPFLAGS = -I@top_srcdir@/ddas/configuration \
 	@PIXIE_CPPFLAGS@ \
 	-I@top_builddir@/ddas \
-	-I@top_srcdir@/ddas/exception @LIBTCLPLUS_CFLAGS@
+	-I@top_srcdir@/ddas/exception @LIBTCLPLUS_CFLAGS@ \
+	-DFIRMWARE_PATH=\"@firmwaredir@\"
 libSystemBooter_la_LIBADD = \
 	@top_builddir@/ddas/configuration/libConfiguration.la \
 	@PIXIE_LDFLAGS@  \
