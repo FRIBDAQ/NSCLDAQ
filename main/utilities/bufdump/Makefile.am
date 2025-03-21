@@ -55,5 +55,15 @@ dumperargs.h: dumperargs.ggo
 		--set-version=@VERSION@
 
 
+#  This explores the problem I saw where v12 buffers did not dump
+# with the right run offset times.
+
+noinst_PROGRAMS=divisor_check
+
+divisor_check_SOURCES=divisor_check.cpp CUnifiedFormatter.cpp
+
+divisor_check_CPPFLAGS=-I@srcdir@ @UFMT_CPPFLAGS@
+divisor_check_LDFLAGS=	@UFMT_LDFLAGS@
+
 EXTRA_DIST=dumperargs.ggo dumper_user.xml dumper_man.xml
 
