@@ -444,18 +444,13 @@ AC_SUBST(DDASFMT_CPPFLAGS)
 AC_SUBST(DDASFMT_LDFLAGS)
 
 # The DDAS Software will only be built if --enable-ddas=yes is supplied by
-# the user. This will attempt to locate the PLX software but if that can't
-# be found, --with-plx-sdk can be used to provide it. What we provide to the
-# Makefiles:
+# the user. What we provide to the Makefiles:
 #
 # BUILD_DDAS       - If this flag is provided that's defined to allow the top
 #                    level Makefile to enable the ddas support software build.
 # PIXIE_API_DIR    - Installation directory of the XIA Pixie API
 # PIXIE_CPPFLAGS   - Compiler flags for Pixie API
 # PIXIE_LDFLAGS    - Linker flags for Pixie API
-# PLX_SDK_DIR      - Installation directory of the PLX API library
-# PLX_CPPFLAGS     - Compiler flags for PLX API
-# PLX_LDFLAGS      - Linker flags for PLX API
 # firmwaredir      - Pixie firmware installation directory
 # dspdir           - Pixie DSP load image installaion directory
 
