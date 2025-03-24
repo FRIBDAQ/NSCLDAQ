@@ -8,6 +8,8 @@
 
 #include <stddef.h>
 
+#include <string>
+
 /** @namespace DAQ */
 namespace DAQ {
     /** @namespace DAQ::DDAS */
@@ -80,17 +82,17 @@ namespace DAQ {
 	    unsigned short getOfflineMode() const { return m_offlineMode; };
 
 	private:
-	    void initSystem(Configuration& config, BootType type);
-	    void initSystemOffline(Configuration& config, BootType type);
+	    void initSystem(Configuration& config);
 	    void parallelBoot(Configuration& config, BootType type);
-	    void serialBoot(Configuration& config, BootType type);
 	    void offlineBoot(Configuration& config, BootType type);
+	    void setPerModuleFirmware(Configuration& config);
+	    void setFirmware(std::string fwFile, unsigned int slot,
+			     std::string device);
+	    void setPerModuleDSP(Configuration& config);
 	    /**
 	     * @brief Read and store hardware info from each of the modules 
 	     * in the system.
 	     * @param config The system configuration.
-	     * @throw CDDASException If `Pixie16ReadModuleInfo()` returns 
-	     *   an error.
 	     */
 	    void populateHardwareMap(Configuration &config);
 	    /**

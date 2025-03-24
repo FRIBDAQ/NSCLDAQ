@@ -11,7 +11,14 @@
 #include "FirmwareVersionFileParser.h"
 #include "ConfigurationParser.h"
 #include "ModEvtFileParser.h"
- 
+
+/**
+ * @todo (ASC 3/21/25): Once parallel boot is implemented, clean up this class
+ * and remove everything which we do not need (e.g. default maps) and remove
+ * any hardware types which are not real or we do not supprot
+ * (e.g. 500m-16b rev F??)
+ */ 
+
 /*!
  * @details
  * This resizes the vectors storing the slot map, module event lengths, and

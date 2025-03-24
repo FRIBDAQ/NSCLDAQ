@@ -12,7 +12,7 @@
 
 namespace {
     // The total number of hardware types we expect at the NSCL
-    const int TOTAL_PIXIE16_VARIANTS = 8;
+    const int TOTAL_PIXIE16_VARIANTS = 12;
 }
 
 /**
@@ -49,6 +49,8 @@ DAQ::DDAS::FirmwareVersionFileParser::parse(
     config[HardwareRegistry::RevF_250MHz_16Bit] = empty;
     config[HardwareRegistry::RevF_500MHz_12Bit] = empty;
     config[HardwareRegistry::RevF_500MHz_14Bit] = empty;
+    config[HardwareRegistry::RevF_500MHz_16Bit] = empty;
+    config[HardwareRegistry::RevH_250MHz_14Bit] = empty;
 
     // Read input file with code provided by XIA using XIA defined
     // formatted file
