@@ -2,6 +2,7 @@ bin_PROGRAMS = ddasdumper.bin
 lib_LTLIBRARIES = libddasrootformat.la
 include_HEADERS = DDASRootEvent.h DDASRootHit.h
 
+BUILT_SOURCES = dumperargs.h dumperargs.cpp
 
 ddasdumper_bin_SOURCES = dumperargs.cpp dumperargs.h ddasdumper.cpp 	\
 	DataSource.cpp DataSource.h					\
