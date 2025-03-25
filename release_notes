@@ -1,3 +1,8 @@
+== 12.1-008 ==
+* Use tomli Python package instead of tomllib in Bullseye
+* Merging 12.1-srs branch with some enhancement
+== 12.1-008 ==
+
 == 12.1-007 ==
 * Pixieserver and pixieplugin updates for 12.x (Issue #255)
 * install example pixieserver.tcl script in share/ddasreadout
@@ -8,8 +13,6 @@
     *   Provide VMUSBnostackReadout = VMUSBReadout framework without stacks.
     simplest way to debug the SIS3316 Readout.
     *   Provide sis3316 configurable module for VMUSBReadout.
-* Use tomli Python package instead of tomllib in Bullseye
-* Merging 12.1-srs branch with some enhancement
 == 12.1-007 ==
 
 == 12.1-006 ==
