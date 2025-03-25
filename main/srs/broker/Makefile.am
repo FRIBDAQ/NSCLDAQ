@@ -7,6 +7,7 @@ libUDPBrokerDerived_la_CXXFLAGS = -I@top_srcdir@/utilities/udpBroker \
                 -I@top_srcdir@/daq/format \
                 -I@top_srcdir@/daq/IO \
                 -I@top_srcdir@/srs/maps \
+                -I@top_srcdir@/srs/sorter \
                 @LIBTCLPLUS_CFLAGS@
 
 libUDPBrokerDerived_la_LIBADD = @top_builddir@/utilities/udpBroker/libUDPBrokerBase.la \
@@ -14,6 +15,7 @@ libUDPBrokerDerived_la_LIBADD = @top_builddir@/utilities/udpBroker/libUDPBrokerB
                    @top_builddir@/daq/IO/libdaqio.la \
                    @top_builddir@/daq/format/libdataformat.la \
                    @top_builddir@/srs/maps/libSRSMaps.la \
+                   @top_builddir@/srs/sorter/libSRSSorter.la \
                    @LIBEXCEPTION_LDFLAGS@
 
 include_HEADERS = UDPBrokerDerived.h datagramHeader.h pcapHeader.h
