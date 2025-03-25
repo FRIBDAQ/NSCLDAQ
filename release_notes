@@ -9,6 +9,7 @@
     simplest way to debug the SIS3316 Readout.
     *   Provide sis3316 configurable module for VMUSBReadout.
 * Use tomli Python package instead of tomllib in Bullseye
+* Merging 12.1-srs branch with some enhancement
 == 12.1-007 ==
 
 == 12.1-006 ==
