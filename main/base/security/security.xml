@@ -433,13 +433,6 @@ g++ -o myapplication ... -L$DAQROOT/lib -lSecurity -Wl,"-rpath=$DAQROOT/lib"...
             abstract base class (<classname>CInteractor</classname>), and
             derived concrete classes.
          </para>
-         <para>
-            The <link linkend="chapter.security">Security chapter</link>
-            of the full documentation manual describes the entire authentication
-            package and how to use it as well as providing a brief listing of
-            the various authenticators and interactors that are currently
-            implemented.
-         </para>
       </refsect1>
 
    </refentry>
@@ -1073,11 +1066,8 @@ g++ -o myapplication ... -L$DAQROOT/lib -lSecurity -Wl,"-rpath=$DAQROOT/lib"...
                 is the interpreter handle pointer.  This will be wrapped
                 in a
                 <classname>CTCLInterpreter</classname>
-                object.  For more information about
-                <classname>CTCLInterpreter</classname>,
-                See the
-                <link linkend="chapter.tclplus">Tcl++ chapter</link>
-                and the
+                object.  For more information about the CTCLInterpreter class, 
+                see the
                 <link linkend="manpage.CTCLInterpreter">CTCLInterpreter reference page</link>.
             </para>
             <para>
@@ -1105,7 +1095,7 @@ g++ -o myapplication ... -L$DAQROOT/lib -lSecurity -Wl,"-rpath=$DAQROOT/lib"...
                 that wraps the Tcl variable.  For more information about
                 <classname>CTCLVariable</classname>
                 objects, see
-               <link linkend="chapter.tclplus">Tcl++ chapter</link> and the
+               the
                 <link linkend="manpage.CTCLVariable">CTCLVariable reference page</link>.
             </para>
             <methodsynopsis>
@@ -1141,9 +1131,7 @@ g++ -o myapplication ... -L$DAQROOT/lib -lSecurity -Wl,"-rpath=$DAQROOT/lib"...
             <classname>CTCLInterpreter</classname>
             and
             <classname>CTCLVariable</classname>
-            are objects that are part of the Tcl++ library. See the
-            <link linkend="chapter.tclplus">Tcl++ chapter</link> of the
-            documentation for more information about them.
+            are objects that are part of the Tcl++ library. 
          </para>
       </refsect1>
    </refentry>

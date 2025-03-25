@@ -36,7 +36,6 @@ DDASReadout_LDFLAGS= \
 	@top_builddir@/ddas/booter/libSystemBooter.la		\
 	@top_builddir@/ddas/exception/libDDASException.la 	\
 	@PIXIE_LDFLAGS@						\
-	@PLX_LDFLAGS@ 						\
 	@LIBTCLPLUS_LDFLAGS@ 					\
 	@TCL_LDFLAGS@						\
 	@LIBEXCEPTION_LDFLAGS@
@@ -97,6 +96,7 @@ install-exec-hook:
 	$(mkinstalldirs) $(SHAREDIR)
 	$(mkinstalldirs) $(SHAREDIR)/crate_1
 	$(INSTALL_DATA) DDASFirmwareVersions.txt $(SHAREDIR)
+	$(INSTALL_DATA) pixieserver.tcl $(SHAREDIR)
 	$(INSTALL_DATA) @srcdir@/crate_1/* $(SHAREDIR)/crate_1
 	$(mkinstalldirs) $(bindir)
 	@INSTALL_SCRIPT@ @srcdir@/ddasReadout.tcl @bindir@/ddasReadout
@@ -104,4 +104,4 @@ install-exec-hook:
 clean-local:
 	rm -f @srcdir@/ddasSortOptions.{h,c}
 
-EXTRA_DIST=DDASFirmwareVersions.txt.in crate_1 ddasSortOptions.ggo ddasReadout.tcl readout.xml sorter.xml readoutdriver.xml readout.dox
+EXTRA_DIST=DDASFirmwareVersions.txt.in crate_1 ddasSortOptions.ggo ddasReadout.tcl readout.xml sorter.xml readoutdriver.xml readout.dox pixieserver.tcl.in

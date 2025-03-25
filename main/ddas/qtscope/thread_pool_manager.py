@@ -1,6 +1,6 @@
+import logging
 import sys
 import traceback
-import logging
 
 from PyQt5.QtCore import QObject, QThreadPool, QRunnable, pyqtSignal, pyqtSlot
 

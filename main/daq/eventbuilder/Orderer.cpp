@@ -178,6 +178,11 @@ Tcl_AppInit(
         interp, "EventBuilder", Eventbuilder_Init, Eventbuilder_Init
     );
 
+    if (Eventbuilder_Init(interp) == TCL_ERROR) {
+	return TCL_ERROR;
+    }
+    
+
     /*
      * Call the init procedures for included packages. Each call should look
      * like this:

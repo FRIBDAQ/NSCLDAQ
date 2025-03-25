@@ -1,0 +1,29 @@
+<!-- chapter device-support -->
+<chapter>
+    <title>Sample programs for the SIS3316/SIS3316-2 digitizer.</title>
+    <para>
+        FRIBDAQ includes the SIS3316 sample programs ported to 
+        run under the VMUSB VME controller.  Refer to the SIS3316
+        documentation for information about these programs and what they do.
+    </para>
+    <para>
+        Programs are installed in 
+        <filename>$DAQROOT/sis3316</filename> rather than $DAQBIN in order to
+        keep them separate from standard FRIBDAQ software.  Some programs
+        can take configuration files that define digitizer parameters.
+        Those get installed in 
+        <filename>$DAQSHARE/sis3316_configs</filename>.
+    </para>
+    <para>
+        The <filename>root_gui</filename> program depends on images
+        for e.g. the program icon.  These are installed in
+        <filename>$DAQSHARE/sis_images</filename>.
+    </para>
+    <para>
+        In addition to the SIS examples a program named
+        <filename>inventory</filename> is installed.  This looks at all possible
+        base addresses for SIS3316 modules and reports which bases have such modules
+        as well as some information about those modules.
+    </para>
+</chapter>
+<!-- /chapter -->

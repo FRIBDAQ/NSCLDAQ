@@ -93,8 +93,11 @@ proc ::rdoCallouts::enter {from to} {
     if {($from eq "Starting")  &&  ($to eq "Halted")} {
         if {[info procs ::OnStart] ne ""} {
             uplevel #0 ::OnStart
-            return
         }
+        if {[info procs ::OnReady] ne ""} {
+            uplevel #0 ::OnReady
+        }
+        return
     }
     
     # Any -> NotReady : OnFail
@@ -109,9 +112,7 @@ proc ::rdoCallouts::enter {from to} {
     # Starting -> Halted : OnReady
     
     if {($from eq "Starting") && ($to eq "Halted")} {
-        if {[info procs ::OnReady] ne ""} {
-            uplevel #0 ::OnReady
-        }
+        
     }
     
     # {Active, Paused} -> Halted : OnEnd

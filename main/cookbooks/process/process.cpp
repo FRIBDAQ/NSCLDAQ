@@ -75,7 +75,7 @@ usage(std::ostream& o, const char* msg)
 {
     o << msg << std::endl;
     o << "Usage:\n";
-    o << "  readrings uri\n";
+    o << "  process uri\n";
     o << "      uri - the file: or tcp: URI that describes where data comes from\n";
     std::exit(EXIT_FAILURE);
 }

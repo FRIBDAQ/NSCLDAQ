@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-import sys
+import logging
 import os
+import sys
 
 sys.path.append(str(os.environ.get("DAQROOT"))+"/ddas/qtscope")
 os.environ['NO_PROXY'] = ""
 os.environ['XDG_RUNTIME_DIR'] = os.environ.get("PWD")
-
-import logging
-
 logging.basicConfig(
     filename="qtscope.log",
     format="%(levelname)s - %(asctime)s: %(message)s"
@@ -15,29 +13,30 @@ logging.basicConfig(
 
 from PyQt5 import QtWidgets, QtCore
 
-from widget_factory import WidgetFactory
 from fit_factory import FitFactory
+from widget_factory import WidgetFactory
 
-from analog_signal import AnalogSignalBuilder
-from trigger_filter import TriggerFilterBuilder
-from energy_filter import EnergyFilterBuilder
-from cfd import CFDBuilder
 from adc_trace import TraceBuilder
-from tau import TauBuilder
-from csra import CSRABuilder
-from mult_coincidence import MultCoincidenceBuilder
-from timing_control import TimingControlBuilder
+from analog_signal import AnalogSignalBuilder
 from baseline import BaselineBuilder
+from cfd import CFDBuilder
+from csra import CSRABuilder
+from energy_filter import EnergyFilterBuilder
+from histogram import HistogramBuilder
+from mult_coincidence import MultCoincidenceBuilder
 from qdclen import QDCLenBuilder
+from tau import TauBuilder
+from timing_control import TimingControlBuilder
+from trigger_filter import TriggerFilterBuilder
 
 from crate_id import CrateIDBuilder
 from csrb import CSRBBuilder
 from trigconfig0 import TrigConfig0Builder
 
-from system_toolbar import SystemToolBarBuilder
 from acquisition_toolbar import AcquisitionToolBarBuilder
 from dsp_toolbar import DSPToolBarBuilder
-from plot_toolbar import PlotToolBarBuilder 
+from plot_toolbar import PlotToolBarBuilder
+from system_toolbar import SystemToolBarBuilder
 
 from fit_exp_creator import ExpFitBuilder
 from fit_gauss_creator import GaussFitBuilder
@@ -97,6 +96,7 @@ def main():
     QtWidgets.QApplication.setAttribute(
         QtCore.Qt.AA_EnableHighDpiScaling, True
     )
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
     app = QtWidgets.QApplication(sys.argv)
     gui = MainWindow(cdf, mdf, tbf, ftf, 4, offline)
     gui.show()
@@ -123,6 +123,7 @@ def create_chan_dsp_factory():
     factory.register_builder("TimingControl", TimingControlBuilder())
     factory.register_builder("Baseline", BaselineBuilder())
     factory.register_builder("QDCLen", QDCLenBuilder())
+    factory.register_builder("Histogram", HistogramBuilder())
 
     return factory
 
@@ -174,22 +175,26 @@ def create_fit_factory():
     # parameter values.
     config_fit_exp = {
         "params": [1, -0.003, 1], # k = -0.003 approx. 20 us in 60 ns samples.
-        "form": "f(x) = p[0]*exp(p[1]*x) + p[2]"
+        "form": "f(x) = p[0]*exp(p[1]*x) + p[2]",
+        "count_data": False
     }
     
     config_fit_gauss = {
         "params": [1, 0, 1],
-        "form": "f(x) = p[0]*exp(-(x-p[1])^2 / (2*p[2]^2))"
+        "form": "f(x) = p[0]*exp(-(x-p[1])^2 / (2*p[2]^2))",
+        "count_data": True
     }
     
     config_fit_gauss_p1 = {
         "params": [1, 0, 1, 0, 0],   
-        "form": "f(x) = p[0]*exp(-(x-p[1])^2 / (2*p[2]^2))\n\t+ p[3] + p[4]*x"
+        "form": "f(x) = p[0]*exp(-(x-p[1])^2 / (2*p[2]^2))\n\t+ p[3] + p[4]*x",
+        "count_data": True
     }
 
     config_fit_gauss_p2 = {
         "params": [1, 0, 1, 0, 0, 0],
-        "form": "f(x) = p[0]*exp(-(x-p[1])^2 / (2*p[2]^2))\n\t+ p[3] + p[4]*x + p[5]*x^2"
+        "form": "f(x) = p[0]*exp(-(x-p[1])^2 / (2*p[2]^2))\n\t+ p[3] + p[4]*x + p[5]*x^2",
+        "count_data": True
     }
     
     # Register fit factory classes:

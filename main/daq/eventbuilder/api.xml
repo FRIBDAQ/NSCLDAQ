@@ -3412,12 +3412,12 @@ public:
             <productnumber></productnumber>
         </refentryinfo> 
       <refmeta>
-         <refentrytitle>EVB::BarrierStats::incomplete</refentrytitle>
+         <refentrytitle>EVB_BarrierStats_incomplete</refentrytitle>
          <manvolnum>1evb</manvolnum>
          <refmiscinfo class='empty'></refmiscinfo>
       </refmeta>
       <refnamediv>
-         <refname>EVB::BarrierStats::incomplete</refname>
+         <refname>EVB_BarrierStats_incomplete</refname>
          <refpurpose>Display incomplete barrier statistics</refpurpose>
       </refnamediv>
       
@@ -3582,12 +3582,12 @@ EVB::BarrierStats::incomplete <replaceable>window ?options?</replaceable>
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle>EVB::BarrierStats::queueBarriers</refentrytitle>
+           <refentrytitle>EVB_BarrierStats_queueBarriers</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>EVB::BarrierStats::queueBarriers</refname>
+           <refname>EVB_BarrierStats_queueBarriers</refname>
            <refpurpose>Displays per queue barrier statistics</refpurpose>
         </refnamediv>
         
@@ -3715,12 +3715,12 @@ EVB::BarrierStats::queueBarriers <replaceable>window ?options?</replaceable>
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle>EVB::BarrierStats::Summary</refentrytitle>
+           <refentrytitle>EVB_BarrierStats_Summary</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>EVB::BarrierStats::Summary</refname>
+           <refname>EVB_BarrierStats_Summary</refname>
            <refpurpose>UI element to summarize barrier statistics.</refpurpose>
         </refnamediv>
         
@@ -3792,12 +3792,12 @@ EVB::BarrierStats::Summary <replaceable>window ?options?</replaceable>
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle>EVB::CallbackManager</refentrytitle>
+           <refentrytitle>EVB_CallbackManager</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>EVB::CallbackManager</refname>
+           <refname>EVB_CallbackManager</refname>
            <refpurpose>Object that manages callback sets.</refpurpose>
         </refnamediv>
         
@@ -3935,12 +3935,12 @@ $cbManager define mycallback;    # e.g.
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle>EVB::connectionList</refentrytitle>
+           <refentrytitle>EVB_connectionList</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>EVB::connectionList</refname>
+           <refname>EVB_connectionList</refname>
            <refpurpose>List event builder connections</refpurpose>
         </refnamediv>
         
@@ -4024,12 +4024,12 @@ EVB::connectionList <replaceable>window ?options?</replaceable>
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle>EVB::GUI procs</refentrytitle>
+           <refentrytitle>EVB_GUI procs</refentrytitle>
            <manvolnum>evb1</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>EVB::GUI procs</refname>
+           <refname>EVB_GUI procs</refname>
            <refpurpose>Standard monitor UI procs.</refpurpose>
         </refnamediv>
         
@@ -4115,12 +4115,12 @@ EVB::maintainGUI <replaceable>window update-ms</replaceable>
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle>EVB::inputStatistics::statusDisplay</refentrytitle>
+           <refentrytitle>EVB_inputStatistics_statusDisplay</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>EVB::inputStatistics::statusDisplay</refname>
+           <refname>EVB_inputStatistics_statusDisplay</refname>
            <refpurpose>Widget to display input statitics</refpurpose>
         </refnamediv>
         
@@ -4450,12 +4450,12 @@ EVB::inputStatistics::statusDisplay <replaceable>window ?options?</replaceable>
         </refentryinfo>
         <refmeta>
            <refentrytitle id='evb1_inputstatistics_queuestats_title'>
-            EVB::inputStatistics::queueStats</refentrytitle>
+            EVB_inputStatistics_queueStats</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>EVB::inputStatistics::queueStats</refname>
+           <refname>EVB_inputStatistics_queueStats</refname>
            <refpurpose>Per queue input statistics widget</refpurpose>
         </refnamediv>
         
@@ -4641,13 +4641,13 @@ EVB::inputStatistics::queueStats window <replaceable>?options?</replaceable>
         </refentryinfo>
         <refmeta>
            <refentrytitle id='evb1_inputstatistics_queuedisplay_title'>
-            ::EVB::inputStatistics::queueDisplay
+            EVB_inputStatistics_queueDisplay
            </refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>::EVB::inputStatistics::queueDisplay</refname>
+           <refname>EVB_inputStatistics_queueDisplay</refname>
            <refpurpose>Display input queue statistics</refpurpose>
         </refnamediv>
         
@@ -4749,12 +4749,12 @@ package require EVB::inputStatistics
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle id='evb1_inputstatistics_summarydisplay_title'>EVB::inputStatistics::summaryDisplay</refentrytitle>
+           <refentrytitle id='evb1_inputstatistics_summarydisplay_title'>EVB_inputStatistics:_summaryDisplay</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>EVB::inputStatistics::summaryDisplay</refname>
+           <refname>EVB_inputStatistics_summaryDisplay</refname>
            <refpurpose>Summary of input statistics.</refpurpose>
         </refnamediv>
         
@@ -4862,12 +4862,12 @@ EVB::inputStatistics::summaryDisplay <replaceable>window ?options?</replaceable>
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle id='evb1_latefragments_title'>EVB::lateFragments</refentrytitle>
+           <refentrytitle id='evb1_latefragments_title'>EVB_lateFragments</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>EVB::lateFragments</refname>
+           <refname>EVB_lateFragments</refname>
            <refpurpose>Late fragment statistics</refpurpose>
         </refnamediv>
         
@@ -5001,12 +5001,12 @@ EVB::LateFragments <replaceable>window ?options?</replaceable>
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle id='evb1_latesummary_title'>EVB::lateSummary</refentrytitle>
+           <refentrytitle id='evb1_latesummary_title'>EVB_lateSummary</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>EVB::lateSummary</refname>
+           <refname>EVB_lateSummary</refname>
            <refpurpose>Widget to display summar of data late fragments.</refpurpose>
         </refnamediv>
         
@@ -5076,12 +5076,12 @@ EVB::lateSummary <replaceable>window ?options?</replaceable>
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle>::EVB::outputStatistics</refentrytitle>
+           <refentrytitle>EVB_outputStatistics</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>::EVB::outputStatistics</refname>
+           <refname>EVB_outputStatistics</refname>
            <refpurpose>Complete output statistics widget</refpurpose>
         </refnamediv>
         
@@ -5253,12 +5253,12 @@ package require EVB::outputStatistics
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle>::EVB::outputSummary</refentrytitle>
+           <refentrytitle>EVB_outputSummary</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>::EVB::outputSummary</refname>
+           <refname>EVB_outputSummary</refname>
            <refpurpose>Summarize output statistics</refpurpose>
         </refnamediv>
         
@@ -5369,12 +5369,12 @@ package require outputStatistics
         </refentryinfo>
         <refmeta>
            <refentrytitle id="evb1_utillity_sortedpair_title">
-                ::EVB::utility::sortedPair</refentrytitle>
+                EVB_utility_sortedPair</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>::EVB::utility::sortedPair</refname>
+           <refname>EVB_utility_sortedPair</refname>
            <refpurpose>Key value pair widget</refpurpose>
         </refnamediv>
         
@@ -5560,12 +5560,12 @@ EVB::utility::sortedPair <replaceable>window ?options?</replaceable>
             <productnumber></productnumber>
         </refentryinfo>
         <refmeta>
-           <refentrytitle id="evb1_utility_sortedwidget_title">::EVB::utility::sortedWidget</refentrytitle>
+           <refentrytitle id="evb1_utility_sortedwidget_title">EVB_utility_sortedWidget</refentrytitle>
            <manvolnum>1evb</manvolnum>
            <refmiscinfo class='empty'></refmiscinfo>
         </refmeta>
         <refnamediv>
-           <refname>::EVB::utility::sortedWidget</refname>
+           <refname>EVB_utility_sortedWidget</refname>
            <refpurpose>General key/widget sorted list</refpurpose>
         </refnamediv>
         

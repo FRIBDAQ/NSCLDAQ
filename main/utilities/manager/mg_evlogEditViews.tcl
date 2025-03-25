@@ -332,6 +332,7 @@ snit::widgetadaptor evlogListView {
     variable contextMenu "";       # If not empty the context menu.
     
     constructor args {
+        
         installhull using ttk::treeview
         
         set columns [list root source host destination container partial critical embedded]
@@ -514,8 +515,12 @@ snit::widgetadaptor evlogListView {
     # @note the window coordinates are passed to the menu action method so that
     #       the element the context menu was created under can be retrieved and passed
     #       to the user's script.
+    # @note because of the above we actually have to rebuild the context menu each time...that is
+    #     it's always necessary
     #
     method _createContextMenuIfNecessary {x y} {
+        destroy $contextMenu
+        set contextMenu ""
         if {($contextMenu eq "") && ([llength $options(-contextmenu)] > 0) } {
             set contextMenu [menu $win.context -tearoff 0]
             foreach item $options(-contextmenu) {
@@ -574,6 +579,7 @@ snit::widgetadaptor evlogListView {
     #
     #
     method _postContextMenu {x y wx wy} {
+        
         $self _createContextMenuIfNecessary $wx $wy
         if {$contextMenu ne ""} {
             $contextMenu post $x $y

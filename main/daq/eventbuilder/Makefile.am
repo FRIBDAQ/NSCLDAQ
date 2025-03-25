@@ -137,6 +137,7 @@ SKELDIR=@prefix@/skeletons/eventbuilder
 install-exec-hook:
 	$(mkinstalldirs) @bindir@
 	$(mkinstalldirs) @prefix@/TclLibs/EventBuilder
+	$(mkinstalldirs) @prefix@/TclLibs/EventBuilderlib
 	$(mkinstalldirs) @prefix@/TclLibs/EventBuilder/REST
 	for f in $(TCL_PROGFILES); do \
 		@INSTALL_PROGRAM@ @srcdir@/$$f @bindir@/`basename $$f .tcl` \
@@ -146,9 +147,10 @@ install-exec-hook:
 	; done
 	for f in $(TCL_PACKAGE_FILES); do @INSTALL_SCRIPT@ @srcdir@/$$f @prefix@/TclLibs/EventBuilder; done
 	$(INSTALL_DATA) @srcdir@/red.gif @prefix@/TclLibs/EventBuilder
-	rm -f @prefix@/TclLibs/EventBuilder/libEventBuilder.so
-	$(LN_S) @libdir@/libEventBuilder.so @prefix@/TclLibs/EventBuilder/libEventBuilder.so
-	echo "pkg_mkIndex -verbose @prefix@/TclLibs/EventBuilder *.tcl *.so" |@TCLSH_CMD@ 
+	rm -f @prefix@/TclLibs/EventBuilderlib/libEventBuilder.so
+	$(LN_S) @libdir@/libEventBuilder.so @prefix@/TclLibs/EventBuilderlib/libEventBuilder.so
+	echo "pkg_mkIndex -verbose @prefix@/TclLibs/EventBuilder *.tcl" |@TCLSH_CMD@
+	echo "pkg_mkIndex -verbose @prefix@/TclLibs/EventBuilderlib  *.so" |@TCLSH_CMD@
 	$(mkinstalldirs) $(SKELDIR)
 	for f in $(FRAMEWORK_SKELETON); do $(INSTALL_DATA) @srcdir@/$$f $(SKELDIR); done
 	$(INSTALL_SCRIPT) @builddir@/Makefile_Skeleton $(SKELDIR)/Makefile

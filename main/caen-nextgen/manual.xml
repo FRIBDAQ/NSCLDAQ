@@ -3157,11 +3157,11 @@ clean:
 <!-- manpage 3daq -->
             <refentry>
                <refmeta>
-                  <refentrytitle>caen_nscldaq::Dig2Device</refentrytitle>
+                  <refentrytitle>Dig2Device</refentrytitle>
                   <manvolnum>3daq</manvolnum>
                </refmeta>
                <refnamediv>
-                  <refname>caen_nscldaq::Dig2Device</refname>
+                  <refname>Dig2Device</refname>
                   <refpurpose>Low Level Access To Digitizers</refpurpose>
                 </refnamediv>
                 <refsynopsisdiv>

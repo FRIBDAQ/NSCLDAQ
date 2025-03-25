@@ -107,7 +107,144 @@
     </refsect1>
 
 </refentry>
+<refentry>   <!-- Unglom-->
+    <refmeta>
+        <refentrytitle>Unglom (note capital U)</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>Unglom (note captital U)</refname>
+        <refpurpose>Break up event file into fragment flie</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis><command>
+$DAQBIN/Unglom <replaceable>source-URI</replaceable>
+        </command></cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This command (not to be confused with
+            <command>unglom</command> which you probably should be
+            using instead), takes an event file that has been through
+            the FRIB event builder and breaks it up into event files
+            containing the fragments from each event.  Each source Id
+            in the input event file will produce an output file named
+            <filename>sid-</filename><replaceable>source-id</replaceable>
+            with the fragments from that source id.  These files will
+            be written in the current working directory.
+        </para>
+        <para>
+            For example, suppose your events are built from sources
+            with ids 1,3,5.  In that case you will get files;
+            <filename>sid-1</filename>, <filename>sid-3</filename> and
+            <filename>sid-5</filename>. Note the lack of an <filename>.evt</filename>
+            file type/extension.
+        </para>
+    </refsect1>
+</refentry>
+<refentry>    <!-- reglom non-interactive reference  -->
 
+
+    <refmeta>
+        <refentrytitle>reglom</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>reglom</refname>
+        <refpurpose>Rebuild events offline</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis>
+        <command>
+$DAQBIN/reglom <option>options...</option> <replaceable>files...</replaceable>
+        </command>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para> 
+          <command>reglom</command> is a non-GUI program that takes the event file that has
+          been through the FRIBDAQ event builder, torn apart into fragment files, and  rebuilds the events using
+          a different coincidence window.  This may be needed if later analysis dtermines the
+          the coincidence window chosen for online data taking was incorrect.
+        </para>
+        <para>
+            Reglom operates with <command>Unglom</command> (do not confuse this with
+            <command>unglom</command> which may be simpler to use than
+            <command>Unglom</command> together with <command>reglom</command>
+        </para>
+        <para>
+            The <command>reglom</command> program accepts command line options,
+            which will be described in the next section and a list of 
+            fragment filenames.  Thes fragment files generally come from
+            running <command>Unglom</command> over an event file that has been
+            event bult.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <para>
+            The options accepted by <command>reglom</command>
+            determine how the fragment files are put together
+            into an event built event file:
+        </para>
+        <variablelist>
+            <varlistentry>
+                <term><option>--help</option></term>
+                <listitem><para>
+                    Outputs brief help text to stdout and
+                    exits without doing anything.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>--version</option></term>
+                <listitem><para>
+                    Outputs the program version string to stdout and
+                    exits without doing anything.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>--dt</option><replaceable>coincidence-window</replaceable></term>
+                <listitem><para>
+                    The argument to this option is the number of clock
+                    ticks that define the event build window.  This value
+                    must be a valid positive, non-zero, integer.  There is no
+                    default value.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>--timestamp-policy</option><replaceable>policy</replaceable></term>
+                <listitem><para>
+                    The argument to tis option determines how the timestamps
+                    for built events is assigned.  It can be one of
+                    <literal>earliest</literal>, <literal>latest</literal>
+                    and <literal>average</literal>.  If not supplied, the default
+                    value is <literal>earliest</literal>, that is the timestamp
+                    of the first fragment in the built event.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>--sourceid</option><replaceable>output-source-id</replaceable></term>
+                <listitem><para>
+                    Defines the source id that will be assigned to output events.
+                    This is normally a small counting number. If not
+                    provided, the default is <literal>0</literal>
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>--output</option><replaceable>filename</replaceable></term>
+                <listitem><para>
+                    Provides the name of the output file to be produced.
+                    This has no default value.  Note that unlike event files
+                    produced by the <command>eventlog</command> program,
+                    output files are a single, unsegmented file.
+                    There is no default value for this mandatory option.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
 <refentry>
     <refmeta>
         <refentrytitle>timecheck</refentrytitle>

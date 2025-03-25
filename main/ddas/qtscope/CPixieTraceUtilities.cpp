@@ -23,8 +23,18 @@
  */
 CPixieTraceUtilities::CPixieTraceUtilities() :
     m_useGenerator(false),
-    m_validAmplitude(20)
+    m_validAmplitude(20),
+    m_pGenerator(new CDataGenerator)
 {}
+
+/**
+ * @details
+ * Destroy the data generator object we're managing.
+ */
+CPixieTraceUtilities::~CPixieTraceUtilities()
+{
+    delete m_pGenerator;
+}
 
 /**
  * @details
@@ -130,11 +140,11 @@ CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
 	throw CXIAException(msg.str(), "Pixie16AcquireADCTrace()", retval);
     }
 
+    unsigned int len;
+    PixieGetTraceLength(module, channel, &len);
+    ResetTrace(len);
+    
     if (!m_useGenerator) {
-	unsigned int len;
-	PixieGetTraceLength(module, channel, &len);
-	ResetTrace(len);
-
 	retval = Pixie16ReadSglChanADCTrace(
 	    m_trace.data(), len, module, channel
 	    );
@@ -147,8 +157,33 @@ CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
 		);
 	}
     } else {
-	std::cerr << "Offline data generation using the generator is not"
-		  << " supported for XIA API 3+" << std::endl;
+	// Get the trace binning and if successful generate a pulse:      
+	const char* pXDT = "XDT";
+	double xdt = 0;
+	retval = Pixie16ReadSglChanPar(pXDT, &xdt, module, channel);
+
+	if (retval < 0) {
+	    std::stringstream errmsg;
+	    errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed";
+	    errmsg << " to read parameter " << pXDT
+		   << " from module " << module
+		   << " channel " << channel
+		   << " with retval " << retval;
+	    throw std::runtime_error(errmsg.str());
+	}
+
+	retval = m_pGenerator->GetTraceData(
+	    m_trace.data(), MAX_ADC_TRACE_LEN, xdt
+	    );
+
+	if (retval < 0) {
+	    std::stringstream errmsg;
+	    errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed";
+	    errmsg << "to read trace from module " << module
+		   << " channel " << channel
+		   << " with retval " << retval;
+	    throw std::runtime_error(errmsg.str());
+	}
     }
 }
 

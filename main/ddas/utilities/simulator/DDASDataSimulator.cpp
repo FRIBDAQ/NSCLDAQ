@@ -45,7 +45,7 @@
 #include <DDASBitMasks.h>
 #include <DDASHit.h>
 
-const uint64_t LOWER_TS_BIT_MASK = 0x00000000FFFFFFFF; //!< Mask lower 16 bits.
+const uint64_t LOWER_TS_BIT_MASK = 0x00000000FFFFFFFF; //!< Mask lower 32 bits.
 const uint64_t UPPER_TS_BIT_MASK = 0x0000FFFF00000000; //!< Mask upper 16 bits.
 const uint32_t PIXIE_MAX_ENERGY = 65535; //!< Max allowed energy value.
 const uint16_t CFD_100_MSPS_MASK = 0x7FFF; //!< CFD mask for 100 MSPS modules.
@@ -98,7 +98,7 @@ DAQ::DDAS::DDASDataSimulator::DDASDataSimulator(std::string fname, int version)
  *   - Write the begin run item to the output file.
  */
 void
-DAQ::DDAS::DDASDataSimulator::beginRun()
+DAQ::DDAS::DDASDataSimulator::beginRun(int sourceID)
 {
     m_fd = open(m_fname.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);    
     if (m_fd == -1) {
@@ -118,10 +118,11 @@ DAQ::DDAS::DDASDataSimulator::beginRun()
 	m_pFactory->makeDataFormatItem()
 	);
     m_pFactory->putRingItem(pFormatItem.get(), m_fd);
-
+    
     std::unique_ptr<CRingStateChangeItem> pBeginItem(
 	m_pFactory->makeStateChangeItem(BEGIN_RUN, 0, 0, m_start, title)
 	);
+    pBeginItem->setBodyHeader(UINT64_MAX, sourceID, 1); // BEGIN barrier = 1
     m_pFactory->putRingItem(pBeginItem.get(), m_fd);
 }
 
@@ -136,7 +137,7 @@ DAQ::DDAS::DDASDataSimulator::beginRun()
  *  - Closes the output file.
  */
 void
-DAQ::DDAS::DDASDataSimulator::endRun()
+DAQ::DDAS::DDASDataSimulator::endRun(int sourceID)
 {
     const auto now = std::chrono::system_clock::now();
     m_stop = std::chrono::system_clock::to_time_t(now);
@@ -147,6 +148,7 @@ DAQ::DDAS::DDASDataSimulator::endRun()
     std::unique_ptr<CRingStateChangeItem> pEndItem(
 	m_pFactory->makeStateChangeItem(END_RUN, 0, elapsed, m_stop, title)
 	);
+    pEndItem->setBodyHeader(UINT64_MAX, sourceID, 2); // END barrier = 2
     m_pFactory->putRingItem(pEndItem.get(), m_fd);
 
     if (fsync(m_fd) == -1) {
@@ -179,6 +181,30 @@ DAQ::DDAS::DDASDataSimulator::putHit(
     const DDASHit& hit, int sourceID, bool useExtTS, double cal
     )
 {
+    // If useExtTS is not set:
+    //   - must provide a valid time
+    //   - must not provide an external timestamp
+    // If useExtTS is set:
+    //   - time is ignored, it can be set or not
+    //   - must provide a valid external timestamp
+    if (!useExtTS && (hit.getTime() <= 0)) {
+	std::stringstream msg;
+	msg << "Invalid hit time: " << hit.getTime(); 
+	throw std::runtime_error(msg.str());
+    }
+    if (!useExtTS && hit.getExternalTimestamp()) {
+	std::stringstream msg;
+	msg << "Not using external timestamp but hit has extTS = "
+	    << hit.getExternalTimestamp();
+	throw std::runtime_error(msg.str());
+    }
+    if (useExtTS && !hit.getExternalTimestamp()) {
+	std::stringstream msg;
+	msg << "Using external timestamp with invalid time: "
+	    << hit.getExternalTimestamp();
+	throw std::runtime_error(msg.str());
+    }
+    
     // Pack the hit into a data buffer:
     
     setBuffer(hit);
@@ -204,7 +230,7 @@ DAQ::DDAS::DDASDataSimulator::putHit(
 	+ sizeof(BodyHeader) + sizeof(RingItemHeader) + 100;    
     std::unique_ptr<CPhysicsEventItem> pPhysicsItem(
 	m_pFactory->makePhysicsEventItem(timestamp, sourceID, 0, bodySize)
-	);
+	); // Already has a correct body header.
     auto pBody = reinterpret_cast<uint32_t*>(pPhysicsItem->getBodyPointer());
     
     // Make the DDASReadout-style hit. Note that the self-inclusive size and
@@ -316,27 +342,29 @@ DAQ::DDAS::DDASDataSimulator::setWord0(const DDASHit& hit)
     m_evtBuf.push_back(word);
 }
 
+/**
+ * @details
+ * Note that it is possible for the values of words 1 and 2 to be zeroes in 
+ * the event that an external timestamp is specified. 
+ */
 void
 DAQ::DDAS::DDASDataSimulator::setWords1And2(const DDASHit& hit)
-{
+{    
     double time = hit.getTime();
-    if (time < 0) {
-	throw std::runtime_error("Hit timestamp < 0!");
-    }    
-    uint64_t coarseTime = getCoarseTimestamp(hit); // In clock ticks.
+    uint64_t coarseTime = getCoarseTimestamp(hit); // In clock ticks.    
     double coarseTimeCal = coarseTime * getClockPeriod(hit); // In ns.
     double corr = time - coarseTimeCal;
-    
+
     // Lower 32 bits of coarse TS, word 1:
     
     uint32_t word = 0x0;
     word = (coarseTime & LOWER_TS_BIT_MASK);
     m_evtBuf.push_back(word);
-    
+
     // Upper 16 bits of coarse timestamp, word 2, lower 16 bits:
     
     word = 0x0;
-    word |= (coarseTime & UPPER_TS_BIT_MASK) >> 32;
+    word |= (coarseTime & UPPER_TS_BIT_MASK) >> 32; // 16????
 
     // Formatted CFD result, word 2, upper 16 bits:
     
@@ -499,8 +527,8 @@ uint64_t
 DAQ::DDAS::DDASDataSimulator::getCoarseTimestamp(const DDASHit& hit)
 {
     double time = hit.getTime();
-    int clockPeriod = getClockPeriod(hit);
     int samplePeriod = getSamplePeriod(hit);
+    int clockPeriod = getClockPeriod(hit);
 
     // Largest correction for one sample group, equal to 0 for 100 MSPS:
     
@@ -566,6 +594,11 @@ DAQ::DDAS::DDASDataSimulator::getSamplePeriod(const DDASHit& hit)
  * The CFD is always assumed to succeed, even if no correction exists. 
  * For 250 and 500 MSPS modules the CFD trigger source is identified based 
  * on the sign and magnitude of the ZCP.
+ * 
+ * @note (ASC 11/6/24): There may be rare cases when the nanosecond time is 
+ * exactly halfway between two adjacent clock ticks. This causes issues because
+ * the calculated zcp == 1 when the "real" zcp in the modules is in [0, 1). 
+ * So in this case, we set the integer raw CFD value to its allowed maximum.
  */
 uint32_t
 DAQ::DDAS::DDASDataSimulator::getPackedCFDResult(
@@ -582,6 +615,7 @@ DAQ::DDAS::DDASDataSimulator::getPackedCFDResult(
     if (msps == 100) {
 	rawCFD = 32768.0*zcp;
 	result |= static_cast<uint32_t>(std::floor(rawCFD));
+	if (result == 32768) result = 32767; // Set to max allowed
 	result = result & CFD_100_MSPS_MASK;
 	result |= failBit << 15;
     } else if (msps == 250) {
@@ -591,6 +625,7 @@ DAQ::DDAS::DDASDataSimulator::getPackedCFDResult(
 	}
 	rawCFD = 16384.0*(zcp + src);
 	result |= static_cast<uint32_t>(std::floor(rawCFD));
+	if (result == 16384) result = 16383; // Set to max allowed
 	result = result & CFD_250_MSPS_MASK;
 	result |= (src << 14);
 	result |= (failBit << 15);
@@ -607,6 +642,7 @@ DAQ::DDAS::DDASDataSimulator::getPackedCFDResult(
 	}
 	rawCFD = 8192.0*(zcp - src + 1);
 	result |= static_cast<uint32_t>(std::floor(rawCFD));
+	if (result == 8192) result = 8191; // Set to max allowed
 	result = result &  CFD_500_MSPS_MASK;
 	// For 500 MSPS, src == 7 indicates forced CFD. We always succeed, so:
 	result |= (src << 13);

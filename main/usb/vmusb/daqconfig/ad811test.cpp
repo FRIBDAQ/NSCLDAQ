@@ -11,6 +11,7 @@
 #include <TCLObject.h>
 
 #include "CConfiguration.h"
+#include <CVMUSB.h>
 
 // Stubs for the tests.
 
@@ -18,6 +19,7 @@ void* gpTCLApplication(0);
 
 namespace Globals {
   CConfiguration* pConfig(0);
+  CVMUSB*         pUSBController(0);
   unsigned        scalerPeriod(10);
 };
 

@@ -408,7 +408,7 @@ proc ::eventlog::_handleOutput {def db fd} {
     if {[eof $fd] } {
         ::eventlog::Log "Event logger in $host -> $dest exited."
         close $fd
-	::sequence::relayOutput "Calling unregister logger for $def"
+	    ::sequence::relayOutput "Calling unregister logger to $dest"
         ::eventlog::_unregisterLogger $db $def
     } else {
         set line [gets $fd]    
@@ -444,7 +444,7 @@ proc eventlog::_writeLoggerScript {db def} {
     set fd [open $fname w]
     
     puts $fd "#!/bin/bash"
-    puts $fd ". $root/daqsetup.bash"
+    puts $fd ". $root/daqsetup.bash -f"
     puts $fd "export RECORD_DEST=$rawdest"
     puts $fd "export RECORD_SRC=$ring"
     puts $fd "export RECORD_PARTIAL=$partial"
@@ -557,7 +557,6 @@ proc ::eventlog::_startLogger   {db def} {
 # @param db - database object command.
 #
 proc eventlog::start {db} {
-    
     if {[eventlog::isRecording $db]} {
         set loggers [::eventlog::listLoggers $db]
         foreach l $loggers {
@@ -565,7 +564,7 @@ proc eventlog::start {db} {
                 ::eventlog::_startLogger $db $l
             }
         }
-    }
+    }   
 }
 ##
 # eventlog::Log

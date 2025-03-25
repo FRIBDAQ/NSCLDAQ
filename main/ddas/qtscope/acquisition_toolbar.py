@@ -23,9 +23,6 @@ class AcquisitionToolBar(QToolBar):
         Button to begin and end runs.
     run_type : QComboBox
         Selection box for run type, list-mode histogram or baseline.
-    binning : QComboBox
-        Selection box for histogram binning. N ADC units/bin where N is the 
-        value displayed in this box.
     current_mod : QSpinBox 
         Module selection for acquisition.
     current_chan : QSpinBox 
@@ -78,10 +75,6 @@ class AcquisitionToolBar(QToolBar):
         self.b_run_control = QPushButton("Begin run")
         self.b_run_control.setStyleSheet(colors.CYAN)
 
-        self.binning = QComboBox()
-        self.binning.insertItems(0, ["1", "2", "4", "8", "16"])
-        label = QLabel("ADC units/bin")
-        
         self.run_type = QComboBox()
         self.run_type.insertItem(RunType.HISTOGRAM.value, "Energy hist.")
         self.run_type.insertItem(RunType.BASELINE.value, "Baseline")
@@ -89,8 +82,6 @@ class AcquisitionToolBar(QToolBar):
         run_control_layout.addWidget(self.b_read_data)
         run_control_layout.addWidget(self.b_run_control)
         run_control_layout.addWidget(self.run_type)
-        run_control_layout.addWidget(self.binning)
-        run_control_layout.addWidget(label)
         
         run_control_box.setLayout(run_control_layout)
 
@@ -98,13 +89,18 @@ class AcquisitionToolBar(QToolBar):
         
         selection_box = QGroupBox("Channel selection")
         selection_layout = QHBoxLayout()
+
+        # See issue #216: Configure the spin box widgets with two digits
+        # to ensure they are created "big enough" to correctly size the
+        # main window on creation. Number of modules and number of channels
+        # per module are assumed no larger than two digits.
         
         self.current_mod = QSpinBox()
         self.current_mod.setPrefix("Mod. ")
-        self.current_mod.setRange(0,0) # Setup after booting.
+        self.current_mod.setRange(0, 99) # Set when booting system.
         self.current_chan = QSpinBox()
         self.current_chan.setPrefix("Chan. ")        
-        self.current_chan.setRange(0,0) # Setup after booting.
+        self.current_chan.setRange(0, 99) # Set when booting system.
         self.read_all = QCheckBox("Read all")
 
         selection_layout.addWidget(self.current_mod)

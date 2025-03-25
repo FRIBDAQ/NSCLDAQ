@@ -601,9 +601,7 @@ int main(int argc, char** argv)
             The <classname>CRingBuffer</classname> class include static methods
             for creating and reinitializing ring buffers as well as
             object based members that allow ring buffer clients (both producers
-            and consumers) to transfer data.  For more on how to use
-            the ring buffer class see
-            <link linkend="chapter.ringprimitives">The Ring Buffer Primitives</link>
+            and consumers) to transfer data.  
          </para>
          <para>
             A unique feature of the <classname>CRingBuffer</classname>

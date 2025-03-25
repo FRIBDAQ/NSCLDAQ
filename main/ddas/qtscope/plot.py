@@ -1,35 +1,22 @@
+import copy
+import inspect
+import logging
+from math import ceil, floor
+import sys
+from time import sleep
+
 import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 import numpy as np
-import inspect
-import copy
-import sys
-import logging
-from time import sleep
-from math import ceil, floor
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QMessageBox
 from PyQt5.QtGui import QPaintEvent
 
 from fit_panel import FitPanel
-
-import xia_constants as xia
 from run_type import RunType
-
-##
-# @todo (ASC 4/3/24): Get ns per sample from XDT value either here or
-# passed as a parameter by the caller.
-#
-
-##
-# @todo (ASC 8/21/24): Remove the custom binning. There is DSP for energy
-# histogram binning, most people do not use it. Allow users to configure
-# that via a tab or spinbox when starting a run? What effect does it have
-# if set to some strage value for production data (should be none, as it
-# effects onboard histos only)?
-#
+import xia_constants as xia
 
 class Plot(QWidget):
     """Plotting widget for the GUI utilizing the matplotlib Qt5 backend.
@@ -49,12 +36,8 @@ class Plot(QWidget):
     logger : Logger
         QtScope Logger object.
     raw_data : dict
-        Dictionary of default-binned, raw data from the digitizers keyed by 
-        the subplot index on which it is displayed. This data maintains the 
-        same size as the data array returned from the digitizers if the 
-        histograms are rebinned.
-    bin_width : int
-        Bin width in ADC units/bin.
+        Dictionary of raw data from the digitizers keyed by the subplot index 
+        on which it is displayed.
     mgr : DSPManager
         DSP manager for calls to XIA API.
 
@@ -70,8 +53,6 @@ class Plot(QWidget):
         Draw a blank histogram-style canvas when starting a histogram run.
     update_canvas()
         Redraw the entire canvas and all its subplots.
-    rebin()
-        Rebin existing single-channel run histogram data and redraw the plot.
     draw_test_data(idx)
         Draw a test figure with a random number of subplots.
 
@@ -104,7 +85,6 @@ class Plot(QWidget):
         # Data storage and presentation:
         
         self.raw_data = {}
-        self.bin_width = 1 # In samples.
         
         ##
         # Main layout
@@ -176,7 +156,6 @@ class Plot(QWidget):
 
         """
         self.raw_data[idx-1] = data
-        self.bin_width = 1 # Trace data isn't binned.
         ax = self.figure.add_subplot(nrows, ncols, idx)
         ax.plot(self.raw_data[idx-1], drawstyle="steps-post")
         xdt = self.mgr.get_chan_par(mod, chan, "XDT")*1000 # in ns.
@@ -233,7 +212,7 @@ class Plot(QWidget):
         self.canvas.draw_idle()
         
     def draw_run_data(
-            self, data, run_type, bin_width, nrows=1, ncols=1, idx=1
+            self, data, run_type, nrows=1, ncols=1, idx=1
     ):
         """Draws a data histogram on the plot canvas.
 
@@ -243,8 +222,6 @@ class Plot(QWidget):
             Single-channel run data.
         run_type : Enum member 
             Type of run data to draw.
-        bin_width : int
-            Width of each bin in ADC units.
         nrows : int, optional, default=1
             Number of subplot rows.
         ncols : int, optional, default=1
@@ -254,10 +231,8 @@ class Plot(QWidget):
 
         """
         self.raw_data[idx-1] = data
-        self.bin_width = bin_width
         ax = self.figure.add_subplot(nrows, ncols, idx)
-        nbins = int(xia.MAX_HISTOGRAM_LENGTH/self.bin_width)        
-        self._plot_histogram(ax, idx-1, nbins)
+        self._plot_histogram(ax, idx-1)
                 
         if run_type == RunType.HISTOGRAM:
             ax.set_xlabel("Energy (ADC units)")
@@ -313,33 +288,25 @@ class Plot(QWidget):
         sleep(0.5)
         self.canvas.draw()
 
-    def rebin(self, bin_width):
-        """Rebin histogrammed data.
-
-        Interactive rebinning is only supported for single channel plots, as 
-        the plotter keeps no history of all the data it is displaying.
-
-        Parameters
-        ----------
-        bin_width : int
-            Histogramm bin width in ADC values/bin.
-
+    def get_subplot_data(self, chan):
+        """Get data from a subplot (channel).
+        Arguments
+        ---------
+        chan : int
+            Channel number.
+        Returns
+        -------
+        NumPy array
+            Data on the subplot or empty if none.
         """
-        self.bin_width = bin_width
+        # If there are more than one set of data on the plot this probably
+        # does not work as intended, but that should be impossible (hopefully)
         axs = self.figure.get_axes()
-        for idx, ax in zip(range(len(axs)), axs):
-            npts = len(self.raw_data[idx]) if self.raw_data else 0
-            if npts == xia.MAX_HISTOGRAM_LENGTH:
-                nbins = int(xia.MAX_HISTOGRAM_LENGTH/self.bin_width)
-                # Remove all drawn histograms but not any axis labeling, etc.
-                # and reset the fit panel before plotting the rebinned data:
-                for line in ax.get_lines():
-                    line.remove()
-                self.fit_panel.reset()
-                self._plot_histogram(ax, idx, nbins)
-            self._set_yscale(ax)
-            self.canvas.draw_idle()
-        
+        if axs[chan].get_lines():
+            return np.array(axs[chan].lines[0].get_ydata())
+        else:
+            return np.empty(0) 
+            
     def draw_test_data(self):
         """Draw test data. 
 
@@ -425,12 +392,11 @@ class Plot(QWidget):
             else:
                 ax.set_ylim(0, 1)
 
-    def _plot_histogram(self, ax, idx, nbins):
+    def _plot_histogram(self, ax, idx):
         """Create and plot histogrammed data.
 
-        Raw histograms with default binning read are used as data weights 
-        to construct a NumPy histogram which is plotted on the provided axes 
-        using Axes.plot.
+        Histograms are counts and therefore governed by Poisson statistics. 
+        As such, each bin in the histogram has weight = data.
 
         Parameters
         ----------
@@ -438,8 +404,6 @@ class Plot(QWidget):
             matplotlib class containing the figure elements.
         idx : int
             Raw data index containing the weights.
-        nbins : int
-            Number of histogram bins.
 
         Raises
         ------
@@ -448,8 +412,10 @@ class Plot(QWidget):
 
         """
         data, bins = np.histogram(
-            [i for i in range(xia.MAX_HISTOGRAM_LENGTH)], bins=nbins,
-            range=(0, xia.MAX_HISTOGRAM_LENGTH), weights=self.raw_data[idx]
+            [i for i in range(xia.MAX_HISTOGRAM_LENGTH)],
+            bins=xia.MAX_HISTOGRAM_LENGTH,
+            range=(0, xia.MAX_HISTOGRAM_LENGTH),
+            weights=self.raw_data[idx]
         )
         # Drop the rightmost bin edge for the x-axis data. y-value is the left
         # edge of the bin, as in, e.g. ROOT.
@@ -497,7 +463,7 @@ class Plot(QWidget):
         """Perform the fit based on the current fit panel settings."""        
         if self.raw_data and len(self.figure.get_axes()) == 1:
             ax = plt.gca()
-            fitter = self.fit_factory.create(
+            fit = self.fit_factory.create(
                 self.fit_panel.function_list.currentText()
             )
             limits = self._get_fit_limits(ax)
@@ -510,49 +476,35 @@ class Plot(QWidget):
                 float(self.fit_panel.p5.text())
             ]
 
-            # Get the indices of the x-data array corresponding to the limits.
-            # Greatly simplified by the following:
-            #     - Data comes with default binning 1 unit/bin,
-            #     - Data length always a power of 2,
-            #     - Traces cannot be rebinned,
-            #     - Histogram binning always a factor of 2.
-            # So we can simply use the bin width to reconstruct the index of
-            # potentially rebinned data by rounding, otherwise we just get the
-            # indices back.
-            idx_min = ceil(int(limits[0]/self.bin_width))
-            idx_max = floor(int(limits[1]/self.bin_width))
+            # Get the indices of the x-data array corresponding to the limits:
+            idx_min = int(limits[0])
+            idx_max = int(limits[1])
                 
             self.logger.debug(f"Fit limits: {limits[0]}, {limits[1]}")
             self.logger.debug(f"Fit limit indices: {idx_min}, {idx_max}")
             self.logger.debug(f"Fit panel guess params: {params}")
-            self.logger.debug(f"Data binning factor: {self.bin_width}")
 
             # If the current subplot has data, get the fit limits and call the
-            # fit function's start() rountine to perform the fit. Fitting is
-            # done using Neyman's chi-square and therefore we drop zeroes prior
-            # performing the fit. x-values passed to the fitter are offset by
-            # half the bin width ("true" bin value is the center).
+            # fit function's start() rountine to perform the fit.
             if ax.get_lines():
                 x = ax.lines[0].get_xdata()[idx_min:idx_max]
                 y = ax.lines[0].get_ydata()[idx_min:idx_max]
-                zeroes = np.where(y == 0)[0]
-                popt, pcov = fitter.start(
-                    np.delete(x, zeroes) + self.bin_width/2,
-                    np.delete(y, zeroes), params, ax
-                )
+
+                # x value is center of bin:
+                result = fit.start(x+0.5, y, params, ax)
 
                 # Update the canvas with the results:
                 x_fit = np.linspace(limits[0], limits[1], 10000)
-                y_fit = fitter.feval(x_fit, *popt)
+                y_fit = fit.model(x_fit, result.x)
                 ax.plot(x_fit, y_fit, 'r-')
 
                 # Print the fitted parameters and uncertainties:
-                for i in range(len(popt)):
+                for i in range(len(result.x)):
                     s = "p[{}]: {:.6e} +/- {:.6e}".format(
-                        i, popt[i], np.sqrt(pcov[i][i])
+                        i, result.x[i], np.sqrt(result.hess_inv[i][i])
                     )
                     self.fit_panel.results.append(s)
-                    if i == (len(popt) - 1):
+                    if i == (len(result.x) - 1):
                         self.fit_panel.results.append("\n")
             else:
                 QMessageBox.about(

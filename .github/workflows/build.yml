@@ -82,8 +82,8 @@ jobs:
                        --with-epics-rootdir=`cat /usr/opt/EPICS_PATH` \
                        --enable-ddas=yes \
                        --enable-ddas-docs=yes \
+                       --with-incorp-build-cores=2 \
                        --with-xiaapidir=`cat /usr/opt/XIAAPI_PATH` \
-                       --with-plx-sdk=`cat /usr/opt/PLX_PATH` \
                        --with-firmwaredir=`cat /usr/opt/DDASFIRMWARE_PATH` \
                        --with-dspdir=`cat /usr/opt/DDASDSP_PATH` \
                        --with-rootsys=`cat /usr/opt/ROOT_PATH` \
@@ -108,6 +108,7 @@ jobs:
         working-directory: ./main/oot
         run: |
           make -j2 dist
+          mv nscldaq-${{ github.ref_name }}.tar.gz nscldaq-${{ github.ref_name }}-dist.tar.gz
       - name: Complete source distribution package
         if: ${{ inputs.packaging == true && inputs.dist-packaging == true}}
         uses: actions/upload-artifact@v4

@@ -97,6 +97,7 @@ proc _PrepareManagerShutdown {sock} {
 #                 /status - return current state
 #                 /allowed - return allowed next states.
 #                 /transition - post a request to transition.
+#                 /shutdown - shuts down the server.
 #                 /elapsed  -Elapsed run time to display.
 proc stateHandler {sock suffix} {
 
@@ -176,6 +177,18 @@ proc stateHandler {sock suffix} {
             # TODO: Check that user has the role they claim to have:
             
             #  Try to set the new state:
+
+            # Only do a transition if the state changes:
+
+            if {[::sequence::currentState db] eq $state} {
+                 Httpd_ReturnData $sock application/json [json::write object \
+                    status [json::write string OK]                          \
+                    state  [json::write string $state]                   \
+                    completed [json::write string OK]
+                ]
+                return
+
+            }
             
             
             set status [catch \

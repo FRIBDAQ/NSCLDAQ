@@ -1,24 +1,25 @@
-from fit_function import FitFunction
 import numpy as np
+
+from fit_function import FitFunction
 
 class GaussFit(FitFunction):
     """Gaussian fitting function class used by QtScope.
 
-    Implements function-specific feval and set_initial_parameters methods from
+    Implements function-specific model and set_initial_parameters methods from
     the base class. See the documentation for the FitFunction base class in 
     fit_function.py for details.
+
     """
-    
-    def feval(self, x, *p):
+    def model(self, x, params):
         """Evaluate the fit function over x.
 
-        Implement a Gaussian fitting function.
+        Implement an un-normalized Gaussian fitting function.
 
         Parameters
         ----------
         x : ndarray
             Array of x values in the fitting range.
-        p : array-like
+        params : array-like
             Parameters used to evaluate the function over x.
 
         Returns
@@ -26,7 +27,7 @@ class GaussFit(FitFunction):
         ndarray
             Array containing the fit values over the range.
         """
-        return p[0]*np.exp(-(x-p[1])**2 / (2*p[2]**2))
+        return params[0]*np.exp(-(x-params[1])**2 / (2*params[2]**2))
 
     def set_initial_parameters(self, x, y, params):
         """Set initial parameter values. 
@@ -44,21 +45,22 @@ class GaussFit(FitFunction):
             Array of fit parameters.
         """
         super().set_initial_parameters(x, y, params)
-        if self.pinit[0] == 0.0:
-            self.pinit[0] = max(y)
-        if self.pinit[1] == 0.0:
-            self.pinit[1] = np.mean(x)
-        if self.pinit[2] == 0.0:
-            self.pinit[2] = np.std(x)
+        if self.p_init[0] == 0.0:
+            self.p_init[0] = max(y)
+        if self.p_init[1] == 0.0:
+            self.p_init[1] = np.mean(x)
+        if self.p_init[2] == 0.0:
+            self.p_init[2] = np.std(x)
 
 class GaussFitBuilder:
-    """Builder method for factory creation."""
-    
+    """Builder method for factory creation.
+
+    """
     def __init__(self):
-        """GaussFitBuilder class constructor."""        
+        """GaussFitBuilder class constructor."""
         self._instance = None
 
-    def __call__(self, params=[], form=""):
+    def __call__(self, params=[], form="", count_data=True):
         """Create the fitting function.
 
         Create an instance of the fit function if it does not exist and 
@@ -78,8 +80,7 @@ class GaussFitBuilder:
         -------
         GaussFit
             Instance of the fit class.
-        """       
+        """
         if not self._instance:
-            self._instance = GaussFit(params, form)
-            
+            self._instance = GaussFit(params, form, count_data)
         return self._instance

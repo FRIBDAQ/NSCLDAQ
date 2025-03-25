@@ -1909,8 +1909,8 @@ g++ -o myApplication src1.o src2.o ... -L$DAQROOT/lib \
         <para>
             Predicates provide a powerful mechanism for selecting and sampling
             data from ring buffers.  For more information about them,
-            see the chapter
-            <link linkend="chapter.ringformat">Ring Format</link>
+            see the web documentation chapter
+            Ring Format
             which provides background information about ring buffer predicates.
             For reference information, see the reference pages for:
             <link linkend="manpage.cringselectionpredicate"><classname>CRingSelectionPredicate</classname></link>,
@@ -1931,9 +1931,7 @@ g++ -o myApplication src1.o src2.o ... -L$DAQROOT/lib \
             of
             <classname>CRingItem</classname>, if you use this class directly,
             you should be familiar with the data types defined in the header
-            <filename>DataFormat.h</filename>.  These are described fully in
-            the chapter:
-            <link linkend="chapter.ringformat">Ring Format</link>.
+            <filename>DataFormat.h</filename>.  
          </para>
       </refsect1>
       <refsect1>

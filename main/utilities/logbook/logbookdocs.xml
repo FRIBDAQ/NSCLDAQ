@@ -4451,9 +4451,7 @@ public:
                   <classname>LogBookPerson</classname> objects that match the
                   SQL where clause in <parameter>where</parameter>.  This
                   claus should omit the keyword <literal>WHERE</literal>.
-                  See
-                  <link linkend='daq5.logbookschema' endterm='daq5.logbookschema.title' />
-                  for the fields that can be used in <parameter>where</parameter>.
+                  
                </para>
                 <para>
                   If <parameter>where</parameter> is a null pointer, as it is
@@ -6609,9 +6607,7 @@ $instance kvCreate <replaceable>new-key value</replaceable>
                      The <parameter>where-clause</parameter> is an SQL
                      fragment that can be appended to the <literal>WHERE</literal>
                      part of the database query that satisfies this command.
-                     See <link linkend='daq5.logbookschema'
-                              endterm='daq5.logbookschema.title' />
-                     for more information about what you might be able to use here.
+                     
                    </para>
                    <para>
                      If <parameter>where-clause</parameter> is not supplied,
@@ -9129,13 +9125,11 @@ kv_create(newkey, value)
                   clause that will be used to filter out the matching people.
                </para>
                <para>
-                  For more informationa bout the strings that can be used
+                  For more information about the strings that can be used
                   for <parameter>whereclause</parameter>, refer to the
                   Sqlite3 reference page for expressions (
                   <ulink url='https://sqlite.org/syntax/expr.html' />
-                  ).  And the logbook schema for the <literal>person</literal>
-                  table at
-                  <link linkend='daq5.logbookschema' endterm='daq5.logbookschema.title' />
+                  ).  
                </para>
             </listitem>
          </varlistentry>

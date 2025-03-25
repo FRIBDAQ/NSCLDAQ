@@ -37,13 +37,12 @@ source [file join $here definitions.tcl]
 #
 #  Add the TclLibs for NSCLDAQ and DDAS to the auto search path then
 #  we can require the port manager and pixieserver packages.
-#  @note this directory must havea a pxisys.ini and cfgPixie16.txt file.
+#  @note this directory must have a cfgPixie16.txt file.
 #         else the pixieserver package will fail to load.
 #
-set DDASTclPackages [file join $DDAS_INSTDIR TclLibs]
 set DAQTclPackages  [file join $DAQ_INSTDIR TclLibs]
 
-lappend auto_path $DDASTclPackages $DAQTclPackages
+lappend auto_path $DAQTclPackages
 package require removetcllibpath
 package require pixieserver
 package require portAllocator

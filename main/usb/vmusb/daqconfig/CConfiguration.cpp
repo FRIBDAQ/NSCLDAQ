@@ -42,6 +42,7 @@
 #include "CXLMFERA.h"
 #include "CCBD8210CrateController.h"
 #include "CCBD8210ReadoutList.h"
+#include "CSIS3316.h"
 #include "CUserCommand.h"
 
 #include <CMASE.h>
@@ -128,6 +129,10 @@ CConfiguration::CConfiguration() :
   m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "mdpp16qdc", new CMDPP16QDC));
   m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "mdpp32qdc", new CMDPP32QDC));
   m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "mdpp32scp", new CMDPP32SCP));
+  m_Commands.push_back(new CUserCommand(
+       *m_pInterp, *this, "sis3316", new CSIS3316)
+  );
+  
 
   // Add hybrid drivers
   typedef CCBD8210CrateController Ctlr;
@@ -147,6 +152,7 @@ CConfiguration::CConfiguration() :
 
   m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "CBDLeCroy2551", 
                             compat_clone(CLeCroy2551<Ctlr,RdoList>())) );
+
     
 //  m_Commands.push_back(new C3820TstampCommand(*m_pInterp, *this));
 }

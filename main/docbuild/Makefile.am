@@ -57,11 +57,14 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/usb/usb1 \
 	@top_srcdir@/usb/vmusb \
 	@top_srcdir@/usb/ccusb \
+	@top_srcdir@/usb/vmusb/SIS3316Readout \
 	@top_srcdir@/daq/readoutgui \
 	@top_srcdir@/utilities/logbook \
 	@top_srcdir@/daq/eventbuilder \
+	@top_srcdir@/daq/evbtools/glom \
 	@top_srcdir@/daq/evbtools/evblite \
 	@top_srcdir@/daq/evbtools/ringsource \
+	@top_srcdir@/daq/evbtools/unglom \
 	@top_srcdir@/utilities/newscaler \
 	@top_srcdir@/simplesetups/vmusb \
 	@top_srcdir@/simplesetups/v775 \
@@ -116,7 +119,9 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/examples \
 	@top_srcdir@/ddas/readout\
 	@top_srcdir@/ddas/pixieplugin \
-	@top_srcdir@/caen-nextgen
+	@top_srcdir@/caen-nextgen \
+	@top_srcdir@/utilities/ringdiagnostics \
+	@top_srcdir@/usb/vmusb/sis3316examples
 
 daq.html: daq.xml
 	- rm -rf html

@@ -118,6 +118,22 @@ caenv956 cget <replaceable>name</replaceable>
                 </para>
             </listitem>
         </varlistentry>
+        <varlistentry>
+            <term><command>-inputs</command> <replaceable>ribbon | nim</replaceable>
+            </term>
+            <listitem><para>
+                This is interpreted by SpecTcl 7.0-001 and later.  It allows it to 
+                distinguish between the N series (NIM Inputs) of digitizer and the others
+                (Ribbon cable inputs).  The channel number decoding differs between these module types.
+                Prior to the addition of this option, users of the N series digitizers (e.g. 785N)
+                had to specify only every other channel name for the decode to work correctly.
+                If one configures the module instead with <literal>-inputs nim</literal>
+                SpecTcl 7.0-001 and later can handle tight packed parameter definitions.
+            </para><para>
+                If not specified this defaults to <literal>ribbon</literal> with the
+                behavior before the addition of this option.
+            </para></listitem>
+        </varlistentry>
          <varlistentry>
             <term><command>-thresholds</command> <replaceable>values</replaceable></term>
             <listitem>
@@ -244,6 +260,48 @@ caenv956 cget <replaceable>name</replaceable>
 		    <literal>false</literal> to get an idea of where
 		    the thresholds are.
 	       </para>
+            </listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><command>-supressunderthreshold</command> <replaceable>bool</replaceable></term>
+            <listitem>
+               <para>
+								 If <literal>false</literal> when <command>-supressrange</command> is
+								 <literal>false</literal>, the module will only suppress under threshold
+								 conversion. If not all channels over threshold will supply data for an
+								 event. In most cases, this should be set to <literal>true</literal>.
+								 This defaults to <literal>false</literal> because this is in effect
+								 when <command>-supressrange</command> is set <literal>false</literal>.
+               </para>
+							 <para>
+								 When enabled, 13th bit (0x2000) of a data word will be set 1 if the data is
+								 under threshold.
+							 </para>
+							 <para>
+								 Make sure to set <command>-supressrange</command> to <litral>false</literal>
+								 to make this option effective.
+							 </para>
+            </listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><command>-supressoverflow</command> <replaceable>bool</replaceable></term>
+            <listitem>
+               <para>
+								 If <literal>false</literal> when <command>-supressrange</command> is
+								 <literal>false</literal>, the module will only suppress overflow
+								 conversion. If not all channels over threshold will supply data for an
+								 event. In most cases, this should be set to <literal>true</literal>.
+								 This defaults to <literal>false</literal> because this is in effect
+								 when <command>-supressrange</command> is set <literal>false</literal>.
+               </para>
+							 <para>
+								 When enabled, 12th bit (0x1000) of a data word will be set 1 if the data is
+								 overflow.
+							 </para>
+							 <para>
+								 Make sure to set <command>-supressrange</command> to <litral>false</literal>
+								 to make this option effective.
+							 </para>
             </listitem>
          </varlistentry>
          <varlistentry>
@@ -7841,7 +7899,7 @@ mdpp32qdc cget <replaceable>name</replaceable>
                              Start window of interest: 0x0000 start at -25.56us, 0x7FFF start at +25.56us, 0x4000 = 16k no delay.
                         </para>
                         <para>
-                             < 16k, window starts before Trigger, > 16k, window is delayed.
+                             &lt; 16k, window starts before Trigger, &gt; 16k, window is delayed.
                         </para>
                         <para>
                              By default, this parameter is 0x3fbe(=16318).
@@ -7965,11 +8023,11 @@ mdpp32qdc cget <replaceable>name</replaceable>
                          <replaceable>bool</replaceable>
                      </term>
                      <listitem>
-										 </listitem>
+										 
                          <para>
                              Switch monitor on
                          </para>
-										 </listitem>
+                        </listitem>
                  </varlistentry>
                  <varlistentry>
                      <term>
@@ -7977,11 +8035,11 @@ mdpp32qdc cget <replaceable>name</replaceable>
                          <replaceable>int 0-31</replaceable>
                      </term>
                      <listitem>
-										 </listitem>
+						
                          <para>
                              Set channel to monitor
                          </para>
-										 </listitem>
+					 </listitem>
                  </varlistentry>
                  <varlistentry>
                      <term>
@@ -7989,11 +8047,11 @@ mdpp32qdc cget <replaceable>name</replaceable>
                          <replaceable>int 0-3</replaceable>
                      </term>
                      <listitem>
-										 </listitem>
+										 
                          <para>
                              Set wave to monitior
                          </para>
-										 </listitem>
+					</listitem>
                  </varlistentry>
                  <varlistentry>
                      <term>
@@ -8770,7 +8828,7 @@ mdpp16qdc cget <replaceable>name</replaceable>
                              Start window of interest: 0x0000 start at -25.56us, 0x7FFF start at +25.56us, 0x4000 = 16k no delay.
                         </para>
                         <para>
-                             < 16k, window starts before Trigger, > 16k, window is delayed.
+                             &lt; 16k, window starts before Trigger, &gt; 16k, window is delayed.
                         </para>
                         <para>
                              By default, this parameter is 0x3fbe(=16318).
@@ -8894,7 +8952,7 @@ mdpp16qdc cget <replaceable>name</replaceable>
                          <replaceable>bool</replaceable>
                      </term>
                      <listitem>
-										 </listitem>
+										 
                          <para>
                              Switch monitor on
                          </para>
@@ -8906,7 +8964,7 @@ mdpp16qdc cget <replaceable>name</replaceable>
                          <replaceable>int 0-31</replaceable>
                      </term>
                      <listitem>
-										 </listitem>
+										 
                          <para>
                              Set channel to monitor
                          </para>
@@ -8918,7 +8976,7 @@ mdpp16qdc cget <replaceable>name</replaceable>
                          <replaceable>int 0-3</replaceable>
                      </term>
                      <listitem>
-										 </listitem>
+										 
                          <para>
                              Set wave to monitior
                          </para>
@@ -9651,7 +9709,7 @@ mdpp32scp cget <replaceable>name</replaceable>
                              Start window of interest: 0x0000 start at -25.56us, 0x7FFF start at +25.56us, 0x4000 = 16k no delay.
                         </para>
                         <para>
-                             < 16k, window starts before Trigger, > 16k, window is delayed.
+                             &lt; 16k, window starts before Trigger, &gt; 16k, window is delayed.
                         </para>
                         <para>
                              By default, this parameter is 0x3fbe(=16318).
@@ -9775,7 +9833,7 @@ mdpp32scp cget <replaceable>name</replaceable>
                          <replaceable>bool</replaceable>
                      </term>
                      <listitem>
-										 </listitem>
+										 
                          <para>
                              Switch monitor on
                          </para>
@@ -9787,7 +9845,7 @@ mdpp32scp cget <replaceable>name</replaceable>
                          <replaceable>int 0-31</replaceable>
                      </term>
                      <listitem>
-										 </listitem>
+										 
                          <para>
                              Set channel to monitor
                          </para>
@@ -9799,7 +9857,7 @@ mdpp32scp cget <replaceable>name</replaceable>
                          <replaceable>int 0-3</replaceable>
                      </term>
                      <listitem>
-										 </listitem>
+										 
                          <para>
                              Set wave to monitior
                          </para>

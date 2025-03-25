@@ -5,6 +5,9 @@ program_scripts=startServer.tcl mg_mkconfig.tcl mg_cfgcontainers.tcl \
 	mg_startloggers.tcl mg_container_wizard.tcl \
 	mg_readout_wizard.tcl
 
+
+PY_PACKAGES=mg_database.py manager_client.py editablelist.py
+PYPROGRAMS=mg_logwizard.py mg_program_wizard.py mg_import.py
 server_scripts=mg_statusserver.tcl  mg_programserver.tcl \
 	mg_kvserver.tcl mg_evlogserver.tcl
 
@@ -24,9 +27,6 @@ docs=userguide.xml api.xml
 test_scripts=container.test program.test sequence.test transitions.test \
 	loggerdb.test kv.test authtest.test evlog.test
 
-EXTRA_DIST=$(program_scripts) $(library_scripts) $(test_scripts) \
-	$(server_scripts) $(docs) \
-	minimal.img singexists.sh
 
 install-exec-local:
 	for f in $(program_scripts); do $(INSTALL_PROGRAM) @srcdir@/$$f @bindir@/`basename $$f .tcl`; done
@@ -38,6 +38,12 @@ install-exec-local:
 	for f in $(server_scripts); do \
 		$(INSTALL_DATA) @srcdir@/$$f @prefix@/TclLibs/manager_server; \
 	done
+	rm -rf @prefix@/pythonLibs/nscldaq/__pycache__   # Force recompilation.
+	(cd @srcdir@; $(INSTALL_SCRIPT) $(PY_PACKAGES) @prefix@/pythonLibs/nscldaq)
+	for f in $(PYPROGRAMS); do \
+		$(INSTALL_PROGRAM) @srcdir@/$$f @bindir@/`basename $$f .py` ; \
+	done
+	
 
 
 check:
@@ -57,3 +63,6 @@ check:
 		echo No singularity manager tests will not be done; \
 	fi
 
+EXTRA_DIST=$(program_scripts) $(library_scripts) $(test_scripts) \
+	$(server_scripts) $(docs) \
+	minimal.img singexists.sh $(PYPROGRAMS) $(PY_PACKAGES)

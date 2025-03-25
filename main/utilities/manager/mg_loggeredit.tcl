@@ -271,7 +271,7 @@ snit::widgetadaptor LoggerList {
     #
     # @param optname - the option name (-loggers - ignored).
     # @param value   - list of logger definition dicts e.g. from
-    #                 ::eventloggers::listLoggers
+    #                 ::eventlog::listLoggers
     # @note Since we have a cget method we don't need to store the results in
     #       options($optname).  We'll fish them programmatically from the
     #       tree.
@@ -479,7 +479,7 @@ proc _addLogger {e loggers} {
 # @param db  - database command.
 # @param logger - dict describing the logger
 # @note The part of the dict that describes the container, and the flags
-#       "just happens" to be what eventloggers::add needs for its options parameter
+#       "just happens" to be what eventlog::add needs for its options parameter
 #
 proc _saveLogger {db logger} {
     # We have to adjust if the container is <None>
@@ -489,7 +489,7 @@ proc _saveLogger {db logger} {
         set logger [dict remove $logger container]    
     }
     
-    eventloggers::add $db                                                    \
+    eventlog::add $db                                                    \
         [dict get $logger daqroot] [dict get $logger ring]                   \
         [dict get $logger host]    [dict get $logger destination]            \
         $logger
@@ -511,10 +511,10 @@ proc _saveLoggers {db loggers} {
     db transaction {
         #  Kill off the existing loggers.
         
-        set ls [::eventloggers::listLoggers $db]
+        set ls [::eventlog::listLoggers $db]
         foreach logger $ls {
             set id [dict get $logger id]
-            ::eventloggers::delete $db $id
+            ::eventlog::delete $db $id
         }
         
         # Add back the new loggers, one at a atime.
@@ -633,7 +633,7 @@ if  {![file writable $fname]} {
 #
 
 sqlite db $fname
-set loggers [::eventloggers::listLoggers db]
+set loggers [::eventlog::listLoggers db]
 LoggerList .loggers -loggers $loggers -ondouble [list _selectItem .entry.loggers .loggers]
 
 ttk::frame .entry

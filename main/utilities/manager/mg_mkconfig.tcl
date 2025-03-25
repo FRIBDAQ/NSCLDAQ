@@ -313,7 +313,7 @@ proc kvstore {db} {
     #  Create mandatory keys if they don't already exist:
     
     set n [$db eval {
-        SELECT COUNT(*) FROM kvstore WHERE keyname='run'
+        SELECT COUNT(*) FROM kvstore WHERE keyname='title'
     }]
     if {$n == 0} {
         $db eval {

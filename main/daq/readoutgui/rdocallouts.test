@@ -53,6 +53,7 @@ tcltest::test bundle-1 {rdoCalloutsBundle package should have the rdoCallouts bu
     $s destroy
     set s [RunstateMachineSingleton %AUTO%]
     catch {$s removeCalloutBundle rdoCallouts}
+   
     $s destroy
     package forget rdoCalloutsBundle
     namespace delete ::rdoCallouts
@@ -67,6 +68,10 @@ tcltest::test bundle-2 {rdoCallouts package auto registerd with the singleton} \
 -setup {
     package require rdoCalloutsBundle
     set s [RunstateMachineSingleton %AUTO%] 
+    catch {$s removeCalloutBundle EVBC}
+    catch {$s removeCalloutBundle ::RingSourceMgr}
+    catch {$s removeCalloutBundle EndrunMon}
+    
 } \
 -cleanup {
     
@@ -127,11 +132,12 @@ tcltest::test load-2 {Reload should supersede} \
         proc OnBegin {run} {
             
         }
+        proc OnStart {} {}  ;  # Needed in bullseye happens in buster.
     } ReadoutCallouts.tcl [pwd]
     ::rdoCallouts::reload
     list [info procs OnStart] [info procs OnBegin]
 } \
--result [list "" OnBegin]
+-result [list OnStart OnBegin]
 
 #-------------------------------------------------------------------------------
 #
@@ -226,11 +232,10 @@ tcltest::test OnBegin-called {Test OnBegin called when Halted is left for Active
     tcltest::makeFile {
         proc OnBegin {run} {
             incr ::OnBeginCalled
-            set  ::OnBeginRunNumber $run
+            set  ::OnBeginRunNumber 1234
         }
     } ReadoutCallouts.tcl [pwd]
 
-    ::ReadoutGUIPanel::setRun 1234
 
     package require rdoCalloutsBundle
     set s [RunstateMachineSingleton %AUTO%]

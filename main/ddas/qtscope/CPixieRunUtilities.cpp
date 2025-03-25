@@ -32,8 +32,18 @@ CPixieRunUtilities::CPixieRunUtilities() :
 	16, std::vector<unsigned int>(MAX_HISTOGRAM_LENGTH, 0)
 	),
     m_runActive(false),
-    m_useGenerator(false)
+    m_useGenerator(false),
+    m_pGenerator(new CDataGenerator)
 {}
+
+/**
+ * @details
+ * Destroy the data generator object we're managing.
+ */
+CPixieRunUtilities::~CPixieRunUtilities()
+{
+    delete m_pGenerator;
+}
 
 /**
  * @todo Disable multiple modules from running in non-sync mode.
@@ -46,15 +56,14 @@ CPixieRunUtilities::BeginHistogramRun(int module)
     for (auto& v : m_genHistograms) {
 	std::fill(v.begin(), v.end(), 0);
     }
-
-    int retval;
+    
+    int retval;    
     try {
 	// Set the "infinite" run time of 99999 seconds:  
 	std::string paramName = "HOST_RT_PRESET";
 	retval = Pixie16WriteSglModPar(
 	    paramName.c_str(), Decimal2IEEEFloating(99999), module
-	    );
-  
+	    );  
 	if (retval < 0) {
 	    std::stringstream msg;
 	    msg << "Run time not properly set."
@@ -66,8 +75,7 @@ CPixieRunUtilities::BeginHistogramRun(int module)
 	// If the run time is properly set, begin a histogram run for this
 	// module turn off synchronization (0):  
 	paramName = "SYNCH_WAIT";
-	retval = Pixie16WriteSglModPar(paramName.c_str(), 0, module);
-  
+	retval = Pixie16WriteSglModPar(paramName.c_str(), 0, module);  
 	if (retval < 0) {
 	    std::stringstream msg;
 	    msg << "CPixieRunUtilities::BeginHistogramRun() failed to write "
@@ -153,7 +161,7 @@ CPixieRunUtilities::EndHistogramRun(int module)
 	std::cout << "Ended histogram run in Mod. " << module << std::endl;
 	m_runActive = false;
     }
-  
+    
     return 0;
 }
 
@@ -161,17 +169,18 @@ CPixieRunUtilities::EndHistogramRun(int module)
  * @details
  * Histogram data comes either from the module itself if running in online
  * mode or from the data generator.
+ * @note The data generator is primarily used to debug plot elements, curve 
+ * fitting and display options. It will ignore any histogram settings (EMin, 
+ * BinFactor) from the DSP.
  */
 int
 CPixieRunUtilities::ReadHistogram(int module, int channel)
 {
     // Allocate data structure for histogram and grab it or use the generator:
-  
     int retval;
     try {
 	if (m_useGenerator) {
-	    CDataGenerator gen;
-	    retval = gen.GetHistogramData(
+	    retval = m_pGenerator->GetHistogramData(
 		m_genHistograms[channel].data(), MAX_HISTOGRAM_LENGTH
 		);
 	    m_histogram = m_genHistograms[channel];
@@ -360,8 +369,8 @@ CPixieRunUtilities::UpdateBaselineHistograms(int module)
 	// Allocate data structure for baselines and grab them or use the
 	// data generator to get data for testing:    
 	if (m_useGenerator) {
-	    CDataGenerator gen;
-	    retval = gen.GetBaselineData(baselines.data(), MAX_NUM_BASELINES);
+	    retval = m_pGenerator->GetBaselineData(baselines.data(),
+						   MAX_NUM_BASELINES);
      
 	} else {
 	    retval = Pixie16ReadSglChanBaselines(

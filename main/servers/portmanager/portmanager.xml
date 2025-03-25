@@ -282,9 +282,11 @@ tclsh DaqPortManager <replaceable>options...</replaceable>
   <refsect1>
     <title>SEE ALSO</title>
     <para>
-        <link linkend="manpage.CPortManager">CPortManager(3daq)</link>
-        <link linkend="manpage.CPortManagerException">CPortManagerException(3daq)</link>
-        <link linkend="manpage.portAllocator">portAllocator(3tcl)</link>
+        <itemizedlist>
+            <listitem><para>CPortManager(3daq)</para></listitem>
+            <listitem><para>CPortManagerException(3daq)</para></listitem>
+            <listitem><para>portAllocator(3tcl)</para></listitem>
+        </itemizedlist>
     </para>
   </refsect1>
 </refentry>
@@ -655,9 +657,11 @@ catch (CPortManagerException&amp; error) {
             SEE ALSO
          </title>
 	 <para>
-            <link linkend="manpage.portAllocator">portAllocator(3tcl)</link>,
-            <link linkend="manpage.CPortManagerException">CPortManagerException(3daq)</link>,
-            <link linkend="manpage.DaqPortManager">DaqPortManager(1tcl)</link>
+        <itemizedlist>
+            <listitem><para>portAllocator(3tcl)</para></listitem>
+            <listitem><para>CPortManagerException(3daq)</para></listitem>
+            <listitem><para>DaqPortManager(1tcl)</para></listitem>
+        </itemizedlist>
 	 </para>
       </refsect1>
    </refentry>
@@ -910,10 +914,12 @@ catch (CPortManagerException&amp; e) {
             SEE ALSO
          </title>
 	 <para>
-            <link linkend="manpage.portAllocator">portAllocator(3tcl)</link>,
-            <link linkend="manpage.CPortManager">CPortManager(3daq)</link>,
-            <link linkend="manpage.DaqPortManager">DaqPortManager(1tcl)</link>
-            <link linkend="manpage.cexception">CException(3tcl)</link>
+        <itemizedlist>
+            <listitem><para>portAllocator(3tcl)</para></listitem>
+            <listitem><para>CPortManager(3daq)</para></listitem>
+            <listitem><para>DaqPortManager(1tcl)</para></listitem>
+            <listitem><para>CException(3tcl)</para></listitem>
+        </itemizedlist>
 	 </para>
       </refsect1>
    </refentry>

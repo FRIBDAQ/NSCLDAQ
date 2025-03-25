@@ -1,33 +1,44 @@
-import numpy as np
-from scipy.optimize import curve_fit
 import logging
+import warnings
+
+import numpy as np
+from scipy.optimize import minimize
+
+np.seterr(all='ignore')
 
 class FitFunction:
     """Base class for fitting functions used by QtScope.
 
     Attributes
     ----------
-    pinit : list
+    p_init : list
         Initial parameter value guesses.
     form : str
         Function formula string.
+    count_data : bool
+        True if data represent counts (optional, default=True).
     logger : Logger
         QtScope Logger instance.
 
     Methods
     -------
-    feval(x, *p)
+    model(x, *p)
         Returns an array of function values evaluated over the range x.
-    set_initial_parameters(x, y, pinit)
-        Set initial parameter values. Guess from the data if none are provided.
-    start(x, y, pinit, ax, result)
+    set_initial_parameters(x, y, params)
+        Sets initial parameter values. Derived classes can override this 
+        function to e.g., make educated guesses at parameters based on data.
+    neg_log_likelihood_p(params, x, y)
+        Poisson negative log likelihood. Used if count_data == True.
+    neg_log_likelihood_g(params, x, y)
+        Gaussian negative log likelihood. Used if count_data == False.
+    start(x, y, params, axis)
         Implementation of the fitting algorithm.
-    """
 
-    def __init__(self, params, form):
+    """
+    def __init__(self, params, form, count_data=True):
         """Class constructor.
 
-        Set initial fit parameters.
+        Set initial fit parameters, functional form, etc.
 
         Parameters
         ----------
@@ -35,13 +46,16 @@ class FitFunction:
             Initial parameters to set.
         form : str
             Function formula to display on the fitting panel.
+        count_data : bool
+            True if the data represents counts.
         """
-        self.logger = logging.getLogger("qtscope_logger")
-        self.pinit = params
+        self.p_init = params # Initial guesses
         self.form = form
+        self.count_data = count_data
+        self.logger = logging.getLogger("qtscope_logger")
 
-    def feval(self, x, *p):
-        """Evaluate the fit function over x.
+    def model(self, x, params):
+        """The fit function over a range of x values.
 
         This function is not implemented in the base class and must be 
         implemented by each fitting function.
@@ -50,13 +64,13 @@ class FitFunction:
         ----------
         x : ndarray
             Array of x values in the fitting range.
-        p : float
+        params : ndarray
             Parameters used to evaluate the function over x.
 
         Raises
         ------
         NotImplementedError
-            If feval from the base class is called. This method must be 
+            If model from the base class is called. This method must be 
             implemented in derived classes.
         """
         raise NotImplementedError()
@@ -76,8 +90,65 @@ class FitFunction:
         params : array-like
             Array of fit parameters.
         """
-        self.pinit = params[0:len(self.pinit)]
-                
+        self.p_init = params[0:len(self.p_init)]
+
+    def neg_log_likelihood_p(self, params, x, y):
+        """Poisson negative log-likelihood. 
+
+        Fit parameters must be first argument and are initially set by x0 in 
+        the `minimize` call. x, y are passed as additional args.
+
+        Parameters
+        ----------
+        params : array-like
+            Array of fit parameters.
+        x : ndarray
+            x data values.
+        y : ndarray 
+            y data values.
+        """
+        # Make sure the model is implemented:
+        try:
+            pred = self.model(x, params)
+        except NotImplementedError:
+            print("ERROR: Model function is not defined!")
+            return np.inf
+        else:
+            # Replace small values with some small number to ensure log(pred)
+            # is valid. I chose to modify the likelihood this way over
+            # returning, e.g, np.inf if any pred <= 0 because it prevents huge
+            # jumps in the objective function value when the parameters are
+            # close to values which give pred <= 0. Also the return value is
+            # always defined.
+            pred = np.maximum(pred, 1e-10)
+            return -np.sum(y*np.log(pred) - pred)
+
+    def neg_log_likelihood_g(self, params, x, y):
+        """Gaussian negative log-likelihood. 
+
+        Fit parameters must be first argument and are initially set by x0 in 
+        the `minimize` call. x, y are passed as additional args.
+
+        Parameters
+        ----------
+        params : array-like
+            Array of fit parameters.
+        x : ndarray
+            x data values.
+        y : ndarray 
+            y data values.
+        """
+        # Make sure the model is implemented:
+        try:
+            pred = self.model(x, params)
+        except NotImplementedError:
+            print("ERROR: Model function is not defined!")
+            return np.inf
+        else:
+            # For Gaussian errors, the MLE reduces to OLS:
+            res = y - pred
+            return np.sum(np.square(res))
+
     def start(self, x, y, params, axis):
         """Implementation of the fitting algorithm.
 
@@ -94,16 +165,26 @@ class FitFunction:
         
         Returns
         -------
-        popt, pcov : array, 2-D array
-            Optimized parameters and parameter covariance matrix from the fit.
+        result : OptimizeResult
+            Contains fit results and other info. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html.
         """
+        y = np.float64(y) # Make sure y data is floating point
         self.set_initial_parameters(x, y, params)
-        self.logger.debug(f"Parameter initial guesses: {self.pinit}")
-        popt, pcov = curve_fit(
-            self.feval, x, y, p0=self.pinit, sigma=np.sqrt(y),
-            absolute_sigma=True, maxfev=5000
-        )
-        self.logger.debug(f"Fit parameters: {popt}")
-        self.logger.debug(f"Fit covariance matrix:\n{pcov}")
-        
-        return popt, pcov
+        # If the data represents counts, use Poisson MLE, otherwise Gaussian:
+        if self.count_data:
+            result = minimize(self.neg_log_likelihood_p,
+                          x0=self.p_init,
+                              args=(x,y),
+                              method='bfgs',
+                              jac='3-point')
+        else:
+            result = minimize(self.neg_log_likelihood_g,
+                              x0=self.p_init,
+                              args=(x,y),
+                              method='bfgs',
+                              jac='3-point')
+        ## Most often an issue with final precision on error estimates:
+        #if not result.success:
+        #    print(f"WARNING: fit did not terminate successfully:\n{result}")
+            
+        return result

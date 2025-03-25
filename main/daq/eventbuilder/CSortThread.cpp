@@ -244,24 +244,12 @@ CSortThread::clearBufferQueue()
 void
 CSortThread::releaseFragments(Fragments& frags)
 {
-
-    delete &frags;
-}
-/**
- * releaseFragmentList
- *    Frees all the fragments in a fragments list and the list iself
- *
- *  @param frags -fragment list reference.
- */
-void
-CSortThread::releaseFragmentList(FragmentList& frags)
-{
-    while(!frags.empty()) {
-        delete frags.front().second;
-        frags.pop_front();
+    //Note the elements of the fragments dequeue are, themselves new'd into being.
+    // and must be deleted.  See Issue #231
+    // The elements of each dequeue are pointers that are passed on to the output thread
+    // and deleted there to avoid copying.
+    for (auto p : frags) {
+      delete p;
     }
     delete &frags;
 }
-
-
-

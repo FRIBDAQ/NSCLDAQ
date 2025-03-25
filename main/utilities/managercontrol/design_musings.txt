@@ -1,0 +1,37 @@
+The Readout GUI configuration parameter requirements are very different 
+from ReadoutShell.
+
+If we assume the user has created is readout programs using the
+wizard then the sequences have all of the stuff needed to make those
+programs transition, but, it's nice to be able to monitor
+their liveness.  So we need:
+
+1.  Connection parameters (where is the manager runniing and under which user name
+    optionally, services for the manager REST server and the output monitor.
+
+2.  List of readout programs.
+
+
+Let's postulate the existence of a TOML configuration file in the wd of the
+control panel (TOML Since it supports arrays)
+
+What it might have:
+
+title = "Configuration file for manager control panel GUI"
+
+[connection]
+host = "localhost"    #  Manager is in the same system
+rest_service="DAQManager"                    # ReST service
+monitor_service "DAQManager-outputMonitor"   # Output monitor service.
+user = "ron"                                 # user running the manager.
+
+[programs]
+readouts=["pgm1", "pgm2"...]                 # Readout programs to monitor.
+
+
+We can have a class that uses the tomllib to load the configuration file which we'll call
+panel.config.
+
+We'll have methods to fetch/modify and re-write the file.
+
+Having all of this, we can connect to the server and set up monitoring.

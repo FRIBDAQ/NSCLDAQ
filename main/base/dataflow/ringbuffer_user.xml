@@ -231,7 +231,7 @@
       Finally, the data transferred through the ring buffer is just
       a stream of bytes, in practice and in the NSCL Ring buffer Data
       Acquisition system, we send messages that have structure. The messages
-      have a structure defined later in <xref linkend="chapter.ringformat"/>.
+      have a structure defined later in <link linkend="chapter.ringformat" />.
     </para>
   </section>
   <section>

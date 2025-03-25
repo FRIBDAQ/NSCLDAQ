@@ -8149,3 +8149,569 @@ singularity instance start --bind /usr/opt:/non-container \
     </refsect1>
 </refentry>
 <!-- /manpage -->
+<!-- manpage 3python -->
+
+<refentry>
+   <refmeta>
+      <refentrytitle>Container</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>Container</refname>
+      <refpurpose>Provide access to the container part of managed experiment configuration databases</refpurpose>
+   </refnamediv>
+
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.mg_database import Container
+
+class Container:
+   def __init__(self, handle)...
+   def exists(self, name)...
+   def add(self, name, image, initscript, mountpoints)...
+   def remove(self, name)...
+   def replace(self, oldname, newname, image, initscript, mountpoints)...
+   def list(self)...
+   def id(self, name)...
+
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This provides python scripts with access to the Container part of the managed
+         experiment environment experiment configuration datababase.
+         Note that docstrings describe this class as well so you can recover
+         much of the information in this manpage from the Python help system.
+      </para>
+      <para>
+         This class was tested using Python3.  No warranty is made to its suitability for use with Python 2
+         scripts.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>METHODS</title>
+      <variablelist>
+         <varlistentry>
+            <term>
+               <code>
+def __init__(self, handle)
+               </code>
+            </term>
+            <listitem><para>
+             Class constructor.  <parameter>handle</parameter> should be
+             an sqlite3 connection object that is connected to the configuration database file.
+             See e.g. <ulink url='https://docs.python.org/3/library/sqlite3.html'>https://docs.python.org/3/library/sqlite3.html</ulink>
+             for information about how to construct an sqlite3 database connection object.
+             </para>
+             <para>
+               All operations performed by this class will be performed on the database connected to 
+               <parameter>handle</parameter>
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term>
+               <code>
+def id(self, name)
+               </code>
+            </term>
+            <listitem><para>
+               If there is a container named <parameter>name</parameter> the primary key for its
+               root table entry (<literal>container</literal> table) is returned.  If not, 
+               <literal>None</literal> is returned. 
+            </para>
+            <para>
+               In general user written code will not need this,  Other classes in the
+               <literal>nscldaq.mg_database</literal> module will use this to establish foreign keys
+               describing the containers used by database objects <emphasis>they</emphasis> create.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term>
+               <code>
+def exists(self, name)      
+               </code>
+            </term>
+            <listitem><para>
+               Returns <literal>True</literal> if there is a container named <parameter>name</parameter>
+               <literal>False</literal> otherwise.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term>
+               <code>
+def add(self, name, image, initsript, mountpoints)      
+               </code>
+            </term>
+            <listitem><para>
+               Creates a new container definition in the database.
+               <parameter>name</parameter> is the unique name by which that container will be
+               referred to by other <classname>Container</classname> methods.  This need not be the
+               <parameter>image</parameter> which is the container image file.
+               If a container by this name already exists, a <classname>ValueError</classname> is raised.
+            </para><para>
+               <parameter>initscript</parameter> specifies a file system path (in the context of
+               the wizard's execution) of a script that will be run before starting any program
+               in the container).  One use of that script can be to establish a version of FRIBDAQ
+               by running the <filename>daqconfig.bash</filename> of that version.
+               The contents of the script itself are sucked into the database.  Therefore, if you
+               modify the script you must re-create the container.  
+            </para><para>
+               <parameter>mountpoints</parameter> is an iterable object of binding specifications.
+               Each element of that iterable is a two or one element array.
+               If the element is a single elment array, that element specifies a host file system path
+               that is made available within the container at the same filesystem path as the host.
+               Note that bindings overlay and supersede filesystem paths within the container image.
+               If an element of <parameter>mountpoints</parameter> is a two element array, the first
+               element is a host file system path and the second one specifies where, in the active
+               container the contents of that path are bound.
+            </para><para>
+               Note that not only directories can be bound.  Even single files can be bound into the
+               running container.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term>
+               <code>
+def remove(self, name)
+               </code>
+            </term>
+            <listitem><para>
+               Removes the container named <parameter>name</parameter> from the set of 
+               container definitions in that database file.  If there is no such container,
+               this method raises a <classname>ValueError</classname>
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term>
+               <code>
+               def replace(self, oldname, newname, image, initscript, mountpoints)
+               </code>
+            </term>
+            <listitem><para>
+               This is identical to 
+            </para>
+            <programlisting>
+            container.remove(oldname)
+            container.add(newname, image, initscript, mountpoints)
+            </programlisting>
+            </listitem>
+            
+         </varlistentry>
+         <varlistentry>
+            <term>
+               <code>
+def list(self)
+               </code>
+            </term>
+            <listitem><para>
+               Returns an iterable that describes all of the container definitions.
+               Each element of the iterable is a dict. With the keys:
+               <literal>name</literal>, <literal>image</literal>, <literal>init_script</literal>
+               and <literal>bindings</literal>.
+               With the exception of <literal>init_script</literal>  these are the 
+               parameter needed to create the container.  <literal>init_script</literal> however is
+               the <emphasis>contents</emphasis> of the initialization script, not its path.
+            </para></listitem>
+         </varlistentry>
+         
+      </variablelist>
+   </refsect1>
+</refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>EventLog</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>EventLog</refname>
+      <refpurpose>Python3 API for the Eventlogger part of the managed expeiment configuration file database.</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.mg_database import EventLog
+
+class EventLog:
+   def __init__(self, handle)...
+   def exists(self, destination)...
+   def add(self, root, source_uri, destination, container, host, options)...
+   def info(self, destination)...
+   def list(self)...
+   def delete(self, id)...
+   def enable(self, id)...
+   def disable(self, id)...
+   def enable_all(self)...
+   def disable_all(self)...
+   def start_recording(self)...
+   def stop_recording(self)...
+   def is_recording(self)...
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This class provides access to the tables in the FRIB managed experiment system that
+         describe how to log data to disk.  The system recognizes two types of event loggers that,
+         for lack of better terminology are called <firstterm>full</firstterm> and 
+         <firstterm>partial</firstterm>.   These determin how the destination fo the logger
+         is used.  It may be worth reviewing the file system structure used by the event logger
+         for the <command>ReadoutShell</command>
+      </para>
+      <para>
+      A partial logger simply writes event files into the destination directory.  This is analagous
+      to how the multilogger for <command>ReadoutShell</command> operates.
+      A full logger maintains the directory struture the main event logger for
+      <command>ReadoutShell</command> maintains, rooted in its destination directory.
+      </para>
+      <para>
+         Event loggers are identified by their destination, which must be unqique, and an identifying
+         integer, which is the primary key of the logger in the root table that descsribes event loggers.
+      </para>
+      <para>
+         Event loggers can be <firstterm>enabled</firstterm> or <firstterm>disabled</firstterm>.
+         Disabled event loggers don't  record data.  Additionally, there is a global 
+         <literal>recording </literal> flag which, when <literal>True</literal> means that when a run
+         begins, event loggers that are enabled are started to record data.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>METHODS</title>
+      <variablelist>
+         <varlistentry>
+            <term><code>
+def __init__(self, handle)
+            </code></term>
+            <listitem><para>
+               Called when constructing an <classname>EventLog</classname> object.  The
+               <parameter>handle</parameter> parameter is the sqlite3 database 
+               connection object that is
+               connecte4d to the configuration database file being manipulated.
+               See
+               <ulink url='https://docs.python.org/3/library/sqlite3.html'>
+               https://docs.python.org/3/library/sqlite3.html</ulink> 
+               for information about how to construct a connection object.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def exists(self, destination)
+            </code></term>
+            <listitem><para>
+               Returns <literal>True</literal> if an event logger is already defined
+               that writes to the specific <parameter>destination</parameter> directory.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def add(self, root, source_uri, destination, container, host, options)
+            </code></term>
+            <listitem><para>
+               Attempts to add a new event logger to the configuration database.
+               The <parameter>root</parameter> specifies the top level directory of the
+               version of NSCLDAQ whose event logger will be used to log data.
+               <parameter>source_uri</parameter> specifies the URI of the ring buffer
+               from which cata will be logged.  <parameter>destination</parameter>
+               is the directory into which data wil be logged.  There must not
+               be a logger defined with the same destination or a <classname>ValueError</classname>
+               will be raised.  The destination must be a valid directory path in the 
+               container.
+            </para>
+            <para>
+               <parameter>container</parameter> specifies the name of the container in which the
+               logger will be run and <parameter>host</parameter> specifies the host in which the
+               logger will run.
+            </para>
+            <para>
+               <parameter>options</parameter> is a dict that specifies additional options. The keys
+               that are recognized (unrecognized keys are ignored) are:
+               <literal>partial</literal> whose value must be a boolean.  <literal>True</literal>
+               means the logger will be partial if omitted or <literal>False</literal> the logger
+               will be a full logger.  <literal>critical</literal> whose value must be a boolean.
+               If <literal>True</literal> then an unexpected event log exit will stop the experiment
+               making it necessary to reboot the experiment after the problem has been fixed.  If 
+               <literal>False</literal>  the experiment continues to run after an unexpected eventlog
+               exit.  The default, if not supplied is <literal>True</literal>.
+               <literal>enabled</literal> if supplied must also take a boolean value.  IF this
+               value is true, then the event logger is enabled to record data the next time event data
+               would be logged. This is <literal>True</literal> by default.
+            </para>
+            <para>
+               On success, the id of the logger is returned.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def info(self, destination)
+            </code></term>
+            <listitem><para>
+               Returns information about the logger which is defined with the
+               <parameter>destination</parameter>.  The information is returned as a dict
+               with the following keys:
+            </para>
+            <para>
+               The keys in the dict are:
+               <literal>id</literal> is the id of the logger.  This is the value returned from 
+               the <methodname>add</methodname> method.
+               <literal>root</literal> is the root directory for the version of NSCLDAQ whose 
+               <command>eventlog</command> program is run to log data.
+               <literal>ring</literal> is the URI of the ringbuffer whose data are analyzed.
+               <literal>host</literal> is the name of the host in which the logger will run.
+               <literal>partial</literal> is True if this is a partial logger.
+               <literal>destination</literal> is the destination of the logger.
+               <literal>critical</literal>  True if the logger is a critical logger.
+               <literal>container</literal> Is the container in which the <command>eventlog</command>
+               is run.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def list(self)            
+            </code></term>
+            <listitem><para>
+               Returns a list of dicts, one for each defined loggers.  The contents of each dict
+               is identical to that described for <methodname>info</methodname>.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def delete(self, id)
+            </code></term>
+            <listitem><para>
+               Deletes the event logger with <parameter>id</parameter> as the id returned from
+               e.g. <methodname>add</methodname> or
+               <methodname>info</methodname>. If there is no corresponding logger, 
+               <classname>ValueError</classname> is raised.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def enable(self, id):
+            </code></term>
+            <listitem><para>
+               Enables the logger with the id <parameter>id</parameter>
+               This means that the next time a recorded run is started, this logger will
+               be started.  Note that <classname>ValueError</classname> is raised if there is
+               no matching logger.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+ def disable(self, id)           
+            </code></term>
+            <listitem><para>
+               Disables the logger identified by <parameter>id</parameter>
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def start_recording(self)
+            </code></term>
+            <listitem><para>
+               Sets the global recoring flag to <literal>True</literal>.
+               The next begin run, will start all enabled event loggers to log event data
+               to their destinations.  Eventloggers are started with the <option>--oneshot</option>
+               so they will log a single run and exit.
+            </para></listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def stop_recording(self)
+            </code></term>
+            <listitem><para>
+               Sets the global recording flag to <literal>False</literal>
+               The next begin run will not start any event loggers.
+            </para></listitem>
+         </varlistentry>
+
+         <varlistentry>
+            <term><code>
+def is_recording(self)
+            </code></term>
+            <listitem><para>
+               Returns the state of the global recording flag.
+            </para></listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+
+<refentry>
+   <refmeta>
+      <refentrytitle>Program</refentrytitle>
+      <manvolnum>3Pytyhon</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>Program</refname>
+      <refpurpose>Provide access to the Program part of FRIB managed experiment definition database</refpurpose>
+   </refnamediv>
+
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.mg_database import Program
+
+def __init__(self, db)...
+def exists(self, name)...
+def add(self, name, path, host, container, wd, options)...
+def delete(self, name)...
+def list(self)...
+def types(self)...
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         Programs in the FRIB managed experiment environment represent executable code or scripts
+         that can be run as part of a sequence that is attached to a data acquisition system state
+         transition.  For example,  When the system boots up initially, sequences associated With
+         that state transition are run.  Those  sequences contain lists of programs to activate.
+      </para>
+      <para>
+         Each program has a unique name and several other properties, such as the 
+         executable/script to run, the host and container in which to run it and the
+         environment in effect when the program runs.
+      </para>
+      <para>
+         Programs also have a property that expresses how they are expected to run.  This is called the
+         program's <firstterm>type</firstterm>.  Some programs, like a readout are considered
+         <firstterm>Critical</firstterm>, which means that if they exit, the system is brought down and
+         will need to be rebooted to start again.  Others are <firstterm>Persistent</firstterm>
+         meaning they are intended to live frome when they were started until the experiment is 
+         shutdown.  Persistent programs are not critical so, if they exit, this fact is noted but
+         the experiment is allowed to continue to run.  Finally, there are <firstterm>Transitory</firstterm>
+         programs.  These are expected to run for a finite duration and then exit.  Typically they perform
+         a single operation and exit.  For example, Readout's run ReST servers.  When a transition is performed
+         to the BEGIN state, a transitory program will run to tell each Readout to start data taking.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>METHODS</title>
+      <variablelist>
+         <varlistentry>
+            <term><code>
+def init(self, db)
+            </code></term>
+            <listitem>
+               <para>
+               Called when a <classname>Program</classname> is constructed.  
+               The <parameter>db</parameter> is an sqlite3 connection object that
+               is connected to the FRIB managed experiment configuration/database file.
+               See 
+               <ulink url='https://docs.python.org/3/library/sqlite3.html'>
+               https://docs.python.org/3/library/sqlite3.html</ulink> 
+               for information about how to construct a connection object.
+               </para>
+            </listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def exists(self, name)
+            </code></term>
+            <listitem>
+               <para>
+               Returns <literal>True</literal> if the program named <parameter>name</parameter>
+               has been defined.
+               </para>
+            </listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def add(self, name, path, host, container, wd, options)
+            </code></term>
+            <listitem>
+               <para>
+               Attempts to add a new program  definition to the configuration.  
+               <parameter>name</parameter> is  the name associated with the program.
+               <parameter>name</parameter> must be unique or else 
+               a <classname>ValueError</classname> will be raised.
+               </para>
+               <para>
+                  <parameter>path</parameter> is the file system path to an executable
+                  file that will be run when the program is run.  This path must exist
+                  within the context of the container in which the program is specified to run.
+                  <parameter>host</parameter> is the host in which the program will run and
+                  <parameter>container</parameter> is the name of the container definition that
+                  specifies the container in which the program will be run.
+                  <parameter>wd</parameter> specifies the working directory in which the program
+                  is started. Note this, as well is interpreted in the context of the container.
+               </para>
+               <para>
+                  <parameter>options</parameter> specifies a set additional program options.  These
+                  options are not mandatory.  The options are specified as a dict.  The following
+                  keys are recognized (others are silently ignored):
+                  <literal>type</literal> The program type.  This can be one of 
+                  <literal>Transitory</literal>, <literal>Critical</literal> or <literal>Persistent</literal>.
+                  <literal>initscript</literal>  specifies the path (in the context of the running program) to
+                  a script that will be run prior to execution of the program.   The script will be executed in the
+                  context of the host and container in which the program is run.  The contents of the script will
+                  be pulled into the database.
+                  <literal>options</literal> is an iterable of the program options passed to the program on startup.
+                  The elements of this list are either pairs or single values.  Pairs are options and their values.  singal
+                  values are just options.  For example <literal>[('--ring', 'fox'), (--debug,)]</literal>.
+                  <literal>parameters</literal> are an iterable.  Each item of the iterable is a parameter passed to the
+                  program as it starts.  For example <literal>['/user/fox/configuration.txt', 'output-file']</literal>
+                  <literal>environment</literal> specifies additional environment variables that are defined prior to running
+                  the program.  THe format of this value is the same as for <literal>options</literal> for 
+                  example: <literal>[('DAQROOT', '12.1-003'), ('ENABLE_DEBUG', )]</literal>
+               </para>
+            </listitem>
+         </varlistentry>
+            <varlistentry>
+            <term><code>
+def delete(self, name)
+            </code></term>
+            <listitem>
+               <para>
+               Attempts to delete the program with the name <parameter>name</parameter>. If there is no
+               program by that name, <classname>ValueError</classname> is raised.
+               </para>
+            </listitem>
+         </varlistentry>
+         <varlistentry>
+            <term><code>
+def list(self)
+            </code></term>
+            <listitem>
+               <para>
+               Lists all programs and their properties.  The return value is a list of dicts.
+               Each dict describes one program and has the following keys:
+               </para>
+               <para>
+                  <literal>id</literal>  the primary key of the root table entry describing the protgram.
+                  <literal>name</literal> the name given to the program.
+                  <literal>path</literal> path to the executable or script file that will be run.  This 
+                  shouild be interpreted in the context of the container in which the program is started.
+                  <literal>host</literal>  the host in which the program is run.
+                  <literal>wd</literal> the working directory in which the program is started.  This should be
+                  interpreted in the context of the container in which the program will be started.
+                  <literal>container</literal>The name of the container in which the program will be run.  This
+                  is the name of a container definition in the configuration database, not a container image name.
+               </para>
+               <para>
+               In addition, the <literal>more</literal> key contains, as a value, most of the options:
+               <literal>type</literal> is a string identifying the program type e.g. <literal>Transitory</literal>.
+               <literal>options</literal> is a list of prorgram options.
+               <literal>parameters</literal> is a list of program  parameters.
+               <literal>environment</literal> is a list of environment definitions.
+               Finally, <literal>initscript_contents</literal> are the contents of the initialization
+               script, or an empty string if one was not specified when the program was defined.
+               </para>
+            </listitem>
+         </varlistentry>
+
+
+
+         <varlistentry>
+            <term><code>
+def types(self)
+            </code></term>
+            <listitem>
+               <para>
+               Returns a list of the legal program types.  At the time this is being written, th is is
+               <literal>['Critical', 'Persistent', 'Transitory']</literal>
+               </para>
+            </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+<!-- /manpage -->

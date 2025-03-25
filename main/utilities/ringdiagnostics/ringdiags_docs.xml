@@ -1,0 +1,321 @@
+<!-- manpage 1daq -->
+
+<refentry id='daq1.ringdiagnostics'>
+
+    <refmeta>
+        <refentrytitle id='daq1.ringdiagnostics.title'>ringdiagnostics</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>ringdiagnostics</refname>
+        <refpurpose> Diagnose ring data flow bottlenecks</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+    <cmdsynopsis>
+    <command>
+$DAQBIN/ringdiagnostics <optional><option>options...</option></optional>
+    </command>
+    </cmdsynopsis>
+    </refsynopsisdiv>
+
+
+    <refsect1><title>DESCRIPTION</title>
+        <para>
+            Provides a graphical description of the flow of data between
+            ringbuffers in a multi computer system.
+        </para>
+    </refsect1>
+    <refsect1><title>OPTIONS</title>
+    <variablelist>
+        <varlistentry>
+            <term><option>--help</option></term>
+            <listitem><para>
+                Prints a list of options and their descriptions to stdout.
+                Then exits without doing anything.
+            </para></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>--update</option><replaceable> seconds</replaceable></term>
+            <listitem><para>
+                Specifies the update rate in seconds.  THis defaults to 2 if not
+                specified.
+            </para></listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><option>--alarm_percentage</option><replaceable> pct</replaceable></term>
+            <listitem><para>
+              Specifies the backlog level, as a percentage of ring size, that constitutes
+              a bottleneck.  This defaults to <literal>90</literal> if not specified.
+            </para></listitem>
+        </varlistentry>
+    </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>Environment requirements in a containr</title>
+        <para>
+            If this is run in a container, its use of the 
+            <literal>nscldaq.nscldaqutils.ssh</literal> method imposes some
+            environment variable definitions:
+        </para>
+        <variablelist>
+            <varlistentry>
+                <term><literal>APPTAINER_CONTAINER</literal></term>
+                <listitem><para>
+                    Must be the full path to the container image.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><literal>SINGULARITY_CONTAINER</literal></term>
+                <listitem><para>
+                    In older singularity systems, this must have the same value
+                    as <literal>APPTAINER_CONTAINER</literal>. In Apptainer systems,
+                    this is not needed.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><literal>CONTAINER_BINDINGS</literal></term>
+                <listitem><para>
+                    Must be a string that can be passed to apptainer/singularity's 
+                    <option>--bind</option> option, that specifies the container bindings
+                    you care about, for example at the FRIB for the bookworm container,
+                    you  might have the value
+                    <literal>/usr/opt/opt-bookworm:/usr/opt</literal>.
+                </para>
+                </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+
+<!-- /manpage -->
+<!-- manpage 3python -->
+<refentry id='python3.pidtocommand'>
+    <refmeta>
+        <refentrytitle id='python3.pidtocommand.title'>pidtocommand</refentrytitle>
+        <manvolnum>3python</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>pidtocommand</refname>
+        <refpurpose>Convert a PID into its command string</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <programlisting>
+from nscldaq.pidtocommand import pidToCommand
+
+print('Init is run as:', ' '.join(nscldaq.pidToCommand(1)))
+
+        </programlisting>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            Given a valid process id (integer), returns the command line string
+            that started that process. The command line is returned as an
+            indexable  iterable
+            where each item is is a consecutive command word.  If the pid is invalid,
+            a <literal>KeyError</literal> is raised.
+        </para>
+        <para>
+            To support getting process command lines from remote systems
+            (e.g. for the <command>ringdiagnostics</command>), this is also
+            installed in $DAQBIN and, when invoked as a command, takes a
+            single parameter, the process id, and outputs that PID's command line.
+            The command line is output as a string. 
+        </para>
+    </refsect1>
+
+</refentry>
+<refentry id='python3.nscldaqutils'>
+    <refmeta>
+        <refentrytitle id='python3.nscldaqqutils.title'>nscldaqutils</refentrytitle>
+        <manvolnum>3python</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>nscldaqutils</refname>
+        <refpurpose>Provide a set of utilities for NSCLDAQ</refpurpose>
+    </refnamediv>        
+
+    <refsynopsisdiv>
+        <programlisting>
+from nscldaq.nscldaqutils import ssh, getSshOutput, getSshError
+
+result = ssh(ahost, acommand)
+print(f'Output from {acommand}@{ahost} ', getSshOutput(result))
+print(f'Error from {acommand}@{ahost}', getSshError(result))
+
+from nscldaq.nscldaqutiles import RingMaster
+import pprint
+
+rm = RingMaster(ahost)
+print("Ring usage from ", rm.host())
+pprint.pp(rm.list_rings())
+
+        </programlisting>
+    </refsynopsisdiv>
+
+    <refsect1><title>DESCRIPTION</title>
+        <para>
+            Some two useful sets of utilities are provided:
+            <orderedlist>
+                <listitem><para>
+                    The ability to execute commands in a remote host via
+                    ssh.
+                </para></listitem>
+                <listitem><para>
+                    The ablity to obtain information about ringbuffer usage in
+                    a local or remote host.
+                </para></listitem>
+            </orderedlist>
+        </para>
+        <refsect2><title>ssH, getSshOuptut, getSshError</title>
+            <para>
+                The ssh method takes two parameters, a hostname and a command
+                string.  THe method attempts to execute the command in the
+                (remote) host and caputures both the stderr and stdtout from
+                that process.   
+            </para>
+            <para>
+                The software tries to re-establish the environment in the local
+                system in the remote system.  This includes:
+                <itemizedlist>
+                    <listitem><para>
+                        If necessary, rebuilding the container environment in the
+                        remote system.
+                    </para></listitem>
+                    <listitem><para>
+                        Copying all environment variabes to the remote system
+                    </para></listitem>
+                    <listitem><para>
+                        Establishing the same curretn working directory.
+                    </para></listitem>
+                </itemizedlist>
+            </para>
+            <para>
+                This all assumes the remote system shares the host
+                file-system, or that the remote system at  least has a similar
+                directory tree structure.
+            </para>
+            <para>
+                To reconstruct the container environment two environment
+                variables must be defined:
+            </para>
+            <variablelist>
+                <varlistentry>
+                    <term><literal>APPTAINER_CONTAINER</literal></term>
+                    <listitem><para>
+                        Must point to the full path of the container image in the
+                        target system's host.  Note that for later versions of
+                        apptainer, this is established in the localhost automatically
+                        when the container is started.  This is not the case for 
+                        <command>singularity</command>
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><literal>CONTAINER_BINDINGS</literal></term>
+                    <listitem><para>
+                        Must contain a vaild value for the singularity/apptainer
+                        <option>--bind</option> option that will construct the
+                        desired bindings in the target.
+                    </para></listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                The command returns a two element list.  The first element is the complete 
+                standard output from the operation while the second the complete 
+                standard error.  Note that this inlcudes output and error from the process
+                of setablishing the environment in the remote system.
+                Therefore, a marker is inserted into both of these just prior to
+                executing the command.
+            </para>
+            <para>
+                Passing the result to <command>getSshOutput</command> will
+                analyze the stdout from the ssh operation and return a list
+                of the lines output by the desired command.  Similarly,
+                <command>getSshError</command>, when passed the result will
+                return the list of  stderr lines (if any) from the command.
+            </para>
+        </refsect2>
+        <refsect2><title>The RingMaster class</title>
+            <para>
+                Allows python programs to interact with the ringmaster in the 
+                local or remote systems to obtain ring usage information.
+                The constructor of the class takes a single parameter, The
+                name of the host whose ring master we want to communicate with.
+                The method <methodname>list_rings</methodname> then produces the ring usage
+                for that host.  The method <methodname>host</methodname>
+                returns the host on which the object was constructed.
+            </para>
+            <para>
+                The result of the <methodname>list_rings</methodname> method
+                returns a list.  Each list element describes a ringbuffer and its
+                usage as a dict.
+            </para>
+            <para>
+                The dicts have the following keys:
+            </para>
+            <variablelist>
+                <varlistentry>
+                    <term><literal>name</literal></term>
+                    <listitem><para>
+                        The name of a ringbuffer.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><literal>size</literal></term>
+                    <listitem><para>
+                        Size of the ringbuffer in kbytes.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><literal>free</literal></term>
+                    <listitem><para>
+                        Number of kbytes free in the ring buffer.  This
+                        is the size of the largest put that could be made into the ringbuffer
+                        without blocking.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><literal>maxconsumers</literal></term>
+                    <listitem><para>
+                        Maximum number of consumers the ringbuffer has been configured for.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><literal>producer_pid</literal></term>
+                    <listitem><para>
+                        Process id of the producer.   If this is <literal>-1</literal> 
+                        the ringbuffer does not have a producer.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><literal>maxget</literal></term>
+                    <listitem><para>
+                        This is the largest consumer backlog.  The name comes from the fact
+                        that this is the largest get that could be made by any consumer.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><literal>minget</literal></term>
+                    <listitem><para>
+                        The smallest consumer backlog.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><literal>consumers</literal></term>
+                    <listitem><para>
+                        The list (possibly empty) of consumers for the ringbuffer.
+                        Each list element is a two element dict that contains
+                        the keys <literal>consumer_pid</literal> and <literal>backlog</literal>
+                    </para></listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect2>
+    </refsect1>
+</refentry>
+<!-- /manpage -->

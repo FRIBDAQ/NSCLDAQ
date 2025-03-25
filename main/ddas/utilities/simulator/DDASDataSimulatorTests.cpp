@@ -28,6 +28,8 @@
 using namespace ddasfmt; // Format, unpackers, etc.
 using namespace DAQ::DDAS; // Simulation framework.
 
+/** @todo (ASC 11/6/24): Write tests for specifying only coarse TS. */
+
 /**
  * @brief Test suite for the DDAS data simulation library.
  * @details

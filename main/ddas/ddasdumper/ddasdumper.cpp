@@ -212,6 +212,11 @@ makeDataSource(::ufmt::RingItemFactoryBase* pFactory, const std::string& strUrl)
         std::string path = uri.getPath();
 	// Need it to last past block:
         std::ifstream& in(*(new std::ifstream(path.c_str())));
+	if (!in.good()) {
+	    std::string msg("Failed to create input stream from ");
+	    msg += path;
+	    throw std::invalid_argument(msg);	    
+	}
         return new StreamDataSource(pFactory, in);
     }
 }

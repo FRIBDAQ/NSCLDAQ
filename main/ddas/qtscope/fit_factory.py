@@ -68,7 +68,7 @@ class FitFactory:
         builder = self.builders.get(key)
         if not builder:
             raise ValueError(key)        
-        return builder(**(self.configs.get(key)))
+        return builder(**self.configs.get(key))
         
     def initialize(self, item):
         """Initialize the list of fitting functions.

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.61)
 
-AC_INIT(nscldaq, 12.1-001, [daqhelp@nscl.msu.edu], [], [https://github.com/FRIBDAQ/NSCLDAQ])
+AC_INIT(nscldaq, 12.1-007, [daqhelp@nscl.msu.edu], [], [https://github.com/FRIBDAQ/NSCLDAQ])
 
 AC_CONFIG_SRCDIR([/base/dataflow/CRingBuffer.h])
 AC_CONFIG_HEADER([config.h])
@@ -24,6 +24,14 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AX_CXX_COMPILE_STDCXX_11([noext])
+
+# Set parallel build for incorps:
+
+AC_ARG_WITH([incorp-build-cores],
+	AC_HELP_STRING([--with-incorp-build-cores=N], [Number of cores used to build incorporated packages (default=1)]),
+	[incorp_cores=$withval],
+	[incorp_cores=1])
+AC_MSG_NOTICE([Building incorporated packages with ${incorp_cores} cores])
 
 # Is git installed? Used to check incorp'd module versions to export to
 # VERSION in the install directory.
@@ -338,7 +346,8 @@ AC_CHECK_FILE([${srcdir}/libtcl/configure.ac],
 		[AC_MSG_NOTICE([Incorporating tcl++ for you])
 		${srcdir}/tcl++incorp])
 AC_MSG_NOTICE([Building and installing tcl++])
-(cd libtcl; ./configure --prefix=${prefix}; make clean install)
+
+(cd libtcl; ./configure --prefix=${prefix}; make clean ; make -j ${incorp_cores} all ; make install)
 result=$?
 AS_VAR_IF([result], [0], [], AC_MSG_ERROR([Failed to build and install tcl++ with result: ${result}]))
 LIBTCLPLUS_CFLAGS="-I${prefix}/include"
@@ -356,8 +365,9 @@ tcl_basename=tcl${TCL_VERSION}
 tcl_configdir="/usr/lib/$tcl_basename"
 tcl_incdir="/usr/include/$tcl_basename"
 
+
 (cd ${srcdir}/tclhttpd3.5.1; ./configure --prefix=${prefix}/share/tclhttpd --enable-gcc --with-tclinclude=$tcl_incdir --with-tcl=$tcl_configdir)
-(cd ${srcdir}/tclhttpd3.5.1; make all install)
+(cd ${srcdir}/tclhttpd3.5.1; make clean ; make -j ${incorp_cores} all ; make install)
 
 # Epics
 #
@@ -381,25 +391,69 @@ else
 	AM_CONDITIONAL(BUILD_EPICS_TOOLS, [false])
 fi
 
+
+#   Build the format libraries.
+#
+# UFMT_CPPFLAGS    - Unified format compiler flags
+# UFMT_LDFLAGS     - Unified format linker flags
+# DDASFMT_CPPFLAGS - DDAS format compiler flags
+# DDASFMT_LDFLAGS  - DDAS format linker flags
+# The unified format and DDAS format libraries have builds that
+# require cmake, so check for that:
+
+AC_CHECK_PROG([have_cmake], [cmake], [yes])
+AS_VAR_IF([have_cmake], [yes], [], AC_MSG_ERROR([cmake must be in the path to build DDAS support software]))
+
+# Check that the unified format library has been incorporated into
+# the source tree and configure/build it into $prefix/unifiedformat
+
+AC_CHECK_FILE([${srcdir}/unifiedformat/CMakeLists.txt],
+	[AC_MSG_NOTICE([Using previously incorporated unified format library at ${srcdir}/unifiedformat])
+	cp -r ${srcdir}/unifiedformat .],
+	[AC_MSG_NOTICE([Incorporating unified format for you])
+	${srcdir}/unifiedfmt-incorp.sh])
+rm -rf unifiedformat/build
+AS_MKDIR_P(unifiedformat/build)	
+AC_MSG_NOTICE([Building unified format])
+(cd unifiedformat/build; cmake .. -DCMAKE_INSTALL_PREFIX=${prefix}/unifiedformat; make clean; make -j ${incorp_cores} all ; make install)
+result=$?
+AS_VAR_IF([result], [0], [], AC_MSG_ERROR([Failed to build and install unified format library with result: ${result}]))
+UFMT_CPPFLAGS="-I${prefix}/unifiedformat/include"
+UFMT_LDFLAGS="-L${prefix}/unifiedformat/lib -lNSCLDAQFormat -lV10Format -lV11Format -lV12Format -lAbstractFormat -Wl,-rpath=${prefix}/unifiedformat/lib"
+
+AC_SUBST(UFMT_CPPFLAGS)
+AC_SUBST(UFMT_LDFLAGS)
+
+# Check that the DDAS format library has been incorporated into the
+# source tree and configure/build it into $prefix/ddasformat.
+	
+AC_CHECK_FILE([${srcdir}/ddasformat/CMakeLists.txt],
+	[AC_MSG_NOTICE([Using previously incorprated ddasformat from the source tree at ${srcdir}/ddasformat])
+	cp -r ${srcdir}/ddasformat .],
+	[AC_MSG_NOTICE([Incorporating ddasformat for you])
+	${srcdir}/ddasfmt-incorp.sh])
+rm -rf ddasformat/build
+AS_MKDIR_P(ddasformat/build)
+AC_MSG_NOTICE([Building DDAS format])
+(cd ddasformat/build; cmake .. -DCMAKE_INSTALL_PREFIX=${prefix}/ddasformat; make clean; make -j ${incorp_cores} all ; make install)
+result=$?
+AS_VAR_IF([result], [0], [], AC_MSG_ERROR([Failed to build and install ddasformat with result: ${result}]))
+DDASFMT_CPPFLAGS="-I${prefix}/ddasformat/include"
+DDASFMT_LDFLAGS="-L${prefix}/ddasformat/lib -lDDASFormat -Wl,-rpath=${prefix}/ddasformat/lib"
+AC_SUBST(DDASFMT_CPPFLAGS)
+AC_SUBST(DDASFMT_LDFLAGS)
+
 # The DDAS Software will only be built if --enable-ddas=yes is supplied by
-# the user. This will attempt to locate the PLX software but if that can't
-# be found, --with-plx-sdk can be used to provide it. What we provide to the
-# Makefiles:
+# the user. What we provide to the Makefiles:
 #
 # BUILD_DDAS       - If this flag is provided that's defined to allow the top
 #                    level Makefile to enable the ddas support software build.
 # PIXIE_API_DIR    - Installation directory of the XIA Pixie API
 # PIXIE_CPPFLAGS   - Compiler flags for Pixie API
 # PIXIE_LDFLAGS    - Linker flags for Pixie API
-# PLX_SDK_DIR      - Installation directory of the PLX API library
-# PLX_CPPFLAGS     - Compiler flags for PLX API
-# PLX_LDFLAGS      - Linker flags for PLX API
 # firmwaredir      - Pixie firmware installation directory
 # dspdir           - Pixie DSP load image installaion directory
-# UFMT_CPPFLAGS    - Unified format compiler flags
-# UFMT_LDFLAGS     - Unified format linker flags
-# DDASFMT_CPPFLAGS - DDAS format compiler flags
-# DDASFMT_LDFLAGS  - DDAS format linker flags
+
 # ROOTSYS          - ROOT installation to compile e.g. ddasdumper against
 # ROOT_CFLAGS      - ROOT cflags (automatically generated from ROOT config)
 # ROOT_LDFLAGS     - ROOT libraries (automatically generated from ROOT config)
@@ -434,52 +488,6 @@ then
 	AC_SUBST(PIXIE_CPPFLAGS)
 	AC_SUBST(PIXIE_LDFLAGS)
 
-	# Specify the location of the PLX installation. This will default to
-	# /usr/opt/plx or $(prefix)/../../plx if no argument is provided.
-	# Since we know its must be version 8+ to support XIA API 4+, the
-	# correct install directory can be inferred from the presence of the
-	# shared library.
-
-	AC_ARG_WITH([plx-sdk],
-		[  --with-plx-sdk=path - Path to the PLX software installation. Required if DDAS support is enabled.],
-		[PLX_SDK_DIR=$withval], [PLX_SDK_DIR=""])
-
-	# Check the default install locations. If no arg is supplied and the
-	# installation directory isn't in the default search paths,
-	# PLX_SDK_DIR is "":
-
-	if test -z "$PLX_SDK_DIR"
-	then
-		for d in /usr/opt/plx $(prefix)/../../plx
-		do
-			if test -z "$PLX_SDK_DIR"
-			then
-				AC_CHECK_FILE([$d/PlxApi/Library/PlxApi.so],
-					[PLX_SDK_DIR="$d"],
-					[PLX_SDK_DIR=""])
-			fi
-		done
-	fi
-
-	#  If PLX_SDK_DIR is still "" then we toss an error:
-
-	if test -z "$PLX_SDK_DIR"
-	then
-		AC_MSG_FAILURE([Could not locate the PLX SDK directory, specify the correct path using --with-plx-sdk])
-	fi
-
-	PLX_CPPFLAGS="-I${PLX_SDK_DIR}/Include -I${PLX_SDK_DIR}/PlxApi"
-
-	# For PLX SDK 8+ we're looking for the shared library:
-
-  	AC_CHECK_FILE([${PLX_SDK_DIR}/PlxApi/Library/PlxApi.so],
-		[PLX_LDFLAGS="-L${PLX_SDK_DIR}/PlxApi/Library -l:PlxApi.so -Wl,-rpath=${PLX_SDK_DIR}/PlxApi/Library"],
-		[AC_MSG_ERROR(invalid PLX SDK installation directory, specify the correct path using --with-plx-sdk)])
-
-	AC_SUBST(PLX_SDK_DIR)
-	AC_SUBST(PLX_CPPFLAGS)
-	AC_SUBST(PLX_LDFLAGS)
-
 	# Also need to know where the Pixie firmware is installed:
 
 	AC_ARG_WITH([firmwaredir],
@@ -507,51 +515,6 @@ then
 	fi
 
 	AC_SUBST(dspdir)
-
- 	# The unified format and DDAS format libraries have builds that
-	# require cmake, so check for that:
-
-	AC_CHECK_PROG([have_cmake], [cmake], [yes])
-	AS_VAR_IF([have_cmake], [yes], [], AC_MSG_ERROR([cmake must be in the path to build DDAS support software]))
-
-	# Check that the unified format library has been incorporated into
-	# the source tree and configure/build it into $prefix/unifiedformat
-
-	AC_CHECK_FILE([${srcdir}/unifiedformat/CMakeLists.txt],
-		[AC_MSG_NOTICE([Using previously incorporated unified format library at ${srcdir}/unifiedformat])
-		cp -r ${srcdir}/unifiedformat .],
-		[AC_MSG_NOTICE([Incorporating unified format for you])
-		${srcdir}/unifiedfmt-incorp.sh])
-	rm -rf unifiedformat/build
-	AS_MKDIR_P(unifiedformat/build)	
-	AC_MSG_NOTICE([Building unified format])
-	(cd unifiedformat/build; cmake .. -DCMAKE_INSTALL_PREFIX=${prefix}/unifiedformat; make clean install)
-	result=$?
-	AS_VAR_IF([result], [0], [], AC_MSG_ERROR([Failed to build and install unified format library with result: ${result}]))
-	UFMT_CPPFLAGS="-I${prefix}/unifiedformat/include"
-	UFMT_LDFLAGS="-L${prefix}/unifiedformat/lib -lNSCLDAQFormat -lV10Format -lV11Format -lV12Format -lAbstractFormat -Wl,-rpath=${prefix}/unifiedformat/lib"
-
-	AC_SUBST(UFMT_CPPFLAGS)
-	AC_SUBST(UFMT_LDFLAGS)
-
-	# Check that the DDAS format library has been incorporated into the
-	# source tree and configure/build it into $prefix/ddasformat.
-		
-	AC_CHECK_FILE([${srcdir}/ddasformat/CMakeLists.txt],
-		[AC_MSG_NOTICE([Using previously incorprated ddasformat from the source tree at ${srcdir}/ddasformat])
-		cp -r ${srcdir}/ddasformat .],
-		[AC_MSG_NOTICE([Incorporating ddasformat for you])
-		${srcdir}/ddasfmt-incorp.sh])
-	rm -rf ddasformat/build
-	AS_MKDIR_P(ddasformat/build)
-	AC_MSG_NOTICE([Building DDAS format])
-	(cd ddasformat/build; cmake .. -DCMAKE_INSTALL_PREFIX=${prefix}/ddasformat; make clean install)
-	result=$?
-	AS_VAR_IF([result], [0], [], AC_MSG_ERROR([Failed to build and install ddasformat with result: ${result}]))
-	DDASFMT_CPPFLAGS="-I${prefix}/ddasformat/include"
-	DDASFMT_LDFLAGS="-L${prefix}/ddasformat/lib -lDDASFormat -Wl,-rpath=${prefix}/ddasformat/lib"
-	AC_SUBST(DDASFMT_CPPFLAGS)
-	AC_SUBST(DDASFMT_LDFLAGS)
 
 	# Check for ROOT. Use rootcling to add ROOT flags and linker options
 	# to the Makefile macro set:
@@ -773,8 +736,10 @@ Makefile
     utilities/swtrigger/Makefile
     utilities/logbook/Makefile
     utilities/manager/Makefile
+    utilities/managercontrol/Makefile
     utilities/readoutREST/Makefile
     utilities/udpBroker/Makefile
+	utilities/ringdiagnostics/Makefile
     epics/epicslib/Makefile
     epics/chanlog/Makefile
     epics/controlpush/Makefile
@@ -847,6 +812,21 @@ Makefile
     usb/vmusb/devtests/Makefile
     usb/vmusb/vmusbPackage/Makefile
     usb/vmusb/tclservertests/Makefile
+	usb/vmusb/sis3316examples/Makefile
+	usb/vmusb/sis3316examples/rebootall/Makefile
+	usb/vmusb/sis3316examples/ch1_to_ch16_external_trigger_test/Makefile
+	usb/vmusb/sis3316examples/internaltrigger_externalgate_dt/Makefile
+	usb/vmusb/sis3316examples/intclk_onemodule/Makefile
+	usb/vmusb/sis3316examples/FPBUS_threads_allmodules/Makefile
+	usb/vmusb/sis3316examples/FPBUS_external_trigger/Makefile
+	usb/vmusb/sis3316examples/FPBUS_read_temps/Makefile
+	usb/vmusb/sis3316examples/FPBUS_appl_allmods/Makefile
+	usb/vmusb/sis3316examples/register_rw/Makefile
+	usb/vmusb/sis3316examples/fwupdate/Makefile
+	usb/vmusb/sis3316examples/access_rate/Makefile
+	usb/vmusb/sis3316examples/rootgui/Makefile
+	usb/vmusb/sis3316examples/inventory/Makefile
+	usb/vmusb/SIS3316Readout/Makefile
     usb/ccusb/Makefile
     usb/ccusb/ccusb/Makefile 
     usb/ccusb/core/Makefile
@@ -887,12 +867,14 @@ Makefile
     ddas/ddasdumper/ddasdumper
     ddas/readout/Makefile
     ddas/readout/DDASFirmwareVersions.txt
+    ddas/readout/pixieserver.tcl
     ddas/pixieplugin/Makefile
     ddas/pixieplugin/definitions.tcl
     ddas/qtscope/Makefile
     ddas/qtscope/qtscope
     ddas/utilities/Makefile
     ddas/utilities/simulator/Makefile
+    ddas/tclconfig/Makefile
     ddas/docs/Makefile
     ddas/docs/Doxyfile
     ddas/docs/DoxygenLayout.xml

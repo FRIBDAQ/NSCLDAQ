@@ -347,17 +347,7 @@ g++ -o urltest -I$DAQROOT/include urltest.cpp -L$DAQROOT/lib -lurl \
         <classname>CURIFormatException</classname> is derived from the
         <classname>CExeption</classname> common exception base class.
      </para>
-     <para>
-        <link linkend="chapter.exception">The NSCL Exception class library</link>
-        chapter describes the exception class hierarchy, how to use it and
-        its common set of interfaces.
-        <link linkend="manpage.cexception">The <classname>CException</classname></link> reference
-        page describes the <classname>CException</classname> class.
-        <link linkend="manpage.curiformatexception">The <classname>CURIFormatException</classname></link>
-        reference page describes the
-        <classname>CUIRFormatException</classname>
-        class.
-     </para>
+     
   </refsect1>
 </refentry>
     

@@ -72,13 +72,13 @@ namespace DAQ {
 	public:
 	    /** @brief Constructor. */
 	    SystemBooter();
-	    /*
-	     * @brief Boot the entire system.
+	    /**
+	     * @brief Boot the entire system with hardware.
 	     * @param config A configuration describing the system.
 	     * @param type Style of boot.
-	     * @throw CXIAException If Pixie16InitSystem() call returns 
+	     * @throw CXIAException If `Pixie16InitSystem()` call returns 
 	     *   an error.
-	     * @throw CXIAException If populateHardwareMap() throws.
+	     * @throw CXIAException If `populateHardwareMap()` throws.
 	     * @throw std::runtime_error If registered hardware is 
 	     *   unrecognized when attempting to boot.
 	     * @throws CXIAException If the Pixie boot fails.
@@ -90,7 +90,7 @@ namespace DAQ {
 	     * @param m_config The system configuration.
 	     * @param type Boot style (load firmware or settings only).
 	     * @throw std::runtime_error If hardware type is unknown.
-	     * @throw CDDASException If Pixie16BootModule returns an error.
+	     * @throw CDDASException If `Pixie16BootModule()` returns an error.
 	     */
 	    void bootModuleByIndex(
 		int modIndex, Configuration& config, BootType type
@@ -120,14 +120,16 @@ namespace DAQ {
 	     * @brief Read and store hardware info from each of the modules 
 	     * in the system.
 	     * @param config The system configuration.
-	     * @throw CDDASException If Pixie16ReadModuleInfo returns an error.
+	     * @throw CDDASException If `Pixie16ReadModuleInfo()` returns 
+	     *   an error.
 	     */
 	    void populateHardwareMap(Configuration &config);
 	    
 	private:
 	    /**
 	     * @brief Convert BootType enumeration to usable boot mask.
-	     * @param type Either BootType::FullBoot or BootType::SettingsOnly.
+	     * @param type Either `BootType::FullBoot` or 
+	     *   `BootType::SettingsOnly`.
 	     * @return unsigned int  
 	     * @retval 0x7f FullBoot
 	     * @retval 0x70 SettingsOnly.
@@ -142,7 +144,7 @@ namespace DAQ {
 	     * @param ModADCMSPS ADC frequency (MSPS).
 	     */
 	    void logModuleInfo(
-		int modIndex, unsigned short ModRev, unsigned short ModSerNum,
+		int modIndex, unsigned short ModRev, unsigned int ModSerNum,
 		unsigned short ModADCBits, unsigned short ModADCMSPS
 		);
 	    /**

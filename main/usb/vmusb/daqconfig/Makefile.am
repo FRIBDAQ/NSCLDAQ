@@ -58,7 +58,10 @@ libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CDeviceCommand.cpp \
 				CMDPP16QDC.cpp \
 				CMDPP32QDC.cpp \
-				CMDPP32SCP.cpp
+				CMDPP32SCP.cpp  \
+				CSIS3316.cpp \
+				sis3316_class.cpp 
+
 
 
 
@@ -124,16 +127,21 @@ noinst_HEADERS		=	CADCCommand.h  		\
 				CMDPPQDC.h \
 				CMDPP16QDC.h \
 				CMDPP32QDC.h \
-				CMDPP32SCP.h
+				CMDPP32SCP.h  \
+				CSIS3316.h \
+				sis3316_class.h \
+				sis3316.h \
+				sis3316Registers.h
 
 
-libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@
+libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@ 
 
 libVMUSBDaqConfig_la_CPPFLAGS = -I@top_srcdir@/usb/common/devices	\
 				-I@top_srcdir@/usb/common/configurableobject \
 				-I@top_srcdir@/usb/vmusb		\
 				-I@top_srcdir@/usb/vmusb/vmusb		\
 				-I@top_srcdir@/usb/common/devices	\
+				-I@top_srcdir@/base/thread              \
 				@LIBTCLPLUS_CFLAGS@			\
 				-I@top_srcdir@/base/headers		\
 				-I@top_srcdir@/base/os		\
@@ -143,6 +151,7 @@ libVMUSBDaqConfig_la_CPPFLAGS = -I@top_srcdir@/usb/common/devices	\
 libVMUSBDaqConfig_la_LIBADD	= \
 				@top_builddir@/usb/vmusb/vmusb/libVMUSB.la \
 				@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
+				@top_builddir@/base/thread/libdaqthreads.la \
 				@LIBTCLPLUS_LDFLAGS@	\
 				$(TCL_LDFLAGS) @THREADLD_FLAGS@
 

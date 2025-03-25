@@ -685,12 +685,7 @@ g++ -o myapp myapp.cpp -L$DAQROOT/lib -lDataFlow -Wl,"-rpath=$DAQROOT/lib"
             than using
             <literal>localhost</literal>.
          </para>
-         <para>
-            The chapter:
-            <link linkend="chapter.ringaccess">Networed Ring Buffer Access</link>
-            includes sample code for detecting and mapping the use of a system's
-            hostname into <literal>localhost</literal>.
-         </para>
+         
       </refsect1>
       <refsect1>
          <title>

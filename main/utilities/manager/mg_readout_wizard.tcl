@@ -1538,11 +1538,12 @@ proc ensureSequencesExist {db} {
 proc makeRunControlPrograms {dbcmd name parameters} {
 
     set kvparams $parameters
+    set readoutName ${name}_readout
     dict set kvparams name ${name}_readout
     makeRunControlProgram \
-        $dbcmd ${name}_settitle [file join \$DAQBIN rdo_titleFromKv] $kvparams [dict get $parameters name]
+        $dbcmd ${name}_settitle [file join \$DAQBIN rdo_titleFromKv] $kvparams $readoutName
     makeRunControlProgram \
-        $dbcmd ${name}_setrun [file join \$DAQBIN rdo_runFromKv] $kvparams [dict get $parameters name]
+        $dbcmd ${name}_setrun [file join \$DAQBIN rdo_runFromKv] $kvparams $readoutName
     makeRunControlProgram \
         $dbcmd ${name}_beginrun [file join \$DAQBIN rdo_control] $parameters begin
     makeRunControlProgram \
