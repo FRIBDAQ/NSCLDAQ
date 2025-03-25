@@ -32,6 +32,7 @@
 #include <CDataSink.h>
 #include <DataFormat.h>
 #include <CRingItem.h>
+#include <cmath>
 
 
 SRSSorter::SRSSorter() : m_maxHits(960), m_dtHits(2) {}//960
@@ -59,11 +60,12 @@ void SRSSorter::sort(uint8_t* data, const uint64_t hitTimeStamp, int sid, CDataS
 
     int fecId = sid - 10;
 
+    double doubleTsDiff = double(hitTimeStamp) - double(m_event[fecId].timestamp);
     int64_t tsDiff = hitTimeStamp - m_event[fecId].timestamp;
 
     // Sanity checks
     // (1) Skip hit/trig marker if smaller timesamp.
-    if (tsDiff < 0){
+    if (!(doubleTsDiff >= -2. && doubleTsDiff < 2.)){
         printf("SRSSorter::sort - tsDiff < 0 - currentTs: %llu prevTs : %llu \n", hitTimeStamp, m_event[fecId].timestamp);
         return;
     }
