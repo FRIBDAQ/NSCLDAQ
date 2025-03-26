@@ -108,13 +108,13 @@ jobs:
         working-directory: ./main/oot
         run: |
           make -j2 dist
-          mv nscldaq-${{ github.ref_name }}.tar.gz nscldaq-${{ github.ref_name }}-dist.tar.gz
+          mv nscldaq-${{ github.ref_name }}.tar.gz nscldaq-${{ github.ref_name }}-dist-${{ inputs.os-version }}.tar.gz
       - name: Complete source distribution package
         if: ${{ inputs.packaging == true && inputs.dist-packaging == true}}
         uses: actions/upload-artifact@v4
         with:
-          name: Complete source distribution
-          path: ./main/oot/nscldaq-${{ github.ref_name }}-dist.tar.gz
+          name: ${{ inputs.os-version }} complete source distribution
+          path: ./main/oot/nscldaq-${{ github.ref_name }}-dist-${{ inputs.os-version }}.tar.gz
       - name: Packaging for binary distribution
         if: ${{ inputs.packaging == true }}
         working-directory: /usr/opt/nscldaq

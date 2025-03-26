@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.61)
 
-AC_INIT(nscldaq, 12.1-007, [daqhelp@nscl.msu.edu], [], [https://github.com/FRIBDAQ/NSCLDAQ])
+AC_INIT(nscldaq, 12.1-009, [daqhelp@nscl.msu.edu], [], [https://github.com/FRIBDAQ/NSCLDAQ])
 
 AC_CONFIG_SRCDIR([/base/dataflow/CRingBuffer.h])
 AC_CONFIG_HEADER([config.h])
@@ -891,6 +891,7 @@ Makefile
     srs/maps/Makefile
     srs/broker/Makefile
     srs/readout/Makefile
+    srs/sorter/Makefile
     cookbooks/Makefile
 ])
 
