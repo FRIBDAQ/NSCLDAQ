@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.61)
 
-AC_INIT(nscldaq, 12.1-009, [daqhelp@nscl.msu.edu], [], [https://github.com/FRIBDAQ/NSCLDAQ])
+AC_INIT(nscldaq, 12.2-000, [daqhelp@nscl.msu.edu], [], [https://github.com/FRIBDAQ/NSCLDAQ])
 
 AC_CONFIG_SRCDIR([/base/dataflow/CRingBuffer.h])
 AC_CONFIG_HEADER([config.h])
@@ -82,6 +82,20 @@ then
 else
 	AM_CONDITIONAL([CAENSUPPORT], [false])
 fi
+
+#  Enabled MVLC code generation:
+
+AC_ARG_ENABLE([mvlc-stack-generator],
+	AC_HELP_STRING([--enable-mvlc-stack-generator], [Build support for generating MVLX fribdaq-readout config files]),
+	[enable_mvlc=$enableval], [enable_mvlc=no])
+
+if test "x$enable_mvlc" == "xyes"
+then
+	AM_CONDITIONAL([MVLC_GENERATOR],[true])
+else	
+	AM_CONDITIONAL([MVLC_GENERATOR], [false])
+fi
+
 
 #  CAEN Nextgen digitizer support is also optional  the CAEN support
 #  libraries are awful in that they require installation in
@@ -892,6 +906,7 @@ Makefile
     srs/broker/Makefile
     srs/readout/Makefile
     srs/sorter/Makefile
+	mvlc/Makefile
     cookbooks/Makefile
 ])
 
