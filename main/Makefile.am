@@ -27,18 +27,22 @@ if BUILD_DDAS
   DDASDIR=ddas
 endif
 
+if MVLC_GENERATOR
+	MVLCGENDIR=mvlc
+endif
+
 SRSDIR=srs
 
 
 SUBDIRS = base caenfw-common servers base/dataflow \
 	daq utilities $(DOCDIR) \
 	sbs usb/common/configurableobject $(EPICSDIRS) $(USBDIR) $(DDASDIR) $(CAENSUPPORTDIRS) \
-	$(CAENNGDIR) $(SRSDIR) \
+	$(CAENNGDIR) $(SRSDIR) $(MVLCGENDIR) \
 	examples
 
 DIST_SUBDIRS = base caenfw-common servers base/dataflow daq utilities \
 	docbuild docconfig simplesetups sbs epics usb ddas \
-	caendigitizers examples caen-nextgen srs
+	caendigitizers examples caen-nextgen srs mvlc
 
 INTROFIGURES = @srcdir@/figures/intro-data-flow-diagram.png \
 	@srcdir@/figures/intro-data-flow-diagram-diagnostics.png
