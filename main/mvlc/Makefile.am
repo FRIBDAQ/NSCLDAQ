@@ -9,3 +9,5 @@ options.c: options.h
 
 options.h: options.ggo
 	$(GENGETOPT) --output-dir=@builddir@ --file-name=options <@srcdir@/options.ggo 
+
+EXTRA_DIST=options.ggo
