@@ -1,6 +1,11 @@
 bin_PROGRAMS=mvlcgenerate
 
-mvlcgenerate_SOURCES=generate.cpp utilities.h utilities.cpp
+mvlcgenerate_SOURCES=generate.cpp utilities.h utilities.cpp \
+	TCLConfigParser.h TCLConfigParser.cpp
+
+
+mvlcgenerate_CPPFLAGS=@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@
+mvlcgenerate_LDFLAGS=@LIBTCLPLUS_LDFLAGS@ @TCL_LIBS@
 
 BUILT_SOURCES = generate.cpp options.h options.c
 nodist_mvlcgenerate_SOURCES=options.h options.c
