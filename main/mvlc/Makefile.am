@@ -1,6 +1,6 @@
 bin_PROGRAMS=mvlcgenerate
 
-mvlcgenerate_SOURCES=generate.cpp
+mvlcgenerate_SOURCES=generate.cpp utilities.h utilities.cpp
 
 BUILT_SOURCES = generate.cpp options.h options.c
 nodist_mvlcgenerate_SOURCES=options.h options.c
