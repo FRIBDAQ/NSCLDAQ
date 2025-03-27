@@ -85,7 +85,7 @@ TCLConfigParser::initialize() {
  */
 void
 TCLConfigParser::operator()() {
-    m_pInterp->GlobalEval(m_daqconfigFile);
+    m_pInterp->EvalFile(m_daqconfigFile);
 }
 
 
