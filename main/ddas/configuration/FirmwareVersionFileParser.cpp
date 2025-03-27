@@ -59,19 +59,13 @@ DAQ::DDAS::FirmwareVersionFileParser::parse(
 	    std::smatch color_match;
 	    std::regex_search(line, color_match, m_matchExpr);
 	    int revision = std::stoi(
-		std::string(
-		    color_match[1].first, color_match[1].second
-		    ), 0, 0
+		std::string(color_match[1].first, color_match[1].second), 0, 0
 		);
 	    int adcRes = std::stoi(
-		std::string(
-		    color_match[2].first, color_match[2].second
-		    )
+		std::string(color_match[2].first, color_match[2].second)
 		);
 	    int adcFreq = std::stoi(
-		std::string(
-		    color_match[3].first, color_match[3].second
-		    )
+		std::string(color_match[3].first, color_match[3].second)
 		);
 	    int calibration;
 

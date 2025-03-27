@@ -33,14 +33,12 @@ namespace DAQ {
 	 * @details
 	 * All Readout and slow controls programs rely on this class to boot 
 	 * the system.
-	 * @todo (ASC 3/20/25): Implement API 4 parallal boot and document
-	 * the changes to the boot class.
 	 */
       
 	class SystemBooter
 	{
 	public:
-	    /** @brief An enum for boot type bitmasks. */
+	    /** @brief An enum for boot type masks, legacy flags. */
 	    enum BootType {
 		FullBoot,    //!< Full boot with firmware load.
 		SettingsOnly //!< Boot with settings only.
@@ -56,7 +54,8 @@ namespace DAQ {
 
 	    /**
 	     * @brief Boot the entire system.
-	     * @todo (ASC 3/20/25): Work in progress.
+	     * @param config References the system configuration.
+	     * @param type Boot type (full or settings-only).
 	     */
 	    void boot(Configuration& config, BootType type);
 	    
@@ -82,12 +81,55 @@ namespace DAQ {
 	    unsigned short getOfflineMode() const { return m_offlineMode; };
 
 	private:
+	    /**
+	     * @brief Perform system initializaiton.
+	     * @param config References the system configuration.
+	     * @throw CXIAException if system initialization fails.
+	     */
 	    void initSystem(Configuration& config);
+	    /**
+	     * @brief Parallel boot of the crate.
+	     * @param config References the system configuration.
+	     * @param type BootType (full or settings-only)
+	     * @throw CXIAException if firmware load fails.
+	     * @throw CXIAException if crate boot fails.
+	     */
 	    void parallelBoot(Configuration& config, BootType type);
+	    /**
+	     * @brief Offline boot of the crate simulation.
+	     * @param config References the system configuration.
+	     * @param type BootType (full or settings-only).
+	     * @throw CXIAException if crate boot fails.
+	     */
 	    void offlineBoot(Configuration& config, BootType type);
+	    /**
+	     * @brief Set firmware from per-module firmware maps.
+	     * @param config References the system configuration.
+	     */
 	    void setPerModuleFirmware(Configuration& config);
-	    void setFirmware(std::string fwFile, unsigned int slot,
-			     std::string device);
+	    /**
+	     * @brief Set firmware for a single module.
+	     * @param config References the system configuration.
+	     * @param mod Module index.
+	     * @throw std::runtime_error If the hardware type is not present
+	     *   in the hardware registry.
+	     */
+	    void setModuleFirmware(Configuration& config, unsigned int mod);
+	    /**
+	     * @brief Set firmware for a single device on a module.
+	     * @param fwFile Path to the device firmware file.
+	     * @param mod Module index.
+	     * @param slot Slot number for this module.
+	     * @param device Firmware device name (sys, fippi, dsp, var).
+	     * @throw CXIAException If the device firmware cannot be set.
+	     */
+	    void setDeviceFirmware(std::string fwFile, unsigned int mod,
+				   unsigned int slot, std::string device);
+	    /**
+	     * @brief Set DSP settings from per-module settings map.
+	     * @param config References the system configuration.
+	     * @throw CXIAException If the firmware boot fails.
+	     */
 	    void setPerModuleDSP(Configuration& config);
 	    /**
 	     * @brief Read and store hardware info from each of the modules 

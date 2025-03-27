@@ -958,8 +958,7 @@ RECURSIVE              = NO
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = @top_srcdir@/ddas/booter/boot.cpp \
-		         @top_srcdir@/ddas/readout/ddasSortOptions.c \
+EXCLUDE                = @top_srcdir@/ddas/readout/ddasSortOptions.c \
 			 @top_srcdir@/ddas/readout/ddasSortOptions.h
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or

@@ -61,17 +61,18 @@ namespace DAQ {
 	 * @details
 	 * The Configuration class stores all of the system configuration for
 	 * a Readout program. It maintains the configuration that is read in
-	 * from the DDASFirmwareVersion.txt, modevtlen.txt, and cfgPixie16.txt
-	 * configuration files. The configuration therefore keeps track of
-	 * the crate id, slot map, setting file path, module event lengths,
-	 * module count, and all of the available firmware files for each 
-	 * hardware type.
+	 * from the modevtlen.txt, and cfgPixie16.txt configuration files.
+	 * The configuration keeps track of the crate ID, slot map, settings
+	 * file path, module event lengths, module count, the hardware types
+	 * present the crate, and, if specified, the firmware and DSP settings
+	 * loaded onto those modules.
 	 *
-	 * It can be configured either manually or by passing it as an 
-	 * argument to a `ConfigurationParser::parse()`, 
-	 * `FirmwareVersionFileParser::parse()`, or `ModEvtFileParser::parse()` 
-	 * methods as it is in the Readout programs.
-	 *
+	 * A number of methods are provided to generate a Configuration object
+	 * based on which of the aforementioned configuration files are
+	 * present. The new function `generateManagedFW()` can be used to
+	 * generate a valid Configuration compatible with XIA's automatic
+	 * firmware management (i.e. no pre-defined default FW).
+	 * 
 	 * At the moment, modules are expected to output events of equal 
 	 * length for all channels. There is no attempt to read out channels 
 	 * with different lengths in a module.
@@ -108,6 +109,7 @@ namespace DAQ {
 		{}
 	    /** @brief Destructor. */
 	    ~Configuration() = default;
+	    
 	    /**
 	     * @brief Set the crate id for the module.
 	     * @param id The id to assign.
@@ -238,9 +240,16 @@ namespace DAQ {
 	     * @return A copy of hardware map vector.
 	     */
 	    std::vector<int> getHardwareMap() const { return m_hardwareMap; };
-	    
+	    /**
+	     * @brief Get the per-module FW maps.
+	     * @return Per-module FW maps.
+	     */
 	    std::map<int, FirmwareMap> getModuleFirmwareMaps() const
 		{ return m_moduleFirmwareMaps; };
+	    /**
+	     * @brief Get the per-module settings file map.
+	     * @return Per-module settings file map.
+	     */
 	    std::map<int, std::string> getModuleSetFileMap() const
 		{ return m_moduleSetFileMap; };
 	    
@@ -249,6 +258,16 @@ namespace DAQ {
 	     * @param stream The ostream to write to.
 	     */
 	    void print(std::ostream& stream);
+	    
+	    /**
+	     * @brief Generate a Configuration class object from cfgPixie16.txt.
+	     * @param cfgPixiePath Path to cfgPixie16.txt.
+	     * @throw std::runtime_error Any errors opening or parsing the 
+	     *   firmware and configuration files.
+	     * @return Pointer to the generated Configuration object.
+	     */
+	    static std::unique_ptr<Configuration>
+	    generate(const std::string& cfgPixiePath);
 	    /**
 	     * @brief Generate a Configuration class object from a firmware 
 	     * version file and cfgPixie16.txt.
@@ -259,12 +278,11 @@ namespace DAQ {
 	     * @return Pointer to the generated Configuration object.
 	     */
 	    static std::unique_ptr<Configuration>
-	    generate(
-		const std::string& fwVsnPath, const std::string& cfgPixiePath
-		);
+	    generate(const std::string& fwVsnPath,
+		     const std::string& cfgPixiePath);
 	    /**
 	     * @brief Generate a Configuration class object from a firmware 
-	     * version file and cfgPixie16.txt.
+	     * version file, cfgPixie16.txt and modevtlen.txt file.
 	     * @param fwVsnPath     Path to the firmware version file.
 	     * @param cfgPixiePath  Path to cfgPixie16.txt.
 	     * @param modEvtLenPath Path to the modevtlen.txt file.
@@ -273,10 +291,21 @@ namespace DAQ {
 	     * @return Pointer to the generated Configuration object.
 	     */
 	    static std::unique_ptr<Configuration>
-	    generate(
-		const std::string& fwVsnPath, const std::string& cfgPixiePath,
-		const std::string& modEvtLenPath
-		);
+	    generate(const std::string& fwVsnPath,
+		     const std::string& cfgPixiePath,
+		     const std::string& modEvtLenPath);
+	    /**
+	     * @brief Generate a Configuration class object from
+	     * cfgPixie16.txt and modevtlen.txt files (managed FW).
+	     * @param cfgPixiePath  Path to cfgPixie16.txt.
+	     * @param modEvtLenPath Path to the modevtlen.txt file.
+	     * @throw std::runtime_error Error opening or parsing the 
+	     *   modevtlen file.
+	     * @return Pointer to the generated Configuration object.
+	     */
+	    static std::unique_ptr<Configuration>
+	    generateManagedFW(const std::string& cfgPixiePath,
+			      const std::string& modEvtLenPath);
 	};
 
 	/** @} */

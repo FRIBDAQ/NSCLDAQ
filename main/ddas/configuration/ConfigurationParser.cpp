@@ -17,7 +17,9 @@
 #include "Configuration.h"
 #include "FirmwareVersionFileParser.h"
 
-#define FILENAME_STR_MAXLEN 256 //!< Number of characters to skip when parsing a line. Maximum allowed length of any comment added by a user.
+/** Number of characters to skip when parsing a line. Maximum allowed length
+ * of any comment added by a user. */
+#define FILENAME_STR_MAXLEN 256
 
 ///
 // Local trim functions
@@ -74,8 +76,7 @@ DAQ::DDAS::ConfigurationParser::parse(
     PXISlotMap.resize(NumModules);
     for(int i = 0; i < NumModules; i++) {
 	auto slotInfo = parseSlotLine(input);
-	PXISlotMap[i] = std::get<0>(slotInfo);
-        
+	PXISlotMap[i] = std::get<0>(slotInfo);        
 	std::string perModuleMap = std::get<1>(slotInfo);
 	if (!perModuleMap.empty()) {
 	    std::ifstream fwMapStream(perModuleMap);
@@ -88,7 +89,6 @@ DAQ::DDAS::ConfigurationParser::parse(
 		perModuleSetfiles[i] = perModuleSetfile;
 	    }
 	}
-        
     }
     input >> DSPParFile;
     input.getline(temp, FILENAME_STR_MAXLEN);
@@ -98,10 +98,8 @@ DAQ::DDAS::ConfigurationParser::parse(
     size_t pos = DSPParFile.find_last_of('.');
     if (pos != std::string::npos) {
 	std::string ext = DSPParFile.substr(pos + 1);
-	std::transform(
-	    ext.begin(), ext.end(), ext.begin(),
-	    [](unsigned char c){ return std::tolower(c); }
-	    );
+	std::transform(ext.begin(), ext.end(), ext.begin(),
+		       [](unsigned char c){ return std::tolower(c); });
 	if (ext != "set" && ext != "json") {
 	    std::stringstream errmsg;
 	    errmsg << "The DSP settings file " << DSPParFile << " read from"
@@ -152,15 +150,17 @@ DAQ::DDAS::ConfigurationParser::parse(
 /**
  * @details 
  * Slot lines consist of a mandatory slot number, and optional substitute
- * firmware mapping file and an optional .set file for that module. Care must
- * be taken since any populated field (other than the slot number) might 
- * actually be a comment. Requirements:
+ * firmware mapping file and an optional settings file for that module.
+ * Care must be taken since any populated field (other than the slot number)
+ * might actually be a comment. Requirements:
  *  - Filenames cannot have spaces in their paths.
  *  - Files must be readable by the user.
- *  - #'s must be spaced from the last file e.g.:
- *      1 firmwaremap.txt# This is an error but,
- *      2 firmwaremap.txt  # This is ok,
- *      3 firmwaremap.txt setfile.set # As is this.
+ *  - Comments denoted by '#' must be spaced from the last file e.g.:
+ @verbatim
+ 1 FirmwareMap.txt# This is an error but,
+ 2 FirmwareMap.txt  # This is ok,
+ 3 FirmwareMap.txt setfile.json # As is this.
+ @endverbatim
  */
 DAQ::DDAS::ConfigurationParser::SlotSpecification
 DAQ::DDAS::ConfigurationParser::parseSlotLine(std::istream& input)
@@ -197,7 +197,7 @@ DAQ::DDAS::ConfigurationParser::parseSlotLine(std::istream& input)
 	setFile.clear();               
     }
     
-    // Check readability of any files:    
+    // Check readability of any files:
     if (firmwareMap != "") {
 	if (access(firmwareMap.c_str(), R_OK)) {
 	    std::string msg("Unable to read firmware mapping file ");
@@ -215,8 +215,8 @@ DAQ::DDAS::ConfigurationParser::parseSlotLine(std::istream& input)
 		throw std::runtime_error(msg); 
 	    }
 	}
-    }
-	    
+    }    
+    
     // Ok everything is good so:
     
     return std::make_tuple(slot, firmwareMap, setFile);
