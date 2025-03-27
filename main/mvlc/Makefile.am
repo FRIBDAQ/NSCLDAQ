@@ -13,7 +13,8 @@ options.h: options.ggo
 
 noinst_PROGRAMS = unittests
 
-unittests_SOURCES = TestRunner.cpp utilities.cpp options.h options.c
+unittests_SOURCES = TestRunner.cpp utiltests.cpp \
+	utilities.cpp options.h options.c
 unittest_CPPFLAGS = @CPPUNIT_CFLAGS@
 unittests_LDFLAGS = @CPPUNIT_LIBS@
 
