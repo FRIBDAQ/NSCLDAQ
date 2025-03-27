@@ -18,10 +18,10 @@ options.h: options.ggo
 
 noinst_PROGRAMS = unittests
 
-unittests_SOURCES = TestRunner.cpp utiltests.cpp \
-	utilities.cpp options.h options.c
-unittest_CPPFLAGS = @CPPUNIT_CFLAGS@
-unittests_LDFLAGS = @CPPUNIT_LIBS@
+unittests_SOURCES = TestRunner.cpp utiltests.cpp parsertests.cpp \
+	utilities.cpp options.h options.c TCLConfigParser.cpp TCLConfigParserh
+unittests_CPPFLAGS = @CPPUNIT_CFLAGS@ $(mvlcgenerate_CPPFLAGS)
+unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
 
 TESTS=unittests
 
