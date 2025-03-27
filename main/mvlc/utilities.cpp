@@ -19,7 +19,6 @@
 @brief some utility functions for mvlcgenerate.
 */
 #include "utilities.h"
-#include "options.h"
 #include <string>
 #include <filesystem>
 
