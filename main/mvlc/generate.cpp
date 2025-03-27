@@ -21,10 +21,11 @@
 
 #include "options.h"
 #include "utilities.h"
+#include "TCLConfigParser.h"
 #include <iostream>
 #include <string>
 
-
+#include <Exception.h>
 #include <stdlib.h>
 
 
@@ -42,7 +43,22 @@ int main(int argc, char** argv) {
     std::string infile = args.inputs[0];
     std::string outfile = computeOutfile(args);
 
+    // Now we need to process the input file.  This is done in a TclConfigParser object
+    // Once that's done we can start to pull bits out of the object and push them into the templated
+    // yaml configuration file...which is then written to outfile.
 
-    std::cout << "infile: " << infile << " outfile: " << outfile << std::endl;
+    try {
+        TCLConfigParser tclparser(infile);
+        tclparser.initialize();
+        tclparser();
+    }
+    catch (CException& e) {
+        std::cerr << "Failed to parse Tcl configuration file: " << infile 
+            << " : " << e.ReasonText() << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+
+    exit(EXIT_SUCCESS);
 
 }
