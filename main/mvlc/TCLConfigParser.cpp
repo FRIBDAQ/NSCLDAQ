@@ -26,6 +26,7 @@
 // Stub classes - remove them as the real classes get defined:
 
 class CReadoutHardware {};
+class CReadoutModule {};
 class CStack {};
 
 //////////////////////////////////////// implementing the canonical methods //////////////////////////

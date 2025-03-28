@@ -27,7 +27,7 @@
 
 class CTCLInterpreter;
 class CStack;
-class CReadoutHardware;
+class CReadoutModule;
 class CTCLObjectProcessor;
 
 /**
@@ -79,7 +79,7 @@ private:
     std::vector<CTCLObjectProcessor*>  m_commandExtensions;   //< commands added for modules.
     CStack*                            m_pEventStack;        //< Modules in the event stack.
     CStack*                            m_pScalerStack;       //< Modlues in the scaler stack.
-    std::map <std::string, CReadoutHardware*> m_modules;     //< Soup of modules.
+    std::map <std::string, CReadoutModule*> m_modules;     //< Soup of modules.
 
     // Canonicals:
 public:
