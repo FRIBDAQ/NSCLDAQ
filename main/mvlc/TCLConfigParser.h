@@ -99,7 +99,7 @@ public:
     virtual void operator()();                                // Process the input file.
 
     // utilities -some might be virtual to support replacement in derived test objects.
-private:
+protected:
     virtual void addExtensions();
     virtual void addExtension(CTCLObjectProcessor& cmdobj);       // Add one extension command.
 

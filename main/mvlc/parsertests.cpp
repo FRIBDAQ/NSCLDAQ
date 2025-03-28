@@ -21,8 +21,10 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/Asserter.h>
 #define private public
+#define protected public
 #include "TCLConfigParser.h"           // Open up internals to tests.
 #undef private
+#undef protected
 #include <stdlib.h>
 #include <string>
 #include <fstream>
@@ -44,6 +46,8 @@ class TCLConfigTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(parse_2);
     // Test addExtension:
     CPPUNIT_TEST(addext_1);
+    // initialize tests
+    CPPUNIT_TEST(initialize_1);
     CPPUNIT_TEST_SUITE_END();
 protected:
     void construct_1();
@@ -54,6 +58,8 @@ protected:
     void parse_3();
 
     void addext_1();
+
+    void initialize_1();
 public: 
     void setUp() {
         // Make a temp scipt file:
@@ -183,4 +189,50 @@ void TCLConfigTests::addext_1() {
     CPPUNIT_ASSERT_EQUAL(1, ext->called);
 
     // parse destruction also destroys our extension.
+}
+///////////////////////// initialize tests
+
+/* override addExtensions - add a command - initialize should call addExtensions */
+
+void TCLConfigTests::initialize_1() {
+
+    class myext : public CTCLObjectProcessor {
+        public:
+            int called;
+            myext(CTCLInterpreter& interp) :
+                CTCLObjectProcessor(interp, "junky", true), called(0) {}
+                int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
+                    called++;
+                    return TCL_OK;
+                }
+    };
+    class myparser : public TCLConfigParser {
+    public:
+        myparser(const std::string infile) : TCLConfigParser(infile) {}
+    protected:
+        virtual void addExtensions() {
+            addExtension(*(new myext(*m_pInterp)));
+        }
+    };
+
+    myparser parser(m_filename);
+    parser.initialize();                     // Second phase of construction.
+
+    CPPUNIT_ASSERT_EQUAL(size_t(1), parser.m_commandExtensions.size());
+
+    // junky should be a command so:
+
+    {
+        std::ofstream file(m_filename);
+        file << "junky\n";
+    }
+    lseek(m_fd, SEEK_SET, 0);
+
+    CPPUNIT_ASSERT_NO_THROW(
+        parser()                          // junky is a legal command.
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        1, 
+        dynamic_cast<myext*>(parser.m_commandExtensions.at(0))->called);
+
 }
