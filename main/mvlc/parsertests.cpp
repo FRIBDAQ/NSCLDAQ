@@ -30,6 +30,9 @@
 #include <string.h>
 #include <memory>
 #include <TCLException.h>
+#include <TCLInterpreter.h>
+#include <TCLObjectProcessor.h>
+
 class TCLConfigTests : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(TCLConfigTests);
     // construction tests
@@ -39,6 +42,8 @@ class TCLConfigTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(parse_1);
     CPPUNIT_TEST(parse_2);
     CPPUNIT_TEST(parse_2);
+    // Test addExtension:
+    CPPUNIT_TEST(addext_1);
     CPPUNIT_TEST_SUITE_END();
 protected:
     void construct_1();
@@ -47,6 +52,8 @@ protected:
     void parse_1();
     void parse_2();
     void parse_3();
+
+    void addext_1();
 public: 
     void setUp() {
         // Make a temp scipt file:
@@ -135,4 +142,45 @@ void TCLConfigTests::parse_3() {
         parser(),
         CTCLException
     );
+}
+///////////////////////// addExtension tests /////////////////////////////////////
+
+/**
+ *   Make a command, invoke addExtension - should be in the extensions vector.
+ *   should be usable from a script. 
+ */
+void TCLConfigTests::addext_1() {
+    // Local extension class:
+
+    class myext : public CTCLObjectProcessor {
+        public:
+            int called;
+            myext(CTCLInterpreter& interp) :
+                CTCLObjectProcessor(interp, "junky", true), called(0) {}
+                int operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
+                    called++;
+                    return TCL_OK;
+                }
+    };
+    TCLConfigParser parser(m_filename);
+    auto ext = new myext(*parser.m_pInterp);
+    parser.addExtension(*ext);
+    CPPUNIT_ASSERT_EQUAL(size_t(1), parser.m_commandExtensions.size());    // An extension should be in the list.
+    // junk because the command is returned by getName as fully namespaced
+    CPPUNIT_ASSERT_EQUAL(std::string("::junky"), parser.m_commandExtensions[0]->getName());
+
+    // We can write a script that invokes the junk command and our extension's called gets incremented:
+
+    {
+        std::ofstream file(m_filename);
+        file << "junky\n";
+    }
+    lseek(m_fd, SEEK_SET, 0);
+
+    CPPUNIT_ASSERT_NO_THROW(
+        parser()                          // junky is a legal command.
+    );
+    CPPUNIT_ASSERT_EQUAL(1, ext->called);
+
+    // parse destruction also destroys our extension.
 }
