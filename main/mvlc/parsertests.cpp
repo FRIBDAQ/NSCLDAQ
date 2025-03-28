@@ -75,7 +75,7 @@ public:
         close(m_fd);
         unlink(m_filename.c_str());
     }
-
+private:
     int         m_fd;
     std::string m_filename;
 };
