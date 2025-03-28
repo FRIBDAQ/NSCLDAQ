@@ -50,7 +50,8 @@ private:                              // more because I'm lazy than they can't b
     int operator!=(const CVMUSBReadoutList& rhs);
 
     // VME operations:
-
+public:
+    #ifdef UNDEFINED
     virtual void addWrite32(uint32_t address, uint8_t amod, uint32_t datum);
     virtual void addWrite16(uint32_t address, uint8_t amod, uint16_t datum);
 
@@ -69,12 +70,12 @@ private:                              // more because I'm lazy than they can't b
     virtual void addMaskedCountFifoRead32(uint32_t address, uint8_t amod);
 
     virtual void addDelay(uint8_t clocks);
-
+#endif
     virtual void addMarker(uint32_t value);
 
     std::vector<std::string> dumpForMvlc();      // Return the operations list.
 
-
+public:
     // Convenience definitions for amods:
     // @todo - expand for the modern amods VMUSB did not support.
 
