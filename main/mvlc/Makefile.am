@@ -1,11 +1,19 @@
 bin_PROGRAMS=mvlcgenerate
 
-mvlcgenerate_SOURCES=generate.cpp utilities.h utilities.cpp \
-	TCLConfigParser.h TCLConfigParser.cpp
+
+# Done this way so we don't need a lib and we don't need to repeat ourselves for
+# test sources
+
+main_modules=utilities.h utilities.cpp \
+	TCLConfigParser.h TCLConfigParser.cpp \
+	CVMUSBReadoutList.h CVMUSBReadoutList.cpp
+mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
 
 
-mvlcgenerate_CPPFLAGS=@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@
-mvlcgenerate_LDFLAGS=@LIBTCLPLUS_LDFLAGS@ @TCL_LIBS@
+mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
+	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@
+mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
+	@LIBTCLPLUS_LDFLAGS@ @TCL_LIBS@
 
 BUILT_SOURCES = generate.cpp options.h options.c
 nodist_mvlcgenerate_SOURCES=options.h options.c
@@ -19,7 +27,9 @@ options.h: options.ggo
 noinst_PROGRAMS = unittests
 
 unittests_SOURCES = TestRunner.cpp utiltests.cpp parsertests.cpp \
-	utilities.cpp options.h options.c TCLConfigParser.cpp TCLConfigParserh
+    stacktests.cpp \
+	options.h options.c \
+	$(main_modules)
 unittests_CPPFLAGS = @CPPUNIT_CFLAGS@ $(mvlcgenerate_CPPFLAGS)
 unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
 
