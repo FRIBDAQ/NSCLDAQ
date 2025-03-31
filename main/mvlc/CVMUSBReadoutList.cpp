@@ -92,6 +92,29 @@ CVMUSBReadoutList::addWrite16(uint32_t address, uint8_t amod, uint16_t datum) {
     addWrite(address, amod, "d16", datum);
 }
 
+/**
+ * addRead32
+ *     Add a 32 bit read to the stack.  This produces something like
+ * \verbatim
+ *  vme_read amod d32 address
+ * \endverbatim
+ *   
+ * 
+ * @param address - the address to read from.
+ * @param amod    - The address modifier to use... CVMUSBReadoutList supplies some symbolics to help.
+ */
+void
+CVMUSBReadoutList::addRead32(uint32_t address, uint8_t amod) {
+    addRead(address, amod, "d32");
+}
+/**
+ * addRead16 - Same as addRead32 but the read is a 16 bit read.
+ * 
+ */
+void
+CVMUSBReadoutList::addRead16(uint32_t address, uint8_t amod) {
+    addRead(address, amod, "d16");
+}
 
 /**
  *  dumpForMvlc
@@ -117,6 +140,20 @@ CVMUSBReadoutList::addWrite(uint32_t address, uint8_t amod, const char* width, u
     std::stringstream stack_line;
     stack_line << "vme_write 0x" << std::hex   << unsigned(amod) <<  " " << width 
      << " 0x" << address << " 0x" << data;
+    std::string mvlc_op(stack_line.str());
+    m_list.push_back(mvlc_op);
+}
+
+/**
+ *  addRead - add a read to the stack.  
+ * 
+ */
+void
+CVMUSBReadoutList::addRead(uint32_t address, uint8_t amod, const char* width) {
+    std::stringstream stack_line;
+    stack_line << "vme_read 0x" << std::hex << unsigned(amod)
+        << " " << width << " 0x" << address;
+    
     std::string mvlc_op(stack_line.str());
     m_list.push_back(mvlc_op);
 }

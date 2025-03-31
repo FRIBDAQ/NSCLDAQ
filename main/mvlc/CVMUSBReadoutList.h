@@ -54,10 +54,10 @@ public:
    
     virtual void addWrite32(uint32_t address, uint8_t amod, uint32_t datum);
     virtual void addWrite16(uint32_t address, uint8_t amod, uint16_t datum);
-#ifdef UNDEFINED
+
     virtual void addRead32(uint32_t address, uint8_t amod);
     virtual void addRead16(uint32_t address, uint8_t amod);
-
+#ifdef UNDEFINED
     virtual void addBlockRead32(uint32_t baseAddress, uint8_t amod, size_t transfers);
     virtual void addFifoRead32(uint32_t  baseAddress, uint8_t amod, size_t transfers);
     virtual void addFifoRead16(uint32_t baseAddress, uint8_t amod, size_t transfers);
@@ -99,6 +99,7 @@ public:
     static const uint8_t a24PrivBlock ;
 private:
     void addWrite(uint32_t address, uint8_t amod, const char* width, uint32_t data);
+    void addRead(uint32_t address, uint8_t amod, const char* width);
 };
 
 #endif

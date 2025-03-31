@@ -40,7 +40,14 @@ class ReadoutListTests : public CppUnit::TestFixture {
 
 
     CPPUNIT_TEST(write_1);     //d32
-    CPPUNIT_TEST(write_2);     //d16y
+    CPPUNIT_TEST(write_2);     //d16
+
+    // Tests for reads:
+
+    CPPUNIT_TEST(read_1);   //d32
+    CPPUNIT_TEST(read_2);   //d16
+
+
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -49,6 +56,8 @@ protected:
     void amods();
     void write_1();
     void write_2();
+    void read_1();
+    void read_2();
 
 public:
     void setUp() {}
@@ -123,7 +132,7 @@ ReadoutListTests::write_1() {
     CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
     CPPUNIT_ASSERT_EQUAL(
         std::string("vme_write 0x9 d32 0x12340000 0x12345678"),
-        mvlclist[0]
+        mvlclist.at(0)
     );
 }
 void 
@@ -135,7 +144,36 @@ ReadoutListTests::write_2() {
     CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
     CPPUNIT_ASSERT_EQUAL(
         std::string("vme_write 0x39 d16 0x124300 0x1234"),
-        mvlclist[0]
+        mvlclist.at(0)
     );
     
+}
+
+/* test the reads*/
+
+void
+ReadoutListTests::read_1() {
+    CVMUSBReadoutList list;
+    list.addRead32(0x123400, CVMUSBReadoutList::a24PrivData);  // amod 0xd
+
+    auto mvlclist = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_read 0x3d d32 0x123400"),
+        mvlclist.at(0)
+    );
+}
+
+void 
+ReadoutListTests::read_2() {
+    CVMUSBReadoutList list;
+    list.addRead16(0x11223344, CVMUSBReadoutList::a32PrivData);
+
+    auto mvlclist = list.dumpForMvlc();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_read 0xd d16 0x11223344"),
+        mvlclist.at(0)
+    );
 }
