@@ -52,6 +52,11 @@ class ReadoutListTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(blockread_1);
     CPPUNIT_TEST(blockread_2);
 
+    // Block count for reads with count from a module field.
+
+    CPPUNIT_TEST(blockcount_1);    // 16 bit.
+    CPPUNIT_TEST(blockcount_2);    // 32 bit.
+
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -64,6 +69,9 @@ protected:
     void read_2();
     void blockread_1();
     void blockread_2();
+    void blockcount_1();
+    void blockcount_2();
+
 
 public:
     void setUp() {}
@@ -208,4 +216,48 @@ ReadoutListTests::blockread_2() {
         std::string("vme_block_read 0xf 100 0x55550000"),
         mvlclist.at(0)
     );
+}
+
+// Read the block count - these makes 2 stack lines.
+
+void
+ReadoutListTests::blockcount_1() {   // 16 bit read of the count.
+    CVMUSBReadoutList list;
+    list.addBlockCountRead16(0x11110000, 0xff00, CVMUSBReadoutList::a32UserData);
+    auto mvlclist = list.dumpForMvlc();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(2), mvlclist.size());
+    auto read_op = mvlclist.at(0);
+    auto mask_op = mvlclist.at(1);
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("read_to_accu 0x9 d16 0x11110000"),
+        read_op
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("mask_shift_accu 0xff00 24"),
+        mask_op
+    );
+}
+
+void
+ReadoutListTests::blockcount_2() {     // 32 bit read of the count:
+
+    CVMUSBReadoutList list;
+    list.addBlockCountRead32(0x11110000, 0xff00, CVMUSBReadoutList::a32UserData);
+    auto mvlclist = list.dumpForMvlc();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(2), mvlclist.size());
+    auto read_op = mvlclist.at(0);
+    auto mask_op = mvlclist.at(1);
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("read_to_accu 0x9 d32 0x11110000"),
+        read_op
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("mask_shift_accu 0xff00 24"),
+        mask_op
+    );
+
 }

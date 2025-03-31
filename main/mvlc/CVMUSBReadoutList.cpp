@@ -166,6 +166,37 @@ CVMUSBReadoutList::addFifoRead32(uint32_t baseAddress, uint8_t amod, size_t tran
     std::string mvlc_op(stack_line.str());
     m_list.push_back(mvlc_op);
 }
+
+/**
+ * addBlockCountRead16
+ *   For the MVLC, the counted block read (that is the block read where the count comes from
+ * a bit field in a value read from the VME), this requires
+ * 1.  A read from memory to the 'accumulator'
+ * 2.  A mask/shift of the accumulator to generate the count.
+ * 3.  Either a vme_read_mem for a block transfer from memory or vme_read for a FIFO transer
+ * 
+ * This method does step 1 and 2 of the above.  The addMaskedCountBLockxxxxRead32 methods do other steps.
+ * The utility maskAndShift generates step 2 in a common way for those methods.
+ * 
+ * @param address - address from which the count is read.
+ * @param mask    - mask that defines the field containing the count.
+ * @param amod    - address modifier.
+ * 
+ * @note, if the user's next operation is not a masked Count block read, the results will be unexpected.
+ */
+void
+CVMUSBReadoutList::addBlockCountRead16(uint32_t address, uint32_t mask, uint8_t amod) {
+    readToAccumulator(address, amod, "d16");    // Step 1.
+    maskAndShift(mask);                         // Step 2.
+}
+/**
+ *  Same as addBlockCountRead16 but the read to the accumulator is 32 bits.
+ */
+void
+CVMUSBReadoutList::addBlockCountRead32(uint32_t address, uint32_t mask, uint8_t amod) {
+    readToAccumulator(address, amod, "d32");    // Step 1.
+    maskAndShift(mask);                         // Step 2.
+}
 /**
  *  dumpForMvlc
  *    Dump the stack.
@@ -206,4 +237,46 @@ CVMUSBReadoutList::addRead(uint32_t address, uint8_t amod, const char* width) {
     
     std::string mvlc_op(stack_line.str());
     m_list.push_back(mvlc_op);
+}
+
+/** 
+ * generate a read_to_accu	amod data_width address stack line:
+ * 
+ */
+void
+CVMUSBReadoutList::readToAccumulator(uint32_t address, uint8_t amod, const char* size) {
+    std::stringstream stack_line;
+    stack_line << "read_to_accu 0x" << std::hex << unsigned(amod) << " " << size    
+        << " 0x" << address;
+
+    std::string mvlc_op(stack_line.str());
+    m_list.push_back(mvlc_op);
+}
+/**
+ *  generate a mask_shift_accu	mask shift 
+ * operation.  This assumes the mask is never 0.
+ * 
+ */
+void
+CVMUSBReadoutList::maskAndShift(uint32_t mask) {
+    // need to figure out the shift count:
+
+    uint32_t scmask = 1;
+    unsigned scount = 0;
+    while(!(scmask & mask)) {
+        scount++;
+        scmask = scmask << 1;
+    }
+    // The shift is a rotate (circular)  left on a 32 bit accumulator so :
+    // Don't need any shifting if it's 0.
+    if (scount != 0) scount = 32 - scount;  // Corresopnds to right shift of scount
+
+    // Generate the stack line:
+
+    std::stringstream stack_line;
+    stack_line << "mask_shift_accu 0x" << std::hex << mask << " " << std::dec << scount;
+
+    std::string mvlc_op(stack_line.str());
+    m_list.push_back(mvlc_op);
+
 }

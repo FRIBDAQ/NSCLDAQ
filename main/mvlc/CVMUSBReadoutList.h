@@ -59,11 +59,11 @@ public:
     virtual void addRead16(uint32_t address, uint8_t amod);
 
     virtual void addBlockRead32(uint32_t baseAddress, uint8_t amod, size_t transfers);
-
     virtual void addFifoRead32(uint32_t  baseAddress, uint8_t amod, size_t transfers);
-#ifdef UNDEFINED
+
     virtual void addBlockCountRead16(uint32_t address, uint32_t mask, uint8_t amod);
     virtual void addBlockCountRead32(uint32_t address, uint32_t mask, uint8_t amod);
+#ifdef UNIMPLEMENTED
     virtual void addMaskedCountBlockRead32(uint32_t address, uint8_t amod);
     virtual void addMaskedCountFifoRead32(uint32_t address, uint8_t amod);
 
@@ -98,6 +98,8 @@ public:
 private:
     void addWrite(uint32_t address, uint8_t amod, const char* width, uint32_t data);
     void addRead(uint32_t address, uint8_t amod, const char* width);
+    void readToAccumulator(uint32_t address, uint8_t amod, const char* size);
+    void maskAndShift(uint32_t mask);
 };
 
 #endif
