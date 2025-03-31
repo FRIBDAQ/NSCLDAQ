@@ -67,7 +67,30 @@ CVMUSBReadoutList::addMarker(uint32_t value) {
     m_list.push_back(mvlc_op);
 }
 
-
+/**
+ * addWrite32
+ *    Add a 32 bit write to the stack.  This looks like
+ * \verbatim
+ * vme_write	amod d32 address value	
+ * \endverbatim
+ * 
+ * @param addresss - the address to write to.
+ * @param amod     - the address modifier to use... CVMUSBReadoutList has some constant defs so you
+ *                   don't need to memorize them from the VME spec.
+ * @param datum    - The data to write.
+ */
+void
+CVMUSBReadoutList::addWrite32(uint32_t address, uint8_t amod, uint32_t datum) {
+    addWrite(address, amod, "d32", datum);
+}
+/**
+ *  addWrite16
+ *     Same as addWrite32 above but the write is a d16 write.
+ */
+void
+CVMUSBReadoutList::addWrite16(uint32_t address, uint8_t amod, uint16_t datum) {
+    addWrite(address, amod, "d16", datum);
+}
 
 
 /**
@@ -79,4 +102,21 @@ CVMUSBReadoutList::addMarker(uint32_t value) {
 std::vector<std::string>
 CVMUSBReadoutList::dumpForMvlc() {
     return m_list;
+}
+
+
+////////////////////////// Private utilities ////////////////////////////////////////////
+
+
+/** 
+ * addWrite  - add a write to the stack.  The additional parameter from the addWritexx is the
+ * textual width of the write ("d32" or "d16").
+ */
+void
+CVMUSBReadoutList::addWrite(uint32_t address, uint8_t amod, const char* width, uint32_t data) {
+    std::stringstream stack_line;
+    stack_line << "vme_write 0x" << std::hex   << unsigned(amod) <<  " " << width 
+     << " 0x" << address << " 0x" << data;
+    std::string mvlc_op(stack_line.str());
+    m_list.push_back(mvlc_op);
 }
