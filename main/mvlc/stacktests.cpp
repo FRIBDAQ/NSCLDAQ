@@ -47,6 +47,10 @@ class ReadoutListTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(read_1);   //d32
     CPPUNIT_TEST(read_2);   //d16
 
+    // Block/fifo reads:
+
+    CPPUNIT_TEST(blockread_1);
+    CPPUNIT_TEST(blockread_2);
 
     CPPUNIT_TEST_SUITE_END();
 
@@ -58,6 +62,8 @@ protected:
     void write_2();
     void read_1();
     void read_2();
+    void blockread_1();
+    void blockread_2();
 
 public:
     void setUp() {}
@@ -174,6 +180,32 @@ ReadoutListTests::read_2() {
     CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
     CPPUNIT_ASSERT_EQUAL(
         std::string("vme_read 0xd d16 0x11223344"),
+        mvlclist.at(0)
+    );
+}
+/*  BLock /FIFO reads */
+void
+ReadoutListTests::blockread_1() {
+    CVMUSBReadoutList list;
+    list.addBlockRead32(0x66660000, CVMUSBReadoutList::a32UserBlock, 100);
+
+    auto mvlclist = list.dumpForMvlc();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_block_read_mem 0xb 100 0x66660000"),
+        mvlclist.at(0)
+    );
+}
+void
+ReadoutListTests::blockread_2() {
+    CVMUSBReadoutList list;
+    list.addFifoRead32(0x55550000, CVMUSBReadoutList::a32PrivBlock, 100);
+
+    auto mvlclist = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_block_read 0xf 100 0x55550000"),
         mvlclist.at(0)
     );
 }

@@ -98,7 +98,7 @@ CVMUSBReadoutList::addWrite16(uint32_t address, uint8_t amod, uint16_t datum) {
  * \verbatim
  *  vme_read amod d32 address
  * \endverbatim
- *   
+ *
  * 
  * @param address - the address to read from.
  * @param amod    - The address modifier to use... CVMUSBReadoutList supplies some symbolics to help.
@@ -116,6 +116,56 @@ CVMUSBReadoutList::addRead16(uint32_t address, uint8_t amod) {
     addRead(address, amod, "d16");
 }
 
+/**
+ *  addBlockRead32
+ *     Adds a block read of 32 bit items.  The caller must ensure that the address modifier is
+ * a block transfer modifier such as CVMUSBReadoutList::a32UserBlock or else the results of the
+ * operation are not defined.alignas
+ *
+ * @param baseAddress- address of the first read.
+ * @param amod   -- Address modifier (see cautiolnabove).
+ * @param transfers - Number of transfers to occur.
+ * 
+ * VME note:  normally a read requires two vme bus cycles one to assert the transfer address and
+ * the second to actually clock in the data.  VME added block transfers where the target of the read is 
+ * responsible for 'knowing' the addresss of subsequent transfers after the first in a block.  The
+ * number of transfers in e.g. an MBLT is limited so the master must still perform an address cycle from
+ * time to time, however this address cycle is now amortized over several data transfers improving performance
+ *  
+ * THe resulting stack line is of the form:alignas
+ * \verbatim
+ *   vme_block_read_mem	amod transfers address
+ * \endverbatim 
+ */
+void
+CVMUSBReadoutList::addBlockRead32(uint32_t baseAddress, uint8_t amod, size_t transfers) {
+    std::stringstream stack_line;
+    stack_line << "vme_block_read_mem 0x" << std::hex << unsigned(amod) << std::dec << " " << transfers
+        << std::hex << " 0x" << baseAddress;
+
+    std::string mvlc_op(stack_line.str());
+    m_list.push_back(mvlc_op);
+}
+/**
+ * addFifoRead32
+ *     THis is identical to addBlockRead32, _but_  the slave does not internally increment the
+ * transfer address  within a VME block transfer and the master always outputs the same base address
+ * for each VME block.   As before, the caller is responsible for using a valid block transfer
+ * address modifier.
+ * 
+ * @param baseAddress - address of the FIFO.
+ * @param amod        - Address modifier of the transfer.
+ * @param transfers   - number of transfers to perform.
+ */
+void
+CVMUSBReadoutList::addFifoRead32(uint32_t baseAddress, uint8_t amod, size_t transfers) {
+    std::stringstream stack_line;
+    stack_line << "vme_block_read 0x" << std::hex << unsigned(amod) << std::dec << " " << transfers
+        << std::hex << " 0x" << baseAddress;
+
+    std::string mvlc_op(stack_line.str());
+    m_list.push_back(mvlc_op);
+}
 /**
  *  dumpForMvlc
  *    Dump the stack.
