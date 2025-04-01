@@ -230,6 +230,25 @@ CVMUSBReadoutList::addMaskedCountFifoRead32(uint32_t address, uint8_t amod) {
     m_list.push_back(mvlc_op);
 }
 /**
+ *  addDelay
+ *    Adds a delay to the stack.  Note that the delays here will, in general, be longer than a similar
+ * delay for the VMUSB. This is because the delay units are milliseconds. 
+ * 
+ * @param ms - The number of milliseconds to delay.  Note that delay should, in general, not be in 
+ * readout stacks!!!!! no longer...perhaps we need to warn at runtime.
+ */
+void
+CVMUSBReadoutList::addDelay(uint32_t ms) {
+    
+    std::stringstream stack_line;
+    stack_line << "software_delay " << ms;
+    std::string mvlc_op(stack_line.str());
+
+    m_list.push_back(mvlc_op);
+
+
+}
+/**
  *  dumpForMvlc
  *    Dump the stack.
  * 

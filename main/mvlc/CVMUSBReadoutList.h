@@ -66,10 +66,9 @@ public:
 
     virtual void addMaskedCountBlockRead32(uint32_t address, uint8_t amod);
     virtual void addMaskedCountFifoRead32(uint32_t address, uint8_t amod);
-#ifdef UNIMPLEMENTED
-    virtual void addDelay(uint8_t clocks);
-#endif
-    virtual void addMarker(uint32_t value);
+
+    virtual void addDelay(uint32_t clocks);
+    virtual void addMarker(uint32_t ms);
 
     std::vector<std::string> dumpForMvlc();      // Return the operations list.
 

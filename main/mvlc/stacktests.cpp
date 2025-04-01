@@ -59,6 +59,10 @@ class ReadoutListTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(blockcount_3);    // BLockcount read.
     CPPUNIT_TEST(blockcount_4);     // Fifo block count read.
 
+    // software_delay test
+
+    CPPUNIT_TEST(delay_1);
+
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -75,7 +79,7 @@ protected:
     void blockcount_2();
     void blockcount_3();
     void blockcount_4();
-
+    void delay_1();
 
 public:
     void setUp() {}
@@ -294,6 +298,20 @@ ReadoutListTests::blockcount_4() {
     CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
     CPPUNIT_ASSERT_EQUAL(
         std::string("vme_read 0xf d32 0x12430000"),
+        mvlclist.at(0)
+    );
+}
+// Stack delay operations 
+
+void
+ReadoutListTests::delay_1() {
+    CVMUSBReadoutList list;
+    list.addDelay(12);        // ms _sigh_.
+
+    auto mvlclist = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("software_delay 12"),
         mvlclist.at(0)
     );
 }
