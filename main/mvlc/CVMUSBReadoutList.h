@@ -71,6 +71,7 @@ public:
     virtual void addMarker(uint32_t ms);
 
     std::vector<std::string> dumpForMvlc();      // Return the operations list.
+    void clear();                               // clear the list.
 
 public:
     // Convenience definitions for amods:

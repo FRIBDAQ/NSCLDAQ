@@ -6,7 +6,8 @@ bin_PROGRAMS=mvlcgenerate
 
 main_modules=utilities.h utilities.cpp \
 	TCLConfigParser.h TCLConfigParser.cpp \
-	CVMUSBReadoutList.h CVMUSBReadoutList.cpp
+	CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
+	CVMUSB.h CVMUSB.cpp
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
 
 

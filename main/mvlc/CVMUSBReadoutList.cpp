@@ -259,7 +259,14 @@ CVMUSBReadoutList::dumpForMvlc() {
     return m_list;
 }
 
-
+/** 
+ *  clear
+ *    Just clear's the vector
+ */
+void
+CVMUSBReadoutList::clear() {
+    m_list.clear();
+}
 ////////////////////////// Private utilities ////////////////////////////////////////////
 
 

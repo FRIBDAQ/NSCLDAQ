@@ -20,6 +20,8 @@
 #ifndef MVLC_CVMUSB_H
 #define MVLC_CVMUSB_H
 #include "CVMUSBReadoutList.h"
+#include <string>
+#include <vector>
 /**
  *  @class CVMUSB
  *    This file is a stand-in for CVMUSB for device support objects. It's handed to their
@@ -31,5 +33,16 @@ class CVMUSB {
 private:
     CVMUSBReadoutList m_operationList;
 public:
+    virtual ~CVMUSB();    // So we can derive.
+    // just the stuff we need to initialize modules.
+    // Note we only support writes because reads are pretty muhc impossible
+    // for us to get data bit, in pretty much all cases, that's about what we need.
+
+    virtual int vmeWrite32(uint32_t address, uint8_t aModifier, uint32_t data);
+    virtual int vmeWrite16(uint32_t address, uint8_t aModifier, uint16_t data);
+    
+
+    std::vector<std::string> getRecordedOperations();
+    void clearRecordedOperations();
 };
 #endif
