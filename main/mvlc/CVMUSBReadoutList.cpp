@@ -198,6 +198,38 @@ CVMUSBReadoutList::addBlockCountRead32(uint32_t address, uint32_t mask, uint8_t 
     maskAndShift(mask);                         // Step 2.
 }
 /**
+ * addMaskedCountBlockRead32 
+ *   This assumes the accumulator already has the transfer counnt via a clall to AddBlockCountReadxx
+ *   When that's the case, a vme_read_mem ( addRead32) is a block read that does the specified
+ *   number of transfers.
+ * 
+ * @param addresss - base address for hte read (this gets incremente4d by vme_read_mem as needed).
+ * @param amod     - Address modifier for the read  an MBLT amod is suggested.
+ *    
+ */
+void
+CVMUSBReadoutList::addMaskedCountBlockRead32(uint32_t address, uint8_t amod) {
+    addRead32(address, amod);                 // Generates the right stuff.
+}
+
+/**
+ *  addMaskedCountFifoRead32
+ *     Same as addMaskedCountBlockRead32 but we use a vme_read so that the address does not 
+ * increment, as for a FIFO.
+ */
+void 
+CVMUSBReadoutList::addMaskedCountFifoRead32(uint32_t address, uint8_t amod) {
+    // Don't have a utility and this is the only use so, shamelessly copy/pasted and
+    // edited from the addRead utility, we have:
+
+    std::stringstream stack_line;
+    stack_line << "vme_read 0x" << std::hex << unsigned(amod)
+        << " " << "d32" << " 0x" << address;
+    
+    std::string mvlc_op(stack_line.str());
+    m_list.push_back(mvlc_op);
+}
+/**
  *  dumpForMvlc
  *    Dump the stack.
  * 
@@ -232,7 +264,7 @@ CVMUSBReadoutList::addWrite(uint32_t address, uint8_t amod, const char* width, u
 void
 CVMUSBReadoutList::addRead(uint32_t address, uint8_t amod, const char* width) {
     std::stringstream stack_line;
-    stack_line << "vme_read 0x" << std::hex << unsigned(amod)
+    stack_line << "vme_read_mem 0x" << std::hex << unsigned(amod)
         << " " << width << " 0x" << address;
     
     std::string mvlc_op(stack_line.str());

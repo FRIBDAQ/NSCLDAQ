@@ -56,6 +56,8 @@ class ReadoutListTests : public CppUnit::TestFixture {
 
     CPPUNIT_TEST(blockcount_1);    // 16 bit.
     CPPUNIT_TEST(blockcount_2);    // 32 bit.
+    CPPUNIT_TEST(blockcount_3);    // BLockcount read.
+    CPPUNIT_TEST(blockcount_4);     // Fifo block count read.
 
     CPPUNIT_TEST_SUITE_END();
 
@@ -71,6 +73,8 @@ protected:
     void blockread_2();
     void blockcount_1();
     void blockcount_2();
+    void blockcount_3();
+    void blockcount_4();
 
 
 public:
@@ -173,7 +177,7 @@ ReadoutListTests::read_1() {
     auto mvlclist = list.dumpForMvlc();
     CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
     CPPUNIT_ASSERT_EQUAL(
-        std::string("vme_read 0x3d d32 0x123400"),
+        std::string("vme_read_mem 0x3d d32 0x123400"),
         mvlclist.at(0)
     );
 }
@@ -187,7 +191,7 @@ ReadoutListTests::read_2() {
 
     CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
     CPPUNIT_ASSERT_EQUAL(
-        std::string("vme_read 0xd d16 0x11223344"),
+        std::string("vme_read_mem 0xd d16 0x11223344"),
         mvlclist.at(0)
     );
 }
@@ -260,4 +264,36 @@ ReadoutListTests::blockcount_2() {     // 32 bit read of the count:
         mask_op
     );
 
+}
+// addMaskedCountBlockRead32 generates the same thing as a 
+// read32.
+
+void
+ReadoutListTests::blockcount_3() {
+    // Note we don't bother to issue the addBlockCountRead since we're not going
+    // to actually do the read.
+
+    CVMUSBReadoutList list;
+    list.addMaskedCountBlockRead32(0x12430000, CVMUSBReadoutList::a32PrivBlock);
+
+    auto mvlclist = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_read_mem 0xf d32 0x12430000"),
+        mvlclist.at(0)
+    );
+}
+// Now for a fifo... same result but a vme_read not a vme_read_mem
+
+void 
+ReadoutListTests::blockcount_4() {
+    CVMUSBReadoutList list;
+    list.addMaskedCountFifoRead32(0x12430000, CVMUSBReadoutList::a32PrivBlock);
+    
+    auto mvlclist = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_read 0xf d32 0x12430000"),
+        mvlclist.at(0)
+    );
 }
