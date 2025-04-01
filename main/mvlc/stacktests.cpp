@@ -18,6 +18,7 @@
 @brief Test CVMUSBReadoutList class.
 */
 #include "CVMUSBReadoutList.h"
+#include "CVMUSB.h"
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/Asserter.h>
 
@@ -63,6 +64,13 @@ class ReadoutListTests : public CppUnit::TestFixture {
 
     CPPUNIT_TEST(delay_1);
 
+    // Since CVMUSB is really a stack based recording entity now
+    // it's not bad to test it here.
+
+    CPPUNIT_TEST(vmusbwrite_1);
+    CPPUNIT_TEST(vmusbwrite_2);
+    CPPUNIT_TEST(vmusbclear_1);
+
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -80,6 +88,10 @@ protected:
     void blockcount_3();
     void blockcount_4();
     void delay_1();
+
+    void vmusbwrite_1();
+    void vmusbwrite_2();
+    void vmusbclear_1();
 
 public:
     void setUp() {}
@@ -313,5 +325,50 @@ ReadoutListTests::delay_1() {
     CPPUNIT_ASSERT_EQUAL(
         std::string("software_delay 12"),
         mvlclist.at(0)
+    );
+}
+
+/// CVMUSB tests:
+
+void 
+ReadoutListTests::vmusbwrite_1() {
+    CVMUSB record;
+    record.vmeWrite32(0x12340000, CVMUSBReadoutList::a32UserData, 0x12345678);
+
+    auto mvlclist = record.getRecordedOperations();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x12345678"),
+        mvlclist.at(0)
+    );
+}
+void 
+ReadoutListTests::vmusbwrite_2() {
+    CVMUSB record;
+    record.vmeWrite16(0x124300, CVMUSBReadoutList::a24UserData, 0x1234);
+
+    auto mvlclist = record.getRecordedOperations();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x39 d16 0x124300 0x1234"),
+        mvlclist.at(0)
+    );
+}
+void 
+ReadoutListTests::vmusbclear_1() {
+    // add some stuff... clear shouldempty thel ist.
+
+    CVMUSB record;
+    for  (int i =0; i < 100; i++) {
+        record.vmeWrite32(0x12340000 + i * sizeof(uint32_t), CVMUSBReadoutList::a32UserData, 0x12345678);
+    }
+
+    record.clearRecordedOperations();
+
+    auto mvlclist = record.getRecordedOperations();
+    CPPUNIT_ASSERT_EQUAL(
+        size_t(0), mvlclist.size()
     );
 }
