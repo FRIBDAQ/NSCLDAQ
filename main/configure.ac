@@ -91,6 +91,7 @@ AC_ARG_ENABLE([mvlc-stack-generator],
 
 if test "x$enable_mvlc" == "xyes"
 then
+	AC_MSG_NOTICE([Including mvlc usb config generation support])
 	AM_CONDITIONAL([MVLC_GENERATOR],[true])
 else	
 	AM_CONDITIONAL([MVLC_GENERATOR], [false])

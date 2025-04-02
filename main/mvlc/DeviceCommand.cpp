@@ -20,9 +20,9 @@
 */
 
 #include "DeviceCommand.h"
-#include "TCLCOnfigParser.h"
+#include "TCLConfigParser.h"
 #include <XXUSBConfigurableObject.h>
-#include "CReadoutModule.h
+#include "CReadoutModule.h"
 
 #include <TCLInterpreter.h>
 #include <TCLObject.h>
@@ -71,7 +71,7 @@ DeviceCommand::~DeviceCommand() {}
  *  and those will be converted in some way to a result and TCL_ERROR return code.
  */
 int
-DeviceCommand::operator()(CTCLInterpreter* interp, std::vector<CTCLObject>& objv) {
+DeviceCommand::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     bindAll(interp, objv);                    // Bind all command words to the interpreter.
     try  {
         requireAtLeast(objv, 3,
@@ -82,12 +82,13 @@ DeviceCommand::operator()(CTCLInterpreter* interp, std::vector<CTCLObject>& objv
 
         if(subcommand == "create") {
             
-                
-            create(devName, getConfigArray(ovbjv));
+            auto configuration = getConfigArray(objv);
+            create(devName, configuration);
             interp.setResult(devName);
             interp.setResult(devName);
         } else if(subcommand == "config") {
-            config(devName, getConfigArray(objv));
+            auto configuration = getConfigArray(objv);
+            config(devName, configuration);
             interp.setResult(devName);
         } else if (subcommand == "cget") {
             requireAtMost(objv, 4, "At most one config parameter can be queried.");
@@ -95,14 +96,14 @@ DeviceCommand::operator()(CTCLInterpreter* interp, std::vector<CTCLObject>& objv
             if (objv.size() == 4) {
                 pParam = std::string(objv[3]).c_str();
             }
-            config(interp, devName, pParam);
+            cget(interp, devName, pParam);
         }
     }
     catch(std::string msg) {
         interp.setResult(msg);
         return TCL_ERROR;
     }
-    catch(CExcepition & e) {
+    catch(CException & e) {
         interp.setResult(e.ReasonText());
         return TCL_ERROR;
     }
@@ -111,7 +112,8 @@ DeviceCommand::operator()(CTCLInterpreter* interp, std::vector<CTCLObject>& objv
         return TCL_ERROR;
     }
     catch(...) {
-        interp.setResult("An unanticipated exception type was caught in DeviceCommaned::operator().")
+        interp.setResult("An unanticipated exception type was caught in DeviceCommaned::operator().");
+        return TCL_ERROR;
     }
     // Nothing to catch means success.
     return TCL_OK;
@@ -129,18 +131,18 @@ DeviceCommand::operator()(CTCLInterpreter* interp, std::vector<CTCLObject>& objv
  * up to the option prior to the error.
  * 
  * @param name - name of the device to configure.
- * @param config - THe configuration option/value pairs - bound to the interpreter already.
+ * @param configParams - THe configuration option/value pairs - bound to the interpreter already.
  * 
  */
 void 
-DeviceCommand::create(std::string name, std::vector<CTCLObject>& config) {
+DeviceCommand::create(std::string name, std::vector<CTCLObject>& configParams) {
     if (m_parser.findDevice(name)) {
-        throwDevicError(name, "Attempted to create a duplicate device");
+        throwDeviceError(name, "Attempted to create a duplicate device");
     } else {
         CReadoutModule* pDevice = createDevice(name);
-        pDevice->Attach(new XXUSB::ConfigurableObject);    // Set up the configuration options.
+        pDevice->Attach(new XXUSB::CConfigurableObject(name));    // Set up the configuration options.
         m_parser.addDevice(name, pDevice);
-        config(name, config);
+        config(name, configParams);
     }
 }
 
@@ -159,13 +161,13 @@ void
 DeviceCommand::config(std::string name, std::vector<CTCLObject>& config) {
     CReadoutModule* pModule = m_parser.findDevice(name);
     if (!pModule) {
-        throwDeviceError(name, "Attempted to configure a non existent device ")
+        throwDeviceError(name, "Attempted to configure a non existent device ");
     } else {
         if (config.size() & 1) {
             throwDeviceError(name, "Configurations must consists of option/value pairs.");
         } else {
-            XXUSB::ConfigurableObject* pConfig = pModule->getConfiguration();
-            for (int i =0; i < config.size(); i++2) {
+            XXUSB::CConfigurableObject* pConfig = pModule->getConfiguration();
+            for (int i =0; i < config.size(); i += 2) {
                 std::string option = config[i];
                 std::string value = config[i+1];    // We ensured this is defined above.
                 pConfig->configure(option, value);  // May throw if, option is invalid e.g.
@@ -190,12 +192,12 @@ DeviceCommand::config(std::string name, std::vector<CTCLObject>& config) {
  * @param option  - If not null the name of the single option value desired.
  */
 void 
-DeviceCommand::cget(CTCLInterpreter& interp, const char* option) {
+DeviceCommand::cget(CTCLInterpreter& interp, std::string name,  const char* option) {
     CReadoutModule* pModule = m_parser.findDevice(name);
-    if (!pmodule) {
+    if (!pModule) {
         throwDeviceError(name, "Attempting to query the configuration of a non-existent device");
     } else {
-        XXUSB::ConfigurableObject* pConfig = pModule->getConfiguration();
+        XXUSB::CConfigurableObject* pConfig = pModule->getConfiguration();
         if (option) { 
             interp.setResult(pConfig->cget(std::string(option)));   // could also throw.
         } else {
@@ -203,14 +205,14 @@ DeviceCommand::cget(CTCLInterpreter& interp, const char* option) {
 
             CTCLObject result; result.Bind(interp);
             for (auto item : config) {
-                CTCLObject itemList; item.Bind(interp);
+                CTCLObject itemList; itemList.Bind(interp);
                 CTCLObject name; name.Bind(interp); name = item.first;
                 CTCLObject value; value.Bind(interp); value = item.second;
 
-                itemList += name; itemList ++ value;
+                itemList += name; itemList += value;
                 result += itemList;
             }
-            inter.setResult(result);
+            interp.setResult(result);
         }
     }
 }
@@ -250,10 +252,10 @@ DeviceCommand::getConfigArray(std::vector<CTCLObject>& objv) const {
        @param reason - reason the error is being thrown. 
 */
 void
-DeviceCommand::throwDeviceError(std::string name, const char* reason) {
+DeviceCommand::throwDeviceError(std::string name, const char* reason)  const{
     std::stringstream error;
     error << "Error involving the device named : " << name << " : " << reason;
 
     std::string message(error.str());
-    throw std::logic_error(error);
+    throw std::logic_error(message);
 }

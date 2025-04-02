@@ -28,7 +28,7 @@ if BUILD_DDAS
 endif
 
 if MVLC_GENERATOR
-	MVLCGENDIR=mvlc
+  MVLCGENDIR=mvlc
 endif
 
 SRSDIR=srs

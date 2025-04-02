@@ -21,12 +21,11 @@
 #ifndef  MVLC_DEVICE_COMMAND_H
 #define  MVLC_DEVICE_COMMAND_H
 
-#include <TCLObjectProocessor.h> 
-#include <TCLObject.h>
+#include <TCLObjectProcessor.h> 
 #include <string>
 
 class TCLConfigParser;
-
+class CReadoutModule;
 
 /**
  *  @class DeviceCommand
@@ -55,7 +54,7 @@ class TCLConfigParser;
  * to produce a new CReadoutModule.
  * 
  */
-class DeviceComand : public CTCLObjectProcsessor; {
+class DeviceCommand : public CTCLObjectProcessor {
     // object data:
 private:
     TCLConfigParser& m_parser;    // We need parser services.
@@ -98,5 +97,6 @@ private:
     std::vector<CTCLObject> getConfigArray(std::vector<CTCLObject>& objv) const;
     void throwDeviceError(std::string name, const char* reason) const;
 
-}
+};
+
 #endif

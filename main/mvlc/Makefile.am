@@ -7,14 +7,17 @@ bin_PROGRAMS=mvlcgenerate
 main_modules=utilities.h utilities.cpp \
 	TCLConfigParser.h TCLConfigParser.cpp \
 	CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
-	CVMUSB.h CVMUSB.cpp
+	CVMUSB.h CVMUSB.cpp \
+	DeviceCommand.h DeviceCommand.cpp \
+	CReadoutModule.h CReadoutModule.cpp
+	
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
 
 
 mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
 	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
-	@LIBTCLPLUS_LDFLAGS@ @TCL_LIBS@
+	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
 
 BUILT_SOURCES = generate.cpp options.h options.c
 nodist_mvlcgenerate_SOURCES=options.h options.c
