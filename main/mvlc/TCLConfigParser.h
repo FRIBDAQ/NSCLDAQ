@@ -29,6 +29,7 @@ class CTCLInterpreter;
 class CStack;
 class CReadoutModule;
 class CTCLObjectProcessor;
+class CReadoutModule;
 
 /**
  *  @class TCLConfigParser
@@ -100,8 +101,8 @@ public:
 
     // Services for devices: 
 
-    CReadoutModule* findDevice(std::string devname);                   // TODO: implement/test
-    void addDevice(std::string devname, CReadoutMdule* driver);        // TODO: implement/test
+    CReadoutModule* findDevice(std::string devname);                   
+    void addDevice(std::string devname, CReadoutModule* driver);        
 
     // utilities -some might be virtual to support replacement in derived test objects.
 protected:

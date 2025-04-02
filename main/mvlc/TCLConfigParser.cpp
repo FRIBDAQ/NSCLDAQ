@@ -90,7 +90,35 @@ TCLConfigParser::operator()() {
 
 // Services for device commands:
 
-
+/**
+ * findDevice
+ *     Locate a device by name in m_modules.
+ * 
+ * @param devname - name of the device to find.
+ * @return CReadoutModule*
+ * @retval nullptr - if there is no such device.
+ */
+CReadoutModule*
+TCLConfigParser::findDevice(std::string devname) {
+    CReadoutModule* result(nullptr);
+    auto p = m_modules.find(devname);
+    if (p != m_modules.end()) {
+        result = p->second;
+    }
+    return result;
+}
+/**
+ * addDevice
+ *    Add a new device to the m_modules map - the caller is responslbe for ensuring this is
+ * not a duplicate.
+ * 
+ * @param devname - name of the new devicde.
+ * @param driver  - pointer to the device instance to have.  We assume ownership of this device.
+ */
+void
+TCLConfigParser::addDevice(std::string devName, CReadoutModule* driver) {
+    m_modules[devName]  = driver;                // Caller has to ensure this is not a duplicate name.
+}
 
 ///////////////////////////////// private utilities ///////////////////////////////////////////
 
