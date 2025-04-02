@@ -25,7 +25,6 @@
 
 // Stub classes - remove them as the real classes get defined:
 
-class CReadoutHardware {};
 class CReadoutModule {};
 class CStack {};
 
@@ -88,6 +87,9 @@ void
 TCLConfigParser::operator()() {
     m_pInterp->EvalFile(m_daqconfigFile);
 }
+
+// Services for device commands:
+
 
 
 ///////////////////////////////// private utilities ///////////////////////////////////////////

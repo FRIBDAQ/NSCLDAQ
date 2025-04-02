@@ -98,6 +98,11 @@ public:
     virtual void initialize();
     virtual void operator()();                                // Process the input file.
 
+    // Services for devices: 
+
+    CReadoutModule* findDevice(std::string devname);                   // TODO: implement/test
+    void addDevice(std::string devname, CReadoutMdule* driver);        // TODO: implement/test
+
     // utilities -some might be virtual to support replacement in derived test objects.
 protected:
     virtual void addExtensions();
