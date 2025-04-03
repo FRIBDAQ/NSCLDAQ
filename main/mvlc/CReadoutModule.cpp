@@ -62,7 +62,7 @@ CReadoutModule::Attach(XXUSB::CConfigurableObject* config) {
     delete m_pConfiguration;
     m_pConfiguration = config;
 
-    // TODO:  If m_pDevice SUpport is notn ull invoke it's OnAttach.
+    // TODO:  If m_pDevice SUpport is not null invoke it's OnAttach.
 }
 /**
  * SetDriver
