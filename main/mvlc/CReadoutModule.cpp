@@ -20,10 +20,8 @@
 
 #include "CReadoutModule.h"
 #include <XXUSBConfigurableObject.h>
+#include "CReadoutHardware.h"
 
-class CReadoutHardware {
-
-};    // TODO:  define and write  this.
 
 /////////////////////////////// canonicals ///////////////////////////////////////////
 
@@ -53,7 +51,6 @@ CReadoutModule::~CReadoutModule() {
  * Attach
  *    Attach a new configuration to the system.  For now we just delete any old m_pConfiguration
  * and set the new one but:alignas
- * TODO: Need to require the device support is not null and invoke it's onAttach to setup the config params
  * 
  * @param config - pointer to the new configuration - must have been 'newed' into existence.
  */
@@ -62,21 +59,21 @@ CReadoutModule::Attach(XXUSB::CConfigurableObject* config) {
     delete m_pConfiguration;
     m_pConfiguration = config;
 
-    // TODO:  If m_pDevice SUpport is not null invoke it's OnAttach.
+    if (m_pDeviceSupport) m_pDeviceSupport->onAttach(*config);
 }
 /**
  * SetDriver
  *    Sets the device driver part of out package. 
  * 
  *  @param pDriver - pointer to adriver instance.
- * TODO:  If there's a configuration, then it must be attached to the driver
+
  */
 void
 CReadoutModule::SetDriver(CReadoutHardware* pDriver) {
     delete m_pDeviceSupport;
     m_pDeviceSupport = pDriver;
 
-    // @TODO:  Invoke pDriver->OnAttach if the config is not null.
+    if (m_pConfiguration) m_pDeviceSupport->onAttach(*m_pConfiguration);
 }
 /**
  * getConfiguration 
