@@ -99,10 +99,13 @@ public:
     virtual void initialize();
     virtual void operator()();                                // Process the input file.
 
+    // Getters:
+
+    CTCLInterpreter* getInterpreter() {return m_pInterp; }
     // Services for devices: 
 
     CReadoutModule* findDevice(std::string devname);                   
-    void addDevice(std::string devname, CReadoutModule* driver);        
+    void addDevice(std::string devname, CReadoutModule* driver);       
 
     // utilities -some might be virtual to support replacement in derived test objects.
 protected:
