@@ -105,7 +105,7 @@ public:
     // Services for devices: 
 
     CReadoutModule* findDevice(std::string devname);                   
-    void addDevice(std::string devname, CReadoutModule* driver);       
+    virtual void addDevice(std::string devname, CReadoutModule* driver);        // virtual for testing.
 
     // utilities -some might be virtual to support replacement in derived test objects.
 protected:

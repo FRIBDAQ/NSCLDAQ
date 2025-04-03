@@ -34,6 +34,7 @@
 #include <memory>
 #include <TCLInterpreter.h>
 #include <TCLException.h>
+#include <XXUSBConfigurableObject.h>
 #include <tcl.h>
 
 
@@ -55,6 +56,13 @@ namespace devcmdtest {
         TestTCLConfigParser(const std::string& infile) :
             TCLConfigParser(infile) {}
         
+    public:
+        // Normally the call to attach  callse  the driver's attach which configures
+        // the options, _but_ in these tests, we don't actually have a driver so we cheat.
+        virtual void addDevice(std::string devname, CReadoutModule* driver) { // to add -test option.
+            driver->getConfiguration()->addParameter("-test", nullptr, nullptr);
+            TCLConfigParser::addDevice(devname, driver);
+        }    
     protected:
         void addExtensions() {
             auto testcmd = new TestDeviceCommand(*getInterpreter(), *this);
@@ -65,18 +73,29 @@ namespace devcmdtest {
 
 class DevCmdTests : public CppUnit::TestFixture {
 
-    CPPUNIT_TEST_SUITE(DevCmdTests);\
+    CPPUNIT_TEST_SUITE(DevCmdTests);
     CPPUNIT_TEST(construct_1);
+    CPPUNIT_TEST(create_1);    // Test create subcommand.
+    CPPUNIT_TEST(create_2);    // Test create command with configuration.
+    CPPUNIT_TEST(create_3);    // Test create command with bad configuration.
+    CPPUNIT_TEST(create_4);    // Test create command with bad parameter count.
+    CPPUNIT_TEST(create_5);    // DUplicate error.
     CPPUNIT_TEST_SUITE_END();
 
 protected:
     void construct_1();
+
+    void create_1();
+    void create_2();
+    void create_3();
+    void create_4();
+    void create_5();
 public:
     void setUp() {
         // Create a temp file...
 
         char nameTemplate[100];
-        strcpy(nameTemplate, "configXXXXXX.tcl");
+        strcpy(nameTemplate, "config.tclXXXXXX");
         m_fd = mkstemp(nameTemplate);
         m_scriptFile = nameTemplate;
 
@@ -109,3 +128,92 @@ DevCmdTests::construct_1() {
 
      CPPUNIT_ASSERT(pCommand);              // Null if not found.
 }
+ ///////////////////////////////////// Create tests ///////////////////////////////////////
+
+
+ // Just make one.
+ void
+ DevCmdTests::create_1() {
+    // Make the script and execute it:
+    {
+        std::ofstream script(m_scriptFile);
+        script << "device create abcd\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW((*m_pParser)());
+
+    // There should be a device named "abcd":
+
+    CPPUNIT_ASSERT(m_pParser->findDevice("abcd"));
+ }
+ // Make one and configure -test to be something.
+
+ void
+ DevCmdTests::create_2() {
+    {
+        std::ofstream script(m_scriptFile);
+        script << "device create abcd -test testing\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW((*m_pParser)());
+
+    // THe configuration should have -test set to "testing"
+    auto device = m_pParser->findDevice("abcd");
+    auto config = device->getConfiguration();
+    std::string value;
+    CPPUNIT_ASSERT_NO_THROW(
+        value = config->cget("-test")
+    );
+
+    CPPUNIT_ASSERT_EQUAL(std::string("testing"), value);
+ }
+
+ // Configure with bad option:
+
+ void
+ DevCmdTests::create_3() {
+    {
+        std::ofstream script(m_scriptFile);
+        script << "device create abcd -testing test\n"; // bad option namne.
+    }
+    CPPUNIT_ASSERT_THROW(
+        (*m_pParser)(),
+        CTCLException
+    );
+ }
+
+ // invalid parameter count:
+
+ void
+ DevCmdTests::create_4() {
+    {
+        std::ofstream script(m_scriptFile);
+        script << "device create abcd -test\n";   // missing value for option.
+    }
+    CPPUNIT_ASSERT_THROW(
+        (*m_pParser)(),
+        CTCLException
+    );
+
+ }
+ // Duplicate device fails but keeps the old one ok
+
+ void
+ DevCmdTests::create_5() {
+    {
+        std::ofstream script(m_scriptFile);
+        script << "device create abcd -test testing\n";   
+        script << "device create abcd -test {will not be set}";  // Duplicate device:
+    }
+    CPPUNIT_ASSERT_THROW(
+        (*m_pParser)(),
+        CTCLException
+    );
+
+    auto device = m_pParser->findDevice("abcd");
+    auto config = device->getConfiguration();
+    std::string value;
+    CPPUNIT_ASSERT_NO_THROW(
+        value = config->cget("-test")
+    );
+
+    CPPUNIT_ASSERT_EQUAL(std::string("testing"), value);
+ }

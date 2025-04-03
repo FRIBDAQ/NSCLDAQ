@@ -65,7 +65,7 @@ public:
         // Make a temp scipt file:
 
         char nameTemplate[100];
-        strcpy(nameTemplate, "configXXXXXX.tcl");
+        strcpy(nameTemplate, "config.tclXXXXXX");
         m_fd = mkstemp(nameTemplate);
         m_filename = nameTemplate;
 
