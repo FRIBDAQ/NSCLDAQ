@@ -9,7 +9,8 @@ main_modules=utilities.h utilities.cpp \
 	CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
 	CVMUSB.h CVMUSB.cpp \
 	DeviceCommand.h DeviceCommand.cpp \
-	CReadoutModule.h CReadoutModule.cpp
+	CReadoutModule.h CReadoutModule.cpp \
+	CReadoutHardware.h CReadoutHardware.cpp
 	
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
 
