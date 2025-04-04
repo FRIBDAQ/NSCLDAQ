@@ -42,7 +42,7 @@ private:
 
     // Canonical methods:
 public:
-    /* TODO: REmove the default null on pdevice.  */
+    
     CReadoutModule();
     virtual ~CReadoutModule();   // Not willing yet to declare this as final.
 
@@ -60,3 +60,4 @@ public:
 };
 
 #endif
+

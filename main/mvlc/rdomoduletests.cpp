@@ -23,7 +23,7 @@
 #include "CVMUSBReadoutList.h"
 #include "CVMUSB.h"
 #define private  public
-#include "CReadoutHardware.cpp"
+#include "CReadoutHardware.h"
 #undef private
 #include "CReadoutModule.h"
 #include "DeviceCommand.h"
@@ -31,6 +31,10 @@
 #include <XXUSBConfigurableObject.h>
 #include <string>
 
+#include <fstream>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 
 // these are test classes supplying concrete classes for abstract base classes.
 // they are in a namespace to avoid collision with any similar classes in other tests:
@@ -92,5 +96,37 @@ namespace rdomoduletest {
     };
 
 }
+
+// Finally the test class.
+
+class ReadoutModuleTests : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(ReadoutModuleTests);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:                       // test declarations.
+
+public:
+    void setUp() {
+        char nameTemplate[100];
+        strcpy(nameTemplate, "config.tclXXXXXX");
+        m_fd = mkstemp(nameTemplate);
+        m_filename = nameTemplate;
+
+        m_pParser = new rdomoduletest::TestParser(m_filename);
+
+    }
+    void tearDown() {
+        close(m_fd);
+        unlink(m_filename.c_str());
+        delete m_pParser;
+    }
+private:                          // Data managed by setUp and tearDown:
+
+    int              m_fd;
+    std::string      m_filename;
+    TCLConfigParser* m_pParser;
+
+};
+CPPUNIT_TEST_SUITE_REGISTRATION(ReadoutModuleTests);
 
 
