@@ -92,11 +92,13 @@ DeviceCommand::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv
             interp.setResult(devName);
         } else if (subcommand == "cget") {
             requireAtMost(objv, 4, "At most one config parameter can be queried.");
-            const char* pParam = nullptr;
+            std::string Param;
+            const char* pParam(nullptr);
             if (objv.size() == 4) {
-                pParam = std::string(objv[3]).c_str();
+                Param = std::string(objv[3]);
+                pParam = Param.c_str();
             }
-            cget(interp, devName, pParam);
+            this->cget(interp, devName, pParam);
         }
     }
     catch(std::string msg) {
