@@ -111,6 +111,8 @@ class ReadoutModuleTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(create_2);     // Creating makes a default cofiguration as expected.
 
     CPPUNIT_TEST(init_1);
+    CPPUNIT_TEST(readout_1);
+    CPPUNIT_TEST(end_1);
     CPPUNIT_TEST_SUITE_END();
 
 protected:                       // test declarations.
@@ -120,6 +122,8 @@ protected:                       // test declarations.
     void create_2();
 
     void init_1();               // Test initialization.
+    void readout_1();           //  test recording readout.
+    void end_1();                  // test recording end run stuff.
 public:
     void setUp() {
         char nameTemplate[100];
@@ -208,6 +212,47 @@ void ReadoutModuleTests::init_1() {
     CPPUNIT_ASSERT_EQUAL(size_t(1), ops.size());
     CPPUNIT_ASSERT_EQUAL(
         std::string("vme_write 0x9 d32 0x40000000 0x1234"),
+        ops.at(0)
+    );
+}
+
+///////////////////////////// Test readout list generation ////////////////////////////////////
+
+void ReadoutModuleTests::readout_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "marky create amarker -base 0x40000000 -value 0x12345678\n";
+    }
+    (*m_pParser)();             // Create/configure
+
+    auto pModule = m_pParser->findDevice("amarker");
+    CVMUSBReadoutList list;
+    pModule->addReadoutList(list);
+
+    auto ops = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(1), ops.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("write_marker 0x12345678"),
+        ops.at(0)
+    );
+}
+//////////////////////// Test shutdown generation////////////////////////////////////
+
+void ReadoutModuleTests::end_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "marky create amarker -base 0x40000000 -value 0x12345678\n";
+    }
+    (*m_pParser)();             // Create/configure
+
+    auto pModule = m_pParser->findDevice("amarker");
+    CVMUSB controller;
+    pModule->onEndRun(controller);
+
+    auto ops = controller.getRecordedOperations();
+    CPPUNIT_ASSERT_EQUAL(size_t(1), ops.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x40000000 0x0"),
         ops.at(0)
     );
 }
