@@ -38,6 +38,7 @@ class CVMUSBReadoutList;
 class CReadoutHardware {
 private:
     XXUSB::CConfigurableObject* m_pConfiguration;
+    
 
     // The canonicals that are allowed:
 public:
