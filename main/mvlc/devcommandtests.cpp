@@ -218,7 +218,7 @@ DevCmdTests::construct_1() {
     );
 
  }
- // Duplicate device fails but keeps the old one ok
+ // Duplicate device fails but keeps the old one 
 
  void
  DevCmdTests::create_5() {
@@ -345,7 +345,7 @@ void
     { 
         std::ofstream script(m_scriptFile);
         script << "device create abcd -test testing -second two\n";
-        script << "set config [device cget abcd -second]";  // in a var so we can get it from the interp.
+        script << "set config [device cget abcd -second]\n";  // in a var so we can get it from the interp.
     }
     CPPUNIT_ASSERT_NO_THROW(
         (*m_pParser)()

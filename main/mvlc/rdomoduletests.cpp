@@ -36,6 +36,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <TCLInterpreter.h>
+#include <tcl.h>
+
 // these are test classes supplying concrete classes for abstract base classes.
 // they are in a namespace to avoid collision with any similar classes in other tests:
 
@@ -101,10 +104,11 @@ namespace rdomoduletest {
 
 class ReadoutModuleTests : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(ReadoutModuleTests);
+    CPPUNIT_TEST(setup_1);
     CPPUNIT_TEST_SUITE_END();
 
 protected:                       // test declarations.
-
+    void setup_1();
 public:
     void setUp() {
         char nameTemplate[100];
@@ -113,6 +117,7 @@ public:
         m_filename = nameTemplate;
 
         m_pParser = new rdomoduletest::TestParser(m_filename);
+        m_pParser->initialize();
 
     }
     void tearDown() {
@@ -130,3 +135,12 @@ private:                          // Data managed by setUp and tearDown:
 CPPUNIT_TEST_SUITE_REGISTRATION(ReadoutModuleTests);
 
 
+///////////////// setup tests ///////////////////////////////////////
+
+void ReadoutModuleTests::setup_1() {
+    // m_pParser should have the command "marky"
+
+    Tcl_Interp* pInterp = m_pParser->getInterpreter()->getInterpreter();
+    auto token = Tcl_FindCommand(pInterp, "marky", nullptr, TCL_GLOBAL_ONLY);
+    CPPUNIT_ASSERT(token);
+}
