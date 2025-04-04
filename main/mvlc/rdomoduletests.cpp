@@ -105,10 +105,15 @@ namespace rdomoduletest {
 class ReadoutModuleTests : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(ReadoutModuleTests);
     CPPUNIT_TEST(setup_1);
+    CPPUNIT_TEST(create_1);     // Creating populates the configuration.
+    CPPUNIT_TEST(create_2);     // Creating makes a default cofiguration as expected.
     CPPUNIT_TEST_SUITE_END();
 
 protected:                       // test declarations.
     void setup_1();
+
+    void create_1();
+    void create_2();
 public:
     void setUp() {
         char nameTemplate[100];
@@ -143,4 +148,40 @@ void ReadoutModuleTests::setup_1() {
     Tcl_Interp* pInterp = m_pParser->getInterpreter()->getInterpreter();
     auto token = Tcl_FindCommand(pInterp, "marky", nullptr, TCL_GLOBAL_ONLY);
     CPPUNIT_ASSERT(token);
+}
+
+//////////////////////  Test module creation ////////////////////////////
+
+void ReadoutModuleTests::create_1() {   // there is a configuration.
+    {
+        std::ofstream script(m_filename);
+        script << "marky create amarker\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW((*m_pParser)());
+
+    auto pModule = m_pParser->findDevice("amarker");
+    CPPUNIT_ASSERT(pModule);                        // Better be able to find it.
+    auto pConfig = pModule->getConfiguration();    // A configuration got attached.
+    CPPUNIT_ASSERT(pConfig);
+
+    
+
+}
+void ReadoutModuleTests::create_2() {  // The config default values are right.
+    {
+        std::ofstream script(m_filename);
+        script << "marky create amarker\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW((*m_pParser)());
+
+    auto pModule = m_pParser->findDevice("amarker");
+    auto pConfig = pModule->getConfiguration();    // A configuration got attached.
+
+    unsigned base;
+    unsigned value;
+    CPPUNIT_ASSERT_NO_THROW(base = pConfig->getUnsignedParameter("-base"));
+    CPPUNIT_ASSERT_EQUAL(unsigned(0), base);
+
+    CPPUNIT_ASSERT_NO_THROW(value = pConfig->getUnsignedParameter("-value"));
+    CPPUNIT_ASSERT_EQUAL(unsigned(0), value);
 }

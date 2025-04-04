@@ -57,6 +57,8 @@ public:
     void Attach(XXUSB::CConfigurableObject* config);
     void SetDriver(CReadoutHardware* pDriver);
     XXUSB::CConfigurableObject* getConfiguration();
+
+    // Todo - driver call jackets.
 };
 
 #endif
