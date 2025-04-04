@@ -61,7 +61,9 @@ namespace rdomoduletest {
         }
         void Initialize(CVMUSB& controller) {
             auto config = getConfiguration();
-            controller.vmeWrite32(config->getIntegerParameter("-base"), CVMUSBReadoutList::a32UserData, 0x1234);
+            controller.vmeWrite32(
+                config->getIntegerParameter("-base"), CVMUSBReadoutList::a32UserData, 0x1234
+            );
         }
         void addReadoutList(CVMUSBReadoutList& list) {
             auto config = getConfiguration();
@@ -107,6 +109,8 @@ class ReadoutModuleTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(setup_1);
     CPPUNIT_TEST(create_1);     // Creating populates the configuration.
     CPPUNIT_TEST(create_2);     // Creating makes a default cofiguration as expected.
+
+    CPPUNIT_TEST(init_1);
     CPPUNIT_TEST_SUITE_END();
 
 protected:                       // test declarations.
@@ -114,6 +118,8 @@ protected:                       // test declarations.
 
     void create_1();
     void create_2();
+
+    void init_1();               // Test initialization.
 public:
     void setUp() {
         char nameTemplate[100];
@@ -184,4 +190,24 @@ void ReadoutModuleTests::create_2() {  // The config default values are right.
 
     CPPUNIT_ASSERT_NO_THROW(value = pConfig->getUnsignedParameter("-value"));
     CPPUNIT_ASSERT_EQUAL(unsigned(0), value);
+}
+//////////////////////////////// Iniitiaize does the right thing /////////////////////////
+
+void ReadoutModuleTests::init_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "marky create amarker -base 0x40000000\n";
+    }
+    (*m_pParser)();             // Create/configure
+
+    auto pModule = m_pParser->findDevice("amarker");
+    CVMUSB controller;
+    pModule->Initialize(controller);
+
+    auto ops = controller.getRecordedOperations();
+    CPPUNIT_ASSERT_EQUAL(size_t(1), ops.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x40000000 0x1234"),
+        ops.at(0)
+    );
 }

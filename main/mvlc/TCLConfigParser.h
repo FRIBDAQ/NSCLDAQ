@@ -30,6 +30,8 @@ class CStack;
 class CReadoutModule;
 class CTCLObjectProcessor;
 class CReadoutModule;
+class CVMUSB;
+class CVMUSBReadoutList;
 
 /**
  *  @class TCLConfigParser
@@ -106,6 +108,7 @@ public:
 
     CReadoutModule* findDevice(std::string devname);                   
     virtual void addDevice(std::string devname, CReadoutModule* driver);        // virtual for testing.
+
 
     // utilities -some might be virtual to support replacement in derived test objects.
 protected:

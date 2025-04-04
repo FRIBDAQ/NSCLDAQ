@@ -21,7 +21,9 @@
 #include "CReadoutModule.h"
 #include <XXUSBConfigurableObject.h>
 #include "CReadoutHardware.h"
-
+#include <stdexcept>
+#include <sstream>
+#include <string>
 
 /////////////////////////////// canonicals ///////////////////////////////////////////
 
@@ -82,4 +84,69 @@ CReadoutModule::SetDriver(CReadoutHardware* pDriver) {
 XXUSB::CConfigurableObject*
 CReadoutModule::getConfiguration() {
     return m_pConfiguration;
+}
+//////////////////// Queriy the driver for its operations ///////////////////////////////////
+/////////////////// these throw std::logic error if  called without both  a config and driver.
+
+
+/**
+ * Initialize
+ *    Called to get the driver's idea of what needs to be done at the start of the run
+ * @param controller - recording controller.
+ */
+void
+CReadoutModule::Initialize(CVMUSB& controller) {
+    checkRunnable("Initialize");
+    m_pDeviceSupport->Initialize(controller);
+}
+
+/**
+ * addReadoutList
+ *    called to get the driver's idea of what needs to be done to collect the data for
+ * an event.
+ */
+void
+CReadoutModule::addReadoutList(CVMUSBReadoutList& list) {
+    checkRunnable("addReadoutList");
+
+    m_pDeviceSupport->addReadoutList(list);
+}
+/**
+ * onEndRun
+ *     Called to get the driver's idea of what to do to shut down.alignas
+ * @param controler - recording controller.
+ */
+void
+CReadoutModule::onEndRun(CVMUSB& controller) {
+    checkRunnable("onEndRun");
+
+    m_pDeviceSupport->onEndRun(controller);
+}
+
+
+///////////////////////////// private utilities /////////////////////////////
+
+/** 
+ * checkRunnable
+ *    Check to see that we are in a runnable state -- that is we have both
+ * a device and a configuration.
+ * 
+ * @param doing - the method the caller called.
+ */
+void
+CReadoutModule::checkRunnable(const char* doing) {
+    std::stringstream errorMessage;
+    errorMessage << "Error attempting to call " << doing << " but we're missing: ";
+
+    if (!m_pConfiguration) {
+        errorMessage << "The device configuration object";
+        std::string  msg(errorMessage.str());
+        throw std::logic_error(msg);
+    }
+
+    if (!m_pDeviceSupport) {
+        errorMessage << " The  device driver object";
+        std::string  msg(errorMessage.str());
+        throw std::logic_error(msg);
+    }
 }

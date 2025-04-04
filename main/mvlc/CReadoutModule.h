@@ -24,6 +24,8 @@ namespace XXUSB {
     class CConfigurableObject;
 }
 class CReadoutHardware;
+class CVMUSB;
+class CVMUSBReadoutList;
 
 /**
  * @class CReadoutModule
@@ -58,7 +60,13 @@ public:
     void SetDriver(CReadoutHardware* pDriver);
     XXUSB::CConfigurableObject* getConfiguration();
 
-    // Todo - driver call jackets.
+    void Initialize(CVMUSB& controller);
+    void addReadoutList(CVMUSBReadoutList& list);
+    void onEndRun(CVMUSB& controller);
+
+    // utilities:
+private:
+    void checkRunnable(const char* doing);
 };
 
 #endif
