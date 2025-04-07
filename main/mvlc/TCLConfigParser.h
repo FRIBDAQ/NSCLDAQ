@@ -96,6 +96,11 @@ private:
     int operator==(const TCLConfigParser& rhs);
     int operator!=(const TCLConfigParser& rhs);
 
+    // selectors:
+public:
+    CStack* getEventStack() {return m_pEventStack; }
+    CStack* getScalerStack() {return m_pScalerStack; }
+
     // Methods.  Some are virtual just because it makes testing possible.
 public: 
     virtual void initialize();

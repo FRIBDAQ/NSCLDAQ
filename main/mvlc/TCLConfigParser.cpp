@@ -21,12 +21,13 @@
 #include "TCLConfigParser.h"
 #include "TCLInterpreter.h"
 #include "TCLObjectProcessor.h"
+#include "CStack.h"
+#include "CReadoutModule.h"
+#include <stdexcept>
+#include <iostream>
 
 
-// Stub classes - remove them as the real classes get defined:
 
-class CReadoutModule {};
-class CStack {};
 
 //////////////////////////////////////// implementing the canonical methods //////////////////////////
 /**
@@ -82,10 +83,38 @@ TCLConfigParser::initialize() {
  *  operator()
  *      Source the configuration file.
  * @throw CExeption - from m_pInterp if there's an error in the script.
+ * @throw std::logic_error - if there's more than one scaler or event tstack.
  */
 void
 TCLConfigParser::operator()() {
     m_pInterp->EvalFile(m_daqconfigFile);
+
+    // See if wwe have an event stack and/or scaler stack...
+    // Warn if we have stacks we can't trigger  (yet) and  error for more than one scaler
+    // or more than one event stack:
+
+    for (auto p : m_modules) {
+        CStack* pStack = dynamic_cast<CStack*>(p.second->getDriver()); // null if module is not a stack.
+        if (pStack) {
+            auto trigger = pStack->getTriggerType();
+            if (trigger == CStack::Nim1) {   // Event stack.
+                if (m_pEventStack) {
+                    throw std::logic_error("More than on event stack is specified!");
+                } else {
+                    m_pEventStack = pStack;
+                }
+            } else if (trigger == CStack::Scaler) {   // Periodic scaler stack.
+                if (m_pScalerStack) {
+                    throw std::logic_error("More than one scaler stack was specified");
+                } else {
+                    m_pScalerStack = pStack;
+                }
+            } else {     // UNsupported stack type:
+                std::cerr << " Interrupt triggered stacks are not supported at this time\n";
+            }
+        }
+    }
+    // We'll catch no stacks in a derived class that does the actual code generation.
 }
 
 // Services for device commands:
