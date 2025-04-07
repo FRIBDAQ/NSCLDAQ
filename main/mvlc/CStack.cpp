@@ -286,7 +286,7 @@ Returns:
    Enumerated value that reflects the trigger value configured into the system.
 */
 CStack::TriggerType
-CStack::getTriggerType()
+CStack::getTriggerType() const
 {
   string sValue = m_pConfiguration->cget("-trigger");
 
