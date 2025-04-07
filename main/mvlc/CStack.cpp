@@ -319,7 +319,7 @@ CStack::getStackElements()
 
   string sValue = m_pConfiguration->cget("-modules");
   Tcl_SplitList(NULL, sValue.c_str(), &argc, &argv);
-  assert(argc > 0);		// Can't have an empty module list.
+  
 
   // Iterate searching for the modules first in the ADcs list and then in the Scalers list.
   // it's a fatal error to fail to find them.  Each module pointer is added to the result list.
