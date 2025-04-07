@@ -23,6 +23,7 @@
 #include <list>
 
 #include "CReadoutHardware.h"
+#include "DeviceCommand.h"
 
 
 // forward definitions
@@ -135,6 +136,17 @@ private:
   static bool moduleChecker(std::string name, std::string proposedValue, void* arg);
 
 };
+/**
+ * @class CStackCommand
+ *   Extend the DeviceCommand class to create a CStack object.
+ */
+class CStackCommand : public  DeviceCommand {
+public:
+  CStackCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CStackCommand();
 
+protected:
+  virtual CReadoutModule* createDevice(std::string name);
+};
 
 #endif

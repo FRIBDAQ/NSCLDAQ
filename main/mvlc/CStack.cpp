@@ -389,3 +389,36 @@ CStack::moduleChecker(string name, string proposedValue, void* arg)
   Tcl_Free(reinterpret_cast<char*>(argv));
   return true;
 }
+
+//////////////////////////////// The stack command /////////////////////////////////
+
+
+/** 
+ * constructor
+ *     @param interp - references the interpreter we get registerd on.
+ *     @param parser - Referneces the parser that will parse the configuration file.
+ *   
+ * @note the command is hardwared to "stack"
+ */
+CStackCommand::CStackCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "stack", parser) {}
+
+/** 
+ * destructor
+ */
+CStackCommand::~CStackCommand() {}
+
+/**
+ *  createDevice
+ *     Create a device module and bind a CStack in as the driver
+ * @param name - name of the device.
+ * @return CReadoutModule* - pointer to the module we created.  The caller must bind in the
+ *         configuration object.
+ */
+CReadoutModule* 
+CStackCommand::createDevice(std::string name) {
+  auto result = new CReadoutModule;
+  result->SetDriver(new CStack(&getParser()));
+
+  return result;
+}
