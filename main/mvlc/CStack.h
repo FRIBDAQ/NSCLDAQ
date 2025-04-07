@@ -104,9 +104,12 @@ private:
   CStack& operator=(const CStack& rhs);
   int operator==(const CStack& rhs) const;
   int operator!=(const CStack& rhs) const;
-  virtual CReadoutHardware* clone() const;  // not used in mvlc.
-public:
 
+
+
+  // Selectors:
+public:
+  TriggerType     getTriggerType() const;            // Lets us distinguish between scaler and event stack.
 
   // The CReadoutHardware Interface:
 
@@ -116,8 +119,7 @@ public:
   virtual void addReadoutList(CVMUSBReadoutList& list);
   virtual void onEndRun(CVMUSB& controller);
   
-  TriggerType     getTriggerType();
-
+  
   static bool scalerIsIncremental()  {return false; }    // always non-incrementtal in mvlc.
 
   // Utility member functions:
