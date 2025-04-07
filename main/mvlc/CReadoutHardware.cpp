@@ -29,10 +29,10 @@ CReadoutHardware::CReadoutHardware()  :
 {}
 /**
  *  destructor
- *    We own the configuration so delete it:
+ *    Our containing readout module owns the configuration.
  */
 CReadoutHardware::~CReadoutHardware()  {
-    delete m_pConfiguration;
+
 }
 
 /**
