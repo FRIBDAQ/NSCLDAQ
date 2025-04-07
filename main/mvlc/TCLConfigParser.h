@@ -119,6 +119,9 @@ public:
 protected:
     virtual void addExtensions();
     virtual void addExtension(CTCLObjectProcessor& cmdobj);       // Add one extension command.
+    void addExtension(CTCLObjectProcessor* pCmd) {
+        addExtension(*pCmd);
+    }
 
 };
 
