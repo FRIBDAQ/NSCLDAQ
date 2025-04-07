@@ -55,6 +55,9 @@ private:
     int operator==(CReadoutModule& rhs);
     int operator!=(CReadoutModule& rhs);
 
+    // Selectors:
+public:
+    CReadoutHardware* getDriver() { return m_pDeviceSupport; }
 public:
     void Attach(XXUSB::CConfigurableObject* config);
     void SetDriver(CReadoutHardware* pDriver);
