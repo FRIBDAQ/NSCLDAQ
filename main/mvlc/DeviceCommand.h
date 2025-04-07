@@ -73,6 +73,7 @@ private:
     int operator==(const DeviceCommand& rhs);
     int operator!=(const DeviceCommand& rhs);
 
+    
     // Visible methods:
 
 public:
@@ -91,6 +92,10 @@ protected:
     //
     virtual CReadoutModule* createDevice(std::string name) = 0; 
 
+    // Selectors for derived classes:
+
+    TCLConfigParser& getParser() {return m_parser; }
+    
     // Private utilities:
 
 private:
