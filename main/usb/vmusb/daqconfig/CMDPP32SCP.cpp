@@ -106,7 +106,7 @@ CMDPP32SCP::onAttach(CReadoutModule& configuration)
   m_pConfiguration -> addEnumParameter("-marktype", MarkTypeStrings, MarkTypeStrings[1]);
 
   m_pConfiguration -> addEnumParameter("-tdcresolution", TDCResolutionStrings, TDCResolutionStrings[0]);
-  m_pConfiguration -> addIntegerParameter("-outputformat",  0,  2, 0);
+  m_pConfiguration -> addIntegerParameter("-outputformat",  0,  24, 0);
 
   m_pConfiguration -> addIntegerParameter("-windowstart", 0, 0x7fff, 0x3fbe);
   m_pConfiguration -> addIntegerParameter("-windowwidth", 0, 0x3fff, 0x20);
@@ -210,6 +210,12 @@ CMDPP32SCP::Initialize(CVMUSB& controller)
   list.addWrite16(base + MarkType,          initamod, marktype);
 
   list.addWrite16(base + TDCResolution,     initamod, tdcresolution);
+  if (!(outputformat == 0 || outputformat == 4 || outputformat == 8
+        || outputformat == 16 || outputformat == 24)) {
+    char msg[100];
+    sprintf(msg, "outputformat %d is invalid value for outputformat!", outputformat);
+    throw msg;
+  }
   list.addWrite16(base + OutputFormat,      initamod, outputformat);
 
   list.addWrite16(base + WindowStart,       initamod, windowstart);
@@ -264,6 +270,8 @@ CMDPP32SCP::Initialize(CVMUSB& controller)
   list.addWrite16(base + MaxTransfer,       initamod, maxtransfer);
   list.addWrite16(base + IrqSource,         initamod, irqsource);
   list.addWrite16(base + IrqEventThreshold, initamod, irqeventthreshold);
+
+  list.addWrite16(base + TimestampReset,    initamod, 1); // reset CTRA for 46 bit timestamp reset
 
   // Now reset again and start daq:
   list.addWrite16(base + InitFifo,          initamod, 1);
@@ -531,8 +539,8 @@ CMDPP32SCP::printRegisters(CVMUSB& controller)
     cout << setw(30) << "Marking type(bin): ";
     if (data == 0)      cout << std::bitset<2>(data) << " (event counter)";
     else if (data == 1) cout << std::bitset<2>(data) << " (time stamp)";
-    else if (data == 2) cout << std::bitset<2>(data) << " (extended time stamp)";
-    else                cout << data << " (error)";
+    else if (data == 3) cout << std::bitset<2>(data) << " (extended time stamp)";
+    else                cout << std::bitset<2>(data) << " (error)";
     cout << endl;
   }
 
@@ -549,10 +557,12 @@ CMDPP32SCP::printRegisters(CVMUSB& controller)
     cerr << "Error in reading register" << endl;
   } else {
     cout << setw(30) << "Output Format: " << data << " ";
-    if (data == 0)      cout << "(standard: time and amplitude)";
-    else if (data == 1) cout << "(amplitude only)";
-    else if (data == 2) cout << "(time only)";
-    else                cout << "(error)";
+    if (data == 0)       cout << "(standard: time and amplitude)";
+    else if (data == 4)  cout << "(compact streaming readout mode)";
+    else if (data == 8)  cout << "(standard streaming readout mode)";
+    else if (data == 16) cout << "(standard with samples mode)";
+    else if (data == 24) cout << "(standard streaming readout with samples mode)";
+    else                 cout << "(error)";
     cout << endl;
   }
 
