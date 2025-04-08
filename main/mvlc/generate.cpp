@@ -1,7 +1,7 @@
 
 /*
     This software is Copyright by the Board of Trustees of Michigan
-    State University (c) Copyright 2005.
+    State University (c) Copyright 2025.
 
     You may use this software under the terms of the GNU public license
     (GPL).  The terms of this license are described at:
@@ -21,13 +21,17 @@
 
 #include "options.h"
 #include "utilities.h"
-#include "TCLConfigParser.h"
+#include "MVLCConfigParser.h"
 #include <iostream>
 #include <string>
 
 #include <Exception.h>
 #include <stdlib.h>
 
+
+static void generateYaml(TCLConfigParser& parser, std::string outfile) {
+
+}
 
 int main(int argc, char** argv) {
     gengetopt_args_info args;
@@ -48,9 +52,10 @@ int main(int argc, char** argv) {
     // yaml configuration file...which is then written to outfile.
 
     try {
-        TCLConfigParser tclparser(infile);
+        MVLCConfigParser tclparser(infile);
         tclparser.initialize();
         tclparser();
+        generateYaml(tclparser, outfile);
     }
     catch (CException& e) {
         std::cerr << "Failed to parse Tcl configuration file: " << infile 
