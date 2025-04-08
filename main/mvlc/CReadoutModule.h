@@ -58,11 +58,10 @@ private:
     // Selectors:
 public:
     CReadoutHardware* getDriver() { return m_pDeviceSupport; }
+    XXUSB::CConfigurableObject* getConfiguration();
 public:
     void Attach(XXUSB::CConfigurableObject* config);
     void SetDriver(CReadoutHardware* pDriver);
-    XXUSB::CConfigurableObject* getConfiguration();
-
     void Initialize(CVMUSB& controller);
     void addReadoutList(CVMUSBReadoutList& list);
     void onEndRun(CVMUSB& controller);
