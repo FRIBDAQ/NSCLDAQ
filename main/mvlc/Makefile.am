@@ -18,7 +18,7 @@ mvlcgenerate_SOURCES=generate.cpp $(main_modules)
 
 
 mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
-	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@
+	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ -DMVLC_TEMPLATE=@datarootdir@/mvlc/triggeronly.yaml
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
 
@@ -43,6 +43,9 @@ unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
 
 TESTS=unittests
 
-EXTRA_DIST=options.ggo
+EXTRA_DIST=options.ggo triggeronly.yaml
 
-EXTRA_DIST=mvmetemplate.yaml
+install-exec-local:
+	$(mkinstalldirs) @datarootdir@/mvlc
+	$(INSTALL_DATA)  @srcdir@/triggeronly.yaml @datarootdir@/mvlc/triggeronly.yaml
+	
