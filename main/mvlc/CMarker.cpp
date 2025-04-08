@@ -22,9 +22,12 @@
 
 
 #include "CMarker.h"
-
+#include "DeviceCommand.h"
+#include "CReadoutModule.h"
 #include <XXUSBConfigurableObject.h>
 #include <CVMUSBReadoutList.h>
+
+
 #include <stdlib.h>
 
 using namespace std;
@@ -108,4 +111,35 @@ CMarker::getIntegerParameter(string name)
 {
   return m_pConfiguration->getUnsignedParameter(name);
 
+}
+
+
+////////////////////// Implement the marker command class.   ///////////////
+
+/**
+ *  constructor:
+ *    All the work is done in the base class constructor.
+ */
+CMarkerCommand::CMarkerCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "marker", parser) {}
+
+/**
+ * destructor:
+ */
+CMarkerCommand::~CMarkerCommand() {}
+
+
+/** createDevice
+ *    Responsible for creating a new CMarker object:
+ * 
+ * @param name (unused) - name of the marker object.
+ * @return CReadoutModule* - a readout module with a CMarker driver object installed.
+ * 
+ */
+CReadoutModule*
+CMarkerCommand::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CMarker);
+
+  return result;
 }

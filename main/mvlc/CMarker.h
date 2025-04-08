@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include "DeviceCommand.h"
 
 
 // Forward class definitions:
@@ -82,5 +83,17 @@ private:
 
 };
 
+/**
+ * @class CMarkerCommand
+ *    Derived class from DeviceCommand that generates
+ * CMarker objects.
+ */
+class CMarkerCommand : public DeviceCommand {
+public:
+  CMarkerCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CMarkerCommand();
+protected:
+  virtual CReadoutModule* createDevice(std::string name);
+};
 
 #endif
