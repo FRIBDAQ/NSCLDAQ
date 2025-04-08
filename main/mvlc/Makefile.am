@@ -44,3 +44,5 @@ unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
 TESTS=unittests
 
 EXTRA_DIST=options.ggo
+
+EXTRA_DIST=mvmetemplate.yaml
