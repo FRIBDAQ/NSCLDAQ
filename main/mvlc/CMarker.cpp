@@ -90,7 +90,7 @@ CMarker::addReadoutList(CVMUSBReadoutList& list)
 {
   unsigned int value = getIntegerParameter("-value");
 
-  list.addMarker(static_cast<uint16_t>(value));
+  list.addMarker(value);
 }
 
 
