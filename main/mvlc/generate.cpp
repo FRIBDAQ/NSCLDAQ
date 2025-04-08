@@ -24,12 +24,63 @@
 #include "MVLCConfigParser.h"
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <Exception.h>
 #include <stdlib.h>
+#include "CStack.h"
+#include "CVMUSB.h"
+#include "CVMUSBReadoutList.h"
 
+
+static void dump(const std::vector<std::string>& ops) {
+    std::cout << "BEGIN:\n";
+    for (auto op : ops) {
+        std::cout << " -- " << op << std::endl;
+    }
+    std::cout << "END\n";
+}
 
 static void generateYaml(TCLConfigParser& parser, std::string outfile) {
+    CStack* event = parser.getEventStack();
+    CStack* scaler = parser.getScalerStack();
+
+    if (event) {
+        CVMUSB controller;
+        CVMUSBReadoutList list;
+        std::cout <<  "--- event stack initialiation\n";
+        event->Initialize(controller);
+        auto initops = controller.getRecordedOperations();
+        controller.clearRecordedOperations();
+        dump(initops);
+        event->addReadoutList(list);
+        auto readops = list.dumpForMvlc();
+        std::cout << "-- event stack readout\n";
+        dump(readops);
+        event->onEndRun(controller);
+        std::cout << "-- event stack end run \n";
+        auto endops = controller.getRecordedOperations();
+        dump(endops);
+    }
+    if (scaler) {
+        CVMUSB controller;
+        CVMUSBReadoutList list;
+        std::cout <<  "--- scaler stack initialiation\n";
+        scaler->Initialize(controller);
+        auto initops = controller.getRecordedOperations();
+        controller.clearRecordedOperations();
+        dump(initops);
+        scaler->addReadoutList(list);
+        auto readops = list.dumpForMvlc();
+        std::cout << "-- scaler stack readout\n";
+        dump(readops);
+        scaler->onEndRun(controller);
+        std::cout << "-- scaler stack end run \n";
+        auto endops = controller.getRecordedOperations();
+        dump(endops);
+    }
+
+    
 
 }
 
