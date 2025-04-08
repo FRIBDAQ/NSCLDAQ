@@ -11,7 +11,7 @@ main_modules=utilities.h utilities.cpp \
 	DeviceCommand.h DeviceCommand.cpp \
 	CReadoutModule.h CReadoutModule.cpp \
 	CReadoutHardware.h CReadoutHardware.cpp \
-	CStack.h CStack.cpp
+	CStack.h CStack.cpp CMarker.h CMarker.cpp
 	
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
 
