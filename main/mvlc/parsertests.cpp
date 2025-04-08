@@ -25,6 +25,7 @@
 #include "TCLConfigParser.h"           // Open up internals to tests.
 #undef private
 #undef protected
+#include "CReadoutModule.h"
 #include <stdlib.h>
 #include <string>
 #include <fstream>
@@ -48,6 +49,9 @@ class TCLConfigTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(addext_1);
     // initialize tests
     CPPUNIT_TEST(initialize_1);
+    // find dev
+    CPPUNIT_TEST(find_1);
+    CPPUNIT_TEST(find_2);
     CPPUNIT_TEST_SUITE_END();
 protected:
     void construct_1();
@@ -60,6 +64,9 @@ protected:
     void addext_1();
 
     void initialize_1();
+
+    void find_1();
+    void find_2();
 public: 
     void setUp() {
         // Make a temp scipt file:
@@ -235,4 +242,22 @@ void TCLConfigTests::initialize_1() {
         1, 
         dynamic_cast<myext*>(parser.m_commandExtensions.at(0))->called);
 
+}
+// Find a device  when one is there:
+
+void
+TCLConfigTests::find_1() {
+    TCLConfigParser parser(m_filename);
+    CReadoutModule* device = new CReadoutModule;
+    parser.addDevice("junk", device);
+
+    CPPUNIT_ASSERT(parser.findDevice("junk"));
+
+}
+// Find non-existent device:
+
+void
+TCLConfigTests::find_2() {
+    TCLConfigParser parser(m_filename);
+    CPPUNIT_ASSERT(!(parser.findDevice("junk")));
 }
