@@ -24,6 +24,8 @@
 #include <sstream>
 #include <string.h>
 #include <fstream>
+#include <CVMUSB.h>
+#include <CVMUSBReadoutList.h>
 
 
 
@@ -60,10 +62,21 @@ MVLCGenerate::generate() {
     auto yaml = loadTemplate();
     setStackDelay(yaml);
 
+    // The readout stacks:
 
+    fillReadoutStack(yaml, "event0", *m_VMUSBConfig->getEventStack());
+    fillReadoutStack(yaml, "event1", *m_VMUSBConfig->getScalerStack());
+
+    // Initialization:
+
+    fillInitStack(yaml, "event0.init", *m_VMUSBConfig->getEventStack());
+    fillInitStack(yaml, "event1.init", *m_VMUSBConfig->getScalerStack());
+
+    // end of run
+
+    // Generate the output file:  
     std::ofstream out(m_outfile);
-    
-    out << yaml;
+    out << yaml << std::endl;
 
 }
 
@@ -92,7 +105,7 @@ MVLCGenerate::loadTemplate() {
  * In this both groups and contents are arrays.  The VME write we need to modify has its data set to be
  * "STACKDELAY"
  * 
- * @param doc - references the YAML we're building.
+ * @param[inout] doc - references the YAML we're building.
  * 
  */
 void
@@ -130,4 +143,69 @@ MVLCGenerate::setStackDelay(YAML::Node& doc) {
         }
     }
     
+}
+/**
+ *  fillReadoutStack
+ *     Fills in the readout stack contents for either the scaler or event stacks:
+ * 
+ * @param[inout] doc - the YAML document to be edited.
+ * @param name - Namne of the stack: event0 for science and event1 for scaler.
+ * @param stack - references the config stack to fill in.
+ */
+void 
+MVLCGenerate::fillReadoutStack(YAML::Node& doc, const char* name,  CStack& stack)  {
+    // generate the vector of operations:
+
+    CVMUSBReadoutList list;
+    stack.addReadoutList(list);
+    auto ops = list.dumpForMvlc();      // Ops is a vector of operations lines.
+
+    // locate what we fill in:
+
+    auto stacks = doc["crate"]["readout_stacks"];
+    // Need to find the correct stack:
+
+    for (int i =0; i < stacks.size(); i++) {
+        auto sname = stacks[i]["name"];
+        if (sname.as<std::string>() == name) {
+            // in that stack we need to filli n the readout list:
+
+            auto groups = stacks[i]["groups"];
+            for (int g =0; g < groups.size(); g++) {
+                if (groups[g]["name"].as<std::string>() == "readout") {
+                    auto contents = groups[g]["contents"];
+                    for (auto line : ops) {
+                        contents.push_back(line);
+                    }
+                }
+            }
+        }
+    }
+}
+/**
+ * fillInitStack
+ *     Locates the initialization stacks and fills them in.alignas
+ * @param doc - refernces the yaml document we're modifying.
+ * @param name - name of the stack: event0.init  event1.init for the event and scaler respectively.
+ */
+void
+MVLCGenerate::fillInitStack(YAML::Node& doc, const char* name, CStack& stack) {
+    // Generate the operations:
+
+    CVMUSB controller; 
+    stack.Initialize(controller);
+    auto ops = controller.getRecordedOperations();
+
+    // Locate the stack we fill in:
+
+    auto stacks = doc["crate"]["init_commands"]["groups"];
+    for (int g = 0; g < stacks.size(); g++) {
+        if (stacks[g]["name"].as<std::string>() == name) {
+            auto stack = stacks[g]["contents"];
+            for (auto line: ops) {
+                std::cout << "pushing " << line << std::endl;
+                stack.push_back(line);
+            }
+        }
+    }
 }

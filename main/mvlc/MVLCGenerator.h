@@ -22,7 +22,7 @@
 #include <string>
 #include <yaml-cpp/yaml.h>
 class TCLConfigParser;
-
+class CStack;
 
 /**
  * @class MVLCGenereate
@@ -71,6 +71,8 @@ public:
 private:
     YAML::Node loadTemplate();
     void setStackDelay(YAML::Node& doc);
+    void fillReadoutStack(YAML::Node& doc, const char* name, CStack& stack);
+    void fillInitStack(YAML::Node& doc, const char* name, CStack& stack);
 
 };
 
