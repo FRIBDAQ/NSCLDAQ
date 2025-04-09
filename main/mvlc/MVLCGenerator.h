@@ -22,6 +22,8 @@
 #include <string>
 class TclConfigParser;
 
+
+
 /**
  * @class MVLCGenereate
  *    This class takes a parsed VMUSB configuration file (parsed by a TclConfigParser) 
@@ -51,7 +53,8 @@ class TclConfigParser;
 class MVLCGenerate {
 private:
     std::string      m_outfile;            // Name of output file.
-    TclConfigParser* m_VMUSBConfig;        // parsd VMUSB configuration file.
+    TclConfigParser* m_VMUSBConfig;        // parsed VMUSB configuration file.
+    static const char* m_YamlTemplate;
 public:
     MVLCGenerate(std::string outfile, TclConfigParser* config);
     virtual ~MVLCGenerate();

@@ -1,0 +1,24 @@
+/*
+    This software is Copyright by the Board of Trustees of Michigan
+    State University (c) Copyright 2025.
+
+    You may use this software under the terms of the GNU public license
+    (GPL).  The terms of this license are described at:
+
+     http://www.gnu.org/licenses/gpl.txt
+
+     Author:
+             Ron Fox 
+             Facility for Rare Isotope4s
+             Michigan State University
+             East Lansing, MI 48824-1321
+
+
+@author Ron Fox <fox at frib dot msu dot edu>
+@brief Main driver for turning VMUSBReadout daqconfig scripts -> mvlc fribdaq-readout .yaml configs
+*/
+#include "MVLCGenerator.h"
+
+
+#define STRINGIZE(s) #s
+const char* MVLCGenerate::m_YamlTemplate=STRINGIZE(MVLC_TEMPLATE);
