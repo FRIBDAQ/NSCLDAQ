@@ -19,9 +19,10 @@ mvlcgenerate_SOURCES=generate.cpp $(main_modules)
 
 
 mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
-	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ -DMVLC_TEMPLATE=@datarootdir@/mvlc/triggeronly.yaml
+	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ -DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" \
+	@YAML_CFLAGS@
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
-	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
+	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@ @YAML_LIBS@
 
 BUILT_SOURCES = generate.cpp options.h options.c
 nodist_mvlcgenerate_SOURCES=options.h options.c
