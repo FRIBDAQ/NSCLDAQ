@@ -18,7 +18,53 @@
 @brief Main driver for turning VMUSBReadout daqconfig scripts -> mvlc fribdaq-readout .yaml configs
 */
 #include "MVLCGenerator.h"
+#include "TCLConfigParser.h"
 
 
-#define STRINGIZE(s) #s
-const char* MVLCGenerate::m_YamlTemplate=STRINGIZE(MVLC_TEMPLATE);
+
+
+const char* MVLCGenerate::m_YamlTemplate=MVLC_TEMPLATE;
+/** 
+ * constructor
+ *    Construct the generator:alignas
+ * @param outfile - output file we will generate to.
+ * @param config  - parsed configuration.
+ * 
+ * The configuration parser must be in scope through the call to generate.
+ */
+
+MVLCGenerate::MVLCGenerate(std::string outfile, TCLConfigParser* config) :
+    m_outfile(outfile), m_VMUSBConfig(config) {}
+
+/**
+ *  destructor
+ */
+MVLCGenerate::~MVLCGenerate() {}
+
+
+/**
+ *  generate
+ *     Generate the yaml output file from the template in m_YamlTemplate using
+ * the configuration in m_VMUSBConfig writing the output file m_outfile.
+ */
+void
+MVLCGenerate::generate() {
+    auto yaml = loadTemplate();
+}
+
+
+
+
+/////////////////// private utilities 
+
+
+/**
+ *  loadTemplate
+ *     Load the template file 
+ * @return YAML::node - the loaded template.
+ *    Throws on error?
+ */
+YAML::Node
+MVLCGenerate::loadTemplate() {
+    return YAML::LoadFile(m_YamlTemplate);
+}

@@ -20,8 +20,8 @@
 #ifndef MVLC_GENERATOR_H
 #define MVLC_GENERATOR_H
 #include <string>
-class TclConfigParser;
-
+#include <yaml-cpp/yaml.h>
+class TCLConfigParser;
 
 
 /**
@@ -53,10 +53,10 @@ class TclConfigParser;
 class MVLCGenerate {
 private:
     std::string      m_outfile;            // Name of output file.
-    TclConfigParser* m_VMUSBConfig;        // parsed VMUSB configuration file.
+    TCLConfigParser* m_VMUSBConfig;        // parsed VMUSB configuration file.
     static const char* m_YamlTemplate;
 public:
-    MVLCGenerate(std::string outfile, TclConfigParser* config);
+    MVLCGenerate(std::string outfile, TCLConfigParser* config);
     virtual ~MVLCGenerate();
 private:
     MVLCGenerate(const MVLCGenerate&);
@@ -66,7 +66,11 @@ private:
 
 public:
     void generate();             // Generate/write the config file.
-    
+  
+    // utilities:
+private:
+    YAML::Node loadTemplate();
+
 };
 
 #endif
