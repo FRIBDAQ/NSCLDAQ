@@ -111,6 +111,7 @@ private:
   // Selectors:
 public:
   TriggerType     getTriggerType() const;            // Lets us distinguish between scaler and event stack.
+  unsigned        getDelay() {return getIntegerParameter("-delay");}
 
   // The CReadoutHardware Interface:
 

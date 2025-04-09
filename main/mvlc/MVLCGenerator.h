@@ -70,6 +70,7 @@ public:
     // utilities:
 private:
     YAML::Node loadTemplate();
+    void setStackDelay(YAML::Node& doc);
 
 };
 

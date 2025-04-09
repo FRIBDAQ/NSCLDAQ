@@ -14,13 +14,14 @@ main_modules=utilities.h utilities.cpp \
 	CStack.h CStack.cpp CMarker.h CMarker.cpp \
 	MVLCConfigParser.h MVLCConfigParser.cpp \
 	MVLCGenerator.h MVLCGenerator.cpp
-	
+
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
 
 
 mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
-	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ -DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" \
-	@YAML_CFLAGS@
+	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ @YAML_CFLAGS@ \
+	-DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" 
+
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@ @YAML_LIBS@
 
