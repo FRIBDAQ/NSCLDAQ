@@ -73,6 +73,7 @@ private:
     void setStackDelay(YAML::Node& doc);
     void fillReadoutStack(YAML::Node& doc, const char* name, CStack& stack);
     void fillInitStack(YAML::Node& doc, const char* name, CStack& stack);
+    void fillEndStack(YAML::Node& doc, const char* name, CStack& stack);
 
 };
 

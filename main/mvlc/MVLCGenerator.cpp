@@ -63,16 +63,20 @@ MVLCGenerate::generate() {
     setStackDelay(yaml);
 
     // The readout stacks:
-
-    fillReadoutStack(yaml, "event0", *m_VMUSBConfig->getEventStack());
-    fillReadoutStack(yaml, "event1", *m_VMUSBConfig->getScalerStack());
+    auto eventStack = m_VMUSBConfig->getEventStack();
+    auto scalerStack = m_VMUSBConfig->getScalerStack();
+    fillReadoutStack(yaml, "event0", *eventStack);
+    fillReadoutStack(yaml, "event1", *scalerStack);
 
     // Initialization:
 
-    fillInitStack(yaml, "event0.init", *m_VMUSBConfig->getEventStack());
-    fillInitStack(yaml, "event1.init", *m_VMUSBConfig->getScalerStack());
+    fillInitStack(yaml, "event0.init", *eventStack);
+    fillInitStack(yaml, "event1.init", *scalerStack);
 
     // end of run
+
+    fillEndStack(yaml, "event0.stop", *eventStack);
+    fillEndStack(yaml, "event1.stop", *scalerStack);
 
     // Generate the output file:  
     std::ofstream out(m_outfile);
@@ -205,6 +209,36 @@ MVLCGenerate::fillInitStack(YAML::Node& doc, const char* name, CStack& stack) {
             for (auto line: ops) {
                 std::cout << "pushing " << line << std::endl;
                 stack.push_back(line);
+            }
+        }
+    }
+}
+/** fillEndStack
+ * 
+ *    Fill in any run end operations for a stack.\
+ * 
+ * @param doc - the YAML document that's being filled in.
+ * @param name - Name of the stack  event0.stop or event1.stop for event and scaler respenctively.a
+ * @param stack - references the appropriate stack to creat the operations.
+ * 
+ */
+void
+MVLCGenerate::fillEndStack(YAML::Node& doc, const char* name, CStack& stack) {
+    // Generate the ops:
+
+    CVMUSB controller;
+    stack.onEndRun(controller);
+    auto ops = controller.getRecordedOperations();
+
+    // Find and fill in the appropriate stack:
+
+    auto stacks = doc["create"]["stop_commands"]["groups"];
+    for (int g = 0; g < stacks.size(); g++) {
+        auto sname = stacks[g]["name"];
+        if (sname.as<std::string>() == name) {
+            auto stack = stacks[g]["contents"];
+            for (auto op : ops) {
+                stack.push_back(op);
             }
         }
     }
