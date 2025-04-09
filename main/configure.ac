@@ -24,6 +24,7 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AX_CXX_COMPILE_STDCXX_11([noext])
+PKG_PROG_PKG_CONFIG 
 
 # Set parallel build for incorps:
 
@@ -93,6 +94,10 @@ if test "x$enable_mvlc" == "xyes"
 then
 	AC_MSG_NOTICE([Including mvlc usb config generation support])
 	AM_CONDITIONAL([MVLC_GENERATOR],[true])
+	# MVLC Generator needs to have the yaml-cpp package and its flags defined:
+
+	PKG_CHECK_MODULES([YAML], [yaml-cpp])
+	
 else	
 	AM_CONDITIONAL([MVLC_GENERATOR], [false])
 fi
