@@ -18,8 +18,8 @@
 */
 
 
-#ifndef MVLC__CMARKER_H
-#define MVLC__CMARKER_H
+#ifndef MVLC_CMARKER_H
+#define MVLC_CMARKER_H
 
 
 #include "CReadoutHardware.h"
