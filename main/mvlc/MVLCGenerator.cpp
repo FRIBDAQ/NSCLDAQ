@@ -65,18 +65,18 @@ MVLCGenerate::generate() {
     // The readout stacks:
     auto eventStack = m_VMUSBConfig->getEventStack();
     auto scalerStack = m_VMUSBConfig->getScalerStack();
-    fillReadoutStack(yaml, "event0", *eventStack);
-    fillReadoutStack(yaml, "event1", *scalerStack);
+    if (eventStack) fillReadoutStack(yaml, "event0", *eventStack);
+    if (scalerStack) fillReadoutStack(yaml, "event1", *scalerStack);
 
     // Initialization:
 
-    fillInitStack(yaml, "event0.init", *eventStack);
-    fillInitStack(yaml, "event1.init", *scalerStack);
+    if (eventStack) fillInitStack(yaml, "event0.init", *eventStack);
+    if (scalerStack) fillInitStack(yaml, "event1.init", *scalerStack);
 
     // end of run
 
-    fillEndStack(yaml, "event0.stop", *eventStack);
-    fillEndStack(yaml, "event1.stop", *scalerStack);
+    if (eventStack) fillEndStack(yaml, "event0.stop", *eventStack);
+    if (scalerStack) fillEndStack(yaml, "event1.stop", *scalerStack);
 
     // Generate the output file:  
     std::ofstream out(m_outfile);
