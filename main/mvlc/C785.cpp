@@ -168,6 +168,8 @@ static XXUSB::CConfigurableObject::Limits ipedRange(ipedLow, ipedHigh);
 
 static const char* inputsEnum[] = {"ribbon", "nim", 0};
 
+static const char* typeEnum[] = {"adc", "qdc", "tdc"};
+
 //////////////////////////////////////////////////////////////////////
 /////////////////// Canonical class/object operations ////////////////
 //////////////////////////////////////////////////////////////////////
@@ -277,6 +279,7 @@ C785::addToChain(CVMUSB& controller,
    -timescale                600 (ns).  (775 only)
    -commonstop               false      (775 only)
    -iped                     180        (QDC's only).
+   -type                     adc* | tdc | qdc  - Device type.
 \endverbatim
 
    All others have no default values.   If, during initialization one of those
@@ -337,6 +340,8 @@ C785::onAttach(XXUSB::CConfigurableObject& configuration)
   // Issue 201 :
 
   m_pConfiguration->addEnumParameter("-inputs", inputsEnum, "ribbon");
+
+  m_pConfiguration->addEnumParameter("-type", typeEnum, "adc");
   
 }
 /*!
@@ -369,6 +374,7 @@ void
 C785::Initialize(CVMUSB& controller)
 {
   unsigned base = getIntegerParameter("-base");
+  auto type = m_pConfiguration->cget("-type");
   // Ok now we've established that we have a V785 we can program it.
   // programming access use the address modifier initamod:
   

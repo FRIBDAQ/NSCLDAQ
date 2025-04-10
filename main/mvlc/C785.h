@@ -112,7 +112,7 @@ private:
   unsigned int  getIntegerParameter(std::string name);
   bool getBoolParameter(std::string name);
   void getThresholds(std::vector<uint16_t>& thresholds);
-
+  
 };
 
 

@@ -57,3 +57,18 @@ If not, the delay is set to 0.  The readout, initialization, and shutdown are co
 * If the scaler stack exists, a similar process is used to fill in the Yaml for the initialization, read and shutdown sections of the YAML. 
 
 Finally libyaml-cpp is ased to write the modified yaml document to the output file.
+
+### Module notes:
+
+The static nature of MVLC stacks means that some modules, which used to interact directly with the module
+on initialization cannot do that any more and require some modifications:
+
+#### C785
+
+This module used to determine the module type (adc, tdc, qdc based on the model number register) and initialize as appropriate.  A new configuration option ```-type``` has been added with the legal values ```adc, qdc, tdc``` defaulting to ```adc```
+
+if the 'adc' command is used for a tdc or qdc -type must be set.
+
+#### Todo:
+
+Maybe it's possible to add more commands like tdc and qdc that will set the default -type?
