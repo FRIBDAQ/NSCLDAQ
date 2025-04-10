@@ -12,6 +12,7 @@ main_modules=utilities.h utilities.cpp \
 	CReadoutModule.h CReadoutModule.cpp \
 	CReadoutHardware.h CReadoutHardware.cpp \
 	CStack.h CStack.cpp CMarker.h CMarker.cpp \
+	C785.h C785.cpp \
 	MVLCConfigParser.h MVLCConfigParser.cpp \
 	MVLCGenerator.h MVLCGenerator.cpp
 
