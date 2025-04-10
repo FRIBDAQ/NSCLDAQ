@@ -30,6 +30,7 @@
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
+
 namespace XXUSB {
   class CConfigurableObject;
 }
@@ -114,6 +115,15 @@ private:
   void getThresholds(std::vector<uint16_t>& thresholds);
   
 };
+/// The command to add the 'adc' command to the interpreter:
 
+class C785Command : public DeviceCommand {
+public:
+  C785Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~C785Command();
+
+protected:
+  virtual CReadoutModule* createDevice(std::string name);
+};
 
 #endif

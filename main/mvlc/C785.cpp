@@ -620,3 +620,34 @@ C785::getThresholds(vector<uint16_t>& thresholds)
 
  
 }
+////////////////////////////////////////// Implement the 'adc' command //////////////////////////
+
+
+/**
+ * constructor
+ * @param interp the interpreter on which to register.
+ * @param parser refernces the parser object
+ * 
+ */
+C785Command::C785Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "adc", parser) {}
+
+/** 
+ * destructor
+ */
+C785Command::~C785Command() {}
+
+
+/**
+ *  createDevice
+ *      Create a new device bound into its containig module.
+ * @param name - ignored name of the device.
+ */
+CReadoutModule* 
+C785Command::createDevice(std::string name) {
+  auto dev = new C785;
+  auto result = new CReadoutModule;
+  result->SetDriver(dev);
+
+  return result;
+}

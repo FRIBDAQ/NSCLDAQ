@@ -21,6 +21,7 @@
 // Define the commands to register.
 #include "CStack.h"
 #include "CMarker.h"
+#include "C785.h"
 
 /**
  * constructor:
@@ -42,4 +43,5 @@ MVLCConfigParser::addExtensions() {
     CTCLInterpreter& interp(*getInterpreter());
     addExtension(new CStackCommand(interp, *this));
     addExtension(new CMarkerCommand(interp, *this));
+    addExtension(new C785Command(interp, *this));
 }
