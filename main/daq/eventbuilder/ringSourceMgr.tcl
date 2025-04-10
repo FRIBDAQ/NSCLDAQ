@@ -392,8 +392,8 @@ proc ::RingSourceMgr::_HandleDataSourceInput {fd info id} {
 	set currentState [$machine getState]
 	$machine destroy
 	if {$Pending::pendingState ne "Halted"} {
-	    # Pending state == "None" AND current state == "Halted" is a
-	    # valid state as well, so pass that as well, see issue #270:
+	    # Pending state == "None" AND current state == "Halted" is also a
+	    # valid state, everything else is an error (see issue #270):
 	    if {$Pending::pendingState ne "None" || $currentState ne "Halted"} {
 		tk_messageBox -type ok -icon error -title {Source exited} \
 		    -message "The event builder source for $info ($id) exited unexpectedly: pending $Pending::pendingState current $currentState"
