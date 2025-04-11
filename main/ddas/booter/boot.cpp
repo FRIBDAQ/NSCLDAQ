@@ -14,7 +14,7 @@ using namespace DAQ::DDAS;
  *
  * @details
  * - Create a SystemBooter object.
- * - Generate a configuration.
+ * - Generate a basic configuration.
  * - Attempt a system boot for the configuration.
  *
  * @return 0 Successful boot, no exceptions, etc.
@@ -22,7 +22,7 @@ using namespace DAQ::DDAS;
 int main()
 {
     SystemBooter booter;
-    auto pConfig = Configuration::generate(FIRMWARE_FILE, "cfgPixie16.txt");
+    auto pConfig = Configuration::generate("cfgPixie16.txt");
     booter.boot(*pConfig, SystemBooter::FullBoot);
 
     return 0;

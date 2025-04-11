@@ -24,8 +24,7 @@ DDASReadout_CPPFLAGS=-I@top_builddir@/ddas 				\
 	@PIXIE_CPPFLAGS@						\
 	@LIBTCLPLUS_CFLAGS@						\
 	@TCL_FLAGS@         						\
-	-fPIC -DFIRMWARE_FILE=\"${SHAREDIR}/DDASFirmwareVersions.txt\"  \
-	-DSORTING 							
+	-fPIC -DSORTING 							
 
 DDASReadout_LDFLAGS= \
 	@top_builddir@/sbs/readout/libSBSProductionReadout.la   \

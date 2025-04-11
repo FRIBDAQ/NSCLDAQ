@@ -42,23 +42,17 @@ CPixieSystemUtilities::Boot()
     if (m_ovrSetFile) {
 	newSetFile = m_config.getSettingsFilePath();
     }
-  
-    // Create a configuration. A few things can happen here:
-    //   1. Default behavior: Use FW file from this version of NSCLDAQ.
-    //   2. FIRMWARE_FILE envvar exists: Boot from custom firmware defined in
-    //      the file this envvar points at. Expects the same format as the
-    //      default firmware configuration file.
-    //   3. Custom firmware defined in cfgPixie16.txt: handled by the
-    //      configuration class, overrides anything done here.
-    // If any configuration piece is incorrect, the configuration class will
-    // complain loudly.
+
+    // If a FW file is specified, use it, otherwise use managed FW:
     
-    const char* fwFile =  FIRMWARE_FILE;
-    const char* alternateFirmwareFile = getenv("FIRMWARE_FILE");
-    if (alternateFirmwareFile) fwFile = alternateFirmwareFile;
-    m_config = *(
-	Configuration::generate(fwFile, "cfgPixie16.txt", "modevtlen.txt")
-	);
+    const char* fwFile = getenv("FIRMWARE_FILE");
+    if (fwFile) {    
+	m_config = *(Configuration::generate(fwFile, "cfgPixie16.txt",
+					     "modevtlen.txt"));
+    } else { 
+	m_config = *(Configuration::generateManagedFW("cfgPixie16.txt",
+						      "modevtlen.txt"));
+    }
 
     // (Re)set the custom settings file path here if used:
     

@@ -23,43 +23,11 @@
 #include <HardwareRegistry.h>
 
 #include <sstream>
+#include <cstring>
+#include <iostream>
 
 #include <config.h>
 #include <config_pixie16api.h>
-
-static const char* infoErrors[3] = {
-    "Success",
-    "Invalid module number",
-    "Failed to read I2C Serial EEPROM"
-};
-
-static const char* bootErrors[25] = {
-    "Success",
-    "Invalid Pixie16 module number",
-    "Size of COMFPGA config file was wrong",
-    "Failed to boot COMM FGPA",
-    "Failed to allocate memory to store data for COMFPGA config file",
-    "Failed to open COMMFPGA config file",
-    "Unused error code 6",
-    "Unused error code 7",
-    "Unused error code 8",
-    "Unused error code 9",
-    "Size of SFGPA Config file is invalid",
-    "Failed to boot signal processing FPGA",
-    "Failed to allocate memory for SFGPA config file",
-    "Failed to open SFGPA config file",
-    "Failed to boot DSP",
-    "Failed to allocate memory to store DPS executable code",
-    "Failed to open DSP code file",
-    "Size of DSP Parameter file is invalid",
-    "Failed to open DSP Parameter file",
-    "Can't initialize DSP Variable indices",
-    "Can't copy DSP Variable indices",
-    "Failed to program FIPPI in",
-    "Failed to set the offset DACs",
-    "Failed to start RESET_ADC",
-    "RESET_ADC run timed out"
-};
 
 /**
  * constructor
@@ -91,34 +59,30 @@ CBoot::~CBoot() {}
 int CBoot::operator()(std::vector<Tcl_Obj*>& objv)
 {
     int index, slot;
-    const char** messages;
     const char* pDoing;
     Tcl_Interp*  pInterp = getInterpreter();
     try {
         requireExactly(objv, 2);
         index = getInteger(objv[1]);
-        
+
         auto slots = m_config.getSlotMap();
         if ((index < 0) || (index >= slots.size())) {
             throw std::string("Module index is invalid");
         }
         slot = slots[index];
         
-        messages = infoErrors;
         pDoing   = "getting module hardware type";
         int hwtype = getHardwareType(index);  // throws on error.
         
-        messages = bootErrors;
         pDoing   = "booting module";
         bootModule(index, hwtype);
-        
     }
     catch (std::string msg) {
         setResult(msg.c_str());
         return TCL_ERROR;
     }
     catch (int status) {
-        std::string msg = apiMsg(index, slot, status, pDoing, messages);
+        std::string msg = apiMsg(index, slot, status, pDoing);
         setResult(msg.c_str());
         return TCL_ERROR;
     }
@@ -132,20 +96,22 @@ int CBoot::operator()(std::vector<Tcl_Obj*>& objv)
  *    Returns a string appropriate to an API error status.
  * @param index -module index.
  * @param slot  - corresponding module slot.
- * @param status - API status value negated.
+ * @param status - API status value.
  * @param doing  -  String describing what failed.
- * @param msgs   - Table of status messages.
  * @return std::string - the error message.
  */
 std::string
-CBoot::apiMsg(int index, int slot, int status, const char* doing, const char* msgs[])
+CBoot::apiMsg(int index, int slot, int status, const char* doing)
 {
+    char xiaErrMsg[1024];    
+    PixieGetReturnCodeText(status, xiaErrMsg, 1024);
+
     std::stringstream s;
-    
     s << "Error " << doing << " module number " << index
-      << " (slot: " << slot << "): " << msgs[status]; 
+      << " (slot: " << slot << "): " << xiaErrMsg; 
     
     std::string result = s.str();
+    
     return result;
 }
 /**
@@ -158,29 +124,32 @@ CBoot::apiMsg(int index, int slot, int status, const char* doing, const char* ms
  *   -  Ask the hardware registry to compute the hardware type.
  * @param index - module number.
  * @return int  - Hardware type of the module.
- * @throw int   - negative status code of failing calls to ReadModuleInfo.
+ * @throw int   - status code of failing calls to ReadModuleInfo.
  * @throw std::string - if we can't figure out a valid hardware type.
+ * @todo (ASC 3/27/25): If the module is in a bad state, does
+ *   `PixieGetModuleInfo()` still retrieve the info properly? Do we need to
+ *   maintain FW and HW maps of the modules independent of XIA's management?
  */
 int
 CBoot::getHardwareType(int index)
 {
-    unsigned short rev, bits, mhz;
-    unsigned int   serial;
+    module_config cfg;
+    int rv = PixieGetModuleInfo(index, &cfg);
+    if (rv < 0) throw rv;
     
-    int status = Pixie16ReadModuleInfo(index, &rev, &serial, &bits, &mhz);
-    if (status) throw -status;
-    
-    // Get the type:
-    
-    int type = DAQ::DDAS::HardwareRegistry::computeHardwareType(
-        rev, mhz, bits
-    );
+    unsigned short rev = cfg.revision;
+    unsigned short msps = cfg.adc_sampling_frequency;
+    unsigned short bits = cfg.adc_bit_resolution;
+	
+    // Module type must be known:
+    auto type = DAQ::DDAS::HardwareRegistry::computeHardwareType(rev, msps, bits);
     if (type == DAQ::DDAS::HardwareRegistry::Unknown) {
-        throw "Module hardware type is unknown";
+	throw "Module hardware type is unknown";
     }
     
     return type;
 }
+
 /**
  * bootModule
  *   Given we know the hardware type of a module, fetch the firmware
@@ -188,24 +157,32 @@ CBoot::getHardwareType(int index)
  *
  * @param index - Index of module to boot.
  * @param type  - hardware type of module.
- * @throw int   - The negative of the status from BootModule.
+ * @throw int   - The status from BootModule.
+ *
+ * @todo (ASC 3/27/25): If the module is in a bad state, does
+ *   `PixieGetModuleInfo()` still retrieve the info properly? Do we need to
+ *   maintain FW and HW maps of the modules independent of XIA's management?
  */
 void
 CBoot::bootModule(int index, int type)
 {
-    auto firmware = m_config.getFirmwareConfiguration(type);
-    std::string setFile = m_config.getSettingsFilePath();
+    char sysFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    char fippiFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    char dspFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    char varFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    std::string settingsFile;
     
-    int status = Pixie16BootModule(
-        firmware.s_ComFPGAConfigFile.c_str(),
-        firmware.s_SPFPGAConfigFile.c_str(),
-        "",                       // Trigger fpga file.
-        firmware.s_DSPCodeFile.c_str(),
-        setFile.c_str(),
-        firmware.s_DSPVarFile.c_str(),
-        index,
-        0x7d
-    );
-    if (status) throw -status;
+    module_config cfg;
+    int rv = PixieGetModuleInfo(index, &cfg);
+    if (rv < 0) throw rv;
+    
+    strcpy(sysFile, cfg.fw_device_file[0]);
+    strcpy(fippiFile, cfg.fw_device_file[1]);
+    strcpy(dspFile, cfg.fw_device_file[2]);
+    strcpy(varFile, cfg.fw_device_file[3]);
+    settingsFile = m_config.getSettingsFilePath(index);
+    
+    rv = Pixie16BootModule(sysFile, fippiFile, nullptr, dspFile,
+			   settingsFile.c_str(), varFile, index, 0x7f);
+    if (rv < 0) throw rv;
 }
-

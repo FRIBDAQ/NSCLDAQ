@@ -21,6 +21,12 @@
  */
 
 /**
+ * @todo (ASC 3/26/25): Entire package needs to replace hardcoded API error
+ * messages with API calls to get error messages from return codes.
+ * See Boot.cpp for initial progress.
+ */ 
+
+/**
  *  This file is loaded when
  *  package require pixie16 is executed.  It must:
  *  - provide the package so pkg_mkIndex does the right thing.
@@ -58,6 +64,7 @@ DAQ::DDAS::Configuration crateConfiguration;
 
 static const char* pkgVersion = "1.1";   // Tcl package version.
 static const char* configFile="cfgPixie16.txt"; // Crate config
+static const char* modEvtLenFile = "modevtlen.txt"; // Event lengths.
 
 /**
  * setErrnoResult
@@ -118,16 +125,30 @@ extern "C" {
             );
             return TCL_ERROR;
         }
-        
-        auto pCfg = DAQ::DDAS::Configuration::generate(FIRMWARE_FILE, configFile);    
-        crateConfiguration = *pCfg;    
+
+	status = access(modEvtLenFile, R_OK);
+        if (status < 0) {
+            setErrnoResult(
+                pInterp, "Unable to read modevtlen.txt in current directory "
+		);
+            return TCL_ERROR;
+        }
+
+	DAQ::DDAS::Configuration* pCfg;
+	const char* fwFile = getenv("FIRMWARE_FILE");
+	if (fwFile) {
+	    crateConfiguration = *(DAQ::DDAS::Configuration::generate(
+				       fwFile, configFile, modEvtLenFile));
+	} else {
+	    crateConfiguration = *(DAQ::DDAS::Configuration::generateManagedFW(
+				       configFile, modEvtLenFile));	
+	}
+	//crateConfiguration = *pCfg;    
             
-            
-        
 #ifdef DEBUG        
-        std::cout << "Configuration: \n";
-        crateConfiguration.print(std::cout);
-        std::cout << std::endl;
+	std::cout << "Configuration: \n";
+	crateConfiguration.print(std::cout);
+	std::cout << std::endl;
         std::cout.flush();
 #endif
         // All the commands register in the pixie16 namespace:
