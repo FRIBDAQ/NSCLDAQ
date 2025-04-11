@@ -76,6 +76,9 @@ Const(FSRange)     0x1060;
 Const(Iped)        0x1060;
 Const(Thresholds)   0x1080;	// Continues through 10bf, 32 D16 words.
 
+
+Const(MaxEventSize)  34;           // Longwords in the largest event.
+
 class C785Tests : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(C785Tests);
     CPPUNIT_TEST(command_1);                // THe command was added.
@@ -276,4 +279,37 @@ C785Tests::init_3() {
 
 // read operations:
 
-void C785Tests::read_1() {}
+void C785Tests::read_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "adc create d -base 0x80000000\n";
+        script << "stack create event -trigger nim1 -modules d\n" ;      
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+    auto estack = m_parser->getEventStack();
+    CPPUNIT_ASSERT(estack);
+
+    CVMUSBReadoutList list;
+    estack->addReadoutList(list);
+    auto ops = list.dumpForMvlc();
+    // THere are 3 ops a fiforead an two 16 bit writers to clear the MEB:
+
+    CPPUNIT_ASSERT_EQUAL(size_t(3), ops.size());
+
+    // The easy ones first:
+
+    CPPUNIT_ASSERT_EQUAL(writecmd(BSet2, 4), ops.at(1));
+    CPPUNIT_ASSERT_EQUAL(writecmd(BClear2, 4), ops.at(2));
+
+
+    // construct the fifo read:
+
+    std::stringstream fifo;
+    fifo << "vme_block_read 0x" << std::hex << unsigned(CVMUSBReadoutList::a32PrivBlock)
+       << std::dec << " " << MaxEventSize + 16 << " 0x80000000";
+    std::string fiforead = fifo.str();
+
+    CPPUNIT_ASSERT_EQUAL(fiforead, ops.at(0));
+}
