@@ -99,6 +99,11 @@ DeviceCommand::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv
                 pParam = Param.c_str();
             }
             this->cget(interp, devName, pParam);
+        } else {
+            std::stringstream msg;
+            msg << "stack invalid subcommand : " << subcommand;
+            std::string error = msg.str();
+            throw std::logic_error(error);
         }
     }
     catch(std::string msg) {
