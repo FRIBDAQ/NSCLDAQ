@@ -299,8 +299,8 @@ C3820::addReadoutList(CVMUSBReadoutList& list)
     // SOftware load next event.
     list.addWrite32(base+KeyLNE, CVMUSBReadoutList::a32UserData, (uint32_t)0);
     // Non timestamp mode, read all scalers.
-      list.addBlockRead32(base+ShadowCounters, CVMUSBReadoutList::a32UserBlock,
-		      (uint32_t)32);
+    list.addBlockRead32(base+ShadowCounters, CVMUSBReadoutList::a32UserBlock,
+        (uint32_t)32);
   }
 
 
