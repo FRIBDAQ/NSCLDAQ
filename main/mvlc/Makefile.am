@@ -12,9 +12,9 @@ main_modules=utilities.h utilities.cpp \
 	CReadoutModule.h CReadoutModule.cpp \
 	CReadoutHardware.h CReadoutHardware.cpp \
 	CStack.h CStack.cpp CMarker.h CMarker.cpp \
-	C785.h C785.cpp \
+	C785.h C785.cpp C3820.h C3820.cpp \
 	MVLCConfigParser.h MVLCConfigParser.cpp \
-	MVLCGenerator.h MVLCGenerator.cpp
+	MVLCGenerator.h MVLCGenerator.cpp 
 
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
 
