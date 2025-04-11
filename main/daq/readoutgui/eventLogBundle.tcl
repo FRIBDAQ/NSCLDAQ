@@ -421,8 +421,15 @@ proc ::EventLog::_handleInput {} {
         # before we got a chance to expect it to here.
 
         if {!$::EventLog::expectingExit && ($::Pending::pendingState ne "Halted")} {
-            ::ReadoutGUIPanel::Log EventLogManager error "Unexpected event log error! $msg"
-            ::Diagnostics::Error {The event logger exited unexpectedly check EventLogManager tab for errors.!!}
+	    # We may already be halted in which case the source exit is
+	    # expected, check this before issuing error message (issue #270):
+	    set sm [::RunstateMachineSingleton %AUTO%]
+	    set currentState [$sm getState]
+	    $sm destroy
+	    if {$::Pending::pendingState ne "None" || $currentState ne "Halted"} {
+		::ReadoutGUIPanel::Log EventLogManager error "Unexpected event log error! $msg pending $::Pending::pendingState current $currentState"
+		::Diagnostics::Error {The event logger exited unexpectedly check EventLogManager tab for errors.!!}
+	    }
         } else {
             # ::EventLog::_finalizeRun;            # May need that if exit before wait.
         }
