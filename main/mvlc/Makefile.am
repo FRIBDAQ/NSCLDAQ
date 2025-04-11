@@ -39,7 +39,7 @@ noinst_PROGRAMS = unittests
 
 unittests_SOURCES = TestRunner.cpp utiltests.cpp parsertests.cpp \
     stacktests.cpp devcommandtests.cpp rdomoduletests.cpp \
-	stackmoduletests.cpp markertests.cpp\
+	stackmoduletests.cpp markertests.cpp v785tests.cpp\
 	options.h options.c \
 	$(main_modules)
 unittests_CPPFLAGS = @CPPUNIT_CFLAGS@ $(mvlcgenerate_CPPFLAGS)

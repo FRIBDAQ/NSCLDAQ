@@ -1,6 +1,6 @@
 /*
     This software is Copyright by the Board of Trustees of Michigan
-    State University (c) Copyright 2005.
+    State University (c) Copyright 2025.
 
     You may use this software under the terms of the GNU public license
     (GPL).  The terms of this license are described at:
@@ -481,7 +481,7 @@ C785::Initialize(CVMUSB& controller)
 
   // If the module is a 775 write the timerange register.
 
-  if (true) {
+  if (type == "tdc") {
     int    range   = getIntegerParameter("-timescale");
     int    reg2Offset;
     //
@@ -505,7 +505,7 @@ C785::Initialize(CVMUSB& controller)
 			  static_cast<uint16_t>(0x400));
   }
   // QDC specific settings:
-  if (true) { //(type == 792) || (type == 862) || (type == 965)) {
+  if (type == "qdc") { //(type == 792) || (type == 862) || (type == 965)) {
     int iped = getIntegerParameter("-iped");
     controller.vmeWrite16(base + Iped, initamod, static_cast<uint16_t>(iped));
   }
