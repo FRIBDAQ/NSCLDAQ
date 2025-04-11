@@ -22,6 +22,7 @@
 #include "CStack.h"
 #include "CMarker.h"
 #include "C785.h"
+#include "C3820.h"
 
 /**
  * constructor:
@@ -44,4 +45,5 @@ MVLCConfigParser::addExtensions() {
     addExtension(new CStackCommand(interp, *this));
     addExtension(new CMarkerCommand(interp, *this));
     addExtension(new C785Command(interp, *this));
+    addExtension(new C3820Command(interp, *this));
 }
