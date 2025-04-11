@@ -297,13 +297,20 @@ snit::type EventLogger {
             # If the exit was unexpected, yell:
             
             if {! $expectingExit || ($::Pending::pendingState ne "Halted")} {
-                set msg "$ring -> $out (pid=$pid) exited unexpectedly!"
-                
-                set dlgmsg "MultiLogger: $msg Check log for errors."
-                tk_messageBox -icon error -type ok -title {Logger exited} \
-                -message $dlgmsg 
-                
-                ::ReadoutGUIPanel::Log MultiLogger: error $msg 
+		# We may already be halted in which case the source exit is
+		# expected, check this before issuing error message (issue #274):
+		set sm [::RunstateMachineSingleton %AUTO%]
+		set currentState [$sm getState]
+		$sm destroy
+		if {$::Pending::pendingState ne "None" || $currentState ne "Halted"} {
+		    set msg "$ring -> $out (pid=$pid) exited unexpectedly! pending $::Pending::pendingState current $currentState"
+		    
+		    set dlgmsg "MultiLogger: $msg Check log for errors."
+		    tk_messageBox -icon error -type ok -title {Logger exited} \
+			-message $dlgmsg 
+		    
+		    ::ReadoutGUIPanel::Log MultiLogger: error $msg
+		}
             } else {
                 set msg "$ring -> $out (pid=$pid) exited normally."
                 ::ReadoutGUIPanel::Log MultiLogger: log $msg
