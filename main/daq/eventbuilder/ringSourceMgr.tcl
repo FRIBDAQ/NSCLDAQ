@@ -388,12 +388,12 @@ proc ::RingSourceMgr::_HandleDataSourceInput {fd info id} {
 	catch {close $fd} msg
 	append text "exited: $msg"
 	::EndrunMon::decEndRunCount;           # One less end run to wait for.0
-	set machine [RunstateMachineSingleton %AUTO%]
-	set currentState [$machine getState]
-	$machine destroy
 	if {$Pending::pendingState ne "Halted"} {
-	    # Pending state == "None" AND current state == "Halted" is also a
-	    # valid state, everything else is an error (see issue #270):
+	    # We may already be halted in which case the source exit is
+	    # expected, check this before issuing error message (issue #270):
+	    set sm [RunstateMachineSingleton %AUTO%]
+	    set currentState [$sm getState]
+	    $sm destroy
 	    if {$Pending::pendingState ne "None" || $currentState ne "Halted"} {
 		tk_messageBox -type ok -icon error -title {Source exited} \
 		    -message "The event builder source for $info ($id) exited unexpectedly: pending $Pending::pendingState current $currentState"
