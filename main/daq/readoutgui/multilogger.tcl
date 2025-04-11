@@ -301,7 +301,7 @@ snit::type EventLogger {
             
             if {! $expectingExit || ($::Pending::pendingState ne "Halted")} {
 		# We may already be halted in which case the source exit is
-		# expected, check this before issuing error message (issue #270):
+		# expected, check this before issuing error message (issue #274):
 		set sm [::RunstateMachineSingleton %AUTO%]
 		set currentState [$sm getState]
 		$sm destroy
