@@ -37,9 +37,12 @@ options.h: options.ggo
 
 noinst_PROGRAMS = unittests
 
-unittests_SOURCES = TestRunner.cpp utiltests.cpp parsertests.cpp \
+UNIT_TESTS=utiltests.cpp parsertests.cpp \
     stacktests.cpp devcommandtests.cpp rdomoduletests.cpp \
-	stackmoduletests.cpp markertests.cpp v785tests.cpp\
+	stackmoduletests.cpp markertests.cpp v785tests.cpp 3820tests.cpp 
+
+unittests_SOURCES = TestRunner.cpp \
+	$(UNIT_TESTS) \
 	options.h options.c \
 	$(main_modules)
 unittests_CPPFLAGS = @CPPUNIT_CFLAGS@ $(mvlcgenerate_CPPFLAGS)
