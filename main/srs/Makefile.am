@@ -1,1 +1,1 @@
-SUBDIRS = maps broker readout
+SUBDIRS = maps sorter broker readout 
