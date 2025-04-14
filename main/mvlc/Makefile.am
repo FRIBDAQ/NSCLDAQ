@@ -13,6 +13,7 @@ main_modules=utilities.h utilities.cpp \
 	CReadoutHardware.h CReadoutHardware.cpp \
 	CStack.h CStack.cpp CMarker.h CMarker.cpp \
 	C785.h C785.cpp C3820.h C3820.cpp \
+	CDelay.h CDelay.cpp \
 	MVLCConfigParser.h MVLCConfigParser.cpp \
 	MVLCGenerator.h MVLCGenerator.cpp 
 
