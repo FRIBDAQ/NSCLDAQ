@@ -14,6 +14,7 @@ main_modules=utilities.h utilities.cpp \
 	CStack.h CStack.cpp CMarker.h CMarker.cpp \
 	C785.h C785.cpp C3820.h C3820.cpp \
 	CDelay.h CDelay.cpp \
+	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h MADC32Registers.h \
 	MVLCConfigParser.h MVLCConfigParser.cpp \
 	MVLCGenerator.h MVLCGenerator.cpp 
 
