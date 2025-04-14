@@ -724,7 +724,7 @@ CMADC32::computeUseGGregister(int gdgEnables, std::string gatemode)
  *  constructor
  */
 CMADC32Command::CMADC32Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
-  DeviceCommand(interp, "madc32", parser) {}
+  DeviceCommand(interp, "madc", parser) {}
 
 /** destructor */
 
