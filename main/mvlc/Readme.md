@@ -69,6 +69,12 @@ This module used to determine the module type (adc, tdc, qdc based on the model 
 
 if the 'adc' command is used for a tdc or qdc -type must be set.
 
-#### Todo:
+##### Todo:
 
 Maybe it's possible to add more commands like tdc and qdc that will set the default -type?
+
+#### CDelay
+
+For the VMUSB, the delay is in 200ns units while for the MVLC the delay is in 1ms units.  This makes the
+delay operation in a readout stack pretty much unusable.  However in initialization and tear-down, it might be 
+useful.
