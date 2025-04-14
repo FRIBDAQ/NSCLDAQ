@@ -18,6 +18,7 @@
 #define MVLC_CMADC32_h
 
 #include "CMesytecBase.h"
+#include "DeviceCommand.h" 
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -104,6 +105,17 @@ public:
   int computeUseGGregister(int gdgEnables, std::string gatemode);
 };
 
-
+/**
+ * @class CMADC32Command - 
+ * generating command for an MADC32 instance.Address
+ * 
+ */
+class CMADC32Command : public DeviceCommand {
+public:
+  CMADC32Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CMADC32Command();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 
 #endif

@@ -717,3 +717,27 @@ CMADC32::computeUseGGregister(int gdgEnables, std::string gatemode)
 	
 	return gdgEnables;
 }
+
+////////////////////////////////////////  Implement CMADCommand class:
+
+/**
+ *  constructor
+ */
+CMADC32Command::CMADC32Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "madc32", parser) {}
+
+/** destructor */
+
+CMADC32Command::~CMADC32Command() {}
+
+
+/**
+ *  createDevice - create a device instance wrapped in a ReadoutModule.
+ */
+CReadoutModule*
+CMADC32Command::createDevice(std::string name) {
+  auto result = new CReadoutModule;
+  result->SetDriver(new CMADC32);
+
+  return result;
+}
