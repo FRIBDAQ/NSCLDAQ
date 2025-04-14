@@ -52,7 +52,14 @@ CVMUSB::vmeWrite16(uint32_t address, uint8_t aModifier, uint16_t data) {
     m_operationList.addWrite16(address, aModifier, data);
     return 0;
 }
-    
+/** delay
+ *    Add a delay to the stack:
+ *     @paramm ms - the number of ms to delay. 
+*/
+void
+CVMUSB::delay(uint32_t ms) {
+    m_operationList.addDelay(ms);
+}
 
 /**
  * getRecordedOperations

@@ -40,6 +40,7 @@ public:
 
     virtual int vmeWrite32(uint32_t address, uint8_t aModifier, uint32_t data);
     virtual int vmeWrite16(uint32_t address, uint8_t aModifier, uint16_t data);
+    virtual void delay(uint32_t ms);                      // add the ability to delay in initializing.
     
 
     std::vector<std::string> getRecordedOperations();
