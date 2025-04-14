@@ -19,6 +19,7 @@
 #define MVLC_CDELAY_H
 
 #include "CReadoutHardware.h"
+#include "DeviceCommand.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -74,5 +75,17 @@ private:
 
 };
 
+/**
+ * @class CDelayCmmand
+ *     Derivation of UserCommand to create an instace of CDelay bound into a module.
+ */
+class CDelayCommand : DeviceCommand {
+public:
+  CDelayCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CDelayCommand();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 
 #endif
+

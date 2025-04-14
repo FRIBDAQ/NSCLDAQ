@@ -22,7 +22,8 @@
 
 #include "CDelay.h"
 
-#include <CReadoutHardware.h>
+#include "CReadoutHardware.h"
+#include "CReadoutModule.h"
 #include <XXUSBConfigurableObject.h>
 #include "CVMUSB.h"
 #include "CVMUSBReadoutList.h"
@@ -102,4 +103,34 @@ CDelay::getIntegerParameter(std::string name)
   unsigned int    value  = strtoul(sValue.c_str(), NULL, 0);
 
   return value;
+}
+
+//////////////////////////// Implement CDelayCommand
+
+
+/** constructor
+ * @param interp - interpreter the delay command is registered on
+ * @param parser - The parser into which modules will be registered.
+ * 
+ */
+CDelayCommand::CDelayCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "delay", parser) {
+
+}
+
+/**
+ *  destructor.
+ */
+CDelayCommand::~CDelayCommand() {}
+
+/**
+ *  createDevice
+ *      Create the module that wraps the device instance.
+ */
+CReadoutModule*
+CDelayCommand::createDevice(std::string name) {
+  auto result = new CReadoutModule();
+  result->SetDriver(new CDelay);
+
+  return result;
 }
