@@ -79,7 +79,7 @@ private:
  * @class CDelayCmmand
  *     Derivation of UserCommand to create an instace of CDelay bound into a module.
  */
-class CDelayCommand : DeviceCommand {
+class CDelayCommand : public DeviceCommand {
 public:
   CDelayCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
   virtual ~CDelayCommand();
