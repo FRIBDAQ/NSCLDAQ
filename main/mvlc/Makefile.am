@@ -40,7 +40,8 @@ noinst_PROGRAMS = unittests
 
 UNIT_TESTS=utiltests.cpp parsertests.cpp \
     stacktests.cpp devcommandtests.cpp rdomoduletests.cpp \
-	stackmoduletests.cpp markertests.cpp v785tests.cpp 3820tests.cpp 
+	stackmoduletests.cpp markertests.cpp v785tests.cpp 3820tests.cpp \
+	delaytests.cpp
 
 unittests_SOURCES = TestRunner.cpp \
 	$(UNIT_TESTS) \
