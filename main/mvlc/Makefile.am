@@ -8,7 +8,7 @@ DEVICE_MODULES=CStack.h CStack.cpp CMarker.h CMarker.cpp \
 	C785.h C785.cpp C3820.h C3820.cpp \
 	CDelay.h CDelay.cpp \
 	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h MADC32Registers.h \
-	CCAENChain.h CCAENChain.cpp 
+	CCAENChain.h CCAENChain.cpp CMADCCHain.h CMADCChain.cpp
 
 main_modules=utilities.h utilities.cpp \
 	TCLConfigParser.h TCLConfigParser.cpp \
