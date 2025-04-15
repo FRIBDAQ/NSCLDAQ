@@ -4,17 +4,20 @@ bin_PROGRAMS=mvlcgenerate
 # Done this way so we don't need a lib and we don't need to repeat ourselves for
 # test sources
 
+DEVICE_MODULES=CStack.h CStack.cpp CMarker.h CMarker.cpp \
+	C785.h C785.cpp C3820.h C3820.cpp \
+	CDelay.h CDelay.cpp \
+	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h MADC32Registers.h \
+	CCAENChain.h CCAENChain.cpp 
+
 main_modules=utilities.h utilities.cpp \
 	TCLConfigParser.h TCLConfigParser.cpp \
 	CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
 	CVMUSB.h CVMUSB.cpp \
+	$(DEVICE_MODULES) \
 	DeviceCommand.h DeviceCommand.cpp \
 	CReadoutModule.h CReadoutModule.cpp \
 	CReadoutHardware.h CReadoutHardware.cpp \
-	CStack.h CStack.cpp CMarker.h CMarker.cpp \
-	C785.h C785.cpp C3820.h C3820.cpp \
-	CDelay.h CDelay.cpp \
-	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h MADC32Registers.h \
 	MVLCConfigParser.h MVLCConfigParser.cpp \
 	MVLCGenerator.h MVLCGenerator.cpp 
 
