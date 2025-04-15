@@ -64,9 +64,9 @@ private:
   typedef ChainList::iterator  ChainListIterator;
 
 private:
-  ChainList         m_Chain;
+  ChainList                     m_Chain;
   XXUSB::CConfigurableObject*   m_pConfiguration;
-  TCLConfigParser*  m_pParser;
+  TCLConfigParser*              m_pParser;
 
   int               m_moduleCount; // Saved at init time.
   uint32_t          m_baseAddress; // Saved at init time.
