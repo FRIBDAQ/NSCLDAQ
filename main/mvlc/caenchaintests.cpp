@@ -46,6 +46,9 @@ class CAENChainTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(chain_3);       // THree modules one nonexistent.
     CPPUNIT_TEST(chain_4);       // THre modules one, not a C785.
 
+    CPPUNIT_TEST(init_1);        // Init does a broadcalst clear data at the end.
+
+    CPPUNIT_TEST(read_1);        // Readout list is pretty simple/small.
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -55,6 +58,8 @@ protected:
     void chain_3();
     void chain_4();
 
+    void init_1();
+    void read_1();
 public:
     // The usual setup/teardown for this sort of test
     void setUp() {
@@ -151,4 +156,71 @@ CAENChainTests::chain_4() {
     CPPUNIT_ASSERT_THROW(
         (*m_parser)(), CTCLException
     );
+}
+
+/// initialization tests:
+
+void
+CAENChainTests::init_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "adc create one -base 0x10000000 -geo 2\n";
+        script << "adc create two -base 0x20000000 -geo 3\n";
+        script << "adc create three -base 0x40000000 -geo 4\n";
+        script << "caenchain create chain -base 0xff000000 -modules [list one two three]\n"; // middle module.
+        script << "stack create event -trigger nim1 -modules chain\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* pEvent = m_parser->getEventStack();
+    CPPUNIT_ASSERT(pEvent);
+
+    CVMUSB controller;
+    pEvent->Initialize(controller);
+    
+    auto ops = controller.getRecordedOperations();
+
+    CPPUNIT_ASSERT(ops.size() > 2);     // There are at least the ones I need.
+    auto nops = ops.size();
+    auto bset = ops.at(nops-2);     // CLEAR_DATA BST2
+    auto bclr = ops.at(nops-1);    // Same for BCLR2
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d16 0xff001032 0x4"),
+        bset
+    );
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d16 0xff001034 0x4"),
+        bclr
+    );
+}
+
+///////////////////// read list tests.
+
+
+void
+CAENChainTests::read_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "adc create one -base 0x10000000 -geo 2\n";
+        script << "adc create two -base 0x20000000 -geo 3\n";
+        script << "adc create three -base 0x40000000 -geo 4\n";
+        script << "caenchain create chain -base 0xff000000 -modules [list one two three]\n"; // middle module.
+        script << "stack create event -trigger nim1 -modules chain\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* pEvent = m_parser->getEventStack();
+    CPPUNIT_ASSERT(pEvent);
+
+    CVMUSBReadoutList list;
+    pEvent->addReadoutList(list);
+
+    auto ops = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(3), ops.size());
 }
