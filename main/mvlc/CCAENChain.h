@@ -18,6 +18,7 @@
 #define MVLC_CCAENCHAIN_H
 
 #include "CReadoutHardware.h"
+#include "DeviceCommand.h"
 #include <stdint.h>
 #include <string>
 #include <list>
@@ -101,5 +102,20 @@ public:
   std::list<std::string> getModules();
   static bool moduleChecker(std::string name, std::string value, void* arg);
   
+};
+
+/*
+   @class CAENChainCommand 
+       Generator command.  Note that we'll need to store the config parser to hand
+       to generated modules.
+*/
+class CAENChainCommand : public DeviceCommand {
+private:
+  TCLConfigParser* m_parser;
+public:
+  CAENChainCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CAENChainCommand();
+protected:
+  CReadoutModule* createDevice(std::string name);
 };
 #endif

@@ -270,3 +270,33 @@ CCAENChain::moduleChecker(string name, string value, void* arg)
 
   return true;		       
 }
+////////////////////////// Implement the CAENChainCommand:
+
+/**
+ *  constructor
+ *     Construct the base class with the command name "caenchain" and save the parser
+ * object for device construction.
+ * 
+ */
+CAENChainCommand::CAENChainCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "caenchain", parser), 
+  m_parser(&parser) 
+  {}
+
+/** destructor 
+ *    We don't own the parser so we dont' delete it.
+*/
+CAENChainCommand::~CAENChainCommand() {}
+
+/**
+ * createDevice
+ *     Create a new Readout module that encapsulates a CCAENChain instance.
+ * Ownership passes to the caller.
+ */
+CReadoutModule*
+CAENChainCommand::createDevice(std::string  name) {
+  auto result = new CReadoutModule;
+  result->SetDriver(new CCAENChain(m_parser));
+
+  return result;
+}
