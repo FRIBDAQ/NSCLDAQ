@@ -49,7 +49,7 @@ public:
      // Make a temp scipt file:
 
      char nameTemplate[100];
-     strcpy(nameTemplate, "sis3820.tclXXXXXX");
+     strcpy(nameTemplate, "madc32.tclXXXXXX");
      m_fd = mkstemp(nameTemplate);
      m_filename = nameTemplate;
 
