@@ -25,6 +25,7 @@
 #include "C3820.h"
 #include "CDelay.h"
 #include "CMADC32.h"
+#include "CCAENChain.h"
 
 /**
  * constructor:
@@ -50,4 +51,5 @@ MVLCConfigParser::addExtensions() {
     addExtension(new C3820Command(interp, *this));
     addExtension(new CDelayCommand(interp, *this));
     addExtension(new CMADC32Command(interp, *this));
+    addExtension(new CAENChainCommand(interp, *this));
 }
