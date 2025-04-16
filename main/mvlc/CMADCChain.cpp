@@ -249,22 +249,22 @@ CMADCChain::moduleChecker(string name, string value, void* arg)
  *    We need to save the parser to pass to instances of CMADCChain we create:
  */
 
- CMADCChainCommand::CMADCChainCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+CMADCChainCommand::CMADCChainCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
   DeviceCommand(interp, "madcchain", parser), m_parser(&parser) {}
 
   /**
    * destructor
    */
 
-   CMADCChainCommand::~ CMADCChainCommand() {}
+CMADCChainCommand::~ CMADCChainCommand() {}
 
    /**
     *  create the module wrapping a device:
     */
-   CReadoutModule*
-   CMADCChainCommand::createDevice(std::string name) {
-    CReadoutModule* result = new CReadoutModule;
-    result->SetDriver(new CMADCChain(m_parser));
+CReadoutModule*
+CMADCChainCommand::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CMADCChain(m_parser));
 
-    return result;
-   }
+  return result;
+}
