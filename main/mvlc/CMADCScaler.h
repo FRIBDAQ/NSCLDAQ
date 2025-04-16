@@ -18,6 +18,7 @@
 
 
 #include "CReadoutHardware.h"
+#include "DeviceCommand.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -71,4 +72,16 @@ public:
 
 };
 
+/**
+ *  @class CMADCScalerCommand 
+ *    DeviceCommand that crate CMADCSCaler objects.
+ */
+class CMADCScalerCommand : public DeviceCommand {
+public:
+  CMADCScalerCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CMADCScalerCommand();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 #endif

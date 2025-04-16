@@ -122,3 +122,33 @@ CMADCScaler::addReadoutList(CVMUSBReadoutList& list)
 
 }
 
+
+/////////////////////////////////// Implement the CMADCScalerCommand class.
+
+
+/**
+ *  consructor
+ *    We add the madcscaler command.
+ */
+CMADCScalerCommand::CMADCScalerCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "madcscaler", parser) {
+
+}
+
+/**
+ *  destructor
+ */
+
+CMADCScalerCommand::~CMADCScalerCommand() {}
+
+ /**
+  *  createDevice
+  *     Create a CReadoutModule that encapsulates a CMADCScaler driver object.
+  */
+CReadoutModule*
+CMADCScalerCommand::createDevice(std::string name) {
+  auto result = new CReadoutModule;
+  result->SetDriver(new CMADCScaler);
+
+  return result;
+}
