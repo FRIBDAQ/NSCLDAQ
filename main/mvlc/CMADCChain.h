@@ -18,6 +18,7 @@
 
 #include "CReadoutHardware.h"
 #include "CMesytecBase.h"
+#include "DeviceCommand.h"
 #include <stdint.h>
 #include <string>
 #include <list>
@@ -97,4 +98,20 @@ private:
   static bool moduleChecker(std::string name, std::string value, void* arg);
   
 };
+
+/**
+ * @class CMADCChainCommand
+ * 
+ *   Command/generator that defines the "madcchain" command to create/config chains.
+ */
+
+class CMADCChainCommand : public DeviceCommand {
+  TCLConfigParser* m_parser;                   // Needed to pass to chains.
+public:
+  CMADCChainCommand(CTCLInterpreter& interp, TCLConfigParser& parser) ;
+  virtual ~CMADCChainCommand();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 #endif
+
