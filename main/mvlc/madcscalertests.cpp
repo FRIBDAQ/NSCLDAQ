@@ -22,7 +22,7 @@
 #include "CVMUSBReadoutList.h"
 #include "CVMUSB.h"
 #include "CMADCScaler.h"
-
+#include "CReadoutModule.h"
 #include "MVLCConfigParser.h"
 #include "CStack.h"
 #include <TCLInterpreter.h>
@@ -52,10 +52,12 @@ static const int time_reset(0x6090);
 class MADCScalerTests : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(MADCScalerTests);
     CPPUNIT_TEST(command_1);    // THe command was registered.
+    CPPUNIT_TEST(create_1);     // Can cretae one and add it to a stack.
     CPPUNIT_TEST_SUITE_END();
 
 protected:
     void command_1();
+    void create_1();
 public:
     void setUp() {
         // Make a temp scipt file:
@@ -88,4 +90,28 @@ MADCScalerTests::command_1() {
     Tcl_Interp* pInterp = m_parser->getInterpreter()->getInterpreter();
     auto token = Tcl_FindCommand(pInterp, "madcscaler", nullptr, TCL_GLOBAL_ONLY);
     CPPUNIT_ASSERT(token);
+}
+
+void 
+MADCScalerTests::create_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "madcscaler create scaler -base 0x12000000\n";
+        script << "stack create sc -trigger scaler -modules scaler\n";
+    }
+
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* scaler = m_parser->getScalerStack();
+    CPPUNIT_ASSERT(scaler);
+
+    auto madcModule = m_parser->findDevice("scaler");
+    CPPUNIT_ASSERT(madcModule);
+
+    // The encapsulated driver must be a CMADCScaler.
+
+    CMADCScaler* madc = dynamic_cast<CMADCScaler*>(madcModule->getDriver());
+    CPPUNIT_ASSERT(madc);
 }
