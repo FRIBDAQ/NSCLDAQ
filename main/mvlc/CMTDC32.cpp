@@ -606,3 +606,28 @@ CMTDC32::getTermination()
 
 //--------------------------------------------------------------------
 
+/////////////////////// Implement the MTDCCommand class:
+
+/**
+ *  constructor
+ */
+MTDCCommand::MTDCCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+    DeviceCommand(interp, "mtdc", parser) {
+
+}
+/**
+ *  destructor:
+ */
+MTDCCommand::~MTDCCommand() {}
+
+
+/**
+ * creatDevice - make the module wrapping an MTDC32 object.
+ */
+CReadoutModule*
+MTDCCommand::createDevice(std::string name) {
+    CReadoutModule* result = new CReadoutModule;
+    result->SetDriver(new CMTDC32);
+
+    return result;
+}

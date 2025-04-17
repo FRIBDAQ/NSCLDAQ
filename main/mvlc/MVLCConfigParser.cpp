@@ -28,6 +28,7 @@
 #include "CCAENChain.h"
 #include "CMADCChain.h"
 #include "CMADCScaler.h"
+#include "CMTDC32.h"
 
 /**
  * constructor:
@@ -56,4 +57,5 @@ MVLCConfigParser::addExtensions() {
     addExtension(new CAENChainCommand(interp, *this));
     addExtension(new CMADCChainCommand(interp, *this));
     addExtension(new CMADCScalerCommand(interp, *this));
+    addExtension(new MTDCCommand(interp, *this));
 }

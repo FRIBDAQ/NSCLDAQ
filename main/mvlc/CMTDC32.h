@@ -114,4 +114,16 @@ private:
 
 };
 
+/**
+ *  @class MTDCCommand
+ *     Derivation of DeviceCommand that creates CMTDC32 objects.
+ */
+class MTDCCommand : public DeviceCommand {
+public:
+    MTDCCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+    virtual ~MTDCCommand();
+protected:
+    CReadoutModule* createDevice(std::string name);
+};
+
 #endif
