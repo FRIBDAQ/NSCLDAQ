@@ -53,11 +53,15 @@ class MADCScalerTests : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(MADCScalerTests);
     CPPUNIT_TEST(command_1);    // THe command was registered.
     CPPUNIT_TEST(create_1);     // Can cretae one and add it to a stack.
+    CPPUNIT_TEST(init_1);      // Initialization is correct (clear scaler).
+    CPPUNIT_TEST(readout_1);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
     void command_1();
     void create_1();
+    void init_1();
+    void readout_1();
 public:
     void setUp() {
         // Make a temp scipt file:
@@ -114,4 +118,70 @@ MADCScalerTests::create_1() {
 
     CMADCScaler* madc = dynamic_cast<CMADCScaler*>(madcModule->getDriver());
     CPPUNIT_ASSERT(madc);
+}
+void
+MADCScalerTests::init_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "madcscaler create scaler -base 0x12000000\n";
+        script << "stack create sc -trigger scaler -modules scaler\n";
+    }
+
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* scaler = m_parser->getScalerStack();
+    CPPUNIT_ASSERT(scaler);
+
+    CVMUSB controller;
+    scaler->Initialize(controller);
+
+    auto ops = controller.getRecordedOperations();
+
+    // One operation
+
+
+    CPPUNIT_ASSERT_EQUAL(size_t(1), ops.size());
+    auto init = ops.at(0);
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d16 0x12006090 0x2"), init
+    );
+}
+
+void
+MADCScalerTests::readout_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "madcscaler create scaler -base 0x12000000\n";
+        script << "stack create sc -trigger scaler -modules scaler\n";
+    }
+
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* scaler = m_parser->getScalerStack();
+    CPPUNIT_ASSERT(scaler);
+
+    CVMUSBReadoutList list;
+    scaler->addReadoutList(list);
+    auto ops = list.dumpForMvlc();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(5), ops.size());
+
+    // first reads the 16 bits of daq_time_lo last is a reset:
+
+    auto rddaqlo = ops.at(0);
+    auto reset   = ops.at(4);
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_read_mem 0x9 d16 0x120060a0"),
+        rddaqlo
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d16 0x12006090 0x2"), reset
+    );
+    
 }
