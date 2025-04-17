@@ -13,7 +13,7 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 
-    Rudimentary tests for the caenchain driver.
+    Rudimentary tests for the madc scaler module
 */
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/Asserter.h>
