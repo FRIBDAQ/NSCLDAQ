@@ -437,4 +437,30 @@ CMDPP32QDC::initCBLTReadout(CVMUSB& controller,
   controller.vmeWrite16(cbltAddress + ReadoutReset, initamod, 0);
   controller.vmeWrite16(cbltAddress + StartAcq,     initamod, 1);
 }
-//////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////// Mdpp32qdcCommand implementation
+
+
+/**
+ *  constructor 
+ */
+Mdpp32qdcCommand::Mdpp32qdcCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "mdpp32qdc", parser) {}
+
+/**
+ * destructor
+ */
+Mdpp32qdcCommand::~Mdpp32qdcCommand() {}
+
+/** createDevice
+ * 
+ * 
+ */
+CReadoutModule*
+Mdpp32qdcCommand::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CMDPP32QDC);
+
+  return result;
+}
+
+

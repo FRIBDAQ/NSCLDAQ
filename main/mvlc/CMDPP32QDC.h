@@ -102,4 +102,16 @@ public:
 
 };
 
+
+/**
+ *  @class Mdpp32qdcCommand
+ *    Provide the mdpp32qdc command.  A derivation of DeviceCommand.
+ */
+class Mdpp32qdcCommand : public DeviceCommand {
+public:
+  Mdpp32qdcCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~Mdpp32qdcCommand();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 #endif
