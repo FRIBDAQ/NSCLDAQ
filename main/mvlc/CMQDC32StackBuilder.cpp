@@ -117,11 +117,11 @@ namespace MQDC32 {
   void CMQDC32StackBuilder::addWriteMarkerType(CVMUSB& list, uint16_t type)
   {
     list.vmeWrite16(m_base + Reg::MarkType, initamod, type); 
-    list.DGGARegister(MQDCDELAY);
+    list.delay(MQDCDELAY);
   }
   
 
-  void CMQDC32StackBuilder::addWriteMemoryBankSeparation(CVMUSBReadoutList& list, 
+  void CMQDC32StackBuilder::addWriteMemoryBankSeparation(CVMUSB& list, 
       uint16_t type)
   {
     list.vmeWrite16(m_base + Reg::BankOperation, initamod, type);
@@ -220,7 +220,7 @@ namespace MQDC32 {
     list.delay(MQDCDELAY);
   }
 
-  void CMQDC32StackBuilder::addWriteECLFCInput(CVMUSBReadoutList& list, uint16_t type)
+  void CMQDC32StackBuilder::addWriteECLFCInput(CVMUSB& list, uint16_t type)
   {
     list.vmeWrite16(m_base + Reg::ECLFC, initamod, type);
     list.delay(MQDCDELAY);
@@ -284,7 +284,7 @@ namespace MQDC32 {
   
   /// addReadoutList methods.
 
-  void addResetReadout(CVMUSBReadout& list) {
+  void CMQDC32StackBuilder::addResetReadout(CVMUSBReadoutList& list) {
     list.addWrite16(m_base + Reg::ReadoutReset, initamod, 0);
   }
 
