@@ -19,6 +19,7 @@
 
 
 #include "CMesytecBase.h"
+#include "DeviceCommand.h"
 #include <stdint.h>
 #include <string>
 #include <vector>

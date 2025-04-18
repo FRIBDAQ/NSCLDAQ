@@ -405,3 +405,28 @@ CMDPP32SCP::initCBLTReadout(CVMUSB& controller,
   controller.vmeWrite16(cbltAddress + ReadoutReset, initamod, 0);
   controller.vmeWrite16(cbltAddress + StartAcq,     initamod, 1);
 }
+//////////////////////// implemenet the Mdpp32ScpCommand class:
+
+/** constructor
+ * 
+ */
+Mdpp32ScpCommand::Mdpp32ScpCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "mdpp32scp", parser) {}
+
+  /** 
+   * destructor:
+   */
+  Mdpp32ScpCommand::~Mdpp32ScpCommand() {}
+
+  /**
+   *  createDevice 
+   * 
+   * wrap an CMDPP32SCP object in a readout module.
+   */
+  CReadoutModule*
+  Mdpp32ScpCommand::createDevice(std::string name) {
+    CReadoutModule* result = new CReadoutModule;
+    result->SetDriver(new CMDPP32SCP);
+
+    return result;
+  }

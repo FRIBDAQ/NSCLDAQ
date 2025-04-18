@@ -112,4 +112,18 @@ public:
 
 };
 
+
+
+/**
+ * @class mddp32scp
+ *    Derivation from DeviceCommand to provide the mdpp32scp command.
+ */
+class Mdpp32ScpCommand : public DeviceCommand {
+public:
+  Mdpp32ScpCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~Mdpp32ScpCommand();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 #endif
