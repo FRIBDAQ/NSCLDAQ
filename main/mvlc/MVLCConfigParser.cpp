@@ -29,6 +29,7 @@
 #include "CMADCChain.h"
 #include "CMADCScaler.h"
 #include "CMTDC32.h"
+#include "CMQDC32RdoHdwr.h"
 
 /**
  * constructor:
@@ -58,4 +59,5 @@ MVLCConfigParser::addExtensions() {
     addExtension(new CMADCChainCommand(interp, *this));
     addExtension(new CMADCScalerCommand(interp, *this));
     addExtension(new MTDCCommand(interp, *this));
+    addExtension(new MqdcCommand(interp, *this));
 }
