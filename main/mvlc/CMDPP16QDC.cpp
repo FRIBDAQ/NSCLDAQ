@@ -19,8 +19,10 @@
 #include <XXUSBConfigurableObject.h>
 #include <unistd.h>
 #include <CVMUSB.h>
+#include <CVMUSBReadoutList.h>
 #include <bitset>
 #include <iomanip>
+#include <iostream>
 
 using std::vector;
 using std::string;
@@ -268,7 +270,7 @@ CMDPP16QDC::Initialize(CVMUSB& controller)
 	list.vmeWrite16(base + SetMonChannel,     initamod, monitorchannel);
 	list.vmeWrite16(base + SetWave,           initamod, monitorwave);
 
-  
+} 
 
 /**
  * This method is called to ask a driver instance to contribute to the readout list (stack)
@@ -301,7 +303,6 @@ CMDPP16QDC::onEndRun(CVMUSB& controller)
 {
 }
 
-/
 /*
   Creates a map from the value of -gaincorrectionlong and -gaincorrectionshort
   to the values that can be programmed into the system.

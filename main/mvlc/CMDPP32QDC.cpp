@@ -21,6 +21,7 @@
 #include <CVMUSB.h>
 #include <bitset>
 #include <iomanip>
+#include <iostream>
 
 using std::vector;
 using std::string;

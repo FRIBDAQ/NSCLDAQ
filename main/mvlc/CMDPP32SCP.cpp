@@ -21,6 +21,7 @@
 #include <CVMUSB.h>
 #include <bitset>
 #include <iomanip>
+#include <iostream>
 
 using std::vector;
 using std::string;
@@ -148,8 +149,8 @@ CMDPP32SCP::Initialize(CVMUSB& controller)
   CVMUSB& list(controller);     // use of CVMUSBReadoutList is not supported with mvlc init.
 
   // First disable the interrupts so that we can't get any spurious ones during init.
-  list.addWrite16(base + Ipl, initamod, 0);
-  list.addDelay(MDPPDELAY);
+  list.vmeWrite16(base + Ipl, initamod, 0);
+  list.delay(MDPPDELAY);
 
   // Now retrieve the configuration parameters:
   uint16_t       id                  = m_pConfiguration -> getIntegerParameter("-id");
