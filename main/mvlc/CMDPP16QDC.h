@@ -105,4 +105,18 @@ public:
 
 };
 
+/**
+ *  @class Mdpp16QdcCommand
+ * 
+ * class derived from DeviceCommand to create and manipulate mdpp32qdc devices.
+ */
+class CMdpp16QdcCommand : public DeviceCommand {
+public:
+  CMdpp16QdcCommand(CTCLInterpreter& interp,  TCLConfigParser& parser);
+  virtual ~CMdpp16QdcCommand();
+protected:
+
+  CReadoutModule* createDevice(std::string name);
+};
+
 #endif
