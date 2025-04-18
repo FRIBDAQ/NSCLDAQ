@@ -773,3 +773,28 @@ CMQDC32RdoHdwr::initCBLTReadout(CVMUSB& ctlr, uint32_t mcast, int rdoSize)
   ctlr.vmeWrite16(mcast + Reg::StartAcq , initamod, (uint16_t)1);
 }
 
+/////////////////////// implement the Mqdc command generator.
+
+/**
+ *  constructor
+ */
+MqdcCommand::MqdcCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "mqdc", parser) {}
+
+/**
+ * destructor
+ */
+MqdcCommand::~MqdcCommand() {}
+
+
+/**
+ *  createDevice
+ *      Create an MQDCRdoHdwr Wrapped in a CReadoutModule.
+ */
+CReadoutModule*
+MqdcCommand::createDevice(std::string name) {
+  CReadoutModule* result  = new CReadoutModule;
+  result->SetDriver(new CMQDC32RdoHdwr);
+
+  return result;
+}

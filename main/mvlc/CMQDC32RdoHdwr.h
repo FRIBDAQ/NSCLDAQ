@@ -19,6 +19,7 @@
 
 
 #include "CReadoutHardware.h"
+#include "DeviceCommand.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -136,6 +137,18 @@ private:
 
 };
 
+/**
+ *  @class MqdcCommand
+ * 
+ *    Derive from DevicCommand to create CMQDCRdoHardware wrapped in CReadoutModule object.
+ */
+class MqdcCommand : public DeviceCommand {
+public:
+  MqdcCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~MqdcCommand();
 
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 
 #endif
