@@ -78,3 +78,8 @@ Maybe it's possible to add more commands like tdc and qdc that will set the defa
 For the VMUSB, the delay is in 200ns units while for the MVLC the delay is in 1ms units.  This makes the
 delay operation in a readout stack pretty much unusable.  However in initialization and tear-down, it might be 
 useful.
+
+#### mcpp32scp
+ 
+*  For the VMUSB, if the -triggersource and -triggeroutput values where ```0x400```, the values of the trigger source
+and trigger output in the module were used.  This is not possible with the fribdaq-readout framework, as interactive initialization is not supported.  Therefore, the raw value of these parameters is *always* used.
