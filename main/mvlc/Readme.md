@@ -79,7 +79,9 @@ For the VMUSB, the delay is in 200ns units while for the MVLC the delay is in 1m
 delay operation in a readout stack pretty much unusable.  However in initialization and tear-down, it might be 
 useful.
 
-#### mcpp32scp
+#### mcppxxxxxx
  
 *  For the VMUSB, if the -triggersource and -triggeroutput values where ```0x400```, the values of the trigger source
 and trigger output in the module were used.  This is not possible with the fribdaq-readout framework, as interactive initialization is not supported.  Therefore, the raw value of these parameters is *always* used.
+*  NSCLDAQ docs don't document the ```mdpp16qdc``` but it is there and implemented.
+* The module configurations have a -printregisters option which, if true prints an annotated view of the device registers.   This is not supportable in the mvlc readout framework so it has been removed.
