@@ -30,6 +30,9 @@
 #include "CMADCScaler.h"
 #include "CMTDC32.h"
 #include "CMQDC32RdoHdwr.h"
+#include "CMDPP32QDC.h"
+#include "CMDPP16QDC.h"
+#include "CMDPP32SCP.h"
 
 /**
  * constructor:
@@ -60,4 +63,7 @@ MVLCConfigParser::addExtensions() {
     addExtension(new CMADCScalerCommand(interp, *this));
     addExtension(new MTDCCommand(interp, *this));
     addExtension(new MqdcCommand(interp, *this));
+    addExtension(new Mdpp32qdcCommand(interp, *this));
+    addExtension(new CMdpp16QdcCommand(interp, *this));
+    addExtension(new Mdpp32ScpCommand(interp, *this));
 }
