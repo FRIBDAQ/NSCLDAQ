@@ -50,7 +50,7 @@ UNIT_TESTS=utiltests.cpp parsertests.cpp \
     stacktests.cpp devcommandtests.cpp rdomoduletests.cpp \
 	stackmoduletests.cpp markertests.cpp v785tests.cpp 3820tests.cpp \
 	delaytests.cpp madc32tests.cpp caenchaintests.cpp madcchaintests.cpp \
-	madcscalertests.cpp mtdctests.cpp mqdctests.cpp mdpptests.cpp
+	madcscalertests.cpp mtdctests.cpp mqdctests.cpp mdpptests.cpp sis3804tests.cpp
 
 unittests_SOURCES = TestRunner.cpp \
 	$(UNIT_TESTS) \
