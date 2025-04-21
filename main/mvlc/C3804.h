@@ -17,6 +17,7 @@
 */
 
 #include "CReadoutHardware.h"
+#include "DeviceCommand.h"
 #include <string>
 #include <stdint.h>
 // Forward class definitions:
@@ -85,6 +86,22 @@ private:
   // 32 bit transfers that throw if there's an error:
 
   void       checkWrite(CVMUSB& controller, uint32_t address, uint32_t value);
+
 };   
 
+
+/**
+ *  @class SIS3804Command 
+ *   DeviceCommand Deriviation to creat modules wrapping C3804 drivers
+ */
+
+ class SIS3804Command : public DeviceCommand {
+public:
+  SIS3804Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~SIS3804Command();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+ };
 #endif
+

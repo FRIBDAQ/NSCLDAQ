@@ -278,3 +278,23 @@ C3804::checkWrite(CVMUSB& controller, uint32_t address, uint32_t value)
   
 
 }
+
+//////////////////// Implement SIS3804Command
+
+/** constructor
+ * 
+ */
+SIS3804Command::SIS3804Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "sis3804", parser) {}
+
+SIS3804Command::~SIS3804Command() {}
+
+  /** 
+   * createDevice 
+  */
+CReadoutModule* SIS3804Command::createDevice(std::string name) {
+    auto result = new CReadoutModule;
+    result->SetDriver(new C3804);
+
+    return result;
+}
