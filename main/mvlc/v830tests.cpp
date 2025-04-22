@@ -22,7 +22,9 @@
 
 #include "CVMUSBReadoutList.h"
 #include "CVMUSB.h"
+#include "CStack.h"
 #include "C830.h"
+#include "CReadoutModule.h"
 #include "MVLCConfigParser.h"
 #include "CStack.h"
 #include <TCLInterpreter.h>
@@ -39,10 +41,16 @@
 class V830Tests : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(V830Tests);
     CPPUNIT_TEST(command_1);
+    CPPUNIT_TEST(create_1);
+    CPPUNIT_TEST(init_1);
+    CPPUNIT_TEST(readout_1);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
     void command_1();
+    void create_1();
+    void init_1();
+    void readout_1();
 public:
     void setUp() {
         // Make a temp script file:
@@ -77,3 +85,97 @@ void V830Tests::command_1() {
     auto token = Tcl_FindCommand(pInterp, "v830", nullptr, TCL_GLOBAL_ONLY);
     CPPUNIT_ASSERT(token);
 }
+// scripts can create one.
+
+void V830Tests::create_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "v830 create scaler -base 0x12340000\n";
+        script << "stack create scalers -modules scaler\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+    auto module = m_parser->findDevice("scaler");
+    CPPUNIT_ASSERT(module);
+    
+    auto driver = dynamic_cast<C830*>(module->getDriver());
+    CPPUNIT_ASSERT(driver);
+    
+}
+
+// initialization looks reasonable
+
+void V830Tests::init_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "v830 create scaler -base 0x12340000\n";
+        script << "stack create scalers  -trigger scaler -modules scaler\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* s = m_parser->getScalerStack();
+    CPPUNIT_ASSERT(s);
+
+    CVMUSB controller;
+    s->Initialize(controller);
+
+    auto ops = controller.getRecordedOperations();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(7), ops.size());
+
+    // first one is a reset write:
+
+    auto reset = ops.front();
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d16 0x12341120 0x0"),
+        reset
+    );
+    // last one sets the ipl to 0 (default value).
+
+    auto setipl = ops.back();
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d16 0x12341112 0x0"),
+        setipl
+    );
+}
+// readout list :
+
+void V830Tests::readout_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "v830 create scaler -base 0x12340000\n";
+        script << "stack create scalers  -trigger scaler -modules scaler\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* s = m_parser->getScalerStack();
+    CPPUNIT_ASSERT(s);
+
+    CVMUSBReadoutList list;
+    s->addReadoutList(list);
+
+    auto ops = list.dumpForMvlc();
+
+    // List is latch operation + 32 reads + clear op 34 operations.
+
+    CPPUNIT_ASSERT_EQUAL(size_t(34), ops.size());
+
+    auto latch = ops.front();
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d16 0x12341124 0x0"),
+        latch
+    );
+
+    auto clear = ops.back();
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d16 0x12341122 0x0"),
+        clear
+    );
+}
+
