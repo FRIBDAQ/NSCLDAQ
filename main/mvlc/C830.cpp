@@ -353,3 +353,29 @@ C830::getTriggerSource() const
 
   assert(0);			// should not happen!
 }
+
+/////////////////////////////////// V830Command implementation
+
+/**
+ * constructor - nothing special
+ */
+V830Command::V830Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "v830", parser) {}
+
+/** 
+ * destructor.
+*/
+V830Command::~V830Command() {}
+
+
+/**
+ *  createDevice
+ *     Return a dynamically created readout module wrapping a C830 object.
+ */
+CReadoutModule*
+V830Command::createDevice(std::string name) {
+  auto result= new CReadoutModule;
+  result->SetDriver(new C830);
+
+  return result;
+}

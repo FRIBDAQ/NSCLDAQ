@@ -17,6 +17,7 @@
 #define MVLC_C830_H
 
 #include "CReadoutHardware.h"
+#include "DeviceCommand.h"
 #include <stdint.h>
 #include <string>
 
@@ -109,4 +110,17 @@ private:
 
 };
 
+
+/**
+ * @class V830Command 
+ *    Derivation from DeviceCommand to build modules that wrap C830 drivers.
+ */
+class V830Command : public DeviceCommand {
+public:
+  V830Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~V830Command();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 #endif
