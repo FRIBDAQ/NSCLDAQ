@@ -13,7 +13,7 @@ DEVICE_MODULES=CStack.h CStack.cpp CMarker.h CMarker.cpp \
 	C3804.h C3804.cpp \
 	CMQDC32RdoHdwr.h CMQDC32RdoHdwr.cpp CMQDC32StackBuilder.h CMQDC32StackBuilder.cpp MQDC32Registers.h \
 	CMDPP16QDC.cpp  CMDPP16QDC.h  CMDPP32QDC.cpp  CMDPP32QDC.h  CMDPP32SCP.cpp  CMDPP32SCP.h  CMDPP.h  CMDPPQDC.h \
-	C830.h C830.cpp
+	C830.h C830.cpp CNADC2530.h CNADC2530.cpp
 
 main_modules=utilities.h utilities.cpp \
 	TCLConfigParser.h TCLConfigParser.cpp \
