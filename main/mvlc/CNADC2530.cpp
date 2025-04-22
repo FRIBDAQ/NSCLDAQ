@@ -411,3 +411,29 @@ CNADC2530::hldToRegister(double hld)
   int intermediate = (int)(((hld/3.2764) - 2)/(0.5/4095));
   return (uint16_t)((intermediate << 2) & 0x3ffc);
 }
+
+////////////////////////////// implmenet the Nadc2530Command.
+
+/**
+ *  constructor - nothing special, register as "hytec"
+ */
+Nadc2530Command::Nadc2530Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "hytec", parser) {}
+
+
+/**
+ * destructor:
+ */
+Nadc2530Command::~Nadc2530Command() {}
+
+/** 
+ * createDevice.
+ * 
+ */
+CReadoutModule* 
+Nadc2530Command::createDevice(std::string name) {
+  auto result = new CReadoutModule;
+  result->SetDriver(new CNADC2530);
+
+  return result;
+}

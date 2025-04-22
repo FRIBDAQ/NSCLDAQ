@@ -98,5 +98,18 @@ private:
   uint16_t hldToRegister(double hld);
   
 };
+/**
+ *  @class Nadc2530Command
+ * 
+ * Specialization of the DeviceCommand class which creates modules that encpasulate the
+ * CNADC2530 driver class.
+ */
+class Nadc2530Command : public DeviceCommand {
+public:
+  Nadc2530Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~Nadc2530Command();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 
 #endif

@@ -35,6 +35,7 @@
 #include "CMDPP32SCP.h"
 #include "C3804.h"
 #include "C830.h"
+#include "CNADC2530.h"
 
 /**
  * constructor:
@@ -70,4 +71,5 @@ MVLCConfigParser::addExtensions() {
     addExtension(new Mdpp32ScpCommand(interp, *this));
     addExtension(new SIS3804Command(interp, *this));
     addExtension(new V830Command(interp, *this));
+    addExtension(new Nadc2530Command(interp, *this));
 }
