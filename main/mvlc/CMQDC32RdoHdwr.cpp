@@ -234,7 +234,7 @@ CMQDC32RdoHdwr::Initialize(CVMUSB& controller)
   // allow time for that configuration to set in before accepting gates
   // because some of the config will effect the digitized values.
   
-  controller.delay(1000);
+  controller.delay(1000000);
 
   // begin accepting gates.
   

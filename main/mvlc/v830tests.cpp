@@ -161,11 +161,11 @@ void V830Tests::readout_1() {
 
     auto ops = list.dumpForMvlc();
 
-    // List is latch operation + 32 reads + clear op 34 operations.
+    // List is latch operation, delays + 32 reads + clear op 34 operations.
 
-    CPPUNIT_ASSERT_EQUAL(size_t(34), ops.size());
+    CPPUNIT_ASSERT_EQUAL(size_t(36), ops.size());  
 
-    auto latch = ops.front();
+    auto latch = ops.at(1);    /// there's a delay.
 
     CPPUNIT_ASSERT_EQUAL(
         std::string("vme_write 0x9 d16 0x12341124 0x0"),

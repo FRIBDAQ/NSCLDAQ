@@ -267,15 +267,15 @@ C830::addReadoutList(CVMUSBReadoutList& list)
     if (enables & (1 << i)) readSize++;
   }
 
-  //  readSize += 32;		// Assume all channels enabled.
+
 
   // If the trigger is VME, we do a latch and delay 1.2usec (1usec is enough).
   // prior to doing the block read.
 
   if (getTriggerSource() == vme) {
-    // list.addDelay(50);		// Seems to need a settled bus?
+    list.addDelay(50);		// Seems to need a settled bus?
     list.addWrite16(baseAddress + TRIGGER, configAmod, (uint16_t)0);
-    // list.addDelay(75);		// 200ns units.
+    list.addDelay(75);		// 200ns units.
   }
   // Add the transfer from the MEB
 

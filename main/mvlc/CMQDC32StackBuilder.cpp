@@ -26,7 +26,7 @@ namespace MQDC32 {
     auto pList = &ctlr;
     
     addSoftReset(*pList);
-    ctlr.delay(1000);
+    ctlr.delay(1000000);
   
   }
 

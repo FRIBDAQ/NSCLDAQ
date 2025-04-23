@@ -318,7 +318,7 @@ CMADC32::Initialize(CVMUSB& controller)
 
   uint32_t base = m_pConfiguration->getUnsignedParameter("-base");
   controller.vmeWrite16(base + Reset,    initamod, (uint16_t)1);
-  controller.delay(1000);      // 1000 ms delay.
+  controller.delay(1000000);    // good part of a second.
   controller.vmeWrite16(base + StartAcq, initamod, (uint16_t)0);
   controller.vmeWrite16(base + ReadoutReset, initamod, (uint16_t)1);
 

@@ -141,7 +141,7 @@ CMDPP32SCP::Initialize(CVMUSB& controller)
   
 
   controller.vmeWrite16(base + Reset,        initamod, 1);
-  controller.delay(1000);                                        // delay the list in ms.
+  controller.delay(100000);                                     
   controller.vmeWrite16(base + StartAcq,     initamod, 0);
   controller.vmeWrite16(base + InitFifo,     initamod, 1);
   controller.vmeWrite16(base + ReadoutReset, initamod, 1);
