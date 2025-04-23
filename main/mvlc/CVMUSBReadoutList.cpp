@@ -231,17 +231,23 @@ CVMUSBReadoutList::addMaskedCountFifoRead32(uint32_t address, uint8_t amod) {
 }
 /**
  *  addDelay
- *    Adds a delay to the stack.  Note that the delays here will, in general, be longer than a similar
- * delay for the VMUSB. This is because the delay units are milliseconds. 
+ 
  * 
- * @param ms - The number of milliseconds to delay.  Note that delay should, in general, not be in 
- * readout stacks!!!!! no longer...perhaps we need to warn at runtime.
+ * @param value  - The number delay length in 200ns units.  
+ * 
+ * This will be transparently converted to the 62.5 cycle units supported
+ * by the mvlc.  The caller  must ensure that this value is less than 0xffffff cycles.
+ * In general this is not a problem as the VMUSB only allowed up to 255 cycles in a delay
+ * which is easily accomodated.
+ * 
+ * In general, the waits will be as much as 62.5ns longer than requested.
  */
 void
-CVMUSBReadoutList::addDelay(uint32_t ms) {
+CVMUSBReadoutList::addDelay(uint32_t value) {
     
+    int cycles = (float)(value)*200.0/62.5  + 1.0;   // MVLC cycles.
     std::stringstream stack_line;
-    stack_line << "software_delay " << ms;
+    stack_line << "wait " << cycles;
     std::string mvlc_op(stack_line.str());
 
     m_list.push_back(mvlc_op);

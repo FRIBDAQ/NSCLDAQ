@@ -76,11 +76,6 @@ if the 'adc' command is used for a tdc or qdc -type must be set.
 
 Maybe it's possible to add more commands like tdc and qdc that will set the default -type?
 
-#### CDelay
-
-For the VMUSB, the delay is in 200ns units while for the MVLC the delay is in 1ms units.  This makes the
-delay operation in a readout stack pretty much unusable.  However in initialization and tear-down, it might be 
-useful.   This is a restriction in the stack instruction set of the MVLC and cannot be "fixed."
 
 #### mcppxxxxxx
  
@@ -89,6 +84,3 @@ and trigger output in the module were used.  This is not possible with the fribd
 *  NSCLDAQ docs don't document the ```mdpp16qdc``` but it is there and implemented.
 * The module configurations have a -printregisters option which, if true prints an annotated view of the device registers.   This is not supportable in the mvlc readout framework so it has been removed.
 
-#### v1495sc
-
-  The scaler seems to need a delay between latch and read... maybe this is time to transfer the counter to the memory.  The delay in VMUSB is 200 * 200ns = 40usec, however the smallest delay operation supported by the MVLC operations is 1ms and so that's used.  This implies the MVLC will be dead during a scaler read of a 1495 logic module for a tleast 1ms.

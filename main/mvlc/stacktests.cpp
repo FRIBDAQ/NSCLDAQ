@@ -323,7 +323,7 @@ ReadoutListTests::delay_1() {
     auto mvlclist = list.dumpForMvlc();
     CPPUNIT_ASSERT_EQUAL(size_t(1), mvlclist.size());
     CPPUNIT_ASSERT_EQUAL(
-        std::string("software_delay 12"),
+        std::string("wait 39"),
         mvlclist.at(0)
     );
 }

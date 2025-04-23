@@ -88,7 +88,7 @@ DelayTests::delay_1() {
 
         CPPUNIT_ASSERT_EQUAL(size_t(1), ops.size());
         CPPUNIT_ASSERT_EQUAL(
-            std::string("software_delay 10"),
+            std::string("wait 33"),
             ops.at(0)
         );
     }

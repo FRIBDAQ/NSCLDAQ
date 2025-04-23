@@ -150,7 +150,7 @@ void V1495scTests::read_1() {
     // Delay is for one millisecond -- for now.
 
     CPPUNIT_ASSERT_EQUAL(
-        std::string("software_delay 1"),
+        std::string("wait 641"),
         delay
     );
     // Block read of 128 longs from a fifo.:
