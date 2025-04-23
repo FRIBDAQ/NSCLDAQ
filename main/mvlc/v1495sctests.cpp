@@ -39,12 +39,15 @@ class V1495scTests : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(V1495scTests);
     CPPUNIT_TEST(command_1);   // the 'v1495sc' command is registered.
     CPPUNIT_TEST(create_1);    // Can script create an object.
+    CPPUNIT_TEST(init_1);      // Init is 8 operations.
+    CPPUNIT_TEST(read_1);      // Readout list generation.
     CPPUNIT_TEST_SUITE_END();
 
 protected:
     void command_1();
     void create_1();
-
+    void init_1();
+    void read_1();
 public:
     void setUp() {
         char nameTemplate[100];
@@ -90,4 +93,70 @@ void V1495scTests::create_1() {
     auto pDriver = pModule->getDriver();
     CPPUNIT_ASSERT(pDriver);
     CPPUNIT_ASSERT(dynamic_cast<CV1495sc*>(pDriver));
+}
+
+void V1495scTests::init_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "v1495sc create scaler -base 0x12340000\n";
+        script << "stack create scalers -trigger scaler -modules scaler\n";
+    }
+
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* pStack = m_parser->getScalerStack();
+    CPPUNIT_ASSERT(pStack);
+
+    CVMUSB controller;
+    pStack->Initialize(controller);
+
+    auto ops = controller.getRecordedOperations();
+    CPPUNIT_ASSERT_EQUAL(size_t(8), ops.size());
+}
+
+void V1495scTests::read_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "v1495sc create scaler -base 0x12340000\n";
+        script << "stack create scalers -trigger scaler -modules scaler\n";
+    }
+
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* pStack = m_parser->getScalerStack();
+    CPPUNIT_ASSERT(pStack);
+    
+    CVMUSBReadoutList list;
+    pStack->addReadoutList(list);
+
+    auto ops = list.dumpForMvlc();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(3), ops.size());
+
+    auto trigger = ops.at(0);
+    auto delay = ops.at(1);
+    auto read = ops.at(2);
+
+    // trigger ia s write of the COMMANDS_SWTRIG operation tot he commands register.
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0xd d32 0x12341014 0x1"),
+        trigger
+    );
+    // Delay is for one millisecond -- for now.
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("software_delay 1"),
+        delay
+    );
+    // Block read of 128 longs from a fifo.:
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_block_read 0xf 129 0x12340000"),
+        read
+    );
 }
