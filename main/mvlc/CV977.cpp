@@ -268,3 +268,28 @@ CV977::addReadoutList(CVMUSBReadoutList& list)
   list.addRead16(base + offset, amod);
 
 }
+
+//////////////////////////////////////  V977Command implementation:
+
+/**
+ * constructor - nothing spectacular here.
+ */
+V977Command::V977Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "v977", parser) {}
+
+/** 
+ * destructor
+ */
+V977Command::~V977Command() {}
+
+/**
+ *  creatDevice 
+ *    Encapsulate a new CV977 in a Readout module
+ */
+CReadoutModule* 
+V977Command::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CV977);
+
+  return result;
+}

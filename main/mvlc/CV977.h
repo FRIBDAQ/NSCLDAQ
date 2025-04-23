@@ -18,6 +18,7 @@
 #define MVLC_C977_H
 
 #include "CReadoutHardware.h"
+#include "DeviceCommand.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -99,6 +100,19 @@ public:
   virtual void addReadoutList(CVMUSBReadoutList& list);
   
 
+};
+
+/** 
+ * @class V977Command
+ *    Derivation of a DeviceCommand that can make module instances encapsulating
+ * instances of the CV977 CAEN V977 input register driver.
+ */
+class V977Command :  public DeviceCommand {
+public:
+  V977Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~V977Command();
+protected:
+  CReadoutModule* createDevice(std::string name);
 };
 
 #endif

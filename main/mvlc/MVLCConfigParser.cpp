@@ -36,6 +36,7 @@
 #include "C3804.h"
 #include "C830.h"
 #include "CNADC2530.h"
+#include "CV977.h"
 
 /**
  * constructor:
@@ -72,4 +73,5 @@ MVLCConfigParser::addExtensions() {
     addExtension(new SIS3804Command(interp, *this));
     addExtension(new V830Command(interp, *this));
     addExtension(new Nadc2530Command(interp, *this));
+    addExtension(new V977Command(interp, *this));
 }
