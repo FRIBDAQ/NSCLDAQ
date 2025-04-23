@@ -312,3 +312,29 @@ CV1495sc::countBits(uint32_t mask)
 
   return result;
 }
+
+
+/////////////////////////////////////// Implementation of V1495Command class.
+
+/**
+ * constructor
+ */
+V1495Command::V1495Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "v1495sc", parser) {}
+
+/** 
+ * destructor
+  */
+ V1495Command::~V1495Command() {}
+
+ /**
+  * createDevice
+  *     Create/return a CReadoutModule that wraps a CV1495sc object:
+  */
+ CReadoutModule*
+ V1495Command::createDevice(std::string name) {
+    CReadoutModule* result = new CReadoutModule;
+    result->SetDriver(new CV1495sc);
+
+    return result;
+ }

@@ -86,6 +86,17 @@ private:
   size_t countBits(uint32_t mask);
 };
 
+/**
+ * @class V1495Command
+ *    Deriviation from DeviceCommand to instantiate CV1495sc modues from scrip.
+ * 
+ */
+class V1495Command: public DeviceCommand {
+public:
+  V1495Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~V1495Command();
 
-
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 #endif
