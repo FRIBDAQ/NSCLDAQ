@@ -61,7 +61,10 @@ Finally libyaml-cpp is ased to write the modified yaml document to the output fi
 ### Module notes:
 
 The static nature of MVLC stacks means that some modules, which used to interact directly with the module
-on initialization cannot do that any more and require some modifications:
+on initialization cannot do that any more and require some modifications.  Any module support that, in the VMUSBReadout was able to inform you that there is not a module of the type specified at the base address specified
+cannot do so as this is an offline translator, running it does not require that an MVLC be connected to the host computer.
+
+Other module specific differences:
 
 #### C785
 
@@ -77,7 +80,7 @@ Maybe it's possible to add more commands like tdc and qdc that will set the defa
 
 For the VMUSB, the delay is in 200ns units while for the MVLC the delay is in 1ms units.  This makes the
 delay operation in a readout stack pretty much unusable.  However in initialization and tear-down, it might be 
-useful.
+useful.   This is a restriction in the stack instruction set of the MVLC and cannot be "fixed."
 
 #### mcppxxxxxx
  
