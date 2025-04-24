@@ -405,3 +405,27 @@ CV1729::enumToValue(const char* pValue, const char** ppLegalValues, const unsign
   msg       += " in CV1729::enumToValue";
   throw msg;
 }
+
+///////////////////////////// Impelement the V1729aCommand class:
+
+/**
+ *  constructor - nothing special.
+ */
+V1729aCommand::V1729aCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "v1729a", parser) {}
+/**
+ * destructor:
+ */
+V1729aCommand::~V1729aCommand() {}
+
+
+/** createDevice
+ *     Return a Readout Module that wraps a CV1729 object.
+ */
+CReadoutModule*
+V1729aCommand::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CV1729);
+
+  return result;
+}

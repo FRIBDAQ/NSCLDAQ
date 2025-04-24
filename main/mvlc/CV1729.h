@@ -113,5 +113,17 @@ private:
 
 
 };
+/**
+ *  @class V1729aCommand
+ *     Derived from DeviceCommand to provide the v1729a command to create/config those drivers.
+ */
+class V1729aCommand : public DeviceCommand {
+public:
+  V1729aCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~V1729aCommand();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
 
 #endif
