@@ -255,6 +255,34 @@ CVMUSBReadoutList::addDelay(uint32_t value) {
 
 }
 /**
+ * addLoopUntil32:
+ *     Loop over a 32 bit read until a condition is met.
+ * @param address - address of the read.
+ * @param amod    - address modifier.
+ * @param mask    - comparison mask.
+ * @param value   - comarison value.
+ * 
+ * The read is done over and over again until when anded with the mask, it matches value.
+ * Suppose for example you need to delay until bit 1 (numbered from 0) is set in some register.
+ * You can 
+ *   addLoopUntil32(address, amod, 0x02, 0x02); and the stack will wait for that to happen.
+ */
+void
+CVMUSBReadoutList::addLoopUntil32(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value) {
+    loopUntil(address, amod, mask, value, "d32");
+
+    
+
+}
+/**
+ * addLoopUntil16 - Same as addLoopUntil32 but the read is 16 bits wide
+ */
+void 
+CVMUSBReadoutList::addLoopUntil16(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value) {
+    loopUntil(address, amod, mask, value, "d16");
+}
+
+/**
  *  dumpForMvlc
  *    Dump the stack.
  * 
@@ -343,4 +371,24 @@ CVMUSBReadoutList::maskAndShift(uint32_t mask) {
     std::string mvlc_op(stack_line.str());
     m_list.push_back(mvlc_op);
 
+}
+
+/** looputil make a generic loop until */
+
+void CVMUSBReadoutList::loopUntil(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value, const char* width) {
+    readToAccumulator(address, amod, width);
+    std::stringstream stack_line;
+    stack_line << "mask_shift_accu " << mask << " 0";
+    std::string op = stack_line.str();
+    m_list.push_back(op);
+    
+    // Clear the stream I think.
+
+    stack_line.seekp(0);
+    stack_line.str("");
+
+    stack_line << "compare_loop_accu eq " << value;
+    op = stack_line.str();
+
+    m_list.push_back(op);
 }

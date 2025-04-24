@@ -70,6 +70,11 @@ public:
     virtual void addDelay(uint32_t clocks);
     virtual void addMarker(uint32_t ms);
 
+    // Loop on the specified 16/32 bit read until the value read masked by mask is equal to value.
+
+    virtual void addLoopUntil32(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value);
+    virtual void addLoopUntil16(uint32_t addresss, uint8_t amod, uint32_t mask, uint32_t value);
+
     std::vector<std::string> dumpForMvlc();      // Return the operations list.
     void clear();                               // clear the list.
 
@@ -100,6 +105,7 @@ private:
     void addRead(uint32_t address, uint8_t amod, const char* width);
     void readToAccumulator(uint32_t address, uint8_t amod, const char* size); 
     void maskAndShift(uint32_t mask);
+    void loopUntil(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value, const char* width);
 };
 
 #endif
