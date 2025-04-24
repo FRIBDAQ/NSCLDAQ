@@ -316,7 +316,7 @@ class Window(QtWidgets.QMainWindow):
         self.LB_log.setStyleSheet('color: %s;' % level)
         self.LB_log.setText(text)
         font = self.LB_log.font()
-        font.setPointSize(20)
+        font.setPointSizeF(20)
         self.LB_log.setFont(font)
         
         rect = self.LB_log.contentsRect()
@@ -326,7 +326,7 @@ class Window(QtWidgets.QMainWindow):
         rect2 = metric.boundingRect(rect, QtCore.Qt.TextWordWrap, text)
         step = -0.01 if rect2.height() > rect.height() else 0.01
         while True:
-            font.setPointSize(size + step)
+            font.setPointSizeF(size + step)
             metric = QtGui.QFontMetrics(font)
             rect2 = metric.boundingRect(rect, QtCore.Qt.TextWordWrap, text)
             if size <= 1:
@@ -340,7 +340,7 @@ class Window(QtWidgets.QMainWindow):
                     break
                 size += step
         
-        font.setPointSize(size)
+        font.setPointSizeF(size)
         self.LB_log.setFont(font)
 
     def _popupConfirmation(self):
@@ -351,13 +351,13 @@ class Window(QtWidgets.QMainWindow):
         confirmation.setDefaultButton(QtWidgets.QMessageBox.No)
 
         font = confirmation.font()
-        font.setPointSize(20)
+        font.setPointSizeF(20)
         confirmation.setFont(font)
 
         return confirmation.exec()
 
     def _openAboutDialog(self):
-        Dialog(self).exec_()
+        About(self).exec_()
         
 
 if __name__ == "__main__":
