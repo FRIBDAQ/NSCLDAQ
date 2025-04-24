@@ -62,6 +62,22 @@ CVMUSB::delay(uint32_t ms) {
 }
 
 /**
+ * loopUntil32
+ *    See CVMUSBReadoutList::addLoopUntil32
+ */
+void
+CVMUSB::loopUntil32(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value) {
+    m_operationList.addLoopUntil32(address, amod, mask, value);
+}
+/**
+ *  loopUntil16 
+ *     see CVMUSBReadoutList::addLoopUntil16.
+ */
+void
+CVMUSB::loopUntil16(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value) {
+    m_operationList.addLoopUntil32(address, amod, mask, value);
+}
+/**
  * getRecordedOperations
  *  Gets the operations we've done since the last clear in a manner suitable for
  *  inclusion in a .yaml config file for mvlc readouts. 
