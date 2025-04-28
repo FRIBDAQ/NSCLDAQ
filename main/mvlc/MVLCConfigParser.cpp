@@ -39,6 +39,7 @@
 #include "CV977.h"
 #include "CV1495sc.h"
 #include "CV1729.h"
+#include "CV1x90.h"
 
 /**
  * constructor:
@@ -78,4 +79,5 @@ MVLCConfigParser::addExtensions() {
     addExtension(new V977Command(interp, *this));
     addExtension(new V1495Command(interp, *this));
     addExtension(new V1729aCommand(interp, *this));
+    addExtension(new V1x90Command(interp, *this));
 }
