@@ -48,6 +48,7 @@ class C1x90Tests : public CppUnit::TestFixture {
     CPPUNIT_TEST(init_3);   // -model v1290A
     CPPUNIT_TEST(init_4);   // -model v1290N
     CPPUNIT_TEST(init_5);   // Explicit V1190A
+    CPPUNIT_TEST(init_6);   // invalid model.
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -58,6 +59,7 @@ protected:
     void init_3();
     void init_4();
     void init_5();
+    void init_6();
 public:
     void setUp() {
         // Make a temp script file:
@@ -248,4 +250,17 @@ C1x90Tests::init_5() {
 
     CPPUNIT_ASSERT_EQUAL(1190, pDev->m_Model);
     CPPUNIT_ASSERT_EQUAL('A', pDev->m_Suffix);
+}
+
+void C1x90Tests::init_6() {
+    // invalid modelcode fails scrpt execution:
+    {
+        std::ofstream script(m_filename);
+        script << "tdc1x90 create tdc -base 0x12340000 -model V1190A\n"; // sb lower case v.
+        script << "stack create event -trigger nim1 -modules tdc\n";
+    }
+    CPPUNIT_ASSERT_THROW(
+        (*m_parser)(),
+        CTCLException
+    );
 }
