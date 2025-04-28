@@ -71,6 +71,14 @@ class ReadoutListTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(vmusbwrite_2);
     CPPUNIT_TEST(vmusbclear_1);
 
+    // Loopuntil tests.
+
+    CPPUNIT_TEST(loopuntil_1);   // 32 bit.
+    CPPUNIT_TEST(loopuntil_2);   // Mask is different from compare.
+
+    CPPUNIT_TEST(loopuntil_3);   // 16 bit.
+    CPPUNIT_TEST(loopuntil_4);   // mask differs from compare.
+
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -92,6 +100,11 @@ protected:
     void vmusbwrite_1();
     void vmusbwrite_2();
     void vmusbclear_1();
+
+    void loopuntil_1();
+    void loopuntil_2();
+    void loopuntil_3();
+    void loopuntil_4();
 
 public:
     void setUp() {}
@@ -371,4 +384,135 @@ ReadoutListTests::vmusbclear_1() {
     CPPUNIT_ASSERT_EQUAL(
         size_t(0), mvlclist.size()
     );
+}
+
+// Tests of the loopuntil methods
+
+void
+ReadoutListTests::loopuntil_1() {
+    // 32 bit read and the mask and value are the same.
+
+    CVMUSBReadoutList list;
+
+    list.addLoopUntil32(0x12340000, CVMUSBReadoutList::a32UserData, 0x010, 0x010);
+
+    // SHould be three operations:
+
+    auto ops = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(3), ops.size());
+    auto rdtoacc = ops.at(0);                           // Read to accumulatior.
+    auto maskshift = ops.at(1);                        // mask /shift accum.
+    auto compare   = ops.at(2);                       // Compare/loop.
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("read_to_accu 0x9 d32 0x12340000"),
+        rdtoacc
+    );
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("mask_shift_accu 0x10 0"),
+        maskshift
+    );
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("compare_loop_accu eq 0x10"),
+        compare
+    );
+
+}
+void
+ReadoutListTests::loopuntil_2() {
+    // 32 bit read and the mask and value are not the same.
+
+    CVMUSBReadoutList list;
+
+    list.addLoopUntil32(0x12340000, CVMUSBReadoutList::a32UserData, 0x030, 0x010);
+
+    // SHould be three operations:
+
+    auto ops = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(3), ops.size());
+    auto rdtoacc = ops.at(0);                           // Read to accumulatior.
+    auto maskshift = ops.at(1);                        // mask /shift accum.
+    auto compare   = ops.at(2);                       // Compare/loop.
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("read_to_accu 0x9 d32 0x12340000"),
+        rdtoacc
+    );
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("mask_shift_accu 0x30 0"),
+        maskshift
+    );
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("compare_loop_accu eq 0x10"),
+        compare
+    );
+
+}
+void
+ReadoutListTests::loopuntil_3() {
+    // 16 bit read and the mask and value are the same.
+
+    CVMUSBReadoutList list;
+
+    list.addLoopUntil16(0x12340000, CVMUSBReadoutList::a32UserData, 0x010, 0x010);
+
+    // SHould be three operations:
+
+    auto ops = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(3), ops.size());
+    auto rdtoacc = ops.at(0);                           // Read to accumulatior.
+    auto maskshift = ops.at(1);                        // mask /shift accum.
+    auto compare   = ops.at(2);                       // Compare/loop.
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("read_to_accu 0x9 d16 0x12340000"),
+        rdtoacc
+    );
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("mask_shift_accu 0x10 0"),
+        maskshift
+    );
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("compare_loop_accu eq 0x10"),
+        compare
+    );
+
+}
+void
+ReadoutListTests::loopuntil_4() {
+    // 16 bit read and the mask and value are not the same.
+
+    CVMUSBReadoutList list;
+
+    list.addLoopUntil16(0x12340000, CVMUSBReadoutList::a32UserData, 0x030, 0x010);
+
+    // SHould be three operations:
+
+    auto ops = list.dumpForMvlc();
+    CPPUNIT_ASSERT_EQUAL(size_t(3), ops.size());
+    auto rdtoacc = ops.at(0);                           // Read to accumulatior.
+    auto maskshift = ops.at(1);                        // mask /shift accum.
+    auto compare   = ops.at(2);                       // Compare/loop.
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("read_to_accu 0x9 d16 0x12340000"),
+        rdtoacc
+    );
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("mask_shift_accu 0x30 0"),
+        maskshift
+    );
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("compare_loop_accu eq 0x10"),
+        compare
+    );
+
 }

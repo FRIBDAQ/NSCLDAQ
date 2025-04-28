@@ -378,7 +378,7 @@ CVMUSBReadoutList::maskAndShift(uint32_t mask) {
 void CVMUSBReadoutList::loopUntil(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value, const char* width) {
     readToAccumulator(address, amod, width);
     std::stringstream stack_line;
-    stack_line << "mask_shift_accu " << mask << " 0";
+    stack_line << "mask_shift_accu 0x" << std::hex << mask << " 0" <<  std::dec;
     std::string op = stack_line.str();
     m_list.push_back(op);
     
@@ -387,7 +387,7 @@ void CVMUSBReadoutList::loopUntil(uint32_t address, uint8_t amod, uint32_t mask,
     stack_line.seekp(0);
     stack_line.str("");
 
-    stack_line << "compare_loop_accu eq " << value;
+    stack_line << "compare_loop_accu eq 0x" << std::hex << value;
     op = stack_line.str();
 
     m_list.push_back(op);
