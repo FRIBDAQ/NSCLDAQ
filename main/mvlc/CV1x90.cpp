@@ -573,7 +573,7 @@ CV1x90::createConfiguration()
 				 XXUSB::CConfigurableObject::isInteger, NULL,
 				 "");
   m_pConfiguration->addEnumParameter(
-    "-model", modelEnum, "v1x90A"
+    "-model", modelEnum, "v1190A"
   );
 
 }
