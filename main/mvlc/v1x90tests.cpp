@@ -49,6 +49,7 @@ class C1x90Tests : public CppUnit::TestFixture {
     CPPUNIT_TEST(init_4);   // -model v1290N
     CPPUNIT_TEST(init_5);   // Explicit V1190A
     CPPUNIT_TEST(init_6);   // invalid model.
+    CPPUNIT_TEST(readout_1); // addreadout list is correct.
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -60,6 +61,7 @@ protected:
     void init_4();
     void init_5();
     void init_6();
+    void readout_1();
 public:
     void setUp() {
         // Make a temp script file:
@@ -263,4 +265,40 @@ void C1x90Tests::init_6() {
         (*m_parser)(),
         CTCLException
     );
+}
+
+void C1x90Tests::readout_1() {
+    {
+        std::ofstream script(m_filename);
+        script << "tdc1x90 create tdc -base 0x12340000\n";
+        script << "stack create event -trigger nim1 -modules tdc\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* pEvent = m_parser->getEventStack();
+    CPPUNIT_ASSERT(pEvent);
+
+    CVMUSB controller;
+    pEvent->Initialize(controller);   
+
+    CVMUSBReadoutList list;
+    pEvent->addReadoutList(list);
+
+    auto ops = list.dumpForMvlc();   // Block read and an a FIFO clear.
+
+    CPPUNIT_ASSERT_EQUAL(size_t(2), ops.size());
+    auto blkread = ops.at(0);
+    auto reset   = ops.at(1);
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_block_read_mem 0xb 1024 0x12340000"),
+        blkread
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d16 0x12341016 0x0"),
+        reset
+    );
+
 }
