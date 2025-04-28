@@ -1023,3 +1023,28 @@ CV1x90::maxhitsMap()
   return result;
   
 }
+/////////////////////// implement the V1x90Comman d class.
+
+/**
+ *  constructor
+ */
+V1x90Command::V1x90Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "tdc1x90", parser)
+  {}
+
+/**
+ * destructor
+ */
+V1x90Command::~V1x90Command() {}
+
+
+/**
+ * createDevice:
+ */
+CReadoutModule* 
+V1x90Command::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CV1x90);
+
+  return result;
+}

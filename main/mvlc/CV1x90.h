@@ -273,6 +273,18 @@ public:
 };
 
                                    
+/**
+ *  @class V1x90Command
+ *     Implements the tdc1x90 command that creates/configs CV1x90 instances
+ * 
+ */
+class V1x90Command : public DeviceCommand {
+public:
+  V1x90Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~V1x90Command();
 
+protected:
+  CReadoutModule*  createDevice(std::string name);
+};
 
 #endif
