@@ -600,9 +600,9 @@ CV1x90::moduleType(CVMUSB& controller, uint32_t base)
     m_Model = 1290;
     m_Suffix = 'A';
 
-  } else if (model == "1290N") {
+  } else if (model == "v1290N") {
     m_Model = 1290;
-    m_Suffix == 'N';
+    m_Suffix = 'N';
   } else {
     std::stringstream error;
     error << "Bug, the -model value was: " << model << " wich should have not been allowed";
@@ -635,7 +635,7 @@ CV1x90::computeCounts()
     }
   }
   if (m_Model == 1290) {
-    if (m_Suffix = 'A') {
+    if (m_Suffix == 'A') {
       m_nChannelCount = 32;
       m_nChipCount    = 4;	// Hi res mode uses several channels in each chip per box channel
     }

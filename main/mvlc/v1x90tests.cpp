@@ -44,12 +44,20 @@ class C1x90Tests : public CppUnit::TestFixture {
     CPPUNIT_TEST(command_1);
     CPPUNIT_TEST(create_1);
     CPPUNIT_TEST(init_1);   // Default device type.
+    CPPUNIT_TEST(init_2);   // -model v1190B
+    CPPUNIT_TEST(init_3);   // -model v1290A
+    CPPUNIT_TEST(init_4);   // -model v1290N
+    CPPUNIT_TEST(init_5);   // Explicit V1190A
     CPPUNIT_TEST_SUITE_END();
 
 protected:
     void command_1();
     void create_1();
     void init_1();
+    void init_2();
+    void init_3();
+    void init_4();
+    void init_5();
 public:
     void setUp() {
         // Make a temp script file:
@@ -115,6 +123,113 @@ C1x90Tests::init_1() {
     {
         std::ofstream script(m_filename);
         script << "tdc1x90 create tdc -base 0x12340000\n";
+        script << "stack create event -trigger nim1 -modules tdc\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* pEvent = m_parser->getEventStack();
+    CPPUNIT_ASSERT(pEvent);
+
+    CVMUSB controller;
+    pEvent->Initialize(controller);
+    CReadoutModule* pModule = m_parser->findDevice("tdc");
+    CPPUNIT_ASSERT(pModule);
+    CV1x90* pDev = dynamic_cast<CV1x90*>(pModule->getDriver());
+    CPPUNIT_ASSERT(pDev);
+
+    CPPUNIT_ASSERT_EQUAL(1190, pDev->m_Model);
+    CPPUNIT_ASSERT_EQUAL('A', pDev->m_Suffix);
+}
+
+void
+C1x90Tests::init_2() {
+    // explicitly 1190 B:
+
+    
+    {
+        std::ofstream script(m_filename);
+        script << "tdc1x90 create tdc -base 0x12340000 -model v1190B\n";
+        script << "stack create event -trigger nim1 -modules tdc\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* pEvent = m_parser->getEventStack();
+    CPPUNIT_ASSERT(pEvent);
+
+    CVMUSB controller;
+    pEvent->Initialize(controller);
+    CReadoutModule* pModule = m_parser->findDevice("tdc");
+    CPPUNIT_ASSERT(pModule);
+    CV1x90* pDev = dynamic_cast<CV1x90*>(pModule->getDriver());
+    CPPUNIT_ASSERT(pDev);
+
+    CPPUNIT_ASSERT_EQUAL(1190, pDev->m_Model);
+    CPPUNIT_ASSERT_EQUAL('B', pDev->m_Suffix);
+}
+void
+C1x90Tests::init_3() {
+    // -model 1290A
+    {
+        std::ofstream script(m_filename);
+        script << "tdc1x90 create tdc -base 0x12340000 -model v1290A\n";
+        script << "stack create event -trigger nim1 -modules tdc\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* pEvent = m_parser->getEventStack();
+    CPPUNIT_ASSERT(pEvent);
+
+    CVMUSB controller;
+    pEvent->Initialize(controller);
+    CReadoutModule* pModule = m_parser->findDevice("tdc");
+    CPPUNIT_ASSERT(pModule);
+    CV1x90* pDev = dynamic_cast<CV1x90*>(pModule->getDriver());
+    CPPUNIT_ASSERT(pDev);
+
+    CPPUNIT_ASSERT_EQUAL(1290, pDev->m_Model);
+    CPPUNIT_ASSERT_EQUAL('A', pDev->m_Suffix);
+}
+
+void
+C1x90Tests::init_4() {
+    // -model v1290N
+
+    {
+        std::ofstream script(m_filename);
+        script << "tdc1x90 create tdc -base 0x12340000 -model v1290N\n";
+        script << "stack create event -trigger nim1 -modules tdc\n";
+    }
+    CPPUNIT_ASSERT_NO_THROW(
+        (*m_parser)()
+    );
+
+    CStack* pEvent = m_parser->getEventStack();
+    CPPUNIT_ASSERT(pEvent);
+
+    CVMUSB controller;
+    pEvent->Initialize(controller);
+    CReadoutModule* pModule = m_parser->findDevice("tdc");
+    CPPUNIT_ASSERT(pModule);
+    CV1x90* pDev = dynamic_cast<CV1x90*>(pModule->getDriver());
+    CPPUNIT_ASSERT(pDev);
+
+    CPPUNIT_ASSERT_EQUAL(1290, pDev->m_Model);
+    CPPUNIT_ASSERT_EQUAL('N', pDev->m_Suffix);
+}
+
+void
+C1x90Tests::init_5() {
+    // -model v1190A explcitly.
+
+    {
+        std::ofstream script(m_filename);
+        script << "tdc1x90 create tdc -base 0x12340000 -model v1190A\n";
         script << "stack create event -trigger nim1 -modules tdc\n";
     }
     CPPUNIT_ASSERT_NO_THROW(
