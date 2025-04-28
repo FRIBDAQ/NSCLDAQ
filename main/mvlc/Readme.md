@@ -84,3 +84,16 @@ and trigger output in the module were used.  This is not possible with the fribd
 *  NSCLDAQ docs don't document the ```mdpp16qdc``` but it is there and implemented.
 * The module configurations have a -printregisters option which, if true prints an annotated view of the device registers.   This is not supportable in the mvlc readout framework so it has been removed.
 
+#### V1x90 
+
+The CAEN multihit TDC's have two basic models, V1190 and V1290.  The V1290 has fewer channels but
+higher resolution. In VMUSBReadout, the model can be read from the device and used to steer initialization and
+readout list generation.  However in fribdaq-readout with the MVLC list handling is totally non-interactive.
+Therefore the new option ```-model``` has been added with legal values:
+
+*  ```v1190A```  - The module is a CAEN V1190 with 128 channels
+*  ```V1190B```  - Th e module is a CAEN V1190 with 64 channels.
+*  ```v1290A```  - The module is a CAEN v1290 with  32 channels.
+*  ```v1290N```  - The module is a CAEN  v1290 with 16 channels
+
+The default value for this is ```v1190A``` as this represents the vast majority of the modules at the FRIB.
