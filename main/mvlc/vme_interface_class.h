@@ -36,7 +36,7 @@ typedef UINT* PUINT;
 #pragma once
 class vme_interface_class{
 public:
-	virtual int vmeopen( void ) = 0;
+	virtual int vmeopen( void* designator ) = 0;
 	virtual int vmeclose( void ) = 0;
 
 	virtual int get_vmeopen_messages( CHAR* messages, UINT* nof_found_devices ) = 0;

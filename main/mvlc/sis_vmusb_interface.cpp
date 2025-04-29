@@ -28,7 +28,7 @@
 
 // I'm lazy so:
 
-typedef sis_vmusb_interface VME;    // MOre C++-ish than the #define I'd used before.
+#define VME sis_vmusb_interface
 
 /**
  * constructor just nulls out the interface pointer:
@@ -43,8 +43,8 @@ sis_vmusb_interface::sis_vmusb_interface() : m_pInterface(0) {}
  * @note only fails if Globals::pUSBController is null.
  */
 int 
-VME::vmeopen(CVMUSB& interface) {
-    m_pInterface = &interface;
+VME::vmeopen(void* interface) {
+    m_pInterface = reinterpret_cast<CVMUSB*>(interface);
     return 0;
 }
 /**
@@ -58,7 +58,7 @@ VME::vmeclose(void) {
     return 0;
 }
 /**
- * get_vme_open_messages
+ * get_vmeopen_messages
  *   Returns failure messages for vme open?
  *  
  * @param messages - buffer into which to load the message(?)
@@ -67,9 +67,14 @@ VME::vmeclose(void) {
  */
 int
 VME::get_vmeopen_messages(CHAR* messages, UINT* nof_found_devices) {
-
-    *nof_found_devices = 1;
-    strcpy(messages, "Open will succeed");
+    if (m_pInterface) {
+        *nof_found_devices = 1;
+        strcpy(messages, "Open will succeed");
+    } else {
+        *nof_found_devices = 0;
+        strcpy(messages, "Must vme open before use");
+        return -1;
+    }
     return 0;
 }
 /**

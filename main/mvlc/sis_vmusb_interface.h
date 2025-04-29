@@ -41,10 +41,11 @@ class CVMUSB;
  * the interface is not in autonomous data taking mode.
  */
 class sis_vmusb_interface : public vme_interface_class {
+private:
 	CVMUSB* m_pInterface;
 public:
 	sis_vmusb_interface();
-    virtual int vmeopen(CVMUSB& interface) ;
+    virtual int vmeopen(void* interface) ;
 	virtual int vmeclose( void ) ;
 
 	virtual int get_vmeopen_messages( CHAR* messages, UINT* nof_found_devices ) ;
