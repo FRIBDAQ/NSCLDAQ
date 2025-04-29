@@ -122,7 +122,7 @@ VME::vme_A32DMA_D32_write (UINT addr, UINT* data, UINT request_nof_words, UINT* 
         if (status < 0) {
             return status;
         }
-        *written_nof_words++;
+        *written_nof_words +=1;
         data++;
         addr += sizeof(UINT);
     }
@@ -158,7 +158,7 @@ VME::vme_A32DMA_D32FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UI
         if (status < 0) {
             return status;
         }
-        *written_nof_words++;
+        *written_nof_words += 1;
         data++;
         
     }
