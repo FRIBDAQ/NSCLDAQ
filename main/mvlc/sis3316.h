@@ -127,7 +127,8 @@
 
 /*         addresses   */
 
-
+#ifndef MVLC_SIS3316_H
+#defin3 MVLC_SIS3316_H
 #define SIS3316_CONTROL_STATUS                       					0x0			/* read/write; D32 */
 #define SIS3316_MODID                                					0x4			/* read only; D32 */
 #define SIS3316_IRQ_CONFIG                           					0x8			/* read/write; D32 */
@@ -667,3 +668,4 @@
 // add 30.05.2013
 #define ACCUMULATOR_MAX_START_INDEX		0xFFFF
 #define ACCUMULATOR_MAX_LENGTH			0x1FF
+#endif

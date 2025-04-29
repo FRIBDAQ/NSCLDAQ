@@ -15,7 +15,8 @@ DEVICE_MODULES=CStack.h CStack.cpp CMarker.h CMarker.cpp \
 	CMDPP16QDC.cpp  CMDPP16QDC.h  CMDPP32QDC.cpp  CMDPP32QDC.h  CMDPP32SCP.cpp  CMDPP32SCP.h  CMDPP.h  CMDPPQDC.h \
 	C830.h C830.cpp CNADC2530.h CNADC2530.cpp CV977.h CV977.cpp \
 	CV1495sc.h CV1495sc.cpp CV1729.h CV1729.cpp \
-	CCAENV1x90Opcodes.h CCAENV1x90Registers.h CV1x90.cpp CV1x90.h 
+	CCAENV1x90Opcodes.h CCAENV1x90Registers.h CV1x90.cpp CV1x90.h \
+	sis3316.h sis3316Registers.h
 
 main_modules=utilities.h utilities.cpp \
 	TCLConfigParser.h TCLConfigParser.cpp \

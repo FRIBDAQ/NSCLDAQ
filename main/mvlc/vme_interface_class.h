@@ -10,8 +10,8 @@
  * 		rfoxkendo  (which will be abbreviated rfk below with no
  *     association with th e Kennedy family).
   */
-#ifndef VME_INTERFACE_CLASS_H
-#define VME_INTERFACE_CLASS_H
+#ifndef MVLC_VME_INTERFACE_CLASS_H
+#define MVLC_VME_INTERFACE_CLASS_H
 #include <stdint.h>
 
 // Modfy these in terms of stdint types.

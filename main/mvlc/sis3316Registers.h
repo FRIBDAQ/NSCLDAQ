@@ -13,8 +13,8 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
-#ifndef SIS3316REGISTERS_H
-#define SIS3316REGISTERS_H
+#ifndef mVLC_SIS3316REGISTERS_H
+#define MVLC_SIS3316REGISTERS_H
 /**
  *  @file sis3316Registers.h
  *  @brief Register definitions and AM's for the SIS3316.

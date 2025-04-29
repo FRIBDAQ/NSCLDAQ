@@ -24,8 +24,8 @@
 /*                                                                         */
 /***************************************************************************/
 
-#ifndef _SIS3316_CLASS_
-#define _SIS3316_CLASS_
+#ifndef MVLC_SIS3316_CLASS_
+#define MVLC_SIS3316_CLASS_
 
 
 //#include "project_system_define.h" //define LINUX or WIN

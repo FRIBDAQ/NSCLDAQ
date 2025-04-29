@@ -21,8 +21,8 @@
 	     East Lansing, MI 48824-1321
 */
 
-#ifndef SIS_VMUSB_INTERFACE_H
-#define SIS_VMUSB_INTERFACE_H
+#ifndef MVLC_SIS_VMUSB_INTERFACE_H
+#define MVLC_SIS_VMUSB_INTERFACE_H
 
 #include "vme_interface_class.h"
 
