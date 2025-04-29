@@ -77,7 +77,7 @@ if the 'adc' command is used for a tdc or qdc -type must be set.
 Maybe it's possible to add more commands like tdc and qdc that will set the default -type?
 
 
-#### mcppxxxxxx
+#### mdppxxxxxx
  
 *  For the VMUSB, if the -triggersource and -triggeroutput values where ```0x400```, the values of the trigger source
 and trigger output in the module were used.  This is not possible with the fribdaq-readout framework, as interactive initialization is not supported.  Therefore, the raw value of these parameters is *always* used.
