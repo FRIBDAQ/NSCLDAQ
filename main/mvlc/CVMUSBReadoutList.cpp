@@ -386,8 +386,8 @@ void CVMUSBReadoutList::loopUntil(uint32_t address, uint8_t amod, uint32_t mask,
 
     stack_line.seekp(0);
     stack_line.str("");
-
-    stack_line << "compare_loop_accu eq 0x" << std::hex << value;
+    // cmp is like from strcomp -1 less than, 0 equal, +1 > than according to Florian
+    stack_line << "compare_loop_accu 0 0x" << std::hex << value;
     op = stack_line.str();
 
     m_list.push_back(op);

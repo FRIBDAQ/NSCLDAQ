@@ -415,7 +415,7 @@ ReadoutListTests::loopuntil_1() {
     );
 
     CPPUNIT_ASSERT_EQUAL(
-        std::string("compare_loop_accu eq 0x10"),
+        std::string("compare_loop_accu 0 0x10"),
         compare
     );
 
@@ -447,7 +447,7 @@ ReadoutListTests::loopuntil_2() {
     );
 
     CPPUNIT_ASSERT_EQUAL(
-        std::string("compare_loop_accu eq 0x10"),
+        std::string("compare_loop_accu 0 0x10"),
         compare
     );
 
@@ -479,7 +479,7 @@ ReadoutListTests::loopuntil_3() {
     );
 
     CPPUNIT_ASSERT_EQUAL(
-        std::string("compare_loop_accu eq 0x10"),
+        std::string("compare_loop_accu 0 0x10"),
         compare
     );
 
@@ -511,7 +511,7 @@ ReadoutListTests::loopuntil_4() {
     );
 
     CPPUNIT_ASSERT_EQUAL(
-        std::string("compare_loop_accu eq 0x10"),
+        std::string("compare_loop_accu 0 0x10"),
         compare
     );
 
