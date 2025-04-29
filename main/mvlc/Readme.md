@@ -97,3 +97,10 @@ Therefore the new option ```-model``` has been added with legal values:
 *  ```v1290N```  - The module is a CAEN  v1290 with 16 channels
 
 The default value for this is ```v1190A``` as this represents the vast majority of the modules at the FRIB.
+
+#### SIS3316 digiitzer.
+
+The support class for this device (```sis3316_class```) relies extensively oin interaction with the device at
+initialization and cannot be supported in the translator environment.  A later version of ```fribdaq-readout```
+may include built in modules like ```VMUSBReadout``` as Florian has added some stuff to his daq classes that 
+might support this.  THerefore  stay tuned for later versions of that program and device support.
