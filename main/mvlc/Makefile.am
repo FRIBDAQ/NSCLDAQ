@@ -56,7 +56,7 @@ UNIT_TESTS=utiltests.cpp parsertests.cpp \
 	delaytests.cpp madc32tests.cpp caenchaintests.cpp madcchaintests.cpp \
 	madcscalertests.cpp mtdctests.cpp mqdctests.cpp mdpptests.cpp sis3804tests.cpp \
 	v830tests.cpp hytectests.cpp v977tests.cpp v1495sctests.cpp v1729tests.cpp  \
-	v1x90tests.cpp
+	v1x90tests.cpp sisvmusbTests.cpp
 	
 unittests_SOURCES = TestRunner.cpp \
 	$(UNIT_TESTS) \
