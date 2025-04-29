@@ -26,7 +26,8 @@ main_modules=utilities.h utilities.cpp \
 	CReadoutModule.h CReadoutModule.cpp \
 	CReadoutHardware.h CReadoutHardware.cpp \
 	MVLCConfigParser.h MVLCConfigParser.cpp \
-	MVLCGenerator.h MVLCGenerator.cpp 
+	MVLCGenerator.h MVLCGenerator.cpp \
+	vme_interface_class.h sis_vmusb_interface.h sis_vmusb_interface.cpp
 
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
 

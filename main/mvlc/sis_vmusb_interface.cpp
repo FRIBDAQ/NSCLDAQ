@@ -20,43 +20,41 @@
  */
 
 #include "sis_vmusb_interface.h"
-#include <Globals.h>    // Accdess to the interface.
 #include <string.h>
 #include <stdexcept>
 
 #include "CVMUSB.h"
-#include "CVMUSBReadoutList.h"
+#include "CVMUSBReadoutList.h"     // For the adress modifier defs.
 
 // I'm lazy so:
 
-#define VME sis_vmusb_interface
+typedef sis_vmusb_interface VME;    // MOre C++-ish than the #define I'd used before.
 
-// Static storage - a class level mutex used to
-// serialize access to the controller.
-
-CMutex VME::m_monitor;
+/**
+ * constructor just nulls out the interface pointer:
+ */
+sis_vmusb_interface::sis_vmusb_interface() : m_pInterface(0) {}
 
 /**
  * vmeopen
  *    Open the vme interface.
+ * @param interface - an open CVMUSB object reference we'll squirel away.
  * @return int - 0 on success, -1 on failure.
  * @note only fails if Globals::pUSBController is null.
  */
 int 
-VME::vmeopen(void) {
-    if (Globals::pUSBController) {
-        return 0;
-    } else {
-        return -1;
-    }
+VME::vmeopen(CVMUSB& interface) {
+    m_pInterface = &interface;
+    return 0;
 }
 /**
  * vmeclose
- *   This is a no-op. 
+*     null out the interface pointer. we can't decomission an interface.
  * @return 0 - success.
  */
 int 
 VME::vmeclose(void) { 
+    m_pInterface = nullptr;
     return 0;
 }
 /**
@@ -65,259 +63,15 @@ VME::vmeclose(void) {
  *  
  * @param messages - buffer into which to load the message(?)
  * @param nof_found_devices - 1 or 0 depending on pUSBController.
- * @returns 0 - always succdess (I guess).
+ * @returns 0 - always success (I guess).
  */
 int
 VME::get_vmeopen_messages(CHAR* messages, UINT* nof_found_devices) {
-    if (Globals::pUSBController) {
-        *nof_found_devices = 1;
-        strcpy(messages, "Open will succeed");
-    } else {
-        *nof_found_devices = 0;
-        strcpy(messages, "There's no underlying VMUSB object to use");
-    }
+
+    *nof_found_devices = 1;
+    strcpy(messages, "Open will succeed");
     return 0;
 }
-/** 
- * vme_A32_D32_read
- *  Reads a single 32 bit word from the VME note that we use the a32UserData address
- * modifier.
- * @param addr - VME address.
- * @param data - Where to put the data.
- * @return value returned from the underlying CVMUSB::vmeread32.
- * 
- */
-int 
-VME::vme_A32D32_read(UINT addr, UINT* data) {
-    if (Globals::pUSBController) {
-        CriticalSection s(m_monitor);
-        return Globals::pUSBController->vmeRead32(
-            addr, CVMUSBReadoutList::a32UserData, data
-        );
-    } else {
-        // there's no open interface:
-
-        return -1;
-    }
-}
-/**
- *  vme_A32DMA_D32_read
- *     block read from a32/d32 (extended user data) space:
- *  @param addr - VME address from which to read.
- *  @param data - Where to put the read data.
- *  @param request_nof_words - number of words requested.
- *  @param got_nof_words - pointer to a place to put the actual transfer count.
- *  @return value from CMUSB::vemBlockRead
- */
-int
-VME::vme_A32DMA_D32_read(
-    UINT addr, UINT* data, UINT req_nof_words, UINT* got_nof_words
-) {
-    // note the sizes are size_t in the VMUSB library.
-
-    if (Globals::pUSBController) {
-        CriticalSection s(m_monitor);
-        size_t xfercount(0);
-        int result = Globals::pUSBController->vmeBlockRead(
-            addr, CVMUSBReadoutList::a32UserData,
-            data, req_nof_words, &xfercount
-        );
-        *got_nof_words = xfercount;
-        return result < 0 ? result : 0;
-    } else {
-        *got_nof_words = 0;
-        return -1;
-    }
-}
-/**
- * vme_A32BLT32_D32_read
- *    Read a block of data uing a BLT transfer (AM=CVMUSB::a32UserBlock)
- * 
- *  @param addr - VME address from which to read.
- *  @param data - Where to put the read data.
- *  @param request_nof_words - number of words requested.
- *  @param got_nof_words - pointer to a place to put the actual transfer count.
- *  @return value from CMUSB::vemBlockRead
- */
-int
-VME::vme_A32BLT32_read(
-    UINT addr, UINT* data, UINT req_nof_words, UINT* got_nof_words
-) {
-// note the sizes are size_t in the VMUSB library.
-
-    if (Globals::pUSBController) {
-        CriticalSection s(m_monitor);
-        size_t xfercount(0);
-        int result = Globals::pUSBController->vmeBlockRead(
-            addr, CVMUSBReadoutList::a32UserBlock,
-            data, req_nof_words, &xfercount
-        );
-        *got_nof_words = xfercount;
-        return result < 0 ? result : 0;
-    } else {
-        *got_nof_words = 0;
-        return -1;
-    }
-}
-/**
- * vme_A32MBLT64_read
- *     This transfer mode is supposed to be supported by he
- * VMUSB -- we'll see.  The address modifier will be hard coded to
- * 0xc which is the  which is the non-privileged MBLT64 transfer AM.
- * 
- *  @param addr - VME address from which to read.
- *  @param data - Where to put the read data.
- *  @param request_nof_words - number of words requested.
- *  @param got_nof_words - pointer to a place to put the actual transfer count.
- *  @return value from CMUSB::vmeBlockRead
- */
-int
-VME::vme_A32MBLT64_read(
-    UINT addr, UINT* data, UINT req_nof_words, UINT* got_nof_words
-) {
-// note the sizes are size_t in the VMUSB library.
-
-    if (Globals::pUSBController) {
-        CriticalSection s(m_monitor);
-        size_t xfercount(0);
-        int result = Globals::pUSBController->vmeBlockRead(
-            addr, 0xc,
-            data, req_nof_words, &xfercount
-        );
-        *got_nof_words = xfercount;
-        return result < 0 ? result : 0;
-    } else {
-        *got_nof_words = 0;
-        return -1;
-    }
-}
-
-/**
- * The remaining types of block read transfers are not supported
- * by the VMUSB and just become MBLT64 transfers.
- */
-int
-VME::vme_A32_2EVME_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
-    return vme_A32MBLT64_read(addr, data, request_nof_words, got_nof_words);
-}
-
-int
-VME::vme_A32_2ESST160_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
-    return vme_A32MBLT64_read(addr, data, request_nof_words, got_nof_words);
-}
-
-int
-VME::vme_A32_2ESST267_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
-    return vme_A32MBLT64_read(addr, data, request_nof_words, got_nof_words);
-}
-
-int
-VME::vme_A32_2ESST320_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
-    return vme_A32MBLT64_read(addr, data, request_nof_words, got_nof_words);
-}
-
-/**
- * vme_A32DMA_D32FIFO_read
- *   Do a block transfer from a FIFO- the transfers take place from the same
- * VME address.  
- * 
- *
- *  @param addr - VME address from which to read.
- *  @param data - Where to put the read data.
- *  @param request_nof_words - number of words requested.
- *  @param got_nof_words - pointer to a place to put the actual transfer count.
- *  @return value from CMUSB::vemFifoRead. 
- */
-int
-VME::vme_A32DMA_D32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
-    if (Globals::pUSBController) {
-        CriticalSection s(m_monitor);
-        size_t got;
-        int result = Globals::pUSBController->vmeFifoRead(
-            addr, CVMUSBReadoutList::a32UserData, data, request_nof_words, &got
-        );
-        *got_nof_words = got;
-        return result < 0 ? result : 0;
-
-    } else {
-        *got_nof_words =0;
-        return -1;
-    }
-}
-/**
- * vme_A32BLT32FIFO_read
- *    same as above but with a block transfer adrfess modifier.  The
- * slave does not assume an address increment within each transfer block and the
- * master asserts the same address at the start of each block.
- * 
- *  @param addr - VME address from which to read.
- *  @param data - Where to put the read data.
- *  @param request_nof_words - number of words requested.
- *  @param got_nof_words - pointer to a place to put the actual transfer count.
- *  @return value from CMUSB::vemFifoRead.   
- */
-int
-VME::vme_A32BLT32FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
-    if (Globals::pUSBController) {
-        CriticalSection s(m_monitor);
-        size_t got;
-        int result = Globals::pUSBController->vmeFifoRead(
-            addr, CVMUSBReadoutList::a32UserBlock, data, request_nof_words, &got
-        );
-        *got_nof_words = got;
-        return result < 0 ? result : 0;
-
-    } else {
-        *got_nof_words =0;
-        return -1;
-    }
-}
-/**
- *  vme_A32MBLT64FIFO_read
- * 
- *    Same as above but the address modifier is 0xC this is supported by
- *    the VMUSB (supposedly).
- */
-int
-VME::vme_A32MBLT64FIFO_read(UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
-    if (Globals::pUSBController) {
-        CriticalSection s(m_monitor);
-        size_t got;
-        int result = Globals::pUSBController->vmeFifoRead(
-            addr, 0xc, data, request_nof_words, &got
-        );
-        *got_nof_words = got;
-        return result < 0 ? result : 0;
-
-    } else {
-        *got_nof_words =0;
-        return -1;
-    }
-}
-
-// The remaining FIFO transfer methods are not supported by the VMUSB
-// and will be mapped to A32MBLT64 reads:
-
-int
-VME::vme_A32_2EVMEFIFO_read(UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words )  {
-    return vme_A32MBLT64FIFO_read(addr, data, request_nof_words, got_nof_words ) ;
-}
-
-int
-VME::vme_A32_2ESST160FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
-    return vme_A32MBLT64FIFO_read(addr, data, request_nof_words, got_nof_words ) ;
-}
-
-int
-VME::vme_A32_2ESST267FIFO_read (UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
-    return vme_A32MBLT64FIFO_read(addr, data, request_nof_words, got_nof_words ) ;
-}
-
-int
-VME::vme_A32_2ESST320FIFO_read(UINT addr, UINT* data, UINT request_nof_words, UINT* got_nof_words ) {
-    return vme_A32MBLT64FIFO_read(addr, data, request_nof_words, got_nof_words ) ;
-}
-
 /**
  * vme_A32D32_write
  * 
@@ -329,14 +83,13 @@ VME::vme_A32_2ESST320FIFO_read(UINT addr, UINT* data, UINT request_nof_words, UI
  */
 int
 VME::vme_A32D32_write( UINT addr, UINT data ) {
-    if(Globals::pUSBController) {
-        CriticalSection s(m_monitor);
-        return Globals::pUSBController->vmeWrite32(addr, CVMUSBReadoutList::a32UserData, data);
+    if (m_pInterface) {
+        m_pInterface->vmeWrite32(addr, CVMUSBReadoutList::a32UserData, data);
+        return 0;
     } else {
-        // no open controller
-
-        return -1;
+        return -1;        // Can't, the device isn't open.
     }
+
 }
 
 /**
@@ -407,7 +160,7 @@ VME::vme_A32DMA_D32FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UI
     return 0;
 }
 
-// All other FIFO writes are in t4erms of the above:
+// All other FIFO writes are in terms of the above:
 
 int
 VME::vme_A32BLT32FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words )  {
@@ -417,7 +170,7 @@ VME::vme_A32BLT32FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UINT
 
 int
 VME::vme_A32MBLT64FIFO_write (UINT addr, UINT* data, UINT request_nof_words, UINT* written_nof_words )  {
-    int status = vme_A32DMA_D32FIFO_read(addr, data, request_nof_words*2, written_nof_words);
+    int status = vme_A32DMA_D32FIFO_write(addr, data, request_nof_words*2, written_nof_words);
     *written_nof_words /= 2;
     return status;
 
