@@ -25,6 +25,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <stdlib.h>
 
 #include <Exception.h>
 #include <stdlib.h>
@@ -65,6 +66,7 @@ int main(int argc, char** argv) {
     // yaml configuration file...which is then written to outfile.
 
     try {
+        setenv("MVLC_TRANSLATOR", "1", 1);
         MVLCConfigParser tclparser(infile);
         tclparser.initialize();
         tclparser();
