@@ -37,6 +37,10 @@ class sisvmusbTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(write_2);
     CPPUNIT_TEST(write_3);
     CPPUNIT_TEST(write_4);
+
+    CPPUNIT_TEST(fifo_1);
+    CPPUNIT_TEST(fifo_2);
+    CPPUNIT_TEST(fifo_3);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -48,6 +52,9 @@ protected:
     void write_2();
     void write_3();
     void write_4();
+    void fifo_1();
+    void fifo_2();
+    void fifo_3();
 
     // I don't have setup/teardown requirements.
 public:
@@ -254,6 +261,135 @@ sisvmusbTests::write_4() {
     );
     CPPUNIT_ASSERT_EQUAL(
         std::string("vme_write 0x9 d32 0x1234001c 0x0"),
+        ops.at(7)
+    );
+}
+
+void 
+sisvmusbTests::fifo_1() {
+    // vme_A32DMA_D32FIFO_write - same as dma write but the addresses don't increment.
+
+    CVMUSB interface;
+    sis_vmusb_interface sis;
+    sis.vmeopen(&interface);
+
+    
+
+    uint32_t data[] = {1, 2, 3, 4};
+    unsigned written;
+    int status = sis.vme_A32DMA_D32FIFO_write(0x12340000, data, 4, &written);
+
+    CPPUNIT_ASSERT_EQUAL(0, status);
+    CPPUNIT_ASSERT_EQUAL(unsigned(4), written);
+
+    auto ops = interface.getRecordedOperations();
+    CPPUNIT_ASSERT_EQUAL(size_t(4), ops.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x1"),
+        ops.at(0)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x2"),
+        ops.at(1)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x3"),
+        ops.at(2)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x4"),
+        ops.at(3)
+    );  
+}
+
+void
+sisvmusbTests::fifo_2() {
+    //A32MBLT32FIFO_write - same result as fifo_1:
+
+    CVMUSB interface;
+    sis_vmusb_interface sis;
+    sis.vmeopen(&interface);
+
+    
+
+    uint32_t data[] = {1, 2, 3, 4};
+    unsigned written;
+    int status = sis.vme_A32BLT32FIFO_write(0x12340000, data, 4, &written);
+
+    CPPUNIT_ASSERT_EQUAL(0, status);
+    CPPUNIT_ASSERT_EQUAL(unsigned(4), written);
+
+    auto ops = interface.getRecordedOperations();
+    CPPUNIT_ASSERT_EQUAL(size_t(4), ops.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x1"),
+        ops.at(0)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x2"),
+        ops.at(1)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x3"),
+        ops.at(2)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x4"),
+        ops.at(3)
+    );  
+}
+
+void
+sisvmusbTests::fifo_3() {
+    // 64 bit fifo writes..  same as 64 bit block xfer but address does not increment
+
+    CVMUSB interface;
+    sis_vmusb_interface sis;
+    sis.vmeopen(&interface);
+
+    uint64_t data[] = {1, 2, 3, 4};
+    unsigned written;
+    int status = sis.vme_A32MBLT64FIFO_write(0x12340000, (uint*)data, 4, &written);
+
+    CPPUNIT_ASSERT_EQUAL(0, status);
+    CPPUNIT_ASSERT_EQUAL(unsigned(4), written);
+
+    auto ops = interface.getRecordedOperations();
+    CPPUNIT_ASSERT_EQUAL(size_t(8), ops.size());
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x1"),
+        ops.at(0)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x2"),
+        ops.at(2)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x3"),
+        ops.at(4)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x4"),
+        ops.at(6)
+    );
+
+    // THe odd ops should be writing 0:
+
+
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x0"),
+        ops.at(1)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x0"),
+        ops.at(3)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x0"),
+        ops.at(5)
+    );
+    CPPUNIT_ASSERT_EQUAL(
+        std::string("vme_write 0x9 d32 0x12340000 0x0"),
         ops.at(7)
     );
 }
