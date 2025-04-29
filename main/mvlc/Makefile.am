@@ -68,7 +68,7 @@ unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
 
 TESTS=unittests
 
-EXTRA_DIST=options.ggo triggeronly.yaml
+EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml
 
 install-exec-local:
 	$(mkinstalldirs) @datarootdir@/mvlc
