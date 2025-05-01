@@ -1,7 +1,7 @@
 <!-- manpage 1daq -->
-<refentry> 
+<refentry id='mvlcgen_man'> 
     <refmeta>
-        <refentrytitle>mvlcgenerate</refentrytitle>
+        <refentrytitle id='mvlcgen_man_title'>mvlcgenerate</refentrytitle>
         <manvolnum>1daq</manvolnum>
     </refmeta>
     <refnamediv>
@@ -149,9 +149,800 @@ if {$istranslator ne ""} {
 </refentry>
 <!-- /manpage -->
 
-<!-- chapter utilities -->
+<!-- chapter user-guide -->
 <chapter><title>mvlcgenerate and using the Mesytec MVLC VME controller </title>
     <para>
+        The Mesytec MVLC is an intelligent VME crate controller.  Like the VMUSB, it is capable of autonomously
+        executing a stack (list) of operations in response to a trigger. What distinguishes the MVLC from the VMUSB,
+        is:
+        <itemizedlist>
+            <listitem><para>
+                The ability to perform complex trigger decisions to trigger stack execution.
+            </para></listitem>
+            <listitem><para>
+                Additional stack operations that allow more complex VME operations to be performed in stacks.
+            </para></listitem>
+            <listitem><para>
+                An Ethernet interface in <emphasis>addition</emphasis> to the USB interface provided by the VMUSB.
+            </para></listitem>
+        </itemizedlist>
     </para>
+    <para>
+        While Mesytec does not provide sufficient documentation for fully homegrown support of the MVLC, the 
+        software support in their github repository 
+        (<ulink url='http://github.com/flueke/mesytec-mvlc'>http://github.com/flueke/mesytec-mvlc</ulink>) for the 
+        user mode does provide a skeleton for a readout program.   We have forked that repository, and created a
+        modified version of that readout program and contributed it back to Mesytec.
+    </para>
+    <para>
+        The framework we adapted requires a static  configuration file which is read <emphasis>once</emphasis>
+        when the program starts.  This configuration file desribes trigger conditions, initialization operations and
+        stacks to execute in response to triggers.
+    </para>
+    <para>
+        At the FRIB in the bookworm and later containers, the driver software, along with our readout program,
+        is installed in <filename>/usr/opt/mesytec-mvlc/<replaceable>version</replaceable></filename>.  Where
+        <replaceable>version</replaceable> is a version number such as <literal>0.1.0</literal>.  Within that directory 
+        tree, the readout program is in <filename>bin/fribdaq-readout</filename>.
+    </para>
+    <para>
+        Coupled with this program, FRIB/NSCLDAQ 12.2, and later, provides a program 
+        <filename>$DAQBIN/mvlcgenerate</filename>, which can translate many VMUSBReadout daqconfig.tcl configuration
+        files into the configuration files expected by <filename>fribdaq-readout</filename>
+    </para>
+    <para>
+        So, to summarize,  to use the Mesytec MVLC with FRIB/NSCLDAQ you will need:
+        <orderedlist>
+            <listitem>
+                <para>
+                    An installed version of the Mesytec MVLC driver software buit with support for
+                    FRIB/NSCLDAQ readout (more about how to get that from scratch later in this chapter).
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    A VMUSB <filename>daqconfig.tcl</filename> with devices supported by the
+                    <filename>mvlcgenerate</filename> program.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Version 12.2 of FRIB/NSCLDAQ or higher, which provides the <filename>mvlcgenerate</filename>
+                    program.
+                </para>
+            </listitem>
+        </orderedlist>
+        
+    </para>
+    <section>
+        <title>Preparing your experiment to use the MVLC.</title>
+        <para>
+            Use <link linkend='mvlcgen_man' endterm='mvlcgen_man_title' /> to translate a <filename>daqconfig.tcl</filename>
+            written for the VMUSB. This may require small modifications, however those modifications can be made in a way
+            that the resulting configuraion file can be used with both the MVLC and the VMUSB controllers.
+        </para>
+        <para>
+            Run <filename>fribdaq-readout</filename> specifying the configuration file that <filename>mvlcgenerate</filename>
+            created.     See <link linkend='fribdaq_readout_man' endterm='fribdaq_readout_man_title'/> to see how to use
+            this program.  Note that while this program is not yet supported by the ReadoutShell GUI, or managed expermiment,
+            support for both is planned.
+        </para>
+    </section>
+    <section>
+        <title>Reference manual for <filename>fribdaq-readout</filename></title>
+        <refentry id='fribdaq_readout_man'>
+            <refmeta>
+                <refentrytitle id='fribdaq_readout_man_title'>fribdaq-readout</refentrytitle>
+                <manvolnum>1mesytec-mvlc</manvolnum>
+            </refmeta>
+            <refnamediv>
+                <refname>fribdaq-readout</refname>
+                <refpurpose>Read data from a Mesytec MVLC interface to a FRIB/NSCLDAQ ringbuffer</refpurpose>
+            </refnamediv>
+            <refsynopsisdiv>
+                <cmdsynopsis>
+                    <command>
+$MVLCROOT/bin/fribdaq-readout <replaceable>options...</replaceable> <replaceable>configFile</replaceable>
+                    </command>
+                </cmdsynopsis>
+            </refsynopsisdiv>
+            <refsect1>
+                <title>DESCRIPTION</title>
+                <para>
+                    This program reads data from a single Mesytec MVLC controller into a ringbuffer.
+                    Note that this program is <emphasis>not</emphasis> part of FRIB/NSCLDAQ but requires
+                    an installation of the Mesytec mvlc userspace driver.  The environment variable
+                    <literal>MVLCROOT</literal> in the command above, is defined by <emphasis>you</emphasis>
+                    to point to the top level directory of this installation.  At the time I'm writing this,
+                    that is <filename>/usr/opt/mesytec-mvlc/0.1.0</filename> at the FRIB or using the FRRIB
+                    containerized bookworm environment.
+                </para>
+                <para>
+                    The <replaceable>configFile</replaceable> on the command line is the output of 
+                    <link linkend='mvlcgen_man' endterm='mvlcgen_man_title' /> when run on a VMUSBReadout
+                    daqconfig file.
+                </para>
+            </refsect1>
+            <refsect1>
+                <title>OPTIONS</title>
+                <para>
+                    Note that in the list of options below, one and only one of the following options must
+                    be provided to describe the MVLC from which data will be collected:
+                    <itemizedlist>
+                        
+                        <listitem>
+                            <para>
+                                <option>--mvlc-eth</option> Specifies the connection will be Ethernet.
+                            </para>
+                        </listitem>
+                        <listitem>
+                            <para>
+                                <option>--mvlc-usb</option> specifies the first MVLC device found on the USB
+                                system will be used (suitable when there's only one device present).
+                            </para>
+                        </listitem>
+                        <listitem>
+                            <para>
+                                <option>--mvlc-usb-index</option>  Specifies that a specific index in the enumerated
+                                list of MVLC devices attached to the USB be used.  This is not really safe, in my opinion
+                                as it relies on a predictable enumeration by linux.
+                            </para>
+                        </listitem>
+                        <listitem>
+                            <para>
+                                <option>--mvlc-usb-serial</option> Specifies the serial number string of a specific
+                                MVLC that is attached to the USB.  This is the safest option to use when you are
+                                selecting from more than one attached MVLC.
+                            </para>
+                        </listitem>
+                    </itemizedlist>
+                </para>
+                
+                <para>
+                    Note that the crate configuration file can also specify the MVLC to use however as that
+                    comes from a template file used by <filename>mvlcgenerate</filename> it, normally, should
+                    be overidden by one o fthe options above.
+                </para>
+
+                <variablelist>
+                    <varlistentry>
+
+                            <term><option>-?</option>, <option>-h</option>, <option>--help</option></term>
+                            <listitem>
+                                <para>
+                                    Display brief usage information in case you can't remember how to run
+                                    the program.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                            <term><option>--mvlc-eth</option> <replaceable>hostname</replaceable></term>
+                            <listitem>
+                                <para>
+                                    mvlc ethernet hostname (overrides CrateConfig).  
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term> <option>--mvlc-usb</option></term>
+                        <listitem>
+                            <para>
+                                Connects to the first MVLC in the USB enumeration of devices.  This is simplest
+                                to use when only one MVLC is attached to the host system via USB.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term> <option>--mvlc-usb-index</option> <replaceable>index</replaceable></term>
+                        <listitem>
+                            <para>
+                                Connect to the mvlc with the given usb device index (overrides CrateConfig).
+                                At system startup, and when a USB device is plugged in, or unplugged, linux
+                                creates an enumeration of devices (think of it as an array of device types and
+                                their connection specifications).  This option allows you to  connect to a specific
+                                MVLC by where it appears in this enumeration. Imagine the array described above
+                                with all non MVLC devices removed, the <replaceable>index</replaceable>
+                                parameter is the index into this reduced array that specifies the MVLC.
+                                to use.
+                            </para>
+                            <para>
+                                If it were me, I'd use <option>--mvlc-usb-serial</option> rather than this option.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--mvlc-usb-serial</option> <replaceable>serial</replaceable> </term>
+                        <listitem>
+                            <para>
+                                Connect to the mvlc with the given usb serial number (overrides CrateConfig).
+                                Each MVLC has a serial number string that is on the module.  Supplying one of
+                                those strings as the <replaceable>serial</replaceable> parameter of the
+                                option selects the MVLC module with the matching serial number string.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--no-listfile</option> </term>
+                        <listitem>
+                            <para>
+                                Do not write readout data to a listfile (data will not be recorded).  The
+                                <literal>minidaq</literal> framework from which <filename>fribdaq-readout</filename>
+                                was constructed can write event files.   Since we are submitting data to a 
+                                FRIB/NSCLDAQ ringbuffer, this is disabled by default.  Normally data will be
+                                recorded by <filename>$DAQBIN/eventlog</filename> the FRIB/NSCLDAQ event logging program.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--overwrite-listfile</option> </term>
+                        <listitem>
+                            <para>
+                                Overwrite an existing listfile.  Disabled by default.  When used with the
+                                <option>--listfile</option> allows the specified event file to be
+                                overwritten by default.  Again, typically  you'll use the FRIB/NSCLDAQ event
+                                logger so you don't need to use this option.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--listfile</option> <replaceable>listfileName</replaceable> </term>
+                        <listitem>
+                            <para>
+                                Filename of the output listfile (e.g. run001.zip).
+                                Again, typically, you won't need this option.  If it is supplied, then a listfile
+                                will be generated.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--listfile-compression-type</option> <replaceable>type</replaceable> </term>
+                        <listitem>
+                            <para>
+                                When supplied, and a list file is being written, this specifies a compression
+                                method for the file.  Valid values are <literal>zip</literal> or <literal>lz4</literal>.
+                                Typically, you will not need to supply this option as FRIB/NSCLDAQ will be recording your data.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--listfile-compression-level</option> <replaceable>level</replaceable> </term>
+                        <listitem>
+                            <para>
+                                Compression level to use (for zip 0 means no compression).  Note that since
+                                FRIB/NSCLDAQ will normally be recording your data you will not need this.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--print-readout-data</option> </term>
+                        <listitem>
+                            <para>
+                                Log each word of readout data to stdout (very verbose!).  Note that the
+                                <filename>$DAQBIN/dumper</filename> pointed at the ring buffer will produce
+                                a dump of the data that is more like what you are used to seeing.  This is
+                                disabled by default.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--no-periodic-counter-dumps</option> </term>
+                        <listitem>
+                            <para>
+                                Do not periodcally print readout and parser counters to stdout.  This is
+                                supplied by default, and disables the very noise periodic dumps of 
+                                acquisition and event parse dumps.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--init-only</option> </term>
+                        <listitem>
+                            <para>
+                                Run the DAQ init sequence and exit
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--ignore-vme-init-errors</option> </term>
+                        <listitem>
+                            <para>
+                                Ignore VME errors during the DAQ init sequence
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--ring</option> <replaceable>ring</replaceable> </term>
+                        <listitem>
+                            <para>
+                                Ring buffer name.  The name of the ring buffer to which the program will
+                                supply data.  The <replaceable>ring</replaceable> parameter must be the
+                                name, not URI of the ring buffer, as ring buffer producers can only produce
+                                to local ringbuffers.
+                            </para>
+                            <para>
+                                If not provided, the ring name is the logged in user name.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--sourceid</option> <replaceable>sourceid</replaceable> </term>
+                        <listitem>
+                            <para>
+                                When a timestamp extractor is provided, 
+                                (see <option>--timestamp-library</option> below), this sets the source id in the
+                                body headers of ring items submitted to the ring.  This option, in combination
+                                with <option>--timstamp-library</option> allows for data from this source to be
+                                merged with other sources using the FRIB/NSCLDAQ event builder.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--timestamp-library</option> <replaceable>shared-object</replaceable> </term>
+                        <listitem>
+                            <para>
+                                Time stamp shared library file.   <replaceable>shared-object</replaceable> is a
+                                shared object library that contains code that knows how to extract a timestamp
+                                from each physics event body.  See 
+                                <link linkend='fribdaq_readout_tsextract_sec' endterm='fribdaq_readout_tsextract_title' />
+                                to learn how to write a timestamp extractor and build it into a suitable
+                                library.
+                            </para>
+                            <para>
+                                Note that you may need to make it clear which directory the timestamp 
+                                extractor lives in due to the normal shared library load paths.
+                                For example <filename>myextractor.so</filename> may fail to load while
+                                <filename>./myextractor.so</filename> will succeed.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--debug</option> </term>
+                        <listitem>
+                            <para>
+                                Enable debug logging. Useful for me but not for you.  Disabled by default.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><option>--trace</option> </term>
+                        <listitem>
+                            <para>
+                                Enable trace logging.  Useful for me but not for you.  Disabled by default.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                </variablelist>
+            </refsect1>
+            <refsect1>
+                <title>Commands</title>
+                <para>
+                    The <filename>fribdaq-readout</filename> is controlled by commands that are accepted on
+                    its stdin.  These commands are not completely compatible with the commands sent to
+                    RaedoutShell's SSHPipe data sources.  Full compatibility is planned, however.
+                    Specifically the commands to set the run number and title differ somewhat.
+                </para>
+                <para>
+                    Future plans are for a Tcl interpreter to be embedded with fully compatible command extensions.
+                    This will also allow support for the REST server needed by the managed environment.
+                </para>
+                <para>
+                    The list of commands is:
+                </para>
+                <variablelist>
+                    <varlistentry>
+                            <term><command>BEGIN</command> <command>begin</command></term>
+                            <listitem>
+                                <para>
+                                    Begin taking data with the current title and run number.  This is only
+                                    allowed if the run is inacstive.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                            <term><command>END</command> <command>end</command></term>
+                            <listitem>
+                                <para>
+                                    End data taking.  THis is only allowed if the run is active or paused.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><command>PAUSE</command>, <command>pause</command></term>
+                        <listitem><para>
+                            Pause data taking.  This is only allowed if the run is active.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><command>RESUME</command>, <command>resume</command></term>
+                        <listitem><para>
+                            Resumes paused data taking.  This only allowed if the run is paused.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><command>TITLE</command>,  <command>title</command></term>
+                        <listitem><para>
+                            Sets the title for the next run.  This is only allowed if the run is inactive.
+                            The remainder of the command line, as is, is set to be the next title.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><command>SETRUN</command>, <command>setrun</command></term>
+                        <listitem><para>
+                            Sets the run number for the next run.  This is only allowed if the run is inactive.
+                            The remainder of the command must be an unsigned integer (0 is acceptable).  
+                            Note that <filename>fribdaq-readout</filename> does not increment run numbers when the
+                            run ends.  This is actually also true of all the readout frameworks.  They rely on the
+                            managed environment or ReadoutShell to do that for them.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><command>EXIT</command>, <command>exit</command>,</term>
+                        <listitem><para>
+                            Exits the program.  This is only allowed if the run is inactive.
+                        </para></listitem>
+                    </varlistentry>
+                </variablelist>
+                <para>
+                    It is recommended to use the lower case versions of those commands, as when a Tcl interpreter is 
+                    retrofitted into the program, it is likely that only lower case commands will be registered.
+                </para>
+            </refsect1>
+            <refsect1 id='fribdaq_readout_tsextract_sec'>
+                <title id='fribdaq_readout_tsextract_title'>TIMESTAMP EXTRACTION PLUGINS</title>
+                <para>
+                    In order to be used with the FRIB/NSCLDAQ event builder, timstamps must be 
+                    extracted from events.  This is done by supplying a timstamp extractor
+                    shared object with the <option>--timestamp-library</option>.  This section
+                    desribes the requirements of a timstamp extractor and how to build it.
+                </para>
+                <para>
+                    Let's start by looking at a silly example, buliding it and describing how to make it
+                    useful.  The silly example will just return an incrementing timestamp:
+                </para>
+                <example>
+                    <title>Silly timestamp extractor for fribdaq-readout</title>
+                    <programlisting>
+
+// Filename: tsextract.cpp
+#include &lt;fribdaq/parser_callbacks.h&gt;  <co id='fribdaqts.includes' />
+#include &lt;stdint.h&gt;
+
+// Timestamp extractors must have C linkage:
+extern "C" {                                 <co id='fribdaqts.clinkage' />
+    /** Sample timestamp extractor
+        normal extractors need to look at the data which are
+        in the module structs
+     */
+    uint64_t                                 <co id='fribdaqts.signature' />
+    extract_timestamp(unsigned numModules, const mesytec::mvlc::readout_parser::ModuleData* event) {
+        static uint64_t timestamp = 0;
+
+        return timestamp++;                 <co id='fribdaqts.return' />
+    }
+}
+
+                    </programlisting>
+                </example>
+                <para>
+                    Let's first tear this apart bit by bit, and then show how to build it.  Then we'll
+                    describe what we need to do to make a more intersting timestamp extractor.
+                </para>
+                <calloutlist>
+                    <callout arearefs="fribdaqts.includes">
+                        <para>
+                            The first of these inlcudes is needed to define the struct that contains the
+                            event, passed into us.  The second, to define <type>uint64_t</type> an
+                            unsigned 64 bit integer into which we'll put the timsetamp.
+                        </para>
+                    </callout>
+                    <callout arearefs="fribdaqts.clinkage">
+                        <para>
+                            The <filename>fribdaq-readout</filename> program has to locate the extractor
+                            from within the shared library.  C++ symbol names for functions get 
+                            <firstterm>mangled</firstterm> by the parameters and their types to support
+                            overloading.  This makes it hard to predict the actual name of a fuction.
+                            the <literal>extern "C"</literal> block causes the compiler to, among other things,
+                            disable this function name mangling so that the name of a function can be
+                            easily located within a library.  The actual mangling is not part of the C++ standard
+                            and may, not only vary from compiler to compiler but from compiler version to compiler version. 
+                        </para>
+                        <para>
+                            Timstamp extractor functions must be defined in side a <literal>extern "C"</literal>
+                            block to turn off mangling of their names.
+                        </para>
+                    </callout>
+                    <callout arearefs='fribdaqts.signature'>
+                        <para>
+                            Timestamp extraction functions must return a <type>uint64_t</type> and be named
+                            <literal>extract_timestamp</literal>.   When we make this function more useful,
+                            we will say more about the parameters passed into this function.
+                        </para>
+                    </callout>
+                    <callout arearefs="fribdaqts.return">
+                        <para>
+                            The job of the extractor is to find the timestamp in the event, and return it as a
+                            <type>uint64_t</type>.  In the case of this silly example, we just defined a 
+                            static variable that increments each time we are called and returned the value
+                            of this variable prior to incrementing it.
+                        </para>
+                    </callout>
+                </calloutlist>
+                <para>
+                    Before turning to making this a useful extractor, let's look at how to create the shared image.
+                    This compilation command will do that:
+                </para>
+                <informalexample>
+                    <programlisting>
+g++ -otsextract.so -fPIC -shared -I$MVLCROOT/include tsextract.cpp
+                    </programlisting>
+                </informalexample>
+                <para>
+                    The <option>-share4d</option> and <option>-fPIC</option> are required when building
+                    shared images.  In the <option>-I</option> we assume that <literal>MVLCROOT</literal>
+                    is an evironment variable you have pointed to the root of a mesytec-mvlc intallation.
+                    At the FRIB this might translate to <filename>/usr/opt/mesytec-mvlc/0.1.0</filename>.
+                    This needed to define the structure that is passed to the extractor.
+                </para>
+                <para>
+                    You might well  ask why we bothered to use the C++ compiler rather than the C compiler
+                    (which would remove the need for an <literal>extern "C"</literal>).  This is because C 
+                    does not have namespaces, and is allowed to pad structures differently than C++ and still
+                    be standard compliant. The <type>mesytec::mvlc::readout_parser::ModuleData</type> is
+                    defined in nested namespaces and compiled by C++
+                </para>
+                <para>
+                    Let's modify this extractor to take the first 64 bits of the event as the timestamp. 
+                    For now we won't worry  about how the timestamp was written to the data, just that the
+                    first 64 bit word is the timestamp.  Always.
+                </para>
+                <para>
+                    To do this we need to know how the event is passed to us. Data are read from the 
+                    MVLC In 'modules'.  This is because the mdaq program the MVLC support software was originally
+                    written for has you adding hardware modules to the readout.  The parameters passed to the
+                    timstamp extractor reflects this as well.  The <parameter>numModules</parameter> is the
+                    number of parameters that were read.  The <parameter>event</parameter> points to an array of
+                    <type> mesytec::mvlc::readout_parser::ModuleData</type>.  Each element of that array
+                    describes a module and provides its data.
+                </para>
+                <para>
+                    <type> mesytec::mvlc::readout_parser::ModuleData</type> is a struct that has the following
+                    elements:
+                </para>
+                <variablelist>
+                    <varlistentry>
+                            <term><type>DataBlock</type> 	<structfield>data</structfield></term>
+                            <listitem>
+                                <para>
+                                    Describes the data, in practice, this is the only field we need in each
+                                    module.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                            <term><type>uint32_t</type> <structfield>prefixSize</structfield></term>
+                            <listitem>
+                                <para>
+                                    Data consist of a statically allocated prefix followed by a dynamically
+                                    allocated data body.  This indicates the size of the prefix.  In our
+                                    case the entire data block is the chunk of the event we care about.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                            <term><type>uint32_t</type>	<structfield>dynamicSize</structfield></term>
+                            <listitem>
+                                <para>
+                                    Size of the dynamically allocated chunk.  We normally don't need this.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                            <term><type>uint32_t</type> <structfield>suffixSize</structfield></term>
+                            <listitem>
+                                <para>
+                                    Size of the suffix chunk.  We don't need this.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                            <term><type>bool</type> <structfield>hasDynamic</structfield></term>
+                            <listitem>
+                                <para>
+                                    True if there is a dynamic chunk.  We normally don't need to worry about
+                                    this field.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                </variablelist>
+                <para>
+                    The important fieled is the data field.  It is a <type>mesytec::mvlc::readout_parser::DataBlock</type> struct which
+                    has the following fields:
+                </para>
+                <variablelist>
+                    <varlistentry>
+                            <term><type>const uint32_t*</type> <structfield>data</structfield></term>
+                            <listitem>
+                                <para>
+                                    Pointer to the actual event data.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                            <term><type>uint32_t</type> <structfield>size</structfield></term>
+                            <listitem>
+                                <para>
+                                    Size in units of uint32_t  of the data chunk.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                </variablelist>
+            
+            <para>
+                Note that all of these definitions are in the <filename>fribdaq/parser_callbacks.h</filename>
+                which is installed when the Mesytec software is installed with <filename>fribdaq-readout</filename>
+                enabled.
+            </para>
+            <para>
+                The explanation above should make it pretty clear how to write a timestamp extractor where
+                the timestamp is in the first 64 bits of the event:
+            </para>
+            <example>
+                <title>Extracting a timestamp from the first 64 bits of MVLC data</title>
+                <programlisting>
+#include &lt;fribdaq/parser_callbacks.h&gt; 
+#include &lt;stdint.h&gt;
+
+// Timestamp extractors must have C linkage:
+extern "C" {                                
+    /** Sample timestamp extractor
+        normal extractors need to look at the data which are
+        in the module structs
+     */
+    uint64_t                             
+    extract_timestamp(unsigned numModules, const mesytec::mvlc::readout_parser::ModuleData* event) {
+        const uint64_t* pTs = reinterpret_cast&lt;const uint64_t*&gt;(event->data.data); <co id='fribdaqts.ptr' />
+        return *pTs; 
+    }
+}
+
+                </programlisting>
+            </example>
+        <calloutlist>
+            <callout arearefs='fribdaqts.ptr'>
+                <para>
+                    This line of code does all the work.  It takes the pointer to the first block of event
+                    data and converts it into a  <type>const uint64_t*</type> pointer.
+                    This pointer, points to the first 64 bits of the event. Dereferencing it results in the
+                    event timestamp.
+                </para>
+            </callout>
+        </calloutlist>
+        <para>
+            You can use this as a template to build a timestamp extractor that matches the data for your
+            event.
+        </para>
+        </refsect1>
+        </refentry>
+    </section>
+    <section>
+        <title>RING ITEMS PRODUCED</title>
+        <para>
+            The <filename>fribdaq-readout</filename> program produces normal FRIB/NSCLDAQ ring items.  The
+            format of the ring items, depends on the version of the DAQ the program is linked to.  If a timestamp
+            extractor is specified, the ring items will have non-empty body headers.  If not, they will have
+            empty body headers.
+        </para>
+        <para>
+            Prior to all state change items, a format item is emitted.   This format item will reflect the
+            format of the underlying version of FRIB/NSCLDAQ.  Normally, this will be 12.0 or higher.
+        </para>
+        <para>
+            For each event, a <literal>PYSICS_EVENT</literal> item is emitted.  As you have seen in the previous
+            section, events can be segmented.  The data from each segment are concatenated to form the body 
+            of the physics event.
+        </para>
+        <para>
+            Scaler items are produced whenever the periodic stack produces data.  As with the VMUSBReadout, 
+            elapsed run time data are produced from an internal timer.   In general, this timer will have a finer
+            granularity than a second, so you must take into account the divisor field of these items, if you
+            are accessing the items directly.  The unified format library is the recommnded way to access data,
+            this will compute the elapsed times from the time elements and divisors transparently.
+        </para>
+        <para>
+            The MVLC Scaler readout is purely time based and, therefore, there is not a final scaler item at the
+            end of the run.
+        </para>
+        <para>
+            The current version does not produce <literal>PHYSICS_EVENT_COUNT</literal> items. This is planned for
+            a later release of the software.
+        </para>
+    </section>
+    <section>
+        <title>BUILDING mesytec-mvlc WITH THE OPTIONAL <filename>fribdaq-readout</filename> PROGRAM</title>
+        <para>
+            If you are using a version of FRIB/NSCLDAQ 12.1 or higher, or at the FRIB in the 
+            containerized environment, The <filename>/usr/opt/</filename> filesystem for the <literal>bookworm</literal>
+            container will include at least one version of the mesytec mvlc support software that includes 
+            <filename>fribdaq-readout</filename>, and you can ignore the remainder of this section.
+        </para>
+        <para>
+            If you are using a native version of FRIB/NSCLDAQ 11.0 and higher, we encourage you to use a containerized
+            environment so that you can ignore this section.
+        </para>
+        <para>
+            If you are stubborn, then this section describes how to build the Mesytect-mvlc software so
+            that it includes the <filename>fribdaq-readout</filename> program and the appropriate headers
+            to allow you to build timestamp extractors.
+        </para>
+        <para>
+            Until our contribution of <filename>fribdaq-readout</filename> is merged into a release, you'll need
+            to do the following:
+        </para>
+        <orderedlist>
+            <listitem>
+                <para>
+                    Clone the <ulink url='https://github.com/flueke/mesytec-mvlc'>https://github.com/flueke/mesytec-mvlc</ulink>
+                    repository.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Checkout the fribdaq-readout branch. This is necessary as long as the main branch does not include 
+                    the <filename>extras/frbdaq</filename> directory.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Create a direcory in which you will do the build.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Use <command>cmake</command> to generate the Makefiles in the build directory.  You will want
+                    to specify <command>-DCMAKE_INSTALL_PREFIX=<replaceable>installation-root</replaceable></command>
+                    and <command>-DNSCLDAQ_ROOT=<replaceable>install-root-of-nscldaq</replaceable></command>
+                    Where <replaceable>installation-root</replaceable> is where you want the software installed,
+                    and <replaceable>install-root-of-nscldaq</replaceable> is the installation directory for the
+                    verison of FRIB/NSCLDAQ you want to build against.  12.0 or higher is recommended though it 
+                    might work with 11.x as well.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <command>make</command> to build the software. If you have a multicore system, you can speed this
+                    up using the <option>-j</option> to specify a parallel make.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Optionally run the unit tests: <command>make test</command>.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <command>make install</command> to install the software where you specified in <option>-DCMAKE_INSTALL_PREFIX</option>
+                </para>
+            </listitem>
+        </orderedlist>
+        <para>
+            If your working directory is a clone of the repository with the appropriate branch checked out,
+            here's an example of how to do all of this.
+        </para>
+        <example>
+            <title>Building mesytec-mvlc with fribdaq-readout</title>
+            <programlisting>
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/opt/mesytec-mlc/0.1.0 -DNSCLDAQ_ROOT=/usr/opt/daq/12.1-007
+(bunch of output here)
+make -j12                     # Make for 12 cores.
+(more output here)
+make test                     #optional 
+(more output here)
+make install
+(final bits of output here)
+            </programlisting>
+        </example>
+    </section>
 </chapter>
 <!-- /chapter -->
