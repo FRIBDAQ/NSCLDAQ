@@ -470,7 +470,12 @@ CV812::configFileToShadow()
   Tcl_Interp* pInterp = Tcl_CreateInterp();
   int status          = Tcl_EvalFile(pInterp, filename.c_str());
 
-  // Ignore errors as some items may have been set:
+  if (status != TCL_OK) {
+    std::string msg = Tcl_GetStringResult(pInterp);
+    std::cerr << "Error processing CAENV812 config file: " << filename << " :\n";
+    std::cerr << msg << std::endl;
+    std::cerr << "The discriminator might not be setup the way  you think it is\n";
+  }
 
   // The threshold array:
 
