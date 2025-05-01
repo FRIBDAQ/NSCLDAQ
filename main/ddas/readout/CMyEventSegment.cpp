@@ -70,15 +70,14 @@ CMyEventSegment::CMyEventSegment(CMyTrigger *trig, CExperiment& exp)
 
     std::cout << "Trying to initialize Pixie" << std::endl << std::flush;
 
-    const char* fwFile =  FIRMWARE_FILE; // Default.    
-    char* alternateFirmwareFile = getenv("FIRMWARE_FILE");
-    if (alternateFirmwareFile) {
-	fwFile = alternateFirmwareFile;
+    const char* fwFile = getenv("FIRMWARE_FILE");
+    if (fwFile) {    
+	m_config = *(Configuration::generate(fwFile, "cfgPixie16.txt",
+					     "modevtlen.txt"));
+    } else { 
+	m_config = *(Configuration::generateManagedFW("cfgPixie16.txt",
+						      "modevtlen.txt"));
     }
-
-    m_config = *(
-	Configuration::generate(fwFile, "cfgPixie16.txt", "modevtlen.txt")
-	);
     m_config.print(std::cout);
     std::cout << std::endl;
 

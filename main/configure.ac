@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.61)
 
-AC_INIT(nscldaq, 12.1-009, [daqhelp@nscl.msu.edu], [], [https://github.com/FRIBDAQ/NSCLDAQ])
+AC_INIT(nscldaq, 12.2-dev, [daqhelp@nscl.msu.edu], [], [https://github.com/FRIBDAQ/NSCLDAQ])
 
 AC_CONFIG_SRCDIR([/base/dataflow/CRingBuffer.h])
 AC_CONFIG_HEADER([config.h])
@@ -24,6 +24,7 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AX_CXX_COMPILE_STDCXX_11([noext])
+PKG_PROG_PKG_CONFIG 
 
 # Set parallel build for incorps:
 
@@ -82,6 +83,25 @@ then
 else
 	AM_CONDITIONAL([CAENSUPPORT], [false])
 fi
+
+#  Enabled MVLC code generation:
+
+AC_ARG_ENABLE([mvlc-stack-generator],
+	AC_HELP_STRING([--enable-mvlc-stack-generator], [Build support for generating MVLX fribdaq-readout config files]),
+	[enable_mvlc=$enableval], [enable_mvlc=no])
+
+if test "x$enable_mvlc" == "xyes"
+then
+	AC_MSG_NOTICE([Including mvlc usb config generation support])
+	AM_CONDITIONAL([MVLC_GENERATOR],[true])
+	# MVLC Generator needs to have the yaml-cpp package and its flags defined:
+
+	PKG_CHECK_MODULES([YAML], [yaml-cpp])
+	
+else	
+	AM_CONDITIONAL([MVLC_GENERATOR], [false])
+fi
+
 
 #  CAEN Nextgen digitizer support is also optional  the CAEN support
 #  libraries are awful in that they require installation in
@@ -452,8 +472,6 @@ AC_SUBST(DDASFMT_LDFLAGS)
 # PIXIE_CPPFLAGS   - Compiler flags for Pixie API
 # PIXIE_LDFLAGS    - Linker flags for Pixie API
 # firmwaredir      - Pixie firmware installation directory
-# dspdir           - Pixie DSP load image installaion directory
-
 # ROOTSYS          - ROOT installation to compile e.g. ddasdumper against
 # ROOT_CFLAGS      - ROOT cflags (automatically generated from ROOT config)
 # ROOT_LDFLAGS     - ROOT libraries (automatically generated from ROOT config)
@@ -500,21 +518,6 @@ then
 	fi
 
 	AC_SUBST(firmwaredir)
-
-	# Establish the dsp load image directory. These files are also not
-	# redistributable so the user must have licensed them and installed
-	# them somewhere.
-
-	AC_ARG_WITH([dspdir],
-		[  --with-dspdir=path - Specify path to the DSP software directory tree. Required if DDAS support is enabled.],
-		[dspdir=$withval])
-
-	if test x$dspdir = x
-	then
-		AC_MSG_ERROR([specifying a firmware install directory using --with-dspdir is a mandatory option if DDAS support is enabled])
-	fi
-
-	AC_SUBST(dspdir)
 
 	# Check for ROOT. Use rootcling to add ROOT flags and linker options
 	# to the Makefile macro set:
@@ -892,6 +895,7 @@ Makefile
     srs/broker/Makefile
     srs/readout/Makefile
     srs/sorter/Makefile
+	mvlc/Makefile
     cookbooks/Makefile
 ])
 

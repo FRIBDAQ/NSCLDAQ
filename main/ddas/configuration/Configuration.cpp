@@ -11,7 +11,14 @@
 #include "FirmwareVersionFileParser.h"
 #include "ConfigurationParser.h"
 #include "ModEvtFileParser.h"
- 
+
+/**
+ * @todo (ASC 3/21/25): Once parallel boot is implemented, clean up this class
+ * and remove everything which we do not need (e.g. default maps) and remove
+ * any hardware types which are not real or we do not supprot
+ * (e.g. 500m-16b rev F??)
+ */ 
+
 /*!
  * @details
  * This resizes the vectors storing the slot map, module event lengths, and
@@ -196,6 +203,25 @@ DAQ::DDAS::Configuration::print(std::ostream &stream)
     stream << "DSPParFile: " << m_settingsFilePath;
 }
 
+std::unique_ptr<DAQ::DDAS::Configuration>
+DAQ::DDAS::Configuration::generate(const std::string& cfgPixiePath)
+{
+    std::unique_ptr<Configuration> pConfig(new Configuration);
+    ConfigurationParser configParser;
+    std::ifstream cfg(cfgPixiePath.c_str(), std::ios::in);
+
+    if(cfg.fail()){
+	std::string errmsg("Configuration::generate() ");
+	errmsg += "Failed to open the system configuration file : ";
+	errmsg += cfgPixiePath;
+	throw std::runtime_error(errmsg);
+    }
+
+    configParser.parse(cfg, *pConfig);
+
+    return std::move(pConfig);
+}
+
 /**
  * @details
  * `std::move()` ensures correct ownership of the returned pointer, 
@@ -206,33 +232,19 @@ DAQ::DDAS::Configuration::generate(
     const std::string &fwVsnPath, const std::string &cfgPixiePath
     )
 {
-    std::unique_ptr<Configuration> pConfig(new Configuration);
+    std::unique_ptr<Configuration> pConfig = generate(cfgPixiePath);
     FirmwareVersionFileParser fwFileParser;
-    ConfigurationParser       configParser;
-    std::ifstream input(fwVsnPath.c_str(), std::ios::in);
+    std::ifstream fwvsn(fwVsnPath.c_str(), std::ios::in);
 
-    if(input.fail()) {
+    if(fwvsn.fail()) {
 	std::string errmsg("Configuration::generate() ");
 	errmsg += "Failed to open the firmware version file: ";
 	errmsg += fwVsnPath;
 	throw std::runtime_error(errmsg);
     }
     
-    fwFileParser.parse(input, pConfig->m_fwMap);    
-
-    input.close();
-    input.clear();
-
-    input.open(cfgPixiePath.c_str(), std::ios::in);
-
-    if(input.fail()){
-	std::string errmsg("Configuration::generate() ");
-	errmsg += "Failed to open the system configuration file : ";
-	errmsg += cfgPixiePath;
-	throw std::runtime_error(errmsg);
-    }
-
-    configParser.parse(input, *pConfig);
+    fwFileParser.parse(fwvsn, pConfig->m_fwMap);
+    fwvsn.close();
 
     return std::move(pConfig);
 }
@@ -248,16 +260,14 @@ DAQ::DDAS::Configuration::generate(
     const std::string &modEvtLenPath
     )
 {
-    ModEvtFileParser modEvtParser;
     std::unique_ptr<Configuration> pConfig = generate(fwVsnPath, cfgPixiePath);
-    int moduleCount = pConfig->getNumberOfModules();
 
     // Read a configration file to tell Pixie16 how big an event is in
     // a particular module.  Within one module all channels MUST be set to
     // the same event length
-
-    std::ifstream modevt;
-    modevt.open(modEvtLenPath.c_str(), std::ios::in);
+    
+    ModEvtFileParser modEvtParser;
+    std::ifstream modevt(modEvtLenPath.c_str(), std::ios::in);
 
     if(!modevt.is_open()) {
 	std::string errmsg("Configuration::generate() ");
@@ -268,6 +278,41 @@ DAQ::DDAS::Configuration::generate(
     }
 
     modEvtParser.parse(modevt, *pConfig);
+    modevt.close();
 
     return std::move(pConfig);
 }
+
+/**
+ * @details
+ * `std::move()` ensures correct ownership of the returned pointer, 
+ * though we _may_ be able to take advantage of some copy elision here.
+ */
+std::unique_ptr<DAQ::DDAS::Configuration>
+DAQ::DDAS::Configuration::generateManagedFW(
+    const std::string &cfgPixiePath, const std::string &modEvtLenPath
+    )
+{
+    std::unique_ptr<Configuration> pConfig = generate(cfgPixiePath);
+
+    // Read a configration file to tell Pixie16 how big an event is in
+    // a particular module.  Within one module all channels MUST be set to
+    // the same event length
+    
+    ModEvtFileParser modEvtParser;
+    std::ifstream modevt(modEvtLenPath.c_str(), std::ios::in);
+
+    if(!modevt.is_open()) {
+	std::string errmsg("Configuration::generate() ");
+	errmsg += "Failed to open the module event length ";
+	errmsg += "configuration file: ";
+	errmsg += modEvtLenPath;
+	throw std::runtime_error(errmsg);
+    }
+
+    modEvtParser.parse(modevt, *pConfig);
+    modevt.close();
+
+    return std::move(pConfig);
+}
+

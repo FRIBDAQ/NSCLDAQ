@@ -19,8 +19,7 @@ libPixieUtilities_la_CPPFLAGS = 				\
 	-I@top_srcdir@/ddas/configuration 			\
 	-I@top_srcdir@/ddas/booter 				\
 	-I@top_srcdir@/ddas/exception @LIBTCLPLUS_CFLAGS@ 	\
-	@PIXIE_CPPFLAGS@ \
-	-DFIRMWARE_FILE=\"@prefix@/share/ddasreadout/DDASFirmwareVersions.txt\"
+	@PIXIE_CPPFLAGS@
 libPixieUtilities_la_LIBADD = \
 	@top_builddir@/ddas/configuration/libConfiguration.la 	\
         @top_builddir@/ddas/booter/libSystemBooter.la 		\

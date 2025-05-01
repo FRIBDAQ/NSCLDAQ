@@ -1,0 +1,13 @@
+package "MVLCGenerate"
+version "1.0"
+purpose "Generate .yaml to run the mvlc fribdaq-readout"
+
+# Unnamed arguments are allowed -- the input file.
+
+args "-u"
+
+option "output" o "Output filename [defaults to name-of-input.yaml]" string optional
+
+text "Translate a VMUSB daqconfig file into an mvlc/fribdaq-readout yaml configuation."
+text "The resulting configuration will use NIM 1 as the event trigger and a timed stack "
+text "to read out the scaler stack every 2 seconds."
