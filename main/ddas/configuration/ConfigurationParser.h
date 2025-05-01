@@ -45,27 +45,34 @@ namespace DAQ {
 	 * PATH_TO_SETTINGS_FILE is a legitimate path. In the top section, the
 	 * parser will ignore up to 256 characters following the leftmost
 	 * integer or string found on each line. Because of this, it is 
-	 * customary to add notes on each of these lines. There is no 
-	 * convention for adding notes, though many people like to use a #. 
-	 * An example would be (note the varying conventions for 
-	 * demonstration):
+	 * customary to add notes on each of these lines. All notes should
+	 * be prepended with a '#':
 	 *
 	 @verbatim
 	 1    # crate id
-	 2    number of modules
-	 2    | slot of first module
-	 3    - slot of second module
-	 /path/to/setfile.set ! another comment
+	 2    # number of modules
+	 2    # slot of first module
+	 3    # slot of second module
+	 /path/to/setfile.json # another comment
 	 @endverbatim
 	 *
 	 * Note the structure shown above reflects changes for issue 
 	 * daqdev/DDAS#106. Each slot specification can have an optional one 
-	 * or two fields: The first optional field is a per slot firmware map 
-	 * file and the second an optional  per slot .set file (since optional
-	 * firmwares may require .set files of a  different format).
-	 *
+	 * or two fields: The first optional field is a per-slot firmware map 
+	 * file and the second an optional per-slot DSP settings file
+	 * (since optional firmwares may require settings files of a different
+	 * format). :
+	 @verbatim
+	 1    # crate id
+	 5    # number of modules
+	 2    # slot of first module
+	 3    FirmwareMap.txt # Use FW defined in this map
+	 4    FirmwareMap.txt alternate_setfile.json # FW map and settings
+	 5    # Default FW and settings
+	 6
+	 /path/to/setfile.json # another comment
+	 @endverbatim
 	 * The ConfigurationParser can be used in the following fashion:
-	 *
 	 * @code
 	 * using namespace DAQ::DDAS;
 	 * Configuration config;

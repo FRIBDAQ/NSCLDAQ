@@ -33,11 +33,8 @@ namespace DAQ { namespace DDAS {class Configuration; }}
  *    a two parameters, the module *index* of the module to boot.
  *    If the user wants to boot by slot number, they must inventory
  *    the modules and look through the inventory to figure out which
- *    index corresponds to the desired slot.  Note that the boot pattern
- *    will only be 0x7d which
- *    - Boots everything but the trigger fpga
- *    - Assumes you don't have a revA module which is the only one
- *      that has a trigger fpga.
+ *    index corresponds to the desired slot. Note that the boot pattern
+ *    will only be 0x7f which boots everything.
  */
 class CBoot : public CTclCommand
 {
@@ -49,7 +46,7 @@ public:
     
     virtual int operator()(std::vector<Tcl_Obj*>& objv);
 private:
-    std::string apiMsg(int index, int slot, int status, const char* doing, const char* msgs[]);
+    std::string apiMsg(int index, int slot, int status, const char* doing);
     int getHardwareType(int index);
     void bootModule(int index, int type);
 };

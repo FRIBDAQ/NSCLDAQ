@@ -6,7 +6,7 @@
 #ifndef MODEVTFILEPARSER_H
 #define MODEVTFILEPARSER_H
 
-#include <iosfwd>
+#include <iosfwd> // Forward declare iostream, fstream
 
 /** @namespace DAQ */
 namespace DAQ {

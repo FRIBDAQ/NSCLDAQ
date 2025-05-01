@@ -10,7 +10,7 @@ APPS=gdgpanel.tcl v812usbcontrol.tcl MDGG16Control.tcl monal3.tcl  \
 	XLM72ScalerGUI.tcl MDGG16Control.tcl XLM72GateDelayControl.tcl
 
 PYAPPS=MDPPTriggerControl.py
-UIS=MDPPTriggerControl.ui
+UIS=MDPPTriggerControl.ui MDPPTriggerControl_about.ui
 
 IMAGES=l3trigicon.png
 
