@@ -24,6 +24,7 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AX_CXX_COMPILE_STDCXX_11([noext])
+PKG_PROG_PKG_CONFIG 
 
 # Set parallel build for incorps:
 
@@ -82,6 +83,25 @@ then
 else
 	AM_CONDITIONAL([CAENSUPPORT], [false])
 fi
+
+#  Enabled MVLC code generation:
+
+AC_ARG_ENABLE([mvlc-stack-generator],
+	AC_HELP_STRING([--enable-mvlc-stack-generator], [Build support for generating MVLX fribdaq-readout config files]),
+	[enable_mvlc=$enableval], [enable_mvlc=no])
+
+if test "x$enable_mvlc" == "xyes"
+then
+	AC_MSG_NOTICE([Including mvlc usb config generation support])
+	AM_CONDITIONAL([MVLC_GENERATOR],[true])
+	# MVLC Generator needs to have the yaml-cpp package and its flags defined:
+
+	PKG_CHECK_MODULES([YAML], [yaml-cpp])
+	
+else	
+	AM_CONDITIONAL([MVLC_GENERATOR], [false])
+fi
+
 
 #  CAEN Nextgen digitizer support is also optional  the CAEN support
 #  libraries are awful in that they require installation in
@@ -875,6 +895,7 @@ Makefile
     srs/broker/Makefile
     srs/readout/Makefile
     srs/sorter/Makefile
+	mvlc/Makefile
     cookbooks/Makefile
 ])
 

@@ -278,7 +278,7 @@ caenv956 cget <replaceable>name</replaceable>
 								 under threshold.
 							 </para>
 							 <para>
-								 Make sure to set <command>-supressrange</command> to <litral>false</literal>
+								 Make sure to set <command>-supressrange</command> to <literal>false</literal>
 								 to make this option effective.
 							 </para>
             </listitem>
@@ -299,7 +299,7 @@ caenv956 cget <replaceable>name</replaceable>
 								 overflow.
 							 </para>
 							 <para>
-								 Make sure to set <command>-supressrange</command> to <litral>false</literal>
+								 Make sure to set <command>-supressrange</command> to <literal>false</literal>
 								 to make this option effective.
 							 </para>
             </listitem>
