@@ -8,7 +8,7 @@ DEVICE_MODULES=CStack.h CStack.cpp CMarker.h CMarker.cpp \
 	C785.h C785.cpp C3820.h C3820.cpp \
 	CDelay.h CDelay.cpp \
 	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h MADC32Registers.h \
-	CCAENChain.h CCAENChain.cpp CMADCCHain.h CMADCChain.cpp \
+	CCAENChain.h CCAENChain.cpp CMADCChain.h CMADCChain.cpp \
 	CMADCScaler.h CMADCScaler.cpp CMTDC32.h CMTDC32.cpp \
 	C3804.h C3804.cpp \
 	CMQDC32RdoHdwr.h CMQDC32RdoHdwr.cpp CMQDC32StackBuilder.h CMQDC32StackBuilder.cpp MQDC32Registers.h \
@@ -34,6 +34,7 @@ mvlcgenerate_SOURCES=generate.cpp $(main_modules)
 
 
 mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
+	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os \
 	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ @YAML_CFLAGS@ \
 	-DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" 
 
@@ -58,7 +59,7 @@ UNIT_TESTS=utiltests.cpp parsertests.cpp \
 	madcscalertests.cpp mtdctests.cpp mqdctests.cpp mdpptests.cpp sis3804tests.cpp \
 	v830tests.cpp hytectests.cpp v977tests.cpp v1495sctests.cpp v1729tests.cpp  \
 	v1x90tests.cpp sisvmusbTests.cpp
-	
+
 unittests_SOURCES = TestRunner.cpp \
 	$(UNIT_TESTS) \
 	options.h options.c \
@@ -73,4 +74,4 @@ EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml
 install-exec-local:
 	$(mkinstalldirs) @datarootdir@/mvlc
 	$(INSTALL_DATA)  @srcdir@/triggeronly.yaml @datarootdir@/mvlc/triggeronly.yaml
-	
+

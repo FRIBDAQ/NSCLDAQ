@@ -62,7 +62,7 @@ cmdline.c: cmdline.h
 
 cmdline.h: commandline.ggo
 	$(GENGETOPT) <@srcdir@/commandline.ggo \
-		--output-dir=@builddir@/vmusb --set-version=@VERSION@
+		--output-dir=@builddir@ --set-version=@VERSION@
 
 
 EXTRA_DIST=commandline.ggo vmusbReadout_user.xml vmusbReadout_man.xml \
