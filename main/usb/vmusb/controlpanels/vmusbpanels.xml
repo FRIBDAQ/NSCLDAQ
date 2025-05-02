@@ -1759,10 +1759,9 @@ vm895usbcontrol <replaceable>configfile</replaceable> <optional>host <optional>p
       <link linkend='manpage.caenv812gui'> caenv812gui</link>
      </para>
      <para>
-      The configuration file format is the same as is described in
-      <link linkend='manpage.caenv812config'>caenv812config</link>
-      however the <literal>crate</literal> configuration variable is
-      ignored.
+      The configuration file format is described below in the section
+      <link  linkend='vmusb1_v812usbcontrol_configfile' endterm='vmusb1_v812usbcontrol_configfile_title'>
+      CONFIGURATION FILE</link> below.
      </para>
      <para>
        If the user does not supply any additional parameters following the <replaceable>configfile</replaceable>,
@@ -1776,7 +1775,92 @@ vm895usbcontrol <replaceable>configfile</replaceable> <optional>host <optional>p
         output to stdout so that you an know what they are.
      </para>
   </refsect1>
-  
+  <refsect1 id='vmusb1_v812usbcontrol_configfile'>
+    <title id='vmusb1_v812usbcontrol_configfile_title'>CONFIGURATION FILE</title>
+    <para>
+        The configuration file for the control panel is actually a Tcl script.
+        the script sets variables which, contain the configuration.  Only the
+        <varname>name</varname> and <varname>base</varname> variables are 
+        required.  The <varname>name</varname> variable must match the name of
+        a slow control module for the V812/V895 in the VMEUSB readout control configuration script.
+        The <varname>base</varname> should be the base address of that module.
+    </para>
+    <para>
+        The full set of configuration variables are:
+    </para>
+    <variablelist>
+        <varlistentry>
+                <term><varname>name</varname></term>
+                <listitem>
+                    <para>
+                        Name of the module in the configuration script for the VMUSBReadout.
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term><varname>base</varname></term>
+                <listitem>
+                    <para>
+                        Base address - this is for documentation purposes.  It is mandatory but just displayed
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term><varname>thresholds</varname></term>
+                <listitem>
+                    <para>
+                        This is an array with integer indices from 0-15 and contains the integer threshold values in 
+                        units of mV. The values should be the absolute values of the thresholds e.g. not
+                        <literal>-2</literal> but <literal>2</literal> for -2mV threshold.
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term><varname>widths</varname></term>
+                <listitem>
+                    <para>
+                        A two element list indexed 0 and 1.  widths(0) applies to channels 0-7 while
+                        widths(1) applies to channel 8-15.
+                        The manual
+                        for the module says this value is from 0 to 255. where 0 corresponds to a 12ns width,
+                        255 a 206ns width, with a non-lineary function between them.  In otherwords use an
+                        oscilloscope to arrive at the correct value if it is important for timing.
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term><varname>majority</varname></term>
+                <listitem>
+                    <para>
+                        THe majority level.
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term><varname>enables</varname></term>
+                <listitem>
+                    <para>
+                        A bitmask where set bits enable the corresponding channel.  The least significatn
+                        bit of the mask is channel 0 e.g. 0x5 enables channel 0, and 2.
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term><varname>deadtimes</varname> (V812 only)</term>
+                <listitem>
+                    <para>
+                        A two element array of deadtime values indexes are 0 and 1.  deadtimes(0) applies to 
+                        channels 0-7 while deadtimes(1) applies to channels 8-15. Don't blame me.
+                        this is how the module works.  A value of 0 represents 118ns while the value 255 represents
+                        1625ns.  Don't assume a linear function connecting these two endpoints.
+                    </para>
+                    <para>
+                        Note that the deadtime is at least the width if it is longer than the programmed deadtime.
+                    </para>
+                </listitem>
+        </varlistentry>
+    </variablelist>
+  </refsect1>
 </refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
