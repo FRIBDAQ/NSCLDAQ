@@ -3,7 +3,7 @@ name: Compiling workflow
 on:
   push:
     branches: 
-      - '12.1-dev'
+      - '12.1-maint'
     tags:
       - '*'
     paths-ignore:

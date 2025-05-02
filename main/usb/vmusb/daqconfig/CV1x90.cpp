@@ -704,7 +704,7 @@ CV1x90::computeCounts()
     }
   }
   if (m_Model == 1290) {
-    if (m_Suffix = 'A') {
+    if (m_Suffix == 'A') {
       m_nChannelCount = 32;
       m_nChipCount    = 4;	// Hi res mode uses several channels in each chip per box channel
     }

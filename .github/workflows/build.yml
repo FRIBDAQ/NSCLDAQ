@@ -70,6 +70,7 @@ jobs:
       - name: Creating build directory
         run: mkdir main/oot
       - name: Configuring
+        if: ${{ inputs.os-version != 'bookworm' }}
         working-directory: ./main/oot
         shell: bash
         run: |
@@ -85,6 +86,26 @@ jobs:
                        --with-incorp-build-cores=2 \
                        --with-xiaapidir=`cat /usr/opt/XIAAPI_PATH` \
                        --with-firmwaredir=`cat /usr/opt/DDASFIRMWARE_PATH` \
+                       --with-dspdir=`cat /usr/opt/DDASDSP_PATH` \
+                       --with-rootsys=`cat /usr/opt/ROOT_PATH` \
+                       CXX=`cat /usr/opt/MPI_PATH`
+      - name: Configuring (Special for Bookworm)
+        if: ${{ inputs.os-version == 'bookworm' }}
+        working-directory: ./main/oot
+        shell: bash
+        run: |
+          ../configure --prefix=/usr/opt/nscldaq/$GITHUB_REF_NAME \
+                       --enable-usb=yes \
+                       --enable-caen-digitizer-support \
+                       --enable-docs \
+                       --enable-epics-tools=yes \
+                       --with-caen-digitizer-libroot=`cat /usr/opt/CAENDIGITIZERLIBS_PATH` \
+                       --with-epics-rootdir=`cat /usr/opt/EPICS_PATH` \
+                       --enable-ddas=yes \
+                       --enable-ddas-docs=yes \
+                       --with-incorp-build-cores=2 \
+                       --with-xiaapidir=`cat /usr/opt/XIAAPI_PATH` \
+                       --with-firmwaredir=`cat /usr/opt/DDASFIRMWARE_PATH_12.1` \
                        --with-dspdir=`cat /usr/opt/DDASDSP_PATH` \
                        --with-rootsys=`cat /usr/opt/ROOT_PATH` \
                        CXX=`cat /usr/opt/MPI_PATH`

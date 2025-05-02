@@ -383,20 +383,27 @@ proc ::RingSourceMgr::_computeRingSourceSwitches {port url tstampExtractor ids
 # @param id   - Source id (numeric)
 #
 proc ::RingSourceMgr::_HandleDataSourceInput {fd info id} {
-  set text "$info ($id) "
-  if {[eof $fd]} {
-    catch {close $fd} msg
-    append text "exited: $msg"
-      ::EndrunMon::decEndRunCount;           # One less end run to wait for.0
-      if {$Pending::pendingState ne "Halted"} {
-        tk_messageBox -type ok -icon error -title {Source exited} \
-          -message "The event builder source for $info ($id) exited unexpectedly"
-      }
-    ::RingSourceMgr::_SourceDied  $fd;     # Do the book keeping for a dead source.
-  } else {
-    append text [gets $fd]
-  }
-  RingSourceMgr::_Output $text
+    set text "$info ($id) "
+    if {[eof $fd]} {
+	catch {close $fd} msg
+	append text "exited: $msg"
+	::EndrunMon::decEndRunCount;           # One less end run to wait for.0
+	if {$Pending::pendingState ne "Halted"} {
+	    # We may already be halted in which case the source exit is
+	    # expected, check this before issuing error message (issue #270):
+	    set sm [::RunstateMachineSingleton %AUTO%]
+	    set currentState [$sm getState]
+	    $sm destroy
+	    if {$Pending::pendingState ne "None" || $currentState ne "Halted"} {
+		tk_messageBox -type ok -icon error -title {Source exited} \
+		    -message "The event builder source for $info ($id) exited unexpectedly: pending $Pending::pendingState current $currentState"
+	    }
+	}
+	::RingSourceMgr::_SourceDied  $fd;     # Do the book keeping for a dead source.
+    } else {
+	append text [gets $fd]
+    }
+    RingSourceMgr::_Output $text
 }
 
 ##

@@ -1,4 +1,10 @@
+== 12.1-010 ==
+* Bug fix on MDPPTriggerControl GUI
+== 12.1-010 ==
+
 == 12.1-009 ==
+* Recommit a missing commit on MDPP-32 Streaming readout support
+* Adding support of the latest MDPP-32 SCP firmware (SP0024)
 == 12.1-009 ==
 
 == 12.1-008 ==
