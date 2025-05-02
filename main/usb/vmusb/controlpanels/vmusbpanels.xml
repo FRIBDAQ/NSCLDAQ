@@ -1712,8 +1712,8 @@ $object vmeWrite8 address data
 </refentry>  
   
 <!-- /manpage -->
-<!-- manpage 1vmusb -->
-</refentry>
+<!-- manpage 1daq -->
+
 <refentry id="vmusb1_v812usbcontrol">
   <refentryinfo>
             <author>
@@ -1728,7 +1728,7 @@ $object vmeWrite8 address data
         </refentryinfo>
   <refmeta>
      <refentrytitle id='vmusb1_v812usbcontrol_title'>VMUSB V812 control</refentrytitle>
-     <manvolnum>1vmusb</manvolnum>
+     <manvolnum>1daq</manvolnum>
      <refmiscinfo class='empty'></refmiscinfo>
   </refmeta>
   <refnamediv>
@@ -1770,9 +1770,9 @@ vm895usbcontrol <replaceable>configfile</replaceable>
       will connect.
      </para>
   </refsect1>
-
+</refentry>
 <!-- /manpage -->
-<!-- manpage 1tcl -->
+<!-- manpage 1daq -->
     <refentry id="tcl1_gdgpanel">
       <refentryinfo>
         <author>
@@ -1786,8 +1786,8 @@ vm895usbcontrol <replaceable>configfile</replaceable>
         <productnumber></productnumber>
       </refentryinfo>
       <refmeta>
-         <refentrytitle>!ModuleName!</refentrytitle>
-         <manvolnum>1tcl</manvolnum>
+         <refentrytitle>gdgpanel</refentrytitle>
+         <manvolnum>daq</manvolnum>
          <refmiscinfo class='empty'></refmiscinfo>
       </refmeta>
       <refnamediv>
