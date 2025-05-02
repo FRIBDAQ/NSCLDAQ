@@ -23,8 +23,8 @@ package require Tk
 # Implements a control panel for a single CAEN V812 CFD or 895
 # Invoke as follows:
 #
-#   v812usbcontrol  filename
-#   v895usbcontrol  filename
+#   v812usbcontrol  filename ?host ?port??
+#   v895usbcontrol  filename ?host ?port??
 #
 #  Where filename is the name of the configuration file the CFD has been
 #  configured with. This file must also include
@@ -43,6 +43,7 @@ package require Tk
 #
 #  The only difference between the 895 and the 812 is that the 895, a leading
 #  edge discriminator has no dead-time setting.
+#  Issue #280 - Added parameters to allow host/port selection.
 
 
 ## locate the distro's TclLibs dir and prepend it to auto_path:
@@ -50,7 +51,7 @@ package require Tk
 set here [file dirname [info script]]
 set libdir [file join $here .. TclLibs]
 set auto_path [concat $libdir $auto_path]
-puts $auto_path
+#puts $auto_path
 
 package provide CFD812   2.0;             # Hokey.
 package require usbcontrolclient
@@ -281,6 +282,28 @@ proc cancelPrompt widget {
     bind $parent <Destroy> ""
     exit
 }
+
+##
+#  usage
+#    Output program usage to stderr.
+#
+proc usage {} {
+    puts stderr "Usage:"
+    puts stderr "   v812usbcontrol|v895usbcontrol config-file ?host ?port??"
+    puts stderr "      v812usbcontrol - indicates you are controlling a CAEN V812 device"
+    puts stderr "      v895usbcontrol - indicates you are controlling a CAEN V895 device"
+    puts stderr "      config-file    -  is a path to the configuration filename."
+    puts stderr "                       This file contains the initial conditions of the device."
+    puts stderr "                       It is updated whenever you click 'commit'"
+    puts stderr "     host            - If provided, specifies the host  VMUSBReadout runs in"
+    puts stderr "     port            - If provided, specfies the --port value for VMUSBReadout"
+    puts stderr " If at least host is provided, you will not be interactively prompted for"
+    puts stderr " connection parameters.  If host is provided but not port, the port"
+    puts stderr " defaults to 27000 which is the default port used by VMUSBReadout"
+    puts stderr " If you are not promped for connection parameters a message will be output"
+    puts stderr " indicating the host and port the program will connect to"
+    
+}
 #-------------------------- Entry point: --------------------------
 
 
@@ -295,13 +318,31 @@ if {$myProgram eq "v895usbcontrol"} {
     set disableDeadtime 0
 }
 
-if {[llength $argv] != 1} {
-    error "Usage:\n     v812usbcontrol config-file"
+if {[llength $argv] < 1} {
+    usage
+    exit -1
 }
 
-set configFile $argv
+set configFile [lindex $argv 0]
+
+# See if the host was given and override the default if so:
+
+set hostgiven 0
+if {[llength $argv] > 1} {
+    set serverHost [lindex $argv 1]
+    set hostgiven 1
+}
+# Override the port if that was given:
+# Ignore excess parameters.
+
+if {[llength $argv] >=3} {
+    set serverPort [lindex $argv 2]
+}
+
 
 source $configFile
+
+
 
 
 wm title . $name
@@ -314,24 +355,31 @@ if {[info var name] eq ""} {
 }
 
 
-# Allow the user to pick the server/port
+# Allow the user to pick the server/port if at least one was not specified
+# on the command line.
+#  This is not displayed if at least the host was given
+#  (Issue #280).
 
-wm withdraw .
+if {!$hostgiven} {
+    wm withdraw .
 
-toplevel .prompter
-slowControlsPrompter .prompter.p -host $serverHost -port $serverPort \
-    -type VMUSBReadout -okcmd [list setConnectionInfo %W] \
-    -cancelcmd [list cancelPrompt %W]
-set prompted 0
-#pack .prompter.p
-grid .prompter.p -sticky nsew
-grid rowconfigure    .prompter.p 0 -weight 1
-grid columnconfigure .prompter.p 0 -weight 1
+    toplevel .prompter
+    slowControlsPrompter .prompter.p -host $serverHost -port $serverPort \
+        -type VMUSBReadout -okcmd [list setConnectionInfo %W] \
+        -cancelcmd [list cancelPrompt %W]
+    set prompted 0
+    #pack .prompter.p
+    grid .prompter.p -sticky nsew
+    grid rowconfigure    .prompter.p 0 -weight 1
+    grid columnconfigure .prompter.p 0 -weight 1
 
-bind .prompter <Destroy> [list cancelPrompt .prompter.p]
-vwait prompted
+    bind .prompter <Destroy> [list cancelPrompt .prompter.p]
+    vwait prompted
 
-wm deiconify .
+    wm deiconify .
+} 
+
+puts "Will connect to the control server $serverHost:$serverPort"
 
 cfdv812Gui .panel   -base $base -name CFD
 
