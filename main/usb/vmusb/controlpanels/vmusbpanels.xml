@@ -1732,19 +1732,19 @@ $object vmeWrite8 address data
      <refmiscinfo class='empty'></refmiscinfo>
   </refmeta>
   <refnamediv>
-     <refname>VMUSB V812 control</refname>
+     <refname>VMUSB V812/895 control</refname>
      <refpurpose>Adapt CAENV812GUI to the VM-USB readout</refpurpose>
   </refnamediv>
   
   <refsynopsisdiv>
     <cmdsynopsis>
         <command>
-v812usbcontrol <replaceable>configfile</replaceable>
+v812usbcontrol <replaceable>configfile</replaceable> <optional>host <optional>port</optional></optional>
         </command>
     </cmdsynopsis>
       <cmdsynopsis>
           <command>
-vm895usbcontrol <replaceable>configfile</replaceable>
+vm895usbcontrol <replaceable>configfile</replaceable> <optional>host <optional>port</optional></optional>
           </command>
       </cmdsynopsis>
 
@@ -1765,11 +1765,18 @@ vm895usbcontrol <replaceable>configfile</replaceable>
       ignored.
      </para>
      <para>
-      On startup the user is presented with a chooser dialog that allows
-      him or her to select the specific server to which the application
-      will connect.
+       If the user does not supply any additional parameters following the <replaceable>configfile</replaceable>,
+       a dialog is popped up to allow them to accept or modify the default values 
+       (host=<literal>localhost</literal>, port=<literal>27000</literal>).   If at least the host is provided,
+       it is used and the dialog is not presented.  If the host is provided but the port is not, the default
+       value of <literal>27000</literal> is used.   IF the host and port are both provided they are used.
+     </para>
+     <para>
+        Irregardless of how the host an connection ports of the VMUSBReadout are specified, they are
+        output to stdout so that you an know what they are.
      </para>
   </refsect1>
+  
 </refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
