@@ -207,7 +207,6 @@ MVLCGenerate::fillInitStack(YAML::Node& doc, const char* name, CStack& stack) {
         if (stacks[g]["name"].as<std::string>() == name) {
             auto stack = stacks[g]["contents"];
             for (auto line: ops) {
-                std::cout << "pushing " << line << std::endl;
                 stack.push_back(line);
             }
         }
