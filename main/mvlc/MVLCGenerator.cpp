@@ -110,7 +110,8 @@ MVLCGenerate::loadTemplate() {
  * "STACKDELAY"
  * 
  * @param[inout] doc - references the YAML we're building.
- * 
+ *
+ *  Note the units of -delay are us while those in the MVLC are ns.
  */
 void
 MVLCGenerate::setStackDelay(YAML::Node& doc) {
@@ -139,7 +140,7 @@ MVLCGenerate::setStackDelay(YAML::Node& doc) {
                 size_t sloc = writeCmd.find(stackDelay);
                 if (sloc != writeCmd.npos) {
                     writeCmd.replace(
-                        sloc, strlen(stackDelay), std::to_string(delay)
+                        sloc, strlen(stackDelay), std::to_string(10000*delay)
                     );
                     contents[w] = writeCmd;
                 }
