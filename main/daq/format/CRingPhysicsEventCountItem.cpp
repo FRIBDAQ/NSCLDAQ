@@ -215,6 +215,17 @@ CRingPhysicsEventCountItem::getTimeDivisor() const
     reinterpret_cast<pPhysicsEventCountItemBody>(getBodyPointer());
   return pItem->s_offsetDivisor;
 }
+/**
+ * setTimeDivisor
+ *    Set the time offset divisor value.
+ * @param divisor - divisor to set.
+ */
+void
+CRingPhysicsEventCountItem::setTimeDivisor(int divisor) {
+   pPhysicsEventCountItemBody pItem =
+    reinterpret_cast<pPhysicsEventCountItemBody>(getBodyPointer());
+   pItem->s_offsetDivisor = divisor;
+}
 /*!
    set the time offset.
    \param offset - new value of time offset.

@@ -13,12 +13,14 @@ crate:
           contents:
         - name: readout_end
           contents:
+            - vme_write 0x09 d16 0xbb006034 0x00000001
     - name: event1
       groups:
         - name: readout
           contents:
-        - name: readout_end
+        - name: readout_start
           contents:
+            - vme_write 0x09 d16 0xbc006034 0x00000001
   stack_triggers:
     - 0x60
     - 0x54
@@ -110,9 +112,9 @@ crate:
           - vme_write 0x09 d16 0xffff030c 0x00000000
           - vme_write 0x09 d16 0xffff0382 0x00000000
           - vme_write 0x09 d16 0xffff0200 0x0000000c
-          - vme_write 0x09 d16 0xffff0300 0x00000000
+          - vme_write 0x09 d16 0xffff0300 0x00000001
           - vme_write 0x09 d16 0xffff0200 0x0000000d
-          - vme_write 0x09 d16 0xffff0300 0x00000000
+          - vme_write 0x09 d16 0xffff0300 0x00000002
           - vme_write 0x09 d16 0xffff0200 0x00000010
           - vme_write 0x09 d16 0xffff0300 0x00000000
           - vme_write 0x09 d16 0xffff0302 0x00000064
@@ -209,8 +211,8 @@ crate:
           - vme_write 0x09 d16 0xffff0302 0x00000000
           - vme_write 0x09 d16 0xffff0304 0x00000000
           - vme_write 0x09 d16 0xffff0306 0x00000000
-          - vme_write 0x09 d16 0xffff030a 0x00000000
-          - vme_write 0x09 d16 0xffff0310 0x00000000
+          - vme_write 0x09 d16 0xffff030a 0x00000001
+          - vme_write 0x09 d16 0xffff0310 0x00000001
           - vme_write 0x09 d16 0xffff0200 0x00000021
           - vme_write 0x09 d16 0xffff0300 0x00000000
           - vme_write 0x09 d16 0xffff0302 0x00000000
@@ -364,25 +366,25 @@ crate:
           - vme_write 0x09 d16 0xffff031c 0x00000000
           - vme_write 0x09 d16 0xffff031e 0x00000000
           - vme_write 0x09 d16 0xffff0200 0x00000200
-          - vme_write 0x09 d16 0xffff0300 0x00000000
-          - vme_write 0x09 d16 0xffff0302 0x00000000
-          - vme_write 0x09 d16 0xffff0304 0x00001111
-          - vme_write 0x09 d16 0xffff0306 0x00001111
-          - vme_write 0x09 d16 0xffff0308 0x00000000
-          - vme_write 0x09 d16 0xffff030a 0x00000000
-          - vme_write 0x09 d16 0xffff030c 0x00001111
-          - vme_write 0x09 d16 0xffff030e 0x00001111
-          - vme_write 0x09 d16 0xffff0310 0x00000000
-          - vme_write 0x09 d16 0xffff0312 0x00000000
-          - vme_write 0x09 d16 0xffff0314 0x00001111
-          - vme_write 0x09 d16 0xffff0316 0x00001111
-          - vme_write 0x09 d16 0xffff0318 0x00000000
-          - vme_write 0x09 d16 0xffff031a 0x00000000
-          - vme_write 0x09 d16 0xffff031c 0x00001111
-          - vme_write 0x09 d16 0xffff031e 0x00001111
+          - vme_write 0x09 d16 0xffff0300 0x00002200
+          - vme_write 0x09 d16 0xffff0302 0x00002200
+          - vme_write 0x09 d16 0xffff0304 0x00003311
+          - vme_write 0x09 d16 0xffff0306 0x00003311
+          - vme_write 0x09 d16 0xffff0308 0x00002200
+          - vme_write 0x09 d16 0xffff030a 0x00002200
+          - vme_write 0x09 d16 0xffff030c 0x00003311
+          - vme_write 0x09 d16 0xffff030e 0x00003311
+          - vme_write 0x09 d16 0xffff0310 0x00002200
+          - vme_write 0x09 d16 0xffff0312 0x00002200
+          - vme_write 0x09 d16 0xffff0314 0x00003311
+          - vme_write 0x09 d16 0xffff0316 0x00003311
+          - vme_write 0x09 d16 0xffff0318 0x00002200
+          - vme_write 0x09 d16 0xffff031a 0x00002200
+          - vme_write 0x09 d16 0xffff031c 0x00003311
+          - vme_write 0x09 d16 0xffff031e 0x00003311
           - vme_write 0x09 d16 0xffff0320 0x00000001
           - vme_write 0x09 d16 0xffff0380 0x00000000
-          - vme_write 0x09 d16 0xffff0382 0x00000000
+          - vme_write 0x09 d16 0xffff0382 0x0000000c
           - vme_write 0x09 d16 0xffff0384 0x00000000
           - vme_write 0x09 d16 0xffff0332 0x00000000
           - vme_write 0x09 d16 0xffff0334 0x00000008
@@ -532,7 +534,7 @@ crate:
           - vme_write 0x09 d16 0xffff0200 0x0000031c
           - vme_write 0x09 d16 0xffff0380 0x00000000
           - vme_write 0x09 d16 0xffff0200 0x0000031d
-          - vme_write 0x09 d16 0xffff0380 0x00000000
+          - vme_write 0x09 d16 0xffff0380 0x00000001
           - vme_write 0x09 d16 0xffff0200 0x0000031e
           - vme_write 0x09 d16 0xffff0300 0x00000000
           - vme_write 0x09 d16 0xffff0302 0x00000000
@@ -557,17 +559,14 @@ crate:
   init_commands:
     name: init_commands
     groups:
-      - name: event0.init 
+      - name: event0.init
         contents:
       - name: event1.init
         contents:
   stop_commands:
     name: stop_commands
     groups:
-      - name: event0.stop
-        contents:
-      - name: event1.stop
-        contents:
+      []
   mcst_daq_start:
     name: mcst_daq_start
     groups:
@@ -578,8 +577,6 @@ crate:
           - vme_write 0x09 d16 0xbb00603c 0x00000001
           - vme_write 0x09 d16 0xbb00603a 0x00000001
           - vme_write 0x09 d16 0xbb006034 0x00000001
-      - name: event1.DAQ Start
-        contents:
           - vme_write 0x09 d16 0xbc00603a 0x00000000
           - vme_write 0x09 d16 0xbc006090 0x00000003
           - vme_write 0x09 d16 0xbc00603c 0x00000001
@@ -591,6 +588,4 @@ crate:
       - name: event0.DAQ Stop
         contents:
           - vme_write 0x09 d16 0xbb00603a 0x00000000
-      - name: event1.DAQ Stop
-        contents:
           - vme_write 0x09 d16 0xbc00603a 0x00000000
