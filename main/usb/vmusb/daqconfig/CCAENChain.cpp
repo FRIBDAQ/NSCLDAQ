@@ -30,8 +30,15 @@ using namespace std;
 
 static const unsigned int LongwordsPerModule(36); // Maximum # longwords/module.
 
-static const uint8_t  cbltamod(CVMUSBReadoutList::a32UserBlock);
-static const uint8_t   mcstamod(CVMUSBReadoutList::a32UserData);
+// If cblt/mcst address is not of the form 0x00xx0000 use a32.
+
+static const uint8_t  cbltamod32(CVMUSBReadoutList::a32UserBlock);
+static const uint8_t   mcstamod32(CVMUSBReadoutList::a32UserData);
+
+// If cblt/mcst address is of the form 0x00xx0000 use a24:
+
+static const uint8_t cbltamod24(CVMUSBReadoutList::a24UserBlock);
+static const uint8_t mcstamod24(CVMUSBReadoutList::a24UserData);
 
 static const uint32_t BSET2(0x1032); // Offset to the bit set 2 register.
 static const uint32_t BCLR2(0x1034); // Offset t the bit clear 2 register.
@@ -168,6 +175,15 @@ CCAENChain::Initialize(CVMUSB& controller)
   // this is needed to ensure event coherency in the event that triggers
   // are going into the system prior to startup.
 
+  // FIgure out which amod to use:
+
+  uint8_t mcstamod;
+  if (m_baseAddress & 0xff000000) {
+    mcstamod = mcstamod32;                  // A32.
+  } else {
+    mcstamod = mcstamod24;                  // A24.
+  }
+
   controller.vmeWrite16(m_baseAddress + BSET2, mcstamod, CLEAR_DATA);
   controller.vmeWrite16(m_baseAddress + BCLR2, mcstamod, CLEAR_DATA);
  
@@ -192,6 +208,22 @@ CCAENChain::addReadoutList(CVMUSBReadoutList& list)
   m_moduleCount               = getModules().size(); // Assume they're all good 
 
   unsigned int transferCount  = m_moduleCount * LongwordsPerModule;
+
+  // figure out the address modifiers:
+
+  uint8_t cbltamod;
+  uint8_t mcstamod;
+
+  if (m_baseAddress & 0xff000000) {
+    // a32:
+    cbltamod = cbltamod32;
+    mcstamod = mcstamod32;
+  } else {
+    // a24
+
+    cbltamod = cbltamod24;
+    mcstamod = mcstamod24;
+  }
 
   list.addBlockRead32(m_baseAddress, cbltamod, transferCount); // Thwack the 'that was easy (TM)' button.
   list.addWrite16(m_baseAddress + BSET2, mcstamod, CLEAR_DATA);
