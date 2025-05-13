@@ -105,6 +105,17 @@ CADCCommand::create(CTCLInterpreter& interp, vector<CTCLObject>& objv)
     Usage(interp, "Invalid value for base address", objv);
     return TCL_ERROR;
   }
+  // Deal with buggy base addressing with the VMUSB:
+
+  if ((base & 0xff000000) == 0) {
+    Usage(
+      interp, 
+      "Module base addresses of the form 0x00nn0000 don't work with the VMUSB!!!", 
+      objv
+    );
+    return TCL_ERROR;
+  }
+
   CReadoutModule* pModule = m_Config.findAdc(name);
   if (pModule) {
     Usage(interp, "Duplicate module creation attempted", objv);

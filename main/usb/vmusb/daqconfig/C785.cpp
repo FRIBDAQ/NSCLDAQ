@@ -323,8 +323,8 @@ C785::onAttach(CReadoutModule& configuration)
 
   // Create the parameters... setting defaults as neeed.
 
-  m_pConfiguration->addParameter("-base", XXUSB::CConfigurableObject::isInteger,
-				 NULL, "0");
+  
+  m_pConfiguration->addIntegerParameter("-base", 0x01000000, 0xffff0000, 0x010000000);
   m_pConfiguration->addParameter("-geo", XXUSB::CConfigurableObject::isInteger,
 				 &GeoLimits);
   m_pConfiguration->addParameter("-thresholds", XXUSB::CConfigurableObject::isIntList,
