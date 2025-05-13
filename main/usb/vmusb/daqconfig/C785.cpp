@@ -43,9 +43,17 @@ using namespace std;
 
 // Address modifiers used to access the module:
 
-static const  uint8_t initamod(CVMUSBReadoutList::a32UserData);
-static const uint8_t readamod(CVMUSBReadoutList::a32PrivBlock);
-static const uint8_t cbltamod(CVMUSBReadoutList::a32PrivBlock);
+// These are for nonzero to bits of base address.
+
+static const  uint8_t initamod32(CVMUSBReadoutList::a32UserData);
+static const uint8_t readamod32(CVMUSBReadoutList::a32PrivBlock);
+static const uint8_t cbltamod32(CVMUSBReadoutList::a32PrivBlock);
+
+// These are for when the base addresss is of the form 0x00xx0000
+
+static const uint8_t initamod24(CVMUSBReadoutList::a24UserData);
+static const uint8_t readamod24(CVMUSBReadoutList::a24UserBlock);   // no real reason to use priv.
+static const uint8_t clbtamod24(CVMUSBReadoutList::a24UserBlock);
 
 // Register map (offsets in bytes) for the V785
 //   Not an exhaustive list as the various test registers are omitted.
@@ -57,7 +65,7 @@ Const(GEO)         0x1002;
 Const(McastAddr)   0x1004;
 Const(BSet1)       0x1006;
 Const(BClear1)     0x1008;
-Const(IPL)         0x100a;
+Const(IPL)         0x100a; 
 Const(Vector)      0x100c;
 Const(Status1)    0x100e;
 Const(Control1)    0x1010;
@@ -237,6 +245,18 @@ C785::addToChain(CVMUSB& controller,
 
   uint32_t baseAddress = getIntegerParameter("-base");
 
+  // FIgure out the address modifier
+
+  uint8_t initamod;
+  if (baseAddress & 0xff000000) {
+    //a32
+
+    initamod = initamod32;
+  } else {
+    // a24
+    initamod = initamod24;
+  }
+
   // Set the MCST/CBLT register:
 
   controller.vmeWrite16(baseAddress+McastAddr, initamod, 
@@ -303,8 +323,8 @@ C785::onAttach(CReadoutModule& configuration)
 
   // Create the parameters... setting defaults as neeed.
 
-  m_pConfiguration->addParameter("-base", XXUSB::CConfigurableObject::isInteger,
-				 NULL, "0");
+  
+  m_pConfiguration->addIntegerParameter("-base", 0x01000000, 0xffff0000, 0x010000000);
   m_pConfiguration->addParameter("-geo", XXUSB::CConfigurableObject::isInteger,
 				 &GeoLimits);
   m_pConfiguration->addParameter("-thresholds", XXUSB::CConfigurableObject::isIntList,
@@ -375,6 +395,17 @@ void
 C785::Initialize(CVMUSB& controller)
 {
   uint32_t base = m_pConfiguration->getUnsignedParameter("-base");	// Get the base address.
+  // figure out the initialization address modifier:
+
+  uint8_t initamod;
+  if (base & 0xff000000) { 
+    // a32:
+    initamod = initamod32;
+  } else {
+    // a24
+
+    initamod = initamod24;
+  }
   int      type = getModuleType(controller, base);
 
   if ((type != 785)  && (type != 775) && (type != 792) &&
@@ -548,6 +579,20 @@ void
 C785::addReadoutList(CVMUSBReadoutList& list)
 {
   uint32_t base = m_pConfiguration->getUnsignedParameter("-base");
+  // figure out the address modifiers
+
+  uint8_t readamod;
+  uint8_t initamod;
+  if (base & 0xff000000) {
+    // a32.
+    readamod = readamod32;
+    initamod = initamod32;
+  } else {
+    // a24
+    readamod = readamod24;
+    initamod = initamod24;
+
+  }
   // only read 1 event.
   //
   for (int i =0; i < EventsPerRead; i++) {
@@ -649,15 +694,21 @@ C785::getModuleType(CVMUSB& controller, uint32_t base)
 {
   uint16_t basel, basem, baseh;
 
- controller.vmeRead16(base + BoardIDLSB, initamod, &basel);
- basel &= 0xff;			// only the bottom byte matters.
+  uint8_t initamod;
+  if (base & 0xff000000) {
+    initamod = initamod32;
+  }  else {
+    initamod = initamod24;
+  }
+  controller.vmeRead16(base + BoardIDLSB, initamod, &basel);
+  basel &= 0xff;			// only the bottom byte matters.
 
- controller.vmeRead16(base + BoardIDMSB, initamod, &basem);
- basem &= 0xff;
+  controller.vmeRead16(base + BoardIDMSB, initamod, &basem);
+  basem &= 0xff;
 
- controller.vmeRead16(base + BoardIDHSB, initamod, &baseh);
- baseh &= 0xff;
+  controller.vmeRead16(base + BoardIDHSB, initamod, &baseh);
+  baseh &= 0xff;
 
- return (basel | (basem << 8) | (baseh << 16));
+  return (basel | (basem << 8) | (baseh << 16));
 
 }

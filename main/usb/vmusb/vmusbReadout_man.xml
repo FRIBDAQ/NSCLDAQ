@@ -90,6 +90,15 @@ caenv956 cget <replaceable>name</replaceable>
 	conversion while the second will have <literal>.l</literal> appended to the
 	name and will be the low range value.
       </para>
+      <warning>
+      <para>
+        Note that we have identified a problem when using these modules with a VMUSB
+        and base addresses of the form <literal>0x00nn0000</literal>
+        Until this can be resolved (if ever), configuring the module with base addresses
+        like these (on the command line or using the <option>-base</option>) will result
+        in an error processing the configurationfile.
+      </para>
+      </warning>
   </refsect1>
   <refsect1>
      <title>
