@@ -84,7 +84,7 @@ $DAQBIN/mvlcgenerate --output=myexperiment.yaml daqconfig.tcl
                 </listitem>
                 <listitem>
                     <para>
-                        The CAEN 32 channel digitizers are supported but, due to the non-interactive nature of the translator, 
+                        The CAEN 32 channel digitizers (V785, V775, V792) are supported but, due to the non-interactive nature of the translator, 
                         the actual CAEN digitizer type cannot be determined at run-time.  The additional configuration option:
                         <option>-type</option> can be specified with the value <literal>adc</literal> <literal>tdc</literal>
                         or <literal>-tdc</literal> to specificy which device speicific initializations must be done.  If not
@@ -102,6 +102,13 @@ if {$istranslator ne ""} {
 ... 
                             </programlisting>
                         </informalexample>
+                    </para>
+                    <para>
+                        Furthermore, the -geo option by default, is not written to the module as that
+                        results in an initialization error if a PAUX (middle connector) is present.
+                        If that connector is not present, set the new parameter 
+                        <option>-paux</option> to a false value (e.g. <literal>no</literal>), in that case,
+                        the translator will generate a write to the GEO register of the module.
                     </para>
                 </listitem>
                 <listitem>
