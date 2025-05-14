@@ -342,6 +342,8 @@ C785::onAttach(XXUSB::CConfigurableObject& configuration)
   m_pConfiguration->addEnumParameter("-inputs", inputsEnum, "ribbon");
 
   m_pConfiguration->addEnumParameter("-type", typeEnum, "adc");
+
+  m_pConfiguration->addBooleanParameter("-paux", true);    // Normally there's a paux ...
   
 }
 /*!
@@ -395,7 +397,10 @@ C785::Initialize(CVMUSB& controller)
   // Set the GEOgraphical address of the module.
 
   uint16_t geo = getIntegerParameter("-geo");
-  controller.vmeWrite16(base+GEO, initamod, geo);
+  bool paux     = getBoolParameter("-paux");
+  if (!paux) {
+    controller.vmeWrite16(base+GEO, initamod, geo);
+  }
   controller.vmeWrite16(base+BSet1, initamod, (uint16_t)0x80);
   controller.vmeWrite16(base+BClear1, initamod, (uint16_t)0x80);
 
