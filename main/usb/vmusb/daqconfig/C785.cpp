@@ -96,6 +96,10 @@ Const(BoardIDHSB) 0x8036;	// Highest significant byte of the id
 Const(BoardIDMSB) 0x803a;	// Middle significant byte of the id.
 Const(BoardIDLSB) 0x803e;	// Lowest significant byte of the id.
 
+// Bit I care about in status1:
+
+Const(AMNESIA)  0x0010;   // If set there's no PAUX and Geo can be written.
+
 // Bits in the mcast/cblt control register:
 
 Const(CbltLeft)   2;
@@ -434,9 +438,15 @@ C785::Initialize(CVMUSB& controller)
   controller.vmeWrite16(base+McastCtl, initamod, (uint16_t)0);
 
   // Set the GEOgraphical address of the module.
+  // Note, this can only be set if the AMNESIA bit is set in the
+  // status register (is this new???).
 
   uint16_t geo = getIntegerParameter("-geo");
-  controller.vmeWrite16(base+GEO, initamod, geo);
+  uint16_t status1;
+  controller.vmeRead16(base + Status1, initamod, &status1);
+  if (status1 & AMNESIA) {
+    controller.vmeWrite16(base+GEO, initamod, geo);
+  }
   controller.vmeWrite16(base+BSet1, initamod, (uint16_t)0x80);
   controller.vmeWrite16(base+BClear1, initamod, (uint16_t)0x80);
 
