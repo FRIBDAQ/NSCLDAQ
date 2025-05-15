@@ -362,79 +362,6 @@ $MVLCROOT/bin/fribdaq-readout <replaceable>options...</replaceable> <replaceable
                         </listitem>
                     </varlistentry>
                     <varlistentry>
-                        <term><option>--no-listfile</option> </term>
-                        <listitem>
-                            <para>
-                                Do not write readout data to a listfile (data will not be recorded).  The
-                                <literal>minidaq</literal> framework from which <filename>fribdaq-readout</filename>
-                                was constructed can write event files.   Since we are submitting data to a 
-                                FRIB/NSCLDAQ ringbuffer, this is disabled by default.  Normally data will be
-                                recorded by <filename>$DAQBIN/eventlog</filename> the FRIB/NSCLDAQ event logging program.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><option>--overwrite-listfile</option> </term>
-                        <listitem>
-                            <para>
-                                Overwrite an existing listfile.  Disabled by default.  When used with the
-                                <option>--listfile</option> allows the specified event file to be
-                                overwritten by default.  Again, typically  you'll use the FRIB/NSCLDAQ event
-                                logger so you don't need to use this option.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><option>--listfile</option> <replaceable>listfileName</replaceable> </term>
-                        <listitem>
-                            <para>
-                                Filename of the output listfile (e.g. run001.zip).
-                                Again, typically, you won't need this option.  If it is supplied, then a listfile
-                                will be generated.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><option>--listfile-compression-type</option> <replaceable>type</replaceable> </term>
-                        <listitem>
-                            <para>
-                                When supplied, and a list file is being written, this specifies a compression
-                                method for the file.  Valid values are <literal>zip</literal> or <literal>lz4</literal>.
-                                Typically, you will not need to supply this option as FRIB/NSCLDAQ will be recording your data.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><option>--listfile-compression-level</option> <replaceable>level</replaceable> </term>
-                        <listitem>
-                            <para>
-                                Compression level to use (for zip 0 means no compression).  Note that since
-                                FRIB/NSCLDAQ will normally be recording your data you will not need this.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><option>--print-readout-data</option> </term>
-                        <listitem>
-                            <para>
-                                Log each word of readout data to stdout (very verbose!).  Note that the
-                                <filename>$DAQBIN/dumper</filename> pointed at the ring buffer will produce
-                                a dump of the data that is more like what you are used to seeing.  This is
-                                disabled by default.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><option>--no-periodic-counter-dumps</option> </term>
-                        <listitem>
-                            <para>
-                                Do not periodcally print readout and parser counters to stdout.  This is
-                                supplied by default, and disables the very noise periodic dumps of 
-                                acquisition and event parse dumps.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
                         <term><option>--init-only</option> </term>
                         <listitem>
                             <para>
@@ -517,75 +444,13 @@ $MVLCROOT/bin/fribdaq-readout <replaceable>options...</replaceable> <replaceable
                 <title>Commands</title>
                 <para>
                     The <filename>fribdaq-readout</filename> is controlled by commands that are accepted on
-                    its stdin.  These commands are not completely compatible with the commands sent to
-                    RaedoutShell's SSHPipe data sources.  Full compatibility is planned, however.
-                    Specifically the commands to set the run number and title differ somewhat.
+                    its stdin.  These commands are complmetely compatible with t
+		    he standard FRIB/NSCLDAQ readout command sets and, like all
+		    FRIB/NSCLDAQ readout command interpreters run inside
+		    an event driven Tcl intpereter making it compatible with
+		    the ReST server and ReadoutShell.
                 </para>
-                <para>
-                    Future plans are for a Tcl interpreter to be embedded with fully compatible command extensions.
-                    This will also allow support for the REST server needed by the managed environment.
-                </para>
-                <para>
-                    The list of commands is:
-                </para>
-                <variablelist>
-                    <varlistentry>
-                            <term><command>BEGIN</command> <command>begin</command></term>
-                            <listitem>
-                                <para>
-                                    Begin taking data with the current title and run number.  This is only
-                                    allowed if the run is inacstive.
-                                </para>
-                            </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                            <term><command>END</command> <command>end</command></term>
-                            <listitem>
-                                <para>
-                                    End data taking.  THis is only allowed if the run is active or paused.
-                                </para>
-                            </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><command>PAUSE</command>, <command>pause</command></term>
-                        <listitem><para>
-                            Pause data taking.  This is only allowed if the run is active.
-                        </para></listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><command>RESUME</command>, <command>resume</command></term>
-                        <listitem><para>
-                            Resumes paused data taking.  This only allowed if the run is paused.
-                        </para></listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><command>TITLE</command>,  <command>title</command></term>
-                        <listitem><para>
-                            Sets the title for the next run.  This is only allowed if the run is inactive.
-                            The remainder of the command line, as is, is set to be the next title.
-                        </para></listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><command>SETRUN</command>, <command>setrun</command></term>
-                        <listitem><para>
-                            Sets the run number for the next run.  This is only allowed if the run is inactive.
-                            The remainder of the command must be an unsigned integer (0 is acceptable).  
-                            Note that <filename>fribdaq-readout</filename> does not increment run numbers when the
-                            run ends.  This is actually also true of all the readout frameworks.  They rely on the
-                            managed environment or ReadoutShell to do that for them.
-                        </para></listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term><command>EXIT</command>, <command>exit</command>,</term>
-                        <listitem><para>
-                            Exits the program.  This is only allowed if the run is inactive.
-                        </para></listitem>
-                    </varlistentry>
-                </variablelist>
-                <para>
-                    It is recommended to use the lower case versions of those commands, as when a Tcl interpreter is 
-                    retrofitted into the program, it is likely that only lower case commands will be registered.
-                </para>
+
             </refsect1>
             <refsect1 id='fribdaq_readout_tsextract_sec'>
                 <title id='fribdaq_readout_tsextract_title'>TIMESTAMP EXTRACTION PLUGINS</title>
