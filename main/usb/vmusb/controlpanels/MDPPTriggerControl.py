@@ -97,16 +97,16 @@ class Window(QtWidgets.QMainWindow):
         PB_load = self.findChild(QtWidgets.QPushButton, 'PB_load')
         PB_save = self.findChild(QtWidgets.QPushButton, 'PB_save')
 
-        PB_apply.pressed.connect(self.applyToModule)
-        PB_update.pressed.connect(self.updateFromModule)
-        PB_load.pressed.connect(self.openLoadfileDialog)
-        PB_save.pressed.connect(self.openSavefileDialog)
+        PB_apply.clicked.connect(self.applyToModule)
+        PB_update.clicked.connect(self.updateFromModule)
+        PB_load.clicked.connect(self.openLoadfileDialog)
+        PB_save.clicked.connect(self.openSavefileDialog)
 
         if data != None:
             self._updateFromJson(data)
 
         PB_about = self.findChild(QtWidgets.QPushButton, "PB_about")
-        PB_about.pressed.connect(self._openAboutDialog)
+        PB_about.clicked.connect(self._openAboutDialog)
 
         self.show()
 
