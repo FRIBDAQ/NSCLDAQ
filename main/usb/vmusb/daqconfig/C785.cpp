@@ -328,7 +328,7 @@ C785::onAttach(CReadoutModule& configuration)
   // Create the parameters... setting defaults as neeed.
 
   
-  m_pConfiguration->addIntegerParameter("-base", 0x01000000, 0xffff0000, 0x010000000);
+  m_pConfiguration->addIntegerParameter("-base", 0x00000000, 0xffff0000, 0x010000000);
   m_pConfiguration->addParameter("-geo", XXUSB::CConfigurableObject::isInteger,
 				 &GeoLimits);
   m_pConfiguration->addParameter("-thresholds", XXUSB::CConfigurableObject::isIntList,
@@ -410,6 +410,7 @@ C785::Initialize(CVMUSB& controller)
 
     initamod = initamod24;
   }
+  
   int      type = getModuleType(controller, base);
 
   if ((type != 785)  && (type != 775) && (type != 792) &&

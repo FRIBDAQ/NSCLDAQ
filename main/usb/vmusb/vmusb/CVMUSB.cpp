@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <memory>
+#include <iostream>
 
 using namespace std;
 
@@ -400,7 +401,10 @@ CVMUSB::readLEDSource()
 */
 void
 CVMUSB::writeDeviceSource(uint32_t value)
-{
+{ 
+    std::cerr << std::hex << "Writing the device source register 0x" << DEVSrcRegister
+      << " with 0x" << value << std::endl;
+
     writeRegister(DEVSrcRegister, value);
     m_regShadow.deviceSources = value;
 }
