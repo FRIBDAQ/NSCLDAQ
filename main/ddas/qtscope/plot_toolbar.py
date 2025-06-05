@@ -17,10 +17,6 @@ class PlotToolBar(NavigationToolbar2QT):
 
     Attributes
     ----------
-    bin_slider : QSlider
-        Slider to control histogram binning.
-    bin_factor : QLabel
-        ADC/units per bin determined from the slider position.
     logscale : QCheckBox
         Enable/disable logscale plotting.
     b_fit_panel : QPushButton
