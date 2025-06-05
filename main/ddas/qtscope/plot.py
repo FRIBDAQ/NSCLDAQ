@@ -31,8 +31,8 @@ class Plot(QWidget):
         Trace and histogram fitting GUI widget.
     fit_factory : FitFactory 
         Factory method for fitting plot data.
-    toolbar : NavigationToolbar2QT
-        Figure navigation toolbar imported from Qt5 backend.
+    toolbar : PlotToolBar
+        Figure navigation toolbar imported from Qt5 NavigationToolbar2QT.
     logger : Logger
         QtScope Logger object.
     raw_data : dict
@@ -127,6 +127,8 @@ class Plot(QWidget):
         self.toolbar.logscale.clicked.connect(
             lambda a=None: self._set_yscale(ax=a)
         )
+        self.toolbar.b_zoom_in.clicked.connect(lambda: self._zoom("in"))
+        self.toolbar.b_zoom_out.clicked.connect(lambda: self._zoom("out"))
         self.toolbar.b_fit_panel.clicked.connect(self._show_fit_panel)
 
         self.fit_panel.b_fit.clicked.connect(self._fit)
@@ -572,3 +574,42 @@ class Plot(QWidget):
     def _close_fit_panel(self):
         """Close the fit panel window."""
         self.fit_panel.close()
+
+    def _zoom(self, zdir):
+        """Zoom in or out on a single-axes canvas. For canvases with multiple
+        axes (i.e., when "Read all" is selected, or when looking at analyzed
+        traces) this is a no-op. 
+
+        Parameters
+        ----------
+        zdir : str
+            Direction to zoom ("in" or "out")
+
+        Throws
+        ------
+        ValueError
+            If zdir is not one of "in" or "out."
+        """
+        if len(self.figure.get_axes()) != 1:
+            print("Cannot zoom on multi-axes plots")
+            return
+        
+        ax = plt.gca()
+        ymin, ymax = ax.get_ylim()
+
+        if zdir == "in":
+            ymax *= 0.5
+        elif zdir == "out":
+            ymax *= 2
+        else:
+            # Params set in ctor so this should be impossible, but:
+            raise ValueError(f"Zoom direction must be 'in' our 'out' "
+                             f"but was '{zdir}'")
+        
+        # We don't want to flip the axes so we only zoom in as far as ymin:
+        if ymax < ymin + 1:
+            print(f"Zoom limit {ymax} reached for current ymin {ymin}")
+            ymax = ymin + 1
+        
+        ax.set_ylim(ymin, ymax)
+        self.canvas.draw_idle()

@@ -19,6 +19,10 @@ class PlotToolBar(NavigationToolbar2QT):
     ----------
     logscale : QCheckBox
         Enable/disable logscale plotting.
+    b_zoom_in : QPushButton
+        Zoom in button.
+    b_zoom_out : QPushButton
+        Zoom out button.
     b_fit_panel : QPushButton
         Button to display the fitting panel GUI.
 
@@ -39,7 +43,12 @@ class PlotToolBar(NavigationToolbar2QT):
         self.b_fit_panel = QPushButton("Fit panel", self)        
         self.b_fit_panel.setStyleSheet(colors.YELLOW)
 
+        self.b_zoom_in = QPushButton("+", self)
+        self.b_zoom_out = QPushButton("-", self)
+        
         self.addWidget(self.logscale)
+        self.addWidget(self.b_zoom_in)
+        self.addWidget(self.b_zoom_out)
         self.addWidget(self.b_fit_panel)
 
         # Remove buttons from toolbar:
@@ -52,11 +61,15 @@ class PlotToolBar(NavigationToolbar2QT):
     def disable(self):
         """Disable child widgets in the plot toolbar."""
         self.logscale.setEnabled(False)
+        self.b_zoom_in.setEnabled(False)
+        self.b_zoom_out.setEnabled(False)
         self.b_fit_panel.setEnabled(False)
         
     def enable(self):
         """Enable child widgets in the plot toolbar."""
         self.logscale.setEnabled(True)
+        self.b_zoom_in.setEnabled(True)
+        self.b_zoom_out.setEnabled(True)
         self.b_fit_panel.setEnabled(True)
 
 class PlotToolBarBuilder:
