@@ -1,5 +1,7 @@
 == 12.1-010 ==
-* Bug fix on MDPPTriggerControl GUI
+* MDPPTriggerControl GUI
+    * Bug fix
+    * Add Monitor control
 == 12.1-010 ==
 
 == 12.1-009 ==
