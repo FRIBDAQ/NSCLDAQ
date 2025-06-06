@@ -606,10 +606,11 @@ class Plot(QWidget):
             raise ValueError(f"Zoom direction must be 'in' our 'out' "
                              f"but was '{zdir}'")
         
-        # We don't want to flip the axes so we only zoom in as far as ymin:
+        # We don't want to flip the axes on traces so we only zoom in as
+        # far as ymin + 1 since the smallest increment is one unit:
         if ymax < ymin + 1:
-            print(f"Zoom limit {ymax} reached for current ymin {ymin}")
             ymax = ymin + 1
+            print(f"Zoom limit {ymax} reached for current ymin {ymin}")
         
         ax.set_ylim(ymin, ymax)
         self.canvas.draw_idle()
