@@ -138,11 +138,14 @@ class Window(QtWidgets.QMainWindow):
 
         monOn = self.RB_MON_ON.isChecked()
         monCh = self.CB_MON_CH.currentIndex()
-        monWave = 0 if self.RB_MON_WAVE_0.isChecked() else
-                   1 if self.RB_MON_WAVE_1.isChecked() else
-                   2 if self.RB_MON_WAVE_2.isChecked() else
-                   3 if self.RB_MON_WAVE_3.isChecked() else
-                   -1 # This won't happen
+        if self.RB_MON_WAVE_0.isChecked():
+            monWave = 0
+        elif self.RB_MON_WAVE_1.isChecked():
+            monWave = 1
+        elif self.RB_MON_WAVE_2.isChecked():
+            monWave = 2
+        elif self.RB_MON_WAVE_3.isChecked():
+            monWave = 3
 
         self.tcl.eval('conn Set monitorOn %d' % monOn)
         self.tcl.eval('conn Set monitorCh %d' % monCh)
@@ -152,8 +155,8 @@ class Window(QtWidgets.QMainWindow):
         receivedMonCh = int(self.tcl.eval('conn Get monitorCh'))
         receivedMonWave = int(self.tcl.eval('conn Get monitorWave'))
 
-        if (triggerSource == receivedTriggerSource) and (triggerOutput == receivedTriggerOutput)
-           and (monOn == receivedMonOn) and (monCh == receivedMonCh) and (monWave == receivedMonWave) :
+        if (triggerSource == receivedTriggerSource) and (triggerOutput == receivedTriggerOutput) \
+           and (monOn == receivedMonOn) and (monCh == receivedMonCh) and (monWave == receivedMonWave):
             self._setLog(LOG_GOOD, 'Successfully applied the settings!')
         else:
             msg = 'Error updating device: '
@@ -216,11 +219,14 @@ class Window(QtWidgets.QMainWindow):
 
         monOn = self.RB_MON_ON.isChecked()
         monCh = self.CB_MON_CH.currentIndex()
-        monWave = 0 if self.RB_MON_WAVE_0.isChecked() else
-                   1 if self.RB_MON_WAVE_1.isChecked() else
-                   2 if self.RB_MON_WAVE_2.isChecked() else
-                   3 if self.RB_MON_WAVE_3.isChecked() else
-                   -1 # This won't happen
+        if self.RB_MON_WAVE_0.isChecked():
+            monWave = 0
+        elif self.RB_MON_WAVE_1.isChecked():
+            monWave = 1
+        elif self.RB_MON_WAVE_2.isChecked():
+            monWave = 2
+        elif self.RB_MON_WAVE_3.isChecked():
+            monWave = 3
 
         dataDict = {"triggerSource":triggerSource,"triggerOutput":triggerOutput,"sc":sc,"lemo":lemo,"monOn":monOn,"monCh":monCh,"monWave":monWave}
 
@@ -357,14 +363,13 @@ class Window(QtWidgets.QMainWindow):
         else:
           self.RB_MON_OFF.setChecked(True)
 
-        self.RB_MON_CH.setCurrentIndex(int(data['mon_ch'])
+        self.RB_MON_CH.setCurrentIndex(int(data['mon_ch']))
 
         match int(data['mon_wave']):
-          case 0: self.RB_MON_WAVE_0.setChecked(True);
-          case 1: self.RB_MON_WAVE_1.setChecked(True);
-          case 2: self.RB_MON_WAVE_2.setChecked(True);
-          case 3: self.RB_MON_WAVE_3.setChecked(True);
-          case _: # This won't happen
+          case 0: self.RB_MON_WAVE_0.setChecked(True)
+          case 1: self.RB_MON_WAVE_1.setChecked(True)
+          case 2: self.RB_MON_WAVE_2.setChecked(True)
+          case 3: self.RB_MON_WAVE_3.setChecked(True)
 
     def _setLog(self, level, text):
         self.LB_log.setStyleSheet('color: %s;' % level)
