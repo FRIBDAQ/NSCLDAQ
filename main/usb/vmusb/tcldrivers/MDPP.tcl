@@ -31,6 +31,9 @@ snit::type mdpp {
     # Registers
     variable triggerSource 0x6058
     variable triggerOutput 0x605E
+    variable monitorOn     0x607A
+    variable monitorCh     0x607C
+    variable monitorWave   0x607E
 
     constructor args {
        $self configurelist $args
@@ -55,6 +58,14 @@ snit::type mdpp {
             $controller vmeWrite16 [expr {$base + $triggerSource}] $setupAmod $value
         } elseif {$parameter eq "triggerOutput"} {
             $controller vmeWrite16 [expr {$base + $triggerOutput}] $setupAmod $value
+        } elseif {$parameter eq "monitorOn"} {
+            $controller vmeWrite16 [expr {$base + $monitorOn}] $setupAmod $value
+        } elseif {$parameter eq "monitorCh"} {
+            $controller vmeWrite16 [expr {$base + $monitorCh}] $setupAmod $value
+        } elseif {$parameter eq "monitorWave"} {
+            $controller vmeWrite16 [expr {$base + $monitorWave}] $setupAmod $value
+        } elseif {[string index $parameter 0] eq "A"} {
+            $controller vmeWrite16 [expr {$base + [string range $parameter 1 end]}] $setupAmod $value
         } else {
             return "ERROR - There's no such parameter: " $parameter
         }
@@ -65,6 +76,14 @@ snit::type mdpp {
             return [$controller vmeRead16 [expr {$base + $triggerSource}] $setupAmod]
         } elseif {$parameter eq "triggerOutput"} {
             return [$controller vmeRead16 [expr {$base + $triggerOutput}] $setupAmod]
+        } elseif {$parameter eq "monitorOn"} {
+            return [$controller vmeRead16 [expr {$base + $monitorOn}] $setupAmod]
+        } elseif {$parameter eq "monitorCh"} {
+            return [$controller vmeRead16 [expr {$base + $monitorCh}] $setupAmod]
+        } elseif {$parameter eq "monitorWave"} {
+            return [$controller vmeRead16 [expr {$base + $monitorWave}] $setupAmod]
+        } elseif {[string index $parameter 0] eq "A"} {
+            return [$controller vmeRead16 [expr {$base + [string range $parameter 1 end]}] $setupAmod]
         } else {
             return "ERROR - There's no such parameter: " $parameter
         }

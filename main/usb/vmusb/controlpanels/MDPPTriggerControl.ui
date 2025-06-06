@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>950</width>
-    <height>565</height>
+    <width>1425</width>
+    <height>591</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -27,8 +27,8 @@
   </property>
   <property name="maximumSize">
    <size>
-    <width>950</width>
-    <height>565</height>
+    <width>1425</width>
+    <height>591</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -92,7 +92,7 @@
          <enum>QLayout::SetMaximumSize</enum>
         </property>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1">
+         <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1,0">
           <item>
            <widget class="QGroupBox" name="GB_groupControl">
             <property name="font">
@@ -871,6 +871,386 @@
             </layout>
            </widget>
           </item>
+          <item>
+           <widget class="QGroupBox" name="GB_monitorControl">
+            <property name="font">
+             <font>
+              <pointsize>20</pointsize>
+             </font>
+            </property>
+            <property name="title">
+             <string>Monitor Control</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_6" stretch="0,0,0,0,0">
+             <item>
+              <widget class="QGroupBox" name="groupBox">
+               <property name="title">
+                <string>Monitor</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_8">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_9">
+                  <item>
+                   <widget class="QRadioButton" name="RB_MON_ON">
+                    <property name="text">
+                     <string>On</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QRadioButton" name="RB_MON_OFF">
+                    <property name="text">
+                     <string>Off</string>
+                    </property>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <spacer name="verticalSpacer_3">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>20</width>
+                 <height>40</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="groupBox_2">
+               <property name="title">
+                <string>Monitor Channel</string>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_9">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_10">
+                  <item>
+                   <widget class="QLabel" name="label_3">
+                    <property name="maximumSize">
+                     <size>
+                      <width>35</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>Ch</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="LB_MON_CH">
+                    <property name="maximumSize">
+                     <size>
+                      <width>30</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>0</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QComboBox" name="CB_MON_CH">
+                    <property name="editable">
+                     <bool>true</bool>
+                    </property>
+                    <property name="maxCount">
+                     <number>32</number>
+                    </property>
+                    <property name="insertPolicy">
+                     <enum>QComboBox::InsertAtCurrent</enum>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>Ch 0:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 1:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 2:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 3:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 4:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 5:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 6:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 7:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 8:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 9:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 10:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 11:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 12:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 13:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 14:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 15:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 16:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 17:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 18:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 19:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 20:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 21:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 22:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 23:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 24:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 25:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 26:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 27:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 28:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 29:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 30:</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Ch 31:</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <spacer name="verticalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>20</width>
+                 <height>40</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="groupBox_3">
+               <property name="title">
+                <string>Monitior Wave</string>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_10">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <layout class="QVBoxLayout" name="verticalLayout_7">
+                  <item>
+                   <widget class="QRadioButton" name="RB_MON_WAVE_0">
+                    <property name="text">
+                     <string>Raw data/Reconstructed Signal</string>
+                    </property>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QRadioButton" name="RB_MON_WAVE_1">
+                    <property name="text">
+                     <string>TF-output/Shaper Output</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QRadioButton" name="RB_MON_WAVE_2">
+                    <property name="text">
+                     <string>Shaper x 32/ BLR-signal x 32</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QRadioButton" name="RB_MON_WAVE_3">
+                    <property name="text">
+                     <string>Shaper x 32 / Timing Filter x 32</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
          </layout>
         </item>
        </layout>
@@ -1130,6 +1510,22 @@
     <hint type="destinationlabel">
      <x>476</x>
      <y>238</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>CB_MON_CH</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>LB_MON_CH</receiver>
+   <slot>setNum(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1229</x>
+     <y>226</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1041</x>
+     <y>226</y>
     </hint>
    </hints>
   </connection>
