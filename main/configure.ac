@@ -1,11 +1,11 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-AC_PREREQ(2.61)
+AC_PREREQ([2.71])
 
-AC_INIT(nscldaq, 12.2-dev, [daqhelp@nscl.msu.edu], [], [https://github.com/FRIBDAQ/NSCLDAQ])
+AC_INIT([nscldaq],[12.2-dev],[daqhelp@nscl.msu.edu],[],[https://github.com/FRIBDAQ/NSCLDAQ])
 
 AC_CONFIG_SRCDIR([/base/dataflow/CRingBuffer.h])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 AH_TOP([
@@ -22,14 +22,14 @@ AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
-AC_PROG_LIBTOOL
+LT_INIT
 AX_CXX_COMPILE_STDCXX_11([noext])
 PKG_PROG_PKG_CONFIG 
 
 # Set parallel build for incorps:
 
 AC_ARG_WITH([incorp-build-cores],
-	AC_HELP_STRING([--with-incorp-build-cores=N], [Number of cores used to build incorporated packages (default=1)]),
+	AS_HELP_STRING([--with-incorp-build-cores=N],[Number of cores used to build incorporated packages (default=1)]),
 	[incorp_cores=$withval],
 	[incorp_cores=1])
 AC_MSG_NOTICE([Building incorporated packages with ${incorp_cores} cores])
@@ -58,14 +58,14 @@ fi
 #  CAEN Digitizer support is optional:
 
 AC_ARG_ENABLE([caen-digitizer-support],
-	AC_HELP_STRING([--enable-caen-digitizer-support], [Build support for CAEN Digitizers]),
+	AS_HELP_STRING([--enable-caen-digitizer-support],[Build support for CAEN Digitizers]),
 	[enable_caen=$enableval],
 	[enable_caen=no])
 
 if test "x$enable_caen" = "xyes"
 then
 	AC_ARG_WITH([caen-digitizer-libroot],
-	AC_HELP_STRING([ --with-caen-digitizer-libroot], [Root directory for CAEN Digitizer/VME/Comm library installation]),
+	AS_HELP_STRING([ --with-caen-digitizer-libroot],[Root directory for CAEN Digitizer/VME/Comm library installation]),
 	[caen_root=$withval], [caen_root=""])
 
 	if test "xx$caen_root" != "xx"
@@ -87,7 +87,7 @@ fi
 #  Enabled MVLC code generation:
 
 AC_ARG_ENABLE([mvlc-stack-generator],
-	AC_HELP_STRING([--enable-mvlc-stack-generator], [Build support for generating MVLX fribdaq-readout config files]),
+	AS_HELP_STRING([--enable-mvlc-stack-generator],[Build support for generating MVLX fribdaq-readout config files]),
 	[enable_mvlc=$enableval], [enable_mvlc=no])
 
 if test "x$enable_mvlc" == "xyes"
@@ -232,8 +232,6 @@ AX_CHECK_OPENSSL([AC_MSG_RESULT([Found OpenSSL])], [AC_MSG_ERROR([cannot find Op
 CPPUNIT_LDFLAGS="${CPPUNIT_LIBS}"
 
 AC_SUBST([AM_CXXFLAGS], [-fno-strict-aliasing])
-
-AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h malloc.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
 
@@ -245,7 +243,6 @@ AC_C_INLINE
 AC_TYPE_OFF_T
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
-AC_HEADER_TIME
 AC_STRUCT_TM
 AC_TYPE_UID_T
 AC_TYPE_UINT16_T
