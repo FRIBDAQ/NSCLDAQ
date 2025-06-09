@@ -48,5 +48,6 @@ public:
     void clearRecordedOperations();
 
     int executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t readBufferSize, size_t* bytesRead);
+    std::vector<uint8_t> executeList(CVMUSBReadoutList& list, int maxBytes);
 };
 #endif

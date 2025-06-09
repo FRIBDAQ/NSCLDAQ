@@ -114,3 +114,12 @@ CVMUSB::executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t readBuffe
     *bytesRead = 0;
     return 0;
 }
+std::vector<uint8_t>
+CVMUSB::executeList(CVMUSBReadoutList& list, int maxbytes) {
+    std::vector<uint8_t> result;
+    size_t junk;
+
+    executeList(list, nullptr, 0, &junk);
+    
+    return result;
+}
