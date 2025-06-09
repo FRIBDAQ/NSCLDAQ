@@ -54,12 +54,15 @@ public:
    
     virtual void addWrite32(uint32_t address, uint8_t amod, uint32_t datum);
     virtual void addWrite16(uint32_t address, uint8_t amod, uint16_t datum);
+    virtual void addBlockWrite32(uint32_t dest, uint8_t amod, const void* pData, size_t nLongs);
 
     virtual void addRead32(uint32_t address, uint8_t amod);
     virtual void addRead16(uint32_t address, uint8_t amod);
 
     virtual void addBlockRead32(uint32_t baseAddress, uint8_t amod, size_t transfers);
     virtual void addFifoRead32(uint32_t  baseAddress, uint8_t amod, size_t transfers);
+
+    
 
     virtual void addBlockCountRead16(uint32_t address, uint32_t mask, uint8_t amod);
     virtual void addBlockCountRead32(uint32_t address, uint32_t mask, uint8_t amod);
