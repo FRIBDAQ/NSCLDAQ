@@ -46,5 +46,7 @@ public:
 
     std::vector<std::string> getRecordedOperations();
     void clearRecordedOperations();
+
+    int executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t readBufferSize, size_t* bytesRead);
 };
 #endif

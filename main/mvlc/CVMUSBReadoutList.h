@@ -77,6 +77,7 @@ public:
 
     std::vector<std::string> dumpForMvlc();      // Return the operations list.
     void clear();                               // clear the list.
+    void appendToStack(CVMUSBReadoutList& other); // Add out list to another list.
 
 public:
     // Convenience definitions for amods:

@@ -301,6 +301,18 @@ void
 CVMUSBReadoutList::clear() {
     m_list.clear();
 }
+/**
+ * appendToStack
+ *    This is actually intended to be called by CVMUSB::executeList.  With the real VMUSB,
+ * executeList would execute the stack.  Since we are just collecting operations to dump
+ * into a configuration YAML we, instead, CVMUSB::executeList, will just call this to
+ * copy this  list into the list of operations it is recording.alignas
+ * @param other - reference to the list our operations get copied into.
+ */
+void
+CVMUSBReadoutList::appendToStack(CVMUSBReadoutList& other) {
+    other.m_list.insert(other.m_list.end(), m_list.begin(), m_list.end());
+}
 ////////////////////////// Private utilities ////////////////////////////////////////////
 
 
