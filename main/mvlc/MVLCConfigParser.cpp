@@ -40,6 +40,7 @@
 #include "CV1495sc.h"
 #include "CV1729.h"
 #include "CV1x90.h"
+#include "CXLMTimestamp.h"
 
 /**
  * constructor:
@@ -80,4 +81,5 @@ MVLCConfigParser::addExtensions() {
     addExtension(new V1495Command(interp, *this));
     addExtension(new V1729aCommand(interp, *this));
     addExtension(new V1x90Command(interp, *this));
+    addExtension(new XLMTSCommand(interp, *this));
 }

@@ -19,7 +19,7 @@
 #ifndef MVLC_CXLM_H
 #define MVLC_CXLM_H
 
-#include "CReadoutModule.h"
+#include "CReadoutHardware.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -48,7 +48,7 @@ namespace XXUSB {
 namespace XLM
 {
 
-class CXLM : public CReadoutModule
+class CXLM : public CReadoutHardware
 {
 protected:			// Data available to derived classes:
 
