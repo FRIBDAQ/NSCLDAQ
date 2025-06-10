@@ -17,7 +17,7 @@ DEVICE_MODULES=CStack.h CStack.cpp CMarker.h CMarker.cpp \
 	CV1495sc.h CV1495sc.cpp CV1729.h CV1729.cpp \
 	CCAENV1x90Opcodes.h CCAENV1x90Registers.h CV1x90.cpp CV1x90.h \
 	sis3316.h sis3316Registers.h \
-	CXLM.h CXLM.cpp CXLMTimestamp.cpp CXLMTimestamp.h
+	CXLM.h CXLM.cpp CXLMTimestamp.cpp CXLMTimestamp.h CXLMFERA.cpp CXLMFERA.h
 
 main_modules=utilities.h utilities.cpp \
 	TCLConfigParser.h TCLConfigParser.cpp \
