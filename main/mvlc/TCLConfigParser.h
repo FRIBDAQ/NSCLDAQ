@@ -116,7 +116,7 @@ public:
 
 
     // utilities -some might be virtual to support replacement in derived test objects.
-protected:
+public:
     virtual void addExtensions();
     virtual void addExtension(CTCLObjectProcessor& cmdobj);       // Add one extension command.
     void addExtension(CTCLObjectProcessor* pCmd) {
