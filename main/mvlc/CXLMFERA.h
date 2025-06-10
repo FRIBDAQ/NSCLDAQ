@@ -48,7 +48,7 @@ class CXLMFERA : public XLM::CXLM
     private:
 
         // initialization routines
-        bool isConfigured(CVMUSB& controller);
+        
         void bootFPGA(CVMUSB& controller);
         void initializeFPGA(CVMUSB& controller);
         void myloadFirmware(CVMUSB& controller, std::string fname);
@@ -122,5 +122,14 @@ class CXLMFERA : public XLM::CXLM
 
 };
 
+//// Creational class:
 
+class XLMFERACmd : public DeviceCommand {
+public:
+    XLMFERACmd(CTCLInterpreter& interp, TCLConfigParser& parser);
+    ~XLMFERACmd();
+
+protected:
+  virtual CReadoutModule* createDevice(std::string name);    
+};
 #endif

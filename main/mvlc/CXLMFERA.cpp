@@ -373,3 +373,28 @@ void CXLMFERA::CXLMBusController::releaseBusses()
 
 }
 
+///////////// Implement the creational:
+
+/**
+ *  constructor:
+ */
+XLMFERACmd::XLMFERACmd(CTCLInterpreter& interp, TCLConfigParser& parser) :
+    DeviceCommand(interp, "XLMFERA", parser) {}
+
+/**
+ *  destructor
+ */
+XLMFERACmd::~XLMFERACmd() {}
+
+/**
+ *  createDevice
+ *     Create the device:
+ */
+CReadoutModule*
+XLMFERACmd::createDevice(std::string name) {
+    auto dev = new CXLMFERA;
+    auto result = new CReadoutModule;
+    result->SetDriver(dev);
+
+    return result;
+}
