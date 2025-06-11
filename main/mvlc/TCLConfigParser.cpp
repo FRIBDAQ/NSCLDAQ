@@ -27,7 +27,7 @@
 #include <iostream>
 
 
-
+TCLConfigParser* TCLConfigParser::m_pInstance(0);
 
 //////////////////////////////////////// implementing the canonical methods //////////////////////////
 /**
@@ -40,6 +40,13 @@ TCLConfigParser::TCLConfigParser(const std::string& infile) :
     m_pEventStack(0),
     m_pScalerStack(0)
 {
+    // Logic error if we already exist:
+
+    if (m_pInstance) {
+        throw std::logic_error("Attempted duplicate TclConfig parser construction");
+    } else {
+        m_pInstance = this;
+    }
 }
 /**
  *  destructor 
@@ -64,7 +71,7 @@ TCLConfigParser::~TCLConfigParser() {
     }
     m_commandExtensions.clear();    // Not really needed.
 
-
+    m_pInstance = nullptr;         // now there's not an instance.
     delete m_pInterp;                 
 
 }
@@ -171,4 +178,12 @@ TCLConfigParser::addExtensions() {
 void
 TCLConfigParser::addExtension(CTCLObjectProcessor& cmdobj) {
     m_commandExtensions.push_back(&cmdobj);
+}
+/** getInstance
+ * 
+ * @return TCLConfigParser*  note could be null if called too soon.
+ */
+TCLConfigParser*
+TCLConfigParser::getInstance() {
+    return m_pInstance;
 }

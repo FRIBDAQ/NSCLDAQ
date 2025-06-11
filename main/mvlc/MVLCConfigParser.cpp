@@ -46,27 +46,20 @@
 
 #include <stdexcept>
 
-// INstance pointer.
-MVLCConfigParser* MVLCConfigParser::m_pInstance(0);
+
 
 /**
  * constructor:
  */
 MVLCConfigParser::MVLCConfigParser(const std::string& script):
     TCLConfigParser(script) {
-    if (m_pInstance) {
-        throw std::logic_error("FATAL - BUGCHECK multiple construcion of config parser");
-    } else {
-        m_pInstance = this;
-    }
 }
 
 /**
  *  Destructor.
- *    The singleton no  longer exists.
  */
 MVLCConfigParser::~MVLCConfigParser() {
-    m_pInstance = nullptr;  // Probably needed to make tests work.
+
 }
 
 /**
@@ -101,12 +94,3 @@ MVLCConfigParser::addExtensions() {
     addExtension(new XLMFERACmd(interp, *this));
 }
 
-/**
- *  getInstance (static)
- * 
- * @return MVLCConfigParser* - instance pointer - theoreticall could be null.
- */
-MVLCConfigParser*
-MVLCConfigParser::getInstance() {
-    return m_pInstance;
-}
