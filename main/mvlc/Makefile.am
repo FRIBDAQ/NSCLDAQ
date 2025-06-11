@@ -1,5 +1,8 @@
 bin_PROGRAMS=mvlcgenerate
 
+# Put public incldes in $DAQINC/mvlcgenerate
+
+includedir=@prefix@/include/mvlc
 
 # Done this way so we don't need a lib and we don't need to repeat ourselves for
 # test sources
@@ -20,14 +23,11 @@ DEVICE_MODULES=CStack.h CStack.cpp CMarker.h CMarker.cpp \
 	CXLM.h CXLM.cpp CXLMTimestamp.cpp CXLMTimestamp.h CXLMFERA.cpp CXLMFERA.h
 
 main_modules=utilities.h utilities.cpp \
-	TCLConfigParser.h TCLConfigParser.cpp \
-	CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
-	CVMUSB.h CVMUSB.cpp \
+	TCLConfigParser.cpp CVMUSBReadoutList.cpp CVMUSB.cpp MVLCConfigParser.cpp \
 	$(DEVICE_MODULES) \
-	DeviceCommand.h DeviceCommand.cpp \
-	CReadoutModule.h CReadoutModule.cpp \
-	CReadoutHardware.h CReadoutHardware.cpp \
-	MVLCConfigParser.h MVLCConfigParser.cpp \
+	 DeviceCommand.cpp \
+	 CReadoutModule.cpp \
+	 CReadoutHardware.cpp \
 	MVLCGenerator.h MVLCGenerator.cpp \
 	vme_interface_class.h sis_vmusb_interface.h sis_vmusb_interface.cpp
 
@@ -41,6 +41,14 @@ mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
 
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@ @YAML_LIBS@
+
+include_HEADERS=TCLConfigParser.h  \
+	CVMUSBReadoutList.h  \
+	CVMUSB.h  \
+	MVLCConfigParser.h \
+	DeviceCommand.h \
+	CReadoutModule.h \
+	CReadoutHardware.h
 
 BUILT_SOURCES = generate.cpp options.h options.c
 nodist_mvlcgenerate_SOURCES=options.h options.c
@@ -70,7 +78,8 @@ unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
 
 TESTS=unittests
 
-EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml
+EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml \
+	SampleDriver.cpp
 
 install-exec-local:
 	$(mkinstalldirs) @datarootdir@/mvlc
