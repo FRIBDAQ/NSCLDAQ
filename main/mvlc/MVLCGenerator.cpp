@@ -232,7 +232,7 @@ MVLCGenerate::fillEndStack(YAML::Node& doc, const char* name, CStack& stack) {
 
     // Find and fill in the appropriate stack:
 
-    auto stacks = doc["create"]["stop_commands"]["groups"];
+    auto stacks = doc["crate"]["stop_commands"]["groups"];
     for (int g = 0; g < stacks.size(); g++) {
         auto sname = stacks[g]["name"];
         if (sname.as<std::string>() == name) {
