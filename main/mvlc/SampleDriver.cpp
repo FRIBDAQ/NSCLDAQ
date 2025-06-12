@@ -69,6 +69,7 @@
 #include <XXUSBConfigurableObject.h>
 #include <stdint.h>
 #include <tcl.h>
+#include <TCLInterpreter.h> 
 
 
  /**
@@ -173,7 +174,7 @@ SampleDriver::onAttach(XXUSB::CConfigurableObject& configuration) {
 
     m_pConfiguration->addBooleanParameter("-writeendrun", false);
     m_pConfiguration->addIntegerParameter("-endrunloc");
-    m_pConfiguration->addIntegerParameter("endrunvalue", 0, 0xffff, 0xbbbb);
+    m_pConfiguration->addIntegerParameter("-endrunvalue", 0, 0xffff, 0xbbbb);
 }
 /**
  * Initialize
@@ -202,9 +203,9 @@ SampleDriver::onAttach(XXUSB::CConfigurableObject& configuration) {
  * success.
  */
 void
-SampleDriver::Initialize(CVMSUB& controller) {
+SampleDriver::Initialize(CVMUSB& controller) {
     uint32_t addr = m_pConfiguration->getIntegerParameter("-resetloc");
-    uint32_t value = m_pConfiguration->getIntegerparameter("-resetvalue");
+    uint32_t value = m_pConfiguration->getIntegerParameter("-resetvalue");
 
     controller.vmeWrite16(addr, CVMUSBReadoutList::a32UserData, value);
 }
@@ -277,7 +278,7 @@ public:
 
 protected:
 
-    virtual CReadoutModule* createDevice(std::string name)    
+    virtual CReadoutModule* createDevice(std::string name);    
 
 };
 
@@ -343,7 +344,7 @@ SampleDriverCommand::~SampleDriverCommand() {}
  * 
  */
 CReadoutModule*
-SampleDriverCommand::create(std::string name) {
+SampleDriverCommand::createDevice(std::string name) {
     CReadoutModule* result = new CReadoutModule;
     result->SetDriver(new SampleDriver);
 
@@ -376,5 +377,7 @@ SampleDriverCommand::create(std::string name) {
 
         TCLConfigParser*  parser = TCLConfigParser::getInstance();
         parser->addExtension(new SampleDriverCommand(*interp, *parser));
+
+        return TCL_OK;
     }
  }
