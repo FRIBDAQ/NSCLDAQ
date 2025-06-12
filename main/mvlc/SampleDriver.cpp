@@ -36,22 +36,34 @@
  * This example will show all of those bits and pieces.  
  * To compile this example you'll need to  use a command like:
  * 
- * g++ -shared -FPIC -olibSampleDriver.so SampleDriver.cpp -I$DAQINC \
- *    -I/usr/include/tcl8.6 
- * 
+ * Here's how the SampleDriver can be built:alignas
+ *  g++ -olibSampleDriver.so -shared -fPIC \ 
+ *            SampleDriver.cpp \ 
+ *            -L$DAQLIB -lmvlcGenerator -Wl,-rpath=$DAQLIB \ 
+ *            -I.. -I$DAQINC -I/usr/include/tcl8.6
  * In that case, the initialization code must be a C function
- * named Sampledriver_Init 
+ * named Sampledriver_Init  as it is in this sample file.
+ * 
+ * Here's a sample daqconfig.tcl that uses the driver assuming
+ * libSampleDriver.so is in the current working directory:
+ * 
+ * ```tcl
+ * load [file join . libSampleDriver.so]
+ *
+ * example create sample
+ * example config sample -marker 0x1212 -resetloc 0x12340000 -resetvalue 0x1234
+ * example config sample -writeendrun true -endrunloc 0x12344000 -endrunvalue 0x4321
+ *
+ * stack create event
+ * stack config event -trigger nim1 -modules sample
+ * 
  * 
  * See the documentation of the Tcl 'load' command at 
- * https://www.tcl-lang.org/man/tcl8.6/TclCmd/load.htm e.g.
+ * https://www.tcl-lang.org/man/tcl8.6/TclCmd/load.htm 
+ * note that the Tcl load command uses the system library load paths
+ * to find the driver so we needed to explicitly specify the directory of
+ * the driver.
  * 
- * In the event this library is in the current working directory,
- * your driver gets made known via:
- * 
- * load ./libSampleDriver.so; # Full path is needed.
- * 
- * After which instances of your device can be created using the
- * command your DriverCommand implements.
  */
 
 // Headers you'll typically need:  Note: Pleaes specify the
