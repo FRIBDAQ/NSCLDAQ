@@ -381,13 +381,10 @@ SampleDriverCommand::createDevice(std::string name) {
  extern "C" {               // Force C bindings.
     int Sampledriver_Init(Tcl_Interp* pInterp) {
 
-        // Encapsulate the raw interpreter in a CTCLInterpreter object.
-        // we must do a new here  because the destruction of the
-        // object also destroys the raw interpreter prematurely.
-        //
-        CTCLInterpreter* interp = new CTCLInterpreter(pInterp);
+
 
         TCLConfigParser*  parser = TCLConfigParser::getInstance();
+        CTCLInterpreter* interp  = parser->getInterpreter();
         parser->addExtension(new SampleDriverCommand(*interp, *parser));
 
         return TCL_OK;
