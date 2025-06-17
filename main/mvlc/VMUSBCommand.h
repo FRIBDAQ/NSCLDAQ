@@ -37,11 +37,11 @@ class CVMUSB;
  * 
  * The command is an ensemble with subcommands that closely match the methods of the CVMUSB class:
  * 
- * -  vmewrite32 address amodifier data
- * -  vmewrite16 addresss amodifier data
+ * -  vmeWrite32 address amodifier data
+ * -  vmeWrite16 addresss amodifier data
  * -  delay ms
- * -  loopuntil32 address amod mask value
- * -  loopuntil16 address amod mask value
+ * -  loopUntil32 address amod mask value
+ * -  loopUntil16 address amod mask value
  * 
  * @note to maintainerse  - if methods are addded to CVMUSB, you need to consider if they should
  * be added as subcommands to this command ensemble.

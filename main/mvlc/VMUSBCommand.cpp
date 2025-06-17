@@ -99,15 +99,15 @@ VMUSBCommand::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv)
         // Dispatch to the subcommand handler or error:
 
         std::string subcommand = objv[1];
-        if (subcommand == "vmewrite32") {
+        if (subcommand == "vmeWrite32") {
             vmewrite32(interp, objv);
-        } else if (subcommand == "vmewrite16") {
+        } else if (subcommand == "vmeWrite16") {
             vmewrite16(interp, objv);
         } else if (subcommand == "delay") {
             delay(interp, objv);
-        } else if (subcommand == "loopuntil32") {
+        } else if (subcommand == "loopUntil32") {
             loopuntil32(interp, objv);
-        } else if (subcommand == "loopuntil16") {
+        } else if (subcommand == "loopUntil16") {
             loopuntil16(interp, objv);
         } else {
             std::stringstream smsg;
