@@ -54,7 +54,7 @@ VMUSBCommand::~VMUSBCommand() {}
  * called or else probably segfaults will be the result of any 'mvlc' command
  */
 void
-VMUSBCommand::setController(CVMSBU& controller) {
+VMUSBCommand::setController(CVMUSB& controller) {
     m_pController = &controller;
 }
 /**
@@ -104,7 +104,7 @@ VMUSBCommand::operator()(CTCLInterpreter& interp, std::vector<CTCLObject>& objv)
         } else if (subcommand == "vmewrite16") {
             vmewrite16(interp, objv);
         } else if (subcommand == "delay") {
-            delay(interp, obvj);
+            delay(interp, objv);
         } else if (subcommand == "loopuntil32") {
             loopuntil32(interp, objv);
         } else if (subcommand == "loopuntil16") {
@@ -164,7 +164,7 @@ VMUSBCommand::vmewrite16(CTCLInterpreter& interp, std::vector<CTCLObject>& objv)
 
     m_pController->vmeWrite16(
         std::get<0>(params), std::get<1>(params), 
-        static_cast<uint16_t>(std::get<3>(params)
+        static_cast<uint16_t>(std::get<2>(params))
     );
 }
 /**
@@ -177,7 +177,7 @@ VMUSBCommand::vmewrite16(CTCLInterpreter& interp, std::vector<CTCLObject>& objv)
  */
 void
 VMUSBCommand::delay(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
-    requireExactly(3, objv, "Delay requires a duration and only a duration");
+    requireExactly(objv, 3, "Delay requires a duration and only a duration");
     int ms = objv[2];
 
     m_pController->delay(ms);
@@ -196,7 +196,7 @@ void
 VMUSBCommand::loopuntil32(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     auto params = getLoopParameters(objv);
 
-    m_pcontroller->loopUntil32(
+    m_pController->loopUntil32(
         std::get<0>(params), std::get<1>(params), 
         std::get<2>(params), std::get<3>(params)
     );
@@ -206,10 +206,10 @@ VMUSBCommand::loopuntil32(CTCLInterpreter& interp, std::vector<CTCLObject>& objv
  *    Same as above but the read is a 16 bit read.
  */
 void
-VMUSBCommand::loopuntil16(CTLInterpreter& interp, std::vector<CTCLObject>& objv) {
+VMUSBCommand::loopuntil16(CTCLInterpreter& interp, std::vector<CTCLObject>& objv) {
     auto params = getLoopParameters(objv);
 
-    m_pcontroller->loopUntil16(
+    m_pController->loopUntil16(
         std::get<0>(params), std::get<1>(params), 
         std::get<2>(params), std::get<3>(params)
     );
@@ -249,17 +249,10 @@ VMUSBCommand::getWriteParameters(std::vector<CTCLObject>& objv) {
     requireExactly(objv, 5, "mvlc writs require address, modifier. and data");
 
     uint32_t addr = int(objv[2]);
-    uint8_t amod = decodeAmod(objv[3]):
+    uint8_t amod = decodeAmod(objv[3]);
     uint32_t data = int(objv[4]);
 
 
-    if(int(amod) != amodbig) {
-        std::stringstream smsg;
-        smsg << "Address modifier " << std::hex << amodbig << "  is not an 8 bit value";
-        std::string msg(smsg.str());
-
-        throw std::invalid_argument(msg);
-    }
 
     return std::make_tuple(addr, amod, data);
 }
@@ -286,7 +279,7 @@ VMUSBCommand::getLoopParameters(std::vector<CTCLObject>& objv) {
     uint32_t addr = int(objv[2]);
     uint8_t  amod = decodeAmod(objv[3]);
     uint32_t mask = int(objv[4]);
-    uint32_t value= int(objv[5])
+    uint32_t value= int(objv[5]);
 
 
     return std::make_tuple(addr, amod, mask, value);

@@ -22,6 +22,7 @@
 #include <TCLObjectProcessor.h>
 #include <stdint.h>
 #include <utility>
+#include <tuple>
 
 class CVMUSB;
 
@@ -54,19 +55,19 @@ private:
     // Canonicals:
 public:
     VMUSBCommand(CTCLInterpreter& interp);
-    vitrual ~VMUSBCommand();
+    virtual ~VMUSBCommand();
 
     // Forbidden canonicals:
 private:
     VMUSBCommand(const VMUSBCommand&);
     VMUSBCommand& operator=(const VMUSBCommand&);
     int operator==(const VMUSBCommand&) const;
-    int operato!=(const VMUSBCommand&) const;
+    int operator!=(const VMUSBCommand&) const;
 
 public:
     // controller management:
 
-    void setController(CVMUBS& controller);
+    void setController(CVMUSB& controller);
     void clearController();
     CVMUSB* getController();
 
