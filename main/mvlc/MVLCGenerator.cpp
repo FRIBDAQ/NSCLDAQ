@@ -26,6 +26,7 @@
 #include <fstream>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
+#include "VMUSBCommand.h"
 
 
 
@@ -44,12 +45,16 @@ static const char* stackDelay = "STACKDELAY";
  */
 
 MVLCGenerate::MVLCGenerate(std::string outfile, TCLConfigParser* config) :
-    m_outfile(outfile), m_VMUSBConfig(config) {}
+    m_outfile(outfile), m_VMUSBConfig(config), m_pVMUSBCommand(0) {
+        m_pVMUSBCommand = new VMUSBCommand(*m_VMUSBConfig->getInterpreter());
+    }
 
 /**
  *  destructor
  */
-MVLCGenerate::~MVLCGenerate() {}
+MVLCGenerate::~MVLCGenerate() {
+    delete m_pVMUSBCommand;
+}
 
 
 /**
@@ -197,7 +202,8 @@ void
 MVLCGenerate::fillInitStack(YAML::Node& doc, const char* name, CStack& stack) {
     // Generate the operations:
 
-    CVMUSB controller; 
+    CVMUSB controller;
+    m_pVMUSBCommand->setController(controller);
     stack.Initialize(controller);
     auto ops = controller.getRecordedOperations();
 
@@ -212,6 +218,7 @@ MVLCGenerate::fillInitStack(YAML::Node& doc, const char* name, CStack& stack) {
             }
         }
     }
+    m_pVMUSBCommand->clearController();
 }
 /** fillEndStack
  * 
@@ -227,6 +234,7 @@ MVLCGenerate::fillEndStack(YAML::Node& doc, const char* name, CStack& stack) {
     // Generate the ops:
 
     CVMUSB controller;
+    m_pVMUSBCommand->setController(controller);
     stack.onEndRun(controller);
     auto ops = controller.getRecordedOperations();
 
@@ -242,4 +250,5 @@ MVLCGenerate::fillEndStack(YAML::Node& doc, const char* name, CStack& stack) {
             }
         }
     }
+    m_pVMUSBCommand->clearController();
 }
