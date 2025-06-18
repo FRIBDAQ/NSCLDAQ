@@ -71,7 +71,7 @@ public:
     virtual void addMaskedCountFifoRead32(uint32_t address, uint8_t amod);
 
     virtual void addDelay(uint32_t clocks);
-    virtual void addMarker(uint32_t ms);
+    virtual void addMarker(uint32_t value);
 
     // Loop on the specified 16/32 bit read until the value read masked by mask is equal to value.
 
@@ -110,6 +110,7 @@ private:
     void readToAccumulator(uint32_t address, uint8_t amod, const char* size); 
     void maskAndShift(uint32_t mask);
     void loopUntil(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value, const char* width);
+    uint16_t longToShort(uint32_t l);
 };
 
 #endif
