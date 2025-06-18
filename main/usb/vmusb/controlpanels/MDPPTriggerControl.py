@@ -365,11 +365,14 @@ class Window(QtWidgets.QMainWindow):
 
         self.RB_MON_CH.setCurrentIndex(int(data['mon_ch']))
 
-        match int(data['mon_wave']):
-          case 0: self.RB_MON_WAVE_0.setChecked(True)
-          case 1: self.RB_MON_WAVE_1.setChecked(True)
-          case 2: self.RB_MON_WAVE_2.setChecked(True)
-          case 3: self.RB_MON_WAVE_3.setChecked(True)
+        if int(data['mon_wave']) == 0:
+          self.RB_MON_WAVE_0.setChecked(True)
+        elif int(data['mon_wave']) == 1:
+          self.RB_MON_WAVE_1.setChecked(True)
+        elif int(data['mon_wave']) == 2:
+          self.RB_MON_WAVE_2.setChecked(True)
+        elif int(data['mon_wave']) == 3:
+          self.RB_MON_WAVE_3.setChecked(True)
 
     def _setLog(self, level, text):
         self.LB_log.setStyleSheet('color: %s;' % level)
