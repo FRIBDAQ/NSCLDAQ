@@ -38,7 +38,7 @@ DEVICE_MODULES= CMarker.h CMarker.cpp \
 	CCAENV1x90Opcodes.h CCAENV1x90Registers.h CV1x90.cpp CV1x90.h \
 	sis3316.h sis3316Registers.h \
 	CXLM.h CXLM.cpp CXLMTimestamp.cpp CXLMTimestamp.h CXLMFERA.cpp CXLMFERA.h \
-	VMUSBCommand.h VMUSBCommand.cpp
+	VMUSBCommand.h VMUSBCommand.cpp VMUSBListCommand.h VMUSBListCommand.cpp
 
 main_modules=utilities.h utilities.cpp \
 	 MVLCConfigParser.cpp \
