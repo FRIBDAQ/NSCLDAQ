@@ -114,11 +114,12 @@ unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
 TESTS=unittests
 
 EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml \
-	SampleDriver.cpp
+	SampleDriver.cpp SampleDriver.tcl
 
 install-exec-local:
 	$(mkinstalldirs) @datarootdir@/mvlc
 	$(mkinstalldirs) @datarootdir@/mvlc-examples
 	$(INSTALL_DATA)  @srcdir@/triggeronly.yaml @datarootdir@/mvlc/triggeronly.yaml
 	$(INSTALL_DATA)  @srcdir@/SampleDriver.cpp @datarootdir@/mvlc-examples
+	$(INSTALL_SCRIPT) @srcdir@/SampleDriver.tcl @datarootdir@/mvlc-examples
 
