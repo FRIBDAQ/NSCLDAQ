@@ -25,7 +25,7 @@
 #include "CReadoutModule.h"
 #include <stdexcept>
 #include <iostream>
-
+#include <tcl.h>
 
 TCLConfigParser* TCLConfigParser::m_pInstance(0);
 
@@ -40,6 +40,12 @@ TCLConfigParser::TCLConfigParser(const std::string& infile) :
     m_pEventStack(0),
     m_pScalerStack(0)
 {
+    // Init the interpreter search paths etc:
+
+    int status = Tcl_Init(m_pInterp->getInterpreter());
+    if (status != TCL_OK) {
+        std::cerr << "Failed to initialize Tcl interpreter paths.. attempting to continue\n";
+    }
     // Logic error if we already exist:
 
     if (m_pInstance) {
