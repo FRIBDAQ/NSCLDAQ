@@ -32,7 +32,7 @@
  *     @param interp -the intepreter on wihch this command ('mvlc') is registered.
  */
 VMUSBCommand::VMUSBCommand(CTCLInterpreter& interp) :
-    CTCLObjectProcessor(interp, "mvlc", TCLPLUS::kfFALSE),
+    CTCLObjectProcessor(interp, "mvlc", TCLPLUS::kfTRUE),
     m_pController(0)
 {}
 
