@@ -42,6 +42,7 @@
 #include "CV1x90.h"
 #include "CXLMTimestamp.h"
 #include "CXLMFERA.h"
+#include "VMUSBListCommand.h"
 
 
 #include <stdexcept>
@@ -92,5 +93,6 @@ MVLCConfigParser::addExtensions() {
     addExtension(new V1x90Command(interp, *this));
     addExtension(new XLMTSCommand(interp, *this));
     addExtension(new XLMFERACmd(interp, *this));
+    addExtension(new VMUSBListCommand(interp));
 }
 
