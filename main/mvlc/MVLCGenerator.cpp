@@ -27,6 +27,7 @@
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 #include "VMUSBCommand.h"
+#include "VMUSBListCommand.h"
 
 
 
@@ -45,8 +46,9 @@ static const char* stackDelay = "STACKDELAY";
  */
 
 MVLCGenerate::MVLCGenerate(std::string outfile, TCLConfigParser* config) :
-    m_outfile(outfile), m_VMUSBConfig(config), m_pVMUSBCommand(0) {
+    m_outfile(outfile), m_VMUSBConfig(config), m_pVMUSBCommand(0), m_pVMUSBListCommand(0) {
         m_pVMUSBCommand = new VMUSBCommand(*m_VMUSBConfig->getInterpreter());
+        m_pVMUSBListCommand = new VMUSBListCommand(*m_VMUSBConfig->getInterpreter());
     }
 
 /**
@@ -167,6 +169,7 @@ MVLCGenerate::fillReadoutStack(YAML::Node& doc, const char* name,  CStack& stack
     // generate the vector of operations:
 
     CVMUSBReadoutList list;
+    m_pVMUSBListCommand->setList(list);
     stack.addReadoutList(list);
     auto ops = list.dumpForMvlc();      // Ops is a vector of operations lines.
 

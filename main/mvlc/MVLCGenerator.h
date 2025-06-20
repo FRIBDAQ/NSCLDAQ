@@ -24,6 +24,7 @@
 class TCLConfigParser;
 class CStack;
 class VMUSBCommand;
+class VMUSBListCommand;
 
 /**
  * @class MVLCGenereate
@@ -57,6 +58,7 @@ private:
     TCLConfigParser* m_VMUSBConfig;        // parsed VMUSB configuration file.
     static const char* m_YamlTemplate;
     VMUSBCommand*      m_pVMUSBCommand;
+    VMUSBListCommand*  m_pVMUSBListCommand;
 public:
     MVLCGenerate(std::string outfile, TCLConfigParser* config);
     virtual ~MVLCGenerate();
