@@ -3,7 +3,7 @@
  * @brief Template code for a samplel mvlcgenerate compiled driver
  * 
  * Compiled drivers allow users to extend the set of devices
- * that mvlcgenerate can generate configuration code for.
+ * for which mvlcgenerate can generate configuration code.
  * 
  * On the whole these drivers are quite similar to those suported
  * by VMUSBReaout (this is intentional, of course).  Because
