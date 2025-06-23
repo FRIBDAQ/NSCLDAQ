@@ -96,3 +96,30 @@ void
 CVMUSB::clearRecordedOperations() {
     m_operationList.clear();
 }
+
+/**
+ *  executeList
+ *    Rather than executing the list, as the VMUSB implementation did, we just
+ * append the operations in the input list to our 'stack'.   
+ * 
+ * @param list - the list of operations to append.
+ * @param pReadBuffer - for compatibility with existing softwrae this won't be written into.
+ * @param readBufferSize - ignored size of pRadBuffer in bytes.
+ * @param bytesRead - written with zero.
+ * @return int - 0 to indicate success to anyone that cares.
+ */
+int
+CVMUSB::executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t readBufferSize, size_t* bytesRead) {
+    list.appendToStack(m_operationList);
+    *bytesRead = 0;
+    return 0;
+}
+std::vector<uint8_t>
+CVMUSB::executeList(CVMUSBReadoutList& list, int maxbytes) {
+    std::vector<uint8_t> result;
+    size_t junk;
+
+    executeList(list, nullptr, 0, &junk);
+    
+    return result;
+}

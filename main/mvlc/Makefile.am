@@ -1,10 +1,30 @@
 bin_PROGRAMS=mvlcgenerate
 
+# Library for generator...needed for extended drivers
+# to link to.
+
+lib_LTLIBRARIES=libmvlcGenerator.la
+
+libmvlcGenerator_la_SOURCES = CReadoutHardware.cpp CReadoutHardware.h \
+	CReadoutModule.cpp CReadoutModule.h \
+	DeviceCommand.h DeviceCommand.cpp \
+	TCLConfigParser.cpp TCLConfigParser.h \
+	CVMUSBReadoutList.cpp  CVMUSBReadoutList.h \
+	CVMUSB.cpp CVMUSB.h\
+	CStack.cpp CStack.h
+
+libmvlcGenerator_la_CPPFLAGS=@TCL_CPPFLAGS@ -I@top_srcdir@ \
+	-I@top_srcdir@/usb/common/configurableobject \
+	@LIBTCLPLUS_CFLAGS@
+
+# Put public incldes in $DAQINC/mvlcgenerate
+
+includedir=@prefix@/include/mvlc
 
 # Done this way so we don't need a lib and we don't need to repeat ourselves for
 # test sources
 
-DEVICE_MODULES=CStack.h CStack.cpp CMarker.h CMarker.cpp \
+DEVICE_MODULES= CMarker.h CMarker.cpp \
 	C785.h C785.cpp C3820.h C3820.cpp \
 	CDelay.h CDelay.cpp \
 	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h MADC32Registers.h \
@@ -16,22 +36,19 @@ DEVICE_MODULES=CStack.h CStack.cpp CMarker.h CMarker.cpp \
 	C830.h C830.cpp CNADC2530.h CNADC2530.cpp CV977.h CV977.cpp \
 	CV1495sc.h CV1495sc.cpp CV1729.h CV1729.cpp \
 	CCAENV1x90Opcodes.h CCAENV1x90Registers.h CV1x90.cpp CV1x90.h \
-	sis3316.h sis3316Registers.h
+	sis3316.h sis3316Registers.h \
+	CXLM.h CXLM.cpp CXLMTimestamp.cpp CXLMTimestamp.h CXLMFERA.cpp CXLMFERA.h \
+	VMUSBCommand.h VMUSBCommand.cpp VMUSBListCommand.h VMUSBListCommand.cpp \
+	TclWrapper.h TclWrapper.cpp
 
 main_modules=utilities.h utilities.cpp \
-	TCLConfigParser.h TCLConfigParser.cpp \
-	CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
-	CVMUSB.h CVMUSB.cpp \
+	 MVLCConfigParser.cpp \
 	$(DEVICE_MODULES) \
-	DeviceCommand.h DeviceCommand.cpp \
-	CReadoutModule.h CReadoutModule.cpp \
-	CReadoutHardware.h CReadoutHardware.cpp \
-	MVLCConfigParser.h MVLCConfigParser.cpp \
 	MVLCGenerator.h MVLCGenerator.cpp \
 	vme_interface_class.h sis_vmusb_interface.h sis_vmusb_interface.cpp
 
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
-
+mvlcgenerate_DEPENDENCIES=libmvlcGenerator.la
 
 mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
 	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os \
@@ -39,7 +56,34 @@ mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
 	-DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" 
 
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
-	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@ @YAML_LIBS@
+	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@ @YAML_LIBS@ @builddir@/libmvlcGenerator.la
+
+include_HEADERS=TCLConfigParser.h  \
+	CVMUSBReadoutList.h  \
+	CVMUSB.h  \
+	MVLCConfigParser.h \
+	DeviceCommand.h \
+	CReadoutModule.h \
+	CReadoutHardware.h
+
+
+# Build SampleDriver example library -> TclLibs/mvlc
+#  A bit of trickyness since we include <mvlc/stuff.h>
+# So pointing -I at the top directory will work.
+#
+
+
+noinst_LTLIBRARIES=libSampleDriver.la
+libSampleDriver_la_SOURCES=SampleDriver.cpp 
+
+	
+
+libSampleDriver_la_CPPFLAGS=@TCL_CPPFLAGS@ -I@top_srcdir@ \
+	-I@top_srcdir@/usb/common/configurableobject \
+	@LIBTCLPLUS_CFLAGS@
+libSampleDriver_la_LDFALGS=@builddir@/libmvlcGenerator.la
+libSampleDriver_DEPENDENCIES=libmvlcGenerator.la
+
 
 BUILT_SOURCES = generate.cpp options.h options.c
 nodist_mvlcgenerate_SOURCES=options.h options.c
@@ -69,9 +113,13 @@ unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
 
 TESTS=unittests
 
-EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml
+EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml \
+	SampleDriver.cpp SampleDriver.tcl
 
 install-exec-local:
 	$(mkinstalldirs) @datarootdir@/mvlc
+	$(mkinstalldirs) @datarootdir@/mvlc-examples
 	$(INSTALL_DATA)  @srcdir@/triggeronly.yaml @datarootdir@/mvlc/triggeronly.yaml
+	$(INSTALL_DATA)  @srcdir@/SampleDriver.cpp @datarootdir@/mvlc-examples
+	$(INSTALL_SCRIPT) @srcdir@/SampleDriver.tcl @datarootdir@/mvlc-examples
 

@@ -25,9 +25,9 @@
 #include "CReadoutModule.h"
 #include <stdexcept>
 #include <iostream>
+#include <tcl.h>
 
-
-
+TCLConfigParser* TCLConfigParser::m_pInstance(0);
 
 //////////////////////////////////////// implementing the canonical methods //////////////////////////
 /**
@@ -40,6 +40,19 @@ TCLConfigParser::TCLConfigParser(const std::string& infile) :
     m_pEventStack(0),
     m_pScalerStack(0)
 {
+    // Init the interpreter search paths etc:
+
+    int status = Tcl_Init(m_pInterp->getInterpreter());
+    if (status != TCL_OK) {
+        std::cerr << "Failed to initialize Tcl interpreter paths.. attempting to continue\n";
+    }
+    // Logic error if we already exist:
+
+    if (m_pInstance) {
+        throw std::logic_error("Attempted duplicate TclConfig parser construction");
+    } else {
+        m_pInstance = this;
+    }
 }
 /**
  *  destructor 
@@ -64,7 +77,7 @@ TCLConfigParser::~TCLConfigParser() {
     }
     m_commandExtensions.clear();    // Not really needed.
 
-
+    m_pInstance = nullptr;         // now there's not an instance.
     delete m_pInterp;                 
 
 }
@@ -171,4 +184,12 @@ TCLConfigParser::addExtensions() {
 void
 TCLConfigParser::addExtension(CTCLObjectProcessor& cmdobj) {
     m_commandExtensions.push_back(&cmdobj);
+}
+/** getInstance
+ * 
+ * @return TCLConfigParser*  note could be null if called too soon.
+ */
+TCLConfigParser*
+TCLConfigParser::getInstance() {
+    return m_pInstance;
 }

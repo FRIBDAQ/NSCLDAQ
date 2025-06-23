@@ -62,7 +62,7 @@ public:
   virtual void onAttach(XXUSB::CConfigurableObject& configuration);
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
-  virtual void onEndRun(CVMUSB& interface);
+  virtual void onEndRun(CVMUSB& controller);
     
  };
 #endif

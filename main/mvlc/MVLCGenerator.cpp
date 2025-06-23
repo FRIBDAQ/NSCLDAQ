@@ -26,6 +26,8 @@
 #include <fstream>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
+#include "VMUSBCommand.h"
+#include "VMUSBListCommand.h"
 
 
 
@@ -44,12 +46,17 @@ static const char* stackDelay = "STACKDELAY";
  */
 
 MVLCGenerate::MVLCGenerate(std::string outfile, TCLConfigParser* config) :
-    m_outfile(outfile), m_VMUSBConfig(config) {}
+    m_outfile(outfile), m_VMUSBConfig(config), m_pVMUSBCommand(0), m_pVMUSBListCommand(0) {
+        m_pVMUSBCommand = new VMUSBCommand(*m_VMUSBConfig->getInterpreter());
+        m_pVMUSBListCommand = new VMUSBListCommand(*m_VMUSBConfig->getInterpreter());
+    }
 
 /**
  *  destructor
  */
-MVLCGenerate::~MVLCGenerate() {}
+MVLCGenerate::~MVLCGenerate() {
+    delete m_pVMUSBCommand;
+}
 
 
 /**
@@ -162,6 +169,7 @@ MVLCGenerate::fillReadoutStack(YAML::Node& doc, const char* name,  CStack& stack
     // generate the vector of operations:
 
     CVMUSBReadoutList list;
+    m_pVMUSBListCommand->setList(list);
     stack.addReadoutList(list);
     auto ops = list.dumpForMvlc();      // Ops is a vector of operations lines.
 
@@ -197,7 +205,8 @@ void
 MVLCGenerate::fillInitStack(YAML::Node& doc, const char* name, CStack& stack) {
     // Generate the operations:
 
-    CVMUSB controller; 
+    CVMUSB controller;
+    m_pVMUSBCommand->setController(controller);
     stack.Initialize(controller);
     auto ops = controller.getRecordedOperations();
 
@@ -212,6 +221,7 @@ MVLCGenerate::fillInitStack(YAML::Node& doc, const char* name, CStack& stack) {
             }
         }
     }
+    m_pVMUSBCommand->clearController();
 }
 /** fillEndStack
  * 
@@ -227,12 +237,13 @@ MVLCGenerate::fillEndStack(YAML::Node& doc, const char* name, CStack& stack) {
     // Generate the ops:
 
     CVMUSB controller;
+    m_pVMUSBCommand->setController(controller);
     stack.onEndRun(controller);
     auto ops = controller.getRecordedOperations();
 
     // Find and fill in the appropriate stack:
 
-    auto stacks = doc["create"]["stop_commands"]["groups"];
+    auto stacks = doc["crate"]["stop_commands"]["groups"];
     for (int g = 0; g < stacks.size(); g++) {
         auto sname = stacks[g]["name"];
         if (sname.as<std::string>() == name) {
@@ -242,4 +253,5 @@ MVLCGenerate::fillEndStack(YAML::Node& doc, const char* name, CStack& stack) {
             }
         }
     }
+    m_pVMUSBCommand->clearController();
 }
