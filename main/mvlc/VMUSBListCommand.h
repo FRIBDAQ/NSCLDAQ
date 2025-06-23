@@ -45,6 +45,8 @@ class CVMUSBReadoutList;
  * - addFifoRead32  address amod numxfers
  * - addBlockCountRead16 address mask amod
  * - addBlockCountRead32 address mask amod
+ * - addMaskedCountBlockRead32 address amod
+ * - addMaskedCountFifoRead32 addresss amod
  * - addDelay clocks
  * - addMarker value   note this is a 32bit marker.
  * - addLoopUntil32 address amod mask value
