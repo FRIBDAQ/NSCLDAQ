@@ -1437,5 +1437,638 @@ example config sample -writeendrun true -endrunloc 0x12344000 -endrunvalue 0x432
         
         </section>
     </section>
+    <section>
+        <title>Tcl Drivers</title>
+        <para>
+            mvlcgenerate supports user written drivers in Tcl as well as C++.  These can be significatly
+            easier to write.  In this section, the general requirements of a Tcl driver are described.
+            Subsections walk through a Sample Tcl driver with the same functionality as the
+            Sample C++ driver in the previous section, and document support facilities available
+            to Tcl drivers.
+        </para>
+        <para>
+            Tcl drivers must be <firstterm>Tcl command ensembles</firstterm>.
+            A commane ensemble, is simple a command with subcommands.  In the core
+            Tcl language itself, the <command>file</command> is an example of a
+            command ensemble. 
+        </para>
+        <para>
+            Tcl provides many ways to produce command ensembles.  Since a driver
+            may need to support many instances of its hardware, the best mapping
+            to that need is one of the Tcl Object oriented packages such as
+            snit, Incremental Tcl, or TclOO.   
+        </para>
+        <para>
+            Object oriented extensions to Tcl have the common property that 
+            a class can be thought of as a thing that generates command ensembles.
+            The base command represents a class instance (object), and its
+            subcommands, the object's methods as defined by its class code.
+        </para>
+        <para>
+            Typically driver instances will need to be configured.  At the very least,
+            real drivers will need to have their instances told the base address of the
+            device hardware the instance is generating code for. Snit and incremental Tcl
+            are, therefore good matches as both provide their objects with built in 
+            configure and cget subcommands and provide a mechanism for easily 
+            defining configurable options.
+        </para>
+        <para>
+            Any driver class must implement three methods in addition to any others
+            it chooses:
+        </para>
+        <variablelist>
+            <varlistentry> 
+                <term><methodname>Initialize</methodname></term>
+                <listitem><para>
+                    Generates device initialization operations that will be
+                    performed as data taking starts.  Note that, as for all
+                    drivers, the driver is not connected to any actual hardware.
+                    It therefore cannot perform any read operations on the device.
+                </para><para>
+                    The Initialize method/subcommand is passed a single parameter.
+                    The paramter represents a command ensemble that can
+                    store VME operations.  It has subcommands that are essentially
+                    methods of the <classname>CVMUSB</classname> command.
+                    This mvlc command is documented in 
+                    <link linkend='mvlcgen.tcl.support' endterm='mvlcgen.tcl.support.title' />.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><methodname>addReadoutList</methodname></term>
+                <listitem><para>
+                    Generates the operations that will be performed on each event trigger
+                    to read the device.  The addRedoutList is passed a single parameter
+                    that is a command ensemble that operates much like a 
+                    CVMUSBReadoutList.  
+                    <link linkend='mvlcgen.tcl.support' endterm='mvlcgen.tcl.support' />
+                    for documentation of this mvcllist command.
+                </para></listitem>
+            </varlistentry>
+            <valistentry>
+                <term><methodname>onEndRun</methodname></term>
+                <listitem><para>
+                    Generates the operations that are performed to shut the device down
+                    as the run is ending.  Like <methodname>Initialize</methodname>, this
+                    method is passed a command ensemble that can store VME operations.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+        <section>
+            <title>Sample Tcl Driver</title>
+            <para>
+                In this section, we will go over the sample Tcl driver code that gets installed in 
+                <filename>$DAQSHARE/mvcl-examples/SampleDriver.tcl</filename>.  This driver is 
+                written in the snit object oriented extension of Tcl.  That file also includes
+                disabled code showing how to use the driver in the configuration file.
+                SampleDriver.tcl is heavily commented.  Those comments have beeen largely
+                stripped here for brevity.
+            </para>
+            <example>
+                <title>mvlcgenerate - Sample Tcl driver in snit.</title>
+                <programlisting>
+package require snit        <co id='mvlcgen-tcl-requiresnit' />
+
+
+snit::type SampleDriver {   <co id='mvlcgen-tcl-snittype' />
+    
+    option -marker -default 0
+    option -resetloc
+    option -resetvalue -default 0xaaaa    <co id='mvlcgen-tcl-optiondefs' />
+    option -writeendrun -default false
+    option -endrunloc
+    option -endrunvalue -default 0xbbbb
+
+    
+    constructor args {
+        $self configurelist $args      <co id='mvlcgen-tcl-constructor' />
+    }
+
+    
+    method Initialize vme {           <co id='mvlcgen-tcl-init' />
+        $vme vmeWrite16 $options(-resetloc) \
+        $::CVMUSBReadoutList::a32UserData $options(-resetvalue)
+    }
+    
+    method addReadoutList list {     <co id='mvlcgen-tcl-addreadout' />
+        $list addMarker  $options(-marker)
+    }
+
+    
+    method onEndRun vme {           <co id='mvlcgen-tcl-endrun' />
+        if {$options(-writeendrun)} {
+            $vme vmeWrite16 $options(-endrunloc) \
+                $::CVMUSBReadoutList::a32UserData $options(-endrunvalue)
+        }
+    }
+}
+
+                </programlisting>
+            </exmaple>
+            <para>
+                The actual operation of the driver is a bit silly but it does illustrate the
+                structure of a driver.  The driver is complete and tested.  At initialization time,
+                it does a 16 bit write whose value and address are configurable via the
+                <option>-resetvalue</option> and <option>-resetloc</option> configuation options
+                respectively.  The readout list is just going to be  a single marker written to the
+                event whose value is configuable via the <option>-marker</option>
+                At end run, if the option <option>-weriteendrun</optoin> is Tcl true,  a configurable
+                value (<option>-endrunvalue</option>) is written to a configurable address
+                (<ption>-resetloc</option).
+            </para>
+            <para>
+                The numbers in the list below refer to the numbers in the code.
+            </para>
+            <calloutlist>
+                <callout arearefs='mvlcgen-tcl-requiresnit'>
+                    <para>
+                        Since our driver is in snit, we must pull in the 
+                        sint code.  This is done via the 
+                        <command>package require snit</command>
+                        command.  Note that a production driver might itself provide a package
+                        via something like:
+                        <command>package provide sampledriver 1.0</command> and live in a 
+                        directory with a library of drivers that have a 
+                        <filename>pkgIndex.tcl</filename> that allows the Tcl package system
+                        to locate them.
+                    </para>
+                </callout>
+                <callout arearefs='mvlcgen-tcl-snittype'>
+                    <para>
+                         A <command>snit::typ</command> provides a block of code that 
+                         create the snit version of a class.   The form of that command is a
+                         typename (<literal>SampleDriver</literal>) followed by a block
+                         of code that defines options, constructors, destructors and methods.
+                    </para>
+                </callout>
+                <callout arearefs='mvlcgen-tcl-optiondefs'>
+                    <para>
+                        The snit <command>option</command> command defines
+                        configurable options for instances of a snit type.
+                        The first command parameter after <command>-option</command>
+                        is the name of the option.  For a tour of snit, see
+                        <ulink url='https://core.tcl-lang.org/tcllib/doc/00329f8b8f/embedded/www/tcllib/files/modules/snit/snitfaq.html'>
+                        https://core.tcl-lang.org/tcllib/doc/00329f8b8f/embedded/www/tcllib/files/modules/snit/snitfaq.html</link>
+                        It descrsibe the option command and its various forms, including type validation, which is 
+                        beyond the scope of this example/document.
+                    </para>
+                </callout>
+                <callout arearefs='mvlcgen-tcl-constructor'>
+                    <para>
+                        The <command>construtor</command> command defines code that is run
+                        when an instance of the class is created.  It is passed any residual
+                        command line values.  The built in method <methodname>configurelist</methodname>
+                        processes this argument as configuration options.  The built in methods
+                        <methodname>configure</methdname> and <methodname>cget</methodname> support
+                        manipulation of the values of the options the type defined.
+                    </para>
+                </callout>
+                <callout arearefs='mvlcgen-tcl-init'>
+                    <para>
+                        The <command>method</command> defines a method that class instances recognize
+                        as subcommands.  In this case we define the <methodname>Initialize</methodname>
+                        which is a require driver method/subcommand.  This method accepts a command
+                        ensemble which allows VME operations to be recorded.  See documentation
+                        of the <command>mvlc</command> in 
+                        <link linkend='mvlcgen.tcl.support' endterm='mvlcgen.tcl.support.title' />
+                        for a description of the subcommands this command ensemble has.
+                    </para>
+                    <para>
+                        Our <methodname>Initialize</methodname> stores a 16 bit VME write 
+                        to the address described by the <option>-resetloc</option>.  The
+                        address modifier used is the A32 user Data address modifier stored
+                        in the predefined variable: <varname>::CVMUSBReadoutList::a32UserData</varname>.
+                        See 
+                        <link linkend='mvlcgen.tcl.support' endterm='mvlcgen.tcl.support' />
+                        for a description of the predefined variables.  These allow you to
+                        specify address modifiers for VME operations without needing to look them up.
+                    </para>
+                </callout>
+                <callout arearefs='mvlcgen-tcl-addreadout'>
+                    <para>
+                        As described earlier, the <methodname>addReadoutList</methdname> generates
+                        VME operations that will be performed on each event.  These operations should
+                        read data from the device into the event and, if necessary, prepare the device for
+                        the next event.
+                    </para>
+                    <para>
+                        The parameter passed in is a command ensemble that operates much like a 
+                        <classname>CVMUSBReadoutlist</classname>.   Subcommands of this ensemble are like
+                        that class's methods.  See the <command>mvlclist</command> in 
+                        <link linkend='mvlcgen.tcl.support' endterm='mvlcgen.tcl.support' />
+                    </para>
+                    <para>
+                        We just add a marker to the event whose value comes from the
+                        <option>-marker</option> configurable option.
+                    </para>
+                </callout>
+                <callout arearefs='mvlcgen-tcl-endrun'>
+                    <para>
+                        <methodname>onEndRun</methodname> is called to generate operations that will be performed when the run ends.
+                        This method is invoked to save operations that should disable the device.
+                        Note that the parameter passed to this method is the same as the parameter passed to
+                        <methodname>Initialize</methodname>; a <classname>CVMUSB</classname> like command ensemble.
+                    </para>
+                    <para>
+                        In our case, we first interrogate the <option>-writeendrun</option> if this is a Tcl
+                        true value, we write to <option>-endrunloc</option> using the
+                        32 bit user data adderss modifier. The value we write is
+                        <option>-endrunvalue</option>
+                    </para>
+                </callout>
+            </calloutlist>
+        </section>
+        <section id='mvlcgen.tcl.support'>
+            <title id='mvlcgen.tcl.support.title'>Support facilities for Tcl drivers.</title>
+            <para>
+                This section provides the following bits of reference material that support
+                Tcl drivers:
+            </para>
+            <variablelist>
+                <varlistentry>
+                    <term>Address modifier variables</term>
+                    <listitem><para>
+                        The predefined Tcl variables that contain VME bus addresss modifier values.
+                </varlistentry>
+                <varlistentry>
+                    <term>The <command>mvlc</command> command</term>
+                    <listitem><para>
+                        The command ensemble that mimics the <classname>CVMUSB </classname>.  This command ensemble
+                        is passed to the Tcl driver's <methodname>Initialize</methodname> and 
+                        <methodname>onEndRun</methodname> subcommands.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>The <command>mvlclist</command> command</term>
+                    <listitem><para>
+                        The command ensemble that mimics <classname>CVMUBSReadoutList</classname>.  This
+                        command ensemble is passed to the Tcl driver's <methodname>addReadoutList</methodname>
+                        subcommands.
+                    </para></listitem>
+                </varlistentry>
+            </variabliest>
+            <refentry>
+                <refmeta>
+                    <refentrytitle>Address modifier Tcl variables</refentrytitle>
+                    <manvolnum>3tcl-mvlcgenerate</manvolnum>
+                </refmeta>
+                <refnamediv>
+                    <refname>Address modifier Tcl variables</refname>
+                    <refpurpose>Provide symbolic values for VME address modifiers.</refpurpose>
+                </refnamediv>
+                <refsynopsisdiv>
+                    <programlinsting>
+CVMUSBReadoutList::a32UserData  
+CVMUSBReadoutList::a32UserProgram  
+CVMUSBReadoutList::a32UserBlock 
+
+CVMUSBReadoutList::a32PrivData 
+CVMUSBReadoutList::a32PrivProgram
+CVMUSBReadoutList::a32PrivBlock
+
+CVMUSBReadoutList::a16User 
+CVMUSBReadoutList::a16Priv
+
+CVMUSBReadoutList::a24UserData
+CVMUSBReadoutList::a24UserProgram
+CVMUSBReadoutList::a24UserBlock
+
+CVMUSBReadoutList::a24PrivData
+CVMUSBReadoutList::a24PrivProgram 
+CVMUSBReadoutList::a24PrivBlock 
+                    </programlisting>
+                </refsynospsidiv>
+                <refsect1>
+                    <title>DESCRIPTION</title>
+                    <para>
+                        The Tcl drivers upport code provides pre-defined Tcl variables in the
+                        <literal>CVMUSBReadoutList</literal> top level namespace.  These
+                        variables contain the values of VME address mofifiers.  Using them
+                        both make Tcl driver code more readable and mean that the programmer
+                        does not need to know the values of the VME bua address modifiers.
+                    </para>
+                    <para>
+                        The meaning of these variables should be evident from their names.  We will,
+                        therefore, not describe them further in this  document.  Note, however that if you are
+                        performing a block transfer, you must use the appropriate block transfer address modifier
+                        to force the controller to use BLT transfer cycles.
+                    </para>
+                </refsect1>
+            </refentry>
+            <refentry>
+                <refmeta>
+                    <refentrytitle>mvlc</refentrytitle>
+                    <manvolnum>3tcl-mvlcgenerate</manvolnum>
+                </refmeta>
+                <refnamediv>
+                    <refname>Memorizer for VME operations</refname>
+                    <refpurpose>Provide substitute for VMUSB controller object</refpurpose>
+                </refnamediv>
+                <refsynopsisdiv>
+                    <programlisting>
+mvlc subcommand ...
+                    </programlisting>
+                </refsynopsisdiv>
+                <refsect1>
+                    <title>DESCRIPTION</title>
+                    <para>
+                        The VMUSBReadout software we are trying to model this translator after, passed
+                        a command ensemble to the <methodname>Initialize</methodname> and 
+                        <methodname>onEndRun</methodname> subcommands of Tcl driver instances as
+                        a parameter.  The <command>mvlc</command> command ensemble is passed to 
+                        driver instances generating code for <command>mvlcgenerate</command>
+                    </para>
+                    <para>
+                        The subcommands (methods) of this command ensemble are modeled closely after those
+                        of the VMUSB instance command ensemble passed to those methods of Tcl driver instances
+                        running in the VMUSBReadout.  The usual difference applies; the <command>mvlc</command>
+                        only memorizes operations because we are not actually connected to any hardware.
+                        This means that read operations are not supported.
+                    </para>
+                    <para>
+                        Note that while the command name is <command>mvlc</command> that command should not be used
+                        directly, instead, substitute the parameter to the method that it is given to.
+                        e.g.:
+                    </para>
+                    <informalexample>
+...
+    method Initialize controller {
+        ...
+        # not mvlc vmeWrite32 $someaddress $CVMUSBReadoutList::a32UserData $somedata
+        $controller vmewwrite32 $somaddress $CVMUBSReadoutList::a32UserData $somedata
+    }
+                    </informalexample>
+                    <para>
+                        This allows drivers to be written that will work either as VMUSBReadout or
+                        as mvlcgenerate drivers.
+                    </para>
+                </refsect1>
+                <refsect1>
+                    <title>SUBCOMMANDS/METHODS</title>
+                    <para>
+                        In Tcl object oriented programming/extensions, normally models classes as commands
+                        that can generate command ensembles (contruct objects).   The subcommands of the
+                        generated ensemble are the object's methods.  The <command>mvlc</command>
+                        can be though of as just such an object.  It has the following
+                        subcommands/methods:
+                    </para>
+                    <variablelist>
+                        <varlistentry>
+                            <term><command>mvlc vmeWrite32 <replaceable>address amod data</replaceable></command></term>
+                            <listitem><para>
+                                Memorizes  a 32 bit write of <parameter>data</parameter>
+                                to the VME address specified by <parameter>address</parameter>
+                                in the address space specified by the address modifier <parameter>amod</parameter>
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlc vmewrite16 <replaceable>addresss amod data</replaceable></command></term>
+                            <listitem><para>
+                            Same as above but the write is a 16 bit write.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlc delay <replaceable>howlong</command></term>
+                            <listitem><para>
+                                Memorizes a delay.  Drivers that were doing e.g. <command>after</command> 
+                                commands to 
+                                perform delays in initialization cannot productively do that in mvlcgenerate
+                                as the operations saved will be spooled into the hardware at a later time.
+                                This operations memorizes a delay of <parameter>howlong</parameter> in
+                                200ns units.  Note that the VMSUBReadout controller does not have this
+                                capability.   Drivers often use the <command>after</command> to delay instead.
+                            </para><para>
+                                To maintain compatibility, the code can be contionalized on the existence
+                                of the <literal>MVLC_TRANSLATOR </literal> environment variable that <command>mvlcgenerator</command
+                                sets for the configuration file.  For example, suppose we need to delay for 1msec:
+                            </para>
+                            <informalexample>
+                            <programlisting>
+method Initialize controller { 
+...
+    if {[array names ::env MVLC_TRANSLATOR] eq ""} {
+        after 1;                       # VMUSBReadout
+    }   else {
+        $controller delay 5000;     # generator - 1ms in 200ns units
+    }
+...
+                                </programlisting>
+                            </informalexample>
+                            </listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlc loopUntil32 <replaceable>address amod mask value</command></term>
+                            <listitem><para>
+                                Sometimes you need to wait for something to happen in the device.  In
+                                VMUSBReadout, this is simply executing reads and looking at the result.
+                                Again, sincde we are just memorizing operations, this cannot be done
+                                in the translator.  The <command>loopUntil32</command> operation,
+                                does a 32 bit read at the selected <replaceable>address</replaceable> in the
+                                address space selected by <replaceable>amod</replaceable>.  The
+                                value read is then bitwise anded with <parameter>mask</parameter>  if the
+                                resulting value is not equal to <parameter>value</parameter> the
+                                read is repeated until it is.  Use with care as incorrect values for mask and
+                                value can result in a stalled operation.
+                            </para><para>
+                                Suppose we reset the device and a 32 bit register sets the top bit
+                                when the device has finished the reset; this can be accomplished as follows
+                                portably between VMUSBReadout and <command>mvlcgenerate</command>:
+                            </para>
+                            <informalexample>
+                                <programlisting>
+method Initialize controller {
+    $self reset $controller;       # Reset the device:
+    if {[array names ::env MVLC_TRANSLATOR] eq ""} {;   # VMUSB
+        while {([$controller vmeRead32 $resetreg $CVMUSBReadoutList::a32UserData] & 0x80000000) != 0x80000000} {
+
+        }
+    } else {;                       # mvlcgenerate
+        $controller loopUntil32 $resetreg $CVMUSBReadoutList::a32UserData 0x80000000 0x80000000
+    }
+}
+                                </programlisting>
+                            </informalexample>
+                            </listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlc loopUntil16 <replaceable>address amod mask value</replaceable></command></term>
+                            <listitem><para>
+                                Same as <command>loopUntil32</command> but the read is a 16 bit operation.  Naturally,
+                                this means the mask and value must also be 16 bit values.
+                            </para></listitem>  
+                        </varlistentry>
+                    </variablelist>
+
+                </refsect1>
+            </refentry>
+            <refentry>
+                <refmeta>
+                    <refentrytitle>mvlclist</refentrytitle>
+                    <manvolnum>3tcl-mvlcgenerate</manvolnum>
+                    <refnamediv>
+                        <refname>mvlclist</refname>
+                        <refpurpose>List memorizor for vmvlcgenerator</refpurpose>
+                    </refnamediv>
+                    <refsynopsisdiv>
+                        <programlisting>
+mvlclist subcommand ...
+                        </programlisting>
+                    </refsynopsisdiv>
+                </refmeta>
+                <refsect1>
+                    <title>DESCRIPTION</title>
+                    <para>
+                        <command>mvlclist</command> is a command ensemble that is passed to the
+                        <methodname>addReadoutList</methodname> method of a Tcl driver.  It is intended 
+                        to look very much  like the VMUSBReadoutList command ensemble that is passed to
+                        VMUSBReadout Tcl drivers.  Note that, as with the VMUSBReadout, the driver should
+                        not explicitly invoke the <command>mvlclist</command> but use the variable
+                        passed in to <methodname>addReadoutList</methodname>.  In this way it is possible
+                        to write Tcl drivers that will work in either <command>mvlcgenerate</command>
+                        or under <command>VMUSBReadout</command>
+                    </para>
+                </refsect1>
+                <refsect1>
+                    <title>SUBCOMMANDS/METHODS</TITLE>
+                    <para>
+                        The <command>mvlclist</command> is a command ensemble.  This is the normal
+                        implementation of an object in Tcl object oriented extensions. Classes are commands
+                        that can generate command ensembles.  The subcommands of the ensembles are then
+                        the methods of the object.
+                    </para>
+                    <para>
+                        The <command>mvlclist</command> provides the following subcommands/methods:
+                    </para>
+                    <variablelist>
+                        <varlistentry>
+                            <term><command>mvlclist addWrite32 <replaceable>address amod datum</replaceable></command></term>
+                            <listitem><para>
+                                Adds a 32 bit wide write operation to the list of operations being memorized.  The
+                                <replaceable>address</replaceable> and <replaceable>amod</replaceable>
+                                identifier the address and address space for the write target while
+                                <replaceable>datum</replaceable> is the 32 bit data that will be written.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addWrite32 <replaceable>address amod datum</replaceable></command></term>
+                            <listitem><para>
+                                Same as <command>addWrite32</command> but the write is only 16 bits wide.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addRead32 <replaceable>address amod</replaceable></command></term>
+                            <listitem><para>
+                                Adds a read to the list of operations being memorized. 
+                                <parameter>address</parameter> and <parameter>amod</parameter> specify the 
+                                address and address space from which the read will be done.
+                                The data fromt he read
+                                will be put into the data for the trigger bieng processed by the list being generated.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addRead16 <replaceable>address amod</replaceable></command></term>
+                            <listitem><para>
+                                Same as <command>addRead32</command> but the read is only 16 bits wide.  This results in a
+                                16 bit item being placed in the data for the trigger being processed by this list.
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addBlockRead32 <replaceable>base-address amod numxfers</replaceable></command></term>
+                            <listitem><para>
+                                Adds a read of a block of <parameter>numxfers</parameter> 32 bit items beginning at 
+                                <parameter>base-address</parameter> in the address space <parameter>amod</parameter>  After
+                                each transfer, the address increments to the next 32 bit location.  It is best to use
+                                one of the block transfer address modifiers as that will trigger a more efficient bock transfer
+                                which does not require an address cycle for each transfer.
+                            <para>
+                                If the slave module raises <literal>BERR</literal> the transfer will terminate.  Note that
+                                the VMUSB will insert a 32 bit item with all bits set if it terminates on a <literal>BERR</literal>
+                                the MVLC will not insert this termination flag.  Normally that item is not necessary as the
+                                module being read will structure the data in such a way that the end of the readout can
+                                be deduced by the software.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addFifoRead32 <replaceable>address amod numxfers</replaceable></command></term>
+                            <listitem><para>
+                                Same as <command>addBlockRead32</commmand>, however all the reads are directed at the same address.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addBlockCountRead16 <replaceable>address mask amod</replaceable></command></term>
+                            <listitem><para>
+                                Sometimes, modules will have a register that has a field that indicates how many items of data it
+                                can produce from e.g. a FIFO. In this case, reading the module is a two step process.  First the
+                                transfer count is extracted from the register and then it is used to drive block read.
+                            </para><para>
+                                This method does a 16 bit read from <parameter>address</parameter> in the
+                                address space specified by <parameter>amod</parameter>. The <parameter>mask</parameter>
+                                idenifies the bits that make up the transfer count field.  For exmample, suppose the
+                                read operation returned <literal>0x1234</literal> and the mask was 
+                                <literal>0x0ff0</literal>  The transfer count will be <literal>0x23</literal>.
+                                Note that the data read by thi operation will be discarded and will not appera in the event.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addBlockCountRead32 <replaceable>address mask amod</replaceable></command></term>
+                            <listitem><para>
+                                Same as <command>addBlockCountRead16</command> but the read is 32 bits wide.
+                            </para></para>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addMaskedCountBlockRead32 <replaceable>address amod</replaceable></command></term>
+                            <listitem><para>
+                                This is the second part of the variable sized read operation.  This operation reads a block of
+                                32 bit data starting at <parameter>address</parameter> in the address space <parameter>amod</parameter>.
+                                The number of transfers attempted is determined by the block count extracted
+                                from the most recent <command>addBlockCountReadxx</command> operation.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>addMaskedCountFifoRead32 <replaceable>address amod</replaceable></command></term>
+                            <listitem><para>
+                                Same as <command>addMaskedCountBLockRead32</command>, but all reads are directed at the
+                                same address.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addDelay <replaceable>how-long</replaceable></command></term>
+                            <listitem><para>
+                                Adds a delay to the list of operations.  The delay will last
+                                <parameter>how-long</parameter>*200nsec.  Note that the MVLC"s delay units have a 
+                                granularity of 62.5nsec.  The length parameter is converted from the 200ns units on the
+                                command line to a delay of at least <paramter>how-long</parameter>*200ns long.  The
+                                actual delay will not be any more than 62.5ns longer than the requested delay.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addMarker <replaceable>value</replaceable></command></term>
+                            <listitem><para>
+                                Adds an operation that will insert <parameter>value</parameter> into the event.
+                                Note that while VMUSB markers are 16 bits wide, MVLC markers are 32 bits
+                                wide.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addLoopUntil32 <replaceable>address amod mask value</replaceable></command></term>
+                            <listitem><para>
+                                This essentially adds a wait until some condition is true in the module.  This operation is not
+                                supported in VMUBSReadout.  An operation is added to the stack that does a 32 bit read from 
+                                <parameter>address</parameter> in the address space specified by <parameter>amod</parameter>.
+                                The value read is bitwise anded with <parameter>mask</parameter> and, if the result is not
+                                equal to <parameter>value</parameter> the operation repeats until it is.  One use for this
+                                is to e.g. initiate an operation in the module via a write and wait on a status bit that indicates
+                                the operation completed.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><command>mvlclist addLoopUntil16 <replaceable>address amod mask value</replaceable></command></term>
+                            <listitem><para>
+                                Same as <command>addLoopUntil32</command> above but the read is only 16 bits wide.
+                            </para></listitem>
+                        </varlistentry>
+                    </variablelist>
+                </refsect1>
+            </refentry>
+        </section>
+    </section>
 </chapter>
 <!-- /chapter -->
