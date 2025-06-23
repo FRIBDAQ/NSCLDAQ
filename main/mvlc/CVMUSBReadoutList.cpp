@@ -91,6 +91,26 @@ void
 CVMUSBReadoutList::addWrite16(uint32_t address, uint8_t amod, uint16_t datum) {
     addWrite(address, amod, "d16", datum);
 }
+/**
+ * addBlockWrite32 
+ *    Add a write of a block of data.  Note that the MVLC does not have a block write
+ * operation (I think). Instead we just add a pile of write32's to the list:
+ * 
+ * @param dest - address of the write destination.
+ * @param amod - address modifier to use.
+ * @param pData - pointer to the data.
+ * @param nLongs - number of longs towrite.
+ */
+void
+CVMUSBReadoutList::addBlockWrite32(uint32_t dest, uint8_t amod, const void* pData, size_t nLongs) {
+    const uint32_t* p = reinterpret_cast<const uint32_t*>(pData);
+    while (nLongs) {
+        addWrite32(dest, amod, *p);
+        p++;
+        dest += sizeof(uint32_t);
+        nLongs--;
+    }
+}
 
 /**
  * addRead32
@@ -300,6 +320,18 @@ CVMUSBReadoutList::dumpForMvlc() {
 void
 CVMUSBReadoutList::clear() {
     m_list.clear();
+}
+/**
+ * appendToStack
+ *    This is actually intended to be called by CVMUSB::executeList.  With the real VMUSB,
+ * executeList would execute the stack.  Since we are just collecting operations to dump
+ * into a configuration YAML we, instead, CVMUSB::executeList, will just call this to
+ * copy this  list into the list of operations it is recording.alignas
+ * @param other - reference to the list our operations get copied into.
+ */
+void
+CVMUSBReadoutList::appendToStack(CVMUSBReadoutList& other) {
+    other.m_list.insert(other.m_list.end(), m_list.begin(), m_list.end());
 }
 ////////////////////////// Private utilities ////////////////////////////////////////////
 

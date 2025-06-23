@@ -14,7 +14,7 @@
 	     East Lansing, MI 48824-1321
 */
 
-// Implementation of the C785 class VM-USB support for the CAEN V785.
+// Implementation of the  CVx190 class VM-USB support for the CAEN V1x90 TDC family.
 
 
 

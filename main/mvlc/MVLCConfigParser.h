@@ -34,8 +34,17 @@
  * 2.  Write a DeviceCommand that creates a CReadoutModule with an instance of
  * that device encapsulsted.
  * 3.  Extend our addExtensions method to register that command.
+ * 
+ * @note this is an irregular singleton so plugins, e.g. can find it.
+ *   The constructor is public but throws logic error if it's been
+ * multiply constructed.  getInstance returns the singleton pointer
+ * -- which could be null if called too soon.  Note that, in general
+ * this isn't a problem as plug ins get loaded from the config script...
+ * which gets executed by this instance.
  */
 class MVLCConfigParser : public TCLConfigParser {
+private:
+    static MVLCConfigParser* m_pInstance;
 public:
     MVLCConfigParser(const std::string& script);
     virtual ~MVLCConfigParser();
@@ -44,8 +53,10 @@ private:
     MVLCConfigParser& operator=(const MVLCConfigParser&);
     int operator==(const MVLCConfigParser&);
     int operator!=(const MVLCConfigParser&);
-protected:
+public:
     virtual void addExtensions();
+
+    static MVLCConfigParser* getInstance();
 };
 
 

@@ -84,6 +84,8 @@ private:
     CStack*                            m_pScalerStack;       //< Modlues in the scaler stack.
     std::map <std::string, CReadoutModule*> m_modules;     //< Soup of modules.
 
+    static TCLConfigParser*         m_pInstance;     // Irregular singleton.
+
     // Canonicals:
 public:
     TCLConfigParser(const std::string& infile);
@@ -116,12 +118,13 @@ public:
 
 
     // utilities -some might be virtual to support replacement in derived test objects.
-protected:
+public:
     virtual void addExtensions();
     virtual void addExtension(CTCLObjectProcessor& cmdobj);       // Add one extension command.
     void addExtension(CTCLObjectProcessor* pCmd) {
         addExtension(*pCmd);
     }
+    static TCLConfigParser* getInstance();
 
 };
 

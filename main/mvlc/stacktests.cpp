@@ -79,6 +79,12 @@ class ReadoutListTests : public CppUnit::TestFixture {
     CPPUNIT_TEST(loopuntil_3);   // 16 bit.
     CPPUNIT_TEST(loopuntil_4);   // mask differs from compare.
 
+    CPPUNIT_TEST(append_1);      // appendToStack (empty target).
+    CPPUNIT_TEST(append_2);      // nonempty target.
+    CPPUNIT_TEST(append_3);      // Empty source.
+
+    CPPUNIT_TEST(execute_1);     // Test the execute method of CVMUSB.
+
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -105,6 +111,12 @@ protected:
     void loopuntil_2();
     void loopuntil_3();
     void loopuntil_4();
+
+    void append_1();
+    void append_2();
+    void append_3();
+
+    void execute_1();
 
 public:
     void setUp() {}
@@ -515,4 +527,89 @@ ReadoutListTests::loopuntil_4() {
         compare
     );
 
+}
+
+// Append to stack with empty target, nonempty source:
+
+void
+ReadoutListTests::append_1() {
+    CVMUSBReadoutList target;
+    CVMUSBReadoutList source;
+
+    source.addWrite32(0x1234000, 0x09, 0x1234);
+    source.addRead16(0x12341000, 0x09);
+
+    source.appendToStack(target);
+
+    auto srcops = source.dumpForMvlc();
+    auto tgtops = target.dumpForMvlc();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(2), tgtops.size());
+    CPPUNIT_ASSERT_EQUAL(srcops[0], tgtops[0]);
+    CPPUNIT_ASSERT_EQUAL(srcops[1], tgtops[1]);
+}
+
+// Append to nonempty targret with non empty src.
+
+void
+ReadoutListTests::append_2() {
+    CVMUSBReadoutList target;
+    CVMUSBReadoutList source;
+
+    target.addBlockRead32(0x10000000, 0x19, 100);
+
+    source.addWrite32(0x1234000, 0x09, 0x1234);
+    source.addRead16(0x12341000, 0x09);
+
+    source.appendToStack(target);
+
+    auto srcops = source.dumpForMvlc();
+    auto tgtops = target.dumpForMvlc();
+
+    CPPUNIT_ASSERT_EQUAL(size_t(3), tgtops.size());
+    CPPUNIT_ASSERT_EQUAL(srcops[0], tgtops[1]);
+    CPPUNIT_ASSERT_EQUAL(srcops[1], tgtops[2]);
+
+}
+// Append empty src does not change target.
+
+void
+ReadoutListTests::append_3() {
+    CVMUSBReadoutList target;
+    CVMUSBReadoutList source;
+
+    target.addBlockRead32(0x10000000, 0x19, 100);
+
+    auto preops = target.dumpForMvlc();
+
+    source.appendToStack(target);
+    auto postops = target.dumpForMvlc();
+
+    CPPUNIT_ASSERT_EQUAL(preops.size(), postops.size());
+    CPPUNIT_ASSERT_EQUAL(preops[0], postops[0]);
+}
+// Having established that appendToStack works we really just have to verify the 
+// append goes the right way around.
+
+void
+ReadoutListTests::execute_1() {
+    CVMUSB controller;
+    CVMUSBReadoutList stack;
+
+    stack.addWrite32(0x12340000, 0x09, 0x1234);
+    stack.addBlockRead32(0x10000000, 0x19, 100);
+    
+    size_t readbytes;
+
+    int status = controller.executeList(stack, nullptr, 0, &readbytes);
+
+    CPPUNIT_ASSERT_EQUAL(0, status);
+    CPPUNIT_ASSERT_EQUAL(size_t(0), readbytes);
+
+    auto stackops = stack.dumpForMvlc();
+    auto recorded = controller.getRecordedOperations();
+
+    CPPUNIT_ASSERT_EQUAL(stackops.size(), recorded.size());   // 2.
+    CPPUNIT_ASSERT_EQUAL(stackops[0], recorded[0]);
+    CPPUNIT_ASSERT_EQUAL(stackops[1], recorded[1]);
 }
