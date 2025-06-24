@@ -388,14 +388,31 @@ CVMUSBControl::addReadoutList(CVMUSBReadoutList& list)
 			    disable);
     }
 
-    // Re-enable the scalers.
-
-//    list.addRegisterWrite(CVMUSB::RegisterOffsets::DEVSrcRegister,
-//			  m_nDeviceSourceSelector);
-//    list.addRegisterWrite(CVMUSB::RegisterOffsets::DEVSrcRegister,
-//			  m_nDeviceSourceSelector);
+    
   }
 }
+/**
+ * onEndRun
+ *     Called just before the run ends.   We implement the
+ *     VMUSB__IDLE_BUSY_WORKAROUND if compiled in:
+ * 
+ * @param controller - the VMUSB contoller object by refernce
+ * 
+ */
+void
+CVMUSBControl::onEndRun(CVMUSB& controller) {
+#ifdef VMUSB_IDLE_BUSY_WORKAROUND
+  if (m_pConfiguration->cget("-nimo1") == "busy") {
+    uint32_t devSource = controller.readDeviceSource(); 
+    devSource &= 0xfffe0;   // Clear the O1 bits.
+    devSource |= CVMUSB::DeviceSourceRegister::nimO1EndOfEvent 
+              |  CVMUSB::DeviceSourceRegister::nimO1Invert;
+
+    controller.writeDeviceSource(devSource);
+  }
+#endif
+}
+
 
 void CVMUSBControl::configureGlobalMode(CVMUSB& controller)
 {
