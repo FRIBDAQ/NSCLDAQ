@@ -248,6 +248,26 @@ CStack::Initialize(CVMUSB& controller)
 void
 CStack::addReadoutList(CVMUSBReadoutList& list)
 {
+  m_stackSizeAdjust = 0;
+#ifdef VMUSB_PROMPT_BUSY_WORKAROUND
+  // Prompt busies in some VMUSB Firmwares only can be implemented
+  // by stack delays.  See Issue #294
+
+  // Delay only the event stack.
+  if (getListNumber() == 0) {
+    uint32_t delay = getIntegerParameter("-delay"); //usec
+    delay = delay * 5;                              // 200nsec units.
+    uint32_t delaysAdded = 0;
+    while (delay > 0) {
+      uint32_t dly  = delay > 255 ? 255 : delay;
+      list.addDelay(dly);
+      delay -= dly;
+      delaysAdded++;
+    }
+    m_stackSizeAdjust += delaysAdded;   
+  }
+
+#endif
   StackElements modules = getStackElements();
   StackElements::iterator p = modules.begin();
   while (p != modules.end()) {
@@ -256,6 +276,12 @@ CStack::addReadoutList(CVMUSBReadoutList& list)
     
     p++;
   }
+#ifdef VMUSB_END_OF_EVENT_WORKAROUND
+  if (getListNumber() == 0) {
+    list.addMarker(0xffff);        // Forces end of event.
+    m_stackSizeAdjust++;
+  }
+#endif
 }
 
 /*!
@@ -377,6 +403,10 @@ CStack::loadStack(CVMUSB& controller)
     // That is 2 longwords.
     
     m_listOffset += readoutList.size() * sizeof(uint32_t)/sizeof(uint16_t)+4 ; // Stack locs are words.
+
+    // Adjust for any workarounds added:
+
+    m_listOffset += m_stackSizeAdjust;
   }
 }
 /*!
@@ -398,7 +428,7 @@ CStack::enableStack(CVMUSB& controller)
   uint8_t   listNumber  = getListNumber();
 
   // If zero, fetch the delay parameter and set it in the DAQ Settings register:
-
+#ifndef VMUSB_PROMPT_BUSY_WORKAROUND
   if (listNumber == 0) {
     uint32_t delay        = getIntegerParameter("-delay");
     uint32_t daqsettings  = controller.readDAQSettings();
@@ -407,6 +437,7 @@ CStack::enableStack(CVMUSB& controller)
     controller.writeDAQSettings(daqsettings); // Write the new register value.
     return;
   }
+  #endif
 
   // If 1 set up the scaler parameters:
 
