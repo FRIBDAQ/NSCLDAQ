@@ -109,7 +109,7 @@ Const(CbltDisabled) 0;
 Const(MaxEventSize)  34;           // Longwords in the largest event.
 Const(MEBDepth)      32;	   // Max events the adc can buffer.
 Const(MaxLongwordsBuffered) (MaxEventSize*MEBDepth);
-Const(EventsPerRead)  1;
+
 
 
 /////////////////////////////////////////////////////////////////////
@@ -595,18 +595,18 @@ C785::addReadoutList(CVMUSBReadoutList& list)
   }
   // only read 1 event.
   //
-  for (int i =0; i < EventsPerRead; i++) {
+  
 
-    list.addFifoRead32(base,
-		       readamod, static_cast<size_t>(MaxEventSize+16));
+  list.addFifoRead32(base,
+          readamod, static_cast<size_t>(MaxEventSize+16));
 
-    // Clear event buffers:
+  // Clear event buffers:
 
-    list.addWrite16(base + BSet2,
-		    initamod, (uint16_t)4);
-    list.addWrite16(base + BClear2,
-		    initamod, (uint16_t)4);
-  }
+  list.addWrite16(base + BSet2,
+      initamod, (uint16_t)4);
+  list.addWrite16(base + BClear2,
+      initamod, (uint16_t)4);
+
 }
 
 /*!
