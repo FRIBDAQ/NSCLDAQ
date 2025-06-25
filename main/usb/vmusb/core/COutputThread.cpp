@@ -523,8 +523,8 @@ COutputThread::processEvents(DataBuffer& inBuffer)
 
       uint32_t* pNextLong = reinterpret_cast<uint32_t*>(pContents);
       if (*pNextLong != 0xffffffff) {
-	cerr << "Ran out of events but did not see buffer terminator\n";
-	cerr << nWords << " remaining unprocessed\n";
+        cerr << "Ran out of events but did not see buffer terminator\n";
+        cerr << nWords << " remaining unprocessed\n";
       }
 
       break;			// trusting event count vs word count(?).
@@ -818,7 +818,16 @@ COutputThread::event(void* pData)
     uint8_t* pEnd = reinterpret_cast<uint8_t*>(pDest);
     pEnd += m_nWordsInBuffer*sizeof(uint16_t); // Where the new body cursor goes.
 
+    // If the end of event workaround is enabled,
+    // We tell the ring item not to include the 16 bit marker
+    // we transparently added to the readout stack to force
+    // end of event to fire.
+
+#ifndef VMUSB_END_OF_EVENT_WORKAROUND
     event.setBodyCursor(pEnd);
+#else
+    event.setBodyCursor(pEnd - sizeof(uint16_t));
+#endif
     event.updateSize();
     event.commitToRing(*m_pRing);
     delete pEvent;
