@@ -61,7 +61,12 @@ libVMUSBCore_la_CPPFLAGS = \
 			-I@top_srcdir@/base/os \
 			-I@top_srcdir@/daq/format	\
 			-I@top_srcdir@/daq/eventbuilder \
+<<<<<<< HEAD
 			@OPENSSL_INCLUDES@ @PIXIE_CPPFLAGS@
+=======
+			@OPENSSL_INCLUDES@ @PIXIE_CPPFLAGS@ \
+			@UFMT_CPPFLAGS@ @VMUSB_WORKAROUNDS@
+>>>>>>> d4db1c034 (Issue #294 - Workaround VMUSB firmware problems.)
 
 # add -DREPORT_ERRORS to INCLUDES below for verbose
 # error reporting info.
