@@ -1,21 +1,6 @@
 lib_LTLIBRARIES		= libVMUSBDaqConfig.la
 
-#
-#  See Issue #294 - this defines conditional compilation
-#  directives that enable workarounds for firmware problems
-#  described in that issue:
-#
-#  -DVMUSB_PROMPT_BUSY_WORKAROUND - Changes the -delay to wait stack elements
-#     to work aroun the problem that using trigger delay does not give
-#     a prompt busy.
-#  -DVMUSB_END_OF_EVENT_WORKAROUND - Adds a marker to the end of the
-#     event stack to ensure end of event fires.
-#  -DVMUSB_IDLE_BUSY_WORKAROUND - If O1 is programmed to be a busy,
-#     forces O1 true when the run ends by making it the
-#     inverse of End of Event which should be always true.
-#
-WORKAROUNDS=-DVMUSB_PROMPT_BUSY_WORKAROUND -DVMUSB_END_OF_EVENT_WORKAROUND \
-	-DVMUSB_IDLE_BUSY_WORKAROUND
+
 
 libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CConfiguration.cpp	\
@@ -145,11 +130,9 @@ noinst_HEADERS		=	CADCCommand.h  		\
 				CMDPP32SCP.h
 
 
-<<<<<<< HEAD
-libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@
-=======
-libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@ $(WORKAROUNDS)
->>>>>>> d0556d865 (Issue #294 - Apply workarounds for VMUSB firmware issues.)
+
+libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@ @VMUSB_WORKAROUNDS@
+
 
 libVMUSBDaqConfig_la_CPPFLAGS = -I@top_srcdir@/usb/common/devices	\
 				-I@top_srcdir@/usb/common/configurableobject \
