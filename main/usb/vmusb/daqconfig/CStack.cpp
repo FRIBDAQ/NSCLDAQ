@@ -248,7 +248,7 @@ CStack::Initialize(CVMUSB& controller)
 void
 CStack::addReadoutList(CVMUSBReadoutList& list)
 {
-  m_stackSizeAdjust = 0;
+  
 #ifdef VMUSB_PROMPT_BUSY_WORKAROUND
   // Prompt busies in some VMUSB Firmwares only can be implemented
   // by stack delays.  See Issue #294
@@ -264,7 +264,7 @@ CStack::addReadoutList(CVMUSBReadoutList& list)
       delay -= dly;
       delaysAdded++;
     }
-    m_stackSizeAdjust += delaysAdded;   
+  
   }
 
 #endif
@@ -279,7 +279,7 @@ CStack::addReadoutList(CVMUSBReadoutList& list)
 #ifdef VMUSB_END_OF_EVENT_WORKAROUND
   if (getListNumber() == 0) {
     list.addMarker(0xffff);        // Forces end of event.
-    m_stackSizeAdjust++;
+  
   }
 #endif
 }
@@ -432,7 +432,7 @@ CStack::loadStack(CVMUSB& controller)
 
     // Adjust for any workarounds added:
 
-    m_listOffset += m_stackSizeAdjust;
+    
   }
 }
 /*!

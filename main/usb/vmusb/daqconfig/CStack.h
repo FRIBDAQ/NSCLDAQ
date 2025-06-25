@@ -100,7 +100,6 @@ public:
 
 private:
   CReadoutModule*    m_pConfiguration;
-  size_t             m_stackSizeAdjust;
   static size_t      m_listOffset; // Offsets for list loading
   static bool        m_incrementalScaler;
 public:
