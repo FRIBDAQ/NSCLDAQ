@@ -316,6 +316,32 @@ CStack::onEndRun(CVMUSB& controller)
 
     p++;
   }
+  
+#ifdef VMUSB_IDLE_BUSY_WORKAROUND
+  // Best to implement this here:  
+  // there are many ways the O1 could have been defined...
+  // the best thing we can do is read the device selection register and
+  // see what the final state was.
+  // If it's selected to by BUSY< then we reprogram it to be
+  // end of event _and_ flip the invert bit.  
+  // end of event should always be false when  idle so 
+  // its inverse is asserted.
+
+  uint32_t currentSelection = controller.readDeviceSource();
+  if ((currentSelection & 0x7) == CVMUSB::DeviceSourceRegister::nimO1Busy) {
+    bool inverted = (currentSelection & CVMUSB::DeviceSourceRegister::nimO1Invert) != 0;
+
+    // new compute the new value of the register:
+
+    currentSelection &= 0xffffffe0;             // Clear the field, invert and latch.
+    currentSelection |= CVMUSB::DeviceSourceRegister::nimO1EndOfEvent;   // select end of event.
+    if (!inverted) {
+      currentSelection |= CVMUSB::DeviceSourceRegister::nimO1Invert;     // get the inversion sense right
+    }                                                                    // for the new selection.
+    controller.writeDeviceSource(currentSelection);
+  }
+
+#endif
 }
 /*!
   Clone virtualizes copy construction.
