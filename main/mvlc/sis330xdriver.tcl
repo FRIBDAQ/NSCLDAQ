@@ -16,9 +16,10 @@ lappend auto_path [file normalize [file join [file dirname [info script]] .. .. 
 
 package require snit
 package require VMUSBDriverSupport
-package require cvmusb
-package require cvmusbreadoutlist
-
+if {[array names ::env MVLC_TRANSLATOR] eq ""} {
+    package require cvmusb
+    package require cvmusbreadoutlist
+}
 package provide SIS330XDriver 1.0
 
 ##
@@ -26,7 +27,7 @@ package provide SIS330XDriver 1.0
 #
 #   Provides a Tcl/Snit VM-USB device driver for the 
 #   SIS330x Flash adc module.  The options are closely patterned
-#   after the methdos of the sis3300.cpp class which implements
+#   after the methods of the sis3300.cpp class which implements
 #   SBS support for this module.
 #
 #
@@ -286,6 +287,7 @@ snit::type sis330xDriver {
     variable HIRAFWMAJOR  0x13
     variable HIRAFWMINOR  0x05
 
+    variable isMVLC;        # true if running in mvlcgenerate.
 
     #-----------------------------------------------------------------------
     #
@@ -294,7 +296,8 @@ snit::type sis330xDriver {
     # Provides a chance to configure and create in one step:
     #
     constructor args {
-	$self configurelist $args
+	    $self configurelist $args
+        set isMVLC [expr {[array names ::env MVLC_TRANSLATOR] ne ""}]
     }
     #-----------------------------------------------------------------------
     #
@@ -310,152 +313,131 @@ snit::type sis330xDriver {
     #                a cvmusb object.
     #
     method Initialize vmusb  {
-	set controller [::VMUSBDriverSupport::convertVmUSB $vmusb]
-	set base       $options(-base)
+        set controller [::VMUSBDriverSupport::convertVmUSB $vmusb]
+        set base       $options(-base)
 
-	# Reset as a single shot operation then 
+        # Reset as a single shot operation then 
 
-	$controller vmeWrite32 [expr $base +  $Reset] $setupAmod 0
+        $controller vmeWrite32 [expr $base +  $Reset] $setupAmod 0
 
-	# Build a list of operations to complete the init:
-
-	set list       [::cvmusbreadoutlist::CVMUSBReadoutList]
-
-	# Figure out and set the  initial CSR.
-
-	set csrValue   [expr $CRUserOutputOff | \
-			    $CRLedOff        | \
-			    $CREnableTriggerOutput | \
-			    $CRNormalTriggerOutput]
-
-	if {$options(-stoptrigger)} {
-	    set csrValue [expr $csrValue | $CRTriggerOnArmedAndStarted]
-	} else {
-	    set csrValue [expr $csrValue | $CRTriggerOnArmed]
-	}
-	$list addWrite32 [expr $base + $CR] $setupAmod $csrValue
-	puts "CR Value written as [format %08x $csrValue]"
-
-	# Turn off all bits in the ACQ register:
-
-	$list addWrite32 [expr $base + $DAQControl] $setupAmod 0xffff0000
-	$list addDelay 20
-
-	# Figure out what needs turning on in the acquisition register (having
-	# first turned everything off) ( and program related parameters if necessary)
-
-	set acqValue 0
-
-	# start delay also implies programing the start delay value:
-
-	if {$options(-startdelay)} {
-	    set acqValue [expr $acqValue | $DAQStartDelayOn]
-	    $list addWrite32 [expr $base + $ExternStartDelay] $setupAmod $options(-startdelayticks)
-	}
-	# stop delay also implies programming the stop delay value:
-
-	if {$options(-stopdelay)} {
-	    set acqValue [expr $acqValue | $DAQStopDelayOn]
-	    $list addWrite32 [expr $base + $ExternStopDelay] $setupAmod $options(-stopdelayticks)
-	}
-	if {$options(-gatemode)} {
-	    set acqValue [expr $acqValue | $DAQEnableGateMode]
-	}
-	if {$options(-randomclock)} {
-	    set acqValue [expr $acqValue | $DAQEnableRandomClock]
-	}
-	if {$options(-lemostartstop)} {
-	    set acqValue [expr $acqValue | $DAQEnableLemoStartStop]
-	}
-	if {$options(-p2startstop)} { 
-	    set acqValue [expr $acqValue | $DAQEnableP2StartStop]
-	}
-	if {$options(-hirarandomclock)} {
-	    set acqValue [expr $acqValue | $DAQEnableHiRARCM | $DAQEnableRandomClock]
-	}
- 
-	set acqValue [expr $acqValue | ($clockSourceValues($options(-clocksource)) << $DAQClockSetShiftCount)]
-	
-	$list addWrite32 [expr $base + $DAQControl] $setupAmod $acqValue
-	puts "ACQ Value [format %04x $acqValue]"
-	
-
-	# Configure the global event configuration register.
-
-	set evtConfig [expr $sampleSizeValues($options(-samplesize)) << $ECFGPageSizeShiftCount]
-	if {$options(-wrap)} {
-	    set evtConfig [expr $evtConfig | $ECFGWrapMask]
-	}
-	if {$options(-randomclock)} {
-	    set evtConfig [expr $evtConfig | $ECFGRandomClock]
-	}
-	puts "Evt config register [format %08x $evtConfig]" 
-	$list addWrite32 [expr $base + $CommonInfo + $EventConfiguration] $setupAmod $evtConfig
-
-	
-	# Channel thresholds:
-
-	puts "Setting channel enables"
-
-	for {set chan 0} {$chan < 8} {incr chan 2} {
-	    set even [lindex $options(-thresholds) $chan]
-	    if {$options(-thresholdslt)} {
-		set even [expr $even | $THRLt]
-	    }
-	    set odd [lindex $options(-thresholds) [expr $chan + 1]]
-	    if {$options(-thresholdslt)} {
-		set odd [expr $odd | $THRLt]
-	    }
-	    set registerValue [expr ($odd << $THRChannelShift) | $even]
-	    puts "Writing threshold [format "%08x to %08x" $registerValue [expr $base +  $EventBases([expr $chan/2]) + $TriggerThreshold]]"
-
-	    $list addWrite32 \
-		[expr $base +  $EventBases([expr $chan/2]) + $TriggerThreshold] \
-		$setupAmod $registerValue
-	}
-	puts "Done setting channel thresholds"
-
-	# Disarm both banks first:
-
-	$list addWrite32 [expr $base + $DAQControl] $setupAmod \
-	    [expr $DAQSampleBank1Off | $DAQSampleBank2Off]
+        # Build a list of operations to complete the init:
+        # This is not portable to mvlcgenerate so:
 
 
-	
-	# Execute the list:
-	
-	puts "Executing list"
+        set list $controller ;  # trick to reduce the conversion typing.
 
-	$controller executeList $list 1000
-#	$inputData destroy
-	$list -delete
-	puts "Returning from init"
+        # Figure out and set the  initial CSR.
 
-	# Dump the values of some key registers:
+        set csrValue   [expr $CRUserOutputOff | \
+                    $CRLedOff        | \
+                    $CREnableTriggerOutput | \
+                    $CRNormalTriggerOutput]
 
-	set cr [$vmusb vmeRead32 [expr $base + $CR] $setupAmod]
-	puts "Control register [format %08x $cr]"
+        if {$options(-stoptrigger)} {
+            set csrValue [expr $csrValue | $CRTriggerOnArmedAndStarted]
+        } else {
+            set csrValue [expr $csrValue | $CRTriggerOnArmed]
+        }
+        $list vmeWrite32 [expr $base + $CR] $setupAmod $csrValue
+        puts "CR Value written as [format %08x $csrValue]"
 
-	set daqctl [$vmusb vmeRead32 [expr $base + $DAQControl] $setupAmod]
-	puts "DAQ control register  [format %08x $daqctl]"
+        # Turn off all bits in the ACQ register:
 
+        $list vmeWrite32 [expr $base + $DAQControl] $setupAmod 0xffff0000
+        $list vmeDelay 20
 
-	set evconfig [$vmusb vmeRead32 [expr $base + $EventInfo1] $setupAmod]
-	puts "Event config: [format %08x $evconfig]"
+        # Figure out what needs turning on in the acquisition register (having
+        # first turned everything off) ( and program related parameters if necessary)
 
-	# Do some one shot stuff at the end of the bulk initialization.
-	#  - Clear the data
-	#  - arm bank 1
-	#  - If the configuration justifies, start sampling.
+        set acqValue 0
 
-	$self _SetArm $controller 1 on
+        # start delay also implies programing the start delay value:
 
-	if {!$options(-gatemode)} {
-	    puts "Turning on sampling now!"
-	    $self _StartSampling $controller
-	}
-	set daqctl [$vmusb vmeRead32 [expr $base + $DAQControl] $setupAmod]
-	puts "DAQ control register(after arming)  [format %08x $daqctl]"	
+        if {$options(-startdelay)} {
+            set acqValue [expr $acqValue | $DAQStartDelayOn]
+            $list vmeWrite32 [expr $base + $ExternStartDelay] $setupAmod $options(-startdelayticks)
+        }
+        # stop delay also implies programming the stop delay value:
+
+        if {$options(-stopdelay)} {
+            set acqValue [expr $acqValue | $DAQStopDelayOn]
+            $list vmeWrite32 [expr $base + $ExternStopDelay] $setupAmod $options(-stopdelayticks)
+        }
+        if {$options(-gatemode)} {
+            set acqValue [expr $acqValue | $DAQEnableGateMode]
+        }
+        if {$options(-randomclock)} {
+            set acqValue [expr $acqValue | $DAQEnableRandomClock]
+        }
+        if {$options(-lemostartstop)} {
+            set acqValue [expr $acqValue | $DAQEnableLemoStartStop]
+        }
+        if {$options(-p2startstop)} { 
+            set acqValue [expr $acqValue | $DAQEnableP2StartStop]
+        }
+        if {$options(-hirarandomclock)} {
+            set acqValue [expr $acqValue | $DAQEnableHiRARCM | $DAQEnableRandomClock]
+        }
+    
+        set acqValue [expr $acqValue | ($clockSourceValues($options(-clocksource)) << $DAQClockSetShiftCount)]
+        
+        $list vmeWrite32 [expr $base + $DAQControl] $setupAmod $acqValue
+        puts "ACQ Value [format %04x $acqValue]"
+        
+
+        # Configure the global event configuration register.
+
+        set evtConfig [expr $sampleSizeValues($options(-samplesize)) << $ECFGPageSizeShiftCount]
+        if {$options(-wrap)} {
+            set evtConfig [expr $evtConfig | $ECFGWrapMask]
+        }
+        if {$options(-randomclock)} {
+            set evtConfig [expr $evtConfig | $ECFGRandomClock]
+        }
+        puts "Evt config register [format %08x $evtConfig]" 
+        $list vmeWrite32 [expr $base + $CommonInfo + $EventConfiguration] $setupAmod $evtConfig
+
+        
+        # Channel thresholds:
+
+        puts "Setting channel enables"
+
+        for {set chan 0} {$chan < 8} {incr chan 2} {
+            set even [lindex $options(-thresholds) $chan]
+            if {$options(-thresholdslt)} {
+            set even [expr $even | $THRLt]
+            }
+            set odd [lindex $options(-thresholds) [expr $chan + 1]]
+            if {$options(-thresholdslt)} {
+            set odd [expr $odd | $THRLt]
+            }
+            set registerValue [expr ($odd << $THRChannelShift) | $even]
+            puts "Writing threshold [format "%08x to %08x" $registerValue [expr $base +  $EventBases([expr $chan/2]) + $TriggerThreshold]]"
+
+            $list vmeWrite32 \
+            [expr $base +  $EventBases([expr $chan/2]) + $TriggerThreshold] \
+            $setupAmod $registerValue
+        }
+        puts "Done setting channel thresholds"
+
+        # Disarm both banks first:
+
+        $list vmeWrite32 [expr $base + $DAQControl] $setupAmod \
+            [expr $DAQSampleBank1Off | $DAQSampleBank2Off]
+       
+
+        # Do some one shot stuff at the end of the bulk initialization.
+        #  - Clear the data
+        #  - arm bank 1
+        #  - If the configuration justifies, start sampling.
+
+        $self _SetArm $controller 1 on
+
+        if {!$options(-gatemode)} {
+            puts "Turning on sampling now!"
+            $self _StartSampling $controller
+        }
+        
     }
     ##
     # addReadoutList 
@@ -544,8 +526,8 @@ snit::type sis330xDriver {
     # @param controller - VMUSB controller object.
     #
     method _Clear controller {
-	$controller vmeWrite32 [expr $options(-base) +$DAQControl] \
-	    $setupAmod $DAQSampleBank1On
+        $controller vmeWrite32 [expr $options(-base) +$DAQControl] \
+            $setupAmod $DAQSampleBank1On
     }
     ##
     # method _SetArm controller which state
@@ -557,17 +539,17 @@ snit::type sis330xDriver {
     # @param state      - What to do: true - arm, false disarm
     #
     method _SetArm {controller which state} {
-	array set arms    [list 1 $DAQSampleBank1On  2 $DAQSampleBank2On]
-	array set disarms [list 1 $DAQSampleBank1Off 2 $DAQSampleBank2Off]
+        array set arms    [list 1 $DAQSampleBank1On  2 $DAQSampleBank2On]
+        array set disarms [list 1 $DAQSampleBank1Off 2 $DAQSampleBank2Off]
 
-	set addr [expr $options(-base) + $DAQControl]
-	if {$state} {
-	    set value $arms($which)
-	} else {
-	    set value $disarms($which)
-	}
-	puts "Arm/disarm: [format "%08x @ %08x" $value $addr]"
-	$controller vmeWrite32 $addr $setupAmod $value
+        set addr [expr $options(-base) + $DAQControl]
+        if {$state} {
+            set value $arms($which)
+        } else {
+            set value $disarms($which)
+        }
+        puts "Arm/disarm: [format "%08x @ %08x" $value $addr]"
+        $controller vmeWrite32 $addr $setupAmod $value
     }
     #
     # _StartSampling controller
@@ -577,8 +559,8 @@ snit::type sis330xDriver {
     # @param controller - VM-USB controller object.
     #
     method _StartSampling {controller} {
-	$controller vmeWrite32 [expr $options(-base) + $VMEStart] \
-	    $setupAmod 1;	# Key register could write anything.
+        $controller vmeWrite32 [expr $options(-base) + $VMEStart] \
+            $setupAmod 1;	# Key register could write anything.
     }
 
 
@@ -598,8 +580,8 @@ snit::type sis330xDriver {
     # @param value  - Proposed new value.
     #
     method configureClockSource {option value} {
-	::VMUSBDriverSupport::validEnum $value [array names clockSourceValues]
-	set options($option) $value
+        ::VMUSBDriverSupport::validEnum $value [array names clockSourceValues]
+        set options($option) $value
     }
     ##
     # configureBool:
@@ -610,8 +592,8 @@ snit::type sis330xDriver {
     # @param value  - Proposed new value.
     #
     method configureBool {option value} {
-	::VMUSBDriverSupport::validBool $value
-	set options($option) $value
+        ::VMUSBDriverSupport::validBool $value
+        set options($option) $value
     }
     ##
     # configureInt
@@ -622,8 +604,8 @@ snit::type sis330xDriver {
     # @param value  - Proposed new value.
     #
     method configureInt {option value} {
-	::VMUSBDriverSupport::validInt $value
-	set options($option) $value
+        ::VMUSBDriverSupport::validInt $value
+        set options($option) $value
     }
     ##
     # configureSampleSize:
@@ -635,8 +617,8 @@ snit::type sis330xDriver {
     # @param value  - Proposed new value.
     #
     method configureSampleSize {option value} {
-	::VMUSBDriverSupport::validEnum $value [array names sampleSizeValues]
-	set options($option) $value
+        ::VMUSBDriverSupport::validEnum $value [array names sampleSizeValues]
+        set options($option) $value
     }
 
     ##
@@ -648,8 +630,8 @@ snit::type sis330xDriver {
     # @param value  - Proposed new value.
     #
     method configureThresholds {option value} {
-	::VMUSBDriverSupport::validIntList $value 8 8 0 0x3ff
-	set options($option) $value
+        ::VMUSBDriverSupport::validIntList $value 8 8 0 0x3ff
+        set options($option) $value
     }
 				     
     ##
@@ -660,8 +642,8 @@ snit::type sis330xDriver {
     # @param value  - Proposed new value.
     #
     method configureGroupsRead {option value} {
-	::VMUSBDriverSupport::validBoolList $value 4 4
-	set options($option) $value
+        ::VMUSBDriverSupport::validBoolList $value 4 4
+        set options($option) $value
     }
 			    
 }
