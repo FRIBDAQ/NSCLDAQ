@@ -118,7 +118,8 @@ TESTS=unittests
 # These files are Tcl Drivers in the library we supply:
 
 TCLDRIVERFILES=VMUSBDriverSupport.tcl \
-	sis3300defs.tcl  sis330xdriver.tcl sis3300.tcl
+	sis3300defs.tcl  sis330xdriver.tcl sis3300.tcl \
+	ACAENV1290.tcl
 
 EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml \
 	SampleDriver.cpp SampleDriver.tcl \
