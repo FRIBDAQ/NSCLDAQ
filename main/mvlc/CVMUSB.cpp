@@ -54,7 +54,7 @@ CVMUSB::vmeWrite16(uint32_t address, uint8_t aModifier, uint16_t data) {
 }
 /** delay
  *    Add a delay to the stack:
- *     @paramm ms - the number of ms to delay. 
+ *     @paramm ms - the number of 200ns units to delay.
 */
 void
 CVMUSB::delay(uint32_t ms) {
