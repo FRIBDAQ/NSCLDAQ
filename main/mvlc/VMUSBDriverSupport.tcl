@@ -55,6 +55,7 @@ if {[array names ::env MVLC_TRANSLATOR] eq ""} {
 } else {
   proc ::VMUSBDriverSupport::convertVmUSB name {
     return $name;                 # MVLCGen requires no conversion.
+  }
 }
 
 if {[array names ::env MVLC_TRANSLATOR] eq ""} {
@@ -78,6 +79,7 @@ if {[array names ::env MVLC_TRANSLATOR] eq ""} {
 } else {
   proc ::VMUSBDriverSupport::convertVmUSBReadoutList name {
     return $name;     # MVLCgen Does not require conversion.
+  }
 }
 ##
 # checkRange
