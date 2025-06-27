@@ -92,21 +92,32 @@ class Window(QtWidgets.QMainWindow):
         self.CB_TO_T0 = self.findChild(QtWidgets.QCheckBox, "CB_TO_T0")
         self.CB_TO_T1 = self.findChild(QtWidgets.QCheckBox, "CB_TO_T1")
 
+        self.RB_MON_ON = self.findChild(QtWidgets.QRadioButton, "RB_MON_ON");
+        self.RB_MON_OFF = self.findChild(QtWidgets.QRadioButton, "RB_MON_OFF");
+
+        self.CB_MON_CH = self.findChild(QtWidgets.QComboBox, "CB_MON_CH")
+        self.CB_MON_CH.currentTextChanged.connect(self._syncComboBoxes)
+
+        self.RB_MON_WAVE_0 = self.findChild(QtWidgets.QRadioButton, "RB_MON_WAVE_0");
+        self.RB_MON_WAVE_1 = self.findChild(QtWidgets.QRadioButton, "RB_MON_WAVE_1");
+        self.RB_MON_WAVE_2 = self.findChild(QtWidgets.QRadioButton, "RB_MON_WAVE_2");
+        self.RB_MON_WAVE_3 = self.findChild(QtWidgets.QRadioButton, "RB_MON_WAVE_3");
+
         PB_apply = self.findChild(QtWidgets.QPushButton, 'PB_apply')
         PB_update = self.findChild(QtWidgets.QPushButton, 'PB_update')
         PB_load = self.findChild(QtWidgets.QPushButton, 'PB_load')
         PB_save = self.findChild(QtWidgets.QPushButton, 'PB_save')
 
-        PB_apply.pressed.connect(self.applyToModule)
-        PB_update.pressed.connect(self.updateFromModule)
-        PB_load.pressed.connect(self.openLoadfileDialog)
-        PB_save.pressed.connect(self.openSavefileDialog)
+        PB_apply.clicked.connect(self.applyToModule)
+        PB_update.clicked.connect(self.updateFromModule)
+        PB_load.clicked.connect(self.openLoadfileDialog)
+        PB_save.clicked.connect(self.openSavefileDialog)
 
         if data != None:
             self._updateFromJson(data)
 
         PB_about = self.findChild(QtWidgets.QPushButton, "PB_about")
-        PB_about.pressed.connect(self._openAboutDialog)
+        PB_about.clicked.connect(self._openAboutDialog)
 
         self.show()
 
@@ -125,7 +136,27 @@ class Window(QtWidgets.QMainWindow):
         receivedTriggerSource = int(self.tcl.eval('conn Get triggerSource'))
         receivedTriggerOutput = int(self.tcl.eval('conn Get triggerOutput'))
 
-        if (triggerSource == receivedTriggerSource) and (triggerOutput == receivedTriggerOutput):
+        monOn = self.RB_MON_ON.isChecked()
+        monCh = self.CB_MON_CH.currentIndex()
+        if self.RB_MON_WAVE_0.isChecked():
+            monWave = 0
+        elif self.RB_MON_WAVE_1.isChecked():
+            monWave = 1
+        elif self.RB_MON_WAVE_2.isChecked():
+            monWave = 2
+        elif self.RB_MON_WAVE_3.isChecked():
+            monWave = 3
+
+        self.tcl.eval('conn Set monitorOn %d' % monOn)
+        self.tcl.eval('conn Set monitorCh %d' % monCh)
+        self.tcl.eval('conn Set monitorWave %d' % monWave)
+
+        receivedMonOn = int(self.tcl.eval('conn Get monitorOn'))
+        receivedMonCh = int(self.tcl.eval('conn Get monitorCh'))
+        receivedMonWave = int(self.tcl.eval('conn Get monitorWave'))
+
+        if (triggerSource == receivedTriggerSource) and (triggerOutput == receivedTriggerOutput) \
+           and (monOn == receivedMonOn) and (monCh == receivedMonCh) and (monWave == receivedMonWave):
             self._setLog(LOG_GOOD, 'Successfully applied the settings!')
         else:
             msg = 'Error updating device: '
@@ -186,7 +217,18 @@ class Window(QtWidgets.QMainWindow):
         lemo.append(self.LE_TS_T0.text())
         lemo.append(self.LE_TS_T1.text())
 
-        dataDict = {"triggerSource":triggerSource,"triggerOutput":triggerOutput,"sc":sc,"lemo":lemo}
+        monOn = self.RB_MON_ON.isChecked()
+        monCh = self.CB_MON_CH.currentIndex()
+        if self.RB_MON_WAVE_0.isChecked():
+            monWave = 0
+        elif self.RB_MON_WAVE_1.isChecked():
+            monWave = 1
+        elif self.RB_MON_WAVE_2.isChecked():
+            monWave = 2
+        elif self.RB_MON_WAVE_3.isChecked():
+            monWave = 3
+
+        dataDict = {"triggerSource":triggerSource,"triggerOutput":triggerOutput,"sc":sc,"lemo":lemo,"monOn":monOn,"monCh":monCh,"monWave":monWave}
 
         selectedFile, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save settings to file", '', "JSON files (*.json)", '', options)
         if selectedFile == '':
@@ -294,12 +336,15 @@ class Window(QtWidgets.QMainWindow):
     def _syncComboBoxes(self, value):
         self.CB_TS_SC.currentTextChanged.disconnect()
         self.CB_TO_SC.currentTextChanged.disconnect()
+        self.CB_MON_CH.currentTextChanged.disconnect()
 
         self.CB_TS_SC.setItemText(self.sender().currentIndex(), value)
         self.CB_TO_SC.setItemText(self.sender().currentIndex(), value)
+        self.CB_MON_CH.setItemText(self.sender().currentIndex(), value)
 
         self.CB_TS_SC.currentTextChanged.connect(self._syncComboBoxes)
         self.CB_TO_SC.currentTextChanged.connect(self._syncComboBoxes)
+        self.CB_MON_CH.currentTextChanged.connect(self._syncComboBoxes)
 
     def _updateFromJson(self, data):
         self._updateTriggerSource(int(str(data['triggerSource']), 16 if str(data['triggerSource']).startswith('0x') else 10))
@@ -308,9 +353,26 @@ class Window(QtWidgets.QMainWindow):
         for i in range(len(data['sc'])):
             self.CB_TS_SC.setItemText(i, data['sc'][i])
             self.CB_TO_SC.setItemText(i, data['sc'][i])
+            self.CB_MON_CH.setItemText(i, data['sc'][i])
 
         self.LE_TS_T0.setText(data['lemo'][0])
         self.LE_TS_T1.setText(data['lemo'][1])
+
+        if data['mon'] == 1:
+          self.RB_MON_ON.setChecked(True)
+        else:
+          self.RB_MON_OFF.setChecked(True)
+
+        self.RB_MON_CH.setCurrentIndex(int(data['mon_ch']))
+
+        if int(data['mon_wave']) == 0:
+          self.RB_MON_WAVE_0.setChecked(True)
+        elif int(data['mon_wave']) == 1:
+          self.RB_MON_WAVE_1.setChecked(True)
+        elif int(data['mon_wave']) == 2:
+          self.RB_MON_WAVE_2.setChecked(True)
+        elif int(data['mon_wave']) == 3:
+          self.RB_MON_WAVE_3.setChecked(True)
 
     def _setLog(self, level, text):
         self.LB_log.setStyleSheet('color: %s;' % level)
