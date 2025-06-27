@@ -454,16 +454,18 @@ CStack::enableStack(CVMUSB& controller)
   uint8_t   listNumber  = getListNumber();
 
   // If zero, fetch the delay parameter and set it in the DAQ Settings register:
-#ifndef VMUSB_PROMPT_BUSY_WORKAROUND
+
   if (listNumber == 0) {
+#ifndef VMUSB_PROMPT_BUSY_WORKAROUND
     uint32_t delay        = getIntegerParameter("-delay");
     uint32_t daqsettings  = controller.readDAQSettings();
     daqsettings           = daqsettings & (~CVMUSB::DAQSettingsRegister::readoutTriggerDelayMask); // Clear bit field.
     daqsettings          |= (delay & CVMUSB::DAQSettingsRegister::readoutTriggerDelayMask);  // insert bit field.
     controller.writeDAQSettings(daqsettings); // Write the new register value.
+#endif
     return;
   }
-  #endif
+
 
   // If 1 set up the scaler parameters:
 
