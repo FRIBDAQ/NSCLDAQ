@@ -2,6 +2,7 @@ import sys
 from ctypes import *
 import inspect
 import logging
+import numpy as np
 
 from run_type import RunType
 from converters import str2char
@@ -827,6 +828,7 @@ class TraceUtilities:
         lib.CPixieTraceUtilities_delete.argtypes = [POINTER(c_char)]
 
         self.obj = lib.CPixieTraceUtilities_new()
+        self.logger = logging.getLogger("qtscope_logger")
     
     def read_trace(self, module, channel):
         """Wrapper to read a trace from a single channel.
@@ -887,7 +889,8 @@ class TraceUtilities:
             Python list of trace data.
         """
         d = lib.CPixieTraceUtilities_GetTraceData(self.obj).contents
-        return [d[i] for i in range(len(d))]
+        
+        return np.array([d[i] for i in range(len(d))])
 
     def use_generator_data(self, mode):
         """ Wrapper to set the manager to use generated data.

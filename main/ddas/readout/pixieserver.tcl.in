@@ -1,0 +1,4 @@
+#---- pixieserver.tcl:
+
+lappend auto_path [file join @prefix@ TclLibs]
+package require pixieplugin

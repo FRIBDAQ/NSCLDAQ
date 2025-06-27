@@ -9,6 +9,8 @@
 #include <TTree.h>
 #include <CRingItem.h>
 
+using namespace ufmt;
+
 void Converter::Initialize(std::string in, std::string fout)
 {
 

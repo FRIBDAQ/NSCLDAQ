@@ -48,18 +48,19 @@
 // Forward definitiosn:
 
 class URL;
-class CRingItem;
-class CRingStateChangeItem;
-class CRingTextItem;
-class CRingScalerItem;
-class CRingPhysicsEventCountItem;
-class CPhysicsEventItem;
-
 class CRingBuffer;
 
 class Converter;
 
-class RingItemFactoryBase;
+namespace ufmt {
+    class CRingItem;
+    class CRingStateChangeItem;
+    class CRingTextItem;
+    class CRingScalerItem;
+    class CRingPhysicsEventCountItem;
+    class CPhysicsEventItem;
+    class RingItemFactoryBase;
+}
 
 
 /*!
@@ -83,7 +84,7 @@ private:
   Converter         *m_prootconverter;  // converter to ROOT file
   std::vector<uint16_t> m_sampleTypes; // Items that should be sampled only (ring buffers).
   std::vector<uint16_t> m_excludeTypes; // Items that should not be dumped at all.
-  RingItemFactoryBase*  m_pRingItemFactory;  // Makes us format independent.
+    ufmt::RingItemFactoryBase*  m_pRingItemFactory;  // Makes us format independent.
 
   // Canonicals... no need for copy construction etc.
   //
@@ -104,15 +105,15 @@ public:
   //Utilities:
 
 private:
-  CRingItem* getItem(CRingBuffer& ring);
-  void processToString(CRingItem* pItem);
-  void processItem(const CRingItem& item);
-  void dumpStateChangeItem(std::ostream& out, const CRingStateChangeItem& item);
-  void dumpStringListItem(std::ostream&  out, const CRingTextItem& item);
-  void dumpScalerItem(std::ostream& out, const CRingScalerItem& item);
-  void dumpPhysicsItem(std::ostream& out, const CPhysicsEventItem& item);
-  void dumpEventCountItem(std::ostream& out, const CRingPhysicsEventCountItem& item);
-  void dumpUnknownItem(std::ostream& out, const CRingItem& item);
+    ufmt::CRingItem* getItem(CRingBuffer& ring);
+  void processToString(ufmt::CRingItem* pItem);
+  void processItem(const ufmt::CRingItem& item);
+  void dumpStateChangeItem(std::ostream& out, const ufmt::CRingStateChangeItem& item);
+  void dumpStringListItem(std::ostream&  out, const ufmt::CRingTextItem& item);
+  void dumpScalerItem(std::ostream& out, const ufmt::CRingScalerItem& item);
+    void dumpPhysicsItem(std::ostream& out, const ufmt::CPhysicsEventItem& item);
+  void dumpEventCountItem(std::ostream& out, const ufmt::CRingPhysicsEventCountItem& item);
+  void dumpUnknownItem(std::ostream& out, const ufmt::CRingItem& item);
 
   std::string defaultSource() const; 
   std::string timeString(time_t theTime) const;

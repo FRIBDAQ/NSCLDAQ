@@ -22,6 +22,8 @@
 #include "RingDataSource.h"
 #include <RingItemFactoryBase.h>
 
+using namespace ufmt;
+
 /**
  * constructor
  *    @param pFact - factory we use to get items.

@@ -26,6 +26,7 @@
 #include <stdexcept>
 
 using namespace std;
+using namespace ufmt;
 
 static bool initialized = false;
 static map<string, int>   textToInt;
