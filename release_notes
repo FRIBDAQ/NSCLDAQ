@@ -1,3 +1,10 @@
+== 12.1-011 ==
+* Provicde workarounds for VMUSB bugs in recent firmware versions.
+    *  A prompt busy is guaranteed by using delay stack elements rather than the trigger delay.
+    *  Busy resting state is active by reprogramming it to be the inverse of end of event as the run ends e.g.
+    *  End of event is forced by appending a marker to the readout stack which is then transparently discarded
+by COutputThread
+== 12.1-011 ==
 == 12.1-010 ==
 * MDPPTriggerControl GUI
     * Bug fix
