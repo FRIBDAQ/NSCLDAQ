@@ -248,6 +248,26 @@ CStack::Initialize(CVMUSB& controller)
 void
 CStack::addReadoutList(CVMUSBReadoutList& list)
 {
+  
+#ifdef VMUSB_PROMPT_BUSY_WORKAROUND
+  // Prompt busies in some VMUSB Firmwares only can be implemented
+  // by stack delays.  See Issue #294
+
+  // Delay only the event stack.
+  if (getListNumber() == 0) {
+    uint32_t delay = getIntegerParameter("-delay"); //usec
+    delay = delay * 5;                              // 200nsec units.
+    uint32_t delaysAdded = 0;
+    while (delay > 0) {
+      uint32_t dly  = delay > 255 ? 255 : delay;
+      list.addDelay(dly);
+      delay -= dly;
+      delaysAdded++;
+    }
+  
+  }
+
+#endif
   StackElements modules = getStackElements();
   StackElements::iterator p = modules.begin();
   while (p != modules.end()) {
@@ -256,6 +276,12 @@ CStack::addReadoutList(CVMUSBReadoutList& list)
     
     p++;
   }
+#ifdef VMUSB_END_OF_EVENT_WORKAROUND
+  if (getListNumber() == 0) {
+    list.addMarker(0xffff);        // Forces end of event.
+  
+  }
+#endif
 }
 
 /*!
@@ -290,6 +316,32 @@ CStack::onEndRun(CVMUSB& controller)
 
     p++;
   }
+  
+#ifdef VMUSB_IDLE_BUSY_WORKAROUND
+  // Best to implement this here:  
+  // there are many ways the O1 could have been defined...
+  // the best thing we can do is read the device selection register and
+  // see what the final state was.
+  // If it's selected to by BUSY< then we reprogram it to be
+  // end of event _and_ flip the invert bit.  
+  // end of event should always be false when  idle so 
+  // its inverse is asserted.
+
+  uint32_t currentSelection = controller.readDeviceSource();
+  if ((currentSelection & 0x7) == CVMUSB::DeviceSourceRegister::nimO1Busy) {
+    bool inverted = (currentSelection & CVMUSB::DeviceSourceRegister::nimO1Invert) != 0;
+
+    // new compute the new value of the register:
+
+    currentSelection &= 0xffffffe0;             // Clear the field, invert and latch.
+    currentSelection |= CVMUSB::DeviceSourceRegister::nimO1EndOfEvent;   // select end of event.
+    if (!inverted) {
+      currentSelection |= CVMUSB::DeviceSourceRegister::nimO1Invert;     // get the inversion sense right
+    }                                                                    // for the new selection.
+    controller.writeDeviceSource(currentSelection);
+  }
+
+#endif
 }
 /*!
   Clone virtualizes copy construction.
@@ -377,6 +429,10 @@ CStack::loadStack(CVMUSB& controller)
     // That is 2 longwords.
     
     m_listOffset += readoutList.size() * sizeof(uint32_t)/sizeof(uint16_t)+4 ; // Stack locs are words.
+
+    // Adjust for any workarounds added:
+
+    
   }
 }
 /*!
@@ -400,13 +456,16 @@ CStack::enableStack(CVMUSB& controller)
   // If zero, fetch the delay parameter and set it in the DAQ Settings register:
 
   if (listNumber == 0) {
+#ifndef VMUSB_PROMPT_BUSY_WORKAROUND
     uint32_t delay        = getIntegerParameter("-delay");
     uint32_t daqsettings  = controller.readDAQSettings();
     daqsettings           = daqsettings & (~CVMUSB::DAQSettingsRegister::readoutTriggerDelayMask); // Clear bit field.
     daqsettings          |= (delay & CVMUSB::DAQSettingsRegister::readoutTriggerDelayMask);  // insert bit field.
     controller.writeDAQSettings(daqsettings); // Write the new register value.
+#endif
     return;
   }
+
 
   // If 1 set up the scaler parameters:
 
