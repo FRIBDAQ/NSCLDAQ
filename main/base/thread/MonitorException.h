@@ -59,7 +59,7 @@ public:
 
 public:
   virtual const char* ReasonText() const;
-  virtual Int_t       ReasonCode() const;
+  virtual int       ReasonCode() const;
 
 
 
