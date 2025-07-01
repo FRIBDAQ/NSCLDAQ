@@ -1,4 +1,7 @@
 lib_LTLIBRARIES		= libVMUSBDaqConfig.la
+
+
+
 libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CConfiguration.cpp	\
 				CScalerCommand.cpp	\
@@ -119,7 +122,7 @@ noinst_HEADERS		=	CADCCommand.h  		\
 				MQDC32Registers.h
 
 
-libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@
+libVMUSBDaqConfig_la_CXXFLAGS=@THREADCXX_FLAGS@ @VMUSB_WORKAROUNDS@
 
 libVMUSBDaqConfig_la_CPPFLAGS = -I@top_srcdir@/usb/common/devices	\
 				-I@top_srcdir@/usb/common/configurableobject \
