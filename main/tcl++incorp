@@ -8,6 +8,10 @@
 #
 
 tag=$1
+if [[ ! $tag ]]
+then
+  tag="libtclplus-v3.0-008"
+fi
 
 git submodule update --init
 
