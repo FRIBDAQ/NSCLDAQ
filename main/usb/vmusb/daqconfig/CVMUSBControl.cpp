@@ -388,14 +388,21 @@ CVMUSBControl::addReadoutList(CVMUSBReadoutList& list)
 			    disable);
     }
 
-    // Re-enable the scalers.
-
-//    list.addRegisterWrite(CVMUSB::RegisterOffsets::DEVSrcRegister,
-//			  m_nDeviceSourceSelector);
-//    list.addRegisterWrite(CVMUSB::RegisterOffsets::DEVSrcRegister,
-//			  m_nDeviceSourceSelector);
+    
   }
 }
+/**
+ * onEndRun
+ *     Called just before the run ends. 
+ * 
+ * @param controller - the VMUSB contoller object by refernce
+ * 
+ */
+void
+CVMUSBControl::onEndRun(CVMUSB& controller) {
+
+}
+
 
 void CVMUSBControl::configureGlobalMode(CVMUSB& controller)
 {

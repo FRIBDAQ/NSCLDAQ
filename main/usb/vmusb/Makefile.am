@@ -9,6 +9,7 @@ SUBDIRS = 	vmusb 		\
 		vmusbPackage \
 		tclservertests
 
+AM_MAKEFLAGS="AM_CXXFLAGS=$(WORKAROUNDS)"
 
 bin_PROGRAMS = VMUSBReadout
 
