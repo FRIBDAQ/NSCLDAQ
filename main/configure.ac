@@ -301,6 +301,61 @@ PKG_CHECK_MODULES(PYTHON,
 AC_SUBST(PYTHON3_CXXFLAGS)
 AC_SUBST(PYTHON3_LIBS)
 
+#
+#  See Issue #294 - Since the compilation flags for the VMUSBReadout
+#  VMUSB firmware problem workarounds must span directories, they
+#  need to be configured.  All are enabled by default.
+#
+#   --disable-vmusb-prompt-busy - turns off workaround for the prompt prompt_busy
+#      firmware bug.  If this is enabled, the stack -delay option is implemented
+#      by waits in the stack rather than a value written to the trigger delay
+#      field of the acquisition config register.
+#   --disable-vmusb-end-event - turns off workaround for the requirement that
+#       in order to get an end of event pulse, the last element of the stack
+#       must put something in the event.  If enabled, a marker is transparently
+#       added to the stack by CStack and removed from the event by COutuptThread.
+#   --disable-vmusb-idle-busy - Turns off the workaround for the state of the
+#       busy when the VMUBS is not in autonomous mode.  If the user has selected
+#       -nimo1 busy, on end run, NIM01 is programmed to either be the inverse of the
+#       end of event (should always be asserted), or if inverted was selected, end of event itself.
+
+AC_ARG_ENABLE([vmusb-prompt-busy], 
+	[AS_HELP_STRING(
+		[--disable-vmusb-prompt-busy], 
+		[Turn off the workaround for VMUSB not giving a prompt busy])], 
+		[enable_prompt=$enableval], [enable_prompt="yes"] )
+
+if test "x$enable_prompt" = "xyes"
+then
+	PROMPT_BUSY="-DVMUSB_PROMPT_BUSY_WORKAROUND"
+fi
+
+AC_ARG_ENABLE([vmusb-end-event],
+	AS_HELP_STRING([--disable-vmusb-end-event], 
+	[Turn off the workaround for the VMUSB not always giving an end of event pulse]),
+	[enable_eoe=$enableval], [enable_eoe="yes"])
+
+if test "x$enable_eoe" = "xyes"
+then
+	END_EVENT="-DVMUSB_END_OF_EVENT_WORKAROUND"
+fi	
+
+AC_ARG_ENABLE([vmusb-idle-busy],
+	AS_HELP_STRING([--disable-vmusb-idle-busy],
+	[Turn off the workaround for the VMUSB not asserting Busy when the run ends]),
+	[enable_idlebusy=$enableval], [enable_idlebusy="yes"])
+
+if test "x$enable_idlebusy" = "xyes"
+then
+	IDLE_BUSY="-DVMUSB_IDLE_BUSY_WORKAROUND"
+fi
+
+#  The VMUSB_WORKAROUNDS variable will have all of the conditionals selected:
+
+VMUSB_WORKAROUNDS="${PROMPT_BUSY} ${END_EVENT} ${IDLE_BUSY}"
+AC_SUBST(VMUSB_WORKAROUNDS)
+
+	
 # Ensure swig is installed: -- this is used to generate wrappers for the
 # VMUSB and CCUSB libraries for use within Tcl drivers.
 #
