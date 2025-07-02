@@ -17,16 +17,9 @@
 */
 
 
-#ifndef __EXCEPTION_H
 #include <Exception.h>
-#endif
 
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
 
 /*!
    Objects of this class are exceptions that describe errors in a monitor states.
