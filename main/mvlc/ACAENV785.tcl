@@ -12,8 +12,8 @@ itcl::class ACAENV785 {
     private variable base
     private variable version
 
-    constructor {de ba} {
-	set device $de
+    constructor {ba} {
+	set device ""
 	set base $ba
     }
 
