@@ -59,6 +59,7 @@ jobs:
              CXX=`cat /usr/opt/MPI_PATH`
       - name: Make
         working-directory: ./main/oot
+        shell: bash
         run: |
           make -j2 clean && make -j2 all && make -j2 install
           source /usr/cargo/env
