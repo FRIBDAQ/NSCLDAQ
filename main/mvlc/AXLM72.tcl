@@ -59,10 +59,10 @@ itcl::class AXLM72 {
   # Sets up all the addresses of devices within the XLM. These 
   # are all with respect to the base address computed from the slot
   # passed in as an argument
-  # 
+  # @param de - ignored.
   # @param sl slot in which the XLM resides.
   #
-	constructor {sl} {
+	constructor {de sl} {
     set device "mvlc";      # This is the 'controller command' on mvlcgenerate.
 		set self [string trimleft $this :]
 		set slot  $sl
