@@ -91,14 +91,15 @@ itcl::class AXLM72 {
   # Read
   #
   # Performs a 32-bit read using the A32 unpriviledged access address modifier (0x09).
+  # We allow this because it may be used in a slow controls server:
   #
   # @param dev     base address of the XLM72
   # @param address offset to add to the dev argument
   # 
   # @returns the value read from the module 
   public method Read {dev address} {
-      error "Read is not supported in immediate mode for mvlcgenerate"
-      #return [$device vmeRead32 [expr [set $dev]+$address] 0x09]
+      
+      return [$device vmeRead32 [expr [set $dev]+$address] 0x09]
   }
 
   ##
