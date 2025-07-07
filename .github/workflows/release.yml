@@ -55,7 +55,7 @@ jobs:
           chmod 755 extract_release_note.sh
           ./extract_release_note.sh ${{ inputs.tag }}
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       - name: Move all files into one place
         run: mv */*.tar.gz .
       - name: Create a release
