@@ -136,6 +136,6 @@ install-exec-local:
 	$(INSTALL_DATA)  @srcdir@/SampleDriver.cpp @datarootdir@/mvlc-examples
 	$(INSTALL_SCRIPT) @srcdir@/SampleDriver.tcl @datarootdir@/mvlc-examples
 	$(mkinstalldirs) @datarootdir@/mvlc/TclLibs
-	$(INSTALL_SCRIPT) $(TCLDRIVERFILES) @datarootdir@/mvlc/TclLibs;
+	for f in $(TCLDRIVERFILES) ; do $(INSTALL_SCRIPT) @srcdir@/$$f @datarootdir@/mvlc/TclLibs; done
 	MVLC_TRANSATOR=1 echo pkg_mkIndex -verbose @datarootdir@/mvlc/TclLibs  "*.tcl" | $(TCLSH_CMD)
 
