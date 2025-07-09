@@ -67,6 +67,7 @@ int main(int argc, char** argv) {
 
     try {
         setenv("MVLC_TRANSLATOR", "1", 1);
+        setenv("TCLLIBPATH", MVLC_TCLLIBDIR, 1);
         MVLCConfigParser tclparser(infile);
         tclparser.initialize();
         tclparser();

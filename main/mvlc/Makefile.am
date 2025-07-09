@@ -53,7 +53,8 @@ mvlcgenerate_DEPENDENCIES=libmvlcGenerator.la
 mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
 	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os \
 	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ @YAML_CFLAGS@ \
-	-DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" 
+	-DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" \
+	-DMVLC_TCLLIBDIR=\"@datarootdir@/mvlc/TclLibs\"
 
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@ @YAML_LIBS@ @builddir@/libmvlcGenerator.la
@@ -113,8 +114,20 @@ unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
 
 TESTS=unittests
 
+#
+# These files are Tcl Drivers in the library we supply:
+
+TCLDRIVERFILES=VMUSBDriverSupport.tcl Utils.tcl \
+	sis3300defs.tcl  sis330xdriver.tcl sis3300.tcl \
+	ACAENV1290.tcl ACAENV785.tcl AXLM72.tcl ACrdcXLM72.tcl \
+	AGD16XLM72.tcl ALevel3XLM72Readout.tcl AMesytecMADC32.tcl \
+	APpacXLM72.tcl ATimeStampXLM72.tcl AXLM72Generic.tcl \
+	AXLM72Scaler.tcl
+	
+
 EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml \
-	SampleDriver.cpp SampleDriver.tcl
+	SampleDriver.cpp SampleDriver.tcl \
+	$(TCLDRIVERFILES)
 
 install-exec-local:
 	$(mkinstalldirs) @datarootdir@/mvlc
@@ -122,4 +135,7 @@ install-exec-local:
 	$(INSTALL_DATA)  @srcdir@/triggeronly.yaml @datarootdir@/mvlc/triggeronly.yaml
 	$(INSTALL_DATA)  @srcdir@/SampleDriver.cpp @datarootdir@/mvlc-examples
 	$(INSTALL_SCRIPT) @srcdir@/SampleDriver.tcl @datarootdir@/mvlc-examples
+	$(mkinstalldirs) @datarootdir@/mvlc/TclLibs
+	$(INSTALL_SCRIPT) $(TCLDRIVERFILES) @datarootdir@/mvlc/TclLibs;
+	MVLC_TRANSATOR=1 echo pkg_mkIndex -verbose @datarootdir@/mvlc/TclLibs  "*.tcl" | $(TCLSH_CMD)
 
