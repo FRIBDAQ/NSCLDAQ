@@ -121,7 +121,7 @@ TCLDRIVERFILES=VMUSBDriverSupport.tcl Utils.tcl \
 	sis3300defs.tcl  sis330xdriver.tcl sis3300.tcl \
 	ACAENV1290.tcl ACAENV785.tcl AXLM72.tcl ACrdcXLM72.tcl \
 	AGD16XLM72.tcl ALevel3XLM72Readout.tcl AMesytecMADC32.tcl \
-	APpacXLM72.tcl ATimeStampXLM72.tcl
+	APpacXLM72.tcl ATimeStampXLM72.tcl AXLM72Generic.tcl
 
 EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml \
 	SampleDriver.cpp SampleDriver.tcl \
