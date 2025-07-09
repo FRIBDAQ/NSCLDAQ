@@ -131,8 +131,7 @@ if {$istranslator ne ""} {
                         by the translator at this time because its initialization is highly interactive with them module.
                     </para>
                 </listitem>
-            </orderedlist>
-        </para>
+            </orderedlist>para>
     </refsect1>
     <refsect1>
         <title>FILES</title>
@@ -2077,3 +2076,6 @@ mvlclist subcommand ...
     </section>
 </chapter>
 <!-- /chapter -->
+<!-- Reference docs for the drivers etc.  -->
+<!-- manpage 3mvlcgen-->
+<!-- /manpage -->
