@@ -2522,6 +2522,217 @@ adc cget <replaceable>name ?option?</replaceable>
         </itemizedlist>
     </refsect1>
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>v830</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>v830</refname>
+        <refpurpose>Support the CAEN V830 latching scaler</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+v830 create <replaceable>name ?option value...?</replaceable>
+v830 config <replaceable>name option value?...?</replaceable>
+v830 cget  <replaceable>name ?option?</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The <command>v830</command> configuration script command
+            provides support to read the CAEN V830 32 channel scaler.  Normally,
+            this module is used in the scaler stack to provie online scaler displays.
+            It can be used in other applications. 
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>-base </option> <replaceable>vme-address</replaceable></term>
+                <listitem><para>
+                    Base address of the module in VME a32 space.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-channels </option> <replaceable>enable-mask</replaceable></term>
+                <listitem><para>
+                    A mask with bits set to enable specific channels to count.  If not
+                    configured, the value programmed is 0xffffffff which enables all channels.
+                    The least significatn bit enables channel 0 while the most significatn bit
+                    enables channel 31.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-dwelltime </option> <replaceable>time-400ns-steps</replaceable></term>
+                <listitem><para>
+                    If the module's <option>-trigger</option> is set to periodic, this value is the
+                    number of 400ns units betwee triggers.  This is not normally  used by
+                    FRIB/NSCLDAQ users.  If not configured, the value is 0.  Note that the
+                    dwell time must be programmed to be at least as long as the readout  time 
+                    if used.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-header </option> <replaceable>enable | disable</replaceable></term>
+                <listitem><para>
+                    If enabled, in addition to the scaler channels being read, an identifying header
+                    is also read.  If not configured, this is disabled.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-trigger </option> <replaceable>vme | periodic | random</replaceable></term>
+                <listitem><para>
+                    Determines how the module is triggered to save latched scalers in its multi-event
+                    buffer (MEB).   If not configured, vme is the default and the trigger is an explicit
+                    trigger over the VME Bus.  This is normal.  If periodic, the module self triggers 
+                    periodically as determined by the <option>-dwelltime</option>.  If random, the module's 
+                    external trigger is used to trigger the module.  If used in the event stack, this
+                    is the more usual trigger.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-wide </option> <replaceable>true | false</replaceable></term>
+                <listitem><para>
+                The module is capable of running either as 32 x 32bit scalers (wide mode) or
+                32 x 26 bit scalers (narrow mode).  If <option>-wide</option> is true, the module
+                is 32 x 32 bit scalers.  If not configured, this is the default.  In 26 bit mode, the most 
+                significant 5 bits of each scaler contain the channel number.
+                Normal FRIB use is <option>-wide</option> configured as  true.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-autoreset </option> <replaceable>enable | disable</replaceable></term>
+                <listitem><para>
+                    When enabled, the scalers are cleared when read.  This is the default if not 
+                    explicitly configured.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-geo </option> <replaceable></replaceable></term>
+                <listitem><para>
+                    The geographical address to place in the header (if <option>-header</option>
+                    is enabled).  Note that for this to be programmed, the backplane and module must
+                    <emphasis>not</emphasis> have the CERN backplane extentions <emphasis>and</emphasis>
+                    <option>-setgeo</option> must be true.  
+                </para><para>
+                    Normally the geo is not used becuase in most FRIB applications, the 
+                    <option>-header</option> is disabled.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-setgeo </option> <replaceable>true | false</replaceable></term>
+                <listitem><para>
+                    This allows the code to program the geographical address register.
+                    This shouild only be true if the backplane and module do not have
+                    the CERN extensions.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-ipl </option> <replaceable>0-7</replaceable></term>
+                <listitem><para>
+                    If this is non-zero, the module will interrupt when trigered and buffering
+                    at least <option>-highwatermark</option> triggers in its MEB.  Note that this
+                    should also be used with the <option>-vector</option> option to set the interrupt
+                    vector. This is not normally used in the FRIB.  One potential use could be
+                    to drive an interrupt triggered stack.
+                    If not configured, the value defaults to 0 which disables interrupts.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-vector </option> <replaceable>0-255</replaceable></term>
+                <listitem><para>
+                    If the module is being used in interrupt mode, this option provides the value of the
+                    interrupt status/id (vector).  This defaults to 0 if not configured.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-highwatermark </option> <replaceable>integer</replaceable></term>
+                <listitem><para>
+                    The scaler has a multi-event buffer that can hold up to 32K words of data.  When used
+                    in interrupt mode, the module will interrupt when the MEB has at least 
+                    <option>-highwatermakr</option> words in it.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
 
+</refentry>
+<refentry id='mvlc3.caenchain'>
+    <refmeta>
+        <refentrytitle id='mvlc3.caenchain.title'>caenchain</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>caenchain</refname>
+        <refpurpose>Bulk readout of <command>adc</command> modules in a chain.</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+caenchain create <replaceable>name ?option value ...?</replaceable>
+caenchain config  <replaceable>name option value ?...?</replaceable>
+caenchain cget  <replaceable>name ?option?</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The CAEN V785, V775, V792 modules can be readout in bulk via a 
+            <firstterm>chainblock</firstterm> transfer.  The manner in which this is done,
+            requires the modules be in a contiguous set of slots.
+            A small amount of readout overhead is eliminated doing this which can result in 
+            marginally smaller dead-times.   
+            When using chain block transfer, <command>adc</command> modules are created and configured
+            and then a <command>caenchain</command> is created and configured and the modules in the
+            chain are configured via the <option>-modules</option> option.  The <command>caenchain</command>
+            module is then put into the stack rather than the individual modules. See 
+            <literal>EXAMPLE</literal> below for a sketch of how this is done.
+            Chains must have at least two modules.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>-base </option> <replaceable>vme-address</replaceable></term>
+                <listitem><para>
+                    This provides the chain block transfer address that will be used.
+                    The chain module will take care of programming this in all of the modules
+                    in the chain.  This should not be the address of any other module in the crate.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-modules </option> <replaceable>list-of-adcs</replaceable></term>
+                <listitem><para>
+                    This is a list of the names of modules created with <command>adc</command>.
+                    The module list has some ordering requirements.  Specifically the module in the
+                    lowest numbered slot must be first and the one in the highest numbered slot must
+                    be last.  Other than that, the modules can be ordered in any way that is convenient,
+                    though we recommend they be in slot number order.  This ordering is required because
+                    the first and last modules in the chain require special programming.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>EXAMPLE</title>
+        <para>
+            This section provides an example that shows how to set up a caen chain.
+        </para>
+        <informalexample>
+            <programlisting>
+adc left -base 0x01000000
+adc middle -base 0x02000000
+adc right -base 0x03000000
+
+caenchain chain -base 0x80000000 -modules [list left middle right]
+
+stack create event -trigger nim0 -modules [list chain]
+            </programlisting>
+        </informalexample>
+    </refsect1>
+</refentry>
 
 <!-- /manpage -->
