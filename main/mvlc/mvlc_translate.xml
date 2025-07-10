@@ -131,7 +131,8 @@ if {$istranslator ne ""} {
                         by the translator at this time because its initialization is highly interactive with them module.
                     </para>
                 </listitem>
-            </orderedlist>para>
+            </orderedlist>
+        </para>
     </refsect1>
     <refsect1>
         <title>FILES</title>
@@ -2077,5 +2078,450 @@ mvlclist subcommand ...
 </chapter>
 <!-- /chapter -->
 <!-- Reference docs for the drivers etc.  -->
-<!-- manpage 3mvlcgen-->
+
+<!-- manpage 3mvlcgen -->
+<refentry>
+
+    <refmeta>
+        <refentrytitle>sis3804</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>sis3804</refname>
+        <refpurpose>Create and configure SiS 3804 VME scaler modules</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+sis3804 create <replaceable>name ?option value?...</replaceable>
+sis3804 config <replaceable>name ?option value?...</replaceable>
+sis3804 cget <replaceable>name ?option?</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This command creates and manipulates the configurable options of
+            an SIS3804 8 channel latching scaler module.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        
+        <variablelist>
+            <varlistentry>
+                <term><option>-base </option><replaceable>base-addresss</replaceable></term>
+                <listitem><para>
+                    Sets the base address of the module. This must normally be specified.
+                    The default value is <literal>0</literal> which is not usually useful.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-refpulser </option> <replaceable>on | off</replaceable>  </term>
+                <listitem><para>
+                 Enables or disables the reference pulser.  The reference pulser is
+                 a 250MHz pulser which when enabled (on), pulses channel 1.  By default, this
+                 is off (disabled).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-disables </option>  <replaceable>mask</replaceable> </term>
+                <listitem><para>
+                Mask who's bits select which channels are disabled.  Bit 0 is channel 1,
+                bit 2 is channel 2 and so on so, for example, a value of 5, disables channels
+                1 and 3.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-autoclear </option> <replaceable>on | off</replaceable>  </term>
+                <listitem><para>
+                    If on, the default, the scaler is cleared after it has been read.
+                    If not, the scaler is only cleared at the beginning of each run.
+                    Note that the read and clear is atomic for each channel.  However,
+                    any counts that come between the latch and read/clear will be lost.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>    
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>sis3820</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>sis3820</refname>
+        <refpurpose>Configurea Struck (SIS) 3820 latching scaler.</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+sis3820 create <replaceable>name ?option value?...</replaceable>
+sis3820 config <replaceable>name ?option value?...</replaceable>
+sis3820 cget <replaceable>name ?option?</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The SIS 3820 is a latching scaler that can also provide timestamp
+            information.    In regular use, it is a 32 channel 32 bit scaler
+            module.  If used as a timestamper it provides 2 48 bit channels.
+            See the <option>-timestamp</option> for more information
+            about this.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>-base </option> <replaceable>integer</replaceable></term>
+                <listitem><para>
+                    Sets the module's base address.   The base addresses are set
+                    via jumpers or rotary switches, depending on the module hardware
+                    revision.  The default value is 0.  
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-timestamp </option> <replaceable>enable |disable </replaceable></term>
+                <listitem><para>
+                When enabled, the module is run in timestamp mode.
+                In timestamp mode, the module
+                    used as two 48 bit channels that increment when inputs 1 and 16
+                    are pulsed.  Normally in timestamp mode, the scaler is also
+                    externally latched on the event trigger e.g.  The default is
+                    disable.  In that case, the module is run as 32 channels of 32 bit wide 
+                    scalers.  This is normally used to display counters in the scaler display.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-inputmode </option> <replaceable> selection</replaceable></term>
+                <listitem><para>
+                Programs how the four NIM inputs are used.  Any of the following
+                values can be used for the selection:
+                <variablelist>
+                    <varlistentry>
+                        <term><literal>default </literal></term>
+                        <listitem><para>
+                            Lets the software select an appropriate default mode
+                            depending on the value of the <option>-timestamp</option>.
+                            See <literal>default mode</literal> below.  This is the
+                            default value for this option.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><literal>None </literal></term>
+                        <listitem><para>
+                            All of the inputs are disabled.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><literal>LNEInhLNE </literal></term>
+                        <listitem><para>
+                            Note that LNE means "Load Next Event" and means
+                            latch.  Input 1 is the load next event signal (latch),
+                            Input 4, inhibits the LNE input.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><literal>LNEInhboth </literal></term>
+                        <listitem><para>
+                            Input 1 loads the next event, Input 3, inhibits scalers from
+                            counting and Input 4 inhibits the LNE input.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><literal>LNEInhCount </literal></term>
+                        <listitem><para>
+                            Input 1 is the latch (LNE) and input 4 inhibits the scalers
+                            from counting when asserted.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><literal>Inh4s </literal></term>
+                        <listitem><para>
+                            Each input inhibits four channels of the scaler.  E.g.
+                            input 1 inhibits, channels 1-4, input 2 inhibits channels 5-8
+                            and so on.  Using this in timestamp mode issues a warning as
+                            there is no input that can latch the timestamp.
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><literal>LNEHiscal </literal></term>
+                        <listitem><para>
+                            Not supported in  
+                        </para></listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term><literal>LNEInhClr </literal></term>
+                        <listitem><para>
+                            Input 1 is the LNE, input 2 inhibits counting and input 3 
+                            clears all of the scaler counters.
+                        </para></listitem>
+                    </varlistentry>
+                </variablelist>
+                </para>
+                <para>
+                    When <literal>default</literal> is selected, the input mode
+                    depends on the state of the <option>-timestamp</option>.
+                    If <option>-timestamp</option> is enabled, default is like selecting
+                    <literal>LNEInhLNE</literal>. If <option>-timestamp</option>
+                    is disabled, default is like selecting <literal>Inh4s</literal>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-outputmode </option> <replaceable>selection </replaceable></term>
+                <listitem><para>
+                    Selects the meaning of the NIM outputs.  The default value
+                    is <literal>clock50Mhz</literal>.  Valid values for 
+                    <option>-outputmode</option> are:
+                    <variablelist>
+                        <varlistentry>
+                        <term><literal>clock50MHz </literal></term>
+                        <listitem><para>
+                            Output 5 duplicates the LNE while Output 7 is a 50MHz 
+                            square wave clock.
+                        </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><literal>LNEAndLed </literal></term>
+                            <listitem><para>
+                                Output 5 echoes the LNE.  Output 8 is the user
+                                output which is not used by NSCLDAQ.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><literal>clock2x10MHz </literal></term>
+                            <listitem><para>
+                                Output 5 echoes the LNE and outputs 6 and7 are
+                                10MHz clocks.
+                            </para></listitem>
+                        </varlistentry>
+                        <varlistentry>
+                            <term><literal>clock1x10MHz </literal></term>
+                            <listitem><para>
+                                Output 5 is the LNE and output 6 is a 10MHz clock.
+                            </para></listitem>
+                        </varlistentry>
+                    </variablelist>
+                </para></listitem>
+            </varlistentry>
+            
+        </variablelist>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>adc</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>adc</refname>
+        <refpurpose>Manage CAEN V785, V775 and V792 digitizers</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+adc create <replaceable>name ?option value...?</replaceable>
+adc config <replaceable>name option  value ?...?</replaceable>        
+adc cget <replaceable>name ?option?</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The <command>adc</command> script command allows you to create and
+            configure the readout of CAEN V785 (adc), V775 (tdc) and V792 (qdc) modules.
+            These modules can also be used in a chain block readout using the
+            <command>caenchain</command> module command.
+        </para>
+        <para>
+            One important difference between the <command>VMUSBReadout</command> and
+            <command>mvlcgenerate</command> support for these modules is the offline nature of
+            <command>mvlcgenerate</command>.  The <command>VMUSBReadout</command> could do module
+            type specific initialization by querying the module itself for its type.  This is
+            not possible for the <command>mvlcgenerate</command> command.  Therefore the
+            additional option <option>-type</option> was added to the configurable options
+            to allow you to specify the module type.  See <literal>OPTIONS</literal> below for
+            more information about this.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                <term><option>-base </option> <replaceable>vme-address </replaceable></term>
+                <listitem><para>
+                    Specifies the base address selected in the module's rotary switches.
+                    Note that due to an error in the module's readout firmware,
+                    base addresses of the form <literal>00xx0000</literal> are rejected
+                    with an error message.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-geo </option> <replaceable>9-bit-value </replaceable></term>
+                <listitem><para>
+                    Specifies the value of the id placed in the id field of the data.  Note that
+                    this value is ignored in modules/backplanes with the CERN P3 extensions.
+                    Modules/backplanes of that sort will have three connecters (adding a small
+                    middle connector to the standard 2 larger VME connectors).  These modules/backplanes
+                    get a physical slot number through that extra connector and use that for the
+                    module id.
+                </para><para>
+                    Furthermore, Modules that have a middle connector get power through that
+                    connector and cannot be used in crates that do not have it without modification.
+                    Modules without a middle connector can be used with extended backplanes but
+                    they must have a <option>-geo</option> specified.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-thresholds </option> <replaceable>list-of-32-integers</replaceable></term>
+                <listitem><para>
+                    THe value of this option is the Tcl list of threshold values (between 0 and 0xff) for the
+                    module channels. The first element of the list is the threshold for channel 0, the second
+                    for channel 1 and so on.  Note that the "N" series of these modules have 16 channels but
+                    are essentially the same module with every other channel connected.  Therefore, those
+                    modules still require 32 integer threshold but the first element is for channel 0, the
+                    second element ignored and the third element for channel 1 and so on.
+                    If not configured the thresholds for all channels are zero.
+                </para><para>
+                    Note that the thresholds are only used if zero supression is enbabled. See the
+                    <option>-supressunderthreshold</option> option.  
+                </para><para>
+                    It is important to fully understand how threshold values are used and how they interact
+                    with the <option>-smallthresholds</option> option.  See section <literal>2.3</literal>
+                    of the manual for these digitizers at e.g. 
+                    <ulink url='https://groups.frib.msu.edu/nscl_library/manuals/caen/MOD.V785.pdf'>
+                    https://groups.frib.msu.edu/nscl_library/manuals/caen/MOD.V785.pdf</ulink>
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-smallthresholds </option> <replaceable> enable|disable</replaceable></term>
+                <listitem><para>
+                    Boolean value.  When enabled, The threshold value is multiplied by two and compared
+                    with the digitized value.  When disabled (the default), It is multiplied by 16 before
+                    comparison.   For exmaple, consider a conversion of 0x0004  And a threshold value of
+                    1. With <option>-smallthresholds</option> enabled, this value is above the applied
+                    threshold value (of 2), and with it disbled, it is not above the applied threshold
+                    value of 16.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-ipl </option> <replaceable>integer-0-7 </replaceable></term>
+                <listitem><para>
+                    If the module is used in interrupt triggered mode, this is the VME bus interrupt priority
+                    level.  This can be used to trigger an interrupt triggered readout stack. Note
+                    that typically when used in NSCLDAQ, this shoulid be <literal>0</literal>, which disables
+                    interrupts.   <literal>0</literal> is the value if not explicitly configured.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-vector </option> <replaceable>status-id </replaceable></term>
+                <listitem><para>
+                    This 8 bit status id is the interrupt vector the module will use when used
+                    in interrupt mode.  This is not normally used and can be allowed to default.
+                    If not confitured the value is <literal>0x80</literal>.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-highwater </option> <replaceable>integer0-32</replaceable></term>
+                <listitem><para>
+                    When the module is used in interrupt mode, it will interrupt when the multi-event
+                    memory (MEB) has at least this number of events. If not configured this
+                    defaults to 24 which represents the MEB (maximum events 32) 3/4 full.
+                    In normal FRIB use, this does  not need to be configured.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-fastclear </option> <replaceable>integer0-0x3ff</replaceable></term>
+                <listitem><para>
+                    Defines the module fast clear window.  This defaults to <literal>0</literal>
+                    This parameter defines the width of the
+                    fast clear window.  IF v is the value of this parameter, the actual fast clear window
+                    width is <literal>v/32 + 7</literal> microseconds.
+                    See section 2.9 of the module manual at e.g.:
+                    <ulink url='https://groups.frib.msu.edu/nscl_library/manuals/caen/MOD.V785.pdf'>
+                    https://groups.frib.msu.edu/nscl_library/manuals/caen/MOD.V785.pdf</ulink>
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-suppressrange </option> <replaceable>enable|disable</replaceable></term>
+                <listitem><para>
+                    Enables range checking for  zero-suppression.  The actual checks that will be done
+                    are determined by <option>-supressunderthreshold</option> and 
+                    <option>-supressoverflow</option>. See below.  If not configured, this defaults to
+                    enabled.   Note that if disabled, no zero suppression is performed, no matter
+                    the values of <option>-supressunderthreshold</option> and 
+                    <option>-supressoverflow</option>.  It is recomended that, while setting up this is
+                    disabled until you know how to program the module thresholds after which, you can turn this
+                    on again.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-supressunderthreshold </option> <replaceable>enable | disable</replaceable></term>
+                <listitem><para>
+                    When enabled, channels with conversions that are under the final threshold value (see
+                    the information in <option>-smallthresholds</option> above), are not included in the
+                    data for this module.  If not configured, this option is disbaled.  Note that this also
+                    requires <option>-suppressrange</option> to be enabled.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-supressoverflow </option> <replaceable>enable |disable</replaceable></term>
+                <listitem><para>
+                    This is only relevent for the V775 TDC. If enabled, time are ommitted from 
+                    the data from this module.  Note that for this to be operative, <option>-supressrange</option>
+                    must also have been enabled.   For modules that are not V775 or V775N, this
+                    option has no effect.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-timescale </option> <replaceable>integer-140-1200</replaceable></term>
+                <listitem><para>
+                This option is only meaningful for V775 (and V775N) modules.  It determines the time range
+                and time granulatiry of the module.    The value of this parameter is the full scale range in
+                ns.  If not configured, the module is programmed with a full scale range of 600ns.  This
+                option is ignored if <option>-type</option> is not tdc.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-iped </option> <replaceable>integer0-255 </replaceable></term>
+                <listitem><para>
+                This option is only meaningful if <option>-type</option> is qdc.
+                It is the current pedestal that is applied to the charge collection circuit of the module.
+                If not configured the parameter defaults to 180.
+                The charge collection circuit can leak charge if the gate lenght is long.  iped an compensate
+                for this charge leakage ensuring that small currents integrate to something that is non-zero.
+                For more information on this, see section 2.1.2 in the manual at e.g.
+                <ulink url='http://pen.phys.virginia.edu/daq/vme/v792ac_usersmanual.pdf'>
+                http://pen.phys.virginia.edu/daq/vme/v792ac_usersmanual.pdf</ulink>. 2.1.3 in the same
+                document describes limits on the gate width that are a result of this leakage current as well
+                as providing guidance for how to set this parameter.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-requiredata </option> <replaceable>enabled | disabled</replaceable></term>
+                <listitem><para>
+                    If this is enabled, even if all of the module's channels would be supressed the
+                    module will still emit a header and trailer value.  If disabled, modules that
+                    are fully suppressed contribute nothing to the data.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-type </option> <replaceable>adc | tdc | qdc</replaceable></term>
+                <listitem><para>
+                    Describes the module type so that type specific initialization is properly done.
+                    If not configured, this defaults to adc.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>SEE ALSO</title>
+        <itemizedlist>
+            <listitem><para>
+                <link linkend='mvlc3.caenchain' endterm='mvlc3.caenchain.title' />
+            </para></listitem>
+        </itemizedlist>
+    </refsect1>
+</refentry>
+
+
 <!-- /manpage -->
