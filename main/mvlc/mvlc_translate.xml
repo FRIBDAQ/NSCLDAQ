@@ -2723,16 +2723,422 @@ caenchain cget  <replaceable>name ?option?</replaceable>
         </para>
         <informalexample>
             <programlisting>
-adc left -base 0x01000000
-adc middle -base 0x02000000
-adc right -base 0x03000000
+adc create left -base 0x01000000
+adc create middle -base 0x02000000
+adc create right -base 0x03000000
 
 caenchain chain -base 0x80000000 -modules [list left middle right]
 
-stack create event -trigger nim0 -modules [list chain]
+stack create event -trigger nim1 -modules [list chain]
             </programlisting>
         </informalexample>
     </refsect1>
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>delay</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>delay</refname>
+        <refpurpose>Add a delay to the readout stack</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+delay create <replaceable>name ?option value...?</replaceable>
+delay config  <replaceable>name option value?..?</replaceable>
+delay cget  <replaceable>name ?option?</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            Adds a delay to the stack.  This can be used to read fast devices first
+            followed by a delay to wait for slower devices which follow.
+            Only one option is available <option>-value</option> which is the 
+            length of the delay in 200ns units.  Note that, while as for the VMUSBReadout, this
+            delay is in 200ns units, it will be converted to the  of 62.5ns units accepted
+            by the MVLC that results in at least the requested delay. For example a value of 
+            1 (requesting a 200ns delay) will actually result in a 250ns delay.
+        </para>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>madc</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>madc</refname>
+        <refpurpose>Support Mesytec MADC32 devices</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv><programlisting>
+madc create <replaceable>name ?option value...?</replaceable>
+madc config  <replaceable>name option value?..?</replaceable>
+madc cget  <replaceable>name ?option?</replaceable>
+    </programlisting></refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The Mesytec MADC32 is a 32 channel peak sensing ADC. It support either common gate
+            mode or a split gate mode where banks of 16 chanels are independentyl gated.  It can
+            place a timestamp in the data obtained from either an external clock source or
+            the 16MHz VME backplane clock.
+        </para>
+        <para>
+            Modules can be individually read out or grouped into a block chain readout using
+            the madcchain command. Since this module has a lot of features you may want to refer
+            to the manual at <ulink url='https://wikihost.frib.msu.edu/S800Doc/lib/exe/fetch.php?media=wiki:madc-32.pdf'>
+            https://wikihost.frib.msu.edu/S800Doc/lib/exe/fetch.php?media=wiki:madc-32.pdf</ulink>
+            
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-addresss</replaceable></term>
+                    <listitem>
+                        <para>
+                            The base address of the module, programmed in its rotary switches.  If not
+                            configured, this defaults to 0 so, in general this option better be configured.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-id</option> <replaceable>integer-0-255</replaceable></term>
+                    <listitem>
+                        <para>
+                            The id of the module included in the data from the module to allow you to know
+                            which chunk of data comes from which modules.  See the manual for where this is
+                            in the data.  If not configured, this defaults to 0.  Each module should have
+                            a unique ID.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ipl</option> <replaceable>level</replaceable></term>
+                    <listitem>
+                        <para>
+                            If the module is  used to trigger a stack via interrupt, this is the 
+                            priority level of the interrupt.  If not configured, this defaults to 0 which
+                            disables module interrupts. At the FRIB, this is the normal usage.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-vector</option> <replaceable>status-id</replaceable></term>
+                    <listitem>
+                        <para>
+                            If interrupts are enabled, this configures the status id (vector) that
+                            the module will interrupt with.  If not configured, this is 0 and
+                            that's normal for FRIB where <option>-ipl</option> is generally zero,
+                            disabling module interrupts.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-timestamp</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            If this is turned on, a timestamp is included in the module data.  If off,
+                            an event sequence number will be used instead.  See <option>-timingsource</option>
+                            to set the source of the clock that is used to provide the timestamp.  Note that
+                            if the modules are incorporated into a <command>madcchain</command> the 
+                            timestamp counters for all modules in the crate are synchronously cleared using broadcast
+                            addresssing.  If not configured, this will default to off providing a sequence number.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-gatemode</option> <replaceable>common | separate</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines how the module is gated. If common, all 32 channels have a common gate and either
+                            Gate0 or Gate1 will gate the module.  If separate, then Gate0 gates the first 16 channels and Gate1
+                            the second.  Note that in this mode, for each event, the module will return two data packets, as if
+                            it were two 16 channel modules with the same <option>-id</option>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-gategenerator</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            If on, the Gate0 and Gate1 inputs are routed through gate and delay generators.
+                            This can be used to align gates with the signals in the channels.  See
+                            <option>-holddelays</option> and <option>-holdwidths</option> for the parameters of
+                            these gate and delay generators.
+                            If not configured, this is off, by default.  Gate generators can be monitored on the
+                            module front panel BUSY output by programming it for gate0 or gate1.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-holddelays</option> <replaceable>two-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            Programs the delays for the two gate and delay generators enabled by
+                            <option>-gategenerator</option>.  These values must be in the range 0 - 255.  A value of
+                            0 represents 50 ns and each step is 50ns, thus a value of 10 is 550ns of delay.  The
+                            two list elements allow each gate generator to be individually programmed. Note that
+                            if not configured, these default to 15.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-holdwidths</option> <replaceable>two-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            Programs the widths of the two gates and delay generators.  These are values from 0 - 255.
+                            The widths increase in units of 50ns. The manual is not clear but I believe that, a value
+                            of 1 represents 50ns.  Note that to trigger digitization requires a minimum gate width of
+                            80ns.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-inputrange</option> <replaceable>4v | 8v | 10v</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the input range of the module.  If not programmed, this defaults to 
+                            4v.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ecltermination</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            If On, the ECL command bus terminators are enabled.  If you bus the ECl command bus,
+                            only the last module should turn this on.  If not configured, this defaults to 
+                            on.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ecltiming</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            When  on, the ECL bus Gate1 input can be used as the clock source for 
+                            the timestamp.  This is off if not configured. The timing source must be
+                            at most 75MHz. See, however <option>-timingsource</option>. Note that only 
+                            <option>-ecltiming</option> or <option>-nimtiming</option> should be on, not both.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-nimtiming</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            If on, the Gate1 input can be used as the clock source for the timestamp.
+                            Only <option>-ecltiming</option> or <option>-nimtiming</option> should be enabled
+                            but not both.  See <option>-timingsource</option>.  If not configured, this 
+                            defaults to off.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-timingsource</option> <replaceable>vme | external</replaceable></term>
+                <listitem><para>
+                    If timestamps are enabled, determines the sourcde of the clock.  vme, the default, if not
+                    configured, uses the VME backplane clock (16MHz).  If external, the either
+                    <option>-ecltiming</option> or <option>-nimtiming</option> must be on but not both, 
+                    in that case, the clock comes from the enabled timing.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-timingdivisor</option> <replaceable>integer-0-0xffff</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines the clock divisor for the timestamp clock.  Note that a value of 
+                            zero is a divisor of 65536.  If not configured, this defaults to 15.  Note that maybe
+                            <literal>1</literal> is a better value?
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-thresholds</option> <replaceable>list-of-32-integers-0-0xfff</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides the list of thresholds for each channel for zero suppresssion.  If the conversion
+                            of a channel is below its threshold, it is not included in the data set.  Zero suppression
+                            is always enabled.  If not configured, the default is 32 zeroes which, effectively, disables
+                            zero suppression by ensuring all conversions are above threshold due to ADC pedestals.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-pulser</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            IF on the test pulser is enabled at low amplitude (7% of full scale).  This pulses
+                            all channels.  If  not configured this defaults to off.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-multievent</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            To be used in interrupt mode. See <option>-irqthresshold</option>  If not
+                            configured, this defaults to off.  In multievent mode, more than one event can be 
+                            buffered and the read will read all buffered events when the list is triggered.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-irqthreshold</option> <replaceable>words</replaceable></term>
+                    <listitem>
+                        <para>
+                            If run in interrupt mode, when the modle has buffered at least this number
+                            of 32 bit words it generates an interrupt.  This can be no more than 8120.
+                            If not programmed this defaults to 0 interrupting as soon as data is buffered.
+                        </para>
+                    </listitem>
+            </varlistentry>
+                <varlistentry>
+                    <term><option>-resolution</option> <replaceable>2k | 4k | 4khires | 8k | 8khires</replaceable></term>
+                    <listitem>
+                        <para>
+                            Programs the desired resolution.  Note that in the manual, the table labeled
+                            "Output formats, resolutions, conversion time" describes these resolutions.
+                            If not programmed, this defaults to 8k.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-nimbusy</option> <replaceable>busy | gate0 | gate1| cbus</replaceable></term>
+                    <listitem>
+                        <para>
+                            While the module has a NIM output labeled "Busy", this output can be programmed for
+                            a variety of functions.  If busy (the default if not configured), this output will,
+                            in fact, be the busy state of the module.  IF gate0 or gate1, the output will monitor the 
+                            output of one of the gate generators, while if cbus is selected, the output can be used
+                            to control external Mesytec C-Bus modules.  While we do have GUIs to do that, it is not 
+                            recommended that you do this as the specifications for how to control modules change in 
+                            ways that are difficult ot predict and adapt.  We recommend, instead, using the
+                            mesycontrol application and an MRCC controller.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+        
+    </refsect1>
+    <refsect1>
+        <title>SEE ALSO</title>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    <link linkend='mvlc.madcchain' endterm='mvlc.madcchain.title' />
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    The <ulink url='https://wikihost.frib.msu.edu/S800Doc/lib/exe/fetch.php?media=wiki:madc-32.pdf'>
+                    MADC32 manual</ulink>
+                </para>
+            </listitem>
+        </itemizedlist>
+    </refsect1>
+</refentry>
+<refentry id='mvlc.madcchain'>
+    <refmeta>
+        <refentrytitle id='mvlc.madcchain.title'>madcchain</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>madcchain</refname>
+        <refpurpose>Chain block readout of MADc32, MQDC32 and MTDC32 modules</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+madcchain create <replaceable>name ?option value...?</replaceable>
+madcchain config  <replaceable>name option value?..?</replaceable>
+madcchain cget  <replaceable>name ?option?</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The <command>madcchain</command> provides the ability to:
+        </para>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    Synchonize the timestamps of a set of MADC32, MTDC32, and MQDC32 modules.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Do an efficient bulk read of theses modules.
+                </para>
+            </listitem>
+        </itemizedlist>
+        <para>
+            To be used in a <command>madcchain</command> the modules must occupy a physcically
+            continguous set of backplane slots.  This is required because of how the chain block transfer
+            to read out all modules in the chain operates.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-cbltaddress</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            This address is programmed into all chain modules as the transfer address from
+                            which the CBLT read will be perfromed.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-mcastaddresss</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            The multicast address that will be used to synchonously clear the module timestamps e.g.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-maxwordspermodule</option> <replaceable>nwords</replaceable></term>
+                    <listitem>
+                        <para>
+                            If not programmed, this is 512.   This value is used to provide the maximum
+                            32 bit words each module can buffer and to size the block read performed
+                            by the CBLT.  If not programmed, this defaults to 512
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-modules</option> <replaceable>module-name-list</replaceable></term>
+                <listitem><para>
+                    Specifies the names of the modules in the chain.  Note, these modules should not
+                    be in the event stack, but the chain should be.  The modules must exist and
+                    be madc, mtdc or mqdc modules.  See the <literal>EXAMPLE</literal>.
+                    The only requirements in ordering the list of modules is that the first module
+                    in the list be the modules with the lowest slot number, and the last, the module
+                    with the highest slot number.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>EXAMPLE</title>
+        <informalexample>
+            <programlisting>
+madc create adc -base 0x01000000; #  Slot 5 e.g.
+mtdc create tdc -base 0x02000000; #  Slot 6 e.g.
+mqdc create qdc -base 0x03000000; # Slot 7 e.g.
+madc create anotheradc -base 0x040000 ; #slot 8.
 
+madcchain create chain -cbltaddress 0x10000000 -mcastaddresss 0x20000000 
+madcchain config chain -module [list adc qdc tdc anotheradc];   # first and last are order important.
+
+stack create event -trigger nim1 -modules [list chain ...]
+            </programlisting>
+        </informalexample>
+    </refsect1>
+</refentry>
 <!-- /manpage -->
