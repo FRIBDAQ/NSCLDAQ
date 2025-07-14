@@ -3231,28 +3231,36 @@ marker cget  <replaceable>name ?option?</replaceable>
 </refentry>
 <refentry>
     <refmeta>
-        <refentrytitle>mdpp16qdc</refentrytitle>
+        <refentrytitle>mdpp16qdc, mdpp32qdc</refentrytitle>
         <manvolnum>3mvlc</manvolnum>
     </refmeta>
     <refnamediv>
-        <refname>mdpp16qdc</refname>
-        <refpurpose>Suport the Mesytec MDPP16 with QDC firmware</refpurpose>
+        <refname>mdpp16qdc, meqq32qdc</refname>
+        <refpurpose>Suport the Mesytec MDPP16 and MDPP32 with QDC firmware</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
         <programlisting>
 mdpp16qdc create <replaceable>name ?option value...?</replaceable>
 mdpp16qdc config  <replaceable>name option value?..?</replaceable>
 mdpp16qdc cget  <replaceable>name ?option?</replaceable>        
+
+mdpp32qdc create <replaceable>name ?option value...?</replaceable>
+mdpp32qdc config  <replaceable>name option value?..?</replaceable>
+mdpp32qdc cget  <replaceable>name ?option?</replaceable>        
         </programlisting>
     </refsynopsisdiv>
     <refsect1>
         <title>DESCRIPTION</title>
         <para>
-            This configuration command provides support for the Mesytec MDPP16, 16 channel digitizer
+            This configuration command provides support for the Mesytec MDPP16, 16 channel
+            and MDPP32 32 channel
+             digitizers
             with charge digizing firmware (QDC firmware).  The configuration of this module is 
             relatively involved so you may want to refer to the
             <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_QDC.pdf'>QDC firmware manual</ulink>
-            When looking at the configuration parameter documntation.
+            When looking at the configuration parameter documntation.  Look at
+            <ulink url='https://www.mesytec.com/products/datasheets/MDPP-32_QDC.pdf'>
+            The MQDC32 QDC firmware manual</ulink> for the 32 channel module.
         </para>
     </refsect1>
     <refsect1>
@@ -3355,6 +3363,272 @@ mdpp16qdc cget  <replaceable>name ?option?</replaceable>
                             <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_SCP-RCP.pdf'>
                             The MDPP-16 manual</ulink>.  This value specifies the value for the register
                             at base + 0x6036 - the multi-event mode register.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-marktype</option> <replaceable>eventcount | timestamp | extended-timestamp</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines what the module will put in the end of event trailer word.   By default, if not configured,
+                            <literal>timestamp</literal> is selected.  If <literal>extended-timestamp</literal> is selected,
+                            the module will add an additional 16 high order bits of timestamp.  See the FIFO format in the
+                            <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_QDC.pdf'>
+                            QDC Firmware manual</ulink> for more details.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-tdcresolution</option> <replaceable>24ps | 49ps | 98ps | 195ps | 391ps | 781ps></replaceable></term>
+                    <listitem>
+                        <para>
+                            Selects the time resolution for the computed tdc. If not configured, defaults to 24ps.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-outputformat</option> <replaceable>register-value</replaceable> </term>
+                    <listitem> 
+                        <para>  
+                            The value to store in register at 0x6044, the output format register.  Only the bottom two bits
+                            can  be selected, and the default value is 3 which is the power up value of that register.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-adcresolution</option> <replaceable>64k | 32k | 16k |  8k | 4k</replaceable></term>
+                    <listitem>
+                        <para>
+                            The ADC resolution selected (register 0x6046).  If not configured this defaults to 
+                            <literal>64k</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-windowstart</option> <replaceable>offset-0-0x7fff</replaceable></term>
+                    <listitem>
+                        <para>
+                            Start of the window of interest relative to the trigger. See register 0x6050 in 
+                            the <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_SCP-RCP.pdf'>
+                            The MDPP-16 manual</ulink>.   If not configured, this defaults to <literal>0x3fbe</literal>.
+                            This is in steps of 1.56ns.  The default value is about 81ns before the trigger.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-windowwidth</option> <replaceable>width-0-0x3ffff</replaceable></term>
+                    <listitem>
+                        <para>
+                            Width of the window of interest.  If not configured, the default is 0x80 which
+                            represents a window width of about 200ns.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-firsthit</option> <replaceable>true | false</replaceable> </term>
+                    <listitem>
+                        <para>
+                            If true, then only the first hit found in the region of interest is transmitted
+                            in the event.  If not configured, this is true by default.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-testpulser</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            Turns on or off the test pulser.  This is off if not explicitly configured
+                            to be <literal>enabled</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-pulseramplitude</option> <replaceable>amplitude0-0xffff</replaceable></term>
+                    <listitem>
+                        <para>
+                            If the <option>-testpulser</option> is enabled, this will be the amplitude of 
+                            the test pulser pulses.  See register 0x6072 of  the
+                            <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_SCP-RCP.pdf'>
+                            The MDPP-16 manual</ulink>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-triggersource</option> <replaceable>register-value</replaceable></term>
+                    <listitem>
+                        <para>
+                            Defines the trigger.  The region of interest in the input signal is then defined
+                            by <option>-windowstart</option> and <option>-windowwidth</option> relative to
+                            when this trigger happens.  See register 0x6058 in the 
+                            <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_SCP-RCP.pdf'>
+                            The MDPP-16 manual</ulink>.  Only the bottom 10 bits of the value are used.
+                            By default, 0 is written into this register if not configured.
+                        </para>  
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-triggeroutput</option> <replaceable>register-value</replaceable></term>
+                    <listitem>
+                        <para>
+                            Defines the signal that will be presented on the trigger output NIM out.
+                            See register 0x605a.  See 
+                             <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_SCP-RCP.pdf'>
+                            The MDPP-16 manual</ulink> for more information.  Note that 
+                            only the bottom 10 bits of the value are used.  If not configured,
+                            <literal>0</literal> is written to this register
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-monitoron</option> <replaceable>on | off </replaceable></term>
+                    <listitem>
+                        <para>
+                            Enables or disables the monitor output.  See, however,
+                            <option>-monitorch</option> and <option>-setwave</option> configuration options
+                            to select what the monitor output show.  If not configured, this configures to
+                            <literal>off</literal> by default.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-monitorch</option> <replaceable>channel-no</replaceable></term>
+                    <listitem>
+                        <para>
+                            Selects the channel to use for the monitor outputs. The actual waveform
+                            monitored in mon0 and mon1 will depend on the value of 
+                            <option>-setwave</option>.  To see anything at those outputs, also
+                            requires configuring <option>-monitoron</option> to <literal>on</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-setwave</option> <replaceable>selection0-3</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines which waveform in the FPGA processing of the waveform is
+                            presented for the channel selected by <option>-monitorch</option> on the
+                            Mon1 and Mon2 outputs.  See the discussion of the monitor outputs in the
+                            description of the monitor outputs
+                            <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_SCP-RCP.pdf'>
+                            The MDPP-16 manual</ulink>
+                            for information about what the actual values of this option will select.  If
+                            not configured, 0 is programmed, selecting the preamplifier output and trigger.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-signalwidth</option> <replaceable>register-values-8-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            This parameter value is an 8 element Tcl list of Signal widths.
+                            The first element applies to channel 0 and 1, the second to 2 and 3 and so on.
+                            For the MDPP32, each element of the  list is the width for a 
+                            quad (set of four) channels.
+                            See register 0x6110 in <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_QDC.pdf'>
+                            QDC Firmware manual</ulink> for more details.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-inputamplitude</option> <replaceable>register-values-8-element-list</replaceable></term>                    <listitem>
+                        <para>
+                            List of the input amplitude values for channel pairs or quads. See register
+                            0x6112 in <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_QDC.pdf'>
+                            QDC Firmware manual</ulink> for more details.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-jumperange</option> <replaceable>register-values-8-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            List of jumper range values for channel pairs or quads.  See 0x6114 in 
+                            <ulink url='https://www.mesytec.com/products/datasheets/MDPP-16_QDC.pdf'>
+                            QDC Firmware manual</ulink> for more details.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-qdcjumper</option> <replaceable>8-element-list-of-bools</replaceable></term>
+                    <listitem>
+                        <para>
+                            Elements should be true if the qdc jumper is in for the corresponding channel pair
+                            or quad.
+                            If not configured, this is 8 <literal>false</literal> values.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-intlong</option> <replaceable>register-values-8-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            List of long integrations times for channel pairs or quads.   In steps of 12.5ns. maximum
+                            value is 506, minimum value 2.  If not programmed, this defaults to 8 elements of 16.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-intshort</option> <replaceable>register-values-8-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            List of short integration values for channel pairs or quads.  In steps of 12.5ns, 
+                            minimum value is 1, maximum value 127.  If not explicitly programmed,
+                            this defaults to 8 elements of 2.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-threshold</option> <replaceable>register-values-16-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            List of channel trigger threshold values, one per channel.  Values can be
+                            in the range 0 to 0xffff.  IF not explicitly programmed, this defaults to a list
+                            of 16 0x4ff values.  Note that there are 16 elements in the list, there is a threshold
+                            for each channel, not a common one for the pair.
+                            Note that for the MQDC32 this is a 32 element list not a 16 element list so, again,
+                            there is a threshold specification for every channel.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-resettime</option> <replaceable>register-values-8-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            The reset time for each channel pair/quad for the preamp.  If not programmed, this defaults
+                            to 8 elements of 32 which is normally sufficient.  Values can range from 0-0x3ff
+                            and the time is in 12.5ns steps.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-gaincorrectionlong</option> <replaceable>8-element-list-with: div4 | mult4 | none</replaceable></term>
+                    <listitem>
+                        <para>
+                            Gain corrections for the long integration time(?).   If not programmed, defaults to 8 elements of
+                            <literal>none</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-gaincorrectionshort</option> <replaceable>8-element-list-with: div4 | mult4 | none</replaceable></term>
+                    <listitem>
+                        <para>
+                            Gain corrections for short integration interval.  See <option>-gaincorrectionlong</option>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-trigtoirq</option> <replaceable>list-of-7-channel-masks</replaceable></term>
+                    <listitem>
+                        <para>
+                            When the module is used in interrupt mode, each element of this list directs the
+                            interrupt priority level of the interrupt for that set of channels.
+                            Each channel should only appear at most once.  The first element of the list is
+                            the mask of channels that will fire IRQ1, the second IRQ2 and so on.
+                        </para><para>
+                            For the MQDC 32, this is a 14 element list.  The first element of the list
+                            are the channel mask for IRQ1 channels 0-15 and the second list element
+                            the channel mask for IRQ1 for channels 16-31 and so on.
                         </para>
                     </listitem>
             </varlistentry>
