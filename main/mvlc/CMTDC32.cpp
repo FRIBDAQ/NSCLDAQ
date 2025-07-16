@@ -219,7 +219,7 @@ CMTDC32::onAttach(XXUSB::CConfigurableObject& configuration)
         "-busy", busyValues, "bothbanks"
     );
     m_pConfiguration->addBooleanParameter("-pulseron", false);
-    m_pConfiguration->addIntegerParameter("-pulserpattern", 0);
+    
     m_pConfiguration->addIntegerParameter(
         "-bank0threshold", 0, 255, 105
     );
@@ -335,11 +335,8 @@ CMTDC32::Initialize(CVMUSB& controller)
     // Support the pulser for test purposes.
     
     if (m_pConfiguration->getBoolParameter("-pulseron")) {
-        addWrite(list, base+TestPulser, 1);
-        addWrite(
-            list, base+MTDCPulserPattern,
-            m_pConfiguration->getIntegerParameter("-pulserpattern")
-        );
+        addWrite(list, base+TestPulser, 3);
+        
     } else {
         addWrite(list, base+TestPulser, 0);
     }
