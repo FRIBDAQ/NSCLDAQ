@@ -4013,5 +4013,692 @@ mdpp32scp cget  <replaceable>name ?option?</replaceable>
         <refentrytitle>mqdc32</refentrytitle>
         <manvolnum>3mvlc</manvolnum>
     </refmeta>
+    <refnamediv>
+        <refname>mqdc32</refname>
+        <refpurpose>Support for MESYTEC MQDC32 module</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+mqdc32 create <replaceable>name ?option value...?</replaceable>
+mqdc32 config  <replaceable>name option value?..?</replaceable>
+mqdc32 cget  <replaceable>name ?option?</replaceable>            
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The MQDC32 is a 32 channel charge sensing ADC.  The <command>mqdc32</command>
+            allows users to create and use modules that support it.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            Configures the module's base address. This must match the base address
+                            set in the module's rotary switches.  If not explicitly configured
+                            (not recommended), this defaults to <literal>0</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-id</option> <replaceable>id-8bits</replaceable></term>
+                    <listitem>
+                        <para>
+                            This programs the unique 8 bit value that will appear in the data
+                            to identify it came from this module.  Each module should be given
+                            a unique <option>-id</option> value.  If not explicitly configured,
+                            (not recommended)
+                            this defaults to <literal>0</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-timestamp</option> <replaceable>enabled | disabled </replaceable></term>
+                    <listitem>
+                        <para>
+                            The module allows a timestamp or event sequence number to be
+                            put in the trailer for data from the module.  If this option is
+                            not explicitly configured, it defaults to <literal>disabled</literal>
+                            which results in event sequence numbers being placed in the data.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-usethresholds</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <literal>enabled</literal>,  threshold values, programmed via the
+                            <option>-threshold</option> option are used to zero suppress the data from
+                            the module.  If not explicitly configured, this defaults to 
+                            <literal>enabled</literal>  During testing it may be useful to turn this to
+                            <literal>disabled</literal> in order to check the actual pedestal values so that
+                            you know how to set the thresholds.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-thresholds</option> <replaceable>32-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides a list of 32 thresholds, one for each channel.  List element 0
+                            is the threshold for channel 0 and so on.  Each threshold must be in the
+                            range 0-0x1fff.  If <option>-usethresholds</option> is enabled, channels
+                            with conversions below their thresholds are suppressed from the data
+                            returned for an event.  If not configured, the default value is a list of
+                            32 zeroes which, effectively, turns off zero suppression when 
+                            <option>-usethresholds</option> is enabled.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ipl</option> <replaceable>IRQ-level</replaceable></term>
+                    <listitem>
+                        <para>
+                            If useing the module to trigger a list with interrupts, 
+                            this should be programmed with the interrupt priority level
+                            the module should use when making an interrupt request
+                            on the backplane.  The default, if not configured is 0 which
+                            is suitable for use with the FRIB mvlc readout system.
+                            An value of zero disables interrupts.  Values of 1-7 enable
+                            interrupts and define the IRQ line on which th module
+                            will request an interrupt.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-vector</option> <replaceable>interrupt-status-id</replaceable></term>
+                    <listitem>
+                        <para>
+                            If interrupts are being used, this configures the status id
+                            (vector) the module will put on the bus in response to an
+                            interruprt acknowledge (IACK).  Legal values are 0-255.
+                            If not explicitly configured, this will default to 0.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-irqthreshold</option> <replaceable>words</replaceable></term>
+                    <listitem>
+                        <para>
+                            If interrupts are used, this determines the minimum number of words
+                            that must be buffered in the FIFO before an interrupt is requested.
+                            Valid values are between 0 and 0xffff.  If not configured, 
+                            this defaults to 1 which means that, if interrupts are enabled,
+                            the mdoule will interrupt as soon as any data hits the FIFO.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-multievent</option> <replaceable>off | on | limited</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines the multi-event readout mode.  The default, if not configured
+                            is <literal>off</literal>.  If <literal>limited</literal> is used then
+                            each read will return at most <option>-maxtransfers</option> words.
+                            <literal>on</literal> implies that a read, if large enough will transfer
+                            all of the data in the FIFO.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-maxtransfers</option> <replaceable>words</replaceable></term>
+                    <listitem>
+                        <para>
+                            When <option>-multievent</option> is <literal>limited</literal>,
+                            this determines the maximum number of words that can be transferred
+                            from the FIFO in a single read.  Valid values 0-0xffff and the
+                            default, if not explicitly programmed is 1.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-countevents</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            If not configured, this defaults to off.  If on, one of the
+                            module registers, that counts the amount of data present
+                            will count events, not words.  Note that at this point,
+                            that has no effect on readout as the transfer size is not
+                            determined by that register.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-skipberr</option> <replaceable>on  | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            If not configured, this defaults to off.   That value is normally
+                            correct for FRIB.  Off, causes the module to terminate transfers, when there
+                            is no more data with a BERR.  If enabled, the transfer will transfer
+                            all of the requested words but an EOB word will indicate when the rest of the
+                            data are not meaningful.  See the desription of register 0x6036
+                            in the 
+                            <ulink url='https://www.mesytec.com/products/datasheets/MQDC-32.pdf'>
+                            MQDC32 manual</ulink> for more information about EOB.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-bankoffsets</option> <replaceable>two-offset-list</replaceable></term>
+                    <listitem>  
+                        <para>
+                            Provides a shift of the data from the module by as much as +/- 1000.
+                            The value consists of a shift value for each bank of 16 channels.
+                            A value of 128 represents a shift of 0.  If not programmed,
+                            the default is a two element list with values 128 for both elements,
+                            that is zero shift for both banks.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-gatemode</option> <replaceable>common | separate</replaceable></term>
+                    <listitem>
+                        <para>
+                            The module can be run with a common gate or as an effective pair of
+                            16 channel modules.   Each 16 channel module group is a 
+                            <firstterm>bank</firstterm>.  In common gate mode all 32 channels
+                            share a single gate and a read of the module will only return one
+                            packet of data.  In separate gate mode, each bank has a separate gate
+                            and the module will return two packets of data per event, one for 
+                            each bank.   If not configured, this defaults to common.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-gatelimits</option> <replaceable>two-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides limits on the gate widts for each bank.   By default,
+                            if not configured, this defaults to two elements of 255 which
+                            does not limit the gate.  For more information about this
+                            and a table of values and the gate limits they provide,
+                            see the description of register 0x6050 and the next page
+                            in <ulink url='https://www.mesytec.com/products/datasheets/MQDC-32.pdf'>
+                            MQDC32 manual</ulink>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-exptrigdelays</option> <replaceable>two-element-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the experiment trigger delay.  this value is in the
+                            range 0-0x3fff.  If not programmed, this is a list of 
+                            two zeroes.  For more on this see the section:
+                            <literal>Delayed gating with experiment trigger</literal>
+                            in <ulink url='https://www.mesytec.com/products/datasheets/MQDC-32.pdf'>
+                            MQDC32 manual</ulink>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-inputcoupling0 -inputcoupling1</option> <replaceable>AC | DC</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the module's input coupling for bank 0 and 1 respectively.
+                            If not programmed, this will default to AC coupling.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-pulser</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            Enables the test pulser.  By default, if not programmed, this
+                            is <literal>off</literal>  See, however
+                            <option>-pulseramp</option> to set the pulser amplitude.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-pulseramp</option> <replaceable>amplitude</replaceable></term>
+                    <listitem>
+                        <para>
+                            This sets the test pulser amplitude, when it is enabled via
+                            <option>-pulser</option>  By default the value is 32 if not
+                            configured.  This should result in conversions at bin 2000.
+                            See register 0x6072 in the
+                            <ulink url='https://www.mesytec.com/products/datasheets/MQDC-32.pdf'>
+                            MQDC32 manual</ulink>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ecltermination</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            Controls the ECL control bus termination.  If the ECL Control lines
+                            are bussed, only the last module on the bus should be terminated.
+                            If on, the default, the terminators for the module's ECL
+                            control bus are enabled.   This is only suitable for 
+                            individually cabled ECL control bus cables.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ecltiming</option> <replaceable>enabled | disabled<</replaceable></term>
+                    <listitem>
+                        <para>
+                            Recall that the module can place a timstamp int the event.
+                            The clock that increments the timestamp is 
+                            either the VME bus 16MHz clock or an external clock
+                            that can either be the gate1 input on the ECL bus or the
+                            Gate1 NIM input (but not both).
+                            If this parameters is enabled, the ECL gate1 input is programmed
+                            to provide a clock input and the FC input a timestamp reset.
+                            Note that the <option>-timingsource</option> must be set to 
+                            external for this to mean anything.  See, as well 
+                            <option>-nimtiming</option> and <option>-timingsource</option>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-nimtiming</option> <replaceable> enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            If enabled, the NIM Gate1 input can be the source of the
+                            timestamp clock.  See the discussion of timing in 
+                            <option>-ecltiming</option> above.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-nimbusy</option> <replaceable>busy | rcbus | full | overthreshold</replaceable></term>
+                    <listitem>
+                        <para>
+                            Programs the meaning of the Busy output.  If busy, then the output is asserted
+                            when the the module is busy. Note that in individually gated mode, this is asserted
+                            only when both banks are busy.  rcbus allows the module to control Mesytec
+                            modules that support the Mesytec control bus.  While we have support software
+                            for several modules we recommend, instead the use of Mesycontrol software
+                            along with an MRCC as the firmware in the controlled modules changes
+                            too rapidly for us to keep up with controls requirements.  full indicates the
+                            module multi event buffer is full and overthreshold that the module's FIFO
+                            has more words than the <option>-irqthreshold</option>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-timingsource</option> <replaceable>external | vme</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the source of the timestamp clock.  vme, the default if not configured,
+                            uses the VME backplane 16MHz clock to increment the timestamp counter.
+                            external requires that either <option>-nimtiming</option> or
+                            <option>-ecltiming</option> be enabled, (but not both), in which case,
+                            they provide the clock.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-timingdivisor<</option> <replaceable>divisor</replaceable></term>
+                    <listitem>
+                        <para>
+                            This value is a scaledown factor for the timestamp
+                            clock. Note that 0 means 65536 and values can be in
+                            the range 0-0xffff.  If not configured, this defaults
+                            to 1.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-resetlogic</option> <replaceable>never | begin_run | extern_oneshot</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines when the internal counters, including the timestamp are reset to zero.
+                            If <literal>never</literal> the counters run continously from power up.  If
+                            <literal>begin_run</literal> (the default if not configured), the counters are cleared
+                            as the run is starting.  Note that no attempt is made to synchronize this clear
+                            with the clear of other modules.  In fact, there will be skew from  with the modules
+                            earlier in the stack being cleared first.  If <literal>extern_oneshot</literal> an
+                            external clear is used. Note that in the case the module is in a <command>madchain</command>
+                            modules programmed for begin_run clear have timestamps synchronously cleared but that
+                            will not synchronize with the clears of modules not in the same chain or not capable
+                            of being in chains.  The most releable way to get a common clear is to use an
+                            external clear signal.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-multlowerlimit0</option> <replaceable>multiplicity</replaceable></term>
+                    <listitem>
+                        <para>
+                            If the banks are run with a common gate, this represents the 
+                            lower limit of the multiplicity filter for all channels.  If separately, this
+                            represents the lower multiplicity limit for bank 0 (channels 0-15).
+                            If not configured, the default is 0.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-multlowerlimit1</option> <replaceable>multiplicity</replaceable></term>
+                    <listitem>
+                        <para>
+                            IF the banks are run with separate gates, this is the lower limit of the multiplicity
+                            filter for bank 1 (channels 16-31).  If common gates are used, this is ignored.
+                            If not configured, this parameter is set to 0.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-multupperlimit0 -multupperlimit1</option> <replaceable>multiplicity</replaceable></term>
+                    <listitem>
+                        <para>
+                            See the previous two options. These parameter set the upper multiplicity limit for the
+                            multiplicity filter.  As with the low limits, <option>-multupperlimit0</option> is used
+                            when the banks are not split with separate gates.  The default values, if not
+                            configured are 32 for <option>-multupperlimit0</option> and
+                            16 for <option>-multupperlimit1</option>.  If I were using the module and running in 
+                            split gates, I would probably set <option>-multupperlimit0</option> to 16 just to be safe.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+
+    </refsect1>
+    <refsect1>
+        <title> SEE ALSO </title>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    <link linkend='mvlc.madcchain' endterm='mvlc.madcchain.title' />
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <ulink url='https://www.mesytec.com/products/datasheets/MQDC-32.pdf'>
+                    The MQDC32 manual</ulink>
+                </para>
+            </listitem>
+        </itemizedlist>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>mtdc32</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>mtdc32</refname>
+        </refpurpose>Provide support for Mesytec MTDC32 module</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+mtdc32 create <replaceable>name ?option value...?</replaceable>
+mtdc32 config  <replaceable>name option value?..?</replaceable>
+mtdc32 cget  <replaceable>name ?option?</replaceable>         
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The <command>mtdc32</command> configuration commands supports creating and configuring 
+            modules for the Mesytec MTDC32 - a 32 channel TDC that can be used either as
+            an absolute timing modules or as a trigger matching timing module.
+            Be sure to read and understand the 
+            <ulink url='https://www.mesytec.com/products/datasheets/MTDC-32.pdf'>
+            MTDC-32 manual</ulink> when reading the configuration option
+            descriptions.
+        </para>
+        <para>
+            Note that MTDC32 modules can be used in <link linkend='mvlc.madcchain' endterm='mvlc.madcchain.title' />
+            modules as well as individually, directly in a stack.
+        </para>
+        <para>
+            Unlike the CAEN V1x90 modules, the gate inputs are timed relative to a hidden set of TDC channels.
+            This means that no reference channel is required to recover high  precision timing relative to the
+            gate in trigger matching mode.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <para>
+            Note in the list of options below, <literal>default value</literal> refers to the value
+            the parameter will have if not explictily configured.
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            This shoud be the full 32 bit base address of the module set in its
+                            address selection rotary switches.  
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-id<replaceable>identifier</replaceable></term>
+                    <listitem>
+                        <para>
+                            This value will be placed in the id field of the data
+                            returned from this module.  Note that it must be in the
+                            range 0-255.  The <option>-id</option> value shoulid be
+                            unique amongst all modules.  If not explicitly configured,
+                            this defaults to 0 -- which is not recommended.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ipl</option> <replaceable>priority</replaceable></term>
+                    <listitem>
+                        <para>
+                            If the module is used to initiate interrupt triggered lists,
+                            this configures the VME interrupt priority leve that will be used.
+                            A value of 0, the default if not configured, disables interrupts.
+                            The legal values are 1-7, reflecting the IRQ levels that are supported
+                            by the VME bus.  At FRIB, normally, interrupts are not used.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-vector</option> <replaceable>status-id</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <option>-ipl</option> is not 0, this will be the 8 bit value of the
+                            status id the module will put on the VME bus when it receives an
+                            IACK for an interrupt it  is initiating. The status id is more commonly 
+                            called an interrupt vector.  By default this is 0 if not configured.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-irqthreshold</option> <replaceable>words</replaceable></term>
+                    <listitem>
+                        <para>
+                            If interrupts are enabled, they will be triggered when the number
+                            of 32 bit words buffered by the exceeds <replaceable>words</replaceable>.
+                            The default value is  1 which will trigger an interreupt on the first event.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-maxtransfers</option> <replaceable>events</replaceable></term>
+                    <listitem>
+                        <para>
+                            In limited multi-event mode, indicates the number of events that will be transferred
+                            before the module terminates the transfer with a BERR (if the requested transfer
+                            size from the host would result in more data). This defaults to 1 as in FRIB normally
+                            only one event is read at a time.  Note that a value of 0 means that the module
+                            does not limit transfers.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-datalen</option> <replaceable>8 | 16 | 32 | 64 </term>
+                    <listitem>
+                        <para>
+                            Specifies the data width of transfers.  Note that if 64 bits is chosen,
+                            The data may be padded out to the next 64 bit boundary. The padding will consist of
+                            a 'fill dummy' word as descsribed in the 
+                            <ulink url='https://www.mesytec.com/products/datasheets/MTDC-32.pdf'>
+                            MTDC32 manual</ulink> FIFO data format section.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-multievent</option> <replacable>off | on | limited</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the module multievent mod , which defaults to <literal>off</literal> 
+                            which only allows the module to save the data from one event at a time.
+                            In <literal>on</literal> the module buffers data from multiple triggers and
+                            does not use <option>-maxtransfers</option> to limit the data transferred from it,
+                            in <literal>limited</limited> Multiple events are buffered but the data
+                            transferred is limited by <option>-maxtransfers</option>.  
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-skipberr</option> <replaceable>enabled | disabled </replaceable></term>
+                    <listitem>
+                        <para>
+                            If disabled (the default), when the module has no more data, it
+                            raises the VME BERR signal which will terminate block transfers.
+                            If enabled (not recommended) the module will transfer
+                            fill dummy values while it has no data.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-countevents</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            When off, the internal counter that describes the amount of data
+                            that can be read counts 32 bit woreds (this is the default), if on,
+                            that counter counts events.  Note that at some time in the future,
+                            that counter might be used to guide the size of the block transfers
+                            used to read the module so it is recommended to leave this off.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-marktype</option> <replacable>eventcount | timestamp | extended-timestamp</replaceable</term>
+                    <listitem>
+                        <para>
+                            This defaults to <literal>timestamp</literal>.  This option determines what will be put in
+                            event trailers.  <literal>eventcount</literal> will store an event sequence number,
+                            <literal>timestamp</literal> will store the 16 low order bits of a timestamp while
+                            <literal>extended-timestamp</literal> will produce two trailer words which will, betweeen them
+                            provide a 46 bit timestamp.  Note this timestamp has to do with the timestamp
+                            maintained by the <option>-tstamp</option> and related parameters not the 
+                            timing maintained by the module in timestamp mode.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-joinedbanks</option> <replaceable>yes | no </replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines if the module is used as a single 32 channel module (the default value yes) or a pair
+                            of 16 channel modules.  When <option>-joinedbanks</option> is <literal>no</literal>
+                            the module acts as if it were two separate TDC modules with Trig0 gating the first 16 channels
+                            and TRig1 gating the second set of 16 channels.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-resolution</option> <replaceable>500ps|250ps|125ps|62.5ps|31.3ps|15.6ps|7.8ps|3.9ps</replaceable></term>
+                    <listitem>
+                        <para>
+                            Selects the TDC resolution. This defaults to 3.9ps.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-format</option> <replaceable>standard | fulltime</replacable></term>
+                    <listitem>
+                        <para>
+                            Determines the format of time data from the module.  In <literal>standard</literal>,
+                            the default value,  times are reported as differences from the gate.  In <literal>fulltime</literal>
+                            mode they are timestamps and th emodule does not operate in trigger matching mode.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-bank0winstart</option> <replaceable>ns</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines where the matching window starts in ns relative to the gate.  Values of 
+                            16384 (roughly the default) have the window starting when the gate pulses.
+                            Lower values allow for a window that starts prior to the gate and higher values,
+                            a window that starts delayed relative to the gate. 
+                            If <option>-joinedbanks</option> is <literal>yes</literal> this defines the start of
+                            the matching window for both banks.  If it is <literal>no</literal> See
+                            <option>-bank1start</option> below.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-bank1winstart</option> <replaceable>ns</replaceable></term>
+                    <listitem>
+                        <para>
+                            This is used when <option>-joinedbanks</option> is <literal>no</literal>
+                            to define the start of the trigger matching window for channels 16-31
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-bank0winwidth -bank1winwidt</option> <replaceable>ns</replaceable></term>
+                    <listitem>
+                        <para>
+                            Defines the matching window width in ns (1-16385).  If the module is in joined bank
+                            mode, only the <option>-bank0winwidth</option> matters.  IF not that is the
+                            window width for bank 0 (channels 0-15) and <option>-bank1winwidth</option>
+                            is the window width for bank 1 (channels 16-31).  Default value as 32ns.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-bank0triggersource -bank1triggersource</option> <replaceable>Tr0 | Tr1 | Chn | Bank0 | Bank1</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines the trigger source.  In Joined bank mode, <option>-bank0triggersource</option> determines the
+                            trigger for all channels, in split mode, only for channels 0-15 with <option>-bank1triggersource</option>
+                            determining the trigger for channels 16-31. The trigger can be either of the trigger inputs, 
+                            Any single channel (e.g. <literal>chan5</literal>), the or of channels 0-15 or the or of channels
+                            16-31.  The defaults are <literal>Tr0</literal> for <option>-bank0triggersource</option> or
+                            <literal>Tr1</literal> for <option>-bank1triggersource</option>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-bank0firsthit -bank1firsthit</option> </replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            IF enabled, only the first hit is transmitted for each bank if in split mode or 
+                            <option>-bank0firsthit</option> controlling both banks.  The default is 
+                            <literal>disabled</literal> for both options.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>KNOWN ISSUES</title>
+        <para>
+            It has been observed that, especially in high resolution modes, it is important to stabilize the 
+            temperature of the module as timings can noticeablly change with temparature.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>SEE ALSO</title>
+        <<itemizedlist>
+            <listitem>
+                <para>
+                    <link linkend='mvlc.madcchain' endterm='mvlc.madcchain.title' />
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <ulink url='https://www.mesytec.com/products/datasheets/MTDC-32.pdf'>
+                    MTDC-32 manual</ulink>
+                </para>
+            </listitem>
+        </itemizedlist>
+    </refsect1>
 </refentry>
 <!-- /manpage -->
