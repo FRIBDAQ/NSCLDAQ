@@ -533,7 +533,7 @@ CMADC32::addReadoutList(CVMUSBReadoutList& list)
   uint32_t base = m_pConfiguration->getUnsignedParameter("-base");
   size_t maxwords = 45;                               // one event.
   if (m_pConfiguration->getBoolParameter("-multievent")) {
-    maxwords = irqThresholdMax*2;                                 // terminate on BERR
+    maxwords = m_pConfiguration->getIntegerParameter("-irqthreshold")*2;                                 // terminate on BERR
   }
   list.addFifoRead32(base + eventBuffer, readamod, (size_t)maxwords);
   list.addWrite16(base + ReadoutReset, initamod, (uint16_t)1);
