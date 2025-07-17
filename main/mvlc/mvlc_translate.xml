@@ -4010,11 +4010,11 @@ mdpp32scp cget  <replaceable>name ?option?</replaceable>
 </refentry>
 <refentry>
     <refmeta>
-        <refentrytitle>mqdc32</refentrytitle>
+        <refentrytitle>mqdc</refentrytitle>
         <manvolnum>3mvlc</manvolnum>
     </refmeta>
     <refnamediv>
-        <refname>mqdc32</refname>
+        <refname>mqdc</refname>
         <refpurpose>Support for MESYTEC MQDC32 module</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
@@ -4027,7 +4027,7 @@ mqdc cget  <replaceable>name ?option?</replaceable>
     <refsect1>
         <title>DESCRIPTION</title>
         <para>
-            The MQDC32 is a 32 channel charge sensing ADC.  The <command>mqdc32</command>
+            The MQDC32 is a 32 channel charge sensing ADC.  The <command>mqdc</command>
             allows users to create and use modules that support it.
         </para>
     </refsect1>
@@ -4419,11 +4419,11 @@ mqdc cget  <replaceable>name ?option?</replaceable>
 </refentry>
 <refentry>
     <refmeta>
-        <refentrytitle>mtdc32</refentrytitle>
+        <refentrytitle>mtdc</refentrytitle>
         <manvolnum>3mvlc</manvolnum>
     </refmeta>
     <refnamediv>
-        <refname>mtdc32</refname>
+        <refname>mtdc</refname>
         <refpurpose>Provide support for Mesytec MTDC32 module</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
@@ -4436,7 +4436,7 @@ mtdc cget  <replaceable>name ?option?</replaceable>
     <refsect1>
         <title>DESCRIPTION</title>
         <para>
-            The <command>mtdc32</command> configuration commands supports creating and configuring 
+            The <command>mtdc</command> configuration commands supports creating and configuring 
             modules for the Mesytec MTDC32 - a 32 channel TDC that can be used either as
             an absolute timing modules or as a trigger matching timing module.
             Be sure to read and understand the 
