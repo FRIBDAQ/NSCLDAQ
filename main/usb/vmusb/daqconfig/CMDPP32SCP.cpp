@@ -577,6 +577,7 @@ CMDPP32SCP::printRegisters(CVMUSB& controller)
   }
 
   status = controller.vmeRead16(base + OutputFormat, initamod, &data);
+	uint16_t outputformat = data;
   if (status < 0) {
     cerr << "Error in reading register" << endl;
   } else {
