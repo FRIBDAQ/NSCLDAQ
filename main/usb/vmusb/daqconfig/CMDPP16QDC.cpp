@@ -116,7 +116,7 @@ CMDPP16QDC::onAttach(CReadoutModule& configuration)
   m_pConfiguration -> addEnumParameter("-marktype", MarkTypeStrings, MarkTypeStrings[1]);
 
   m_pConfiguration -> addEnumParameter("-tdcresolution", TDCResolutionStrings, TDCResolutionStrings[0]);
-  m_pConfiguration -> addIntegerParameter("-outputformat",  0,  3, 3);
+  m_pConfiguration -> addIntegerParameter("-outputformat",  0,  24, 0);
   m_pConfiguration -> addEnumParameter("-adcresolution", ADCResolutionStrings, ADCResolutionStrings[0]);
 
   m_pConfiguration -> addIntegerParameter("-windowstart", 0, 0x7fff, 0x3fbe);
@@ -140,6 +140,13 @@ CMDPP16QDC::onAttach(CReadoutModule& configuration)
   m_pConfiguration -> addIntListParameter("-resettime",      0, 0x03ff,  8,  8,  8,    32);
   m_pConfiguration -> addStringListParameter("-gaincorrectionlong",  8, GainCorrectionStrings[2]);
   m_pConfiguration -> addStringListParameter("-gaincorrectionshort", 8, GainCorrectionStrings[2]);
+
+  m_pConfiguration -> addIntListParameter("-samplesource",        0,    2, 8, 8, 8, 0);
+  m_pConfiguration -> addBoolListParameter("-nooffsetcorrection", 8, false);
+  m_pConfiguration -> addBoolListParameter("-noresampling",       8, false);
+  m_pConfiguration -> addIntListParameter("-numpresamples",       0, 1000, 8, 8, 8, 0);
+  m_pConfiguration -> addIntListParameter("-numsamples",          0, 1000, 8, 8, 8, 0);
+
   m_pConfiguration -> addBooleanParameter("-printregisters", false);
   m_pConfiguration -> addIntListParameter("-trigtoirq",      0, 0xffff,  7,  7,  7,    0);
 }
@@ -217,6 +224,13 @@ CMDPP16QDC::Initialize(CVMUSB& controller)
   auto           resettime           = m_pConfiguration -> getIntegerList("-resettime");
   vector<string> gaincorrectionlong  = m_pConfiguration -> getList("-gaincorrectionlong");
   vector<string> gaincorrectionshort = m_pConfiguration -> getList("-gaincorrectionshort");
+
+  auto           samplesource        = m_pConfiguration -> getIntegerList("-samplesource");
+  auto           nooffsetcorrection  = m_pConfiguration -> getIntegerList("-nooffsetcorrection");
+  auto           noresampling        = m_pConfiguration -> getIntegerList("-noresampling");
+  auto           numpresamples       = m_pConfiguration -> getIntegerList("-numpresamples");
+  auto           numsamples          = m_pConfiguration -> getIntegerList("-numsamples");
+
   bool           isPrintRegisters    = m_pConfiguration -> getBoolParameter("-printregisters");
   auto           trigtoirq           = m_pConfiguration -> getIntegerList("-trigtoirq");
 
@@ -266,6 +280,16 @@ CMDPP16QDC::Initialize(CVMUSB& controller)
     list.addDelay(MDPPCHCONFIGDELAY);
     list.addWrite16(base + ShortGainCorrection, initamod, (uint16_t)GainCorrectionMap[gaincorrectionshort.at(channelPair)]);
     list.addDelay(MDPPCHCONFIGDELAY);
+
+    // checking if sample output is enabled
+    if (outputformat&0x10 == 0x10) {
+      list.addWrite16(base + PreSamples,   initamod, (uint16_t)numpresamples.at(channelPair));
+      list.addDelay(MDPPCHCONFIGDELAY);
+      list.addWrite16(base + NumSamples,   initamod, (uint16_t)numsamples.at(channelPair));
+      list.addDelay(MDPPCHCONFIGDELAY);
+      list.addWrite16(base + SampleConfig, initamod, (uint16_t)(nooffsetcorrection.at(channelPair)*128 + noresampling.at(channelPair)*64 + samplesource.at(channelPair)));
+      list.addDelay(MDPPCHCONFIGDELAY);
+    }
   }
 
   // Finally clear the converter and set the IPL which enables interrupts if
@@ -574,7 +598,7 @@ CMDPP16QDC::printRegisters(CVMUSB& controller)
     cout << setw(30) << "Marking type(bin): ";
     if (data == 0)      cout << std::bitset<2>(data) << " (event counter)";
     else if (data == 1) cout << std::bitset<2>(data) << " (time stamp)";
-    else if (data == 2) cout << std::bitset<2>(data) << " (extended time stamp)";
+    else if (data == 3) cout << std::bitset<2>(data) << " (extended time stamp)";
     else                cout << data << " (error)";
     cout << endl;
   }
@@ -592,11 +616,11 @@ CMDPP16QDC::printRegisters(CVMUSB& controller)
     cerr << "Error in reading register" << endl;
   } else {
     cout << setw(30) << "Output Format: " << data << " ";
-    if (data == 0)      cout << "(time and long integral)";
-    else if (data == 1) cout << "(long integral only [QDC mode])";
-    else if (data == 2) cout << "(time only [TDC mode])";
-    else if (data == 3) cout << "(long integral, short integral and time [default])";
-    else                cout << "(error)";
+    if (data == 0)       cout << "(window of interest mode)";
+    else if (data == 8)  cout << "(standard streaming readout mode)";
+    else if (data == 16) cout << "(window of interest with samples mode)";
+    else if (data == 24) cout << "(standard streaming readout with samples mode)";
+    else                 cout << "(error)";
     cout << endl;
   }
 
@@ -788,6 +812,39 @@ CMDPP16QDC::printRegisters(CVMUSB& controller)
       else if (data == 1024) cout << "(neutral)";
       else                   cout << "(error)";
       cout << endl;
+    }
+
+    // checking if sample output is enabled
+    if (outputformat&0x10 == 0x10) {
+      status = controller.vmeRead16(base + PreSamples, initamod, &data);
+      if (status < 0) {
+        cerr << "Error in reading register" << endl;
+      } else {
+        cout << setw(30) << "Number of pre-samples: " << data << endl;
+      }
+
+      status = controller.vmeRead16(base + NumSamples, initamod, &data);
+      if (status < 0) {
+        cerr << "Error in reading register" << endl;
+      } else {
+        cout << setw(30) << "Number of total samples: " << data << endl;
+      }
+
+      status = controller.vmeRead16(base + SampleConfig, initamod, &data);
+      if (status < 0) {
+        cerr << "Error in reading register" << endl;
+      } else {
+        cout << setw(30) << "Sample config: ";
+        cout << (data&0x80 ? "No " : "") << "offset correction, ";
+				cout << (data&0x40 ? "No " : "") << "resampling, ";
+
+        int samplesource = data&0x3;
+        if      (samplesource == 0) cout << "from ADC";
+        else if (samplesource == 1) cout << "from short int";
+        else if (samplesource == 2) cout << "from long int";
+        else                        cout << "error";
+        cout << endl;
+      }
     }
 
     cout << endl;
