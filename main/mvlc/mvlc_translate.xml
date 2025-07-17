@@ -4280,7 +4280,7 @@ mqdc cget  <replaceable>name ?option?</replaceable>
                     </listitem>
             </varlistentry>
             <varlistentry>
-                    <term><option>-ecltiming</option> <replaceable>enabled | disabled<</replaceable></term>
+                    <term><option>-ecltiming</option> <replaceable>enabled | disabled</replaceable></term>
                     <listitem>
                         <para>
                             Recall that the module can place a timstamp int the event.
@@ -4335,7 +4335,7 @@ mqdc cget  <replaceable>name ?option?</replaceable>
                     </listitem>
             </varlistentry>
             <varlistentry>
-                    <term><option>-timingdivisor<</option> <replaceable>divisor</replaceable></term>
+                    <term><option>-timingdivisor</option> <replaceable>divisor</replaceable></term>
                     <listitem>
                         <para>
                             This value is a scaledown factor for the timestamp
@@ -4952,6 +4952,145 @@ hytec cget  <replaceable>name ?option?</replaceable>
             </varlistentry>
         </variablelist>
     </refsect1>
+    
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>stack</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>stack</refname>
+        <refpurpose>Group modules into readout 'stacks'.</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+stack create <replaceable>name ?option value...?</replaceable>
+stack config  <replaceable>name option value?..?</replaceable>
+stack cget  <replaceable>name ?option?</replaceable>         
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            Just creating a module does not allow it to be readout. Data acquisition with the MVLC,
+            as with the VMUSB, requires the creation of lists of modules or
+            stacks.  the fribdaq-readout program allows for two stacks,
+            one triggered by NIM I/O 1 and one triggered periodically.
+            In FRIB use, normally scaler modules are in the periodic stack.
+            The event modules normally go in the NIM triggered stack.
+        </para>
+        <para>
+            While all of the configuration options for the VMUSB stack
+            are provided not all of them do anything yet.  As support for using
+            the mvlc is fleshed out, so will the support for options in the stack.
+        </para>
+        <para>
+            See <literal>EXAMPLES</literal> for examples of stacks and how
+            to build them.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-trigger</option> <replaceable>nim1 | scaler | interrupt</replaceable></term>
+                    <listitem>
+                        <para>
+                            Specifies what triggers stack execution.  For mvlcgenerate only
+                            <literal>nim1</literal> and <literal>scaler</literal> are supported and
+                            the default is <literal>nim1</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-period</option> <replaceable>seconds</replaceable></term>
+                    <listitem>
+                        <para>
+                            This is not yet used.  When it becomes usuable, it will be the
+                            period of the scaler stack.  At present this is hard-coded to 2 seconds.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-stack</option>> <replaceable>stack-no</replaceable></term>
+                    <listitem>
+                        <para>
+                            For interrupt driven stacks (not supported) this will be the
+                            number of the stack. Defaulting to 2 valid values are 2-7.
+                            Default is 2.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>>-delay</option></term>
+                    <listitem>
+                        <para>
+                            Number of microsseconds to delay stack execution after the
+                            trigger.  At present this only applies to the event stack.
+                            Value defaults to 0
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-vector -ipl</option> <replaceable>interrupt-parameters</replaceable></term>
+                    <listitem>
+                        <para>
+                            For interrupt driven stacks (not yet supported), this is the status-id and
+                            interrupt priority level to recognize as the stack trigger.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-modules</option> <replaceable>module-name-list</replaceable></term>
+                    <listitem>
+                        <para>
+                            Contains the list of modules that will be initialized, read out and
+                            finalized by this stack.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-incremental</option> <replaceable>true | false</replaceable></term>
+                    <listitem>
+                        <para>
+                            For now ignored.  If true (the default) scalers are marekd as
+                            incremental. fribdaq-readout currently  marks all
+                            scaler items as incremental.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>EXAMPLES</title>
+        <para>
+            The example below shows how to build an event stack that consists
+            of several Mesytec MADC32 modules that are minimally configured:
+        </para>
+        <informalexample>
+        <programlisting>
+madc create adc1 -base 0x01000000
+madc create adc2 -base 0x02000000
+madc create adc3 -base 0x03000000
 
+stack create event -trigger nim1 -modules [list adc1 adc2 adc3]
+        </programlisting>
+        </informalexample>
+
+        <para>
+            The example below shows how to build a scaler stack that consists
+            of several SIS 3820 scaler modules.  
+        </para>
+        <informalexample>
+            <programlisting>
+sis3820 create scaler1 -base 0x10000000
+sis3820 create scaler2 -base 0x20000000
+sis3820 create scaler3 -base 0x30000000
+
+stack create scaler -trigger scaler -modules [ list scaler1 scaler2 scaler3]
+            </programlisting>
+        </informalexample>
+    </refsect1>
+</refentry>
 <!-- /manpage -->
