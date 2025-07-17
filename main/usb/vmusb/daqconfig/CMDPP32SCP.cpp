@@ -127,6 +127,13 @@ CMDPP32SCP::onAttach(CReadoutModule& configuration)
   m_pConfiguration -> addIntListParameter("-blr",              0, 0x0003,  8,  8,  8,      2);
   m_pConfiguration -> addIntListParameter("-signalrisetime",   0, 0x007f,  8,  8,  8,      0);
   m_pConfiguration -> addIntListParameter("-resettime",       16, 0x03ff,  8,  8,  8,     16);
+
+  m_pConfiguration -> addIntListParameter("-samplesource",        0,    3, 8, 8, 8, 0);
+  m_pConfiguration -> addBoolListParameter("-nooffsetcorrection", 8, false);
+  m_pConfiguration -> addBoolListParameter("-noresampling",       8, false);
+  m_pConfiguration -> addIntListParameter("-numpresamples",       0, 1000, 8, 8, 8, 0);
+  m_pConfiguration -> addIntListParameter("-numsamples",          0, 1000, 8, 8, 8, 0);
+
   m_pConfiguration -> addBooleanParameter("-printregisters",  false);
   m_pConfiguration -> addIntListParameter("-trigtoirq",        0, 0xffff, 14, 14, 14,      0);
 }
@@ -201,6 +208,13 @@ CMDPP32SCP::Initialize(CVMUSB& controller)
   auto           blr                 = m_pConfiguration -> getIntegerList("-blr");
   auto           signalrisetime      = m_pConfiguration -> getIntegerList("-signalrisetime");
   auto           resettime           = m_pConfiguration -> getIntegerList("-resettime");
+
+  auto           samplesource        = m_pConfiguration -> getIntegerList("-samplesource");
+  auto           nooffsetcorrection  = m_pConfiguration -> getIntegerList("-nooffsetcorrection");
+  auto           noresampling        = m_pConfiguration -> getIntegerList("-noresampling");
+  auto           numpresamples       = m_pConfiguration -> getIntegerList("-numpresamples");
+  auto           numsamples          = m_pConfiguration -> getIntegerList("-numsamples");
+
   bool           isPrintRegisters    = m_pConfiguration -> getBoolParameter("-printregisters");
   auto           trigtoirq           = m_pConfiguration -> getIntegerList("-trigtoirq");
 
@@ -260,6 +274,16 @@ CMDPP32SCP::Initialize(CVMUSB& controller)
     list.addDelay(MDPPCHCONFIGDELAY);
     list.addWrite16(base + ResetTime,           initamod, (uint16_t)resettime.at(channelPair));
     list.addDelay(MDPPCHCONFIGDELAY);
+
+    // checking if sample output is enabled
+    if (outputformat&0x10 == 0x10) {
+      list.addWrite16(base + PreSamples,   initamod, (uint16_t)numpresamples.at(channelPair));
+      list.addDelay(MDPPCHCONFIGDELAY);
+      list.addWrite16(base + NumSamples,   initamod, (uint16_t)numsamples.at(channelPair));
+      list.addDelay(MDPPCHCONFIGDELAY);
+      list.addWrite16(base + SampleConfig, initamod, (uint16_t)(nooffsetcorrection.at(channelPair)*128 + noresampling.at(channelPair)*64 + samplesource.at(channelPair)));
+      list.addDelay(MDPPCHCONFIGDELAY);
+    }
   }
 
   // Finally clear the converter and set the IPL which enables interrupts if
@@ -557,10 +581,10 @@ CMDPP32SCP::printRegisters(CVMUSB& controller)
     cerr << "Error in reading register" << endl;
   } else {
     cout << setw(30) << "Output Format: " << data << " ";
-    if (data == 0)       cout << "(standard: time and amplitude)";
+    if (data == 0)       cout << "(window of interest mode)";
     else if (data == 4)  cout << "(compact streaming readout mode)";
     else if (data == 8)  cout << "(standard streaming readout mode)";
-    else if (data == 16) cout << "(standard with samples mode)";
+    else if (data == 16) cout << "(window of interest with samples mode)";
     else if (data == 24) cout << "(standard streaming readout with samples mode)";
     else                 cout << "(error)";
     cout << endl;
@@ -782,6 +806,40 @@ CMDPP32SCP::printRegisters(CVMUSB& controller)
       cerr << "Error in reading register" << endl;
     } else {
       cout << setw(30) << "Reset time: " << (data&0x3ff) << " (*12.5 [ns])" << endl;
+    }
+
+    // checking if sample output is enabled
+    if (outputformat&0x10 == 0x10) {
+      status = controller.vmeRead16(base + PreSamples, initamod, &data);
+      if (status < 0) {
+        cerr << "Error in reading register" << endl;
+      } else {
+        cout << setw(30) << "Number of pre-samples: " << data << endl;
+      }
+
+      status = controller.vmeRead16(base + NumSamples, initamod, &data);
+      if (status < 0) {
+        cerr << "Error in reading register" << endl;
+      } else {
+        cout << setw(30) << "Number of total samples: " << data << endl;
+      }
+
+      status = controller.vmeRead16(base + SampleConfig, initamod, &data);
+      if (status < 0) {
+        cerr << "Error in reading register" << endl;
+      } else {
+        cout << setw(30) << "Sample config: ";
+        cout << (data&0x80 ? "No " : "") << "offset correction, ";
+				cout << (data&0x40 ? "No " : "") << "resampling, ";
+
+        int samplesource = data&0x3;
+        if      (samplesource == 0) cout << "from ADC";
+        else if (samplesource == 1) cout << "reconstructed input";
+        else if (samplesource == 2) cout << "from TF-int";
+        else if (samplesource == 3) cout << "from shaper";
+        else                        cout << "error";
+        cout << endl;
+      }
     }
 
     cout << endl;
