@@ -134,6 +134,8 @@ Const(NIM1)                 0x606e;
 Const(TestPulser)           0x6070;
 Const(PulserAmplitude)      0x6072;
 Const(NIM0)                 0x6074;
+
+// Monitor control registers
 Const(MonSwitch)            0x607a;
 Const(SetMonChannel)        0x607c;
 Const(SetWave)              0x607e;
@@ -172,6 +174,11 @@ Const(Threshold2)           0x6120;
 Const(Threshold3)           0x6122;
 
 Const(ResetTime)            0x6128;
+
+// Sample registers
+Const(PreSamples)           0x6146;
+Const(NumSamples)           0X6148;
+Const(SampleConfig)         0x614A;
 
 // Special trigger outputs:
 Const(TrigToIRQ1L)          0x6300; // Ch 0-16 from low to high bit
