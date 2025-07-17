@@ -4019,9 +4019,9 @@ mdpp32scp cget  <replaceable>name ?option?</replaceable>
     </refnamediv>
     <refsynopsisdiv>
         <programlisting>
-mqdc32 create <replaceable>name ?option value...?</replaceable>
-mqdc32 config  <replaceable>name option value?..?</replaceable>
-mqdc32 cget  <replaceable>name ?option?</replaceable>            
+mqdc create <replaceable>name ?option value...?</replaceable>
+mqdc config  <replaceable>name option value?..?</replaceable>
+mqdc cget  <replaceable>name ?option?</replaceable>            
         </programlisting>
     </refsynopsisdiv>
     <refsect1>
@@ -4424,13 +4424,13 @@ mqdc32 cget  <replaceable>name ?option?</replaceable>
     </refmeta>
     <refnamediv>
         <refname>mtdc32</refname>
-        </refpurpose>Provide support for Mesytec MTDC32 module</refpurpose>
+        <refpurpose>Provide support for Mesytec MTDC32 module</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
         <programlisting>
-mtdc32 create <replaceable>name ?option value...?</replaceable>
-mtdc32 config  <replaceable>name option value?..?</replaceable>
-mtdc32 cget  <replaceable>name ?option?</replaceable>         
+mtdc create <replaceable>name ?option value...?</replaceable>
+mtdc config  <replaceable>name option value?..?</replaceable>
+mtdc cget  <replaceable>name ?option?</replaceable>         
         </programlisting>
     </refsynopsisdiv>
     <refsect1>
@@ -4471,7 +4471,7 @@ mtdc32 cget  <replaceable>name ?option?</replaceable>
                     </listitem>
             </varlistentry>
             <varlistentry>
-                    <term><option>-id<replaceable>identifier</replaceable></term>
+                    <term><option>-id</option> <replaceable>identifier</replaceable></term>
                     <listitem>
                         <para>
                             This value will be placed in the id field of the data
@@ -4528,7 +4528,7 @@ mtdc32 cget  <replaceable>name ?option?</replaceable>
                     </listitem>
             </varlistentry>
             <varlistentry>
-                    <term><option>-datalen</option> <replaceable>8 | 16 | 32 | 64 </term>
+                    <term><option>-datalen</option> <replaceable>8 | 16 | 32 | 64 </replaceable></term>
                     <listitem>
                         <para>
                             Specifies the data width of transfers.  Note that if 64 bits is chosen,
@@ -4540,14 +4540,14 @@ mtdc32 cget  <replaceable>name ?option?</replaceable>
                     </listitem>
             </varlistentry>
             <varlistentry>
-                    <term><option>-multievent</option> <replacable>off | on | limited</replaceable></term>
+                    <term><option>-multievent</option> <replaceable>off | on | limited</replaceable></term>
                     <listitem>
                         <para>
                             Sets the module multievent mod , which defaults to <literal>off</literal> 
                             which only allows the module to save the data from one event at a time.
                             In <literal>on</literal> the module buffers data from multiple triggers and
                             does not use <option>-maxtransfers</option> to limit the data transferred from it,
-                            in <literal>limited</limited> Multiple events are buffered but the data
+                            in <literal>limited</literal> Multiple events are buffered but the data
                             transferred is limited by <option>-maxtransfers</option>.  
                         </para>
                     </listitem>
@@ -4576,7 +4576,7 @@ mtdc32 cget  <replaceable>name ?option?</replaceable>
                     </listitem>
             </varlistentry>
             <varlistentry>
-                    <term><option>-marktype</option> <replacable>eventcount | timestamp | extended-timestamp</replaceable</term>
+                    <term><option>-marktype</option> <replaceable>eventcount | timestamp | extended-timestamp</replaceable></term>
                     <listitem>
                         <para>
                             This defaults to <literal>timestamp</literal>.  This option determines what will be put in
@@ -4609,7 +4609,7 @@ mtdc32 cget  <replaceable>name ?option?</replaceable>
                     </listitem>
             </varlistentry>
             <varlistentry>
-                    <term><option>-format</option> <replaceable>standard | fulltime</replacable></term>
+                    <term><option>-format</option> <replaceable>standard | fulltime</replaceable></term>
                     <listitem>
                         <para>
                             Determines the format of time data from the module.  In <literal>standard</literal>,
@@ -4666,7 +4666,7 @@ mtdc32 cget  <replaceable>name ?option?</replaceable>
                     </listitem>
             </varlistentry>
             <varlistentry>
-                    <term><option>-bank0firsthit -bank1firsthit</option> </replaceable>enabled | disabled</replaceable></term>
+                    <term><option>-bank0firsthit -bank1firsthit</option> <replaceable>enabled | disabled</replaceable></term>
                     <listitem>
                         <para>
                             IF enabled, only the first hit is transmitted for each bank if in split mode or 
@@ -4675,6 +4675,131 @@ mtdc32 cget  <replaceable>name ?option?</replaceable>
                         </para>
                     </listitem>
             </varlistentry>
+            <varlistentry>
+                    <term><option>-tr0terimenated -tr1terminated</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            If on, the associated trigger input on the ECL control bus is terminated.  The default is
+                            <literal>off</literal> if the trigger lines are bussed, the appropriate trigger
+                            input terminations must be done on the last module in the bus.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-resetterminated</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            If on, the ECL control bus timestamp reset input is terminated.  This defaults
+                            to off as it is anticipated you will want a bussed clock reset to get all modules
+                            synchronized. In a bused ECL bus, only the last module on the bus should/must be
+                            terminated.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ecltrig1isoscillator</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            If enabled, the TR1 ECL Input is used to increment the timestamp when <option>-timingsource</option>
+                            is <literal>external</literal>.  By default, this is <literal>disabled</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-trigfromecl</option> <replaceable>true | false</replaceable></term>
+                    <listitem>
+                        <para>
+                            When <literal>true</literal>, the trigger inputs are taken from the ECL bus.
+                            If false, the default, the TR0 and TR1 inputs are taken from the NIM inputs.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-nimtrig1isoscillator</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            When enabled, the NIM TR1 input is used to increment the timestamp if the 
+                            <option>-timingsource</option> configuration option is <literal>external</literal>.
+                            By default, this is <literal>disabled</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-busy</option> <replaceable>bothbanks | cbsoutput | bufferfull | abovethreshold</replaceable></term>
+                    <listitem>
+                        <para>
+                            Programs the meaning of the BUSY output.  The default, <literal>bothbanks</literal> means the
+                            outpt is asserted when both banks are busy.  <literal>cbusoutput</literal> allows the
+                            output to control Mesytec CBUS devices. While we do have some support for some of those
+                            devices via this output; we recommend, instead, using the mesycontrol software
+                            and an MRCC USB to CBUS module.  The firmware in the controllable module often
+                            changes faster than our ability to continue to fully controll them.  Mesytec's mesycontrol
+                            software adapts without a gap.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-bank0threshold -bank1threshold</option> <replaceable>value</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the discriminator level for the associated bank.  For NIM signals, the default
+                            values of <literal>105</literal> are suitable.  The value can be between 0 and 255. 
+                            See the section <emphasis>Initialising the MTDC for basic timing measurement</emphasis>
+                            int the <ulink url='https://www.mesytec.com/products/datasheets/MTDC-32.pdf'>
+                            MTDC-32 manual</ulink> for a discussion of this value.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-timingsource</option> <replaceable>vme | external</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the source of the clock that increments the timestamp.  The default,
+                            <literal>vme</literal> increments the timestamp on the 16MHz VME backplane clock.
+                            This is a convenient mechanism to provide all modules with a common clock timing.
+                            If one of the external inputs should be used (see <option>-ecltrig1isoscillator</option>
+                            and <option>-nimtrig1isoscillator</option>), this should be set to <literal>externale</literal>.
+                            None of this matters if <option>-marktype</option> is <literal>eventcount</literal>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-tsdivisor</option> <replaceable>divisor</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the timestamp clock scaledown. This defaults to 1 which does not scale down
+                            the clock source.
+                            A value of 0 is a scale down of 65536.  Legal values are 0-65535.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <!-- Note there is a -tstamp option defined but I don't see it ever used and don't understand
+                what it might be for so I'm not documenting it.  Especially because I don't see it documented
+                for VMUSB Readout... Not removing from the code - just in case -->
+            
+            <varlistentry>
+                    <term><option>-multlow0 -multlow1</option> <replaceable>multiplicity</replaceable></term>
+                    <listitem>
+                        <para>
+                            In joined bank mode, <option>-multlow0</option> sets the minimum number of hits
+                            to save a triggered event.  In split bank mode, it sents the minimum number of hits
+                            required in bank 0 to result in a bank0 event while <option>-multlow1</option>
+                            does the same for bank 1.  Valid ranges are 0-255. The default value of 
+                            <literal>0</literal> does not require a hit to make an event.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-multhi0 -multhi1</option> <replaceable>multiplicity</replaceable></term> 
+                    <listitem>
+                        <para>
+                            Same as <option>-multlow0</option> and <option>-multlow1</option> but sets the
+                            maximum number of hits that make an event.  The  value range is 0-255, and the
+                            default values are 255 (which presumably does not limit the number of hits hits).
+                        </para>
+                    </listitem>
+            </varlistentry>
+
         </variablelist>
     </refsect1>
     <refsect1>
@@ -4686,7 +4811,7 @@ mtdc32 cget  <replaceable>name ?option?</replaceable>
     </refsect1>
     <refsect1>
         <title>SEE ALSO</title>
-        <<itemizedlist>
+        <itemizedlist>
             <listitem>
                 <para>
                     <link linkend='mvlc.madcchain' endterm='mvlc.madcchain.title' />
@@ -4701,4 +4826,132 @@ mtdc32 cget  <replaceable>name ?option?</replaceable>
         </itemizedlist>
     </refsect1>
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>hytec</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>hytec</refname>
+        <refpurpose>Support hytec NADC 2530 module</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+hytec create <replaceable>name ?option value...?</replaceable>
+hytec config  <replaceable>name option value?..?</replaceable>
+hytec cget  <replaceable>name ?option?</replaceable>        
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The Hytec NADC 2530 is an 8 channel peak sensing ADC. It features two separate
+            address spaces.  On board jumpers specify the base of the control register set and
+            is configured using the <option>-csr</option> configuration option.  One of the control
+            registers programs the location of the on board event buffer memory and
+            that is programmed via the <option>-memory</option> configuration option.
+        </para>
+        <para>
+            This module is no longer being produced and is not recommended for new setups.  It 
+            should be replaced in existing setups as soon as possible.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-csr</option> <replaceable>vme-addresss</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the module control register base address. Note that this value
+                            must match the value selected by the module's jumpers.  Note that the
+                            VME register space is in A24 space so the valid values are between 0
+                            and 0x00ffffff.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-memory</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            Selects the base address that will be programmed for the event memory for
+                            the module.  The event memory lives in a32 space so legal values are
+                            between 0 and 0xffffffff.  Note that as this is software programmable,
+                            care must be taken to ensure that the event memory does not overlap 
+                            the address space of any other module.  Only the top 11 bits of the 
+                            vme address are relevant. e.g. 0xffffffff is treated as 0xffe00000.
+
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ipl</option> <replaceable>interrupt-level</replaceable></term>
+                    <listitem>
+                        <para>
+                            If the module will be used to trigger an interrupt triggered list,
+                            this is the interrupt priotiry (the IRQ line the module uses) for
+                            thos interrupts.  The default value of 0 disables module interrupts.
+                            Legal values are 0-7.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-vector</option> <replaceable>status-id</replaceable></term>
+                    <listitem>
+                        <para>
+                            Specifies the status-id the module puts on the bus when an interrupt
+                            request is acknowledged. 
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-lld</option> <replaceable>mv</replaceable></term>
+                    <listitem>
+                        <para>
+                            The floating point low level discriminator value in floating point
+                            millivolts between 0 and 819.2.  Default is 0.0
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-hld</option> <replaceable>volts</replaceable></term>
+                    <listitem>
+                        <para>
+                            High level discrimiator value in floatig point volts from 0 to 8.192
+                            Default is 8.192
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-events</option> <replaceable>events-per-interrupt</replaceable></term>
+                    <listitem>
+                        <para>
+                            If the module is run in interrupt mode, this is the number of events
+                            it will buffer before interrupting.  This defaults to 1 and, in any event,
+                            we normally don't use it in interrupt mode.  Maximum value is 10.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-zerosuppress</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                           When on, the default, the module supresses channels with values below
+                           the lld an above the hld.  
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-id</option> <replaceable>id</replaceable></term>
+                    <listitem>
+                        <para>
+                            This is a 16 bit value that is placed in the event to identify the module the
+                            data came from.  Defaults to zero.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+
 <!-- /manpage -->

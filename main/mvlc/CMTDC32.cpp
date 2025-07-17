@@ -231,7 +231,7 @@ CMTDC32::onAttach(XXUSB::CConfigurableObject& configuration)
     );
     m_pConfiguration->addIntegerParameter("-tsdivisor", 1, 65535, 1);  // avoid 65536 special case.
     
-    m_pConfiguration->addBooleanParameter("-tstamp");
+    m_pConfiguration->addBooleanParameter("-tstamp");               // I don't think this is used!!!!
     m_pConfiguration->addIntegerParameter("-multlow0", 0, 255, 0);
     m_pConfiguration->addIntegerParameter("-multhi0", 0, 255, 255);
     m_pConfiguration->addIntegerParameter("-multlow1", 0, 255, 0);
