@@ -242,6 +242,12 @@ CMDPP32QDC::Initialize(CVMUSB& controller)
   list.addWrite16(base + MarkType,          initamod, marktype);
 
   list.addWrite16(base + TDCResolution,     initamod, tdcresolution);
+  if (!(outputformat == 0 || outputformat == 8
+        || outputformat == 16 || outputformat == 24)) {
+    char msg[100];
+    sprintf(msg, "outputformat %d is invalid value for outputformat!", outputformat);
+    throw msg;
+  }
   list.addWrite16(base + OutputFormat,      initamod, outputformat);
   list.addWrite16(base + ADCResolution,     initamod, adcresolution);
 
@@ -287,7 +293,7 @@ CMDPP32QDC::Initialize(CVMUSB& controller)
     list.addDelay(MDPPCHCONFIGDELAY);
 
     // checking if sample output is enabled
-    if (outputformat&0x10 == 0x10) {
+    if ((outputformat&0x10) == 0x10) {
       list.addWrite16(base + PreSamples,   initamod, (uint16_t)numpresamples.at(channelPair));
       list.addDelay(MDPPCHCONFIGDELAY);
       list.addWrite16(base + NumSamples,   initamod, (uint16_t)numsamples.at(channelPair));
@@ -834,7 +840,7 @@ CMDPP32QDC::printRegisters(CVMUSB& controller)
     }
 
     // checking if sample output is enabled
-    if (outputformat&0x10 == 0x10) {
+    if ((outputformat&0x10) == 0x10) {
       status = controller.vmeRead16(base + PreSamples, initamod, &data);
       if (status < 0) {
         cerr << "Error in reading register" << endl;
