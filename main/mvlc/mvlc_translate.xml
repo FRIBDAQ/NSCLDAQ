@@ -5093,4 +5093,341 @@ stack create scaler -trigger scaler -modules [ list scaler1 scaler2 scaler3]
         </informalexample>
     </refsect1>
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>v1495sc</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>v1495sc</refname>
+        <refpurpose>Use CAEN V1495 with scaler firmware</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+v1495sc create <replaceable>name ?option value...?</replaceable>
+v1495sc config  <replaceable>name option value?..?</replaceable>
+v1495sc cget  <replaceable>name ?option?</replaceable>      
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            CAEN offered firmware for the V1495 logic module (this module is obsolete and no longer
+            produced) that made the module a 128 channel scaler.   This provides support for using this
+            module in a scaler stack.  Note that the module readout perfomrs a VME (software) trigger
+            to latch scaler values and then reads only the control lregister,  an optional timestamp and 
+            the enabled channels.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            Base address of the module.  This must match the base address
+                            configured int he module's rotary switches.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-exttrig</option> <replaceable>enabled | disabled </replaceable></term>
+                    <listitem>
+                        <para>
+                            Enables the external trigger for the module.  This is disabled by default.
+                            If enabled, the G0 input latches the scaler values.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-inttrig</option> <replaceable>enabled |disabled </replaceable></term>
+                    <listitem>
+                        <para>
+                            Enables the module internal trigger of the latch.  This is disabled by default.
+                            The module can be programmed to produce an internal trigger periodically.
+                            This configures that trigger to be recognized by the module
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-vmetrigger</option> <replaceable>enabled |disabled </replaceable></term>
+                    <listitem>
+                        <para>
+                            Enables the software to trigger the module. By default this is enabled
+                            as the readout will trigger the latch.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-inputlevel</option> <replaceable>nim | ttl</replaceable></term>
+                    <listitem>
+                        <para>
+                            Describes the input levels.  This default to <literal>nim</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-autoreset</option> <replaceable>yes | no</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <literal>yes</literal>, the default, the scalers are read and cleared.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-g1_mode</option> <replaceable>inhibit | reset | test</replaceable></term>
+                    <listitem>
+                        <para>
+                            Defines the function of the G1 input.  By default, this is <literal>inhibit</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-includetimes</option> <replaceable>yes | no</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <literal>yes</literal> the readout includes timing information.  The default
+                            is <literal>no</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-bank1enables -bank2enables -bank3enables -bank4enables</option> <replaceable>mask</replaceable></term>
+                    <listitem>
+                        <para>
+                            The scaler is organized a four 32 channel banks.  These options allow individual channels to be
+                            disabled or enabled.   Each option is a mask of 32 bits which are set to enable a corresponding
+                            channel.  By default all of these options are 0xffffffff which enables all channels in all banks.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-dwelltime</option> <replaceable>mircoseconds</replaceable></term>
+                    <listitem>
+                        <para>
+                            When internal triggers are enabled, the internal trigger happens every
+                            <replaceable>microseconds</replaceable>.  The default value is
+                            0x2000000 about 33.5 seconds.  Normally, with <option>-inttrig</option> disabled, this
+                            value is not used.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>v1729a</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>v1729a</refname>
+        <refpurpose>Support for the  CAEN v1729a waveform digitizer</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+v1729a create <replaceable>name ?option value...?</replaceable>
+v1729a config  <replaceable>name option value?..?</replaceable>
+v1729a cget  <replaceable>name ?option?</replaceable>           
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This configuration command provides support for the CAEN V1729A digitizer.  The module operates
+            by continunously storing waveforms in  a circular analog memory.  Triggering criteria
+            then determine and which chunks of this analog memory are digitized.  Note that while
+            the analog memory suports extremely fast sampling (GHz), the digitization and readout are
+            slow by comparison.   Therefore support integrates a delay operation that can allow the
+            MVLC to stall the stack for some fixed period of time before initiating readout.
+            Be sure to see the 
+            <ulink url='https://nuchem.iucf.indiana.edu/Instrumentation/Elec_Manual/Electronic_pdfs/Digitizer_V1729a_manual.pdf'>
+            V1729 Manual</ulink> for guidance in setting this delay.
+        </para>
+        <para>
+            I believe this module is no longer in production.  As such it is not recommended for new applications.
+            Existing applications should look for a replacement module.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-adress</replaceable></term>
+                    <listitem>
+                        <para>
+                            Defines the base address configured in the module's rotary switches.
+                            This value is used by the support software to construct references to the
+                            module's internal registers and event memory.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-irqenable</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            Enables or disables modcule interrupts.  This defaults to 
+                            <literal>disabled</literal> and should probably not be enabled.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-threshold</option> <replaceable>DAC-value</replaceable></term>
+                    <listitem>
+                        <para>
+                            Value to load into the trigger thresholds DAC. Note that this value is only
+                            used when <option>-triggersource</option > is either <literal>internal</literal>
+                            or <literal>both</literal>.  IF used, you might want to think about triggering
+                            your stack using the module's trigger output signal.
+                            Legal values are 0 - 4095 where the default is 4095.  The actual threshold DAC
+                            values will be (0.5*<literal>DAC-value</literal>-1)mV Allowing for thresholds in the range
+                            of &plusmn;1V
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-pretrigger</option> <replaceable>clocks</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the pretrigger value.  This is in the range 0-0xffff and defaults to 10240.
+                            The pretrigger is in units of clocks.  See section 2.1.1 of
+                            <ulink url='https://nuchem.iucf.indiana.edu/Instrumentation/Elec_Manual/Electronic_pdfs/Digitizer_V1729a_manual.pdf'>
+                             V1729 Manual</ulink>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-posttrigger</option> <replaceable>samples</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the posttrigger value in clocks. This value must be inthe range of 
+                            0-0xffff and defaults to 64.  Together, the pretrigger and post trigger
+                            define the acquisition window and, therefore, the number of samples to
+                            expect from the module.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-triggersource</option> <replaceable>external | internal| both</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines the source of the module's trigger.  The default is <literal>external</literal>
+                            which uses the front panel EXT_TRG input.  <literal>internal</literal> triggers
+                            on the input waveforms exceeding the <option>-threshold</option> value.
+                            Note that in that case you may want to use the TRIGOUT front panel signal to know
+                            externally that the module has triggered. <literal>both</literal> will trigger the
+                            module on either the front panel EXT_TRG signal or a channel crossing the threshold
+                            value.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-triggeredge</option> <replaceable>rising | falling</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines the edge of the trigger that is used to determine how the internal trigger
+                            opertates.  In <literal>rising</literal> mode (the default), the module triggers when
+                            an input rises above the threshold.  If <literal>falling</literal>, the module
+                            triggers when an input falls below the threshold.  This supports both negative and positive
+                            going pulses.  Note that the external trigger always fires on the transition from not
+                            asserted to asserted.  The manual is unclear on this point in that it says the external
+                            trigger is always on the rising edge, but since the input uses NIM signalling, this really
+                            means falling edge to asserted.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-triggermask</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            This allows the <option>-triggerchannels</option> to define which channels
+                            actually participate in the internal trigger.  If <literal>enabled</literal>,
+                            then <option>-triggerchannels</option> defines which channels participate in the trigger.
+                            THe default is <literal>disabled</literal> which allows all channels to participate in the
+                            internal trigger.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-triggerchannels</option> <replaceable>mask</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <option>-triggermask</option> is <literal>enabled</literal> only the channels
+                            whose bits are set in the mask will participate in the internal trigger.
+                            Channel 0 is the least significatn bit and channel 4, the most, so a value of
+                            <literal>0x5</literal> allows channels 0, and 2 to participate in the trigger.
+                            By default this mask is 0xf allowing all channels to participate in the internal trigger.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-poststoplatency</option> <replaceable>time</replaceable></term>
+                    <listitem>
+                        <para>
+                            See section 2.1.5 of the
+                            <ulink url='https://nuchem.iucf.indiana.edu/Instrumentation/Elec_Manual/Electronic_pdfs/Digitizer_V1729a_manual.pdf'>
+                             V1729 Manual</ulink>.
+                             If the module is internally triggered, it still requires an external validation
+                             signal in the EXT_TRG signal.  If this validation does not come before
+                             the <option>poststoplatency</option> after the end of the window (set by the
+                             <option>-posttrigger</option>), the saved signal is not digitized; saving a tremendous
+                             amount of dead-time.  The time values are in units of 2.5&mu;sec. By default this is
+                             4 which represents 10&mu;sec.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-postlatencypretrig</option>  <replaceable>time</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the latency to wait prior to re-enabling the trigger if trigger validation was
+                            not received  in time.   This timer starts with the end of the
+                            <option>-poststoplatency</option> timer.  The time is in units of 2.5&mu;sec and defaults
+                            to 1.  The minimum value is the time required to fill the analog memory  which is,
+                            in fact 2.5&mu;sec at 1GHz sampling.  Note that 2 should be used if you are sampling at
+                            500MHz.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-samplingfreq</option> <replaceable>2ghz | 1ghz | 500mhz</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the sampling frequency for the analog memory.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-delay</option> <replaceable>microseconds</replaceable></term>
+                    <listitem>
+                        <para>
+                            Since a significant time is required to digitize the window of acquired data,
+                            this parameter allows the MVLC to delay by the number of microseconds
+                            specified by the parameter before attempting readout.  Default value is 0 but
+                            should not remain that small.  THe manual does not give guidance on the
+                            delay time to use. See <literal>DATA READ</literal> below.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>DATA READ</title>
+        <para>
+            The first word read af the the delay is the Interrupt
+            register which indicates if data can be read yet.  The TRIGGER_REC register is 
+            also read and then the entire RAM as the VMUSB cannot be told how to read
+            only the waveform. See
+            the <ulink url='https://nuchem.iucf.indiana.edu/Instrumentation/Elec_Manual/Electronic_pdfs/Digitizer_V1729a_manual.pdf'>
+            V1729 Manual</ulink> for a description of how to find the acquired waveform in the RAM image
+            that is read after the TRIGER_REC register.
+        </para>
+        <para>
+            To adjust the delay, take data and increase it until the Interrupt register value
+            indicates reliably that data is available by having its bottom bit set.  That bit indicates
+            that waveform data is read to be read.
+        </para>
+    </refsect1>
+</refentry>
 <!-- /manpage -->
