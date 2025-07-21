@@ -5798,4 +5798,107 @@ tdc1x90 cget  <replaceable>name ?option?</replaceable>
         </variablelist>
     </refsect1>
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>v977</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>v977</refname>
+        <refpurpose>Support the CAEN V977 input/coincidence register</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+v977 create <replaceable>name ?option value...?</replaceable>
+v977 config  <replaceable>name option value?..?</replaceable>
+v977 cget  <replaceable>name ?option?</replaceable>       
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            Supplied support for the CAEN v977 I/O register and coincidence module.   The most common use of
+            this module is to record a trigger pattern for the event.  When configuring this module,
+            refer to 
+            <ulink url='https://nuchem.iucf.indiana.edu/Instrumentation/Elec_Manual/Electronic_pdfs/IOreg_V977.pdf'>
+            the V977 manual</ulink>.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTION</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides the base addres for the module that was confiugred in its
+                            rotary switches.  Note that CAEN modules are notorious for ordering
+                            their rotary switches differently from model to model.  Be sure
+                            to refer to figure 4.1 of
+                            <ulink url='https://nuchem.iucf.indiana.edu/Instrumentation/Elec_Manual/Electronic_pdfs/IOreg_V977.pdf'>
+                            the V977 manual</ulink>.  
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-inputmask</option> <replaceable>channel-mask</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the channel mask register value.  Inputs which are masked will never
+                            have their bits set when read.  The least significant bit is the mask bit for
+                            input 0 and so on.  The default value is <literal>0</literal> unmasking all channels.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-readmode</option> <replaceable>singlehit | multihit</replaceable></term>
+                    <listitem>
+                        <para>
+                            Determines if the single hit or multihit regsitsers are read.  The default
+                            <literal>singlehit</literal> reads the single hit register.  
+                            <literal>multihit</literal> reads the multihit register.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-readandclear</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <literal>enabled</literal> (the default) the registesr is atomically read and cleared.
+                            If not, the electronics is responsible for clearing the register somewhen.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-pattern</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <literal>enabled</literal> the module works as a multihit pattern register.
+                            Normally this shouild be paired with <option>-readmode</option> <literal>multihit</literal>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-gate</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            If enabled, the module operates in gated mode (the default) and inputs are only transferred
+                            when the gate is pulsed.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ormask</option> <replaceable>on | off</replaceable></term>
+                    <listitem>
+                        <para>
+                            When <literal>off</literal> (the default), the OR output on the module
+                            is asserted whenever there are input bits. If <literal>on</literal>,
+                            the OR output is 'masked' and will never be asserted.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+
+    </refsect1>
+</refentry>
 <!-- /manpage -->
