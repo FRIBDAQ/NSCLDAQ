@@ -5901,4 +5901,61 @@ v977 cget  <replaceable>name ?option?</replaceable>
 
     </refsect1>
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>XLMTimestamp</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>XLMTimestamp</refname>
+        <refpurpose>XLM with timstamp firmware</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+XLMTimestamp create <replaceable>name ?option value...?</replaceable>
+XLMTimestamp config  <replaceable>name option value?..?</replaceable>
+XLMTimestamp cget  <replaceable>name ?option?</replaceable>       
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The XLM72 module is a general purpose FPGA module. This means that what it does
+            depends entirely on the firmware that has been loaded into it.   For the
+            timeastmp firmware, two 32 bit values are read to the data stream from the module.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides the base address of the module.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-firmware</option> <replaceable>path-to-firmware-file</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provies the path to the firmware filename for the timestamp firmware.
+                            This must be provided unless the module is loaded externally from the 
+                            Readout (at some  point we will probably have a xlmloadmvlc to do that).
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-loadfirmware</option> <replaceable>yes | no </replaceable></term>
+                    <listitem>
+                        <para>
+                            IF yes, the default, the firmware will be loaded at the start of each run.  If no, it is 
+                            assumed the firmware will have been loaded external to the readout.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
 <!-- /manpage -->
