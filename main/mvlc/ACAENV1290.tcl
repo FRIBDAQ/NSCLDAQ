@@ -1,8 +1,5 @@
-#  This port of the CAENV1290 class to me seems very not trival
-#  to make portable between the VMUSBReadout and the
-#  mvlcgenerate... so we're not even going to try.
 
-# should be able t6o construct an ACAENV1290 and wrap it in
+# should be able to construct an ACAENV1290 and wrap it in
 # a tcldriver.  What you cannot do is configure this as
 # that appears hard coded with the InitReA3 method.  I know
 # Scott W, the probable original author could have done it differently,

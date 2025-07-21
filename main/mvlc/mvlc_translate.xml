@@ -5957,5 +5957,70 @@ XLMTimestamp cget  <replaceable>name ?option?</replaceable>
             </varlistentry>
         </variablelist>
     </refsect1>
+
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>ACAENV1290</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>ACAENV1290</refname>
+        <refpurpose>Special purpose Tcl CAEN V1290 driver </refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+ACAENV1290 <replaceable>name</replaceable>
+addtcldriver create <replaceable>stack-name</replaceable> -ensemble <replaceable>name</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The <classname>ACAENV1290</classname> ITcl class is a specialized Tcl translation
+            driver for the CAEN V1290 TDC.  The synposis above shows how to use it.
+            The driver has no configurable options.  On inintialization it:
+        </para>
+        <orderedlist>
+            <listitem>
+                <para>
+                    Sets the module in trigger matching mode
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Sets the matching window width to 1500
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                Sets the window offset to -1000
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Turns off chip parkers.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Disables error markers.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Enables trigger time subraction.
+                </para>
+            </listitem>
+        </orderedlist>
+        <para>
+            The source code does not contain an Author attribution nor the 
+            purpose however I believe the author was Scott Williams and the 
+            original purpose was the REA3 diagnostics box.  The 
+            <command>tdc1x90</command> is a much more flexible driver
+            and is recommended instead of this driver, which is provided
+            for legacy use only.
+        </para>
+    </refsect1>
 </refentry>
 <!-- /manpage -->
