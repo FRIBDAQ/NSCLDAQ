@@ -5430,4 +5430,372 @@ v1729a cget  <replaceable>name ?option?</replaceable>
         </para>
     </refsect1>
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>tdc1x90</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>tdc1x90</refname>
+        <refpurpose>Support the CAEN V1290 and V1190 TDC family</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+tdc1x90 create <replaceable>name ?option value...?</replaceable>
+tdc1x90 config  <replaceable>name option value?..?</replaceable>
+tdc1x90 cget  <replaceable>name ?option?</replaceable>       
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The CAEN V1290 and V1190 (collectively V1x90) 
+            are time digitizers that are based on the CERN HPTDC chip.
+            This module is still available, however my understanding is that
+            the CERN HPTDC chip is not so once stocks of that chip 
+            run out, this module will no longer be available.
+        </para>
+        <para>
+            THe module is normally used in FRIB in trigger matching mmode.
+            In trigger matching mode, the trigger and programmable parameters
+            define a window and hits within that window constitute an event.
+        </para>
+        <para>
+            Note that the trigger gated relative to the digitizer's 
+            onboard clock and, therefore its timing is not known to anywhere
+            close to the precision of the digitizers.  If timing relative to the
+            trigger is desired, the gate itself must be digitized and 
+            differences computed with respect to the digitized gate.  This is
+            normally used when the matching window is used to simulate either a common start
+            or a common stop TDC.
+        </para>
+        <para>
+            Note that the module is controlled by a micro controller and parameters
+            are set by passing them to the microcontroller via data and handshake registers.
+            The MVLC can properly do this handshake so it may well initialize faster
+            than the VMUSB, but, in general, it can take quite a bit of time to
+            initialize these modules.
+        </para>
+        <para>
+            This module has a lot of configuration options so
+            be sure to familiarize yourself with the manuals for the specific TDC
+            you are using. For example, see the
+            <ulink url='http://pen.phys.virginia.edu/daq/vme/v1190_usersmanual.pdf'>
+            CAEN V1190 manual</ulink>.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            The module base address.  Be sure to set this option to match the
+                            base address selecte by the module rotary switches.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-vsn</option> <replaceable>virtual-slot</replaceable></term>
+                    <listitem>
+                        <para>
+                            This is a 5 bit value that will be included as the <literal>GEO</literal>
+                            field in the data read from the module.  See figure 6.1 of
+                            the
+                            <ulink url='http://pen.phys.virginia.edu/daq/vme/v1190_usersmanual.pdf'>
+                            CAEN V1190 manual</ulink>.
+                        </para>
+                        <para>
+                            THe value of <option>-vsn</option> should be unique over all modules.
+                            IF you set this to be the number of the VME Bus slot the module is inserted
+                            in, it will be hard to go wrong.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ipl</option> <replaceable>IRQ-priority</replaceable></term>
+                    <listitem>
+                        <para>
+                            If you are using the module to generate backplane interrupts, this is
+                            the number of the interrupt request line (and hence the interrupt priority level)
+                            to use.  A value of 0 disables interrupts and is the default.
+                            If you are using interrupts, the value can be in the range 1-6.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-vector</option> <replaceable>status-id</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <option>-ipl</option> is not zero, this provides the 8 bit value of the
+                            status id that is placed on the data bus in response to an IACK recdeived by the
+                            module.  Note that if the interrupt handler supports 16 bit interrupters,
+                            you will probably need to program it to accept interrtupt at this
+                            status-id with the top 8 bits of the status-id set to 1.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-termination</option> <replaceable>none | on | switch</replaceable></term>
+                    <listitem>
+                        <para>
+                            Controls the termination of the control bus ECL inputs.  By default this is
+                            <literal>on</literal> making the board suitable for the final board in a bus.
+                            If <literal>none</literal> the inputs are not terminated.  If <literal>switch</literal>
+                            the TERM switch on the board controls the termination not software.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-tagtime</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            Enables  or disables the trigger time tag word to be included in the
+                            data.  Note that this has a resolution of the module's clock and does not
+                            remove the possible need for a reference channel.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-highwatermark</option> <replaceable>words</replaceable></term>
+                    <listitem>
+                        <para>
+                            When interrupts are enabled on the module, if the event buffer contains more
+                            than this number of words the module initiates an interrupt.  This defaults to 1
+                            and must be in the range 0-0xffff
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-ecloutput</option> <replaceable>ready | full | almostfull | error</replaceable></term>
+                    <listitem>
+                        <para>
+                            Defines the meanin go f the <literal>OUT_PROG</literal> ECL output on the 
+                            control bus.  The default, <literal>ready</literal>, means that the signal is
+                            asserted when data are ready to be read.  <literal>full</literal> means asserted
+                            when the event memory is completely full.  <literal>almostfulll</literal>
+                            means the signal is asserted when the event memory has
+                            at least the <option>-highwatermark</option> option value words.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-window</option> <replaceable>width</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the time width of the matching window in 25ns units.  Be sure to understand
+                            the constraints on the trigger, matching window and window offset described in 
+                            2.4.1 of the 
+                            <ulink url='http://pen.phys.virginia.edu/daq/vme/v1190_usersmanual.pdf'>
+                            CAEN V1190 manual</ulink>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-offset</option> <replaceable>offset-time</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the window offset relative to the trigger.  This value is in units of
+                            25ns.  The values are in the range -2048 to 40.  The relation of the trigger, window
+                            and offset must satisfy the constraints described in 2.4.1 of the 
+                            <ulink url='http://pen.phys.virginia.edu/daq/vme/v1190_usersmanual.pdf'>
+                            CAEN V1190 manual</ulink>.  Note that the offset is in the same timing domain as
+                            the trigger and, therefore the window will jitter by 25ns from the absolute
+                            trigger time.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-extramargin</option> <replaceable>margin-tiome</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the extra margin time in the matching window.  This value is in clock 
+                            cycles.  The default is 8.  which represents 200ns.  The purpose of this parameter
+                            is to slightly extend the matching window to compensate for the jitter in the
+                            start of the matching window due to the fact that it is started by the FPGA.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-rejectmargin</option> <replaceable>reject-margin-tim</replaceable></term>
+                    <listitem>
+                        <para>
+                            The reject margin is a time at the beginning of the match window during which
+                            hits will be rejectec.  Again this is intended to compensate for the jitter in 
+                            gate timing which results in a corresponding jitter in the start of the matching
+                            window.  Units are in clock cycles, and the default is 4 which represents 100ns.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-triggerrelative</option> <replaceable>true | false</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <literal>true</literal>, the default, hit timing will be relative to the trigger.
+                            Note that this does not eliminate the need for a reference channel to get true
+                            trigger relative timing, as the trigger timing
+                            will jitter by as much as a clock cycle.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-edgedetect</option> <replaceable>pair | leading | trailing | both</replaceable></term>
+                    <listitem>
+                        <para>
+                            Deterrmines when a hit is timed.  THe default is 
+                            <literal>leading</literal> which times on the leading
+                            edge of the input.  <literal>trailing</literal> times on the trailing edge of the
+                            input pulse and <literal>both</literal> makes both edges of the input pulse a hit.
+                            In <literal>pair</literal> a pulse will produce a hit containing the leading 
+                            edge timing of the pulse and another hit containing the pulse width.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-edgeresolution</option> <replaceable>800ps | 200ps | 400ps | 800ps | 1.6ns |3.12ns </replaceable> </term>
+                    <listitem>
+                        <para>
+                            Sets the meaning of the least significant bit of timing data for edge triggering.
+                            The default is <literal>100ps</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-leresolution</option> <replaceable>100ps 200ps 400ps 800ps 1.6ns 3.12ns</replaceable></term>
+                    <listitem>
+                        <para>
+                            If the module is in pair mode, sets the resolution of the leading edge hit.  By default,
+                            this is <literal>100ps</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-widthresolution</option> <replaceable>100ps | 200ps | 400ps | 800ps | 1.6ns | 3.2ns | 6.25ns |12.5ns |25ns |50ns |100ns |200ns | 400ns | 800ns </replaceable></term>
+                    <listitem>
+                        <para>
+                            If the mnodule is in pair mode, sets the resolution of the width hit.  By default this is
+                            <literal>100ps</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-deadtime</option> <replaceable>5ns | 10ns | 30ns | 100ns |</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the time between pulses that a channel will be dead before accepting a second pulse.
+                            By default, this is <literal>5ns</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-encapsulatechip</option> <literal>enabled | disabled</literal></term>
+                    <listitem>
+                        <para>
+                            Determines if a chip header/trailer for each HPTDC chip in the module will be
+                            produced. Default is <literal>enabled</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-maxhits</option> <replaceable>0 | 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | infinite</replaceable></term>
+                    <listitem>
+                        <para>
+                            Limits the number of hits that can be put into an event.  The default,
+                            <literal>infinite</literal> places no limit on the event size.  If the number of hits actually
+                            exceeds the <option>-maxhits</option> value, the TDC generates an Error word at the end of
+                            the event with error flag value of 0x1000 indicating size limit exceeded.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-errormark</option> <replaceable>enabled | disabled</replaceable> </term>
+                    <listitem>
+                        <para>
+                            If <literal>enabled</literal> (the default), the TDC is allowed to indicate a global
+                            error by placing an error flag at the end of the event.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-errorbypass</option> <replaceable>enabled | disabled</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <literal>enabled</literal>, the default, the TDC is bypassed in the event of an eror.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-globaloffset</option> <replaceable>coarse fine</replaceable></term>
+                    <listitem>
+                        <para>
+                            Allows for an offset to be added to all channels.  A coarse and fine offset are
+                            provided. This defaults to two zero values, which  provides no offset.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-channeladjusts</option> <replaceable>off0 ...</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides for a list of offsets to add to the hit timing of each channnel.
+                            By default, this is an empty string which supplies no offsets.  Valid values
+                            are a list of offset values for channel0, channel 1 etc...
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-model</option> <replaceable>v1190A | v1190B | v1290A | v1290N </replaceable></term>
+                    <listitem>
+                        <para>
+                            With the VMUSB, the model number could be read from the modue, however with the
+                            translaotr this is not possible.  Therefore, set this option to the correct
+                            model number of your module.  The model number defines the number of channels
+                            and a few other bits of programminug that are module dependent.  the
+                            default value is <literal>v1190A</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            The VMUSB Readout configuration of this module also provided configuration parameters
+            that help VMUSBSpecTcl to automatically decode data from these devices and togenerate the
+            correct spectra.  The MVLC SpecTcl will process these configuration options as well:
+        </para>
+        
+        <variablelist>
+            <varlistentry>
+                    <term><option>-refchannnel</option> <replaceable>channel-no</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides the number of the channel to be used as the reerence channel.
+                            This channel should have the gate plugged into it.  Data from each channel will
+                            have the value of the reference channel subtracted from it to get an absolute gate
+                            relative timing.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-depth</option> <replaceable>hit-count</replaceable></term>
+                    <listitem>
+                        <para>
+                            As each channel can have more than one hit, this defines the number of single hit
+                            spectra SpecTcl will create for each channel.  Defaults to 16.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-channelcount</option> <replaceable>num-channels</replaceable></term>
+                    <listitem>
+                        <para>
+                            Required parameter (not legal default) this option defines the number of channels
+                            the module has.  This  is normally, 128, 64, 32, or 16 depending on the
+                            model number.  In the future, this may be doublechecked or elimnated in favor
+                            of computing this from the <option>-model</option> option.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
 <!-- /manpage -->
