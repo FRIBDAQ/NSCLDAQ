@@ -5970,6 +5970,7 @@ XLMTimestamp cget  <replaceable>name ?option?</replaceable>
     </refnamediv>
     <refsynopsisdiv>
         <programlisting>
+package require ACAENV1290
 ACAENV1290 <replaceable>name</replaceable>
 addtcldriver create <replaceable>stack-name</replaceable> -ensemble <replaceable>name</replaceable>
         </programlisting>
@@ -6021,6 +6022,136 @@ addtcldriver create <replaceable>stack-name</replaceable> -ensemble <replaceable
             and is recommended instead of this driver, which is provided
             for legacy use only.
         </para>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>ACAENV795</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>ACAENV785</refname>
+        <refpurpose>Tcl Driver for CAEN V785 fixed initialization</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+package require ACAENV785
+ACAENV785 <replaceable>device-name</replaceable>
+
+addtcldriver create <replaceable>device-stackname</replaceable> -ensemble <replaceable>device-name</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            <command>ACAENV785</command> provides a Tcl driver that has a fixed initialization of the 
+            CAEN V785 module.  I believe this was written originally by Scott Williams for the REA3 beamline
+            diagnostics box and initialization
+            does not set the module up to do any zero suppression.  Thus, you can expect the data from the module
+            to include all channels fromt he module as well as the standard header and trailer for any 
+            event in which the module received a gate.
+        </para>
+        <para>
+            The <command>adc</command> is more flexible and recommended for use instead.  This driver is 
+            provided only to support legacy applications.
+        </para>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>ACrdcXLM72</refentrytitle>
+        <manvolnum>3vmcl</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>ACrdcXLM72</refname>
+        <refpurpose>Provide support for the XLM72 with the S800 CRDC Firmware</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+package require crdcxlm72
+ACrdcXLM72 <replaceable>dev-name</replaceable>
+<replaceable>dev-name</replaceable>  configure <replaceable>option value ?...?</replaceable>
+<replaceable>dev-name</replaceble> cget <replaceable>option</replaceable>
+
+addtcldriver create <replaceable>dev-stacknaame</replaceable> -ensemble <replaceable>dev-name</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This is a IncrTcl driver intended to readout out the S800 and Sweeper magnet CRDC detectors
+            via an XLM72 with appropriate firmware.  I believe the original code was written by
+            Daniel Bazin with a later port to the VMUSBReadout by Jeromy Tompkins.
+        </para>
+        <para>
+            Note that since this is a translator, at every start of data taking, the FPGA will be loaded.
+            At some point in the future, we will arrange for the FGPA to be externally loaded via a utility
+            like exists for the VMUSB.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <para>
+            Like the compiled drivers, <command>ACrdcXLM72</command> objects have
+            options to configure them.  Once the object is created it has a configure subcommand that allows you to
+            set option values.  It also has a cget option which allows you to query the value of individual
+            options.  See <literal>SYNOPSIS</literal> above for more.
+        </para>
+        <para>
+            Options are:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-filename</option> <replaceable>path-to-firmware</replaceable></term>
+                    <listitem>
+                        <para>
+                            Specifies the file that contains the CRDC FPGA firmware.  This file will be
+                            loaded at initialization time.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-samples</option> <replaceable>no-samples-per-pad</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides the number of samples per pad that should be read.  The samples on each
+                            pad allow for the determination of the particle's Y position through the detector.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-period</option> <replaceable>value</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the period. 
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-delay</option> <replaceable>delay</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the delayparameter
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-width</option> <replaceable>width</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the width parameter.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-shift</option> <replaceable>shift</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the shift parameter.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
     </refsect1>
 </refentry>
 <!-- /manpage -->

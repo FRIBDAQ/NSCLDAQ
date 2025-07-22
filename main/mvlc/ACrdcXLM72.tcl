@@ -48,6 +48,7 @@ package require Utils
 #   -width
 #   -shift
 #   -thresholds - list of thresholds e.g. ...config -thresholds [list ....]; # 256 thresholds.
+#   -firmware  - the firmware file.
 #
 itcl::class ACrdcXLM72 {
 	inherit AXLM72
@@ -62,6 +63,7 @@ itcl::class ACrdcXLM72 {
   public variable width    --unset--
   public variable shift    --unset--
   public variable thresholds --unset-- ;#  Should be a list of 256 values.
+  
 
   ## Constructor
   #
@@ -344,8 +346,12 @@ itcl::body ACrdcXLM72::Init {} {\
   if {$filename eq "--unset--"} {
     error "The FPGA firmware file has not been configured via the -filename option"
   }
-	source $filename
-	AccessBus 0x10001
+  AccessBus 0x10001
+	Configure $filename
+  SetFPGABoot 0x10000
+  BootFPGA
+
+	
 
   # get a list of the names that exist in the array
   
@@ -389,9 +395,7 @@ itcl::body ACrdcXLM72::Init {} {\
   if {$thresholds eq "--unset--"} {
     return -code error "ACrdcXLM72::Init -thresholds were never configured!"
   }
-  if {[llength $thresholds] != 256} {
-    return -code error "ACrdcXLM72::Init - there must be exactly 256 thresholds!"
-  }
+  
 	
 	WriteThresholds $thresholds
 

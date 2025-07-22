@@ -391,7 +391,7 @@ itcl::body AXLM72::BootFPGA {} {
 	Write vme 4 $releaseFPGA  ;# Keep DSP in reset, Release FPGA
 
   # Leave some time to boot FPGA
-	after 500
+	$device delay 50000;   #Hopefully enough time.
 }
 
 
