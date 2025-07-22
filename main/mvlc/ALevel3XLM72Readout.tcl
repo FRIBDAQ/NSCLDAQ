@@ -8,6 +8,7 @@ package require xlm72
 
 itcl::class ALevel3XLM72 {
     inherit AXLM72
+    public variable filename
 
     global stoppedstate
 
@@ -70,7 +71,7 @@ itcl::body ALevel3XLM72::XSet {name addr data} {
 # @param controllelr - vmusb like controller object.
 
 itcl::body ALevel3XLM72::Initialize {controller} {
-    SetController $cpntroller
+    SetController $controller
     
     # ??? what is the initialization???
 }
