@@ -72,7 +72,7 @@ itcl::class AGD16XLM72 {
 
   public method ReadFirmware {}
 
-	public method Init {filename}
+	public method Init {}
 }
 
 itcl::body AGD16XLM72::WriteDelayWidth {ch de wi} {

@@ -21,7 +21,7 @@ itcl::class APpacXLM72 {
 
   # These configurble options replace the stupid aname thingy in initialize.
 
-  public variable filename "/dev/null";    # No init file by default.
+  public variable filename "--unset--";    # Firmware file.
   public variable period "--unset--"
   public variable delay "--unset--"
   public variable width "--unset--"
@@ -164,7 +164,7 @@ itcl::class APpacXLM72 {
   #  if after sourcing the script the array named $array doesnot
   #  exist or does not contain all of the information required, 
   #  an error occurs and returns with code=1
-	public method Init {filename array}
+	public method Init {}
 
 
   ############################################################
@@ -299,10 +299,18 @@ itcl::body APpacXLM72::WriteThresholds {th} {
 # for each of the old aname indices and you can bloody well fix your old-style
 # Tcl files to configure the object.
 #     RF - yeah you shoul have done it differently Scott.
-itcl::body APpacXLM72::Init {fname} {
-	source $fname
+itcl::body APpacXLM72::Init {} {
+	
 
 	AccessBus 0x10001
+  # Load the firmware and boot the module.
+
+  if {$filename eq "--unset--"} {
+    error "You must configure the firmware file (-filename)."
+  }
+  Configure $filename
+  SetFPGABoot 0x10000
+  BootFPGA
 
   # Write the samples, period, delay, width, shift, and threshold values
   #  if and only if the $aname array provides a value. Otherwise throw an

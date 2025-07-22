@@ -219,7 +219,7 @@ itcl::class ACrdcXLM72 {
   #  if after sourcing the script the array named $array doesnot
   #  exist or does not contain all of the information required, 
   #  an error occurs and returns with code=1
-	public method Init {filename array}
+	public method Init {}
 
 
   ############################################################
