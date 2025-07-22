@@ -72,8 +72,20 @@ itcl::body ALevel3XLM72::XSet {name addr data} {
 
 itcl::body ALevel3XLM72::Initialize {controller} {
     SetController $controller
+
+
     
-    # ??? what is the initialization???
+    # load the firmware:
+
+    AccessBus 0x10000
+
+    # Load the firmware:
+
+    Configure $filename
+    SetFPGABoot 0x10000
+    BootFPGA
+
+    ReleaseBus
 }
 ##
 # addReadoutList

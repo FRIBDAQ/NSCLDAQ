@@ -6198,7 +6198,7 @@ addtcldriver create <replaceable>stack-devname</replaceable> -ensemble <replacea
         </para>
         <para>
             Unlike the original module, configuration is done via options that
-            are descsribed in the <title>OPTION</title> section below, rather than explicit
+            are descsribed in the <literal>>OPTIONS</literal> section below, rather than explicit
             method calls.  This, again is because the driver must operate in an off-line mode
             producing initialization command lists rather than directly interacting with the hardware.
         </para>
@@ -6256,6 +6256,40 @@ addtcldriver create <replaceable>stack-devname</replaceable> -ensemble <replacea
                     </listitem>
             </varlistentry>
         </variablelist>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>ALevel3XLM72</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>ALevel3XLM72</refname>
+        <refpurpose>Support the MoNA/Sweeper level 3 trigger XLM7s fpga</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+package require ALevel3XLM72Readout
+ALevel3XLM72 create <replaceable>device-name</replaceable>
+<replaceable>device-name</replaceable> configure -filename <replaceable>firmware-path</replaceable>
+
+addtcldriver create <replaceable>stack-name</replaceable>  -ensemble <replaceable>device-name</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This module supports the MoNA-LISA third level trigger module.  It provides 
+            both triger information and the timestamp for the event.  I believe the original
+            module was written by Danial Bazin and was later ported to the VMUSBReadout system
+            by Jeromy Tomkins.  This documents the mvlcgenerate code generator module.
+        </para>
+        <para>
+            The driver instances accept a single option, <option>-filename</option> whose value
+            is the path to the firmware file.  As with all XLM modules at this point,
+            the firmware is loaded whenever data taking starts.  This will be eliminated
+            in the future when an external mvlc firmware loader program is written.
+        </para>
     </refsect1>
 </refentry>
 <!-- /manpage -->
