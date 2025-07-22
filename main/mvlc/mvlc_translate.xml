@@ -6071,7 +6071,7 @@ addtcldriver create <replaceable>device-stackname</replaceable> -ensemble <repla
 package require crdcxlm72
 ACrdcXLM72 <replaceable>dev-name</replaceable>
 <replaceable>dev-name</replaceable>  configure <replaceable>option value ?...?</replaceable>
-<replaceable>dev-name</replaceble> cget <replaceable>option</replaceable>
+<replaceable>dev-name</replaceable> cget <replaceable>option</replaceable>
 
 addtcldriver create <replaceable>dev-stacknaame</replaceable> -ensemble <replaceable>dev-name</replaceable>
         </programlisting>
@@ -6148,6 +6148,110 @@ addtcldriver create <replaceable>dev-stacknaame</replaceable> -ensemble <replace
                     <listitem>
                         <para>
                             Sets the shift parameter.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-thresholds</option> <replaceable>list-of-thresholds</replaceable></term>
+                    <listitem>
+                        <para>
+                            List of 256 threshold register values.  Note that if the list is shorter than
+                            256, the threshold values not given are set to the meximum values.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>AGD16XLM72</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>AGD16XLM72</refname>
+        <refpurpose>Support XLM72 running 16 channel gate and delay generator firmware.</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+package require gd16xlm72
+
+AGD16XLM72 <replaceable>device-name</replaceable>
+<replaceable>device-name</replaceable> configure <replaceable>option value ?...?</replaceable>
+
+addtcldriver create <replaceable>stack-devname</replaceable> -ensemble <replaceable>device-name</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This configuration command provides support for the XLM72 general purpose logic module
+            running 16 channel gate and delay generator firmware.  The module was originally written
+            by Daniel Bazin and ported to the VMUSBReadout by Jeromy Tompkins.  This version operates
+            as a translator driver for the <command>mvlcgenerate</command> program.
+        </para>
+        <para>
+            Note that since this operates in an offline translator mode, the firmware file
+            will be loaded and booted every start of data taking.  In the future an
+            mvlc loader program will be written to allow the firmware to be loaded externally
+            to reduce startup time.
+        </para>
+        <para>
+            Unlike the original module, configuration is done via options that
+            are descsribed in the <title>OPTION</title> section below, rather than explicit
+            method calls.  This, again is because the driver must operate in an off-line mode
+            producing initialization command lists rather than directly interacting with the hardware.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <para>
+            Creating an instance of <classname>AGD16XLM72</classname> produces a command ensemble
+            that inluces the subcommands <command>configure</command>, which allows you to provide
+            values for one or more options and <command>cget</command> which allows you to retrieve the
+            value of an option.
+        </para>
+        <para>
+            The valid options are:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-delay</option> <replaceable>list-of-delays</replaceable></term>
+                    <listitem>
+                        <para>
+                            The valid Tcl list of the 16 delay values.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-width</option> <replaceable>list-of-widths</replaceable></term>
+                    <listitem>
+                        <para>
+                            The valid Tcl list of the 16 width values.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-bypass</option> <replaceable>bypass-value</replaceable></term>
+                    <listitem>
+                        <para>
+                            The bypass value.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-insspect</option> <replaceable>inspect-value</replaceable></term>
+                    <listitem>
+                        <para>
+                            The inspection value.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-filename</option> <replaceable>path-to-firmware-file</replaceable></term>
+                    <listitem>
+                        <para>
+                            File system path to the gate and delay generator firmware.
                         </para>
                     </listitem>
             </varlistentry>
