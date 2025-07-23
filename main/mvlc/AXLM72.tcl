@@ -45,7 +45,7 @@ itcl::class AXLM72 {
 	protected variable device 
 
 	private variable slot   ;#< slot of the device
-	private variable base   ;#< base address 
+	public  variable base   ;#< base address 
 	private variable vme    ;#< address offset to vme interface
 	private variable fpga   ;#< address offset to fpga 
 	private variable dsp    ;#< address offset to dsp
