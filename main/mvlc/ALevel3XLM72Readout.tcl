@@ -12,8 +12,8 @@ itcl::class ALevel3XLM72 {
 
     global stoppedstate
 
-    constructor {de sl} {
-	AXLM72::constructor $de $sl
+    constructor {} {
+	AXLM72::constructor junk
     } {}
 
     method XSet {dev offset value}

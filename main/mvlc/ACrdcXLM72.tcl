@@ -69,8 +69,8 @@ itcl::class ACrdcXLM72 {
   #
   # @param sl the slot in which the AXLM72V resides
   #
-	constructor {de sl} {
-		AXLM72::constructor $de $sl
+	constructor {} {
+		AXLM72::constructor junk
 	} { }
 
   ## Wrapper function to make this a readout class:

@@ -34,8 +34,8 @@ itcl::class APpacXLM72 {
   # based on the slot number.
   #
   # @param sl the slot in which the XLM72V is located
-	constructor {de sl} {
-		AXLM72::constructor $de $sl
+	constructor {} {
+		AXLM72::constructor junk
 	} {}
 
   ############################################################

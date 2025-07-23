@@ -50,8 +50,8 @@ itcl::class AGD16XLM72 {
   public variable inspect "--unset--"
   public variable filename "--unset--"
 
-	constructor {de sl} {
-		AXLM72::constructor $de $sl
+	constructor {} {
+		AXLM72::constructor junk
 	} {}
   #  Note the reads are only done in the slow controls env and the
   #  controller is set.  Have to think abit about if this is threadsafe!!
