@@ -501,7 +501,8 @@ CMADC32::Initialize(CVMUSB& controller)
   list.addDelay(MADCDELAY);
   list.addWrite16(base + WithdrawIrqOnEmpty, initamod, (uint16_t)1);
   if(multiEvent) {
-    list.addWrite16(base + MultiEvent, initamod, (uint16_t)7);
+      // 4 bit value, make sure bit 2 is unset (skip berr, send eob)
+    list.addWrite16(base + MultiEvent, initamod, (uint16_t)3);
   }
   else {
     list.addWrite16(base + MultiEvent, initamod, (uint16_t)0);
