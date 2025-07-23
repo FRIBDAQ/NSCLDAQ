@@ -103,8 +103,8 @@ snit::type sis330x {
     option -mingttime       -default [lrepeat 4 0]       -validatemethod _validMNP
     option -trigwidth       -default [lrepeat 4 0]       -validatemethod _validMNP       
     option -groupenables    -default [lrepeat 4 true]    -validatemethod _validGroupEnables
-    option -header          -default 0xfadc              -validatemethod _isUint16
-    option -trailer         -default 0xffff              -validatemethod _isUint16
+    option -header          -default 0xfadcfadc              
+    option -trailer         -default 0xffffffff              
     
     
     
