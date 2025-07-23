@@ -6434,4 +6434,255 @@ addtcldriver create <replaceable>stack-name</replaceable> -ensemble <replaceable
         </variablelist>
     </refsect1>
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>ATimeStampXLM72</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>ATimeStampXLM72</refname>
+        <refpurpose>Use XLM72 with timestamp firmware</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+package require ATimeStampXLM72
+ATimeStampXLM72 <replaceable>dev-name</replaceable>
+<replaceable>dev-name</replaceable> configure -base <replaceable>vme-base-address</replaceable>
+
+addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>dev-name</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This Tcl driver reads two words of timestamp data for each event.
+            The only configuration option it accepts is <option>-base</option> which
+            sets the base address of the module.
+        </para>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>sis3300</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>sis3300</refname>
+        <refpurpose>Tcl driver for the SIS3300/3301 FADC without HiRA firmware</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+package require sis330x
+set driver [sis330x %AUTO%] <replaceable>?option value ...?</replaceable>
+<replaceable>$driver</replaceable> configure <replaceable>option value ?...?</replaceable>
+
+addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>$driver</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The SIS 3300/3301 is a 100MHz flash ADC module.  Its firmware only supports the
+            acquisition of waveforms. <command>sis330x</command> provides a Tcl driver
+            that supports this module with the HiRA clock support firmware.
+            See  <link linkend="man3mvlc.sis330xdriver" endterm='man3mvlc.sis330xdriver.title' />
+            for a driver that does not support the HiRA clock.  The HiRA clock was used
+            with XLM readout of Washington University Chip boards with older XLM's and Wash-U
+            chip sets that required external digitization of the multiplexed analog
+            signals.
+        </para>
+        <para>
+            Note that this module is now obsolete. Alternative modules should be selected with
+            sufficient time to allow support for the replacement to be developed.  When using
+            this module, however, see 
+            <ulink url= 'https://groups.frib.msu.edu/nscl_library/manuals/sis/sis3301.pdf'>
+            the Module's manual</ulink>
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-base-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            Defines the base address of the board.  This must match the value selected
+                            by the rotary switche in conjunction with the J1 jumper which should
+                            be set to enable A32, disble GIO and disable VIPA when used at the FRIB.
+                        </para>
+                        <para>
+                            See section 3 of <ulink url= 'https://groups.frib.msu.edu/nscl_library/manuals/sis/sis3301.pdf'>
+                            the Module's manual</ulink> for information about setting the base
+                            address in the module's hardware.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-clock</option> <replaceable>100Mhz | 50MHz | 25MHz | 12.5Mhz | 6.25Mhz | 3.125Mhz | external | random | hira</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the source of the digizizer clock.  This defaults to <literal>100Mhz</literal>.
+                            <literal>external</literal> expects a symmetric clock on LEMO or ECL connector clock input.
+                            <literal>random</literal> digitizes every 100MHz but only stores a sample when the externa clock
+                            input pulses.  <literal>hira</literal> only digitizes on the falling edge of the external clock and
+                            can tolerate a highly asymmetric clock as will come from the XLM attached to the 
+                            Wash U Chip boards.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-mode</option> <replaceable>start | stop |gate</replaceable></term>
+                <listitem>
+                    <para>
+                        Determines when the module acquires samples.  In <literal>start</literal>, the default, 
+                        samples will start being acquired on the leading edge of Lemo input 3.  Sampling will continue
+                        until the programmed number of <option>-samples</option> have been acquired.  In this mode you
+                        can either delay the readout the appropriate amount or use the rising edge of LEMO output 2 
+                        to know when sampling is done and trigger the event from it.  In <literal>stop</literal> mode,
+                        the module is always sampling into its memory, treating it like a circular buffer.  The stop input
+                        terminates sampling. In <literal>gate</literal> mode, sampling begins on the leading edge of the
+                        gate and ends on its trailing edge.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-startdelay</option> <replaceable>disabled | num-clocks</replaceable></term>
+                    <listitem>
+                        <para>
+                            If <literal>disabled</literal>, the default, no start delay is performed.  If
+                            an integer value,  in the range [0-65535], the external start is delayed by
+                            <replaceable>num-clocks</replaceable>+2 samples clocks.  This allows for
+                            pre-triggering.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-stopdelay</option> <replaceable>disabled | num-clocks</replaceable></term>
+                    <listitem>
+                        <para>
+                            Same as for <option>-startdelay</option> but optionally delays the stop. See 
+                            section 4.8 of 
+                            <ulink url= 'https://groups.frib.msu.edu/nscl_library/manuals/sis/sis3301.pdf'>
+                            the Module's manual</ulink> for more on start and stop delay modes.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-samples</option> <replaceable>128K | 16K | 4K | 2K| 1K| 512 | 256 | 128</replaceable></term>
+                    <listitem>
+                        <para>
+                            In start and stop mode, this represents the number of samples the 
+                            module will pass into the event.  The default is <literal>128K</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-thresholdslt</option>  <replaceable>eight-booleans</replaceable></term>
+                    <listitem>
+                        <para>
+                            The module is capable of generating  a trigger output when the input signal passes
+                            threshold values for each of the inputs.  This allows the module to operate in self-triggered
+                            mode by, e.g. connecting the trigger out to the Start input and specifying the module's
+                            mode to be <literal>start</literal>  These 8 booleans specify the direction of threshold
+                            crossing that generates the trigger for each channel.  For each channel, if that channel's
+                            list element is <literal>true</literal>  triggers will be generated when the signal passes below
+                            its threshold value.  IF <literal>false</literal> triggers are generated when the signal
+                            passes above the threshold.  The default is <literal>lrepeat 8 false</literal> setting
+                            all channels to require the signal pass above the threshold to generate the trigger.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-thresholds</option> <replaceable>eight-integers</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides the threshold values for each of the channels.  THis must be a value in the
+                            range [0-0x3fff] and defaults to <literal>lrepeat 8 false</literal> setting
+                            all thresholds to the maximum allowed value.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-minlttime</option> <replaceable>four-clock-times</replaceable></term>
+                    <listitem>
+                        <para>
+                            Channels are organized as four two channel groups.  This option
+                            sets the number of clocks that a signal must be below the threshold Value
+                            in that group if the channel's <option>threholdslt</option> is true to 
+                            generate a trigger.  This is useful if the signal is noisy to prevent false triggers.
+                            The default is <literal>lrepeat 4 0</literal> which will trigger as soon as the signal passes
+                            below the threshold
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-mingttime</option> <replaceable>four-clock-times</replaceable></term>
+                    <listitem>
+                        <para>
+                            See <option>-mingttime</option> this performs the same function for channels
+                            that have <option>-thresholdslt</option> false, setting the time the signal must
+                            be above threshold to fire the trigger.  This defaults to 
+                            <literal>lrepeat 4 0</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-trigwidth</option> <replaceable>four-widths</replaceable></term>
+                    <listitem>
+                        <para>
+                            If non-zero specifes the number of clocks the auto trigger is held for. The default
+                            is lrepeat 4 0.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-groupenables</option> <replaceable>four-bools</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides for selective enable/disable of each 2 channel group.  The default
+                            is lrepeat 4 true which enables all groups.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-header</option> <replaceable>integer</replaceable></term>
+                    <listitem>
+                        <para>
+                            Specifies the value of a header placed in the data by the readoutlist.
+                            The header value is a marker.  Recall that MVLC markers are 32 bits not 16 bits.
+                            The default value is <literal>0xfadcfadc</literal>  This differs from the
+                            VMUSB which only uses 16 markers and has a defalut value of <literal>0xfadc</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-trailer</option> <replaceable>integer</replaceable></term>
+                    <listitem>
+                        <para>
+                            Defines the value of the marker that is inserted at the end of readout.
+                            This defaults to <literal>0xffffffff</literal>  Recall that the
+                            MVLC markers are 32 bits wide where the VMUSB markers are 16 bits wide.  This differs,
+                            therefore from the default for the VMUSB which is <literal>0xffff</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>SEE ALSO</title>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    <ulink url= 'https://groups.frib.msu.edu/nscl_library/manuals/sis/sis3301.pdf'>
+                    The Module's manual</ulink>
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <link linkend="man3mvlc.sis330xdriver" endterm='man3mvlc.sis330xdriver.title' />
+                </para>
+            </listitem>
+        </itemizedlist>
+    </refsect1>
+</refentry>
 <!-- /manpage -->
