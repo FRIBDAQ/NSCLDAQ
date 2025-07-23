@@ -84,7 +84,7 @@ itcl::class APpacXLM72 {
   #          bus (0x10000)
   #
   # @param ctlr a cvmusb::CVMUSB object
-  # @param wi   the delay (units?) (must be in range [0,63])
+  # @param wi   the width (units?) (must be in range [0,63])
   #
   # @returns error if argument is out of range
 	public method WriteWidth {wi}
