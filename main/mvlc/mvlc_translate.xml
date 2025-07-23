@@ -6060,7 +6060,7 @@ addtcldriver create <replaceable>device-stackname</replaceable> -ensemble <repla
 <refentry>
     <refmeta>
         <refentrytitle>ACrdcXLM72</refentrytitle>
-        <manvolnum>3vmcl</manvolnum>
+        <manvolnum>3mvlc</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ACrdcXLM72</refname>
@@ -6101,6 +6101,14 @@ addtcldriver create <replaceable>dev-stacknaame</replaceable> -ensemble <replace
             Options are:
         </para>
         <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            XLM Module VME base address.
+                        </para>
+                    </listitem>
+            </varlistentry>
             <varlistentry>
                     <term><option>-filename</option> <replaceable>path-to-firmware</replaceable></term>
                     <listitem>
@@ -6216,6 +6224,14 @@ addtcldriver create <replaceable>stack-devname</replaceable> -ensemble <replacea
         </para>
         <variablelist>
             <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            VME base address of the module.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
                     <term><option>-delay</option> <replaceable>list-of-delays</replaceable></term>
                     <listitem>
                         <para>
@@ -6285,11 +6301,137 @@ addtcldriver create <replaceable>stack-name</replaceable>  -ensemble <replaceabl
             by Jeromy Tomkins.  This documents the mvlcgenerate code generator module.
         </para>
         <para>
-            The driver instances accept a single option, <option>-filename</option> whose value
-            is the path to the firmware file.  As with all XLM modules at this point,
+            The driver instances accepts the configuration  options; <option>-filename</option> whose value
+            is the path to the firmware file and <option>-base</option> whose value is the 
+            module base address.  As with all XLM modules at this point,
             the firmware is loaded whenever data taking starts.  This will be eliminated
             in the future when an external mvlc firmware loader program is written.
         </para>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>AMesytecMADC32</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>AMesytecMADC32</refname>
+        <refpurpose>Support for REA3 diganostics use of Mesytec MADC32</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+package require AMesytecMADC32
+AMesytecMADC32 create <replaceable>dev-name</replaceable>
+
+addtcldriver create <replaceable>stack-name</replaceable>  -ensemble <replaceable>dev-name</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            Provides hard coded support for the Meystec MADC32 as a Tcl module.  I believe this
+            was written for the REA3 diagnostic system by Scott Williams though there is no
+            attribution nor purpose in the code.   The <command>madc</command> command provides
+            more general support and is recommended for current use.
+        </para>
+        <para>
+            Initialization sets the module into single event mode and sets all threshold
+            values to zero.  This results in non zero-suppressed data.
+        </para>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>APpacXLM72</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>APpacXLM72</refname>
+        <refpurpose>Provide support for XLM72 with PPAC readout firmware</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+package require ppacxlm72
+APpacXLM72 <replaceable>dev-name</replaceable>
+<replaceable>dev-name</replaceable> configure <replaceable>option value ?...?</replaceable>
+
+addtcldriver create <replaceable>stack-name</replaceable> -ensemble <replaceable>dev-name</replaceable>
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This Tcl driver provides support for the PPAC Readout XLM72 firmware.  
+            As with all of the XLM72 based modules, until an external firmware loader
+            is written, the firmware is unconditionally loaded at the start
+            of each data taking run.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>vme-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            VME base address of the module.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-filename</option> <replaceable>firmware-file-path</replaceable></term>
+                    <listitem>
+                        <para>
+                            Path to the file containing the firmware for the module.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        
+            <varlistentry>
+                    <term><option>-pariod</option> </term>
+                    <listitem>
+                        <para>
+                            Period parameter, in the rangge [0-3].
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-delay</option> <replaceable>delay</replaceable></term>
+                    <listitem>
+                        <para>
+                            Set the delay value, must be in the range [0-15].
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-width</option> <replaceable>width</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the width parameter, must be in the range [0-63].
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-shift</option> <replaceable>shift</replaceable></term>
+                    <listitem>
+                        <para>
+                            Set the shift value.  Must be in the range [0-255].
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-thresholds</option> <replaceable>list-of-thresholds</replaceable></term>
+                    <listitem>
+                        <para>
+                            List of threshold values.  This is a list that is at most 256 elements long.
+                            If not all elements are provided, the "missing" elements are set to 1023 which is
+                            the larges allowed threshodl value.  Thresholds are in groups of four for the
+                            four connectors on the PPAC.  Each group of four contains threshold for, in order
+                            a pin on connectors 0,1,2,3.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
     </refsect1>
 </refentry>
 <!-- /manpage -->
