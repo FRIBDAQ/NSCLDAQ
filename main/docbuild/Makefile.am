@@ -127,7 +127,7 @@ BOOKDIRS =@top_srcdir@ \
 daq.html: daq.xml
 	- rm -rf html
 	mkdir html
-	- $(TOHTML) -o @builddir@/html daq.xml
+	$(TOHTML) -o @builddir@/html daq.xml
 	touch daq.html
 
 daq.xml:
@@ -139,7 +139,7 @@ tutorial.pdf: @srcdir@/tutorial.xml
 tutorial.html: @srcdir@/tutorial.xml
 	- rm -rf tuthtml
 	mkdir @builddir@/tuthtml
-	- $(TOHTML) -o @builddir@/tuthtml @srcdir@/tutorial.xml
+	$(TOHTML) -o @builddir@/tuthtml @srcdir@/tutorial.xml
 	touch tutorial.html
 
 
