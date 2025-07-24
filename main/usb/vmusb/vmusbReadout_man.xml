@@ -180,9 +180,8 @@ caenv956 cget <replaceable>name</replaceable>
                   The interrupt priority level the module should use to request
                   a VME bus interrupt.  This defaults to 6 and should be set to
                   zero to disable interrupts.  Normally interrupts will be used
-                  to trigger an interrupt triggered stack.  The default of 6
-                  is historical in nature, in most cases for,
-                  the default should be overridden to zero.
+                  to trigger an interrupt triggered stack.  The default value
+                  is 0 which disables module interrupts.
                </para>
             </listitem>
          </varlistentry>
@@ -8946,8 +8945,8 @@ mdpp16qdc cget <replaceable>name</replaceable>
                                          Standard streaming mode
                                      </para>
                                  </listitem>
-                             <varlistentry>
                              </varlistentry>
+                             <varlistentry>
                                  <term><literal>16</literal></term>
                                  <listitem>
                                      <para>
@@ -9969,8 +9968,8 @@ mdpp32scp cget <replaceable>name</replaceable>
                                          Standard streaming mode
                                      </para>
                                  </listitem>
-                             <varlistentry>
                              </varlistentry>
+                             <varlistentry>
                                  <term><literal>16</literal></term>
                                  <listitem>
                                      <para>

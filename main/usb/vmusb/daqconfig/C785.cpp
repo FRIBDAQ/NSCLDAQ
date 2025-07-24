@@ -296,7 +296,7 @@ C785::addToChain(CVMUSB& controller,
    Parameter                 Default
    -thresholds               list of 32 0's.
    -smallthresholds          false
-   -ipl                      6 (interrupt 6 is expected by the rdo thread.
+   -ipl                      0 disabled
    -vector                   0x80
    -highwater                MEBDepth*3/4  (3/4 full event buffer).
    -fastclear                0
@@ -333,7 +333,7 @@ C785::onAttach(CReadoutModule& configuration)
   m_pConfiguration->addParameter("-smallthresholds", XXUSB::CConfigurableObject::isBool,
 				 NULL, "false");
   m_pConfiguration->addParameter("-ipl", XXUSB::CConfigurableObject::isInteger,
-				 &iplRange, "6");
+				 &iplRange, "0");
   m_pConfiguration->addParameter("-vector", XXUSB::CConfigurableObject::isInteger,
 				 &vectorRange, "0x80");
 
