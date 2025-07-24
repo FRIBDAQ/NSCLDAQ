@@ -215,6 +215,15 @@ CStack::Initialize(CVMUSB& controller)
 void
 CStack::addReadoutList(CVMUSBReadoutList& list)
 {
+  // If necessary, prepend the delay to the stack
+  // 
+
+  int usecDelay = getIntegerParameter("-delay");
+  if (usecDelay > 0)  {
+    int cyclesDelay =  usecDelay * 5;   // Prepend delay wants useconds.
+    list.addDelay(cyclesDelay);
+  }
+  
   StackElements modules = getStackElements();
   
   for (auto p : modules) {
