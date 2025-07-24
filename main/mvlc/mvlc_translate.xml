@@ -6461,9 +6461,9 @@ addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>dev-na
         </para>
     </refsect1>
 </refentry>
-<refentry>
+<refentry id='mvlc.sis3300'>
     <refmeta>
-        <refentrytitle>sis3300</refentrytitle>
+        <refentrytitle id='mvlc.sis3300.title'>sis3300</refentrytitle>
         <manvolnum>3mvlc</manvolnum>
     </refmeta>
     <refnamediv>
@@ -6473,7 +6473,7 @@ addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>dev-na
     <refsynopsisdiv>
         <programlisting>
 package require sis330x
-set driver [sis330x %AUTO%] <replaceable>?option value ...?</replaceable>
+set driver [sis330x %AUTO% <replaceable>?option value ...?</replaceable>] 
 <replaceable>$driver</replaceable> configure <replaceable>option value ?...?</replaceable>
 
 addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>$driver</replaceable>
@@ -6485,8 +6485,7 @@ addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>$drive
             The SIS 3300/3301 is a 100MHz flash ADC module.  Its firmware only supports the
             acquisition of waveforms. <command>sis330x</command> provides a Tcl driver
             that supports this module with the HiRA clock support firmware.
-            See  <link linkend="man3mvlc.sis330xdriver" endterm='man3mvlc.sis330xdriver.title' />
-            for a driver that does not support the HiRA clock.  The HiRA clock was used
+            The HiRA clock was used
             with XLM readout of Washington University Chip boards with older XLM's and Wash-U
             chip sets that required external digitization of the multiplexed analog
             signals.
@@ -6677,12 +6676,9 @@ addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>$drive
                     The Module's manual</ulink>
                 </para>
             </listitem>
-            <listitem>
-                <para>
-                    <link linkend="man3mvlc.sis330xdriver" endterm='man3mvlc.sis330xdriver.title' />
-                </para>
-            </listitem>
+            
         </itemizedlist>
     </refsect1>
 </refentry>
+
 <!-- /manpage -->
