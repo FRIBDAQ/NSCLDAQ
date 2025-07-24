@@ -1,2 +1,2 @@
 user-guide simple-setups device-support commands utilities servers libraries frameworks
-1compatibility 1daq 1epics 1evb 1tcl 1sbsReadout 1usbReadout 1utilities 3daq 3ccusb 3evb 3rdogui 3provider 3python 3vmusb 3tcl 3sbsReadout 5daq 5tcl 5vmusb
+1compatibility 1daq 1epics 1evb 1tcl 1sbsReadout 1usbReadout 1utilities 3daq 3ccusb 3evb 3rdogui 3provider 3python 3vmusb 3mvlcgen  3tcl 3sbsReadout 5daq 5tcl 5vmusb

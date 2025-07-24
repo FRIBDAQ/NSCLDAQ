@@ -5,8 +5,8 @@ package provide ATimeStampXLM72 1.0
 itcl::class ATimeStampXLM72 {
 	inherit AXLM72
 
-	constructor {de sl} {
-		AXLM72::constructor $de $sl
+	constructor {} {
+		AXLM72::constructor 
 	} {}
 
 	public method Clear {} {Write fpga 0 1; Write fpga 0 0}

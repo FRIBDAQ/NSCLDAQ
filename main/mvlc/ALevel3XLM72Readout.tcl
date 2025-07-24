@@ -8,11 +8,12 @@ package require xlm72
 
 itcl::class ALevel3XLM72 {
     inherit AXLM72
+    public variable filename
 
     global stoppedstate
 
-    constructor {de sl} {
-	AXLM72::constructor $de $sl
+    constructor {} {
+	AXLM72::constructor junk
     } {}
 
     method XSet {dev offset value}
@@ -70,9 +71,21 @@ itcl::body ALevel3XLM72::XSet {name addr data} {
 # @param controllelr - vmusb like controller object.
 
 itcl::body ALevel3XLM72::Initialize {controller} {
-    SetController $cpntroller
+    SetController $controller
+
+
     
-    # ??? what is the initialization???
+    # load the firmware:
+
+    AccessBus 0x10000
+
+    # Load the firmware:
+
+    Configure $filename
+    SetFPGABoot 0x10000
+    BootFPGA
+
+    ReleaseBus
 }
 ##
 # addReadoutList

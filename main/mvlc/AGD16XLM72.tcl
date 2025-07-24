@@ -21,6 +21,7 @@
 #         the cvmusb::CVMUSB and cvmusbreadoutlist::CVMUSBReadout methods
 #         and to have a format that is more in line with other NSCLDAQ 
 #         code.
+# @note - Rewritten by R. Fox to work as a mvlcgenerate translator module.
 
 package provide gd16xlm72 1.0
 
@@ -34,6 +35,7 @@ package require snit
 #    -width - list of 16 width values, one per channel.
 #    -bypass - bypass value.
 #    -inspect - inspection value.
+#    -filename   - firmware file path.
 #
 itcl::class AGD16XLM72 {
 	inherit AXLM72
@@ -46,9 +48,10 @@ itcl::class AGD16XLM72 {
   public variable width "--unset--"
   public variable bypass "--unset--"
   public variable inspect "--unset--"
+  public variable filename "--unset--"
 
-	constructor {de sl} {
-		AXLM72::constructor $de $sl
+	constructor {} {
+		AXLM72::constructor junk
 	} {}
   #  Note the reads are only done in the slow controls env and the
   #  controller is set.  Have to think abit about if this is threadsafe!!
@@ -69,7 +72,7 @@ itcl::class AGD16XLM72 {
 
   public method ReadFirmware {}
 
-	public method Init {filename}
+	public method Init {}
 }
 
 itcl::body AGD16XLM72::WriteDelayWidth {ch de wi} {
@@ -119,15 +122,14 @@ itcl::body AGD16XLM72::ReadFirmware {} {
 #  @param filename - a file that is sourced in
 #    this gives the caller a chance to configure the
 #    object
-itcl::body AGD16XLM72::Init {filename} {
+itcl::body AGD16XLM72::Init {} {
   if {![file exists $filename]} {
     set msg "AGD16XLM72::Init initialization error. "
-    append msg "File ($filename) does not exist."
+    append msg "FIrmware file ($filename) does not exist."
     return -code error $msg
   } 
 
-  # if we made it here, then the file exists
-	source $filename
+  
 
   #  Check that all options have been initialized:
 
@@ -153,6 +155,14 @@ itcl::body AGD16XLM72::Init {filename} {
   }
 
 	AccessBus 0x10000
+
+  # Load the firmware:
+
+  Configure $filename
+  SetFPGABoot 0x10000
+  BootFPGA
+
+
 	for {set i 1} {$i <= 16} {incr i} {
     set delay [lindex $delay $i] 
     set width [lindex $width $i]
