@@ -35,7 +35,7 @@
 
 const char* MVLCGenerate::m_YamlTemplate=MVLC_TEMPLATE;
 
-static const char* stackDelay = "STACKDELAY";
+
 /** 
  * constructor
  *    Construct the generator:alignas
@@ -67,7 +67,7 @@ MVLCGenerate::~MVLCGenerate() {
 void
 MVLCGenerate::generate() {
     auto yaml = loadTemplate();
-    setStackDelay(yaml);
+
 
     // The readout stacks:
     auto eventStack = m_VMUSBConfig->getEventStack();
@@ -107,55 +107,8 @@ YAML::Node
 MVLCGenerate::loadTemplate() {
     return YAML::LoadFile(m_YamlTemplate);
 }
-/**
- * setStackDelay
- * 
- * Pull the event stack delay from the configuration and substitute it for the value in the vme_write that
- * sets it in the trigger configuration.
- * This is somewhere in the soup of vme_write operations in crate/init_trigger_io/groups/name ""/contents.
- * In this both groups and contents are arrays.  The VME write we need to modify has its data set to be
- * "STACKDELAY"
- * 
- * @param[inout] doc - references the YAML we're building.
- *
- *  Note the units of -delay are us while those in the MVLC are ns.
- */
-void
-MVLCGenerate::setStackDelay(YAML::Node& doc) {
-    // If there's an event stack it's -delay option is used, if not 0.
 
-    unsigned delay = 0;
-    auto event = m_VMUSBConfig->getEventStack();
-    if(event) {
-        delay = event->getDelay();
-    }
-    
-    // Now find the thing to modify:
 
-    auto trigger = doc["crate"]["init_trigger_io"];
-    auto groups = trigger["groups"];
-    for (unsigned i = 0; i < groups.size(); i++) {
-        auto name = groups[i]["name"];
-        if (name && name.as<std::string>() == "") {
-            auto contents = groups[i]["contents"];
-            
-            // Need to find the one that has a vlue of 
-            // STACKDELAY and fix it up with delay.
-
-            for (unsigned w = 0; w < contents.size(); w++) {
-                std::string writeCmd = contents[w].as<std::string>();
-                size_t sloc = writeCmd.find(stackDelay);
-                if (sloc != writeCmd.npos) {
-                    writeCmd.replace(
-                        sloc, strlen(stackDelay), std::to_string(10000*delay)
-                    );
-                    contents[w] = writeCmd;
-                }
-            }
-        }
-    }
-    
-}
 /**
  *  fillReadoutStack
  *     Fills in the readout stack contents for either the scaler or event stacks:
