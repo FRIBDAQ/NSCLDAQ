@@ -7857,44 +7857,52 @@ mdpp32qdc cget <replaceable>name</replaceable>
                      </listitem>
                  </varlistentry>
                  <varlistentry>
-                     <term><option>-outputformat</option> <replaceable>0-3</replaceable></term>
+                     <term><option>-outputformat</option> <replaceable>0 | 4 | 8 | 16 | 24</replaceable></term>
                      <listitem>
                          <variablelist>
                              <varlistentry>
-                               <term><literal>0</literal></term>
-			       <listitem>
-                                 <para>
-                                     Time and long integral
-                                 </para>
-			       </listitem>
+                                 <term><literal>0</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Standard window of interest mode
+                                     </para>
+                                 </listitem>
                              </varlistentry>
                              <varlistentry>
-                               <term><literal>1</literal></term>
-			       <listitem>
-                                 <para>
-                                     Long integral only (QDC mode)
-                                 </para>
-			       </listitem>
+                                 <term><literal>4</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Compact streaming mode
+                                     </para>
+                                 </listitem>
                              </varlistentry>
                              <varlistentry>
-                               <term><literal>2</literal></term>
-			       <listitem>
-                                 <para>
-                                     Time only (TDC mode)
-                                 </para>
-			       </listitem>
+                                 <term><literal>8</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Standard streaming mode
+                                     </para>
+                                 </listitem>
                              </varlistentry>
                              <varlistentry>
-                               <term><literal>3</literal></term>
-			       <listitem>
-                                 <para>
-                                     Long integral, short integral and time
-                                 </para>
-			       </listitem>
+                                 <term><literal>16</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Window of interest with samples mode
+                                     </para>
+                                 </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                                 <term><literal>24</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Standard streaming with samples mode
+                                     </para>
+                                 </listitem>
                              </varlistentry>
                          </variablelist>
                          <para>
-                             By default, the value is <literal>3</literal>.
+                             By default, the value is <literal>0</literal>.
                          </para>
                      </listitem>
                  </varlistentry>
@@ -8282,6 +8290,130 @@ mdpp32qdc cget <replaceable>name</replaceable>
                      </listitem>
                  </varlistentry>
                  <varlistentry>
+                     <term>
+                         <option>-nooffsetcorrection</option>
+                         <replaceable>bool[8] true | false</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 documentation) The 4 samples before transmitted samples are used
+                             for offset subtraction: mean value of the 4 samples is subtracted from all
+                             following samples.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is
+                             <literal>[list false false false false  false false false false]</literal>,
+                             which means the offset is corrected for the channels in each channel group.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-noresampling</option>
+                         <replaceable>bool[8] true | false</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 documentation) Usually the input signals are asynchronous to the
+                             sampling frequency. This results in a jitter of the digitized signal by the
+                             sampling period in time. To get a stable display there are two possibilities:
+                             1) MDPP can do a resampling. So it calculates new sampling points related to the
+                             precise time measured by the digital discriminator in the timing path.
+                             2) In the sampling header, a "phase" showing the time difference between discriminator
+                             time and sample time is transmitted. In the mvme display the curve is shifted by this
+                             time to give a stable display as usually shown by an oscilloscope.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is
+                             <literal>[list false false false false  false false false false]</literal>,
+                             which means the module is doing resampling for the channels in each channel group.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-samplesource</option>
+                         <replaceable>int[8] 0-2</replaceable>
+                     </term>
+                     <listitem>
+                         <variablelist>
+                             <varlistentry>
+                               <term><literal>0</literal></term>
+                               <listitem>
+                                 <para>
+                                     Samples directly from ADC
+                                 </para>
+                               </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                               <term><literal>1</literal></term>
+                               <listitem>
+                                 <para>
+                                     Samples from short integration
+                                 </para>
+                               </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                               <term><literal>2</literal></term>
+                               <listitem>
+                                 <para>
+                                     Samples from long integration
+                                 </para>
+                               </listitem>
+                             </varlistentry>
+                         </variablelist>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is
+                             <literal>[list 0 0 0 0  0 0 0 0]</literal>,
+                             which means the samples are directly from ADC for the channels in each channel group.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-numpresamples</option>
+                         <replaceable>int[8] 0-1000</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             The number of samples before the input signal, where the input signal starts from
+                             the trigger.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is <literal>[list 0 0 0 0  0 0 0 0]</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-numsamples</option>
+                         <replaceable>int[8] 0-1000</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             The number of samples from the input signal defined by the trigger signal.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is <literal>[list 0 0 0 0  0 0 0 0]</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
                      <term><option>-printregisters</option> <replaceable>0 | 1</replaceable></term>
                      <listitem>
                          <para>
@@ -8320,6 +8452,11 @@ set triggerOutput       0x100
 set monitorOn           0
 set monitorCh           0
 set monitorWave         0
+set noOffsetCorrection  [list false false false false  false false false false]
+set noResampling        [list false false false false  false false false false]
+set sampleSource        [list  0  0  0  0   0  0  0  0]
+set numPreSamples       [list  4  4  4  4   4  4  4  4]
+set numSamples          [list 12 12 12 12  12 12 12 12]
 
 mdpp32qdc create qdc -base 0x00030000
 mdpp32qdc config qdc -signalwidth $signalWidth \
@@ -8340,6 +8477,11 @@ mdpp32qdc config qdc -signalwidth $signalWidth \
                      -monitoron $monitorOn \
                      -setmonitorch $monitorCh \
                      -setwave $monitorWave \
+                     -nooffsetcorrection $noOffsetCorrection \
+                     -noresampling $noResampling \
+                     -samplesource $sampleSource \
+                     -numpresamples $numPreSamples \
+                     -numsamples $numSamples \
                      -printregisters 1
                  </programlisting>
              </example>
@@ -8786,44 +8928,44 @@ mdpp16qdc cget <replaceable>name</replaceable>
                      </listitem>
                  </varlistentry>
                  <varlistentry>
-                     <term><option>-outputformat</option> <replaceable>0-3</replaceable></term>
+                     <term><option>-outputformat</option> <replaceable>0 | 8 | 16 | 24</replaceable></term>
                      <listitem>
                          <variablelist>
                              <varlistentry>
-                               <term><literal>0</literal></term>
-			       <listitem>
-                                 <para>
-                                     Time and long integral
-                                 </para>
-			       </listitem>
+                                 <term><literal>0</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Standard window of interest mode
+                                     </para>
+                                 </listitem>
                              </varlistentry>
                              <varlistentry>
-                               <term><literal>1</literal></term>
-			       <listitem>
-                                 <para>
-                                     Long integral only (QDC mode)
-                                 </para>
-			       </listitem>
+                                 <term><literal>8</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Standard streaming mode
+                                     </para>
+                                 </listitem>
+                             <varlistentry>
+                             </varlistentry>
+                                 <term><literal>16</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Window of interest with samples mode
+                                     </para>
+                                 </listitem>
                              </varlistentry>
                              <varlistentry>
-                               <term><literal>2</literal></term>
-			       <listitem>
-                                 <para>
-                                     Time only (TDC mode)
-                                 </para>
-			       </listitem>
-                             </varlistentry>
-                             <varlistentry>
-                               <term><literal>3</literal></term>
-			       <listitem>
-                                 <para>
-                                     Long integral, short integral and time
-                                 </para>
-			       </listitem>
+                                 <term><literal>24</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Standard streaming with samples mode
+                                     </para>
+                                 </listitem>
                              </varlistentry>
                          </variablelist>
                          <para>
-                             By default, the value is <literal>3</literal>.
+                             By default, the value is <literal>0</literal>.
                          </para>
                      </listitem>
                  </varlistentry>
@@ -9199,7 +9341,7 @@ mdpp16qdc cget <replaceable>name</replaceable>
                  <varlistentry>
                      <term>
                          <option>-gaincorrectionshort</option>
-                         <replaceable>int[8] none | div4 | mult4</replaceable>
+												 <replaceable>int[8] none | div4 | mult4</replaceable>
                      </term>
                      <listitem>
                          <para>
@@ -9207,6 +9349,130 @@ mdpp16qdc cget <replaceable>name</replaceable>
                              calculated based on the signal width and amplitude. This should give a quite
                              good start value. Detais of the signals will have an effect on the real
                              amplitude. So, there are 2 scaling factors to correct the gains.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-nooffsetcorrection</option>
+                         <replaceable>bool[8] true | false</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             (From MDPP-16 documentation) The 4 samples before transmitted samples are used
+                             for offset subtraction: mean value of the 4 samples is subtracted from all
+                             following samples.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is
+                             <literal>[list false false false false  false false false false]</literal>,
+                             which means the offset is corrected for the channels in each channel group.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-noresampling</option>
+                         <replaceable>bool[8] true | false</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             (From MDPP-16 documentation) Usually the input signals are asynchronous to the
+                             sampling frequency. This results in a jitter of the digitized signal by the
+                             sampling period in time. To get a stable display there are two possibilities:
+                             1) MDPP can do a resampling. So it calculates new sampling points related to the
+                             precise time measured by the digital discriminator in the timing path.
+                             2) In the sampling header, a "phase" showing the time difference between discriminator
+                             time and sample time is transmitted. In the mvme display the curve is shifted by this
+                             time to give a stable display as usually shown by an oscilloscope.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is
+                             <literal>[list false false false false  false false false false]</literal>,
+                             which means the module is doing resampling for the channels in each channel group.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-samplesource</option>
+                         <replaceable>int[8] 0-2</replaceable>
+                     </term>
+                     <listitem>
+                         <variablelist>
+                             <varlistentry>
+                               <term><literal>0</literal></term>
+                               <listitem>
+                                 <para>
+                                     Samples directly from ADC
+                                 </para>
+                               </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                               <term><literal>1</literal></term>
+                               <listitem>
+                                 <para>
+                                     Samples from short integration
+                                 </para>
+                               </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                               <term><literal>2</literal></term>
+                               <listitem>
+                                 <para>
+                                     Samples from long integration
+                                 </para>
+                               </listitem>
+                             </varlistentry>
+                         </variablelist>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is
+                             <literal>[list 0 0 0 0  0 0 0 0]</literal>,
+                             which means the samples are directly from ADC for the channels in each channel group.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-numpresamples</option>
+                         <replaceable>int[8] 0-1000</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             The number of samples before the input signal, where the input signal starts from
+                             the trigger.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is <literal>[list 0 0 0 0  0 0 0 0]</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-numsamples</option>
+                         <replaceable>int[8] 0-1000</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             The number of samples from the input signal defined by the trigger signal.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is <literal>[list 0 0 0 0  0 0 0 0]</literal>.
                          </para>
                      </listitem>
                  </varlistentry>
@@ -9249,6 +9515,11 @@ set triggerOutput       0x100
 set monitorOn           0
 set monitorCh           0
 set monitorWave         0
+set noOffsetCorrection  [list false false false false  false false false false]
+set noResampling        [list false false false false  false false false false]
+set sampleSource        [list  0  0  0  0   0  0  0  0]
+set numPreSamples       [list  4  4  4  4   4  4  4  4]
+set numSamples          [list 12 12 12 12  12 12 12 12]
 
 mdpp16qdc create qdc -base 0x00030000
 mdpp16qdc config qdc -signalwidth $signalWidth \
@@ -9269,6 +9540,11 @@ mdpp16qdc config qdc -signalwidth $signalWidth \
                      -monitoron $monitorOn \
                      -setmonitorch $monitorCh \
                      -setwave $monitorWave \
+                     -nooffsetcorrection $noOffsetCorrection \
+                     -noresampling $noResampling \
+                     -samplesource $sampleSource \
+                     -numpresamples $numPreSamples \
+                     -numsamples $numSamples \
                      -printregisters 1
                  </programlisting>
              </example>
@@ -9675,32 +9951,40 @@ mdpp32scp cget <replaceable>name</replaceable>
                      </listitem>
                  </varlistentry>
                  <varlistentry>
-                     <term><option>-outputformat</option> <replaceable>0-2</replaceable></term>
+                     <term><option>-outputformat</option> <replaceable>0 | 8 | 16 | 24</replaceable></term>
                      <listitem>
                          <variablelist>
                              <varlistentry>
-                               <term><literal>0</literal></term>
-			       <listitem>
-                                 <para>
-                                     Standard (time and amplitude)
-                                 </para>
-			       </listitem>
+                                 <term><literal>0</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Standard window of interest mode
+                                     </para>
+                                 </listitem>
                              </varlistentry>
                              <varlistentry>
-                               <term><literal>1</literal></term>
-			       <listitem>
-                                 <para>
-                                     Amplitude only
-                                 </para>
-			       </listitem>
+                                 <term><literal>8</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Standard streaming mode
+                                     </para>
+                                 </listitem>
+                             <varlistentry>
+                             </varlistentry>
+                                 <term><literal>16</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Window of interest with samples mode
+                                     </para>
+                                 </listitem>
                              </varlistentry>
                              <varlistentry>
-                               <term><literal>2</literal></term>
-			       <listitem>
-                                 <para>
-                                     Time only
-                                 </para>
-			       </listitem>
+                                 <term><literal>24</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Standard streaming with samples mode
+                                     </para>
+                                 </listitem>
                              </varlistentry>
                          </variablelist>
                          <para>
@@ -10029,6 +10313,147 @@ mdpp32scp cget <replaceable>name</replaceable>
                      </listitem>
                  </varlistentry>-->
                  <varlistentry>
+                     <term>
+                         <option>-nooffsetcorrection</option>
+                         <replaceable>bool[8] true | false</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 documentation) The 4 samples before transmitted samples are used
+                             for offset subtraction: mean value of the 4 samples is subtracted from all
+                             following samples.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is
+                             <literal>[list false false false false  false false false false]</literal>,
+                             which means the offset is corrected for the channels in each channel group.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-noresampling</option>
+                         <replaceable>bool[8] true | false</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 documentation) Usually the input signals are asynchronous to the
+                             sampling frequency. This results in a jitter of the digitized signal by the
+                             sampling period in time. To get a stable display there are two possibilities:
+                             1) MDPP can do a resampling. So it calculates new sampling points related to the
+                             precise time measured by the digital discriminator in the timing path.
+                             2) In the sampling header, a "phase" showing the time difference between discriminator
+                             time and sample time is transmitted. In the mvme display the curve is shifted by this
+                             time to give a stable display as usually shown by an oscilloscope.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is
+                             <literal>[list false false false false  false false false false]</literal>,
+                             which means the module is doing resampling for the channels in each channel group.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-samplesource</option>
+                         <replaceable>int[8] 0-3</replaceable>
+                     </term>
+                     <listitem>
+                         <variablelist>
+                             <varlistentry>
+                               <term><literal>0</literal></term>
+                               <listitem>
+                                 <para>
+                                     Samples directly from ADC
+                                 </para>
+                               </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                               <term><literal>1</literal></term>
+                               <listitem>
+                                 <para>
+                                     Samples from reconstructed input signal
+                                 </para>
+                               </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                               <term><literal>2</literal></term>
+                               <listitem>
+                                 <para>
+                                     Samples from timing filter shaper
+                                 </para>
+                               </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                               <term><literal>3</literal></term>
+                               <listitem>
+                                 <para>
+                                     Samples from main shaper
+                                 </para>
+                               </listitem>
+                             </varlistentry>
+                         </variablelist>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is
+                             <literal>[list 0 0 0 0  0 0 0 0]</literal>,
+                             which means the samples are directly from ADC for the channels in each channel group.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-numpresamples</option>
+                         <replaceable>int[8] 0-1000</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             The number of samples before the input signal, where the input signal starts from
+                             the trigger.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is <literal>[list 0 0 0 0  0 0 0 0]</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-numsamples</option>
+                         <replaceable>int[8] 0-1000</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             The number of samples from the input signal defined by the trigger signal.
+                         </para>
+                         <para>
+                             This option is ignored if <option>-outputformat</option> is other than 16 or 24.
+                         </para>
+                         <para>
+                             By default, the value is <literal>[list 0 0 0 0  0 0 0 0]</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-printregisters</option> <replaceable>0 | 1</replaceable></term>
+                     <listitem>
+                         <para>
+                             Print out register values from the module. The values are not from the user input,
+                             but from the actual register values read from the module after processing the input.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
                      <term><option>-printregisters</option> <replaceable>0 | 1</replaceable></term>
                      <listitem>
                          <para>
@@ -10067,6 +10492,11 @@ set triggerOutput       0x100
 set monitorOn           0
 set monitorCh           0
 set monitorWave         0
+set noOffsetCorrection  [list false false false false  false false false false]
+set noResampling        [list false false false false  false false false false]
+set sampleSource        [list  0  0  0  0   0  0  0  0]
+set numPreSamples       [list  4  4  4  4   4  4  4  4]
+set numSamples          [list 12 12 12 12  12 12 12 12]
 
 mdpp32scp create scp -base 0x00030000
 mdpp32scp config scp -tfintdiff $tfintdiff \
@@ -10086,6 +10516,11 @@ mdpp32scp config scp -tfintdiff $tfintdiff \
                      -monitoron $monitorOn \
                      -setmonitorch $monitorCh \
                      -setwave $monitorWave \
+                     -nooffsetcorrection $noOffsetCorrection \
+                     -noresampling $noResampling \
+                     -samplesource $sampleSource \
+                     -numpresamples $numPreSamples \
+                     -numsamples $numSamples \
                      -printregisters 1
                  </programlisting>
              </example>

@@ -307,7 +307,7 @@ C785::onAttach(XXUSB::CConfigurableObject& configuration)
   m_pConfiguration->addParameter("-smallthresholds", XXUSB::CConfigurableObject::isBool,
 				 NULL, "false");
   m_pConfiguration->addParameter("-ipl", XXUSB::CConfigurableObject::isInteger,
-				 &iplRange, "6");
+				 &iplRange, "0");
   m_pConfiguration->addParameter("-vector", XXUSB::CConfigurableObject::isInteger,
 				 &vectorRange, "0x80");
 

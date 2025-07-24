@@ -88,7 +88,7 @@ static XXUSB::CConfigurableObject::isListParameter HoldValidity(Zero, Byte,
 
 // Limits on irqthreshold:
 
-static XXUSB::CConfigurableObject::limit irqThresholdMax(956); // that's what the manual says 
+static XXUSB::CConfigurableObject::limit irqThresholdMax(8120); // that's what the manual says 
 static XXUSB::CConfigurableObject::Limits irqThresholdLimits(Zero, irqThresholdMax);
 
 
@@ -230,14 +230,7 @@ CMADC32::onAttach(XXUSB::CConfigurableObject& configuration)
 	m_pConfiguration->addIntListParameter("-holddelays", 0, 255, 2, 2, 2, 15);
 	m_pConfiguration->addIntListParameter("-holdwidths", 0, 255, 2, 2, 2, 20);
 	
-	// Old style ...
-  //m_pConfiguration->addParameter("-holddelays", XXUSB::CConfigurableObject::isIntList,
-	//			 &HoldValidity, "15 15");
-  //m_pConfiguration->addParameter("-holdwidths", XXUSB::CConfigurableObject::isIntList,
-	//			 &HoldValidity, "20 20");
-
-  //m_pConfiguration->addParameter("-gategenerator", XXUSB::CConfigurableObject::isBool,
-	//			 NULL, "false");
+	
 	
 	m_pConfiguration->addEnumParameter("-gategenerator", gategencodes, "off" );
 	
@@ -401,7 +394,7 @@ CMADC32::Initialize(CVMUSB& controller)
 
 
   if (pulser) {
-    controller.vmeWrite16(base+TestPulser, initamod, (uint16_t)2);
+    controller.vmeWrite16(base+TestPulser, initamod, (uint16_t)5);
   }
   else {
     controller.vmeWrite16(base+TestPulser, initamod,(uint16_t)0);
@@ -538,8 +531,11 @@ CMADC32::addReadoutList(CVMUSBReadoutList& list)
   // Need the base:
 
   uint32_t base = m_pConfiguration->getUnsignedParameter("-base");
-
-  list.addFifoRead32(base + eventBuffer, readamod, (size_t)45);
+  size_t maxwords = 45;                               // one event.
+  if (m_pConfiguration->getBoolParameter("-multievent")) {
+    maxwords = m_pConfiguration->getIntegerParameter("-irqthreshold")*2;                                 // terminate on BERR
+  }
+  list.addFifoRead32(base + eventBuffer, readamod, (size_t)maxwords);
   list.addWrite16(base + ReadoutReset, initamod, (uint16_t)1);
   
 }

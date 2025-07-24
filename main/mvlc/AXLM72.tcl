@@ -45,7 +45,7 @@ itcl::class AXLM72 {
 	protected variable device 
 
 	private variable slot   ;#< slot of the device
-	private variable base   ;#< base address 
+	public  variable base   ;#< base address 
 	private variable vme    ;#< address offset to vme interface
 	private variable fpga   ;#< address offset to fpga 
 	private variable dsp    ;#< address offset to dsp
@@ -65,8 +65,8 @@ itcl::class AXLM72 {
 	constructor {de sl} {
     set device "mvlc";      # This is the 'controller command' on mvlcgenerate.
 		set self [string trimleft $this :]
-		set slot  $sl
-		set base  [expr $sl<<27]
+		#set slot  $sl
+		#set base  [expr $sl<<27];       # configuration parameter.
 		set vme   [expr $base+0x800000]
 		set dsp   [expr $base+0x600000]
 		set fpga  [expr $base+0x400000]
@@ -391,7 +391,7 @@ itcl::body AXLM72::BootFPGA {} {
 	Write vme 4 $releaseFPGA  ;# Keep DSP in reset, Release FPGA
 
   # Leave some time to boot FPGA
-	after 500
+	$device delay 50000;   #Hopefully enough time.
 }
 
 
