@@ -115,8 +115,8 @@ main(int argc, char** argv)
     
     // Now collect the data sources:
     
-    if (arginfo.inputs_num < 2) {
-        std::cerr << "reglomming only makes sense with at least two input sources\n";
+    if (!(arginfo.inputs_num >= 1)) {
+        std::cerr << "reglomming only makes sense with at least one input source\n";
         std::exit(EXIT_FAILURE);
     }
     std::vector<CDataSource*> dataSources;
