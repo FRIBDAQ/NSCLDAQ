@@ -1,0 +1,27 @@
+package "MVLC_XLMLoad"
+version "1.0"
+purpose "Load XLM firmware over MVLC controller."
+
+# Un-named options are allowed - the firmware filename specifically:
+
+args "-u"
+
+# We have two sets of options; those that define which XLM Is loaded
+# Those that define how the MVLC is connected to us.
+
+#  XLM can be selected by either base addresss or slot #.
+
+defgroup "select" groupdesc="Select how to define which XLM to load" required
+groupoption "base" b "Base address of XLM to load" group="select" int
+groupoption "slot" s "Slot number of XLM to load" group="select" int
+
+#  MVLC can be selected as any of:
+#    - IP addresss/host for ethernet.
+#    - First findable USB device.
+#    - Index in usb enumeration.
+#    - Serial number:
+
+defgroup "mvlc" groupdesc="Select MVLC interface" required
+groupoption "host" h "Host of Ethernet connected MVLC" group="mvlc" string
+groupoption "usb"  u "USB index or first one for USB connected MVLC" group="mvlc" int default="0"
+groupoption "serial" S "Serial number of USB conneted MVLC" group="mvlc" int
