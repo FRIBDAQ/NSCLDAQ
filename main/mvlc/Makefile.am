@@ -1,4 +1,7 @@
-bin_PROGRAMS=mvlcgenerate
+bin_PROGRAMS=mvlcgenerate mvlc_xlmload
+
+
+#------------------ build the generator:
 
 # Library for generator...needed for extended drivers
 # to link to.
@@ -82,8 +85,8 @@ libSampleDriver_la_SOURCES=SampleDriver.cpp
 libSampleDriver_la_CPPFLAGS=@TCL_CPPFLAGS@ -I@top_srcdir@ \
 	-I@top_srcdir@/usb/common/configurableobject \
 	@LIBTCLPLUS_CFLAGS@
-libSampleDriver_la_LDFALGS=@builddir@/libmvlcGenerator.la
-libSampleDriver_DEPENDENCIES=libmvlcGenerator.la
+libSampleDriver_la_LDFLAGS=@builddir@/libmvlcGenerator.la
+libSampleDriver_la_DEPENDENCIES=libmvlcGenerator.la
 
 
 BUILT_SOURCES = generate.cpp options.h options.c
@@ -94,6 +97,32 @@ options.c: options.h
 options.h: options.ggo
 	$(GENGETOPT) --output-dir=@builddir@ --file-name=options <@srcdir@/options.ggo 
 
+
+#----------------------------------- build mvlc_xlmload
+
+mvlc_xlmload_SOURCES = xlmload.cpp \
+	CMVLCDirect.h CMVLCDirect.cpp CXLM.h CXLM.cpp \
+	xlm_options.h xlm_options.c
+
+
+
+mvlc_xlmload_CPPFLAGS=@MVLC_CPPFLAGS@ \
+	-I@top_srcdir@/usb/common/configurableobject \
+	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os
+
+mvlc_xlmload_LDFLAGS=libmvlcGenerator.la \
+	@MVLC_LDFLAGS@ \
+	@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
+	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
+
+xlm_options.c: xlm_options.h
+
+xlm_options.h: xlmload_options.ggo
+	$(GENGETOPT) --output-dir=@builddir@ --file-name=xlm_options <@srcdir@/xlmload_options.ggo
+
+mvlc_xlmload_DEPENDENCIES=libmvlcGenerator.la
+
+#------------------------------ build/runtests
 
 noinst_PROGRAMS = unittests
 
