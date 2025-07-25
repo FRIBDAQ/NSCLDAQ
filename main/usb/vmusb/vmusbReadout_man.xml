@@ -3974,7 +3974,7 @@ madc cget <replaceable>name</replaceable>
                     be used either as <literal>separate</literal> gates,
                     where each gate controlls 16 of the 32 channels, or
                     as <literal>common</literal> where either input will
-                    gate all 32 channels.
+                    gate all 32 channels. 
                   </para>
                   <para>
                     The value <parameter>mode</parameter> should be either
@@ -4299,8 +4299,9 @@ madc cget <replaceable>name</replaceable>
 				</para>
 			 </note>
             </listitem>
-          </varlistentry>
-	       <varlistentry>
+		  </varlistentry>
+		  	    <!-- Comment out multievent for now
+	  <varlistentry>
                   <term><option>-multievent</option> <replaceable>boolean</replaceable></term>
                   <listitem>
                     <para>
@@ -4320,6 +4321,7 @@ madc cget <replaceable>name</replaceable>
 		    </para>
                   </listitem>
                 </varlistentry>
+-->
                 <varlistentry>
                   <term><option>-irqthreshold</option> <replaceable>integer</replaceable></term>
                   <listitem>
