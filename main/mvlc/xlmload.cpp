@@ -17,6 +17,16 @@ int main(int argc, char** argv) {
     if (cmdline_parser(argc, argv, &args)) {
         exit(EXIT_FAILURE);
     }
+    // Need a firmware file:
+
+    if (args.inputs_num != 1) {
+        std::cerr << "There must be at least a single firmware file\n";
+        exit(EXIT_FAILURE);
+    }
+    std::string firmware = args.inputs[0];
+    std::cerr << "Firmware file " << firmware << std::endl;
+
+
     // Figure out the base address of the XLM based on the options:
 
     uint32_t xlmBase = 0;
