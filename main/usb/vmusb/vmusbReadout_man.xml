@@ -4307,7 +4307,8 @@ madc cget <replaceable>name</replaceable>
 				</para>
 			 </note>
             </listitem>
-          </varlistentry>
+		  </varlistentry>
+		  <!--
 	       <varlistentry>
                   <term><option>-multievent</option> <replaceable>boolean</replaceable></term>
                   <listitem>
@@ -4327,7 +4328,8 @@ madc cget <replaceable>name</replaceable>
 			 This is <literal>false</literal> by default.
 		    </para>
                   </listitem>
-                </varlistentry>
+                  </varlistentry>
+		  -->
                 <varlistentry>
                   <term><option>-irqthreshold</option> <replaceable>integer</replaceable></term>
                   <listitem>
