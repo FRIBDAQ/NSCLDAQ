@@ -23,5 +23,5 @@ groupoption "slot" s "Slot number of XLM to load" group="select" int
 
 defgroup "mvlc" groupdesc="Select MVLC interface - choose one" required
 groupoption "host" h "Host of Ethernet connected MVLC" group="mvlc" string
-groupoption "usb"  u "USB index or first one for USB connected MVLC" group="mvlc" int default="0"
-groupoption "serial" S "Serial number of USB conneted MVLC" group="mvlc" int
+groupoption "usb"  u "USB enumeration index for USB connected MVLC" group="mvlc" int default="0" argoptional
+groupoption "serial" S "Serial number of USB conneted MVLC" group="mvlc" string
