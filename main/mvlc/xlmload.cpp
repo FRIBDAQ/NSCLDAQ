@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     // Need a firmware file:
 
     if (args.inputs_num != 1) {
-        std::cerr << "There must be at least a single firmware file\n";
+        std::cerr << "There must be at exactly a single firmware file\n";
         exit(EXIT_FAILURE);
     }
     std::string firmware = args.inputs[0];
