@@ -4,11 +4,14 @@
  * @author Ron Fox <fox@frib.msu.edu>
  */
 #include "xlm_options.h"
+#include "CMVLCDirect.h"
+#include "CXLM.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <iostream>
 #include <mesytec-mvlc/mesytec-mvlc.h>
 #include <string>
+
 
 using namespace mesytec::mvlc;
 
@@ -60,6 +63,14 @@ int main(int argc, char** argv) {
         std::cerr << "Unable to connect to the MVLC: " << ec.message() << std::endl;
         exit(EXIT_FAILURE);
     }
+    // Create the encapsulated controlle rand the loader:
+
+    CMVLCDirect controller(interface);
+    XLM::CFirmwareLoader loader(controller, xlmBase);
+
+    // Finall load the device:
+
+    loader(firmware);
 
         
     return EXIT_SUCCESS;
