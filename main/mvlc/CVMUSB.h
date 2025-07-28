@@ -47,7 +47,7 @@ public:
     std::vector<std::string> getRecordedOperations();
     void clearRecordedOperations();
 
-    int executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t readBufferSize, size_t* bytesRead);
-    std::vector<uint8_t> executeList(CVMUSBReadoutList& list, int maxBytes);
+    virtual int executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t readBufferSize, size_t* bytesRead);
+    std::vector<uint8_t> executeList(CVMUSBReadoutList& list, int maxBytes); // In terms of the virtual one.
 };
 #endif

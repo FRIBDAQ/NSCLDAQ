@@ -101,6 +101,7 @@ options.h: options.ggo
 #----------------------------------- build mvlc_xlmload
 
 mvlc_xlmload_SOURCES = xlmload.cpp \
+	CVMUSB.h CVMUSB.cpp CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
 	CMVLCDirect.h CMVLCDirect.cpp CXLM.h CXLM.cpp \
 	xlm_options.h xlm_options.c
 
