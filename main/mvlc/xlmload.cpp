@@ -68,10 +68,18 @@ int main(int argc, char** argv) {
     CMVLCDirect controller(interface);
     XLM::CFirmwareLoader loader(controller, xlmBase);
 
-    // Finall load the device:
+    // Finally load the XLM
 
     loader(firmware);
 
+    // If requested, verify the signature after a second.
+
+    if (args.signature_given && args.verify_offset_given) {
+        if (!loader.validate(xlmBase + args.verify_offset_arg, args.signature_arg)) {
+            std::cerr << "Signature verification failed!!!\n";
+            exit(EXIT_FAILURE);
+        }
+    }
         
     return EXIT_SUCCESS;
 }
