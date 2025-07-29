@@ -291,7 +291,7 @@ CMADC32::onAttach(CReadoutModule& configuration)
 
   // Parameters to support multi-event/irq mode
 
-  // m_pConfiguration->addParameter("-multievent", XXUSB::CConfigurableObject::isBool, NULL, "false");
+  m_pConfiguration->addParameter("-multievent", XXUSB::CConfigurableObject::isBool, NULL, "false");
   m_pConfiguration->addParameter("-irqthreshold", XXUSB::CConfigurableObject::isInteger,
 				 &irqThresholdLimits, "0");
 
@@ -303,8 +303,8 @@ CMADC32::onAttach(CReadoutModule& configuration)
 				 &validResolution, "8k");
   m_pConfiguration->addEnumParameter("-nimbusy",nimbusycodes, "busy");
   
-  // // Issue #308: Configurable Max_transfer_data register 0x601a:
-  // m_pConfiguration->addParameter("-maxtransfer", XXUSB::CConfigurableObject::isInteger, NULL, "0");
+  // Issue #308: Configurable Max_transfer_data register 0x601a:
+  m_pConfiguration->addParameter("-maxtransfers", XXUSB::CConfigurableObject::isInteger, NULL, "0");
 
   
 }
@@ -362,12 +362,12 @@ CMADC32::Initialize(CVMUSB& controller)
   int         timedivisor = m_pConfiguration->getIntegerParameter("-timingdivisor");
   vector<long int> thresholds  = m_pConfiguration->getIntegerList("-thresholds");
   bool        pulser      = m_pConfiguration->getBoolParameter("-pulser");
-  // bool        multiEvent  = m_pConfiguration->getBoolParameter("-multievent");
+  bool        multiEvent  = m_pConfiguration->getBoolParameter("-multievent");
   string      resolution  = m_pConfiguration->cget("-resolution");
   int         irqThreshold= m_pConfiguration->getIntegerParameter("-irqthreshold");
   int         nimBusyRegValue = nimbusyvalues[m_pConfiguration->getEnumParameter("-nimbusy", nimbusycodes)];
   // Issue #308: Configurable Max_transfer_data register 0x601a
-  // int         maxTransfer  = m_pConfiguration->getIntegerParameter("-maxtransfer"); 
+  int         maxTransfers = m_pConfiguration->getIntegerParameter("-maxtransfers"); 
 
 	// The gdg value needs to be modified or errored depending on the -gatemode value:
 	
@@ -513,18 +513,18 @@ CMADC32::Initialize(CVMUSB& controller)
   list.addDelay(MADCDELAY);
   list.addWrite16(base + WithdrawIrqOnEmpty, initamod, (uint16_t)1);
 
-  // // Issue #308: Override default multievent and maxtransfer if specified
-  // // e.g., for madcchain:  
-  // if(multiEvent) {
-  //     uint16_t regval = 11;
-  //     std::cerr << "Overriding default multievent: " << regval << std::endl;
-  //     // 4 bit value, make sure bit 2 is unset (skip berr, send eob)
-  //     list.addWrite16(base + MultiEvent, initamod, regval);    
-  // }
-  // if (maxTransfer) { // 0 if not specified as an option
-  //     std::cerr << "Overriding default maxtransfer: " << maxTransfer << std::endl;
-  //     list.addWrite16(base + MaxTransfer, initamod, (uint16_t)maxTransfer);
-  // } 
+  // Issue #308: Override default multievent and maxtransfers if specified
+  // e.g., for madcchain:  
+  if(multiEvent) {
+      uint16_t regval = 11;
+      std::cerr << "Overriding default multievent: " << regval << std::endl;
+      // 4 bit value, make sure bit 2 is unset (skip berr, send eob)
+      list.addWrite16(base + MultiEvent, initamod, regval);    
+  }
+  if (maxTransfers) { // 0 if not specified as an option
+      std::cerr << "Overriding default maxtransfer: " << maxTransfers << std::endl;
+      list.addWrite16(base + MaxTransfer, initamod, (uint16_t)maxTransfers);
+  } 
 
   list.addDelay(MADCDELAY);
 
