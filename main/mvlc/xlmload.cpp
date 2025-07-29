@@ -98,6 +98,7 @@ int main(int argc, char** argv) {
     // If requested, verify the signature after a second.
 
     if (args.signature_given && args.verify_offset_given) {
+        sleep(1);
         if (!loader.validate(xlmBase + args.verify_offset_arg, args.signature_arg)) {
             std::cerr << "Signature verification failed!!!\n";
             exit(EXIT_FAILURE);
