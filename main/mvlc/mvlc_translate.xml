@@ -147,6 +147,185 @@ if {$istranslator ne ""} {
         </itemizedlist>
     </refsect1>
 </refentry>
+<refentry id='man1daq.mvlc_xlmload'>
+    <refmeta>
+        <refentrytitle id='man1daq.mvlc_xlmload.title'>mvlc_xlmload</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>mvlc_xlmload</refname>
+        <refpurpose>Connect to and MVLC and load firmware for an XLM-72</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis>
+<command>$DAQBIN/mvlc_xlmload</command>
+    <arg choice='plain'><group>
+        <arg><option>--base <replaceable>vme-address</replaceable></option></arg>
+        <arg><option>--slot <replaceable>vme-slot-number</replaceable></option></arg>
+    </group></arg>        
+    <arg choice="plain"><group>
+        <arg><option>--host<replaceable>mvlc-host-ip</replaceable></option></arg>
+        <arg><option>--usb<optional><replaceable>enumeration-index</replaceable></optional></option></arg>
+        <arg><option>--serial<replaceable>mvlc-serial-number-string</replaceable></option></arg>
+    </group></arg>
+    <arg choice="plain"><option><optional>--signature<replaceable>signature-value</replaceable></optional></option></arg>
+    <arg choice="plain"><option><optional>--verify-offset<replaceable>signature-offset</replaceable></optional></option></arg>
+    <arg choice="plain">firmware-file-path</arg>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            <command>mvlc_xlmload</command> supports loading and booting
+            XLM-72 firmware files over the MVLC interface.  Several 
+            connection modes are provided (see <literal>OPTIONS</literal> below).
+            The XLM can be selected either by its slot in the VME backplane or
+            by its VME base address.
+        </para>
+        <para>
+            Several XLM firmwares write a unique signature  value into a known
+            part of the XLM-72 memory space.  <command>mvlc_xlmload</command>
+            can optionally verify this signature.
+        </para>
+        <para>
+            <replaceable>firmware-file-path</replaceable> must specify a file system
+            path to a valid XLM firmware file.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <para>
+            The <command>mvlc_xlmload</command> options come in three groups:
+        </para>
+        <orderedlist>
+            <listitem>
+                <para>
+                    MVLC Connection options, of which, only one may be selected.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    XLM address options, of which only one must be selected.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Signature verification options, of which none or all must
+                    be provided.
+                </para>
+            </listitem>
+        </orderedlist>
+        <refsect2>
+            <title>MVLC Connection options</title>
+            <para>
+                Exactly one of the options below must be selected.
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><option>--host</option> <replaceable>mvlc-ip</replaceable></term>
+                        <listitem>
+                            <para>
+                                Use this option if the MVLC is on Etherenet, <parameter>mvlc-ip</parameter>
+                                provides the IP address or DNS name of the device.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><option>--usb</option> <optional><replaceable>enumeration-index</replaceable></optional></term>
+                        <listitem>
+                            <para>
+                                Use this option to select an MVLC that is connected to the
+                                host via USB.  If the <parameter>enumeration-index</parameter> is
+                                not given, the USB is searched for the first MVLC and that module
+                                will be used.  This is recommended if only one MVLC is connected by USB
+                                to the host.  If <parameter>enumeration-index</parameter> is
+                                provided, the USB enumeration is searched for the
+                                <parameter>enumeration-index</parameter>'th occurence
+                                of an MVLC and tha module is used.
+                            </para>
+                            <para>
+                                Since USB enumeration is not predictable, while
+                                using an <parameter>enumeration-index</parameter>
+                                is supported it is not recommended.  If you have
+                                more than one MVLC we suggset using the 
+                                <option>--serial</option>
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><option>--serial</option> <replaceable>serial-string</replaceable></term>
+                        <listitem>
+                            <para>
+                                When there's more than one USB connnected MVLC this option is
+                                recommended.  The <parameter>serial-string</parameter>
+                                specifies the specific MVLC to use by its serial number string.
+                                The serial number string is given on a sticker on the component side
+                                of the MVLC module.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect2>
+        <refsect2>
+            <title>XLM addressing/selection</title>
+            <para>
+                One and only one of the options below must be selected.
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><option>--base</option> <replaceable>vme-address</replaceable></term>
+                        <listitem>
+                            <para>
+                                Specifies the base address of the module to load.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><option>--slot</option> <replaceable>slot-num</replaceable></term>
+                        <listitem>
+                            <para>
+                                Specifies the VME slot number occupied by the module to load.
+                                This is used when the module and backplane include the
+                                CERN backplane extensions (A middle connector between the
+                                two large connectors at the top and bottom of the bus).
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect2>
+        <refsect2>
+            <title>Firmware verification</title>
+            <para>
+                Many XLM firmwares, once started, place a signature value
+                in a specified offset from the base of the XLM memory.
+                If this is the case for the firmware you are loading, you may
+                optionally specify that this be checked.  Either both or
+                none of the options in this section must be provided.  If none
+                of the options are specified, signature verification won't be done.
+                If both are they describe how verification should be done and
+                after loading the module and a short delay, the signaure is verified.
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><option>--signature</option> <replaceable>signature-value</replaceable></term>
+                        <listitem>
+                            <para>
+                                Provides the signature value for verification.  
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><option>--verify-offset</option> <replaceable>signature-offset</replaceable></term>
+                        <listitem>
+                            <para>
+                                Provides the offset to the signature from the XLM base.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect2>
+    </refsect1>
+</refentry>
 <!-- /manpage -->
 
 <!-- chapter user-guide -->
@@ -2074,6 +2253,43 @@ mvlclist subcommand ...
                 </refsect1>
             </refentry>
         </section>
+    </section>
+    <section>
+        <title>XLM-72 based modlues</title>
+        <para>
+            Several devices supported by FRIB/NSCLDAQ are based on the XLM-72 FPGA based
+            module.  In the FRIB, in order to allow each module to be interchanged,
+            the firmware for these modules is not loaded from PROM but loaded
+            into the SRAM.  The FPGA is then told to load its firmware from SRAM and
+            initiate operations.
+        </para>
+        <para>
+            The offline nature of mvlcgenerate means that you have two  choices for how
+            to handle the firmware for these devices:
+        </para>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    Load the firmware at the start of data taking. This can be
+                    time consuming but will work.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Load the firmware external to data taking and don't load
+                    the firmware ever again, as long as power is maintained on the crate.
+                </para>
+            </listitem>
+        </itemizedlist>
+        <para>
+            We support both modes of operation. The program
+            <link linkend='man1daq.mvlc_xlmload' endterm='man1daq.mvlc_xlmload.title' />
+            describes a program that can load an XLM-72's firmware over the MVLC.
+            Each of the XLM support modules, in addition to providing an option
+            to provide the name of the firmware file, provides a 
+            <option>-load-firmware</option> option which, when true, produces
+            code to load the firmware each time data taking starts.
+        </para>
     </section>
 </chapter>
 <!-- /chapter -->
