@@ -12,12 +12,35 @@
 #include <mesytec-mvlc/mesytec-mvlc.h>
 #include <string>
 
-
+/**
+ *  validateOptionCombinations
+ *     Some argument combinations can't be checked by gengetopt,
+ * like the requirement that --signature and --verify-offset
+ * must both or neithr be present.   This checks that combination
+ * 
+ * @param args - references the parsed argument struct cmdline_parser
+ * crated.
+ * @return bool - true if those options are in a valid combination.
+ */
+static bool validateOptionCombintations(gengetopt_args_info& args) {
+    // If either is given but not both that's bad.
+    if ((args.signature_given || args.verify_offset_given)  &&
+        !(args.signature_given && args.verify_offset_given)
+    ) {
+        return false;
+    }
+    return true;
+}
 using namespace mesytec::mvlc;
 
 int main(int argc, char** argv) {
     gengetopt_args_info args;
     if (cmdline_parser(argc, argv, &args)) {
+        exit(EXIT_FAILURE);
+    }
+    if (!validateOptionCombintations(args) ) {
+        std::cerr << 
+            "If --signature or --verify-offset are given, both must be given\n";
         exit(EXIT_FAILURE);
     }
     // Need a firmware file:
