@@ -3974,7 +3974,7 @@ madc cget <replaceable>name</replaceable>
                     be used either as <literal>separate</literal> gates,
                     where each gate controlls 16 of the 32 channels, or
                     as <literal>common</literal> where either input will
-                    gate all 32 channels.
+                    gate all 32 channels. 
                   </para>
                   <para>
                     The value <parameter>mode</parameter> should be either
@@ -4299,8 +4299,8 @@ madc cget <replaceable>name</replaceable>
 				</para>
 			 </note>
             </listitem>
-          </varlistentry>
-	       <varlistentry>
+		  </varlistentry>
+	  <varlistentry>
                   <term><option>-multievent</option> <replaceable>boolean</replaceable></term>
                   <listitem>
                     <para>
@@ -4311,13 +4311,25 @@ madc cget <replaceable>name</replaceable>
                       to handle the data from this device.
                     </para>
                     <para>
-                      the default value for this parameter is
+                      The default value for this parameter is
                       <literal>false</literal> which runs the module in
-                      single event mode.
+                      single event mode. If separate gate mode is enabled, this 
+                      parameter is set to <literal>true</literal> automatically.
                     </para>
-		    <para>
-			 This is <literal>false</literal> by default.
-		    </para>
+                  </listitem>
+                </varlistentry> 
+                	  <varlistentry>
+                  <term><option>-maxtransfers</option> <replaceable>integer</replaceable></term>
+                  <listitem>
+                    <para>
+                    Set the maximum number of events to transfer before 
+                    ending the transfer at the next end-of-event word in multievent 
+                    mode.                 
+                    </para>
+                    <para>
+                    This value is set automatically based on the gate mode and is 
+                    generally not necessary for the user to configure directly.
+                    </para> 
                   </listitem>
                 </varlistentry>
                 <varlistentry>
