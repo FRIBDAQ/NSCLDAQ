@@ -8,4 +8,5 @@
 by COutputThread
 * Implenenting sample data taking in MDPP-16/32 modules
 * Updating MDPP-16/32 documentation
+* Updated MADC-32 for indpendent bank operation
 == 12.2-dev ==
