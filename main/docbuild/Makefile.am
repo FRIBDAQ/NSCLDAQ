@@ -114,8 +114,8 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/base/tclutils \
 	@top_srcdir@/base/tclwidgets  \
 	@top_srcdir@/base/tcpip		\
-	@top_srcdir@/libtcl/tclplus  \
-	@top_srcdir@/libtcl/exception \
+	@top_builddir@/libtcl/tclplus  \
+	@top_builddir@/libtcl/exception \
 	@top_srcdir@/examples \
 	@top_srcdir@/ddas/readout\
 	@top_srcdir@/ddas/pixieplugin \

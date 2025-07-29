@@ -285,6 +285,10 @@ CMADC32::onAttach(XXUSB::CConfigurableObject& configuration)
   m_pConfiguration->addParameter("-resolution", XXUSB::CConfigurableObject::isEnum,
 				 &validResolution, "8k");
   m_pConfiguration->addEnumParameter("-nimbusy",nimbusycodes, "busy");
+
+  // Issue #308: multibank operation
+    m_pConfiguration->addParameter("-maxtransfers", XXUSB::CConfigurableObject::isInteger, NULL, "0");
+
 }
 /*!
    Initialize the module prior to data taking.  We will get the initialization
@@ -346,6 +350,8 @@ CMADC32::Initialize(CVMUSB& controller)
   string      resolution  = m_pConfiguration->cget("-resolution");
   int         irqThreshold= m_pConfiguration->getIntegerParameter("-irqthreshold");
   int         nimBusyRegValue = nimbusyvalues[m_pConfiguration->getEnumParameter("-nimbusy", nimbusycodes)];
+  // Issue #308: multibank operation
+  int         maxTransfers = m_pConfiguration->getIntegerParameter("-maxtransfers"); 
 
 	// The gdg value needs to be modified or errored depending on the -gatemode value:
 	
@@ -368,12 +374,16 @@ CMADC32::Initialize(CVMUSB& controller)
   controller.vmeWrite16(base + MarkType, initamod, (uint16_t)(timestamp ? 1 : 0)); 
   controller.delay(MADCDELAY);
 
-  if (gatemode == string("separate")) {
-    controller.vmeWrite16(base + BankOperation, initamod, (uint16_t)1);
+  // Issue #308: multibank operation
+    if (gatemode == string("separate")) {
+      controller.vmeWrite16(base + BankOperation, initamod, (uint16_t)1);
+      controller.vmeWrite16(base + MultiEvent, initamod, (uint16_t)11);
+      controller.vmeWrite16(base + MaxTransfer, initamod, (uint16_t)2);
   }
   else {
-    controller.vmeWrite16(base  + BankOperation, initamod, (uint16_t)0);
-  }									
+      controller.vmeWrite16(base  + BankOperation, initamod, (uint16_t)0);
+      controller.vmeWrite16(base + MultiEvent, initamod, (uint16_t)0); 
+  }					
   controller.delay(MADCDELAY);
 
   // If the gate generator is on, we need to program the hold delays and widths
@@ -484,12 +494,19 @@ CMADC32::Initialize(CVMUSB& controller)
   controller.vmeWrite16(base + Resolution, initamod, (uint16_t)resolutionValue(resolution));
   controller.delay(MADCDELAY);
   controller.vmeWrite16(base + WithdrawIrqOnEmpty, initamod, (uint16_t)1);
+
+  // Issue #308: multibank operation
   if(multiEvent) {
-    controller.vmeWrite16(base + MultiEvent, initamod, (uint16_t)7);
+      uint16_t regval = 11;
+      std::cerr << "Overriding default multievent: " << regval << std::endl;
+      // 4 bit value, make sure bit 2 is unset (skip berr, send eob)
+      controller.vmeWrite16(base + MultiEvent, initamod, regval);    
   }
-  else {
-    controller.vmeWrite16(base + MultiEvent, initamod, (uint16_t)0);
-  }
+  if (maxTransfers) { // 0 if not specified as an option
+      std::cerr << "Overriding default maxtransfer: " << maxTransfers << std::endl;
+      controller.vmeWrite16(base + MaxTransfer, initamod, (uint16_t)maxTransfers);
+  } 
+
   controller.delay(MADCDELAY);
 
   // Finally clear the converter and set the IPL which enables interrupts if
