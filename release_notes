@@ -1,3 +1,9 @@
+ == 12.1-012 ==
+* Implenenting sample data taking in MDPP-16/32 modules
+* Updating MDPP-16/32 documentation
+* Updates for MADC-32 for independent bank operation
+== 12.1-012 ==
+
 == 12.1-011 ==
 * Provicde workarounds for VMUSB bugs in recent firmware versions.
     *  A prompt busy is guaranteed by using delay stack elements rather than the trigger delay.
