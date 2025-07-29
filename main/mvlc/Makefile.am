@@ -80,7 +80,7 @@ include_HEADERS=TCLConfigParser.h  \
 noinst_LTLIBRARIES=libSampleDriver.la
 libSampleDriver_la_SOURCES=SampleDriver.cpp 
 
-	
+
 
 libSampleDriver_la_CPPFLAGS=@TCL_CPPFLAGS@ -I@top_srcdir@ \
 	-I@top_srcdir@/usb/common/configurableobject \
@@ -89,7 +89,7 @@ libSampleDriver_la_LDFLAGS=@builddir@/libmvlcGenerator.la
 libSampleDriver_la_DEPENDENCIES=libmvlcGenerator.la
 
 
-BUILT_SOURCES = generate.cpp options.h options.c
+BUILT_SOURCES = generate.cpp options.h options.c xlm_options.h xlm_options.c
 nodist_mvlcgenerate_SOURCES=options.h options.c
 
 options.c: options.h
@@ -105,7 +105,7 @@ mvlc_xlmload_SOURCES = xlmload.cpp \
 	CMVLCDirect.h CMVLCDirect.cpp CXLM.h CXLM.cpp \
 	xlm_options.h xlm_options.c
 
-
+mvlc_xlmload_DEPENDENCIES=xlm_options.c
 
 mvlc_xlmload_CPPFLAGS=@MVLC_CPPFLAGS@ \
 	-I@top_srcdir@/usb/common/configurableobject \
@@ -115,6 +115,8 @@ mvlc_xlmload_LDFLAGS=libmvlcGenerator.la \
 	@MVLC_LDFLAGS@ \
 	@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
+
+
 
 xlm_options.c: xlm_options.h
 
@@ -153,9 +155,10 @@ TCLDRIVERFILES=VMUSBDriverSupport.tcl Utils.tcl \
 	AGD16XLM72.tcl ALevel3XLM72Readout.tcl AMesytecMADC32.tcl \
 	APpacXLM72.tcl ATimeStampXLM72.tcl AXLM72Generic.tcl \
 	AXLM72Scaler.tcl
-	
 
-EXTRA_DIST=options.ggo triggeronly.yaml Readme.md mvlc_translate.xml \
+
+EXTRA_DIST=options.ggo xlmload_options.ggo \
+	triggeronly.yaml Readme.md mvlc_translate.xml \
 	SampleDriver.cpp SampleDriver.tcl \
 	$(TCLDRIVERFILES)
 
