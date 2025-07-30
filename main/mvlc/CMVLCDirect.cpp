@@ -213,14 +213,14 @@ CMVLCDirect::executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t read
  */
 int
 CMVLCDirect::interp_write(std::stringstream& operation) {
-    uint8_t amod;
+    unsigned  amod;
     std::string width;
     uint32_t address;
     uint32_t data;
 
     operation >> std::hex >> amod >> width >> address >> data;
 
-    if (m_controller.vmeWrite(address, data, amod, width == "d32" ? VMEDataWidth::D32 : VMEDataWidth::D16)) {
+    if (m_controller.vmeWrite(address, data, (uint8_t)amod, width == "d32" ? VMEDataWidth::D32 : VMEDataWidth::D16)) {
         throw std::runtime_error("VMEWrite failed");
     }
     return 0;
@@ -284,7 +284,7 @@ CMVLCDirect::interp_mask_shift_accu(std::stringstream& operation) {
  */
 int
 CMVLCDirect::interp_read_to_accu(std::stringstream& operation) {
-    uint8_t amod;
+    unsigned  amod;
     std::string width;
     uint32_t addr;
 
@@ -295,7 +295,7 @@ CMVLCDirect::interp_read_to_accu(std::stringstream& operation) {
 
     // do the read:
 
-    auto ec = m_controller.vmeRead(addr, data, amod, width == "d32" ? VMEDataWidth::D32 : VMEDataWidth::D16 );
+    auto ec = m_controller.vmeRead(addr, data, (uint8_t)amod, width == "d32" ? VMEDataWidth::D32 : VMEDataWidth::D16 );
     if (ec) {
         throw std::runtime_error("vmeRead in interp_read_to_accu failed");
     }
