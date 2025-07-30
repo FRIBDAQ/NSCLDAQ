@@ -81,6 +81,7 @@ int main(int argc, char** argv) {
         std::cerr << "Connect USB to serial number: " << args.serial_arg << std::endl;
         interface = make_mvlc_usb(std::string(args.serial_arg));
     }
+    interface.setDisableTriggersOnConnect(true);  // No readout data.
     auto ec = interface.connect();
     if (ec) {
         std::cerr << "Unable to connect to the MVLC: " << ec.message() << std::endl;
