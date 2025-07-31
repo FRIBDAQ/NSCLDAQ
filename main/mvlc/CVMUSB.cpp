@@ -66,7 +66,7 @@ CVMUSB::vmeWrite16(uint32_t address, uint8_t aModifier, uint16_t data) {
  * could comd from a derived class).
  */
 int
-CVMUSB::vmeBlockWrite32(uint32_t base, uint32_t aModifier, uint32_t* pData, size_t nTransfers) {
+CVMUSB::vmeBlockWrite32(uint32_t base, uint8_t aModifier, uint32_t* pData, size_t nTransfers) {
     while (nTransfers) {
         int status;
         status = vmeWrite32(base, aModifier, *pData); 
