@@ -52,6 +52,35 @@ CVMUSB::vmeWrite16(uint32_t address, uint8_t aModifier, uint16_t data) {
     m_operationList.addWrite16(address, aModifier, data);
     return 0;
 }
+/**
+ * vmeBlockWrite32 
+ *    Do a write of a block of 32 bit words.  Note, this is not directly supported
+ * in the MVLC so it's implemented as a loop of vmewrite16 operations.
+ * Polymorphism should make this become actual direct opertions in e.g. CMVLCDirect.
+ * 
+ * @param address - first address to which the write is performed.
+ * @param aModifier - the address modifier specifying the address space for addresss.
+ * @param pData   - Pointer to the block of data to write.
+ * @param nTransfers - Number of transfers to perform.
+ * @return int  - 0 if all succeed else an error code from the individual vmeWrite32 that failed (note that
+ * could comd from a derived class).
+ */
+int
+CVMUSB::vmeBlockWrite32(uint32_t base, uint32_t aModifier, uint32_t* pData, size_t nTransfers) {
+    while (nTransfers) {
+        int status;
+        status = vmeWrite32(base, aModifier, *pData); 
+        if (status) return status;
+
+        // book keeping for the next write:
+
+        nTransfers--;
+        base += sizeof(uint32_t);
+        pData++;
+    }
+    return 0;    // success.
+}
+
 /** delay
  *    Add a delay to the stack:
  *     @paramm ms - the number of 200ns units to delay.
