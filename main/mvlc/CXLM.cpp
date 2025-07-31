@@ -409,7 +409,7 @@ void CFirmwareLoader::remapBits(uint32_t* sramImage, uint8_t* fileImage, uint32_
     *dest++ = lword;		// set a destination longword.
   }
 }
-
+//Note this method assumes the image is an even number of 32 bit longs.
 void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBytes)
 {
   static const size_t   blockSize = 64;
@@ -427,40 +427,18 @@ void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBy
   uint32_t* p  = image;
   while (nRemainingBytes > blockSize*sizeof(uint32_t)) {
     CVMUSBReadoutList  loadList;
-    for (int i =0; i < blockSize; i++) {
-#ifdef DUMPDEBUG      
-      dump << "\n" << setw(8) << destAddr 
-           << " " << setw(2)  << static_cast<int>(sramaAmod)
-           << " " << setw(8) << *p;
-#endif      
-      loadList.addWrite32(destAddr, sramaAmod,  *p++);
-//      loadList.addRead32(destAddr, sramaAmod);
-      destAddr += sizeof(uint32_t);
-    }
+    m_ctlr.vmeBlockWrite32(destAddr, sramaAmod, p, blockSize);
+    
     nRemainingBytes -= blockSize*sizeof(uint32_t);
-    // Write the block:
-
-    std::vector<uint8_t> retData = m_ctlr.executeList(loadList, sizeof(uint16_t));
+    destAddr        += blockSize * sizeof(uint32_t);
+    p += blockSize;
     
   }
 
   // Handle any odd partial block:
   if (nRemainingBytes > 0) {
     CVMUSBReadoutList loadList;
-    while (nRemainingBytes > 0) {
-#ifdef DUMPDEBUG     
-      dump << "\n" << setw(8) << destAddr 
-           << " " << setw(2)  << static_cast<int>(sramaAmod)
-           << " " << setw(8) << *p;
-#endif      
-      loadList.addWrite32(destAddr, sramaAmod, *p++);
-//      loadList.addRead32(destAddr, sramaAmod);
-      destAddr += sizeof(uint32_t);
-      nRemainingBytes -= sizeof(uint32_t);
-    }
-    // Write the block:
-
-    std::vector<uint8_t> retData = m_ctlr.executeList(loadList, sizeof(uint16_t));
+    m_ctlr.vmeBlockWrite32(destAddr, sramaAmod, p, nRemainingBytes/sizeof(uint32_t));
     
   }
 #ifdef DUMPDEBUG  
