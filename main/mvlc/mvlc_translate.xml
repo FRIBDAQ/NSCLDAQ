@@ -1665,7 +1665,7 @@ example config sample -writeendrun true -endrunloc 0x12344000 -endrunvalue 0x432
                     It therefore cannot perform any read operations on the device.
                 </para><para>
                     The Initialize method/subcommand is passed a single parameter.
-                    The paramter represents a command ensemble that can
+                    The parameter represents a command ensemble that can
                     store VME operations.  It has subcommands that are essentially
                     methods of the <classname>CVMUSB</classname> command.
                     This mvlc command is documented in 
@@ -7400,6 +7400,321 @@ public:
                     </listitem>
             </varlistentry>
         </variablelist>
+    </refsect1>
+</refentry>
+<refentry id='mvlc3.cvmusb'>
+    <refmeta>
+        <refentrytitle id='mvlc3.cvmusb.title'>CVMUSB</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>CVMUSB</refname>
+        <refpurpose>Standin class for VMUSBReadout's CVMUSB class</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;CVMUSB.h&gt;
+
+class CVMUSB {
+public:
+
+    virtual int vmeWrite32(uint32_t address, uint8_t aModifier, uint32_t data);
+    virtual int vmeWrite16(uint32_t address, uint8_t aModifier, uint16_t data);
+    virtual int vmeBlockWrite32(uint32_t base, uint32_t aModifier, uint32_t* pData, size_t nTransfers);
+    virtual void delay(uint32_t amount);
+    virtual void loopUntil32(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value);
+    virtual void loopUntil16(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value);
+
+    std::vector&lt;std::string&gt; getRecordedOperations();
+    void clearRecordedOperations();
+
+    virtual int executeList(CVMUSBReadoutList&amp; list, void* pReadBuffer, size_t readBufferSize, size_t* bytesRead);
+    std::vector&lt;uint8_t&lt; executeList(CVMUSBReadoutList&amp; list, int maxBytes);
+};
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This class implements a subset of the VMUSBReaodut's <classname>CVMUSB</classname>  Since the
+            class is used in the context of an offline translator from VMUSBReadout configuration files
+            to fribdaq-readout yaml configuration files, reads are not supported.  The 
+            operations requested of a <classname>CVMUSB</classname> are memorized and, later dumped into the
+            appropriate segments of the final configuration file.
+        </para>
+        <para>
+            Remembering that you are not connected to the hardware is an important part of
+            porting VMUSBReadout drivers to mvlc_generate code generators.  Compilation will detect and
+            flag as errors attempts to read the hardware, however a more subtle issue is that many
+            VMUSBReadout drivers implement delays as calls to either
+            <literal>sleep(3)</literal> or <literal>usleep(3)</literal>.  This will not have the desired effect.
+            Instead of a delay in, e.g. the initialization of the device, mvlc_generate will delay as it is tranlating
+            the configuration file.  Use the <methodname>delay</methodname> of this
+            <classname>CVMUSB</classname> class instead.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type> <methodname>vmeWrite32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>aModifier</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>data</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Stores a 32 bit wide write operation of <parameter>data</parameter>
+                            to the <parameter>address</parameter> in the address space specified by
+                            <parameter>aModifier</parameter>.  Remember, the operation is not actually
+                            done when this method is called, it is later put into a list of operations
+                            the readout will perform when it's supposed to.  This is your last warning.
+                        </para>
+                        <para>
+                            On success, 0 is returned. Failure is not possible in the base class, however
+                            it is flagged by a return value of -1 with a meaningful value of <varname>errno</varname>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type> <methodname>vmeWrite16</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>aModifier</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint16_t</type> <parameter>data</parameter>
+                            </methodparam>
+
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Same as <methodname>vmeWrite32</methodname>, however <parameter>data</parameter>
+                            and the actual transfer are 16 bits wide.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type> <methodname>vmeBlockWrite32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>base</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_5</type> <parameter>aModifier</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t*</type> <parameter>pData</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t</type> <parameter>nTransfers</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Transfers a block of <parameter>nTransfers</parameter>
+                            consecutive <type>uint32_t</type> values from 
+                            <parameter>pData</parameter> to the block of  VME
+                            address space specified by <parameter>base</parameter> in the
+                            address space specifiec by <parameter>aModifier</parameter>
+                        </para>
+                        <para>
+                            Note that as the MVLC does not have a block write operation,
+                            this just generates several equivalent calls to <methodname>vmeWrite32</methodname>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>delay</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>amount</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Implemewnts a delay that will occur at this point in the operation
+                            list that is being generated.  <parameter>amount</parameter> is the
+                            length of the delay in 200ns units.  These units are chosen to be
+                            compatible with the VMUBSReadout.   The actual underlying units are
+                            62.5ns and a sufficient number of 62.5ns periods will be generated to delay
+                            for at least the requested time.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>loopUntil32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter >amod </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>value</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            In VMUSBReadout, one could wait for a condition in board by polling it.
+                            This can't be done directly with the generator's off line operation.
+                            The MVLC, however does have sufficient richness in its operation set
+                            to do this autonomously.
+                        </para>
+                        <para>
+                            The value from the read specified by <parameter>address</parameter> and
+                            <parameter>amod</parameter> is repeated until, when bitwise anded with
+                            <parameter>mask</parameter> the resulting value is equal to <parameter>value</parameter>.
+                            This provides the ability to wait until a bit field within a devide has
+                            reached a specified value.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>loopUntil16</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter >amod </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>value</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Same as <methodname>loopUntil32</methodname>  but the read performed is only
+                            16 bits wide.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>std::vector&lt;std::string&gt; </type> <methodname>getRecordedOperations</methodname>
+                            <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Returns the list of memorized operations in a form that allows the operations
+                            to be placed into the Yaml configuration file.  Note that this is normally called by
+                            the mvlc_generate framework and you won't need to call it in your code.
+                        </para>
+                        <para>
+                            This method is non-destructive.  That is the list of operations is not modified.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>clearRecordedOperations</methodname>
+                            <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Clears the list of saved operations.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type> <methodname>executeList</methodname>
+                            <methodparam>
+                                <type>CVMUSBReadoutList&amp;</type> <parameter>list</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>void*</type> <parameter>pReadBuffer</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t</type> <parameter>readBufferSize</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t*</type> <parameter>bytesRead</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            The VMUSB can operate on lists of operations.  These are normally
+                            organized in a <classname>CVMUSBReadoutList</classname> object and,
+                            during initialization and end run, executed in a <classname>CVMUSB</classname>
+                            object.  In our case, <methodname>executeList</methodname> just
+                            appends the operations in <parameter>list</parameter> to the list of operations
+                            being maintained by the <classname>CVMUSB</classname> object.
+                        </para>
+                        <para>
+                            Since no reads can be done, the remainig parameters, which have to do with
+                            providing a buffer for the results of read operations and its size are not
+                            important since <parameter>pReadBuffer</parameter> will never be stored to.
+                            <parameter>bytesRead</parameter> for consistency, however, will always have a
+                            zero stored in it.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>std::vector&lt;uint8_t&gt;</type> <methodname>executeList</methodname>
+                            <methodparam>
+                                <type>CVMUSBReadoutList&amp;</type> <parameter>list</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>int</type> <parameter>maxBytes</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            With the VMUSB this was a simplified version of <methodname>executeList</methodname>
+                            In fact what this method does is append the <parameter>list</parameter>
+                            to the list of operations memorized by the <classname>CVMUBS</classname> object.
+                            It returns an empty vector as reads are not done.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>SEE ALSO</title>
+        <para>
+            <link linkend='mvlc3.cvmusbreadoutlist' endterm='mvlc3.cvmusbreadoutlist.title' />
+        </para>
     </refsect1>
 </refentry>
 <!-- /manpage --> 
