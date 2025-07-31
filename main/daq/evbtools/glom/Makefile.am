@@ -1,7 +1,7 @@
 bin_PROGRAMS=glom
 
 
-glom_SOURCES= glomMain.cpp
+glom_SOURCES= glomMain.cpp CBufferedFragmentReader.cpp
 
 nodist_glom_SOURCES=glom.c glom.h
 
@@ -24,3 +24,13 @@ glom.h: @srcdir@/glom.ggo
 		--output-dir=@builddir@ --file-name=glom
 
 EXTRA_DIST=glom.ggo glom.xml config.h
+
+##
+# Make a buffered fragment reader library for testing
+#
+
+lib_LTLIBRARIES = libBufferedFragmentReader.la
+libBufferedFragmentReader_la_SOURCES = CBufferedFragmentReader.cpp CBufferedFragmentReader.h
+include_HEADERS = CBufferedFragmentReader.h
+libBufferedFragmentReader_la_CPPFLAGS = @UFMT_CPPFLAGS@
+libBufferedFragmentReader_la_LIBADD = @UFMT_LDFLAGS@ 
