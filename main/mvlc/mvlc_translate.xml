@@ -1513,7 +1513,7 @@ SampleDriverCommand::createDevice(std::string name) {
                         Name mangling means that the actual name of a function, as seen by the linker, is
                         the name you give it, modified in ways that describe the parameters and, if appropriate,
                         the class or namespace the function lives in.
-                        For example, the SampleDriver::createDevicde method winds up crating a function
+                        For example, the SampleDriver::createDevice method winds up crating a function
                         named: 
                         <literal>_ZN19SampleDriverCommand12createDeviceENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE</literal>.
                         </para>
@@ -5170,9 +5170,9 @@ hytec cget  <replaceable>name ?option?</replaceable>
     </refsect1>
     
 </refentry>
-<refentry>
+<refentry id='mvlc3.stackcommand'>
     <refmeta>
-        <refentrytitle>stack</refentrytitle>
+        <refentrytitle id='mvlc3.stackcommand.title'>stack</refentrytitle>
         <manvolnum>3mvlc</manvolnum>
     </refmeta>
     <refnamediv>
@@ -7942,5 +7942,293 @@ public:
         </para>
     </refsect1>
 </refentry>
+<refentry  id='mvlc3.tclconfigparser'>
+    <refmeta>
+        <refentrytitle id='mvlc3.tclconfigparser.title'>TCLConfigParser</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>TCLConfigParser</refname>
+        <refpurpose>Base class for mvlcgenerate configuration parser</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;mvlc/TCLConfigParser.h&gt;
 
+class TCLConfigParser {
+public:
+    TCLConfigParser(const std::string&amp; infile);
+    
+    CStack* getEventStack() ;
+    CStack* getScalerStack();
+
+    virtual void initialize();
+    virtual void operator()();                         
+    CTCLInterpreter* getInterpreter();
+    CReadoutModule* findDevice(std::string devname);                   
+    virtual void addDevice(std::string devname, CReadoutModule* driver);
+    virtual void addExtensions();
+    virtual void addExtension(CTCLObjectProcessor&amp; cmdobj);       
+    void addExtension(CTCLObjectProcessor* pCmd) 
+    static TCLConfigParser* getInstance();
+
+};
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This is the base class for the translator parser.  The subclass <classname>MVLCConfigParser</classname>
+            does al lthe real work with this class just providing the framework on which devices, the event
+            and scaler stack can be hung.
+        </para>
+        <para>
+            In order to handle a virtual initialization of the extensions, a two phase initialization
+            is required. First the specific subclass must be instantiated.  Next <methodname>initialize</methodname>
+            must be called.  This is a virtual method that will do any type specific initialization including, 
+            but not limited to registering extensions.  Finally, when ready to interpret the configuration
+            script to build the final configuration, <methodname>operator()</methodname> should be 
+            called to process the configuration file into a configuration.  The final step, would naturally
+            be using that configuration to generate the final configuration file.
+        </para>
+        <para>
+            Note that this method is an irregular singleton in that it has a public constructor that
+            prevents multiple invocations and a <methodname>getInstance</methodname> that returns
+            a pointer to the singleton object if it has been constructed.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <constructorsynopsis>
+                            <methodname>TCLConfigParser</methodname>
+                            <methodparam>
+                                <type>const std::string&amp;</type> <parameter>infile</parameter>
+                            </methodparam>
+                        </constructorsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            The constructor requires a single parameter; the path to the file that
+                            is interpreted by <methodname>operator()</methodname>.  Note that construction
+                            also instantiates a <classname>CTCLInterpreter</classname> object.
+                            The <parameter>infile</parameter> is saved in member data and is the name
+                            of the configuration file that <methodname>operator()</methodname> will intepret.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type> CStack*</type> <methodname>getEventStack</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            It makes sense to call this method, only after <methodname>operator()</methodname>
+                            has processed the configuration file.  If an event stack, has been defined
+                            by the configuration, this method returns a pointer to it.  If not, 
+                            <literal>nullptr</literal> is returned.  <literal>nullptr</literal> will, naturally,
+                            also be returned if the configuration file has not yet been processed.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>CStack*</type> <methodname>getScalerStack</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            It makes sense to call this method, only after <methodname>operator()</methodname>
+                            has processed the configuration file.  If an scaler stack, has been defined
+                            by the configuration, this method returns a pointer to it.  If not, 
+                            <literal>nullptr</literal> is returned.  <literal>nullptr</literal> will, naturally,
+                            also be returned if the configuration file has not yet been processed.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>initialize</methodname> <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            This method invokes <methodname>addExtensions</methodname> to extend the
+                            Tcl interpreter used to interpret the configuration script.
+                            Since this operation is virtual it cannot be invoked from the constructor.
+                            This is is because constructor code ignores the polymophism of virtual 
+                            methods.  This is why the two phase construction described in 
+                            <literal>DESCRIPTION</literal> is needed to allow subclasses to do their
+                            own type specific initialization.
+                        </para>
+                        <para>
+                            Subclasses  typically only need to modify <methodname>addExtensions</methodname>
+                            to add the set of domain specific verbs the interpreter will understand.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>operator()</methodname> <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            This method interprets the configuration file tha was passed in to the constructor.
+                            Once the configuration has been built from the file  the code generator can
+                            query it to generate appropriate operations.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>CTCLInterpreter*</type> <methodname> getInterpreter</methodname> <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Returns a pointer to the interpreter object that will be used to interpret the
+                            configuration file. 
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>CReadoutModule*</type> <methodname>findDevice</methodname>
+                            <methodparam>
+                                <type>std::string</type> <parameter>devname</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            It only makes sense to call this method after, or during configuration.
+                            It returns a pointer to the <classname>CReadoutModule</classname> of the
+                            device named <parameter>devname</parameter>. One use during configuration is
+                            for devices such as <link linkend='mvlc3.caenchain' endterm='mvlc3.caenchain.title' />,
+                            or 
+                            <link linkend='mvlc3.stackcommand' endterm='mvlc3.stackcommand.title' />
+                            to validate the contents of
+                            their list of devices they control.  
+                            <link linkend='mvlc3.devicecommand' endterm='mvlc3.devicecommand.title' /> objects
+                            will also use this to ensure they are not creating devices with dupliate names
+                            and to lookup existing devices to configure or introspect their configurations.
+                        </para>
+                        <para>
+                            If there is no match to the module name in the set of modules defined when 
+                            <methodname>findDevice</methodname> is called, a <literal>nullptr</literal> is returned.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addDevice</methodname>
+                            <methodparam>
+                                <type>std::string</type> <parameter>devname</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>CReadoutModule*</type> <parameter> driver</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a new named device driver instance wrapped together with its configuration
+                            to the configuration being buit up.
+                        </para>
+                        <para>
+                            This is normally called from a 
+                            <link linkend='mvlc3.devicecommand' endterm='mvlc3.devicecommand.title' />
+                            when it creates a new 
+                            <link linkend='mvlc3.creadoutmodule' endterm='mvlc3.creadoutmodule.title' />
+                            to enter that device in the configuration.
+                            <parameter>devname</parameter> is the name assigned to the device
+                            in the <command>create</command> subcommand while <parameter>driver</parameter>
+                            is a pointer to the
+                             <link linkend='mvlc3.creadoutmodule' endterm='mvlc3.creadoutmodule.title' />
+                            that subcommand created.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addExtensions</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            This is an no-op method.  It is not pure virtual to facilitate unit testing.
+                            Normally derived class override this method and provide code to extend the
+                            base Tcl intepreter that will be used to interpret the configuration file.
+                        </para>
+                        <para>
+                            This can be thought of as a strategy method that is called by
+                            <methodname>initialize</methodname>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addExtension</methodname>
+                            <methodparam>
+                                <type>CTCLObjectProcessor&amp;</type> <parameter>cmdobj</parameter>
+                            </methodparam> 
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a command extension to the interpreter.  The configuration maintains a List
+                            of command objects added.  <parameter>cmdobj</parameter> must be 
+                            dynamically created via <literal>new</literal>. Ownership passes into our object and
+                            the object <literal>delete</literal>'s all extensions added in this way
+                             when it is destroyed.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>addExtension</methodname>
+                            <methodparam>
+                                <type>CTCLObjectProcessor*</type> <parameter>pCmd</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Invokes the previous overload of <methodname>addExtension</methodname> with 
+                            the dereferences <parameter>pCmd</parameter>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>static TCLConfigParser*</type> <methodname>getInstance</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            As described, this is an irregular singleton.  If an instance has been
+                            created, this will return a pointer to that instance.  If not, 
+                            <literal>nullptr</literal> is returned. The irregularity stems from the need
+                            to pass a connfiguration file name into the constructor of the instance.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
 <!-- /manpage --> 
