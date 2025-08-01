@@ -7919,19 +7919,266 @@ public:
             <varlistentry>
                     <term>
                         <methodsynopsis>
-                            <type> </type> <methodname></methodname>
+                            <type> void</type> <methodname>addFifoRead32</methodname>
                             <methodparam>
-                                <type> </type> <parameter> </parameter>
+                                <type>uint32_t </type> <parameter>baseAddress </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t</type> <parameter>transfers</parameter>
                             </methodparam>
                         </methodsynopsis>
                     </term>
                     <listitem>
                         <para>
-                            TEXT
+                            Same as <methodname>addBlockRead32</methodname> but all reads
+                            are done from the same address.  That address typically is a FIFO buffer.
                         </para>
                     </listitem>
             </varlistentry>
-            
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addBlockCountRead16</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            The interface supports block reads whose size is given by some value
+                            read from the VME.  This is used when the module might produce a variable
+                            length event but supplies a register that describes how much data has been
+                            acquired. 
+                        </para>
+                        <para>
+                            Variable length read require two stack operations.  The first,
+                            a <methodname>addBlockCountReadxx</methodname> fetches the transfer count,
+                            while the second a <methodname>addMaskedCountBlockRead32</methodname>
+                            or <methodname>addMaskedCountFifoRead</methodname> does the actual transfer.
+                        </para>
+                        <para>
+                            This method extracts the transfer count for a subsequent masked count operation.
+                            The read of the register containing the counf field is a 16 bit read from
+                            <parameter>address</parameter> in the address space specified by <parameter>amod</parameter>.
+                            The field containing the count is assumed to be a contigous set of bits in the
+                            field specified by the <parameter>mask</parameter>.
+                        </para>
+                        <para>
+                            Suppose, for example, the <parameter>mask</parameter> is <literal>0x0f00</literal>
+                            and the value read
+                            was <literal>0xabcd</literal>  The subsequent masked block read will 
+                            hvae a transfer count of
+                            <literal>0xb</literal> (or 11) 32 bit items.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addBlockCountRead32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            This method is the same as <methodname>addBlockCountRead16</methodname>, but the
+                            read performed is 32 bits wide.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addMaskedCountBlockRead32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Performs a block transfer with a count that was extracted by the most
+                            recent <methodname>addBlockCountRead16</methodname> or 
+                            <methodname>addBlockCountRead32</methodname> operation.  The transfer begins
+                            at <parameter>address</parameter> in the address space specified by <parameter>amod</parameter>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addMaskedCountFifoRead32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Performs a block transfer with a count that was extracted by the most
+                            recent <methodname>addBlockCountRead16</methodname> or 
+                            <methodname>addBlockCountRead32</methodname> operation. All transfers are from
+                            <parameter>address</parameter> in the address space specified by <parameter>amod</parameter>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addDelay</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>clocks</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a delay to the stack.  In order to be compatible with the VMUSBReadout delay operation,
+                            the length of the dleay is at least <parameter>clocks</parameter>*200ns.  Note that the
+                            actual delay may be slightly longer because the MVLC delay operation is in units of
+                            62.5ns, and we delay for at least <parameter>clocks</parameter>*200ns.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><methodsynopsis>
+                            <type>virtual void</type> <methodname>addMarker</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>value</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Causes a 32 bit literal value to be stored in the event.  Note that VMUSB markers
+                            are 16 bit wide.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addLoopUntil32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>value</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Provides a method to delay until some specific condition exists in a device.
+                            The stack element does a 32 bit read from 
+                            <parameter>address</parameter> in the address space specified by
+                            <parameter>amod</parameter> until the value read bitwise anded with the 
+                            <parameter>mask</parameter> is equal to the <parameter>value</parameter>.
+                        </para>
+                        <para>
+                            Note that unlike the <methodname>adBlockCountReadxx</methodname> methods,
+                            No shifting is done.  The read, after being anded with the <parameter>value</parameter>
+                            is directly compared with the <parameter>value</parameter>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addLoopUntil16</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>value</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Same as <methodname>addLoopUntil32</methodname> but the reads are only 16 bits wide.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>std::vector&lt;std::string&gt;</type> <methodname>dumpForMvlc</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Retuns the contenst of the stack in a form that is recognizable in MVLC configuration files.
+                            This is intended for use by the generator framework and unit tests.  This dump is non-destructive.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><methodsynopsis>
+                            <type>void</type> <methodname>clear</methodname> <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Clears the stack contents.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>appendToStack</methodname>
+                            <methodparam>
+                                <type>CVMUSBReadoutList&amp;</type> <parameter>other</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Intended to be used by <classname>CVMUSB</classname> when it performs an
+                            <methodname>executeList</methodname> operation.  This method
+                            appends the contents of <emphasis>this</emphasis> stack to <parameter>other</parameter>.
+                            The append is non-desctructive.  If you want to use this stack again  you should most likely
+                            invoke <methodname>clear</methodname> first.
+                        </para>
+                    </listitem>
+            </varlistentry>
         </variablelist>
     </refsect1>
     <refsect1>
