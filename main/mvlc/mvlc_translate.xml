@@ -6898,9 +6898,9 @@ addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>$drive
 </refentry>
 
 <!-- The C++ support classes  that are exported -->
-<refentry>
+<refentry id='mvlc3.readouthardware'>
     <refmeta>
-        <refentrytitle>CReadoutHardware</refentrytitle>
+        <refentrytitle id='mvlc3.readouthardware.title'>CReadoutHardware</refentrytitle>
         <manvolnum>3mvlc</manvolnum>
     </refmeta>
     <refnamediv>
@@ -7191,7 +7191,7 @@ protected:
         <itemizedlist>
             <listitem>
                 <para>
-                    <link linkend='mvlc3.readoutdevice' endterm='mvlc3.readoutdevice.title' />
+                    <link linkend='mvlc3.readouthardware' endterm='mvlc3.readouthardware.title' />
                 </para>
             </listitem>
             
@@ -7723,7 +7723,7 @@ public:
         <manvolnum>3mvlc</manvolnum>
     </refmeta>
     <refnamediv>
-        <refname>CVMUSBReadoutList</rename>
+        <refname>CVMUSBReadoutList</refname>
         <refpurpose>Stand in for VMUSBReadout's CVMUSBReadoutList</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
@@ -7822,6 +7822,7 @@ public:
                             </methodparam>
                             <methodparam>
                                 <type>uint32_t</type> <parameter>datum</parameter>
+                            </methodparam>
                         </methodsynopsis>
                     </term>
                     <listitem>
@@ -7844,6 +7845,7 @@ public:
                             </methodparam>
                             <methodparam>
                                 <type>uint16_t</type> <parameter>datum</parameter>
+                            </methodparam>
                         </methodsynopsis>
                     </term>
                     <listitem>
@@ -7868,7 +7870,7 @@ public:
                                 <type>const void*</type> <parameter>pData</parameter>
                             </methodparam>
                             <methodparam>
-                                <type>size_t<type> <parameter>transfers</parameter>
+                                <type>size_t</type> <parameter>transfers</parameter>
                             </methodparam>
                         </methodsynopsis>
         
@@ -7907,7 +7909,7 @@ public:
                     <listitem>
                         <para>
                             Adds a 32 bit wide block transfer to the list. <parameter>transfers</parameter>
-                            transfers will be transferred starting from the <parameter>baseAddress<parameter>
+                            transfers will be transferred starting from the <parameter>baseAddress</parameter>
                             in the address spacde <parameter>amod</parameter>. Data from the block read,
                             goes into the event.  It is not legal to use this in a list that is executed
                             via <classname>CVMUSB</classname>::<methodname>executeList</methodname>.
@@ -7940,4 +7942,5 @@ public:
         </para>
     </refsect1>
 </refentry>
+
 <!-- /manpage --> 
