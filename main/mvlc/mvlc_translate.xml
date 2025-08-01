@@ -1889,7 +1889,7 @@ snit::type SampleDriver {   <co id='mvlcgen-tcl-snittype' />
             <refentry>
                 <refmeta>
                     <refentrytitle>Address modifier Tcl variables</refentrytitle>
-                    <manvolnum>3tcl-mvlcgenerate</manvolnum>
+                    <manvolnum>3mvlcgen</manvolnum>
                 </refmeta>
                 <refnamediv>
                     <refname>Address modifier Tcl variables</refname>
@@ -2527,7 +2527,7 @@ sis3820 cget <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>adc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>adc</refname>
@@ -2741,7 +2741,7 @@ adc cget <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>v830</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>v830</refname>
@@ -2879,7 +2879,7 @@ v830 cget  <replaceable>name ?option?</replaceable>
 <refentry id='mvlc3.caenchain'>
     <refmeta>
         <refentrytitle id='mvlc3.caenchain.title'>caenchain</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>caenchain</refname>
@@ -2953,7 +2953,7 @@ stack create event -trigger nim1 -modules [list chain]
 <refentry>
     <refmeta>
         <refentrytitle>delay</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>delay</refname>
@@ -2982,7 +2982,7 @@ delay cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>madc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>madc</refname>
@@ -3261,7 +3261,7 @@ madc cget  <replaceable>name ?option?</replaceable>
 <refentry id='mvlc.madcchain'>
     <refmeta>
         <refentrytitle id='mvlc.madcchain.title'>madcchain</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>madcchain</refname>
@@ -3361,7 +3361,7 @@ stack create event -trigger nim1 -modules [list chain ...]
 <refentry>
     <refmeta>
         <refentrytitle>madcscaler</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>madcscaler</refname>
@@ -3421,7 +3421,7 @@ stack create scalers -trigger scaler -period 2 -modules [list adcscler qdcscaler
 <refentry>
     <refmeta>
         <refentrytitle>marker</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>marker</refname>
@@ -3448,7 +3448,7 @@ marker cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>mdpp16qdc, mdpp32qdc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>mdpp16qdc, meqq32qdc</refname>
@@ -3854,7 +3854,7 @@ mdpp32qdc cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>mdpp32scp</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>mdpp32scp</refname>
@@ -4227,7 +4227,7 @@ mdpp32scp cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>mqdc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>mqdc</refname>
@@ -4636,7 +4636,7 @@ mqdc cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>mtdc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>mtdc</refname>
@@ -5045,7 +5045,7 @@ mtdc cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>hytec</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>hytec</refname>
@@ -5173,7 +5173,7 @@ hytec cget  <replaceable>name ?option?</replaceable>
 <refentry id='mvlc3.stackcommand'>
     <refmeta>
         <refentrytitle id='mvlc3.stackcommand.title'>stack</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>stack</refname>
@@ -5312,7 +5312,7 @@ stack create scaler -trigger scaler -modules [ list scaler1 scaler2 scaler3]
 <refentry>
     <refmeta>
         <refentrytitle>v1495sc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>v1495sc</refname>
@@ -5435,7 +5435,7 @@ v1495sc cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>v1729a</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>v1729a</refname>
@@ -5649,7 +5649,7 @@ v1729a cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>tdc1x90</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>tdc1x90</refname>
@@ -6017,7 +6017,7 @@ tdc1x90 cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>v977</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>v977</refname>
@@ -6120,7 +6120,7 @@ v977 cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>XLMTimestamp</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>XLMTimestamp</refname>
@@ -6178,7 +6178,7 @@ XLMTimestamp cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>ACAENV1290</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ACAENV1290</refname>
@@ -6243,7 +6243,7 @@ addtcldriver create <replaceable>stack-name</replaceable> -ensemble <replaceable
 <refentry>
     <refmeta>
         <refentrytitle>ACAENV795</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ACAENV785</refname>
@@ -6276,7 +6276,7 @@ addtcldriver create <replaceable>device-stackname</replaceable> -ensemble <repla
 <refentry>
     <refmeta>
         <refentrytitle>ACrdcXLM72</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ACrdcXLM72</refname>
@@ -6390,7 +6390,7 @@ addtcldriver create <replaceable>dev-stacknaame</replaceable> -ensemble <replace
 <refentry>
     <refmeta>
         <refentrytitle>AGD16XLM72</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>AGD16XLM72</refname>
@@ -6493,7 +6493,7 @@ addtcldriver create <replaceable>stack-devname</replaceable> -ensemble <replacea
 <refentry>
     <refmeta>
         <refentrytitle>ALevel3XLM72</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ALevel3XLM72</refname>
@@ -6528,7 +6528,7 @@ addtcldriver create <replaceable>stack-name</replaceable>  -ensemble <replaceabl
 <refentry>
     <refmeta>
         <refentrytitle>AMesytecMADC32</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>AMesytecMADC32</refname>
@@ -6559,7 +6559,7 @@ addtcldriver create <replaceable>stack-name</replaceable>  -ensemble <replaceabl
 <refentry>
     <refmeta>
         <refentrytitle>APpacXLM72</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>APpacXLM72</refname>
@@ -6653,7 +6653,7 @@ addtcldriver create <replaceable>stack-name</replaceable> -ensemble <replaceable
 <refentry>
     <refmeta>
         <refentrytitle>ATimeStampXLM72</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ATimeStampXLM72</refname>
@@ -6680,7 +6680,7 @@ addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>dev-na
 <refentry id='mvlc.sis3300'>
     <refmeta>
         <refentrytitle id='mvlc.sis3300.title'>sis3300</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>sis3300</refname>
@@ -6901,7 +6901,7 @@ addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>$drive
 <refentry id='mvlc3.readouthardware'>
     <refmeta>
         <refentrytitle id='mvlc3.readouthardware.title'>CReadoutHardware</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>CReadoutHardware</refname>
@@ -7088,7 +7088,7 @@ public:
 <refentry id='mvlc3.devicecommand'>
     <refmeta>
         <refentrytitle id='mvlc3.devicecommand.title'>DeviceCommand</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>DeviceCommand</refname>
@@ -7201,7 +7201,7 @@ protected:
 <refentry id='mvlc3.creadoutmodule'>
     <refmeta>   
         <refentrytitle id='mvlc3.creadoutmodule.title'>CReadoutModule</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>CReadoutModule</refname>
@@ -7405,7 +7405,7 @@ public:
 <refentry id='mvlc3.cvmusb'>
     <refmeta>
         <refentrytitle id='mvlc3.cvmusb.title'>CVMUSB</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>CVMUSB</refname>
@@ -7720,7 +7720,7 @@ public:
 <refentry id='mvlc3.cvmusbreadoutlist'>
     <refmeta>
         <refentrytitle id='mvlc3.cvmusbreadoutlist.title'> CVMUSBReadoutList</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>CVMUSBReadoutList</refname>
@@ -7945,7 +7945,7 @@ public:
 <refentry  id='mvlc3.tclconfigparser'>
     <refmeta>
         <refentrytitle id='mvlc3.tclconfigparser.title'>TCLConfigParser</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>TCLConfigParser</refname>
@@ -8228,6 +8228,93 @@ public:
                         </para>
                     </listitem>
             </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+<refentry id='mvlc3.mvlcconfigparser'>
+    <refmeta>
+        <refentrytitle id='mvlc3.mvlcconfigparser.title'>MVLCCOnfigParser</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>MVLCConfigParser</refname>
+        <refpurpose>Provide MVLC specific <classname>TCLConfigParser</classname> class</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;mvlc/MVLCConfigParser.h&gt;
+class MVLCConfigParser : public TCLConfigParser {
+public:
+    MVLCConfigParser(const std::string&amp; script);
+    virtual void addExtensions();
+
+    static MVLCConfigParser* getInstance();
+};
+
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This is the specialization of
+            <link linkend='mvlc3.tclconfigparser' endterm='mvlc3.tclconfigparser.title' />
+            that defines the Tcl extensions needed to parse the verbs that make up the 
+            configuration file froim the VMUSBReadout.  Once parsed the configuration
+            can be translated into the appropriate yaml file.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHOD</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <constructorsynopsis>
+                            <methodname>MVLCConfigParser</methodname>
+                            <methodparam>
+                                <type>const std::string&amp;</type> <parameter>script</parameter>
+                            </methodparam>
+                        </constructorsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Constructor.  The <parameter>script</parameter> is the path to the
+                            script configuration file for VMUSBReadout that will be interpreted and,
+                            ultimately, translated
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addExtensions</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Provides the extensions to the Tcl intepreter that will interpret 
+                            the configuration script needed to do that interpretation.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>static MVLCConfigParser*</type> <methodname>getInstance</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Just as 
+                            <link linkend='mvlc3.tclconfigparser' endterm='mvlc3.tclconfigparser.title' />
+                            is a irregular singleton, so is <classname>MVLCConfigParser</classname>.
+                            This method really just invokes the 
+                            <classname>TCLConfigParser</classname>::<methodname>getInstance</methodname> casting
+                            to the proper type of pointer returned.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            
         </variablelist>
     </refsect1>
 </refentry>
