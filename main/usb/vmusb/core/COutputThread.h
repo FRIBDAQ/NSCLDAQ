@@ -144,6 +144,11 @@ private:
   StateChangeCallback m_pBeginRunCallback;
   CSystemControl& m_systemControl;
 
+#ifdef VMUSB_END_OF_EVENT_WORKAROUND
+  // We need to keep track of the last header pointer.
+
+  uint16_t*    m_pLastHeader;
+#endif
 
   // Constuctors and other canonicals.
 

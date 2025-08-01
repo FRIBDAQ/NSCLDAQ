@@ -105,6 +105,9 @@ COutputThread::COutputThread(std::string ring, CSystemControl& sysControl) :
   m_pSclrTimestampExtractor(0),
   m_pBeginRunCallback(0),
   m_systemControl(sysControl)
+#ifdef VMUSB_END_OF_EVENT_WORKAROUND
+  ,m_pLastHeader(0)
+#endif
 {
     memset(&m_statistics, 0, sizeof(m_statistics));
 }
@@ -804,6 +807,42 @@ COutputThread::event(void* pData)
   // If that was the last segment submit it and reset cursors and counters.
 
   if (!haveMore) {			    // Ending segment:
+  #ifdef VMUSB_END_OF_EVENT_WORKAROUND
+    // If this is enabled, we have a trailing marker we have to delete, and
+    // we need to adjust the wordcount in the segment header down by that
+    // marker...and deal with the edge case that this is the only 
+    // word in that segment.... in that case we need to retract the
+    // header as well and remove the contiuation bit from the last
+    // header:
+
+    // remove the marker:
+
+    segmentSize--;
+    m_pCursor -= sizeof(uint16_t);
+    m_nWordsInBuffer--;
+
+    // Ajust the header properly
+
+    if (segmentSize) {
+      header = header & (~VMUSBEventLengthMask) | segmentSize;  //Sset the adjust segment size...
+      *pSegment = header;                                       // Replace the original header
+    } else {
+      // That left an empty segment so retract the header too...
+      // if there was no last header that means we're going to emit an empty event...
+      // but that means the user has an event stack with no modules so they
+      // get what they deserve.
+
+      if (m_pLastHeader) {
+        m_pCursor -= sizeof(uint16_t);    // Retract the empty header
+        m_nWordsInBuffer--;
+        
+        auto lastHeader = *m_pLastHeader;  // Remove the continuation bit
+        lastHeader &= ~VMUSBContinuation;  // from the previous header.
+        *m_pLastHeader = lastHeader;
+      } 
+    }
+
+  #endif
     //
     // IF we were given a timestamp extractor we create an event with full
     // body header.
@@ -834,11 +873,9 @@ COutputThread::event(void* pData)
     // we transparently added to the readout stack to force
     // end of event to fire.
 
-#ifndef VMUSB_END_OF_EVENT_WORKAROUND
+
     event.setBodyCursor(pEnd);
-#else
-    event.setBodyCursor(pEnd - sizeof(uint16_t));
-#endif
+
     event.updateSize();
     event.commitToRing(*m_pRing);
     delete pEvent;
@@ -857,7 +894,17 @@ COutputThread::event(void* pData)
     
         
     m_nEventsSeen++;
+#ifdef VMUSB_END_OF_EVENT_WORKAROUND
+    m_pLastHeader = nullptr;      // Next event does not have a prior header.
+#endif
   }
+#ifdef VMUSB_END_OF_EVENT_WORKAROUND
+  else {
+    // Save the header so we can adjust if the last segment only has a marker:
+
+    m_pLastHeader = pSegment;
+  }
+#endif
 
 }
 
