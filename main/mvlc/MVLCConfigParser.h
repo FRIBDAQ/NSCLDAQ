@@ -43,8 +43,7 @@
  * which gets executed by this instance.
  */
 class MVLCConfigParser : public TCLConfigParser {
-private:
-    static MVLCConfigParser* m_pInstance;
+
 public:
     MVLCConfigParser(const std::string& script);
     virtual ~MVLCConfigParser();
@@ -56,7 +55,9 @@ private:
 public:
     virtual void addExtensions();
 
-    static MVLCConfigParser* getInstance();
+    static MVLCConfigParser* getInstance() { 
+        return reinterpret_cast<MVLCConfigParser*>(TCLConfigParser::getInstance()); 
+    }
 };
 
 
