@@ -7717,4 +7717,227 @@ public:
         </para>
     </refsect1>
 </refentry>
+<refentry id='mvlc3.cvmusbreadoutlist'>
+    <refmeta>
+        <refentrytitle id='mvlc3.cvmusbreadoutlist.title'> CVMUSBReadoutList</refentrytitle>
+        <manvolnum>3mvlc</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>CVMUSBReadoutList</rename>
+        <refpurpose>Stand in for VMUSBReadout's CVMUSBReadoutList</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;mvlc/CVMUSBReadoutList.h&gt;
+
+class CVMUSBReadoutList {
+public:
+    CVMUSBReadoutList();
+    virtual ~CVMUSBReadoutList();     // just in case we derive.
+   
+    virtual void addWrite32(uint32_t address, uint8_t amod, uint32_t datum);
+    virtual void addWrite16(uint32_t address, uint8_t amod, uint16_t datum);
+    virtual void addBlockWrite32(uint32_t dest, uint8_t amod, const void* pData, size_t nLongs);
+
+    virtual void addRead32(uint32_t address, uint8_t amod);
+    virtual void addRead16(uint32_t address, uint8_t amod);
+
+    virtual void addBlockRead32(uint32_t baseAddress, uint8_t amod, size_t transfers);
+    virtual void addFifoRead32(uint32_t  baseAddress, uint8_t amod, size_t transfers);
+
+    
+
+    virtual void addBlockCountRead16(uint32_t address, uint32_t mask, uint8_t amod);
+    virtual void addBlockCountRead32(uint32_t address, uint32_t mask, uint8_t amod);
+
+    virtual void addMaskedCountBlockRead32(uint32_t address, uint8_t amod);
+    virtual void addMaskedCountFifoRead32(uint32_t address, uint8_t amod);
+
+    virtual void addDelay(uint32_t clocks);
+    virtual void addMarker(uint32_t value);
+
+
+    virtual void addLoopUntil32(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value);
+    virtual void addLoopUntil16(uint32_t addresss, uint8_t amod, uint32_t mask, uint32_t value);
+
+    std::vector&lt;std::string&gt; dumpForMvlc();      // Return the operations list.
+    void clear();                               // clear the list.
+    void appendToStack(CVMUSBReadoutList&amp; other); // Add out list to another list.
+
+public:
+
+    static const uint8_t a32UserData  ;
+    static const uint8_t a32UserProgram  ;
+    static const uint8_t a32UserBlock ;
+
+    static const uint8_t a32PrivData ;
+    static const uint8_t a32PrivProgram;
+    static const uint8_t a32PrivBlock;
+
+    static const uint8_t a16User ;
+    static const uint8_t a16Priv;
+
+    static const uint8_t a24UserData;
+    static const uint8_t a24UserProgram;
+    static const uint8_t a24UserBlock;
+    
+    static const uint8_t a24PrivData;
+    static const uint8_t a24PrivProgram ;
+    static const uint8_t a24PrivBlock ;
+};
+
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The code drivers (<classname>CReadoutHardware</classname>) <methodname>addReadoutList</methodname>
+            add operations needed to perform the device readout. In order to ease the porting
+            of VMUSBReadout device driver modules to translator code generators. This provides
+            a <classname>CVMUSBReadoutList</classname> that is closely compatible with the class with the
+            same name defined in the VMUSBReadout framework.
+        </para>
+        <para>
+            This class, however saves the operations in a form that allows them to be dumped into 
+            the yaml configuration file <classname>mvlcgenerate</classname> writes.
+        </para>
+        <para>
+            These lists can also be created during code generation for initialization and then 
+            when <classname>CVMUSB</classname>'s <methodname>executeList</methodname> method is executed,
+            the  operations saved by this list can be appended to the operations being saved by that object.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type> void </type> <methodname>addWrite32</methodname>
+                            <methodparam>
+                                <type>uint32_t  </type> <parameter>address </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>datum</parameter>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a 32 bit write of <parameter>datum</parameter> to the address specified
+                            by <parameter>address</parameter> and address modifier specified by
+                            <parameter>amod</parameter>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type> void </type> <methodname>addWrite16</methodname>
+                            <methodparam>
+                                <type>uint32_t  </type> <parameter>address </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint16_t</type> <parameter>datum</parameter>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a 16 bit write of <parameter>datum</parameter> to the address specified
+                            by <parameter>address</parameter> and address modifier specified by
+                            <parameter>amod</parameter>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void </type> <methodname>addBlockWrite32</methodname>
+                            <methodparam>
+                                <type>uint32_t </type> <parameter> dest</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>const void*</type> <parameter>pData</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t<type> <parameter>transfers</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+        
+                    </term>
+                    <listitem>
+                        <para>
+                            Stores a block transfer in the list.  The data are gotten from 
+                            <parameter>transfers</parameter> <type>uint32_t</type> 
+                            words pointed to by <parameter>pData</parameter>  When The
+                            transfer is executed, the destination base address are defined
+                            by <parameter>dest</parameter> with the address space selected by
+                            <parameter>amod</parameter>
+                        </para>
+                        <para>
+                            Note that the data are copied from <parameter>pData</parameter>
+                            into the list
+                            when this is called
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void </type> <methodname>addBlockRead32</methodname>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>baseAddress </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t</type> <parameter>transfers</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a 32 bit wide block transfer to the list. <parameter>transfers</parameter>
+                            transfers will be transferred starting from the <parameter>baseAddress<parameter>
+                            in the address spacde <parameter>amod</parameter>. Data from the block read,
+                            goes into the event.  It is not legal to use this in a list that is executed
+                            via <classname>CVMUSB</classname>::<methodname>executeList</methodname>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type> </type> <methodname></methodname>
+                            <methodparam>
+                                <type> </type> <parameter> </parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            TEXT
+                        </para>
+                    </listitem>
+            </varlistentry>
+            
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>ADDRESS MODIFIER DEFINITIONS</title>
+        <para>
+            In addition to its methods, the class defines a set of static <type>uint8_t</type> public data
+            that provide symbolic values for VME bus address modifiers.  These values should be self-explanatory.
+        </para>
+    </refsect1>
+</refentry>
 <!-- /manpage --> 
