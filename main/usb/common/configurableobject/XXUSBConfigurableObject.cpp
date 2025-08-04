@@ -1070,7 +1070,7 @@ CConfigurableObject::isInteger(string name, string value, void* arg)
 
 
   char* end;
-  auto lvalue = strtoull(value.c_str(), &end, 0);	// Base allows e.g. 0x.
+  auto lvalue = strtoll(value.c_str(), &end, 0);	// Base allows e.g. 0x.
   if (*end != '\0') {		               // String is not just an integer.
     return false;
   }

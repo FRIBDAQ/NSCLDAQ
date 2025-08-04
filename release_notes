@@ -1,6 +1,7 @@
 == 12.0-025 ==
 * Implenenting sample data taking in MDPP-16/32 modules
 * Updating MDPP-16/32 documentation
+* Fix for window offset config in V1x90 digitizers
 == 12.0-025 ==
 
 == 12.0-024 ==
