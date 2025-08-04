@@ -269,7 +269,7 @@ CV1x90::Initialize(CVMUSB& controller)
   uint16_t highWater       = m_pConfiguration->getIntegerParameter("-highwatermark");
   string   eclOutput       = m_pConfiguration->cget("-ecloutput");
   uint16_t windowWidth     = m_pConfiguration->getIntegerParameter("-window");
-  int      windowOffset    = m_pConfiguration->getIntegerParameter("-offset");
+  uint16_t windowOffset    = m_pConfiguration->getIntegerParameter("-offset");
   uint16_t extraSearch     = m_pConfiguration->getIntegerParameter("-extramargin");
   uint16_t rejectMargin    = m_pConfiguration->getIntegerParameter("-rejectmargin");
   bool     subtractTrigger = m_pConfiguration->getBoolParameter("-triggerrelative");
