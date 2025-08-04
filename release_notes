@@ -2,6 +2,7 @@
 * Implenenting sample data taking in MDPP-16/32 modules
 * Updating MDPP-16/32 documentation
 * Updates for MADC-32 for independent bank operation
+* Correctly configure window offset for V1x90 digitizers
 == 12.1-012 ==
 
 == 12.1-011 ==
