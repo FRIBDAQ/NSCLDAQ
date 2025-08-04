@@ -132,6 +132,12 @@ private:
   StateChangeCallback m_pBeginRunCallback;
   CSystemControl& m_systemControl;
 
+#ifdef VMUSB_END_OF_EVENT_WORKAROUND
+  // We need to keep track of the last header pointer.
+  // Since the buffer can be re-allocated we use a buffer offset
+    ssize_t    m_LastHeader;        // Signed because 0 is a valid last header.
+#endif
+
 
   // Constuctors and other canonicals.
 
