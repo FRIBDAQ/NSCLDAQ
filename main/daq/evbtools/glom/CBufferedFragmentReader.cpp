@@ -56,17 +56,20 @@ CBufferedFragmentReader::CBufferedFragmentReader(int fd) :
     m_nFd(fd), m_pBuffer(nullptr), m_nBufferSize(0), m_nBytesInBuffer(0),
     m_nReadSize(0), m_nOffset(0)
 {
-    // Figure out the read size and allocate the block etc:
-    
-    int nPipeDepth = fcntl(m_nFd, F_GETPIPE_SZ);
+    // Figure out the read size and allocate the block etc. If reading
+    // from a pipe, try to set the buffer size to 1MB (see issue #307):
+
+    fcntl(STDIN_FILENO, F_SETPIPE_SZ, 1024*1024);
+    int nPipeDepth = fcntl(m_nFd, F_GETPIPE_SZ); 
     if (nPipeDepth > 0) {
         m_nReadSize = nPipeDepth;
     } else {
         m_nReadSize = DefaultReadSize;
     }
 
-    // Allocate the block but make it look like it's been exactly fully read:
-    
+    // We know its stdin so lets allocate the block but make it look like
+    // it's been exactly fully read:
+   
     m_pBuffer = malloc(m_nReadSize);
     if (!m_pBuffer) {
         throw std::bad_alloc();
