@@ -106,7 +106,7 @@ COutputThread::COutputThread(std::string ring, CSystemControl& sysControl) :
   m_pBeginRunCallback(0),
   m_systemControl(sysControl)
 #ifdef VMUSB_END_OF_EVENT_WORKAROUND
-  ,m_pLastHeader(0)
+  ,m_LastHeader(-1)		// Not set.
 #endif
 {
     memset(&m_statistics, 0, sizeof(m_statistics));
@@ -788,7 +788,9 @@ COutputThread::event(void* pData)
       m_pBuffer            = pNewBuffer;
       m_pCursor            = m_pBuffer + m_nWordsInBuffer * sizeof(uint16_t);
       m_nOutputBufferSize += newSize;
-
+      // TODO:
+      // Augh this will have changed the last header location too!
+      // maybe make it an offset not a pointer that's invariant!!!!
     } else {
       throw std::string("Failed to resize event buffer to fit an oversized segment");
     }
@@ -798,6 +800,9 @@ COutputThread::event(void* pData)
   // Next we can copy our data to the output buffer and update the cursor
   // remembering that the size is not self inclusive:
   //
+ #ifdef VMUSB_END_OF_EVENT_WORKAROUND
+  uint16_t* dest = reinterpret_cast<uint16_t*>(m_pCursor);
+#endif
   memcpy(m_pCursor, pData, segmentSize*sizeof(uint16_t));
   m_nWordsInBuffer += segmentSize;
   m_pCursor += segmentSize*sizeof(uint16_t); // advance the cursor
@@ -823,22 +828,25 @@ COutputThread::event(void* pData)
 
     // Ajust the header properly
 
-    if (segmentSize) {
-      header = header & (~VMUSBEventLengthMask) | segmentSize;  //Sset the adjust segment size...
-      *pSegment = header;                                       // Replace the original header
-    } else {
+
+    // Note the header length is not self inclusive hence the -1
+    header = header & (~VMUSBEventLengthMask) | (segmentSize-1);  //Sset the adjust segment size...
+    *dest = header;        // Relace it in our copy-in buffer.
+    if (header == 0) {
       // That left an empty segment so retract the header too...
       // if there was no last header that means we're going to emit an empty event...
       // but that means the user has an event stack with no modules so they
       // get what they deserve.
 
-      if (m_pLastHeader) {
+      if (m_LastHeader >= 0) {
         m_pCursor -= sizeof(uint16_t);    // Retract the empty header
         m_nWordsInBuffer--;
         
-        auto lastHeader = *m_pLastHeader;  // Remove the continuation bit
+        uint16_t* pLastHeader =
+	    reinterpret_cast<uint16_t*>(m_pBuffer + m_LastHeader);  // Remove the continuation bit
+	uint16_t lastHeader = *pLastHeader;
         lastHeader &= ~VMUSBContinuation;  // from the previous header.
-        *m_pLastHeader = lastHeader;
+        *pLastHeader = lastHeader;
       } 
     }
 
@@ -895,14 +903,16 @@ COutputThread::event(void* pData)
         
     m_nEventsSeen++;
 #ifdef VMUSB_END_OF_EVENT_WORKAROUND
-    m_pLastHeader = nullptr;      // Next event does not have a prior header.
+    m_LastHeader = -1;      // Next event does not have a prior header.
 #endif
   }
 #ifdef VMUSB_END_OF_EVENT_WORKAROUND
   else {
-    // Save the header so we can adjust if the last segment only has a marker:
-
-    m_pLastHeader = pSegment;
+    // Save the header offset so we can adjust if the last segment only has a marker:
+    // Note we save the offset because the buffer might get reallocated/moved on the
+    // next segment, invalidating a pointer.
+      
+      m_LastHeader = reinterpret_cast<uint8_t*>(dest) - m_pBuffer;
   }
 #endif
 
