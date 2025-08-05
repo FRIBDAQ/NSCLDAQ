@@ -108,9 +108,17 @@ then
 
 	if test "x$mvlcdir" != "x"
 	then
-		MVLC_CPPFLAGS="-I${mvlcdir}/include -I${mvlcdir}/include/mesytec-mvlc"
-		MVLC_LDFLAGS="-L${mvlcdir}/lib -lmesytec-mvlc -Wl,-rpath=${mvlcdir}/lib"
+		MVLC_ROOT="${mvlcdir}"
+		MVLC_INC="${mvlcdir}/include"
+		MVLC_LIB="${mvlcdir}/lib"
+		MVLC_BIN="${mvlcdir}/bin"
 
+		MVLC_CPPFLAGS="-I${MVLC_INC} -I${MVLC_INC}/mesytec-mvlc"
+		MVLC_LDFLAGS="-L${MVLC_LIB} -lmesytec-mvlc -Wl,-rpath=${MVLC_LIB}"
+		AC_SUBST(MVLC_ROOT)
+		AC_SUBST(MVLC_INC)
+		AC_SUBST(MVLC_LIB)
+		AC_SUBST(MVLC_BIN)
 		AC_SUBST(MVLC_CPPFLAGS)
 		AC_SUBST(MVLC_LDFLAGS)
 	else
