@@ -919,7 +919,7 @@ COutputThread::event(void* pData)
       m_LastHeader = reinterpret_cast<uint8_t*>(dest) - m_pBuffer;
   }
 #endif
->>>>>>> 0fdd1fcf5 (Issue #294 - VMUSB firmware workarounds.)
+
 
 }
 
