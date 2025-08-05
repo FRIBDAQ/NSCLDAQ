@@ -788,9 +788,7 @@ COutputThread::event(void* pData)
       m_pBuffer            = pNewBuffer;
       m_pCursor            = m_pBuffer + m_nWordsInBuffer * sizeof(uint16_t);
       m_nOutputBufferSize += newSize;
-      // TODO:
-      // Augh this will have changed the last header location too!
-      // maybe make it an offset not a pointer that's invariant!!!!
+      
     } else {
       throw std::string("Failed to resize event buffer to fit an oversized segment");
     }
