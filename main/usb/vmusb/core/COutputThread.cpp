@@ -905,7 +905,6 @@ COutputThread::event(void* pData)
     
         
     m_nEventsSeen++;
-  }
 
 #ifdef VMUSB_END_OF_EVENT_WORKAROUND
     m_LastHeader = -1;      // Next event does not have a prior header.
