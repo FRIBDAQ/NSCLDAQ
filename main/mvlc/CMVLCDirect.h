@@ -25,6 +25,7 @@
 namespace mesytec {
     namespace mvlc {
         class MVLC;
+        class StackCommandBuilder;
     }
 }
 
@@ -38,8 +39,7 @@ namespace mesytec {
 class CMVLCDirect : public CVMUSB {
 private: 
     mesytec::mvlc::MVLC& m_controller;
-    uint32_t             m_accumulator;      // For interpreting lists.
-    size_t               m_prevReadIndex;    // list index of last interp_read_to_accu
+    
 
 public:
     CMVLCDirect(mesytec::mvlc::MVLC& controller);
@@ -59,11 +59,11 @@ public:
 private:
     // These methods are used in interpreting list items;
 
-    int interp_write(std::stringstream& operation);
-    int interp_wait(std::stringstream& operation);
-    int interp_mask_shift_accu(std::stringstream& operation);
-    int interp_read_to_accu(std::stringstream& operation);
-    int interp_compare_loop_accu(std::stringstream& operation);
+    int interp_write(std::stringstream& operation, mesytec::mvlc::StackCommandBuilder& builder);
+    int interp_wait(std::stringstream& operation, mesytec::mvlc::StackCommandBuilder& builder);
+    int interp_mask_shift_accu(std::stringstream& operation, mesytec::mvlc::StackCommandBuilder& builder);
+    int interp_read_to_accu(std::stringstream& operation, mesytec::mvlc::StackCommandBuilder& builder);
+    int interp_compare_loop_accu(std::stringstream& operation, mesytec::mvlc::StackCommandBuilder& builder);
 
 
 };

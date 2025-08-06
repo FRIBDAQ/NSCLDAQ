@@ -23,12 +23,14 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdexcept>
-
+#include <iostream>
 #include <vector>
+#include <chrono>
 
 
 using  mesytec::mvlc::MVLC;
 using  mesytec::mvlc::VMEDataWidth;
+using  mesytec::mvlc::StackCommandBuilder;
 
 // @note  When the C++ standard changes to 20 or higher we can use std::rotl here
 // rather than this left rotate method.
@@ -140,9 +142,9 @@ CMVLCDirect::loopUntil16(uint32_t address, uint8_t amod, uint32_t mask, uint32_t
 }
 /**
  * executeList
- *    Since I don't yet know/understand how to do an MVLC immediate list like I do with a VMUSB,
- * this method interprets the list...which is just a set of operations encoded as for the Yaml
- * configuration file.   We *know* this list only contains writes loopuntils and delay operations.
+ *   There are some restrictions on MVLC immediate lists.
+ * Specifically, there can be at most 681 writes...we'll limit the list
+ * size to 600 and we're only going to support VME write and wait operations.
  * 
  * @param  list - Referencde to the VMUSB Readout list.
  * @param  pReadBuffer - pointer to a buffer that will never get anything put in it.
@@ -154,33 +156,36 @@ CMVLCDirect::loopUntil16(uint32_t address, uint8_t amod, uint32_t mask, uint32_t
 int
 CMVLCDirect::executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t readBufferSize, size_t * bytesRead) {
     auto operations = list.dumpForMvlc();      // get the list operations.
+    if (operations.size() > 600) {
+        throw std::invalid_argument("CMVLCDirect::executeList onyly supports up to 600 stack elements");
+    }
+    StackCommandBuilder builder;
+    // Docs say that stacktransaction needs to start with a reference or marker so:
+
+    builder.addWriteMarker(0xaaaa5555);
 
     try {
-        for (size_t pc = 0; pc < operations.size(); ) {
+        for (auto operation : operations) {
             std::string opcode;
-            std::stringstream sop(operations[pc]);                 // Makes parsing easy.
+            std::stringstream sop(operation);                 // Makes parsing easy.
             sop >> opcode;                             // operation to do:
 
             if (opcode == "vme_write") {
-                interp_write(sop);
-                pc++;
+                interp_write(sop, builder);
+                
             } else if (opcode == "wait") {
-                interp_wait(sop);
-                pc++;
+                interp_wait(sop, builder);
+                
             } else if (opcode == "mask_shift_accu") {
-                interp_mask_shift_accu(sop);
-                pc++;
+                interp_mask_shift_accu(sop, builder);
+                
 
             } else if (opcode == "read_to_accu") {
-                interp_read_to_accu(sop);
-                m_prevReadIndex = pc;                  // Save the potential loop dest.
-                pc++;
+                interp_read_to_accu(sop, builder);
+                
             } else if (opcode == "compare_loop_accu") {
-                if (interp_compare_loop_accu(sop)) {
-                    pc++;
-                } else {
-                    pc = m_prevReadIndex;             // no match so loop.
-                }
+                interp_compare_loop_accu(sop, builder);
+                
             } else {
                 errno = ENOTSUP;
                 return -1;
@@ -188,6 +193,14 @@ CMVLCDirect::executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t read
         }
     } catch (std::runtime_error& error) {
         errno = EIO;
+        return -1;
+    }
+    // Try to execute the stack:
+
+    std::vector<uint32_t> readData;
+    auto ec = m_controller.stackTransaction(builder, readData);
+    if (ec) {
+        std::cerr << "MVLCDirect::executeList failed stack transaction: " << ec.message() << std::endl;
         return -1;
     }
     return 0;
@@ -212,23 +225,21 @@ CMVLCDirect::executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t read
  * @return 0  - on success.  Throws std::runtime_error if the write failed.
  */
 int
-CMVLCDirect::interp_write(std::stringstream& operation) {
+CMVLCDirect::interp_write(std::stringstream& operation, StackCommandBuilder& builder) {
     unsigned  amod;
     std::string width;
     uint32_t address;
     uint32_t data;
 
     operation >> std::hex >> amod >> width >> address >> data;
-
-    if (m_controller.vmeWrite(address, data, (uint8_t)amod, width == "d32" ? VMEDataWidth::D32 : VMEDataWidth::D16)) {
-        throw std::runtime_error("VMEWrite failed");
-    }
+    builder.addVMEWrite(address, data, amod, width == "d32" ? VMEDataWidth::D32 : VMEDataWidth::D16);
+    
     return 0;
 }
 /**
  *  interp_wait
  * 
- *      Wait for at least n 62.5usec  The full format of this is:
+ * Wait for probably a long time as this is a software delay it says.
  * 
  * wait decimal-cycles
  * 
@@ -236,13 +247,10 @@ CMVLCDirect::interp_write(std::stringstream& operation) {
  * @note the actual delay will be the last number of usec that is at least as long as requested.
  */
 int
-CMVLCDirect::interp_wait(std::stringstream& operation) {
+CMVLCDirect::interp_wait(std::stringstream& operation, StackCommandBuilder& builder) {
     uint32_t cycles;
     operation >> cycles;
-    uint32_t vmusbdelay = (double)cycles*62.5/200.0 + 1.0;   // in 200ns units
-
-    delay(vmusbdelay);
-
+    builder.addSoftwareDelay(std::chrono::milliseconds(cycles));
 
     return 0;                   // Always works.
 }
@@ -257,15 +265,14 @@ CMVLCDirect::interp_wait(std::stringstream& operation) {
  * @note m_accumulator contains the accumulator value
  */
 int
-CMVLCDirect::interp_mask_shift_accu(std::stringstream& operation) {
+CMVLCDirect::interp_mask_shift_accu(std::stringstream& operation, StackCommandBuilder& builder) {
     uint32_t mask;
     int      shift;
 
 
     operation >> std::hex >> mask >> std::dec >> shift;
 
-    m_accumulator &= mask;
-    m_accumulator = rol(m_accumulator, shift);
+    builder.addMaskShiftAccu(mask, shift);
 
     return 0;
 }
@@ -283,7 +290,7 @@ CMVLCDirect::interp_mask_shift_accu(std::stringstream& operation) {
  * @return int 0 on success else throws std::runtime_error.
  */
 int
-CMVLCDirect::interp_read_to_accu(std::stringstream& operation) {
+CMVLCDirect::interp_read_to_accu(std::stringstream& operation, StackCommandBuilder& builder) {
     unsigned  amod;
     std::string width;
     uint32_t addr;
@@ -292,15 +299,8 @@ CMVLCDirect::interp_read_to_accu(std::stringstream& operation) {
     //Decode the operands:
 
     operation >> std::hex >> amod >> width >>addr;
+    builder.addReadToAccu(addr, (uint8_t)amod, width == "d32" ? VMEDataWidth::D32 : VMEDataWidth::D16 );
 
-    // do the read:
-
-    auto ec = m_controller.vmeRead(addr, data, (uint8_t)amod, width == "d32" ? VMEDataWidth::D32 : VMEDataWidth::D16 );
-    if (ec) {
-        throw std::runtime_error("vmeRead in interp_read_to_accu failed");
-    }
-
-    m_accumulator = data;
 
     return 0;
 }
@@ -320,20 +320,22 @@ CMVLCDirect::interp_read_to_accu(std::stringstream& operation) {
  * @return int - 0 comparison failed, 1 comparison worked.  It's up to the caller to implement the loop.
  */
 int
-CMVLCDirect::interp_compare_loop_accu(std::stringstream& operation) {
+CMVLCDirect::interp_compare_loop_accu(std::stringstream& operation, StackCommandBuilder& builder) {
     int compare;
     uint32_t value;
 
     operation >> compare >> std::hex >>value;
 
+    mesytec::mvlc::AccuComparator test;
+
     if (compare < 0) {
-        return m_accumulator < value;
+        test = mesytec::mvlc::AccuComparator::LT;
     } else if (compare > 0) {
-        return m_accumulator > value;
+        test = mesytec::mvlc::AccuComparator::GT;
     } else {   // 0
-        return m_accumulator == value;
+        test = mesytec::mvlc::AccuComparator::EQ;
     }
-    // should not vall here.
-    // this will kill the program as it's not caught.
-    throw std::logic_error("interp_compare_loop_accu - control fell through the if chain");
+    builder.addCompareLoopAccu(test, value);
+
+    return 0;
 }
