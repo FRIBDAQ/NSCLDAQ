@@ -36,6 +36,7 @@
 #include <chrono>
 #include <thread>
 #include <sstream>
+#include <stdexcept>
 
 using namespace std;
 using XXUSB::CConfigurableObject;
@@ -461,6 +462,7 @@ void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBy
 
 void CFirmwareLoader::loadSRAM1(uint32_t destAddr, uint32_t* image, uint32_t nBytes)
 {
+  throw std::logic_error("loadSRAM1 is not supported for MVLC...yet.");
   // for now load it one byte at a time... in 256 tansfer chunks:
 
   if (nBytes == 0) return;	// Stupid edge case but we'll handle it correctly.
