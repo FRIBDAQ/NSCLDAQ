@@ -51,6 +51,7 @@ namespace ufmt::EVB {
 
 
 typedef std::deque<std::pair<time_t, EVB::pFragment>> EvbFragments;
+typedef std::vector<std::pair<time_t, EVB::pFragment>> EvbFragmentsV;
 
 /**
  * @class CFragmentHandler

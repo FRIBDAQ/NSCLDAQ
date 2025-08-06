@@ -96,7 +96,7 @@ MODULE_SCOPE int main(int, char **);
 #ifdef TCL_LOCAL_MAIN_HOOK
 MODULE_SCOPE int TCL_LOCAL_MAIN_HOOK(int *argc, char ***argv);
 #endif
-
+
 /*
  *----------------------------------------------------------------------
  *
@@ -368,7 +368,7 @@ int pthread_create(pthread_t *__restrict thread,
 
     return i_return; 
 } 
-
+
 }
 #endif
 /*

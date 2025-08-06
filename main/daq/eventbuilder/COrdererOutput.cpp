@@ -111,8 +111,8 @@ COrdererOutput::operator()(const EvbFragments& event)
   int n(0);
   size_t totalWrite(0);
   for (auto i = event.begin(); i != event.end(); i++) {
-    auto p = i->second;
-    
+      auto p = i->second;
+      
     // If this will overflow maxwrite - output what we have so far:
     // and reset stuff.  This allows us to produce the next set
     // of iovs overlapped with the consumer getting this set:
