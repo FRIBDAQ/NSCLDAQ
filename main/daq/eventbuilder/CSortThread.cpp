@@ -24,6 +24,9 @@
 #include "COutputThread.h"
 #include <map>
 
+#include <thread>
+#include <chrono>
+
 // Timestamp comparison for sorted merge:
 
 static bool
@@ -80,7 +83,7 @@ CSortThread::run()
         releaseFragments(*newData); 
         m_nQueuedFrags -= mergedFrags->size();
         pOutput->queueFragments(mergedFrags);
-
+	// std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 /**
@@ -219,7 +222,9 @@ CSortThread::merge(FragmentList& result, FragmentList& list1, FragmentList& list
 void
 CSortThread::merge(FragmentList& result, FragmentList& list)
 {
-  result.insert(result.end(), list.begin(), list.end());
+    // std::cerr << "one way merge nfrags: " << list.size() << std::endl;
+    result.insert(result.end(), list.begin(), list.end());
+
 }
 /**
  * clearBufferQueue

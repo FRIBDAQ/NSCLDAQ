@@ -204,7 +204,7 @@ CFragmentHandler::addFragments(size_t nSize, const EVB::FlatFragment* pFragments
       frags++;
       srcid = pHeader->s_sourceId;
       size_t fragmentSize = totalFragmentSize(pHeader);
-      if((pHeader->s_size + sizeof(EVB::FragmentHeader)) > nSize) {
+      if(fragmentSize > nSize) {
         std::stringstream s;
         s << "Last fragment has too many bytes: " << nSize
           << " bytes in fragment group but " << fragmentSize
@@ -229,7 +229,6 @@ CFragmentHandler::addFragments(size_t nSize, const EVB::FlatFragment* pFragments
   
     // Don't flush until we have allowed time for all data sources to 
     // establish themselves
-    
     flushQueues();		// flush events with received time stamps older than m_nNow - m_nBuildWindow
       
   
@@ -666,7 +665,6 @@ CFragmentHandler::Xoff()
 void
 CFragmentHandler::flush()
 {
-
   flushQueues(true);
   m_nNewest = 0;
   m_nOldest = UINT64_MAX;
@@ -912,11 +910,11 @@ CFragmentHandler::flushQueues(bool completely)
     
       CSortThread::FragmentList& partialSort(*new CSortThread::FragmentList);
       
-      {
-        auto& item(p->second.s_queue.front().second);
-        std::string& qname(p->second.s_qid);
+      // {
+      //   auto& item(p->second.s_queue.front().second);
+      //   std::string& qname(p->second.s_qid);
   
-      }
+      // }
       
       DequeueUntilStamp(partialSort, p->second.s_queue, mark);
       handleDequeuedFragments(p, partialSort, pFrags, statcopy);
@@ -1750,7 +1748,6 @@ CFragmentHandler::IdlePoll(ClientData data)
   CFragmentHandler* pHandler = reinterpret_cast<CFragmentHandler*>(data);
   pHandler->m_nNow = time(NULL);	// Update tod.
   
-  
   pHandler->flushQueues();   //  Do time window based flush.
  
   
@@ -2055,15 +2052,17 @@ CFragmentHandler::insertFragment(
     time_t clockTime, EVB::pFragment pFrag, SourceQueue& dest
 )
 {
-  std::pair<time_t, EVB::pFragment> entry = {clockTime, pFrag};
+    // std::pair<time_t, EVB::pFragment> entry = {clockTime, pFrag};
   uint64_t entryTimestamp = pFrag->s_header.s_timestamp;
   
   if (dest.s_queue.empty()) {                  // queue empty.
-    dest.s_queue.push_back(entry);
+      //dest.s_queue.push_back(entry);
+      dest.s_queue.emplace_back(std::make_pair(clockTime, pFrag));
   } else {
     uint64_t tailStamp = dest.s_queue.back().second->s_header.s_timestamp;
     if (entryTimestamp >= tailStamp) {    // In order....
-      dest.s_queue.push_back(entry);
+      // dest.s_queue.push_back(entry);
+	dest.s_queue.emplace_back(std::make_pair(clockTime, pFrag));
     } else {                                 // have to hunt.
       auto p = dest.s_queue.rbegin();        // reverse iteration.
       while (p != dest.s_queue.rend()) {
@@ -2074,10 +2073,13 @@ CFragmentHandler::insertFragment(
       // If p == rend push_front otherwise figure out how to insert:
       
       if (p == dest.s_queue.rend()) {
-        dest.s_queue.push_front(entry);
+	  dest.s_queue.emplace_front(std::make_pair(clockTime, pFrag));
+        // dest.s_queue.push_front(entry);
       } else {
         auto insertionPoint = p.base();
-        dest.s_queue.insert(insertionPoint, entry);
+        // dest.s_queue.insert(insertionPoint, entry);
+	dest.s_queue.insert(insertionPoint, std::make_pair(clockTime, pFrag));
+	
       }
     }
   }

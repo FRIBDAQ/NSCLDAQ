@@ -29,6 +29,8 @@
 using namespace ufmt;
 
 static const int BUFFERSIZE=1024*1024;  // Hard coded for now.
+static const int BUFFER_MBYTES=100;
+
 /*------------------------------------------------------------------------
 **  Canonical methods
 */
@@ -55,9 +57,9 @@ COrdererOutput::COrdererOutput(int fd) :
   long maxWrite = fcntl(m_OutputChannel, F_GETPIPE_SZ, nullptr);
   if (maxWrite == -1) {
     std::cerr << "* Warning * fcntl would not return a value for F_GETPIPE_SZ\n";
-    std::cerr << "* Using 1Mbyte by default\n";
+    std::cerr << "* Using " << BUFFER_MBYTES <<"Mbyte by default\n";
     std::cerr.flush();
-    maxWrite = 1024*1024;
+    maxWrite = BUFFER_MBYTES*1024*1024;
   } else {
     //std::cerr << " Maximum output write size: " << maxWrite << std::endl;
     std::cerr.flush();
@@ -99,7 +101,7 @@ COrdererOutput::operator()(const EvbFragments& event)
   int maxWrite = m_nMaxWrite;
   
   // Minimize dynamic memory management:
-  
+  // std::cerr << "event size in ord out " << event.size() << std::endl;
   int nIovs = event.size()*2;
   if (nIovs > m_nVectors) {
     free(m_pVectors);
@@ -120,6 +122,7 @@ COrdererOutput::operator()(const EvbFragments& event)
     
     size_t nBytes = sizeof(EVB::FragmentHeader) + p->s_header.s_size;
     if (((totalWrite + nBytes) > maxWrite) && (n > 0)) {
+	// std::cerr << "dump buffer " << totalWrite + nBytes << " > " << maxWrite << " n=" << n << std::endl;
       dumpOutput(iovs, n);
       n = 0;
       totalWrite = 0;
@@ -133,19 +136,25 @@ COrdererOutput::operator()(const EvbFragments& event)
     
     n += 2;
     totalWrite += nBytes;
-    if (totalWrite > maxWrite) {
-      dumpOutput(iovs, n);
-      n = 0;
-      totalWrite = 0;
-    }
+
+    // // If current iov write size exceeds max, we'll just dump it next iter
+    // // when checking size of next iov:
+    
+    // if (totalWrite > maxWrite) {
+    // 	std::cerr << "dump2 buffer " << totalWrite << " > " << maxWrite << " n=" << n << std::endl;
+    // 	//   dumpOutput(iovs, n);
+    // 	n = 0;
+    // 	totalWrite = 0;
+    // }
     
   }
   // If we have a partial buffer, output it:
 
   if (n) {
-    dumpOutput(iovs, n);
-    n = 0;  // Not strictly needed.
-    totalWrite = 0;
+      // std::cerr << "dump3 buffer " << " n=" << n << std::endl;
+      dumpOutput(iovs, n);
+      n = 0;  // Not strictly needed.
+      totalWrite = 0;
   }
   return;
 

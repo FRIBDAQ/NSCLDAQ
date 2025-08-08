@@ -33,6 +33,9 @@
 #include <stdlib.h>
 #include <netdb.h>
 
+#include <thread>
+#include <chrono>
+
 /**
  * CEVBFrameworkApp.cpp - implementation of the CEVBFrameworkApp class.
  * this class is the application level class for the event builder client framework.
@@ -249,6 +252,7 @@ CEVBFrameworkApp::operator()(int argc, char** argv)
 	while (1) {
 	  for_each(m_sources.begin(), m_sources.end(),
 		   poller);
+	  // std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
       }
       catch (...) {

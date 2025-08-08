@@ -25,6 +25,9 @@
 #include <algorithm>
 #include <iostream>
 
+#include <thread>
+#include <chrono>
+
 using namespace ufmt;
 
 /**
@@ -63,6 +66,7 @@ COutputThread::run()
             }
         }
         freeFragments(pFrags);
+	// std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 /*---------------------------------------------------------------------------
@@ -140,7 +144,6 @@ EvbFragments*
 COutputThread::getFragments()
 {
     auto pFragmentList = m_inputQueue.get();
-    
    
     return pFragmentList;        // result is a ref dynamically created so this is ok.
     
@@ -165,6 +168,7 @@ COutputThread::freeFragments(EvbFragments* frags)
         EVB::pFragment frag = p->second;
         freeFragment(frag);
     }
+    
     // and now the vector itself:
     
     delete frags;

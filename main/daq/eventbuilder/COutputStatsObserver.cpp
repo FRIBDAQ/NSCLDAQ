@@ -59,12 +59,12 @@ void
 COutputStatsObserver::operator()(const EvbFragments& event)
 {
   m_nTotalFragments += event.size();
-  CriticalSection c(m_perSourceStatGuard); 
-  for (auto p = event.begin(); p != event.end(); p++) {
-    EVB::pFragment pf = p->second;
-    uint32_t sourceId = pf->s_header.s_sourceId;
-    m_perSourceStatistics[sourceId]++;
-  }
+  // CriticalSection c(m_perSourceStatGuard); 
+  // for (auto p = event.begin(); p != event.end(); p++) {
+  //   EVB::pFragment pf = p->second;
+  //   uint32_t sourceId = pf->s_header.s_sourceId;
+  //   m_perSourceStatistics[sourceId]++;
+  // }
 }
 /**
  * clear
