@@ -787,11 +787,14 @@ then
 	rust_repos="${rust_repos} https://github.com/FRIBDAQ/rust-ringtostdout"
 	rust_repos="${rust_repos} https://github.com/FRIBDAQ/rust-ringmaster"
 	RUST_SUBDIRS=""
+
+	mkdir -p rust-tools
 	for repo in ${rust_repos}
 	do 
 		AC_MSG_NOTICE([Cloning rust tool from ${repo}])
-		(cd rust_tools; git clone  ${repo})
 		subdir=`basename ${repo}`
+		rm -rf rust_tools/${subdir}
+		(cd rust_tools; git clone  ${repo})
 		RUST_SUBDIRS="${RUST_SUBDIRS} ${subdir}"
 	done
 	AC_SUBST(RUST_SUBDIRS)
