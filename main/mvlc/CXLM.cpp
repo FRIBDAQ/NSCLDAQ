@@ -413,10 +413,10 @@ void CFirmwareLoader::remapBits(uint32_t* sramImage, uint8_t* fileImage, uint32_
 //Note this method assumes the image is an even number of 32 bit longs.
 void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBytes)
 {
-  static const size_t   blockSize = 256;                 // MVLC we can maybe even go to 512.
+    static const size_t   blockSize = 512;
   uint32_t              nRemainingBytes    = nBytes;
 
-  // for now load it one byte at a time... in 256 tansfer chunks:
+  // for now load it one byte at a time...in blockSize chunks.
 
   if (nRemainingBytes == 0) return;	// Stupid edge case but we'll handle it correctly.
 
