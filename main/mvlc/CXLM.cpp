@@ -135,7 +135,7 @@ CXLM::onAttach(CConfigurableObject& configuration)
 			     Utils::validFirmwareFile, NULL, "");
 
   // whether to load firmware or not
-  configuration.addBooleanParameter("-loadfirmware", true);
+  configuration.addBooleanParameter("-loadfirmware", false);
 }
 
 /////////////////////////////////////////////////////////////////////////////////

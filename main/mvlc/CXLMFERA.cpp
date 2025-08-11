@@ -144,22 +144,24 @@ CXLMFERA::Initialize(CVMUSB& controller)
     
         // Always load.      
         
-        loader(firmwareFname);
-        controller.vmeWrite32(base + XLM::Interrupt, registerAmod, XLM::InterruptResetDSP);
-        // Was previously the AXLM72V_CES::Configure
+        if (forceFirmwareLoad) {
 
-        // Load firmware file and also boot the XLM
-        // loadFirmware(controller,firmwareFname);
-        // myloadFirmware(controller,firmwareFname);
+            if (firmwareFname == "") {
+                throw std::string("CXLMFERA:: -forceFirmwareLoad true requires -firmware be configured");
+            }
+            loader(firmwareFname);
+            controller.vmeWrite32(base + XLM::Interrupt, registerAmod, XLM::InterruptResetDSP);
+            // Was previously the AXLM72V_CES::Configure
+
         
-        //usleep(2000000);
-        controller.delay(2000);
+            controller.delay(2000);
         
         
        
-        initializeFPGA(controller);
-        Clear(controller);
-        loader.releaseBusses();           // Be damned sure we're off the buses
+            initializeFPGA(controller);
+            Clear(controller);
+            loader.releaseBusses();           // Be damned sure we're off the buses
+        }
     
     }
     
