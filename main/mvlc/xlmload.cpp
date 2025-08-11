@@ -93,9 +93,12 @@ int main(int argc, char** argv) {
     XLM::CFirmwareLoader loader(controller, xlmBase);
 
     // Finally load the XLM
-
-    loader(firmware);
-
+    try {
+	loader(firmware);
+    } catch (std::string msg) {
+	std::cerr <<  "Load failed: " << msg << std::endl;
+	return EXIT_FAILURE;
+    }
     // If requested, verify the signature after a second.
 
     if (args.signature_given && args.verify_offset_given) {
