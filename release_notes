@@ -8,4 +8,6 @@
 by COutputThread
 * Implenenting sample data taking in MDPP-16/32 modules
 * Updating MDPP-16/32 documentation
+* Updated MADC-32 for indpendent bank operation
+* Fix for window configuration in V1x90 digitizers
 == 12.2-dev ==

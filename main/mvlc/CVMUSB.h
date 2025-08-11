@@ -40,6 +40,7 @@ public:
 
     virtual int vmeWrite32(uint32_t address, uint8_t aModifier, uint32_t data);
     virtual int vmeWrite16(uint32_t address, uint8_t aModifier, uint16_t data);
+    virtual int vmeBlockWrite32(uint32_t base, uint8_t aModifier, uint32_t* pData, size_t nTransfers);
     virtual void delay(uint32_t ms);                      // add the ability to delay in initializing.
     virtual void loopUntil32(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value);
     virtual void loopUntil16(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value);
@@ -47,7 +48,7 @@ public:
     std::vector<std::string> getRecordedOperations();
     void clearRecordedOperations();
 
-    int executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t readBufferSize, size_t* bytesRead);
-    std::vector<uint8_t> executeList(CVMUSBReadoutList& list, int maxBytes);
+    virtual int executeList(CVMUSBReadoutList& list, void* pReadBuffer, size_t readBufferSize, size_t* bytesRead);
+    std::vector<uint8_t> executeList(CVMUSBReadoutList& list, int maxBytes); // In terms of the virtual one.
 };
 #endif

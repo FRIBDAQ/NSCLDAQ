@@ -93,6 +93,9 @@ CXLMTimestamp::Initialize(CVMUSB& controller)
   // Load the firmware
   if (m_pConfiguration->getBoolParameter("-loadfirmware")) {
     std::string firmware = m_pConfiguration->cget("-firmware");
+    if (firmware == "") {
+      throw std::string("CXLMTimestamp - -loadfirmware requires that -firmware be configured");
+    }
 
     loadFirmware(controller, firmware);
     // Can't sleep.  Have to add a delay to the stack being buitl:

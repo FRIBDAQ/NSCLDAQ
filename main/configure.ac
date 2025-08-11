@@ -87,8 +87,14 @@ fi
 #  Enabled MVLC code generation:
 
 AC_ARG_ENABLE([mvlc-stack-generator],
-	AS_HELP_STRING([--enable-mvlc-stack-generator],[Build support for generating MVLX fribdaq-readout config files]),
+	AS_HELP_STRING([--enable-mvlc-stack-generator],
+	[Build support for generating MVLX fribdaq-readout config files requires --with-mvlcdir]),
 	[enable_mvlc=$enableval], [enable_mvlc=no])
+
+AC_ARG_WITH([mvlcdir],
+	AS_HELP_STRING([--with-mvlcdir],[Root directory of the MVLC driver installation]),
+	[mvlcdir=$withval],[mvlcdir=""]
+)
 
 if test "x$enable_mvlc" == "xyes"
 then
@@ -97,10 +103,33 @@ then
 	# MVLC Generator needs to have the yaml-cpp package and its flags defined:
 
 	PKG_CHECK_MODULES([YAML], [yaml-cpp])
+
+	#  We need to know where the mvlc driver is... so mvlcdir can't be blank.
+
+	if test "x$mvlcdir" != "x"
+	then
+		MVLC_ROOT="${mvlcdir}"
+		MVLC_INC="${mvlcdir}/include"
+		MVLC_LIB="${mvlcdir}/lib"
+		MVLC_BIN="${mvlcdir}/bin"
+
+		MVLC_CPPFLAGS="-I${MVLC_INC} -I${MVLC_INC}/mesytec-mvlc"
+		MVLC_LDFLAGS="-L${MVLC_LIB} -lmesytec-mvlc -Wl,-rpath=${MVLC_LIB}"
+		AC_SUBST(MVLC_ROOT)
+		AC_SUBST(MVLC_INC)
+		AC_SUBST(MVLC_LIB)
+		AC_SUBST(MVLC_BIN)
+		AC_SUBST(MVLC_CPPFLAGS)
+		AC_SUBST(MVLC_LDFLAGS)
+	else
+		AC_MSG_ERROR([--enable-mvlc-stack-generator also requires --with-mvlcdir])
+	fi
 	
 else	
 	AM_CONDITIONAL([MVLC_GENERATOR], [false])
 fi
+
+
 
 
 #  CAEN Nextgen digitizer support is also optional  the CAEN support
