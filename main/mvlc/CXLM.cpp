@@ -36,6 +36,7 @@
 #include <chrono>
 #include <thread>
 #include <sstream>
+#include <stdexcept>
 
 using namespace std;
 using XXUSB::CConfigurableObject;
@@ -409,13 +410,13 @@ void CFirmwareLoader::remapBits(uint32_t* sramImage, uint8_t* fileImage, uint32_
     *dest++ = lword;		// set a destination longword.
   }
 }
-
+//Note this method assumes the image is an even number of 32 bit longs.
 void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBytes)
 {
-  static const size_t   blockSize = 64;
+    static const size_t   blockSize = 512;
   uint32_t              nRemainingBytes    = nBytes;
 
-  // for now load it one byte at a time... in 256 tansfer chunks:
+  // for now load it one byte at a time...in blockSize chunks.
 
   if (nRemainingBytes == 0) return;	// Stupid edge case but we'll handle it correctly.
 
@@ -424,43 +425,34 @@ void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBy
   std::ofstream dump("fwloader.txt");
   dump << hex << setfill('0');
 #endif  
+  CVMUSBReadoutList list;                // Do list based transfers:
   uint32_t* p  = image;
   while (nRemainingBytes > blockSize*sizeof(uint32_t)) {
     CVMUSBReadoutList  loadList;
-    for (int i =0; i < blockSize; i++) {
-#ifdef DUMPDEBUG      
-      dump << "\n" << setw(8) << destAddr 
-           << " " << setw(2)  << static_cast<int>(sramaAmod)
-           << " " << setw(8) << *p;
-#endif      
-      loadList.addWrite32(destAddr, sramaAmod,  *p++);
-//      loadList.addRead32(destAddr, sramaAmod);
+    for(int i = 0 ; i < blockSize; i++) {
+      list.addWrite32(destAddr, sramaAmod, *p);
+      p++;
+      nRemainingBytes -= sizeof(uint32_t);
       destAddr += sizeof(uint32_t);
     }
-    nRemainingBytes -= blockSize*sizeof(uint32_t);
-    // Write the block:
-
-    std::vector<uint8_t> retData = m_ctlr.executeList(loadList, sizeof(uint16_t));
+    m_ctlr.executeList(list, blockSize*sizeof(uint32_t));
+    list.clear();                       // Re-use it.
     
   }
 
   // Handle any odd partial block:
+  
   if (nRemainingBytes > 0) {
-    CVMUSBReadoutList loadList;
-    while (nRemainingBytes > 0) {
-#ifdef DUMPDEBUG     
-      dump << "\n" << setw(8) << destAddr 
-           << " " << setw(2)  << static_cast<int>(sramaAmod)
-           << " " << setw(8) << *p;
-#endif      
-      loadList.addWrite32(destAddr, sramaAmod, *p++);
-//      loadList.addRead32(destAddr, sramaAmod);
+    list.clear();                         // probably already clear but ...
+    while(nRemainingBytes > 0) {
+      list.addWrite32(destAddr, sramaAmod, *p);
+      p++;
       destAddr += sizeof(uint32_t);
       nRemainingBytes -= sizeof(uint32_t);
     }
-    // Write the block:
-
-    std::vector<uint8_t> retData = m_ctlr.executeList(loadList, sizeof(uint16_t));
+    
+    m_ctlr.executeList(list, blockSize*sizeof(uint32_t));
+    list.clear();                            // Not really needed but...
     
   }
 #ifdef DUMPDEBUG  
@@ -470,6 +462,7 @@ void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBy
 
 void CFirmwareLoader::loadSRAM1(uint32_t destAddr, uint32_t* image, uint32_t nBytes)
 {
+  throw std::logic_error("loadSRAM1 is not supported for MVLC...yet.");
   // for now load it one byte at a time... in 256 tansfer chunks:
 
   if (nBytes == 0) return;	// Stupid edge case but we'll handle it correctly.

@@ -147,6 +147,185 @@ if {$istranslator ne ""} {
         </itemizedlist>
     </refsect1>
 </refentry>
+<refentry id='man1daq.mvlc_xlmload'>
+    <refmeta>
+        <refentrytitle id='man1daq.mvlc_xlmload.title'>mvlc_xlmload</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>mvlc_xlmload</refname>
+        <refpurpose>Connect to and MVLC and load firmware for an XLM-72</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis>
+<command>$DAQBIN/mvlc_xlmload</command>
+    <arg choice='plain'><group>
+        <arg><option>--base <replaceable>vme-address</replaceable></option></arg>
+        <arg><option>--slot <replaceable>vme-slot-number</replaceable></option></arg>
+    </group></arg>        
+    <arg choice="plain"><group>
+        <arg><option>--host<replaceable>mvlc-host-ip</replaceable></option></arg>
+        <arg><option>--usb<optional><replaceable>enumeration-index</replaceable></optional></option></arg>
+        <arg><option>--serial<replaceable>mvlc-serial-number-string</replaceable></option></arg>
+    </group></arg>
+    <arg choice="plain"><option><optional>--signature<replaceable>signature-value</replaceable></optional></option></arg>
+    <arg choice="plain"><option><optional>--verify-offset<replaceable>signature-offset</replaceable></optional></option></arg>
+    <arg choice="plain">firmware-file-path</arg>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            <command>mvlc_xlmload</command> supports loading and booting
+            XLM-72 firmware files over the MVLC interface.  Several 
+            connection modes are provided (see <literal>OPTIONS</literal> below).
+            The XLM can be selected either by its slot in the VME backplane or
+            by its VME base address.
+        </para>
+        <para>
+            Several XLM firmwares write a unique signature  value into a known
+            part of the XLM-72 memory space.  <command>mvlc_xlmload</command>
+            can optionally verify this signature.
+        </para>
+        <para>
+            <replaceable>firmware-file-path</replaceable> must specify a file system
+            path to a valid XLM firmware file.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <para>
+            The <command>mvlc_xlmload</command> options come in three groups:
+        </para>
+        <orderedlist>
+            <listitem>
+                <para>
+                    MVLC Connection options, of which, only one may be selected.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    XLM address options, of which only one must be selected.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Signature verification options, of which none or all must
+                    be provided.
+                </para>
+            </listitem>
+        </orderedlist>
+        <refsect2>
+            <title>MVLC Connection options</title>
+            <para>
+                Exactly one of the options below must be selected.
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><option>--host</option> <replaceable>mvlc-ip</replaceable></term>
+                        <listitem>
+                            <para>
+                                Use this option if the MVLC is on Etherenet, <parameter>mvlc-ip</parameter>
+                                provides the IP address or DNS name of the device.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><option>--usb</option> <optional><replaceable>enumeration-index</replaceable></optional></term>
+                        <listitem>
+                            <para>
+                                Use this option to select an MVLC that is connected to the
+                                host via USB.  If the <parameter>enumeration-index</parameter> is
+                                not given, the USB is searched for the first MVLC and that module
+                                will be used.  This is recommended if only one MVLC is connected by USB
+                                to the host.  If <parameter>enumeration-index</parameter> is
+                                provided, the USB enumeration is searched for the
+                                <parameter>enumeration-index</parameter>'th occurence
+                                of an MVLC and tha module is used.
+                            </para>
+                            <para>
+                                Since USB enumeration is not predictable, while
+                                using an <parameter>enumeration-index</parameter>
+                                is supported it is not recommended.  If you have
+                                more than one MVLC we suggset using the 
+                                <option>--serial</option>
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><option>--serial</option> <replaceable>serial-string</replaceable></term>
+                        <listitem>
+                            <para>
+                                When there's more than one USB connnected MVLC this option is
+                                recommended.  The <parameter>serial-string</parameter>
+                                specifies the specific MVLC to use by its serial number string.
+                                The serial number string is given on a sticker on the component side
+                                of the MVLC module.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect2>
+        <refsect2>
+            <title>XLM addressing/selection</title>
+            <para>
+                One and only one of the options below must be selected.
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><option>--base</option> <replaceable>vme-address</replaceable></term>
+                        <listitem>
+                            <para>
+                                Specifies the base address of the module to load.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><option>--slot</option> <replaceable>slot-num</replaceable></term>
+                        <listitem>
+                            <para>
+                                Specifies the VME slot number occupied by the module to load.
+                                This is used when the module and backplane include the
+                                CERN backplane extensions (A middle connector between the
+                                two large connectors at the top and bottom of the bus).
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect2>
+        <refsect2>
+            <title>Firmware verification</title>
+            <para>
+                Many XLM firmwares, once started, place a signature value
+                in a specified offset from the base of the XLM memory.
+                If this is the case for the firmware you are loading, you may
+                optionally specify that this be checked.  Either both or
+                none of the options in this section must be provided.  If none
+                of the options are specified, signature verification won't be done.
+                If both are they describe how verification should be done and
+                after loading the module and a short delay, the signaure is verified.
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><option>--signature</option> <replaceable>signature-value</replaceable></term>
+                        <listitem>
+                            <para>
+                                Provides the signature value for verification.  
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><option>--verify-offset</option> <replaceable>signature-offset</replaceable></term>
+                        <listitem>
+                            <para>
+                                Provides the offset to the signature from the XLM base.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect2>
+    </refsect1>
+</refentry>
 <!-- /manpage -->
 
 <!-- chapter user-guide -->
@@ -809,8 +988,8 @@ make install
             </programlisting>
         </example>
     </section>
-    <section>
-        <title>Extending the generator with loadable C++ generators</title>
+    <section id='mvlcchap.cppextensions'>
+        <title id='mvlcchap.cppextensions.title'>Extending the generator with loadable C++ generators</title>
         <para>
             The mvlcgenrate program can, as the VMUSBReadout program, accept loadable
             C++ driver extensions.   These are modeled after lodable C++ extensions
@@ -1334,7 +1513,7 @@ SampleDriverCommand::createDevice(std::string name) {
                         Name mangling means that the actual name of a function, as seen by the linker, is
                         the name you give it, modified in ways that describe the parameters and, if appropriate,
                         the class or namespace the function lives in.
-                        For example, the SampleDriver::createDevicde method winds up crating a function
+                        For example, the SampleDriver::createDevice method winds up crating a function
                         named: 
                         <literal>_ZN19SampleDriverCommand12createDeviceENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE</literal>.
                         </para>
@@ -1486,7 +1665,7 @@ example config sample -writeendrun true -endrunloc 0x12344000 -endrunvalue 0x432
                     It therefore cannot perform any read operations on the device.
                 </para><para>
                     The Initialize method/subcommand is passed a single parameter.
-                    The paramter represents a command ensemble that can
+                    The parameter represents a command ensemble that can
                     store VME operations.  It has subcommands that are essentially
                     methods of the <classname>CVMUSB</classname> command.
                     This mvlc command is documented in 
@@ -1710,7 +1889,7 @@ snit::type SampleDriver {   <co id='mvlcgen-tcl-snittype' />
             <refentry>
                 <refmeta>
                     <refentrytitle>Address modifier Tcl variables</refentrytitle>
-                    <manvolnum>3tcl-mvlcgenerate</manvolnum>
+                    <manvolnum>3mvlcgen</manvolnum>
                 </refmeta>
                 <refnamediv>
                     <refname>Address modifier Tcl variables</refname>
@@ -2075,6 +2254,43 @@ mvlclist subcommand ...
             </refentry>
         </section>
     </section>
+    <section>
+        <title>XLM-72 based modlues</title>
+        <para>
+            Several devices supported by FRIB/NSCLDAQ are based on the XLM-72 FPGA based
+            module.  In the FRIB, in order to allow each module to be interchanged,
+            the firmware for these modules is not loaded from PROM but loaded
+            into the SRAM.  The FPGA is then told to load its firmware from SRAM and
+            initiate operations.
+        </para>
+        <para>
+            The offline nature of mvlcgenerate means that you have two  choices for how
+            to handle the firmware for these devices:
+        </para>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    Load the firmware at the start of data taking. This can be
+                    time consuming but will work.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Load the firmware external to data taking and don't load
+                    the firmware ever again, as long as power is maintained on the crate.
+                </para>
+            </listitem>
+        </itemizedlist>
+        <para>
+            We support both modes of operation. The program
+            <link linkend='man1daq.mvlc_xlmload' endterm='man1daq.mvlc_xlmload.title' />
+            describes a program that can load an XLM-72's firmware over the MVLC.
+            Each of the XLM support modules, in addition to providing an option
+            to provide the name of the firmware file, provides a 
+            <option>-load-firmware</option> option which, when true, produces
+            code to load the firmware each time data taking starts.
+        </para>
+    </section>
 </chapter>
 <!-- /chapter -->
 <!-- Reference docs for the drivers etc.  -->
@@ -2311,7 +2527,7 @@ sis3820 cget <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>adc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>adc</refname>
@@ -2525,7 +2741,7 @@ adc cget <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>v830</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>v830</refname>
@@ -2663,7 +2879,7 @@ v830 cget  <replaceable>name ?option?</replaceable>
 <refentry id='mvlc3.caenchain'>
     <refmeta>
         <refentrytitle id='mvlc3.caenchain.title'>caenchain</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>caenchain</refname>
@@ -2737,7 +2953,7 @@ stack create event -trigger nim1 -modules [list chain]
 <refentry>
     <refmeta>
         <refentrytitle>delay</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>delay</refname>
@@ -2766,7 +2982,7 @@ delay cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>madc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>madc</refname>
@@ -3045,7 +3261,7 @@ madc cget  <replaceable>name ?option?</replaceable>
 <refentry id='mvlc.madcchain'>
     <refmeta>
         <refentrytitle id='mvlc.madcchain.title'>madcchain</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>madcchain</refname>
@@ -3145,7 +3361,7 @@ stack create event -trigger nim1 -modules [list chain ...]
 <refentry>
     <refmeta>
         <refentrytitle>madcscaler</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>madcscaler</refname>
@@ -3205,7 +3421,7 @@ stack create scalers -trigger scaler -period 2 -modules [list adcscler qdcscaler
 <refentry>
     <refmeta>
         <refentrytitle>marker</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>marker</refname>
@@ -3232,7 +3448,7 @@ marker cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>mdpp16qdc, mdpp32qdc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>mdpp16qdc, meqq32qdc</refname>
@@ -3638,7 +3854,7 @@ mdpp32qdc cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>mdpp32scp</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>mdpp32scp</refname>
@@ -4011,7 +4227,7 @@ mdpp32scp cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>mqdc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>mqdc</refname>
@@ -4420,7 +4636,7 @@ mqdc cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>mtdc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>mtdc</refname>
@@ -4829,7 +5045,7 @@ mtdc cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>hytec</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>hytec</refname>
@@ -4954,10 +5170,10 @@ hytec cget  <replaceable>name ?option?</replaceable>
     </refsect1>
     
 </refentry>
-<refentry>
+<refentry id='mvlc3.stackcommand'>
     <refmeta>
-        <refentrytitle>stack</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <refentrytitle id='mvlc3.stackcommand.title'>stack</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>stack</refname>
@@ -5096,7 +5312,7 @@ stack create scaler -trigger scaler -modules [ list scaler1 scaler2 scaler3]
 <refentry>
     <refmeta>
         <refentrytitle>v1495sc</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>v1495sc</refname>
@@ -5219,7 +5435,7 @@ v1495sc cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>v1729a</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>v1729a</refname>
@@ -5433,7 +5649,7 @@ v1729a cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>tdc1x90</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>tdc1x90</refname>
@@ -5801,7 +6017,7 @@ tdc1x90 cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>v977</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>v977</refname>
@@ -5904,7 +6120,7 @@ v977 cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>XLMTimestamp</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>XLMTimestamp</refname>
@@ -5962,7 +6178,7 @@ XLMTimestamp cget  <replaceable>name ?option?</replaceable>
 <refentry>
     <refmeta>
         <refentrytitle>ACAENV1290</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ACAENV1290</refname>
@@ -6027,7 +6243,7 @@ addtcldriver create <replaceable>stack-name</replaceable> -ensemble <replaceable
 <refentry>
     <refmeta>
         <refentrytitle>ACAENV795</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ACAENV785</refname>
@@ -6060,7 +6276,7 @@ addtcldriver create <replaceable>device-stackname</replaceable> -ensemble <repla
 <refentry>
     <refmeta>
         <refentrytitle>ACrdcXLM72</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ACrdcXLM72</refname>
@@ -6174,7 +6390,7 @@ addtcldriver create <replaceable>dev-stacknaame</replaceable> -ensemble <replace
 <refentry>
     <refmeta>
         <refentrytitle>AGD16XLM72</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>AGD16XLM72</refname>
@@ -6277,7 +6493,7 @@ addtcldriver create <replaceable>stack-devname</replaceable> -ensemble <replacea
 <refentry>
     <refmeta>
         <refentrytitle>ALevel3XLM72</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ALevel3XLM72</refname>
@@ -6312,7 +6528,7 @@ addtcldriver create <replaceable>stack-name</replaceable>  -ensemble <replaceabl
 <refentry>
     <refmeta>
         <refentrytitle>AMesytecMADC32</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>AMesytecMADC32</refname>
@@ -6343,7 +6559,7 @@ addtcldriver create <replaceable>stack-name</replaceable>  -ensemble <replaceabl
 <refentry>
     <refmeta>
         <refentrytitle>APpacXLM72</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>APpacXLM72</refname>
@@ -6437,7 +6653,7 @@ addtcldriver create <replaceable>stack-name</replaceable> -ensemble <replaceable
 <refentry>
     <refmeta>
         <refentrytitle>ATimeStampXLM72</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>ATimeStampXLM72</refname>
@@ -6464,7 +6680,7 @@ addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>dev-na
 <refentry id='mvlc.sis3300'>
     <refmeta>
         <refentrytitle id='mvlc.sis3300.title'>sis3300</refentrytitle>
-        <manvolnum>3mvlc</manvolnum>
+        <manvolnum>3mvlcgen</manvolnum>
     </refmeta>
     <refnamediv>
         <refname>sis3300</refname>
@@ -6681,4 +6897,1672 @@ addtcldriver <replaceable>stack-name</replaceable> -ensemble <replaceable>$drive
     </refsect1>
 </refentry>
 
-<!-- /manpage -->
+<!-- The C++ support classes  that are exported -->
+<refentry id='mvlc3.readouthardware'>
+    <refmeta>
+        <refentrytitle id='mvlc3.readouthardware.title'>CReadoutHardware</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>CReadoutHardware</refname>
+        <refpurpose>Base class for mvlcgenerate compiled code drivers</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;mvlc/CReadoutHardware.h&gt;
+class CReadoutHardware {
+public:
+    CReadoutHardware();
+    virtual ~CReadoutHardware();
+    void setConfiguration(XXUSB::CConfigurableObject* pConfig);
+    XXUSB::CConfigurableObject* getConfiguration() { return m_pConfiguration; }
+    
+    virtual void onAttach(XXUSB::CConfigurableObject&amp; configuration);
+    virtual void Initialize(CVMUSB&amp; controller);
+    virtual void addReadoutList(CVMUSBReadoutList&amp; list);
+    virtual void onEndRun(CVMUSB&amp; controller);
+        
+ };
+
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            Provides the base class which defines the interface
+            that must be implemented by code generators for devices
+            supported by the <command>mvlcgenerate</command>.
+        </para>
+        <para>
+            When writing a subclass to this class, it is important
+            to remember that the generator runs offline.  You have no actual
+            access to the MVLC when it is running.  While some of the objects
+            passed in to methods like <methodname>onAttach</methodname> look like
+            they are VMUSB based objects, they are not.  They have interfaces
+            like those objects to make porting existing VMUSB drivers less
+            difficult but they are fundmantally different.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <void /><methodname>setConfiguration</methodname>
+                            <methodparam>
+                                <type>XXUSB::CConfigurableObject*</type> <parameter>pConfig</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Provides an external method to set a new module
+                            stored configuration. 
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>XXUSB::CConfigurableObjectd*</type>
+                            <methodname>getConfiguration</methodname>
+                            <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Returns a pointer to the objects current configuration.
+                            Methods like <methodname>Initialize</methodname>
+                            will normally use this to obtain the configuration
+                            of the object so that they now how to formulate
+                            initialization operations.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <void /> <methodname>OnAttach</methodname>
+                            <methodparam>
+                                <type>XXUSB::CConfigurableObject&amp;</type>
+                                <parameter>config</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Your driver code will normally need to override this
+                            method.  It is called by the larger framework to provide
+                            a configuration object.  Your code should invoke
+                            <methodname>setConfiguration</methodname> to save the
+                            configuration in the the base class.  Your code should
+                            also define configuration options and their value types
+                            using the methods of <classname>XXUSB::ConfigurableObject</classname>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <void /> <methodname>Initialize</methodname>
+                            <methodparam>
+                                <type>CVMUSB&amp;</type> <parameter>controller</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            This method is called to generate initialization code
+                            that will be executed just before data taking starts.  
+                            <parameter>controller</parameter> is a version of 
+                            <classname>CVMUSB</classname> that memorizes the operations
+                            performed for later inclusion in to the yaml file
+                            created by <command>mvlcgenerate</command>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <void /> <methodname>addReadoutList</methodname>
+                            <methodparam>
+                                <type>CVMUSBReadoutList&amp;</type> <parameter>list</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Called by the framework to generate the list of operations that
+                            will read the supported module in response to an event trigger.
+                            The <parameter>list</parameter> is a <classname>CVMUSBReadoutList</classname>
+                            like object that memorizes VME operations in a form that can be easily
+                            emitted to the yaml configuration file that <command>mvlcgenerate</command>
+                            generates.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <void /> <methodname>onEndRun</methodname>
+                            <methodparam>
+                                <type>CVMUSB&amp;</type> <parameter>controller</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Called by the framework to emit any VME operations that
+                            might be needed to shut down the supported device as data taking
+                            ends.  The <parameter>controller</parameter> memorizes the operations
+                            emitted by this method in a form that can be easily emitted 
+                            by <command>mvlcgenerate</command> to the yaml configuration
+                            file it generates.S
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>SEE ALSO</title>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    <link linkend='mvlc3.cvmusb' endterm='mvlc3.cvmusb.title' />
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <link linkend='mvlc3.cvmusbreadoutlist' endterm='mvlc3.cvmusbreadoutlist.title' />
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <link linkend='mvlc3.devicecommand' endterm='mvlc3.devicecommand.title' />
+                </para>
+            </listitem>
+        </itemizedlist>
+    </refsect1>
+</refentry>
+<refentry id='mvlc3.devicecommand'>
+    <refmeta>
+        <refentrytitle id='mvlc3.devicecommand.title'>DeviceCommand</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>DeviceCommand</refname>
+        <refpurpose>Base class for mvlcgenerate device commands</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;mvlc/DeviceCommand.h&gt;
+
+class DeviceCommand : public CTCLObjectProcessor {
+
+public:
+    DeviceCommand(CTCLInterpreter&amp; interp, const char* cmd, TCLConfigParser&amp; parser);
+    virtual ~DeviceCommand();
+    virtual int operator()(CTCLInterpreter&amp; interp, std::vector&lt;CTCLObject&gt;&amp; objv);
+
+protected:
+    //
+    virtual CReadoutModule* createDevice(std::string name) = 0; 
+    TCLConfigParser&amp; getParser() {return m_parser; }
+
+};
+
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            <classname>DeviceCommand</classname> provides an abstract base
+            class that supports regisering the command to support creating, configuring
+            and introspecting a device instance that is supported via a
+            <classname>CReadoutHardware</classname> derived class.
+        </para>
+        <para>
+            The process of building a loadable extension to mvlcgenerate
+            is described in tutorial detail in 
+            <link linkend='mvlcchap.cppextensions' endterm ='mvlcchap.cppextensions.title' />.
+            It will not be described here.  
+        </para>
+        <para>
+            In summary, however, you define a derived class and implement
+            <methodname>createDevice</methodname> that encapsulates the configuation
+            and <classname>CReadoutHardware</classname> in a <classname>CReadoutModule</classname>
+            and register that derived class with the command name you want, in the 
+            interprter used  by mvlcgenerate to process configuration input files.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <constructorsynopsis>
+                            <methodname>DeviceCommand</methodname>
+                            <methodparam>
+                                <type>CTCLInterpeter&amp;</type> <parameter>interp</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>const char*</type> <parameter>cmd</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>TCLConfigParser&amp;</type> <parameter>parser</parameter>
+                            </methodparam>
+                        </constructorsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            The contructor is invoked to register the command.
+                            <parameter>interp</parameter> is the interpreter on which
+                            the command will be registered.  <parameter>cmd</parameter>
+                            is the command command's verb name.  Finally,
+                            <command>parser</command> is the instance of the parser that
+                            will process the configuration file.  This value can be gotten
+                            via <methodname>TCLConfigParser::getInstance</methodname>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>CReadoutModule*</type> <methodname>createDevice</methodname>
+                            <methodparam>
+                                <type>std::string</type> <parameter>name</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            You will need to implement this method in your derived class.
+                            The example in 
+                            <link linkend='mvlcchap.cppextensions' endterm ='mvlcchap.cppextensions.title' />
+                            shows how to do this and what to put in your implementation.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>SEE ALSO</title>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    <link linkend='mvlc3.readouthardware' endterm='mvlc3.readouthardware.title' />
+                </para>
+            </listitem>
+            
+        </itemizedlist>
+    </refsect1>
+</refentry>
+<refentry id='mvlc3.creadoutmodule'>
+    <refmeta>   
+        <refentrytitle id='mvlc3.creadoutmodule.title'>CReadoutModule</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>CReadoutModule</refname>
+        <refpurpose>Encapsulate a code generator and its configuration.</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;CReadoutModule.h&gt;
+
+class CReadoutModule {
+
+public:
+    
+    CReadoutModule();
+    virtual ~CReadoutModule();   // Not willing yet to declare this as final.
+
+    CReadoutHardware* getDriver();
+    XXUSB::CConfigurableObject* getConfiguration();
+    void Attach(XXUSB::CConfigurableObject* config);
+    void SetDriver(CReadoutHardware* pDriver);
+    void Initialize(CVMUSB&amp; controller);
+    void addReadoutList(CVMUSBReadoutList&amp; list);
+    void onEndRun(CVMUSB&amp; controller);
+
+};
+
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRITION</title>
+        <para>
+            The <classname>CReadoutModule</classname> encapsulates a 
+            <classname>CReadoutHardware</classname> derived object along with
+            a <classname>XXUSB::CConfigurableObject</classname> that supplies
+            that readout driver's configuration.
+        </para>
+        <para>
+            A <classname>DeviceCommand</classname> derived object will normally
+            implement that object's <methodname>createDevice</methodname> to
+            instantiate a <classname>CReadoutModule</classname>, instantiate the
+            appropriate <classname>CReadoutHardware</classname> derived class and
+            use the <methodname>SetDriver</methodname> to store the driver in the
+            module, returning that object.
+        </para>
+        <para>
+            <classname>CReadoutHardware</classname> also is a facade in front of
+            the driver object providing all of code generating entries.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>CReadoutHardware*</type> <methodname>getDriver </methodname>
+                            <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Returns a pointer to the code generating driver encapsulated by
+                            the object.  Note that if <methodname>SetDriver</methodname>
+                            was not yet called, this will return a <literal>nullptr</literal>
+                            The <classname>CReadoutHardware</classname> retains ownership of the
+                            <classname>CReadoutHardware</classname> object.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>XXUSB::CConfigurableObject* </type> <methodname>getConfiguration </methodname>
+                            <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Returns a pointer to the configuration of the module.  If <methodname>Attach</methodname>
+                            has not been called this will return <literal>nullptr</literal>, however the 
+                            base class <classname>DeviceCommand</classname> handling of the <command>create</command>
+                            subcommand, creates a configuration and invokes <methodname>Attach</methodname> so in principle,
+                            if a module was created via the configuration script, this will never be the case except, within
+                            the <classname>DeviceCommand</classname>'s <methodname>createDevice</methodname> method.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void </type> <methodname>Attach </methodname>
+                            <methodparam>
+                                <type>XXUSB::CConfigurableObject*</type> <parameter>config</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Associates the configuration <parameter>config</parameter> with the object.
+                            Ownership of <parameter>config</parameter> passes to the <classname>CReadoutModule</classname>
+                            object.  Note that on destruction (or replacement), the cofiguration will be <literal>delete</literal>-d.
+                            This implies it must have been <literal>new</literal>-ed into existence.
+                        </para>
+                        <para>
+                            If <methodname>SetDevice</methodname> has been called with a non-null <classname>CReadoutHardware</classname>
+                            pointer, then that driver's <methodname>onAttach</methodname> is called to allow it to define its configuration
+                            options.  
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void </type> <methodname>SetDriver </methodname>
+                            <methodparam>
+                                <type>CReadoutHardware*</type> <parameter>pDriver</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Sets the module's driver.  The driver must have been dyanmically created with <literal>new</literal> as its ownership
+                            is passed into the module and <literal>delete</literal> will be used by the module when it is 
+                            destroyed or in the unlikely event <methodname>SetDriver</methodname> is called again to replace the
+                            existing driver code.
+                        </para>
+                        <para>
+                            If the module already h as a configuration, the driver's <methodname>onAttach</methodname>
+                            is invoked.   This is not the normal case. The normal case is that a device
+                            command's <command>create</command> subcommand gets a module with the driver set,
+                            creates an empty configuration and then uses <methodname>Attach</methodname> to 
+                            get the configuration's options created by the driver.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void </type> <methodname>Initialize </methodname>
+                            <methodparam>
+                                <type>CVMUSB&amp;</type> <parameter>controller</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            If the object has a driver and a configuration, the driver's
+                            <methodname>Initialize</methodname> is invoked
+                            to generate initializatio operations.  If not an
+                            <classname>std::logic_error</classname> is thrown indicating either mis-use
+                            of this method or an error in the generator framwork, which should invoke this.
+                        </para>
+                        <para>
+                            The <parameter>controller</parameter> provides a subset of the
+                            VMUSBReadout's <classname>CVMUSB</classname> operations, but memorizes those operations.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void </type> <methodname>addReadoutList </methodname>
+                            <methodparam>
+                                <type>CVMUSBReadoutList&amp;</type> <parameter>list</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            If the object has a configuration and a driver, the driver's
+                            <methodname>addReadoutList</methodname> is invoked to generate the operations
+                            needed to read the module.  Note that <parameter>list</parameter> is an
+                            object very much like the <classname>CVMUSBReadoutList</classname> that can 
+                            memorize opertions requested by <methodname>addReadoutList</methodname> to be
+                            put into the resulting configuration file.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void </type> <methodname>onEndRun </methodname>
+                            <methodparam>
+                                <type>CVMUSB&amp;</type> <parameter>controller</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Called by the framework to generate end of run shutdown code.  If the object
+                            has a driver and a configuration the driver's <methodname>onEndRun</methodname>
+                            method is called.  <parameter>controller</parameter> is an object the memorizes
+                            the operations the driver requests so that they can be put into the appropriate
+                            part of the generated configuration file.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+<refentry id='mvlc3.cvmusb'>
+    <refmeta>
+        <refentrytitle id='mvlc3.cvmusb.title'>CVMUSB</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>CVMUSB</refname>
+        <refpurpose>Standin class for VMUSBReadout's CVMUSB class</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;CVMUSB.h&gt;
+
+class CVMUSB {
+public:
+
+    virtual int vmeWrite32(uint32_t address, uint8_t aModifier, uint32_t data);
+    virtual int vmeWrite16(uint32_t address, uint8_t aModifier, uint16_t data);
+    virtual int vmeBlockWrite32(uint32_t base, uint32_t aModifier, uint32_t* pData, size_t nTransfers);
+    virtual void delay(uint32_t amount);
+    virtual void loopUntil32(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value);
+    virtual void loopUntil16(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value);
+
+    std::vector&lt;std::string&gt; getRecordedOperations();
+    void clearRecordedOperations();
+
+    virtual int executeList(CVMUSBReadoutList&amp; list, void* pReadBuffer, size_t readBufferSize, size_t* bytesRead);
+    std::vector&lt;uint8_t&lt; executeList(CVMUSBReadoutList&amp; list, int maxBytes);
+};
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This class implements a subset of the VMUSBReaodut's <classname>CVMUSB</classname>  Since the
+            class is used in the context of an offline translator from VMUSBReadout configuration files
+            to fribdaq-readout yaml configuration files, reads are not supported.  The 
+            operations requested of a <classname>CVMUSB</classname> are memorized and, later dumped into the
+            appropriate segments of the final configuration file.
+        </para>
+        <para>
+            Remembering that you are not connected to the hardware is an important part of
+            porting VMUSBReadout drivers to mvlc_generate code generators.  Compilation will detect and
+            flag as errors attempts to read the hardware, however a more subtle issue is that many
+            VMUSBReadout drivers implement delays as calls to either
+            <literal>sleep(3)</literal> or <literal>usleep(3)</literal>.  This will not have the desired effect.
+            Instead of a delay in, e.g. the initialization of the device, mvlc_generate will delay as it is tranlating
+            the configuration file.  Use the <methodname>delay</methodname> of this
+            <classname>CVMUSB</classname> class instead.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type> <methodname>vmeWrite32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>aModifier</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>data</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Stores a 32 bit wide write operation of <parameter>data</parameter>
+                            to the <parameter>address</parameter> in the address space specified by
+                            <parameter>aModifier</parameter>.  Remember, the operation is not actually
+                            done when this method is called, it is later put into a list of operations
+                            the readout will perform when it's supposed to.  This is your last warning.
+                        </para>
+                        <para>
+                            On success, 0 is returned. Failure is not possible in the base class, however
+                            it is flagged by a return value of -1 with a meaningful value of <varname>errno</varname>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type> <methodname>vmeWrite16</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>aModifier</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint16_t</type> <parameter>data</parameter>
+                            </methodparam>
+
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Same as <methodname>vmeWrite32</methodname>, however <parameter>data</parameter>
+                            and the actual transfer are 16 bits wide.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type> <methodname>vmeBlockWrite32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>base</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_5</type> <parameter>aModifier</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t*</type> <parameter>pData</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t</type> <parameter>nTransfers</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Transfers a block of <parameter>nTransfers</parameter>
+                            consecutive <type>uint32_t</type> values from 
+                            <parameter>pData</parameter> to the block of  VME
+                            address space specified by <parameter>base</parameter> in the
+                            address space specifiec by <parameter>aModifier</parameter>
+                        </para>
+                        <para>
+                            Note that as the MVLC does not have a block write operation,
+                            this just generates several equivalent calls to <methodname>vmeWrite32</methodname>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>delay</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>amount</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Implemewnts a delay that will occur at this point in the operation
+                            list that is being generated.  <parameter>amount</parameter> is the
+                            length of the delay in 200ns units.  These units are chosen to be
+                            compatible with the VMUBSReadout.   The actual underlying units are
+                            62.5ns and a sufficient number of 62.5ns periods will be generated to delay
+                            for at least the requested time.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>loopUntil32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter >amod </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>value</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            In VMUSBReadout, one could wait for a condition in board by polling it.
+                            This can't be done directly with the generator's off line operation.
+                            The MVLC, however does have sufficient richness in its operation set
+                            to do this autonomously.
+                        </para>
+                        <para>
+                            The value from the read specified by <parameter>address</parameter> and
+                            <parameter>amod</parameter> is repeated until, when bitwise anded with
+                            <parameter>mask</parameter> the resulting value is equal to <parameter>value</parameter>.
+                            This provides the ability to wait until a bit field within a devide has
+                            reached a specified value.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>loopUntil16</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter >amod </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>value</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Same as <methodname>loopUntil32</methodname>  but the read performed is only
+                            16 bits wide.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>std::vector&lt;std::string&gt; </type> <methodname>getRecordedOperations</methodname>
+                            <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Returns the list of memorized operations in a form that allows the operations
+                            to be placed into the Yaml configuration file.  Note that this is normally called by
+                            the mvlc_generate framework and you won't need to call it in your code.
+                        </para>
+                        <para>
+                            This method is non-destructive.  That is the list of operations is not modified.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>clearRecordedOperations</methodname>
+                            <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Clears the list of saved operations.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>int</type> <methodname>executeList</methodname>
+                            <methodparam>
+                                <type>CVMUSBReadoutList&amp;</type> <parameter>list</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>void*</type> <parameter>pReadBuffer</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t</type> <parameter>readBufferSize</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t*</type> <parameter>bytesRead</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            The VMUSB can operate on lists of operations.  These are normally
+                            organized in a <classname>CVMUSBReadoutList</classname> object and,
+                            during initialization and end run, executed in a <classname>CVMUSB</classname>
+                            object.  In our case, <methodname>executeList</methodname> just
+                            appends the operations in <parameter>list</parameter> to the list of operations
+                            being maintained by the <classname>CVMUSB</classname> object.
+                        </para>
+                        <para>
+                            Since no reads can be done, the remainig parameters, which have to do with
+                            providing a buffer for the results of read operations and its size are not
+                            important since <parameter>pReadBuffer</parameter> will never be stored to.
+                            <parameter>bytesRead</parameter> for consistency, however, will always have a
+                            zero stored in it.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>std::vector&lt;uint8_t&gt;</type> <methodname>executeList</methodname>
+                            <methodparam>
+                                <type>CVMUSBReadoutList&amp;</type> <parameter>list</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>int</type> <parameter>maxBytes</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            With the VMUSB this was a simplified version of <methodname>executeList</methodname>
+                            In fact what this method does is append the <parameter>list</parameter>
+                            to the list of operations memorized by the <classname>CVMUBS</classname> object.
+                            It returns an empty vector as reads are not done.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>SEE ALSO</title>
+        <para>
+            <link linkend='mvlc3.cvmusbreadoutlist' endterm='mvlc3.cvmusbreadoutlist.title' />
+        </para>
+    </refsect1>
+</refentry>
+<refentry id='mvlc3.cvmusbreadoutlist'>
+    <refmeta>
+        <refentrytitle id='mvlc3.cvmusbreadoutlist.title'> CVMUSBReadoutList</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>CVMUSBReadoutList</refname>
+        <refpurpose>Stand in for VMUSBReadout's CVMUSBReadoutList</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;mvlc/CVMUSBReadoutList.h&gt;
+
+class CVMUSBReadoutList {
+public:
+    CVMUSBReadoutList();
+    virtual ~CVMUSBReadoutList();     // just in case we derive.
+   
+    virtual void addWrite32(uint32_t address, uint8_t amod, uint32_t datum);
+    virtual void addWrite16(uint32_t address, uint8_t amod, uint16_t datum);
+    virtual void addBlockWrite32(uint32_t dest, uint8_t amod, const void* pData, size_t nLongs);
+
+    virtual void addRead32(uint32_t address, uint8_t amod);
+    virtual void addRead16(uint32_t address, uint8_t amod);
+
+    virtual void addBlockRead32(uint32_t baseAddress, uint8_t amod, size_t transfers);
+    virtual void addFifoRead32(uint32_t  baseAddress, uint8_t amod, size_t transfers);
+
+    
+
+    virtual void addBlockCountRead16(uint32_t address, uint32_t mask, uint8_t amod);
+    virtual void addBlockCountRead32(uint32_t address, uint32_t mask, uint8_t amod);
+
+    virtual void addMaskedCountBlockRead32(uint32_t address, uint8_t amod);
+    virtual void addMaskedCountFifoRead32(uint32_t address, uint8_t amod);
+
+    virtual void addDelay(uint32_t clocks);
+    virtual void addMarker(uint32_t value);
+
+
+    virtual void addLoopUntil32(uint32_t address, uint8_t amod, uint32_t mask, uint32_t value);
+    virtual void addLoopUntil16(uint32_t addresss, uint8_t amod, uint32_t mask, uint32_t value);
+
+    std::vector&lt;std::string&gt; dumpForMvlc();      // Return the operations list.
+    void clear();                               // clear the list.
+    void appendToStack(CVMUSBReadoutList&amp; other); // Add out list to another list.
+
+public:
+
+    static const uint8_t a32UserData  ;
+    static const uint8_t a32UserProgram  ;
+    static const uint8_t a32UserBlock ;
+
+    static const uint8_t a32PrivData ;
+    static const uint8_t a32PrivProgram;
+    static const uint8_t a32PrivBlock;
+
+    static const uint8_t a16User ;
+    static const uint8_t a16Priv;
+
+    static const uint8_t a24UserData;
+    static const uint8_t a24UserProgram;
+    static const uint8_t a24UserBlock;
+    
+    static const uint8_t a24PrivData;
+    static const uint8_t a24PrivProgram ;
+    static const uint8_t a24PrivBlock ;
+};
+
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The code drivers (<classname>CReadoutHardware</classname>) <methodname>addReadoutList</methodname>
+            add operations needed to perform the device readout. In order to ease the porting
+            of VMUSBReadout device driver modules to translator code generators. This provides
+            a <classname>CVMUSBReadoutList</classname> that is closely compatible with the class with the
+            same name defined in the VMUSBReadout framework.
+        </para>
+        <para>
+            This class, however saves the operations in a form that allows them to be dumped into 
+            the yaml configuration file <classname>mvlcgenerate</classname> writes.
+        </para>
+        <para>
+            These lists can also be created during code generation for initialization and then 
+            when <classname>CVMUSB</classname>'s <methodname>executeList</methodname> method is executed,
+            the  operations saved by this list can be appended to the operations being saved by that object.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type> void </type> <methodname>addWrite32</methodname>
+                            <methodparam>
+                                <type>uint32_t  </type> <parameter>address </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>datum</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a 32 bit write of <parameter>datum</parameter> to the address specified
+                            by <parameter>address</parameter> and address modifier specified by
+                            <parameter>amod</parameter>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type> void </type> <methodname>addWrite16</methodname>
+                            <methodparam>
+                                <type>uint32_t  </type> <parameter>address </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint16_t</type> <parameter>datum</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a 16 bit write of <parameter>datum</parameter> to the address specified
+                            by <parameter>address</parameter> and address modifier specified by
+                            <parameter>amod</parameter>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void </type> <methodname>addBlockWrite32</methodname>
+                            <methodparam>
+                                <type>uint32_t </type> <parameter> dest</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>const void*</type> <parameter>pData</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t</type> <parameter>transfers</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+        
+                    </term>
+                    <listitem>
+                        <para>
+                            Stores a block transfer in the list.  The data are gotten from 
+                            <parameter>transfers</parameter> <type>uint32_t</type> 
+                            words pointed to by <parameter>pData</parameter>  When The
+                            transfer is executed, the destination base address are defined
+                            by <parameter>dest</parameter> with the address space selected by
+                            <parameter>amod</parameter>
+                        </para>
+                        <para>
+                            Note that the data are copied from <parameter>pData</parameter>
+                            into the list
+                            when this is called
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void </type> <methodname>addBlockRead32</methodname>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>baseAddress </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t</type> <parameter>transfers</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a 32 bit wide block transfer to the list. <parameter>transfers</parameter>
+                            transfers will be transferred starting from the <parameter>baseAddress</parameter>
+                            in the address spacde <parameter>amod</parameter>. Data from the block read,
+                            goes into the event.  It is not legal to use this in a list that is executed
+                            via <classname>CVMUSB</classname>::<methodname>executeList</methodname>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type> void</type> <methodname>addFifoRead32</methodname>
+                            <methodparam>
+                                <type>uint32_t </type> <parameter>baseAddress </parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>size_t</type> <parameter>transfers</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Same as <methodname>addBlockRead32</methodname> but all reads
+                            are done from the same address.  That address typically is a FIFO buffer.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addBlockCountRead16</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            The interface supports block reads whose size is given by some value
+                            read from the VME.  This is used when the module might produce a variable
+                            length event but supplies a register that describes how much data has been
+                            acquired. 
+                        </para>
+                        <para>
+                            Variable length read require two stack operations.  The first,
+                            a <methodname>addBlockCountReadxx</methodname> fetches the transfer count,
+                            while the second a <methodname>addMaskedCountBlockRead32</methodname>
+                            or <methodname>addMaskedCountFifoRead</methodname> does the actual transfer.
+                        </para>
+                        <para>
+                            This method extracts the transfer count for a subsequent masked count operation.
+                            The read of the register containing the counf field is a 16 bit read from
+                            <parameter>address</parameter> in the address space specified by <parameter>amod</parameter>.
+                            The field containing the count is assumed to be a contigous set of bits in the
+                            field specified by the <parameter>mask</parameter>.
+                        </para>
+                        <para>
+                            Suppose, for example, the <parameter>mask</parameter> is <literal>0x0f00</literal>
+                            and the value read
+                            was <literal>0xabcd</literal>  The subsequent masked block read will 
+                            hvae a transfer count of
+                            <literal>0xb</literal> (or 11) 32 bit items.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addBlockCountRead32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            This method is the same as <methodname>addBlockCountRead16</methodname>, but the
+                            read performed is 32 bits wide.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addMaskedCountBlockRead32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Performs a block transfer with a count that was extracted by the most
+                            recent <methodname>addBlockCountRead16</methodname> or 
+                            <methodname>addBlockCountRead32</methodname> operation.  The transfer begins
+                            at <parameter>address</parameter> in the address space specified by <parameter>amod</parameter>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addMaskedCountFifoRead32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Performs a block transfer with a count that was extracted by the most
+                            recent <methodname>addBlockCountRead16</methodname> or 
+                            <methodname>addBlockCountRead32</methodname> operation. All transfers are from
+                            <parameter>address</parameter> in the address space specified by <parameter>amod</parameter>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addDelay</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>clocks</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a delay to the stack.  In order to be compatible with the VMUSBReadout delay operation,
+                            the length of the dleay is at least <parameter>clocks</parameter>*200ns.  Note that the
+                            actual delay may be slightly longer because the MVLC delay operation is in units of
+                            62.5ns, and we delay for at least <parameter>clocks</parameter>*200ns.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><methodsynopsis>
+                            <type>virtual void</type> <methodname>addMarker</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>value</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Causes a 32 bit literal value to be stored in the event.  Note that VMUSB markers
+                            are 16 bit wide.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addLoopUntil32</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>value</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Provides a method to delay until some specific condition exists in a device.
+                            The stack element does a 32 bit read from 
+                            <parameter>address</parameter> in the address space specified by
+                            <parameter>amod</parameter> until the value read bitwise anded with the 
+                            <parameter>mask</parameter> is equal to the <parameter>value</parameter>.
+                        </para>
+                        <para>
+                            Note that unlike the <methodname>adBlockCountReadxx</methodname> methods,
+                            No shifting is done.  The read, after being anded with the <parameter>value</parameter>
+                            is directly compared with the <parameter>value</parameter>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addLoopUntil16</methodname>
+                            <methodparam>
+                                <type>uint32_t</type> <parameter>address</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint8_t</type> <parameter>amod</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>mask</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type> uint32_t</type> <parameter>value</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Same as <methodname>addLoopUntil32</methodname> but the reads are only 16 bits wide.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>std::vector&lt;std::string&gt;</type> <methodname>dumpForMvlc</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Retuns the contenst of the stack in a form that is recognizable in MVLC configuration files.
+                            This is intended for use by the generator framework and unit tests.  This dump is non-destructive.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><methodsynopsis>
+                            <type>void</type> <methodname>clear</methodname> <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Clears the stack contents.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>appendToStack</methodname>
+                            <methodparam>
+                                <type>CVMUSBReadoutList&amp;</type> <parameter>other</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Intended to be used by <classname>CVMUSB</classname> when it performs an
+                            <methodname>executeList</methodname> operation.  This method
+                            appends the contents of <emphasis>this</emphasis> stack to <parameter>other</parameter>.
+                            The append is non-desctructive.  If you want to use this stack again  you should most likely
+                            invoke <methodname>clear</methodname> first.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>ADDRESS MODIFIER DEFINITIONS</title>
+        <para>
+            In addition to its methods, the class defines a set of static <type>uint8_t</type> public data
+            that provide symbolic values for VME bus address modifiers.  These values should be self-explanatory.
+        </para>
+    </refsect1>
+</refentry>
+<refentry  id='mvlc3.tclconfigparser'>
+    <refmeta>
+        <refentrytitle id='mvlc3.tclconfigparser.title'>TCLConfigParser</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>TCLConfigParser</refname>
+        <refpurpose>Base class for mvlcgenerate configuration parser</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;mvlc/TCLConfigParser.h&gt;
+
+class TCLConfigParser {
+public:
+    TCLConfigParser(const std::string&amp; infile);
+    
+    CStack* getEventStack() ;
+    CStack* getScalerStack();
+
+    virtual void initialize();
+    virtual void operator()();                         
+    CTCLInterpreter* getInterpreter();
+    CReadoutModule* findDevice(std::string devname);                   
+    virtual void addDevice(std::string devname, CReadoutModule* driver);
+    virtual void addExtensions();
+    virtual void addExtension(CTCLObjectProcessor&amp; cmdobj);       
+    void addExtension(CTCLObjectProcessor* pCmd) 
+    static TCLConfigParser* getInstance();
+
+};
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This is the base class for the translator parser.  The subclass <classname>MVLCConfigParser</classname>
+            does al lthe real work with this class just providing the framework on which devices, the event
+            and scaler stack can be hung.
+        </para>
+        <para>
+            In order to handle a virtual initialization of the extensions, a two phase initialization
+            is required. First the specific subclass must be instantiated.  Next <methodname>initialize</methodname>
+            must be called.  This is a virtual method that will do any type specific initialization including, 
+            but not limited to registering extensions.  Finally, when ready to interpret the configuration
+            script to build the final configuration, <methodname>operator()</methodname> should be 
+            called to process the configuration file into a configuration.  The final step, would naturally
+            be using that configuration to generate the final configuration file.
+        </para>
+        <para>
+            Note that this method is an irregular singleton in that it has a public constructor that
+            prevents multiple invocations and a <methodname>getInstance</methodname> that returns
+            a pointer to the singleton object if it has been constructed.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <constructorsynopsis>
+                            <methodname>TCLConfigParser</methodname>
+                            <methodparam>
+                                <type>const std::string&amp;</type> <parameter>infile</parameter>
+                            </methodparam>
+                        </constructorsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            The constructor requires a single parameter; the path to the file that
+                            is interpreted by <methodname>operator()</methodname>.  Note that construction
+                            also instantiates a <classname>CTCLInterpreter</classname> object.
+                            The <parameter>infile</parameter> is saved in member data and is the name
+                            of the configuration file that <methodname>operator()</methodname> will intepret.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type> CStack*</type> <methodname>getEventStack</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            It makes sense to call this method, only after <methodname>operator()</methodname>
+                            has processed the configuration file.  If an event stack, has been defined
+                            by the configuration, this method returns a pointer to it.  If not, 
+                            <literal>nullptr</literal> is returned.  <literal>nullptr</literal> will, naturally,
+                            also be returned if the configuration file has not yet been processed.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>CStack*</type> <methodname>getScalerStack</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            It makes sense to call this method, only after <methodname>operator()</methodname>
+                            has processed the configuration file.  If an scaler stack, has been defined
+                            by the configuration, this method returns a pointer to it.  If not, 
+                            <literal>nullptr</literal> is returned.  <literal>nullptr</literal> will, naturally,
+                            also be returned if the configuration file has not yet been processed.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>initialize</methodname> <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            This method invokes <methodname>addExtensions</methodname> to extend the
+                            Tcl interpreter used to interpret the configuration script.
+                            Since this operation is virtual it cannot be invoked from the constructor.
+                            This is is because constructor code ignores the polymophism of virtual 
+                            methods.  This is why the two phase construction described in 
+                            <literal>DESCRIPTION</literal> is needed to allow subclasses to do their
+                            own type specific initialization.
+                        </para>
+                        <para>
+                            Subclasses  typically only need to modify <methodname>addExtensions</methodname>
+                            to add the set of domain specific verbs the interpreter will understand.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>operator()</methodname> <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            This method interprets the configuration file tha was passed in to the constructor.
+                            Once the configuration has been built from the file  the code generator can
+                            query it to generate appropriate operations.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>CTCLInterpreter*</type> <methodname> getInterpreter</methodname> <void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Returns a pointer to the interpreter object that will be used to interpret the
+                            configuration file. 
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>CReadoutModule*</type> <methodname>findDevice</methodname>
+                            <methodparam>
+                                <type>std::string</type> <parameter>devname</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            It only makes sense to call this method after, or during configuration.
+                            It returns a pointer to the <classname>CReadoutModule</classname> of the
+                            device named <parameter>devname</parameter>. One use during configuration is
+                            for devices such as <link linkend='mvlc3.caenchain' endterm='mvlc3.caenchain.title' />,
+                            or 
+                            <link linkend='mvlc3.stackcommand' endterm='mvlc3.stackcommand.title' />
+                            to validate the contents of
+                            their list of devices they control.  
+                            <link linkend='mvlc3.devicecommand' endterm='mvlc3.devicecommand.title' /> objects
+                            will also use this to ensure they are not creating devices with dupliate names
+                            and to lookup existing devices to configure or introspect their configurations.
+                        </para>
+                        <para>
+                            If there is no match to the module name in the set of modules defined when 
+                            <methodname>findDevice</methodname> is called, a <literal>nullptr</literal> is returned.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addDevice</methodname>
+                            <methodparam>
+                                <type>std::string</type> <parameter>devname</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type>CReadoutModule*</type> <parameter> driver</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a new named device driver instance wrapped together with its configuration
+                            to the configuration being buit up.
+                        </para>
+                        <para>
+                            This is normally called from a 
+                            <link linkend='mvlc3.devicecommand' endterm='mvlc3.devicecommand.title' />
+                            when it creates a new 
+                            <link linkend='mvlc3.creadoutmodule' endterm='mvlc3.creadoutmodule.title' />
+                            to enter that device in the configuration.
+                            <parameter>devname</parameter> is the name assigned to the device
+                            in the <command>create</command> subcommand while <parameter>driver</parameter>
+                            is a pointer to the
+                             <link linkend='mvlc3.creadoutmodule' endterm='mvlc3.creadoutmodule.title' />
+                            that subcommand created.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addExtensions</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            This is an no-op method.  It is not pure virtual to facilitate unit testing.
+                            Normally derived class override this method and provide code to extend the
+                            base Tcl intepreter that will be used to interpret the configuration file.
+                        </para>
+                        <para>
+                            This can be thought of as a strategy method that is called by
+                            <methodname>initialize</methodname>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addExtension</methodname>
+                            <methodparam>
+                                <type>CTCLObjectProcessor&amp;</type> <parameter>cmdobj</parameter>
+                            </methodparam> 
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Adds a command extension to the interpreter.  The configuration maintains a List
+                            of command objects added.  <parameter>cmdobj</parameter> must be 
+                            dynamically created via <literal>new</literal>. Ownership passes into our object and
+                            the object <literal>delete</literal>'s all extensions added in this way
+                             when it is destroyed.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>void</type> <methodname>addExtension</methodname>
+                            <methodparam>
+                                <type>CTCLObjectProcessor*</type> <parameter>pCmd</parameter>
+                            </methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Invokes the previous overload of <methodname>addExtension</methodname> with 
+                            the dereferences <parameter>pCmd</parameter>.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>static TCLConfigParser*</type> <methodname>getInstance</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            As described, this is an irregular singleton.  If an instance has been
+                            created, this will return a pointer to that instance.  If not, 
+                            <literal>nullptr</literal> is returned. The irregularity stems from the need
+                            to pass a connfiguration file name into the constructor of the instance.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+<refentry id='mvlc3.mvlcconfigparser'>
+    <refmeta>
+        <refentrytitle id='mvlc3.mvlcconfigparser.title'>MVLCCOnfigParser</refentrytitle>
+        <manvolnum>3mvlcgen</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>MVLCConfigParser</refname>
+        <refpurpose>Provide MVLC specific <classname>TCLConfigParser</classname> class</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+#include &lt;mvlc/MVLCConfigParser.h&gt;
+class MVLCConfigParser : public TCLConfigParser {
+public:
+    MVLCConfigParser(const std::string&amp; script);
+    virtual void addExtensions();
+
+    static MVLCConfigParser* getInstance();
+};
+
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This is the specialization of
+            <link linkend='mvlc3.tclconfigparser' endterm='mvlc3.tclconfigparser.title' />
+            that defines the Tcl extensions needed to parse the verbs that make up the 
+            configuration file froim the VMUSBReadout.  Once parsed the configuration
+            can be translated into the appropriate yaml file.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHOD</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <constructorsynopsis>
+                            <methodname>MVLCConfigParser</methodname>
+                            <methodparam>
+                                <type>const std::string&amp;</type> <parameter>script</parameter>
+                            </methodparam>
+                        </constructorsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Constructor.  The <parameter>script</parameter> is the path to the
+                            script configuration file for VMUSBReadout that will be interpreted and,
+                            ultimately, translated
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>virtual void</type> <methodname>addExtensions</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Provides the extensions to the Tcl intepreter that will interpret 
+                            the configuration script needed to do that interpretation.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        
+            <varlistentry>
+                    <term>
+                        <methodsynopsis>
+                            <type>static MVLCConfigParser*</type> <methodname>getInstance</methodname><void />
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Just as 
+                            <link linkend='mvlc3.tclconfigparser' endterm='mvlc3.tclconfigparser.title' />
+                            is a irregular singleton, so is <classname>MVLCConfigParser</classname>.
+                            This method really just invokes the 
+                            <classname>TCLConfigParser</classname>::<methodname>getInstance</methodname> casting
+                            to the proper type of pointer returned.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            
+        </variablelist>
+    </refsect1>
+</refentry>
+<!-- /manpage --> 
