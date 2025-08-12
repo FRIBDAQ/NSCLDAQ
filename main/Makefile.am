@@ -33,12 +33,18 @@ endif
 
 SRSDIR=srs
 
+# Rust tools:
+
+if BUILD_RUST_TOOLS
+	RUSTSUBDIRS=rust_tools
+endif
+
 
 SUBDIRS = base caenfw-common servers base/dataflow \
 	daq utilities $(DOCDIR) \
 	sbs usb/common/configurableobject $(EPICSDIRS) $(USBDIR) $(DDASDIR) $(CAENSUPPORTDIRS) \
 	$(CAENNGDIR) $(SRSDIR) $(MVLCGENDIR) \
-	examples
+	examples $(RUSTSUBDIRS)
 
 DIST_SUBDIRS = base caenfw-common servers base/dataflow daq utilities \
 	docbuild docconfig simplesetups sbs epics usb ddas \
