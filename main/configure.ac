@@ -484,14 +484,9 @@ AC_ARG_ENABLE([epics-tools],
 if test "$enable_epics_tools" = "yes"
 then
 	AX_EPICS
-	AM_CONDITIONAL([EPICS], [true])
-	AM_CONDITIONAL(BUILD_EPICS_TOOLS, [true])
-
-else
-	AM_CONDITIONAL([EPICS], [false])
-	AM_CONDITIONAL(BUILD_EPICS_TOOLS, [false])
 fi
-
+AM_CONDITIONAL(EPICS, test "x$enable_epics_tools" != "x")
+AM_CONDITIONAL(BUILD_EPICS_TOOLS, test "x$enable_epics_tools" != "x")
 
 #   Build the format libraries.
 #

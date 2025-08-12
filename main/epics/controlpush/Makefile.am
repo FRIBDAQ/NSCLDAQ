@@ -64,7 +64,7 @@ cmdline.c: options.ggo
 
 cmdline.h: cmdline.c
 
-EXTRA_DIST = options.ggo  Channels.dat  controlpush.xml
+
 
 
 noinst_PROGRAMS = unittests
@@ -87,3 +87,4 @@ clean-local:
 	rm -f cmdline.c rmcline.h
 
 endif
+EXTRA_DIST = options.ggo  Channels.dat  controlpush.xml
