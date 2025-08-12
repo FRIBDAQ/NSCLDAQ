@@ -26,13 +26,13 @@
 #  Maintain the variable below with the space separated names of the
 # subdirs containing rust packages in this tree of the repo.
 
-RUST_BUILTIN=
+RUST_BUILTIN=ring_monitor
 INSTALL_DIR=@bindir@/rust     # Segragate the rust bins..
 
 all-local:
 	for tool in @RUST_SUBDIRS@ ; do (cd $${tool}; @RUST_CARGO@ build --release); done
 	for tool in $(RUST_BUILTIN); do \
-		(cd @srcdir@/$$tool; @RUST_CARGO@ build --release --target-dir @builddir@/$$tool/target); \
+		(cd @srcdir@/$$tool; @RUST_CARGO@ build --release --target-dir @abs_builddir@/$$tool/target); \
 	done
 
 
