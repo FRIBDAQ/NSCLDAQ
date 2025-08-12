@@ -48,7 +48,7 @@ SUBDIRS = base caenfw-common servers base/dataflow \
 
 DIST_SUBDIRS = base caenfw-common servers base/dataflow daq utilities \
 	docbuild docconfig simplesetups sbs epics usb ddas \
-	caendigitizers examples caen-nextgen srs mvlc
+	caendigitizers examples caen-nextgen srs mvlc rust_tools
 
 INTROFIGURES = @srcdir@/figures/intro-data-flow-diagram.png \
 	@srcdir@/figures/intro-data-flow-diagram-diagnostics.png
