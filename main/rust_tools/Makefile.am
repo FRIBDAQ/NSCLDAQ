@@ -46,9 +46,19 @@ install-exec-local:
 	$(mkinstalldirs) $(INSTALL_DIR)
 	files=""; \
 	for tool in @RUST_SUBDIRS@; do \
-		executable=`cat $$tool/Cargo.toml | grep "name =" | cut -d= -f2|tr -d " \""`; \
+		executable=`cat @builddir@/$$tool/Cargo.toml | grep "name =" | cut -d= -f2|tr -d " \""`; \
 		executable="@builddir@/$$tool/target/release/$${executable}"; \
 		files="$${files} $${executable}";   \
 	done; \
 	$(INSTALL_PROGRAM) $${files} $(INSTALL_DIR)
+	file=""; \
+	for tool in $(RUST_BUILTIN) ; do \
+		executable=`cat @srcdir@/$$tool/Cargo.toml | grep "name =" | cut -d= -f2|tr -d " \""`; \
+		executable="@builddir@/$$tool/target/release/$${executable}"; \
+		files="$${files} $${executable}";   \
+	done; \
+	if test "x$${files}" != "x"; then \
+		$(INSTALL_PROGRAM) $${files} $(INSTALL_DIR); \
+	fi
+
 
