@@ -31,13 +31,13 @@ if MVLC_GENERATOR
   MVLCGENDIR=mvlc
 endif
 
+if BUILD_RUST_TOOLS
+RUSTSUBDIRS=rust_tools
+endif
+
+
 SRSDIR=srs
 
-# Rust tools:
-
-if BUILD_RUST_TOOLS
-	RUSTSUBDIRS=rust_tools
-endif
 
 
 SUBDIRS = base caenfw-common servers base/dataflow \

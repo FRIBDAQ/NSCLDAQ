@@ -760,7 +760,7 @@ then
 	# ~/.cargo/bin
 	#  Those are the things we support -- if neither exists,
 	#  the usr needs to install RUST; we won't do it for them.
-	AM_CONDITIONAL([BUILD_RUST_TOOLS], [true])
+
 	AC_MSG_CHECKING([Checking for Rust toolchain])
 	if test -x /usr/cargo/bin/cargo
 	then
@@ -799,11 +799,10 @@ then
 	done
 	AC_SUBST(RUST_SUBDIRS)
 
-else 
-	AM_CONDITIONAL([BUILD_RUST_TOOLS], [false])	
 fi
+AM_CONDITIONAL(BUILD_RUST_TOOLS, [test "x$enable_rust" = "xyes"])
 
-
+AC_MSG_NOTICE([RUST STuff done])
 #---------------------------------------------------------------------------
 # Generate the following from their .in's (note that Automake takes
 # *.am -> *.in.
@@ -813,7 +812,7 @@ fi
 # Sept 25, 2014
 
 AC_CONFIG_FILES([
-Makefile
+	Makefile
 		nscldaq
 		daqsetup.bash
 		base/pugi/Makefile
