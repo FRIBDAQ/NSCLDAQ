@@ -788,7 +788,7 @@ then
 	rust_repos="${rust_repos} https://github.com/FRIBDAQ/rust-ringmaster"
 	RUST_SUBDIRS=""
 
-	mkdir -p rust-tools
+	mkdir -p rust_tools
 	for repo in ${rust_repos}
 	do 
 		AC_MSG_NOTICE([Cloning rust tool from ${repo}])
