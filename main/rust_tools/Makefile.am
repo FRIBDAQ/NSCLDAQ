@@ -27,12 +27,28 @@
 # subdirs containing rust packages in this tree of the repo.
 
 RUST_BUILTIN=
+INSTALL_DIR=@bindir@/rust     # Segragate the rust bins..
 
 all-local:
 	for tool in @RUST_SUBDIRS@ ; do (cd $${tool}; @RUST_CARGO@ build --release); done
-	for tool in ${RUST_BUILTIN}; do \
-		(cd $$tool; @RUST_CARGO@ build --release --target-dir @builddir@/$$tool/target); \
+	for tool in $(RUST_BUILTIN); do \
+		(cd @srcdir@/$$tool; @RUST_CARGO@ build --release --target-dir @builddir@/$$tool/target); \
 	done
 
 
+#
+# Installing the packages is a matter of parsing the cargos to get the
+# list of files to install and then installing them.  See comments above about
+# how to parse Cargo.toml.
+#
+
 install-exec-local:
+	$(mkinstalldirs) $(INSTALL_DIR)
+	files=""; \
+	for tool in @RUST_SUBDIRS@; do \
+		executable=`cat $$tool/Cargo.toml | grep "name =" | cut -d= -f2|tr -d " \""`; \
+		executable="@builddir@/$$tool/target/release/$${executable}"; \
+		files="$${files} $${executable}";   \
+	done; \
+	$(INSTALL_PROGRAM) $${files} $(INSTALL_DIR)
+
