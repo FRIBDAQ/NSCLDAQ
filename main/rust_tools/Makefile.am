@@ -61,4 +61,7 @@ install-exec-local:
 		$(INSTALL_PROGRAM) $${files} $(INSTALL_DIR); \
 	fi
 
+# Finally, since the Rust built ins are not known to the
+# autotools directly, we need to include them in the tarball too:
 
+EXTRA_DIST=$(RUST_BUILTIN)
