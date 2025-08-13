@@ -1,3 +1,10 @@
+#  This package provides a ring buffer performance
+# monitor.  It is intended to be started at system start
+# time though it can be started manually.
+# It will advertise the service RING_MONITOR
+# With the port manager.  I've not decided if it'll
+# be a web server or if there will be a display client 
+# component (perhaps pyqt).  We'll see 
 [package]
 name = "ring_monitor"
 version = "0.1.0"

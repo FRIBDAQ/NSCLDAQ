@@ -485,8 +485,8 @@ if test "$enable_epics_tools" = "yes"
 then
 	AX_EPICS
 fi
-AM_CONDITIONAL(EPICS, test "x$enable_epics_tools" != "x")
-AM_CONDITIONAL(BUILD_EPICS_TOOLS, test "x$enable_epics_tools" != "x")
+AM_CONDITIONAL(EPICS, test "x$enable_epics_tools" = "xyes")
+AM_CONDITIONAL(BUILD_EPICS_TOOLS, test "x$enable_epics_tools" = "xyes")
 
 #   Build the format libraries.
 #
