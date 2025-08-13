@@ -484,14 +484,9 @@ AC_ARG_ENABLE([epics-tools],
 if test "$enable_epics_tools" = "yes"
 then
 	AX_EPICS
-	AM_CONDITIONAL([EPICS], [true])
-	AM_CONDITIONAL(BUILD_EPICS_TOOLS, [true])
-
-else
-	AM_CONDITIONAL([EPICS], [false])
-	AM_CONDITIONAL(BUILD_EPICS_TOOLS, [false])
 fi
-
+AM_CONDITIONAL(EPICS, test "x$enable_epics_tools" = "xyes")
+AM_CONDITIONAL(BUILD_EPICS_TOOLS, test "x$enable_epics_tools" = "xyes")
 
 #   Build the format libraries.
 #
@@ -747,6 +742,62 @@ AC_SUBST(THREADLD_FLAGS)
 
 AC_CONFIG_LINKS([utilities/filter/run-0000-00.evt:utilities/filter/run-0000-00.evt])
 
+#  Start support for integrating rust tools:
+
+AC_ARG_ENABLE([rust-tools],
+	AS_HELP_STRING([--enable-rust-tools], [Build RUST tools and toys]),
+	[enable_rust=$enableval], [enable_rust=no]
+)
+if test "x$enable_rust" = "xyes"
+then
+	# Figure out where the rust toolchains are. For FRIB containers,
+	# it's in /usr/cargo/bin  for user installs it may be in 
+	# ~/.cargo/bin
+	#  Those are the things we support -- if neither exists,
+	#  the usr needs to install RUST; we won't do it for them.
+
+	AC_MSG_CHECKING([Checking for Rust toolchain])
+	if test -x /usr/cargo/bin/cargo
+	then
+		RUST_TOOL_DIR=/usr/cargo/bin
+		BUILD_RUST_TOOLS=1
+	else 
+		if test -x ~/.cargo/bin/cargo
+		then
+			BUILD_RUST_TOOLS=1
+			RUST_TOOL_DIR=~/.cargo/bin
+		else
+			AC_MSG_ERROR([You need to install the rust toolchain to --enable-rust-tools see https://man7.org/linux/man-pages/man1/test.1.html])
+		fi
+	fi
+	RUST_CARGO="${RUST_TOOL_DIR}/cargo"
+	
+	AC_SUBST(RUST_TOOL_DIR)
+	AC_SUBST(RUST_CARGO)
+
+	#Incorporate the rust directory tree into builddir:
+	# The next symbol is a list of the 
+	# Git repositories to clone into rust_tools:
+	rust_repos="https://github.com/FRIBDAQ/rust-portman"
+	rust_repos="${rust_repos} https://github.com/FRIBDAQ/rust-ringtostdout"
+	rust_repos="${rust_repos} https://github.com/FRIBDAQ/rust-ringmaster"
+	RUST_SUBDIRS=""
+
+	mkdir -p rust_tools
+	for repo in ${rust_repos}
+	do 
+		AC_MSG_NOTICE([Cloning rust tool from ${repo}])
+		subdir=`basename ${repo}`
+		rm -rf rust_tools/${subdir}
+		(cd rust_tools; git clone  ${repo})
+		RUST_SUBDIRS="${RUST_SUBDIRS} ${subdir}"
+	done
+	AC_SUBST(RUST_SUBDIRS)
+
+fi
+AM_CONDITIONAL(BUILD_RUST_TOOLS, [test "x$enable_rust" = "xyes"])
+
+AC_MSG_NOTICE([RUST STuff done])
 #---------------------------------------------------------------------------
 # Generate the following from their .in's (note that Automake takes
 # *.am -> *.in.
@@ -756,7 +807,7 @@ AC_CONFIG_LINKS([utilities/filter/run-0000-00.evt:utilities/filter/run-0000-00.e
 # Sept 25, 2014
 
 AC_CONFIG_FILES([
-Makefile
+	Makefile
 		nscldaq
 		daqsetup.bash
 		base/pugi/Makefile
@@ -978,6 +1029,7 @@ Makefile
     srs/sorter/Makefile
 	mvlc/Makefile
     cookbooks/Makefile
+	rust_tools/Makefile
 ])
 
 AC_OUTPUT
