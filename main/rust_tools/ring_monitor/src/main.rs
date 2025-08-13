@@ -1,3 +1,11 @@
+
+use std::env;
+use std::process;
+use std::{thread, time};
+use std::io::{self, Write};
+use portman_client;
+
+const SERVICE_NAME : &str = "RING_MONITOR";
 ///  This program provides an FRIB/NSCLDAQ ringbuffer statistics
 ///  monitor.  Note that when run, it will run itself with an
 ///  added --server (portnum) option.  The spawned subprocess
@@ -19,14 +27,6 @@
 /// 
 ///
 ///
-use std::env;
-use std::process;
-use std::{thread, time};
-use std::io::{self, Write};
-use portman_client;
-
-const SERVICE_NAME : &str = "RING_MONITOR";
-
 fn main() {
     let executable = env::current_exe().unwrap();
     let executable : String = executable.to_str().unwrap().to_string();
@@ -37,9 +37,8 @@ fn main() {
     let args : Vec<String> = env::args().collect();
     if args.len() == 3 {
         if args[1] == "--server" {
-            println!("Running server on port {}", args[2]);
-            let sleep_time = time::Duration::from_secs(5);    // seconds to sleep:
-            thread::sleep(sleep_time);
+            let port = args[2].parse::<u16>().unwrap();
+            monitor(port);
             return;
         }
     }
@@ -72,16 +71,26 @@ fn main() {
         io::stdout().flush().unwrap();
     }
 }
-//
-// Called to see if our service is already advertised.
-// returns true if the service_name is already advertised by the port manager.
+///
+/// Called to see if our service is already advertised.
+/// returns true if the service_name is already advertised by the port manager.
 fn already_advertised(client : &mut portman_client::Client , service_name: &str) -> bool {
     let allocation = client.find_my_service(service_name).unwrap();  // Pointless if portman isn't running.
     return allocation.len() == 1;    
 }
-// Allocate my service.
-// panics on failure.
+/// Allocate my service.
+/// panics on failure.
 
 fn allocate_port(client: &mut portman_client::Client, service_name: &str) -> u16  {
     client.get(service_name).unwrap()
+}
+
+///
+/// This is the functino thats' run by child processe:
+/// 
+fn monitor(port : u16) {
+    println!("Running server on {}", port);
+    let sleep_time = time::Duration::from_secs(5);    // seconds to sleep:
+    thread::sleep(sleep_time);
+    return;
 }
