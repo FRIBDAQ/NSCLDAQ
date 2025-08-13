@@ -20,9 +20,35 @@
 ///
 ///
 use std::env;
-
+use std::process;
+use std::{thread, time};
+use std::io::{self, Write};
 fn main() {
     let executable = env::current_exe().unwrap();
     let executable : String = executable.to_str().unwrap().to_string();
-    println!("Hello, world! from {}", executable);
+    // Run ourself with the --server 12345 parameter. e.g...unless we
+    // have been run with the --server parameter.
+
+    let args : Vec<String> = env::args().collect();
+    if args.len() == 3 {
+        if args[1] == "--server" {
+            println!("Running server on port {}", args[2]);
+            let sleep_time = time::Duration::from_secs(5);    // seconds to sleep:
+            thread::sleep(sleep_time);
+            return;
+        }
+    }
+    // Loop on running ourselves until we exit with the --server option..
+
+    loop {
+        let output = process::Command::new(&executable)
+            .arg("--server").arg("1234")
+            .output()
+            .expect("Failed to respawn");
+        println!("Subprocess exited stdout: ");
+        io::stdout().write_all(&output.stdout).unwrap();
+        println!("\nStderr: ");
+        io::stdout().write_all(&output.stderr).unwrap();
+        io::stdout().flush().unwrap();
+    }
 }
