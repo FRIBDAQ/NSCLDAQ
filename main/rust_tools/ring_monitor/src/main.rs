@@ -23,9 +23,14 @@ use std::env;
 use std::process;
 use std::{thread, time};
 use std::io::{self, Write};
+use portman_client;
+
+const SERVICE_NAME : &str = "RING_MONITOR";
+
 fn main() {
     let executable = env::current_exe().unwrap();
     let executable : String = executable.to_str().unwrap().to_string();
+
     // Run ourself with the --server 12345 parameter. e.g...unless we
     // have been run with the --server parameter.
 
@@ -38,11 +43,26 @@ fn main() {
             return;
         }
     }
-    // Loop on running ourselves until we exit with the --server option..
+    // We are the parent... if there's already a service
+    // registered, we exit with a message.
+    // Otherwise we register our service
 
+    // Loop on running ourselves until we exit with the --server option..
+    
+    let mut pman = portman_client::Client::new(30000);      // port manager port hard  coded.
+    if already_advertised(&mut pman, SERVICE_NAME) {
+        eprintln!(
+            "I think I'm already running as someone is advertising the {} service", 
+            SERVICE_NAME
+        );
+        return;
+    } 
+    let port = allocate_port(&mut pman, SERVICE_NAME);
+    println!("Allocated port {}", port);
+    let port_string = port.to_string();
     loop {
         let output = process::Command::new(&executable)
-            .arg("--server").arg("1234")
+            .arg("--server").arg(&port_string)
             .output()
             .expect("Failed to respawn");
         println!("Subprocess exited stdout: ");
@@ -51,4 +71,17 @@ fn main() {
         io::stdout().write_all(&output.stderr).unwrap();
         io::stdout().flush().unwrap();
     }
+}
+//
+// Called to see if our service is already advertised.
+// returns true if the service_name is already advertised by the port manager.
+fn already_advertised(client : &mut portman_client::Client , service_name: &str) -> bool {
+    let allocation = client.find_my_service(service_name).unwrap();  // Pointless if portman isn't running.
+    return allocation.len() == 1;    
+}
+// Allocate my service.
+// panics on failure.
+
+fn allocate_port(client: &mut portman_client::Client, service_name: &str) -> u16  {
+    client.get(service_name).unwrap()
 }
