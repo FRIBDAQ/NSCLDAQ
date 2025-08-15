@@ -1663,10 +1663,11 @@ foreach module [vx27xxpha list] {
                 </section>
             </section>
         </section>
-        <section id='sec.eventstruct'>
+      </section>
+      <section id='sec.eventstruct'>
           <title id='sec.eventstruct.title'>Event structure</title>
             <para>
-                This section describes events written by the Readout program.
+                Thissssssss section describes events written by the Readout program.
                 These hits are encapsulated in NSCLDAQ ringitems.  When the event
                 builder is  in use, additional event builder encapsulation
                 will occur.
@@ -1839,7 +1840,6 @@ foreach module [vx27xxpha list] {
                 all with the same length, I don't think this padding ever happens.
             </para>
         </section>
-    </section>
     <section id='ch.spectcl'>
         <title id='ch.spectcl.title'>
             Configuring SpecTcl
