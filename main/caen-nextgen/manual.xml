@@ -1664,7 +1664,7 @@ foreach module [vx27xxpha list] {
             </section>
         </section>
         <section id='sec.eventstruct'>
-            <title id='sec.eventstruct.title'></title>
+          <title id='sec.eventstruct.title'>Event structure</title>
             <para>
                 This section describes events written by the Readout program.
                 These hits are encapsulated in NSCLDAQ ringitems.  When the event
@@ -1733,7 +1733,7 @@ foreach module [vx27xxpha list] {
                             <entry>Low priority flags. Only meaningful if selected.</entry>
                         </row>
                         <row>
-                            <entry>uint16_t></entry>
+                            <entry>uint16_t</entry>
                             <entry>High priority flags. Only meaningful if selected.</entry>
                         </row>
                         <row>
