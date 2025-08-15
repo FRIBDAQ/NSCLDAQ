@@ -1667,7 +1667,7 @@ foreach module [vx27xxpha list] {
       <section id='sec.eventstruct'>
           <title id='sec.eventstruct.title'>Event structure</title>
             <para>
-                Thissssssss section describes events written by the Readout program.
+                This section describes events written by the Readout program.
                 These hits are encapsulated in NSCLDAQ ringitems.  When the event
                 builder is  in use, additional event builder encapsulation
                 will occur.
