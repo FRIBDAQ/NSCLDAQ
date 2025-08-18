@@ -17,6 +17,7 @@ bin_PROGRAMS = VMUSBReadout
 
 VMUSBReadout_CPPFLAGS= \
   @THREADCXX_FLAGS@ \
+  @VMUSB_WORKAROUNDS@ \
 	-I@top_srcdir@/usb/vmusb/vmusb \
 	-I@top_srcdir@/usb/vmusb/core \
 	-I@top_srcdir@/usb/vmusb/daqconfig \
