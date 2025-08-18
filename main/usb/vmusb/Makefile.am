@@ -17,6 +17,7 @@ bin_PROGRAMS = VMUSBReadout
 
 VMUSBReadout_CPPFLAGS= \
   @THREADCXX_FLAGS@ \
+  @VMUSB_WORKAROUNDS@ \
 	-I@top_srcdir@/usb/vmusb/vmusb \
 	-I@top_srcdir@/usb/vmusb/core \
 	-I@top_srcdir@/usb/vmusb/daqconfig \
@@ -32,7 +33,7 @@ VMUSBReadout_CPPFLAGS= \
 	@TCL_CPPFLAGS@ $(USBSWITCHES)  @PIXIE_CPPFLAGS@
 
 
-VMUSBReadout_CCFLAGS=@THREADC_FLAGS@ @VMUSB_WORKAROUNDS@
+VMUSBReadout_CCFLAGS=@THREADC_FLAGS@
 
 VMUSBReadout_SOURCES = CTheApplication.cpp Globals.cpp 
 
