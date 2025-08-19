@@ -1,3 +1,7 @@
+== 12.0-026 ==
+* Fixing "nummap_chunk(): invalid pointer" issue with VMUSBReadoutGui
+== 12.0-026 ==
+
 == 12.0-025 ==
 * Implenenting sample data taking in MDPP-16/32 modules
 * Updating MDPP-16/32 documentation
