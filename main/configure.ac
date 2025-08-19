@@ -4,7 +4,7 @@
 AC_PREREQ(2.61)
 
 
-AC_INIT(nscldaq,11.3-038, [scientificsoftware@nscl.msu.edu],[], [http://www.sourceforge.net/projects/nscldaq])
+AC_INIT(nscldaq,11.3-039, [scientificsoftware@nscl.msu.edu],[], [http://www.sourceforge.net/projects/nscldaq])
 
 
 

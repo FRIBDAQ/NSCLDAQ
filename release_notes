@@ -1,3 +1,6 @@
+== 11.3-039 ==
+== 11.3-039 ==
+
 == 11.3-038 ==
 * Fixing "nummap_chunk(): invalid pointer" issue with VMUSBReadoutGui
 == 11.3-038 ==
