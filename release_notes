@@ -6,7 +6,7 @@
     *  A prompt busy is guaranteed by using delay stack elements rather than the trigger delay.
     *  Busy resting state is active by reprogramming it to be the inverse of end of event as the run ends e.g.
     *  End of event is forced by appending a marker to the readout stack which is then transparently discarded
-by COutputThread
+by COutputThread (nummap_chunk() issue fixed)
 * Implenenting sample data taking in MDPP-16/32 modules
 * Updating MDPP-16/32 documentation
 * Updated MADC-32 for indpendent bank operation
