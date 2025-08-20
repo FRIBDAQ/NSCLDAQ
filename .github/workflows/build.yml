@@ -109,7 +109,7 @@ jobs:
                        --with-firmwaredir=`cat /usr/opt/DDASFIRMWARE_PATH_12.1` \
                        --with-dspdir=`cat /usr/opt/DDASDSP_PATH` \
                        --with-rootsys=`cat /usr/opt/ROOT_PATH` \
-                       --enable-caen-nextgen
+                       --enable-caen-nextgen \
                        CXX=`cat /usr/opt/MPI_PATH`
       - name: Make
         working-directory: ./main/oot
