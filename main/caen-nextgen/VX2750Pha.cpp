@@ -3470,7 +3470,7 @@ static const std::map<VX2750Pha::Endpoint, std::string> endpointToString = {
         }
         if (m_dppPhaOptions.s_enableFineTimestamps) {
             
-            description[index++] = createScalar("FINE_TIMSTAMP", "U16");
+            description[index++] = createScalar("FINE_TIMESTAMP", "U16");
         }
         if(m_dppPhaOptions.s_enableFlags) {
             
