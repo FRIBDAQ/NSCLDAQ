@@ -1,3 +1,7 @@
+== 12.1-015 ==
+* Bug fix - event size is wrong by a byte
+== 12.1-015 ==
+
 == 12.1-014 ==
 * Enable fine timestamp output in CAEN VX2740 digitizer readout
 == 12.1-014 ==
