@@ -1,4 +1,5 @@
 == 11.3-039 ==
+* Bug fix - event size is wrong by a byte
 == 11.3-039 ==
 
 == 11.3-038 ==
