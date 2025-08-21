@@ -882,11 +882,9 @@ COutputThread::event(void* pData)
     // we transparently added to the readout stack to force
     // end of event to fire.
 
-#ifndef VMUSB_END_OF_EVENT_WORKAROUND
+
     event.setBodyCursor(pEnd);
-#else
-    event.setBodyCursor(pEnd - sizeof(uint16_t));
-#endif
+
     event.updateSize();
     event.commitToRing(*m_pRing);
     delete pEvent;
