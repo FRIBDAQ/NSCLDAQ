@@ -5,6 +5,7 @@ use std::{thread, time};
 use std::io::{self, Write};
 use portman_client;
 use ringmaster_client;
+use nscldaq_ringbuffer;
 use std::collections::HashMap;
 
 const SERVICE_NAME : &str = "RING_MONITOR";
@@ -91,6 +92,23 @@ fn allocate_port(client: &mut portman_client::Client, service_name: &str) -> u16
 ///  Thread to monitor a single, named ringbuffer.
 /// 
 fn ring_monitor(name: &str) {
+    // Become a consumer of the ring that was passed in:
+
+    let uri = format!("tcp://localhost/{}", name);
+
+    let mut consumer = ringmaster_client::RingBufferConsumer::attach(&uri)
+        .expect("Monitor thread failed to attach as consumer");
+    let mut bytes : usize = 0;                          // Total bytes transferred.
+    
+
+    let mut data : [u8;1024] = [0; 1024];
+    loop {
+        if let Ok(n) = consumer.consumer.timed_get(&mut data, time::Duration::from_secs(1)) {
+            bytes = bytes + n;
+        }
+    }
+    
+
 }
 
 fn follow_rings(list : &Vec<ringmaster_client::RingInformation>) {
@@ -102,6 +120,22 @@ fn follow_rings(list : &Vec<ringmaster_client::RingInformation>) {
             thread_map.insert(ring.name.clone(), handle);
         }
         
+    }
+    // in case the subprocesses exit:: try join them:
+
+    let mut to_delete = vec![];
+    for k in thread_map.keys() {
+        let handle = thread_map.get(&k.clone()).unwrap();
+        if handle.is_finished() {
+            
+            to_delete.push(k.clone());
+        }
+    }
+    // Delete the joined threads from the map:
+
+    for k in to_delete.into_iter() {
+        let handle = thread_map.remove(&k.clone()).unwrap();
+        let _ = handle.join();
     }
 }
 ///

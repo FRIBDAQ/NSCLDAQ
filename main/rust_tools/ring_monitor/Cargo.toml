@@ -13,3 +13,4 @@ edition = "2024"
 [dependencies]
 portman_client = "0.2.0"
 ringmaster_client = "0.1.1"
+nscldaq_ringbuffer = "0.8.7"
