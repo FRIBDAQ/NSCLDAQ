@@ -4,8 +4,11 @@ use std::process;
 use std::{thread, time};
 use std::io::{self, Write};
 use portman_client;
+use ringmaster_client;
+use std::collections::HashMap;
 
 const SERVICE_NAME : &str = "RING_MONITOR";
+const MB : u32 = 1024*1024;
 ///  This program provides an FRIB/NSCLDAQ ringbuffer statistics
 ///  monitor.  Note that when run, it will run itself with an
 ///  added --server (portnum) option.  The spawned subprocess
@@ -84,13 +87,50 @@ fn already_advertised(client : &mut portman_client::Client , service_name: &str)
 fn allocate_port(client: &mut portman_client::Client, service_name: &str) -> u16  {
     client.get(service_name).unwrap()
 }
-
 ///
-/// This is the functino thats' run by child processe:
+///  Thread to monitor a single, named ringbuffer.
+/// 
+fn ring_monitor(name: &str) {
+}
+
+fn follow_rings(list : &Vec<ringmaster_client::RingInformation>) {
+    let mut thread_map : HashMap<String, thread::JoinHandle<()>> = HashMap::new(); // Map of threads we have.
+    for ring in list.iter() {
+        if !thread_map.contains_key(&ring.name) {
+            let name = ring.name.clone();
+            let handle = thread::spawn(move || {ring_monitor(&name)});
+            thread_map.insert(ring.name.clone(), handle);
+        }
+        
+    }
+}
+///
+/// This is the function thats' run by child processe:
+/// 
+/// The port paramteer is the port on which 
+/// we will listen for connections from clients
+/// asking for our statistics and so on.
+/// 
+/// For now, what we're going to do is periodically check the ringbuffer
+/// status from the ringmaster.  If needed, we will spin off more
+/// statistics gathering threads.  Since we will wind up being a client
+/// of all rings, including proxies, eventually, if a ring is destroyed,
+/// the ring master will destroy us which will cause our parent to respawn us
+/// ..and the dance will start all over again.
+/// 
+/// Ring deletion is a rare occurence.
 /// 
 fn monitor(port : u16) {
-    println!("Running server on {}", port);
-    let sleep_time = time::Duration::from_secs(5);    // seconds to sleep:
-    thread::sleep(sleep_time);
-    return;
+
+    loop {
+        let mut c = ringmaster_client::Client::new("localhost");
+        
+        match c.list_rings() {
+            Ok(list) => {
+                follow_rings(&list)
+            },
+            Err(reason) => eprintln!("Failed to list rings {}", reason),
+        }
+        thread::sleep(time::Duration::from_secs(5));
+    }
 }
