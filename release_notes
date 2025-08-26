@@ -11,4 +11,5 @@ by COutputThread (nummap_chunk() issue fixed)
 * Updating MDPP-16/32 documentation
 * Updated MADC-32 for indpendent bank operation
 * Fix for window configuration in V1x90 digitizers
+* Resolve inconsistent behavior between VX2740 readout and unpacker handling of fail bit
 == 12.2-dev ==
