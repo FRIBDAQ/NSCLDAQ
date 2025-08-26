@@ -1,4 +1,5 @@
 == 12.1-016 ==
+* Resolve inconsistency in fail bit data read and unpacking for CAEN VX2740
 == 12.1-016 ==
 
 == 12.1-015 ==
