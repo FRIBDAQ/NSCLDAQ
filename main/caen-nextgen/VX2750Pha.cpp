@@ -3458,9 +3458,8 @@ static const std::map<VX2750Pha::Endpoint, std::string> endpointToString = {
     
         description[index++] = createScalar("CHANNEL", "U8");
         description[index++] = createScalar("TIMESTAMP_NS", "U64");
-        description[index++] = createScalar("ENERGY", "U16");
-        
-        //description[index++] = createScalar("BOARD_FAIL", "BOOL");
+        description[index++] = createScalar("ENERGY", "U16");        
+        description[index++] = createScalar("BOARD_FAIL", "BOOL");
             
         // Now add in any selected optional elements to the readout format:
         
@@ -3555,7 +3554,8 @@ static const std::map<VX2750Pha::Endpoint, std::string> endpointToString = {
         argv[argc++] = &(event.s_channel);
         argv[argc++] = &(event.s_nsTimestamp);
         argv[argc++] = &(event.s_energy);
-        //argv[argc++] = &(event.s_fail);
+	// Issue #356: enable read of fail bit in event data
+	argv[argc++] = &(event.s_fail);
         
         // The remaining arguments depend on the values of the dpp PHA options
         // struct flags:
@@ -3603,6 +3603,7 @@ static const std::map<VX2750Pha::Endpoint, std::string> endpointToString = {
         if (m_dppPhaOptions.s_enableEventSize) {
             argv[argc++] = &(event.s_eventSize);
         }
+
         while(!ReadData(1000000, argc, argv))
             ;                                          // Block until read.
         

@@ -62,7 +62,9 @@ VX2750EventSegment::VX2750EventSegment(
     m_pExperiment(pExperiment), m_sourceId(sourceId),
     m_pModule(nullptr), m_pConfiguration(pConfig), m_moduleName(pModuleName),
     m_hostOrPid(pHostOrPid), m_isUsb(fIsUsb), m_traceSizes(nullptr)
-{}
+{
+    std::cerr << "Constructing event segment from local src\n";
+}
 
 /**
  * destructor
@@ -247,8 +249,6 @@ void VX2750EventSegment::onResume()
   *    +------------------------------------+
   *    | uint16_t t downsample selection(*) |
   *    +------------------------------------+
-  *    | uint16_t fail  flag                 |
-  *    +------------------------------------+
   *    | uint16_t analog probe type 1  (*)  |
   *    +------------------------------------+
   *    | uint32_t aprobe1 nSamples          |  - 0 if no data.
@@ -290,6 +290,8 @@ void VX2750EventSegment::onResume()
   *    +------------------------------------+
   *    |  Digital probe data(4)             | 1 byteper sample
   *             ...                           could be no data
+  *    +------------------------------------+
+  *    | uint16_t fail  flag                |
   *    +------------------------------------+
   *    
   *\endverbatim    
@@ -368,7 +370,7 @@ void VX2750EventSegment::onResume()
     union {
         uint8_t*  p8;
         uint16_t* p16;
-        uint32_t* p32;
+        uint32_t* p32; // Also used for analog probe int32_t type
         uint64_t* p64;
     } p;
     p.p16 = reinterpret_cast<uint16_t*>(pBuffer);
@@ -452,6 +454,11 @@ void VX2750EventSegment::onResume()
     } else {
         *p.p32++ = 0;
     }
+
+    // Issue #356: last thing is the fail bit:
+    
+    m_Event.s_fail = *p.p16++;
+    
     // Compute/return the number of uint16_t's in thye buffer:
     // THe + 1 below adds an extra pad byte if bytesNeeded is odd.
     // (which I think is impossible since there are an even number
