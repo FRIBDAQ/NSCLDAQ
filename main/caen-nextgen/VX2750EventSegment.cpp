@@ -62,9 +62,7 @@ VX2750EventSegment::VX2750EventSegment(
     m_pExperiment(pExperiment), m_sourceId(sourceId),
     m_pModule(nullptr), m_pConfiguration(pConfig), m_moduleName(pModuleName),
     m_hostOrPid(pHostOrPid), m_isUsb(fIsUsb), m_traceSizes(nullptr)
-{
-    std::cerr << "Constructing event segment from local src\n";
-}
+{}
 
 /**
  * destructor
