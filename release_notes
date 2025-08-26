@@ -1,4 +1,5 @@
 == 12.1-016 ==
+* Resolve inconsistent behavior between data read and unpacking for fail bit in VX2740 modules
 == 12.1-016 ==
 
 == 12.1-015 ==
