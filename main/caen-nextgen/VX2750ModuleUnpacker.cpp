@@ -149,7 +149,8 @@ VX2750ModuleUnpacker::unpackHit(const void* pData)
     
     p.w++;
     
-    // Timestamp, coarse, fine, and energy...all the fixed size stuff:
+    // Timestamp, coarse, fine, and energy...all the fixed size stuff
+    // except for the fail flags which come at the end of the event
     
     (*m_ns)[ch] = static_cast<double>(*(p.q));  p.q++;
     (*m_rawTimestamp)[ch] = static_cast<double>(*(p.q)); p.q++;
@@ -158,7 +159,6 @@ VX2750ModuleUnpacker::unpackHit(const void* pData)
     m_lowPriorityFlags[ch] = static_cast<double>(*(p.w)); p.w++;
     m_highPriorityFlags[ch] = static_cast<double>(*(p.w)); p.w++;
     m_downSampleSelection[ch] = static_cast<double>(*(p.w)); p.w++;
-    m_failFlags[ch] = static_cast<double>(*(p.w)) ; p.w++;
     
     // Analog probe 1:
     
@@ -168,7 +168,7 @@ VX2750ModuleUnpacker::unpackHit(const void* pData)
     memcpy(m_analogProbe1Samples[ch].data(), p.l, nSamples*sizeof(std::uint32_t));
     p.l += nSamples;
     
-    // Analog probe 2
+    // Analog probe 2:
     
     m_analogProbe2Types[ch] = *(p.w); p.w++;
     nSamples = *(p.l); p.l++;
@@ -192,20 +192,25 @@ VX2750ModuleUnpacker::unpackHit(const void* pData)
     memcpy(m_digitalProbe2Samples[ch].data(), p.b, nBytes);
     p.b += nBytes;
     
-    // Digital Probe 1:
+    // Digital Probe 3:
     
     m_digitalProbe3Types[ch] =  *(p.w) ; p.w++;
     nBytes = *(p.l); p.l++;
     m_digitalProbe3Samples[ch].resize(nBytes);
     memcpy(m_digitalProbe3Samples[ch].data(), p.b, nBytes);
     p.b += nBytes;
-    // Digital Probe 1:
+    
+    // Digital Probe 4:
     
     m_digitalProbe4Types[ch] =  *(p.w) ; p.w++;
     nBytes = *(p.l); p.l++;
     m_digitalProbe4Samples[ch].resize(nBytes);
     memcpy(m_digitalProbe4Samples[ch].data(), p.b, nBytes);
     p.b += nBytes;
+
+    // Fail flags contained in the last word in the event:
+
+    m_failFlags[ch] = *(p.w) ; p.w++;
     
     const uint8_t* pBegin = reinterpret_cast<const uint8_t*>(pData);
     if (((p.b - pBegin) % 2) == 1) p.b++;  // Skip any padding.
