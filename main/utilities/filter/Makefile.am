@@ -145,4 +145,4 @@ install-data-local:
 	$(INSTALL_DATA) Makefile-template @prefix@/filterkit/Makefile
 
 EXTRA_DIST = filterargs.ggo SkeletonMain.cpp CTemplateFilter.cpp \
-             Makefile-template.in FilterIncludes.in config.h
+             Makefile-template.in FilterIncludes.in config.h filter.xml

@@ -15,6 +15,16 @@ function set_env() {
     export PYTHONPATH=$DAQROOT/pythonLibs:$PYTHONPATH
     export DAQTCLLIBS=@prefix@/TclLibs
     export DAQSHARE=@prefix@/share
+
+    # if MVLC_ROOT is defined, then we assume all the MVLC envs can be set:
+  
+    if test "x@MVLC_ROOT@" != "x" 
+    then
+      export MVLC_ROOT=@MVLC_ROOT@
+      export MVLC_INC=@MVLC_INC@
+      export MVLC_LIB=@MVLC_LIB@
+      export MVLC_BIN=@MVLC_BIN@
+    fi
 }
 
 if test "$1" = "-h"
