@@ -306,8 +306,8 @@ public:
     // dpp-pha endpoint.
     struct EnabledItems {
         //                      channel is always on.
+	//                      ns timestamp always enabled.
         bool s_enableRawTimestamps;
-        //                      ns timestamp always enabled.
         bool s_enableFineTimestamps;
         //                      energy always enabled.
         bool s_enableFlags;     // Enables all flags.
