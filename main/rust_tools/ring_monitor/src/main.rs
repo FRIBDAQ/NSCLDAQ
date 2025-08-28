@@ -5,12 +5,10 @@ use std::{thread, time};
 use std::io::{self, Write};
 use portman_client;
 use ringmaster_client;
-use nscldaq_ringbuffer;
 use rust_ringitem_format;
 use std::collections::HashMap;
 
 const SERVICE_NAME : &str = "RING_MONITOR";
-const MB : u32 = 1024*1024;
 const BUFFER_SIZE : usize = 1024;
 
 ///
@@ -167,10 +165,10 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
     let mut p = *next_offset;
     
     let lsize = size_of::<u32>();
-    let mut size : u32 = 0;
+    
     while nbytes - p > lsize * 2 {    // there's room for a header.
     
-        size = u32::from_ne_bytes(data[p..p+lsize].try_into().unwrap());
+        let size = u32::from_ne_bytes(data[p..p+lsize].try_into().unwrap());
         p += lsize;
         let item_type     = u32::from_ne_bytes(data[p..p+lsize].try_into().unwrap());
 
@@ -230,7 +228,6 @@ fn ring_monitor(name: &str) {
 
     let mut consumer = ringmaster_client::RingBufferConsumer::attach(&uri)
         .expect("Monitor thread failed to attach as consumer");
-    let mut bytes : usize = 0;                          // Total bytes transferred.
     
 
     let mut data : [u8;BUFFER_SIZE] = [0; BUFFER_SIZE];
