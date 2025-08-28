@@ -6,6 +6,8 @@ use portman_client;
 use ringmaster_client;
 use rust_ringitem_format;
 use std::collections::HashMap;
+use serde::Serialize;
+use serde_json;
 
 
 
@@ -17,7 +19,7 @@ const RING_POLL_INTERVAL : u64  = 1; // Secs between polls for new rings.
 ///
 /// The information we want to maintain for each ringbuffer is:
 /// 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 struct RingBufferStatistics {
     name:  String,         // name of the ringbuffer.
     bytes: usize,          // Total bytes observed through the ring.
@@ -76,6 +78,7 @@ impl UpdateMessage {
 
 /// The statistics the user is interested in also include rates:
 /// 
+#[derive(Serialize)]
 struct StatisticsAndRates {
     last_statistics   : RingBufferStatistics, // Note this has the ring name.
     byte_rate         : f64,
