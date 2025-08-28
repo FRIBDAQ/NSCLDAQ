@@ -72,6 +72,65 @@ impl UpdateMessage {
         }
     }
 }
+
+/// The statistics the user is interested in also include rates:
+/// 
+struct StatisticsAndRates {
+    last_statistics   : RingBufferStatistics, // Note this has the ring name.
+    byte_rate         : f64,
+    event_rate        : f64,
+    byte_per_run_rate : f64,
+    evts_per_run_rate : f64
+}
+
+impl StatisticsAndRates {
+    // Create a newly initialized struc.
+    // This requires a ring name.
+
+    fn new(ring: &str) -> StatisticsAndRates {
+        StatisticsAndRates { last_statistics: RingBufferStatistics::new(ring), 
+             byte_rate: 0.0, event_rate: 0.0, byte_per_run_rate: 0.0, evts_per_run_rate: 0.0 }
+    }
+    fn update(&mut self, info : &UpdateMessage) -> &mut Self {
+        // Let's be sure the message really was for us.
+        // panic if not:
+
+        if info.statistics.name != self.last_statistics.name {
+            let msg = 
+                format!("BUGCHECK - StatiticsAndRates::update called with mismatched rings was {} should be {}", 
+                info.statistics.name, self.last_statistics.name
+            );
+            panic!("{}", msg);
+        }
+
+        // Need differences from last and now to get rates:
+
+        let dt : f64 = info.interval.as_secs_f64();
+        self.byte_rate = (info.statistics.bytes - self.last_statistics.bytes) as f64 / dt;
+        self.event_rate = (info.statistics.events - self.last_statistics.events) as f64/dt;
+        
+        // If we started a new run and the events are < than last time, then we start from 0.
+
+        if self.last_statistics.bytes_this_run > info.statistics.bytes_this_run {
+            // New run so:
+
+            self.last_statistics.bytes_this_run = 0;
+            self.last_statistics.events_this_run = 0;
+        }
+        self.byte_per_run_rate = 
+            (info.statistics.bytes_this_run - self.last_statistics.bytes_this_run) as f64 / dt;
+        self.event_rate =
+            (info.statistics.events_this_run - self.last_statistics.events_this_run) as f64 /dt;
+
+        // Updtae the last statistics field:
+
+        self.last_statistics = info.statistics.clone();
+        
+
+        self                                // If we add more methods we can chain.
+    }
+}
+
 ///  This program provides an FRIB/NSCLDAQ ringbuffer statistics
 ///  monitor.  Note that when run, it will run itself with an
 ///  added --server (portnum) option.  The spawned subprocess
@@ -343,7 +402,7 @@ fn follow_rings(list : &Vec<ringmaster_client::RingInformation>, sender : &mpsc:
 /// 
 fn monitor(port : u16) {
     let (sender, receiver) = mpsc::channel::<UpdateMessage>();
-    
+    let mut aggregated_stats = HashMap::<String, StatisticsAndRates>::new();
     loop {
         let mut c = ringmaster_client::Client::new("localhost");
         
@@ -357,11 +416,24 @@ fn monitor(port : u16) {
 
         // Note that Disconnected is legitimate since we have several
         // senders, one for each ringbuffer:
-
+        // THe loop processes all pending messages from monitors.
         loop {
             let status = receiver.try_recv();
             if let Ok(msg) = status {
-                // Not sure yet what to do with the msg.
+                let name = msg.statistics.name.clone();
+                if ! aggregated_stats.contains_key(&name) {
+                    // Insert a new entry for this ring:
+
+                    aggregated_stats.insert(
+                        name, 
+                        StatisticsAndRates::new(&msg.statistics.name)
+                    );
+                }
+                // Update the statistics.
+                aggregated_stats
+                    .get_mut(&msg.statistics.name.clone())
+                    .unwrap()
+                    .update(&msg);
             } else {
                 break;
             }
