@@ -1,15 +1,17 @@
 
-use std::env;
-use std::process;
-use std::{thread, time};
+use std::{thread, time, process, env};
 use std::io::{self, Write};
+use std::sync::mpsc;
 use portman_client;
 use ringmaster_client;
 use rust_ringitem_format;
 use std::collections::HashMap;
 
+
+
 const SERVICE_NAME : &str = "RING_MONITOR";
 const BUFFER_SIZE : usize = 1024;
+const UPDATE_TIME : u64  = 5;       // How often to update statistics -> main thread.
 
 ///
 /// The information we want to maintain for each ringbuffer is:
@@ -55,6 +57,21 @@ impl RingBufferStatistics {
     }
 }
 
+///  This is the structure of statistics update messages sent
+///  to the main thread by the monitor threads:
+/// 
+struct UpdateMessage {
+    interval : time::Duration,
+    statistics : RingBufferStatistics,
+}
+
+impl UpdateMessage {
+    fn new(i : time::Duration, stats : &RingBufferStatistics) -> UpdateMessage {
+        UpdateMessage { interval: i, 
+            statistics : stats.clone()
+        }
+    }
+}
 ///  This program provides an FRIB/NSCLDAQ ringbuffer statistics
 ///  monitor.  Note that when run, it will run itself with an
 ///  added --server (portnum) option.  The spawned subprocess
@@ -217,9 +234,15 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
 
     result
 }
+///  send statistics updates to the main thread.
+/// 
+fn send_statistics(ch : &mpsc::Sender<UpdateMessage>, elapsed : time::Duration, stats : &RingBufferStatistics) {
+    let msg = UpdateMessage::new(elapsed, stats);
+    let _ = ch.send(msg);                             // Send the statistics.
+}
 ///  Thread to monitor a single, named ringbuffer.
 /// 
-fn ring_monitor(name: &str) {
+fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
     // Become a consumer of the ring that was passed in:
 
     let mut statistics = RingBufferStatistics::new(name);
@@ -233,9 +256,11 @@ fn ring_monitor(name: &str) {
     let mut data : [u8;BUFFER_SIZE] = [0; BUFFER_SIZE];
     let mut next_item_offset = 0;
     let mut residual = 0;
-
+    let mut start_time = time::Instant::now();         // Start of stats gathering.
     loop {
-        if let Ok(n) = consumer.consumer.timed_get(&mut data[residual..BUFFER_SIZE-1], time::Duration::from_secs(1)) {
+        if let Ok(n) = consumer
+            .consumer
+            .timed_get(&mut data[residual..BUFFER_SIZE-1], time::Duration::from_secs(1)) {
             
             let (new_run, run_events, events, run_bytes) =
                 analyze_ring_data(n, &data, &mut next_item_offset, &mut residual);
@@ -255,18 +280,26 @@ fn ring_monitor(name: &str) {
                 data[i] = data[(n-1) - residual + i];
             }
         }
-        
+        // See if we need to dump the statistics to the main thread:
+        // if so we start then ext interval
+
+       let elapsed = start_time.elapsed();
+       if elapsed.as_secs() >= UPDATE_TIME {
+            send_statistics(&chan, elapsed, &statistics);
+            start_time = time::Instant::now();                    
+       }
     }
     
 
 }
 
-fn follow_rings(list : &Vec<ringmaster_client::RingInformation>) {
+fn follow_rings(list : &Vec<ringmaster_client::RingInformation>, sender : &mpsc::Sender<UpdateMessage>) {
     let mut thread_map : HashMap<String, thread::JoinHandle<()>> = HashMap::new(); // Map of threads we have.
     for ring in list.iter() {
         if !thread_map.contains_key(&ring.name) {
             let name = ring.name.clone();
-            let handle = thread::spawn(move || {ring_monitor(&name)});
+            let chan = sender.clone();
+            let handle = thread::spawn(move || {ring_monitor(&name, chan)});
             thread_map.insert(ring.name.clone(), handle);
         }
         
@@ -309,16 +342,31 @@ fn follow_rings(list : &Vec<ringmaster_client::RingInformation>) {
 /// Ring deletion is a rare occurence.
 /// 
 fn monitor(port : u16) {
-
+    let (sender, receiver) = mpsc::channel::<UpdateMessage>();
+    
     loop {
         let mut c = ringmaster_client::Client::new("localhost");
         
         match c.list_rings() {
             Ok(list) => {
-                follow_rings(&list)
+                follow_rings(&list, &sender)
             },
             Err(reason) => eprintln!("Failed to list rings {}", reason),
         }
+        // Read any statistics updates from the monitor threads:
+
+        // Note that Disconnected is legitimate since we have several
+        // senders, one for each ringbuffer:
+
+        loop {
+            let status = receiver.try_recv();
+            if let Ok(msg) = status {
+                // Not sure yet what to do with the msg.
+            } else {
+                break;
+            }
+        }
+
         thread::sleep(time::Duration::from_secs(5));
     }
 }
