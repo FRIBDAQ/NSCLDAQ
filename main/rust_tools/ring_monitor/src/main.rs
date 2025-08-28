@@ -403,7 +403,8 @@ fn serve_statistics(sock: &mut TcpStream, stats: &HashMap<String, StatisticsAndR
         statsv.push(v.clone());
     }
 
-    let msg_string = serde_json::to_string(&statsv).unwrap();
+    let mut msg_string = serde_json::to_string(&statsv).unwrap();
+    msg_string += "\n";
     let _ = sock.write_all(msg_string.as_bytes());
     let _ = sock.flush();                            // Make sure it's been sent.
 
