@@ -12,6 +12,7 @@ use std::collections::HashMap;
 const SERVICE_NAME : &str = "RING_MONITOR";
 const BUFFER_SIZE : usize = 1024;
 const UPDATE_TIME : u64  = 5;       // How often to update statistics -> main thread.
+const RING_POLL_INTERVAL : u64  = 1; // Secs between polls for new rings.
 
 ///
 /// The information we want to maintain for each ringbuffer is:
@@ -435,10 +436,10 @@ fn monitor(port : u16) {
                     .unwrap()
                     .update(&msg);
             } else {
-                break;
+                break;                  // No more messages this time.
             }
         }
 
-        thread::sleep(time::Duration::from_secs(5));
+        thread::sleep(time::Duration::from_secs(RING_POLL_INTERVAL));
     }
 }
