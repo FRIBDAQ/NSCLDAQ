@@ -1,5 +1,5 @@
 
-use std::{thread, time, process, env};
+use std::{env, net, process, thread, time};
 use std::io::{self, Write};
 use std::sync::mpsc;
 use portman_client;
@@ -8,7 +8,7 @@ use rust_ringitem_format;
 use std::collections::HashMap;
 use serde::Serialize;
 use serde_json;
-
+use std::net::{TcpListener, TcpStream};
 
 
 const SERVICE_NAME : &str = "RING_MONITOR";
@@ -78,7 +78,7 @@ impl UpdateMessage {
 
 /// The statistics the user is interested in also include rates:
 /// 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 struct StatisticsAndRates {
     last_statistics   : RingBufferStatistics, // Note this has the ring name.
     byte_rate         : f64,
@@ -155,6 +155,10 @@ impl StatisticsAndRates {
 ///         port stability so clients only need to translate the service once.
 /// 
 ///
+///   To get the current idea of the statistics over all rings,
+/// Forma connection to this program and you will receive a JSON string
+/// containing the statistics.  This will be a serialization of an array of
+/// StatistcsAdRates structs.
 ///
 fn main() {
     let executable = env::current_exe().unwrap();
@@ -388,6 +392,23 @@ fn follow_rings(list : &Vec<ringmaster_client::RingInformation>, sender : &mpsc:
         let _ = handle.join();
     }
 }
+/// Provides the current aggregated statistics to the peer:
+/// 
+fn serve_statistics(sock: &mut TcpStream, stats: &HashMap<String, StatisticsAndRates>) {
+    // We want a JSON array of StatisticsaAnd Rates so:
+
+    let mut statsv = vec![];
+    
+    for v in stats.values() {
+        statsv.push(v.clone());
+    }
+
+    let msg_string = serde_json::to_string(&statsv).unwrap();
+    let _ = sock.write_all(msg_string.as_bytes());
+    let _ = sock.flush();                            // Make sure it's been sent.
+
+    let _ = sock.shutdown(net::Shutdown::Both);       // Shut down the connection.
+}
 ///
 /// This is the function thats' run by child processe:
 /// 
@@ -407,6 +428,10 @@ fn follow_rings(list : &Vec<ringmaster_client::RingInformation>, sender : &mpsc:
 fn monitor(port : u16) {
     let (sender, receiver) = mpsc::channel::<UpdateMessage>();
     let mut aggregated_stats = HashMap::<String, StatisticsAndRates>::new();
+
+    let ip_spec = format!("127.0.0.1:{}", port);     // Listener specification.
+    let server = TcpListener::bind(&ip_spec).expect("Cant start server");
+    let _ = server.set_nonblocking(true);                           // don't stop the loop for connections.
     loop {
         let mut c = ringmaster_client::Client::new("localhost");
         
@@ -440,6 +465,17 @@ fn monitor(port : u16) {
                     .update(&msg);
             } else {
                 break;                  // No more messages this time.
+            }
+        }
+        // Handle connections by sending the aggregated statistics back to them:
+
+        loop {
+            let stat = server.accept();
+            if let Ok((mut sock, _peer)) = stat {
+                serve_statistics(&mut sock, &aggregated_stats);
+            } else {
+                // assume no connections.
+                break;
             }
         }
 
