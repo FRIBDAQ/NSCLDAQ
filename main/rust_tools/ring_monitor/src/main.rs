@@ -6,10 +6,57 @@ use std::io::{self, Write};
 use portman_client;
 use ringmaster_client;
 use nscldaq_ringbuffer;
+use rust_ringitem_format;
 use std::collections::HashMap;
 
 const SERVICE_NAME : &str = "RING_MONITOR";
 const MB : u32 = 1024*1024;
+const BUFFER_SIZE : usize = 1024;
+
+///
+/// The information we want to maintain for each ringbuffer is:
+/// 
+#[derive(Clone, Debug)]
+struct RingBufferStatistics {
+    name:  String,         // name of the ringbuffer.
+    bytes: usize,          // Total bytes observed through the ring.
+    events: usize,         // Total PHYSICS_EVENT items observed through the ring.
+    bytes_this_run: usize, // Total bytes through the ring since last BEGIN_RUN.
+    events_this_run: usize, // Total PHYSICS_EVENT items since last BEGIN_RUN.
+}
+impl RingBufferStatistics {
+    /// Create a ring buffer statistics item
+    /// that has all counters zeroed:
+    fn new(name :&str) -> RingBufferStatistics {
+        RingBufferStatistics {
+            name: String::from(name),
+            bytes: 0, events: 0,
+            bytes_this_run: 0, events_this_run: 0
+        }
+    }
+    /// Zero the per run statistics:
+    /// 
+    fn new_run(&mut self) -> &mut RingBufferStatistics {
+        self.bytes_this_run = 0;
+        self.events_this_run = 0;
+        self              // So chaining can be done.
+    }
+    /// Count some bytes:
+    /// 
+    fn count_bytes(&mut self, bytes : usize) -> &mut RingBufferStatistics {
+        self.bytes += bytes;
+        self.bytes_this_run += bytes;
+        self
+    }
+    /// Count some events:
+    ///
+    fn count_events(&mut self, events: usize) -> &mut RingBufferStatistics {
+        self.events += events;
+        self.events_this_run += events;
+        self
+    }
+}
+
 ///  This program provides an FRIB/NSCLDAQ ringbuffer statistics
 ///  monitor.  Note that when run, it will run itself with an
 ///  added --server (portnum) option.  The spawned subprocess
@@ -88,11 +135,96 @@ fn already_advertised(client : &mut portman_client::Client , service_name: &str)
 fn allocate_port(client: &mut portman_client::Client, service_name: &str) -> u16  {
     client.get(service_name).unwrap()
 }
-///
+
+/// Analyze the ring data.  Note that given our buffer shape,
+/// the the initial part (or even all of the buffer) might not
+/// be a ring item so the parameters are:
+/// 
+/// n - amount of data from the ring buffer.
+/// data - the data from the ring.
+/// next_item_offset - number of bytes remaining in the last ringitem from the last read.
+///       This will also be updated.
+/// 
+/// The returned tuple is in order:
+///     bool - new_run - true if a BEGIN_RUN item was encountered int the data.
+///     Option<usize> - Number of events in the data since the last BEGIN_RUN in the data.
+///     usize - Total number of events in the data.
+///     Option<usize> - Number of bytes since in the data since he last BEGIN_RUN in the data.
+/// 
+/// A note on the "Since the last BEGIN_RUN..." items. Those are only meaningful
+/// if the 
+///     
+fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, residual: &mut usize) ->
+    (bool, Option<usize>, usize, Option<usize>) {
+
+    let mut result = 
+        (false, None as Option<usize>, 0 as usize, None as Option<usize>);
+    // Case when there's no full ring item in the data:
+    if *next_offset > nbytes {
+        *next_offset -= nbytes;            // Offset into the next chunk
+        return (false, None, 0, None);
+    }
+    let mut p = *next_offset;
+    
+    let lsize = size_of::<u32>();
+    let mut size : u32 = 0;
+    while nbytes - p > lsize * 2 {    // there's room for a header.
+    
+        size = u32::from_ne_bytes(data[p..p+lsize].try_into().unwrap());
+        p += lsize;
+        let item_type     = u32::from_ne_bytes(data[p..p+lsize].try_into().unwrap());
+
+        // Count events.
+        if item_type == rust_ringitem_format::PHYSICS_EVENT {
+            result.2 += 1;
+            if result.1.is_none() {
+                result.1 = Some(1);
+
+            } else {
+                result.1 = Some(result.1.unwrap() + 1);
+            }
+            
+        }
+        // Update the # bytes since the last begin run.
+        if result.3.is_none() {
+            result.3 = Some(size as usize);
+        } else {
+            result.3 = Some(result.3.unwrap() + size as usize);
+        }
+        // Reset the per run counters if this is  a BEGIN_RUN item:
+
+        if item_type == rust_ringitem_format::BEGIN_RUN {
+            result.0 = true;                             // There was a begin run.
+            result.1 = None;                             // no new events.
+            result.3 = Some(size as usize);                             // For data we've had this item.
+        }
+        p += size as usize - 2*lsize;                            // next ring item.
+        // If that took us off the end of the ring item, 
+        // We need to set next_offset accordingly and return what we have:
+
+        if p > nbytes {
+            *next_offset = p - nbytes;
+            return result;
+        }
+    }
+    // If we got here and p < the data size?, there's a partial header left in we need to hold on to
+    // so that we can glue that to the next chunk of data
+
+    if p  <=  nbytes {              // This gets a resid if needed.
+        *residual = nbytes - p;
+    } else {
+        *residual = 0;
+    }
+
+
+    result
+}
 ///  Thread to monitor a single, named ringbuffer.
 /// 
 fn ring_monitor(name: &str) {
     // Become a consumer of the ring that was passed in:
+
+    let mut statistics = RingBufferStatistics::new(name);
 
     let uri = format!("tcp://localhost/{}", name);
 
@@ -101,11 +233,32 @@ fn ring_monitor(name: &str) {
     let mut bytes : usize = 0;                          // Total bytes transferred.
     
 
-    let mut data : [u8;1024] = [0; 1024];
+    let mut data : [u8;BUFFER_SIZE] = [0; BUFFER_SIZE];
+    let mut next_item_offset = 0;
+    let mut residual = 0;
+
     loop {
-        if let Ok(n) = consumer.consumer.timed_get(&mut data, time::Duration::from_secs(1)) {
-            bytes = bytes + n;
+        if let Ok(n) = consumer.consumer.timed_get(&mut data[residual..BUFFER_SIZE-1], time::Duration::from_secs(1)) {
+            
+            let (new_run, run_events, events, run_bytes) =
+                analyze_ring_data(n, &data, &mut next_item_offset, &mut residual);
+            statistics.count_bytes(n)
+                .count_events(events); 
+            if new_run {
+                statistics.new_run();
+                statistics.events_this_run  = run_events.unwrap();
+                statistics.bytes_this_run   = run_bytes.unwrap();
+               
+            }
+            // If there's a residual, we need to move those bytes to the bottom of the buffer for the next
+            // read.  The number of bytes will be small (less than the size of a ring item header) so we
+            // don't need to be fancy:
+
+            for i in 0..residual {
+                data[i] = data[(n-1) - residual + i];
+            }
         }
+        
     }
     
 
@@ -122,7 +275,11 @@ fn follow_rings(list : &Vec<ringmaster_client::RingInformation>) {
         
     }
     // in case the subprocesses exit:: try join them:
-
+    // This double loop bit is ugly but to use the join
+    // handle requires removing it from the map
+    // and that soils the iterator.
+    // therefore, one pass to figure out who's gone
+    // and another pass to remove handles from the map, joinnig them.
     let mut to_delete = vec![];
     for k in thread_map.keys() {
         let handle = thread_map.get(&k.clone()).unwrap();
