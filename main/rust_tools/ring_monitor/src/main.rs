@@ -253,7 +253,7 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
     
     let lsize = size_of::<u32>();
     
-    while nbytes - p > lsize * 2 {    // there's room for a header.
+    while nbytes - p >= lsize * 2 {    // there's room for a header.
     
         let size = u32::from_ne_bytes(data[p..p+lsize].try_into().unwrap());
         p += lsize;
@@ -792,6 +792,55 @@ mod analyze_tests {
         assert_eq!(0, result.2);
         assert!(result.3.is_some());
         assert_eq!(raw.size() as usize, result.3.unwrap());
+
+    }
+    #[test]
+    fn begin_1() {
+        // begin with a 'next offset'...by adding part of a physics item. after the begin item:
+
+        let begin_run = state_change::StateChange::new_without_body_header(
+            state_change::StateChangeType::Begin,
+            123, 0, 1, "This is a title", None
+        );
+
+        // Now we need to put it in the buffer:
+        let raw   = begin_run.to_raw();
+        let mut buffer: [u8;BUFFER_SIZE] = [0;BUFFER_SIZE];
+        let mut nbytes = add_item(&raw, &mut buffer, 0);
+
+        // add part of a physics item by hand:
+        let s: u32 = 125;
+        let size  : [u8;4] = s.to_ne_bytes();
+        let phystype : [u8;4] = PHYSICS_EVENT.to_ne_bytes();
+
+        // add the header to the buffer but no body:
+
+        buffer[nbytes..nbytes+size_of::<u32>()].copy_from_slice(&size);
+        nbytes += size_of::<u32>();
+        buffer[nbytes..nbytes+size_of::<u32>()].copy_from_slice(&phystype);
+        nbytes += size_of::<u32>();
+
+        let mut offset = 0;
+        let mut residual = 0;
+        let result = analyze_ring_data(nbytes, &buffer, &mut offset, &mut residual);
+
+        // Still care that the result is correct:
+
+        
+        assert!(result.0);
+        assert!(result.1.is_some());
+        assert_eq!(1, result.1.unwrap());
+        assert_eq!(1, result.2);
+        assert!(result.3.is_some());
+        assert_eq!((125+raw.size()) as usize, result.3.unwrap());
+
+        // Should not be a residual since all headers fit:
+
+        assert_eq!(0, residual);
+
+        // However offset to the next item in the next buffer should be:
+
+        assert_eq!(125 - 2*size_of::<u32>(), offset);
 
     }
 }
