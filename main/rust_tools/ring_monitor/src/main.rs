@@ -79,7 +79,7 @@ impl UpdateMessage {
 
 /// The statistics the user is interested in also include rates:
 /// 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, PartialEq)]
 struct StatisticsAndRates {
     last_statistics   : RingBufferStatistics, // Note this has the ring name.
     byte_rate         : f64,
@@ -528,10 +528,9 @@ mod rbstat_tests {
     #[test]
     fn new_run_1() {
         let mut stats = RingBufferStatistics::new("testing");
-        stats.count_events(5);
-        stats.count_bytes(10);
-
-        stats.new_run();   // Should only clear the *this_run values:
+        stats.count_events(5)
+            .count_bytes(10)
+            .new_run();   // Should only clear the *this_run values:
 
         assert_eq!(
             RingBufferStatistics {
@@ -554,11 +553,11 @@ mod updmsg_tests {
     #[test]
     fn new_1() {
         let mut stats = RingBufferStatistics::new("test");
-        stats.count_bytes(100);
-        stats.count_events(10);
-        stats.new_run();                     // Zero the run countes.
-        stats.count_bytes(100);
-        stats.count_events(10);              // More data.
+        stats.count_bytes(100)
+            .count_events(10)
+            .new_run()                 // Zero the run countes.
+            .count_bytes(100)
+            .count_events(10);              // More data.
 
         let update_time = Duration::from_secs(2);   // Yeah slow rate but meh.
 
