@@ -117,7 +117,7 @@ impl StatisticsAndRates {
         
         // If we started a new run and the events are < than last time, then we start from 0.
         // To compute the rate.
-        
+
         if self.cum_statistics.bytes_this_run > info.statistics.bytes_this_run {
             // New run so:
 
@@ -688,5 +688,37 @@ mod sandr_tests {
             stats
         )
 
+    }
+}
+// The next test module requires the FRIB/NSCLDAQ port manager be running in the system.
+
+#[cfg(test)]
+mod port_tests {
+    use portman_client::Client;
+
+    use crate::already_advertised;
+
+    #[test]
+    fn allocate_1() {
+        // allocate:
+
+        let mut  c = Client::new(30000);
+        let ptest = c.get("RINGMON_TEST1");
+        assert!(ptest.is_ok());
+
+
+    }
+    #[test]
+    fn check_2() {
+        let svc = "RINGMON_TEST2";
+        let mut c = Client::new(30000);
+
+        assert!(!already_advertised(&mut c, svc));
+        let ptest = c.get(svc);  // so its distint.
+        assert!(ptest.is_ok());
+
+        // New should show as advertised:
+
+        assert!(already_advertised(&mut c, svc));
     }
 }
