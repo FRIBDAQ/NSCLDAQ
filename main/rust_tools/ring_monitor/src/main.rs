@@ -1,7 +1,7 @@
 
 use std::{env, net, process, thread, time};
-use std::io::{self, Write};
 use std::sync::mpsc;
+use std::io::{self, Write};
 use portman_client;
 use ringmaster_client;
 use rust_ringitem_format;
@@ -47,15 +47,15 @@ impl RingBufferStatistics {
     /// Count some bytes:
     /// 
     fn count_bytes(&mut self, bytes : usize) -> &mut RingBufferStatistics {
-        self.bytes += bytes;
-        self.bytes_this_run += bytes;
+        self.bytes = self.bytes.wrapping_add(bytes);
+        self.bytes_this_run =self.bytes_this_run.wrapping_add(bytes);
         self
     }
     /// Count some events:
     ///
     fn count_events(&mut self, events: usize) -> &mut RingBufferStatistics {
-        self.events += events;
-        self.events_this_run += events;
+        self.events = self.events.wrapping_add(events);
+        self.events_this_run = self.events_this_run.wrapping_add(events);
         self
     }
 }
