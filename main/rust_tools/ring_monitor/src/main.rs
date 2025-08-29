@@ -116,7 +116,8 @@ impl StatisticsAndRates {
         self.event_rate = (info.statistics.events - self.cum_statistics.events) as f64/dt;
         
         // If we started a new run and the events are < than last time, then we start from 0.
-
+        // To compute the rate.
+        
         if self.cum_statistics.bytes_this_run > info.statistics.bytes_this_run {
             // New run so:
 
