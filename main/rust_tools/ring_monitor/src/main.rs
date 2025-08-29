@@ -290,13 +290,16 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
 
         if p >= nbytes {
             *next_offset = p - nbytes;
+            if p == nbytes {
+                *residual  = 0;
+            }
             return result;
         }
     }
     // If we got here and p < the data size?, there's a partial header left in we need to hold on to
     // so that we can glue that to the next chunk of data
 
-    if p  <=  nbytes {              // This gets a resid if needed.
+    if p  <  nbytes {              // This gets a resid if needed.
         *residual = nbytes - p;
     } else {
         *residual = 0;
@@ -907,5 +910,47 @@ mod analyze_tests {
         assert_eq!(0, result.2);
         assert!(result.3.is_some());
         assert_eq!(raw.size() as usize, result.3.unwrap());
+    }
+    #[test]
+    fn evenht_1() {
+        // begin run with a bunch of physics events.
+
+        let begin_run = state_change::StateChange::new_without_body_header(
+            state_change::StateChangeType::Begin,
+            123, 0, 1, "This is a title", None
+        );
+
+        // Now we need to put it in the buffer:
+        let raw   = begin_run.to_raw();
+        let brunsize = raw.size();
+        let mut buffer: [u8;BUFFER_SIZE] = [0;BUFFER_SIZE];
+        let mut nbytes = add_item(&raw, &mut buffer, 0);
+
+        // Create a simple physics item:
+
+        let mut event = event_item::PhysicsEvent::new(None);
+        event.add(1 as u16); event.add(2 as u16); event.add(3 as u16);
+        let raw = event.to_raw();
+
+        for _ in 0..5 {
+            nbytes = add_item(&raw, &mut buffer, nbytes);
+        }
+
+        // Ok we have 5 events after a begin run:
+
+        let mut offset = 0;
+        let mut resid = 1243;    // Should get reset.
+        let result = analyze_ring_data(nbytes, &buffer, &mut offset, &mut resid);
+
+        assert_eq!(0, offset);
+        assert_eq!(0, resid);
+
+        assert!(result.0);          // was a begin run.
+        assert!(result.1.is_some());   // THere are post begin run events.
+        assert_eq!(5, result.1.unwrap());  // There were 5 of them to be exact.
+        assert_eq!(5, result.2);          // 2 total events.
+        assert!(result.3.is_some());
+        assert_eq!((brunsize + 5*raw.size()) as usize, result.3.unwrap());   // 
+
     }
 }
