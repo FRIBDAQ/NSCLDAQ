@@ -63,6 +63,7 @@ impl RingBufferStatistics {
 ///  This is the structure of statistics update messages sent
 ///  to the main thread by the monitor threads:
 /// 
+#[derive(Debug, PartialEq)]
 struct UpdateMessage {
     interval : time::Duration,
     statistics : RingBufferStatistics,
@@ -540,5 +541,38 @@ mod rbstat_tests {
             stats
         );
 
+    }
+}
+#[cfg(test)]
+mod updmsg_tests {
+    use crate::*;
+    use std::time::Duration;
+    // Test the implementation of update messages:
+
+    use crate::RingBufferStatistics;
+
+    #[test]
+    fn new_1() {
+        let mut stats = RingBufferStatistics::new("test");
+        stats.count_bytes(100);
+        stats.count_events(10);
+        stats.new_run();                     // Zero the run countes.
+        stats.count_bytes(100);
+        stats.count_events(10);              // More data.
+
+        let update_time = Duration::from_secs(2);   // Yeah slow rate but meh.
+
+        let msg = UpdateMessage::new(update_time, &stats);
+
+        assert_eq!(
+            UpdateMessage {
+                interval: update_time,
+                statistics: RingBufferStatistics {
+                    name: String::from("test"),
+                    bytes: 200, events: 20, bytes_this_run: 100, events_this_run: 10
+                }
+            },
+            msg
+        );
     }
 }
