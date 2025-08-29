@@ -624,4 +624,36 @@ mod sandr_tests {
         );
 
     }
+    #[test]
+    fn update_2() {
+        // Simulate a message update that indicates an new run started.
+
+        let mut stats = StatisticsAndRates::new("test");
+        let interval = Duration::from_secs(1);
+        let mut incr_stat = RingBufferStatistics::new("test");
+        incr_stat.count_bytes(100)
+            .count_events(5);
+        let msg = UpdateMessage::new(interval, &incr_stat);
+
+        stats.update(&msg);        // Establishes baseline counts:
+
+        incr_stat.new_run()
+            .count_bytes(50)
+            .count_events(2);             // Should make stats thing this is a new run.
+        let msg = UpdateMessage::new(interval, &incr_stat);
+        stats.update(&msg);
+        
+        assert_eq!(
+            StatisticsAndRates {
+                cum_statistics : RingBufferStatistics {
+                    name : String::from("test"), 
+                    bytes: 150, events: 7, bytes_this_run: 50, events_this_run: 2
+
+                },
+                byte_rate: 50.0, event_rate: 2.0, byte_per_run_rate : 50.0, evts_per_run_rate: 2.0
+            },
+            stats
+        )
+
+    }
 }
