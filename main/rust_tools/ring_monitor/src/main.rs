@@ -341,7 +341,7 @@ fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
             .timed_get(&mut data[residual..BUFFER_SIZE-1], time::Duration::from_secs(1)) {
             
             let (new_run, run_events, events, run_bytes) =
-                analyze_ring_data(n, &data, &mut next_item_offset, &mut residual);
+                analyze_ring_data(n+residual, &data, &mut next_item_offset, &mut residual);
             statistics.count_bytes(n)
                 .count_events(events); 
             if new_run {
