@@ -79,9 +79,9 @@ impl UpdateMessage {
 
 /// The statistics the user is interested in also include rates:
 /// 
-#[derive(Clone, Serialize, PartialEq)]
+#[derive(Clone, Serialize, Debug, PartialEq)]
 struct StatisticsAndRates {
-    last_statistics   : RingBufferStatistics, // Note this has the ring name.
+    cum_statistics   : RingBufferStatistics, // Note this has the ring name.
     byte_rate         : f64,
     event_rate        : f64,
     byte_per_run_rate : f64,
@@ -93,17 +93,17 @@ impl StatisticsAndRates {
     // This requires a ring name.
 
     fn new(ring: &str) -> StatisticsAndRates {
-        StatisticsAndRates { last_statistics: RingBufferStatistics::new(ring), 
+        StatisticsAndRates { cum_statistics: RingBufferStatistics::new(ring), 
              byte_rate: 0.0, event_rate: 0.0, byte_per_run_rate: 0.0, evts_per_run_rate: 0.0 }
     }
     fn update(&mut self, info : &UpdateMessage) -> &mut Self {
         // Let's be sure the message really was for us.
         // panic if not:
 
-        if info.statistics.name != self.last_statistics.name {
+        if info.statistics.name != self.cum_statistics.name {
             let msg = 
                 format!("BUGCHECK - StatiticsAndRates::update called with mismatched rings was {} should be {}", 
-                info.statistics.name, self.last_statistics.name
+                info.statistics.name, self.cum_statistics.name
             );
             panic!("{}", msg);
         }
@@ -111,25 +111,25 @@ impl StatisticsAndRates {
         // Need differences from last and now to get rates:
 
         let dt : f64 = info.interval.as_secs_f64();
-        self.byte_rate = (info.statistics.bytes - self.last_statistics.bytes) as f64 / dt;
-        self.event_rate = (info.statistics.events - self.last_statistics.events) as f64/dt;
+        self.byte_rate = (info.statistics.bytes - self.cum_statistics.bytes) as f64 / dt;
+        self.event_rate = (info.statistics.events - self.cum_statistics.events) as f64/dt;
         
         // If we started a new run and the events are < than last time, then we start from 0.
 
-        if self.last_statistics.bytes_this_run > info.statistics.bytes_this_run {
+        if self.cum_statistics.bytes_this_run > info.statistics.bytes_this_run {
             // New run so:
 
-            self.last_statistics.bytes_this_run = 0;
-            self.last_statistics.events_this_run = 0;
+            self.cum_statistics.bytes_this_run = 0;
+            self.cum_statistics.events_this_run = 0;
         }
         self.byte_per_run_rate = 
-            (info.statistics.bytes_this_run - self.last_statistics.bytes_this_run) as f64 / dt;
-        self.event_rate =
-            (info.statistics.events_this_run - self.last_statistics.events_this_run) as f64 /dt;
+            (info.statistics.bytes_this_run - self.cum_statistics.bytes_this_run) as f64 / dt;
+        self.evts_per_run_rate =
+            (info.statistics.events_this_run - self.cum_statistics.events_this_run) as f64 /dt;
 
         // Updtae the last statistics field:
 
-        self.last_statistics = info.statistics.clone();
+        self.cum_statistics = info.statistics.clone();
         
 
         self                                // If we add more methods we can chain.
@@ -573,5 +573,55 @@ mod updmsg_tests {
             },
             msg
         );
+    }
+}
+#[cfg(test)]
+mod sandr_tests {
+    // Tests for impl StatisticsAndRates
+
+    use crate::*;
+    use std::time::Duration;
+
+    #[test]
+    fn new_1() {
+        // Test proper initialization:
+
+        let stats = StatisticsAndRates::new("test");
+        assert_eq!(
+            StatisticsAndRates {
+                cum_statistics : RingBufferStatistics {
+                     name: String::from("test"), 
+                     bytes: 0, events: 0, bytes_this_run: 0, events_this_run: 0 },
+                byte_rate: 0.0, event_rate: 0.0,
+                byte_per_run_rate: 0.0, evts_per_run_rate: 0.0
+            }, stats
+        );
+    }
+    #[test]
+    fn update_1() {
+        // Test update and rate computation with no new run:
+
+        let mut stats = StatisticsAndRates::new("test");
+        let interval = Duration::from_secs(1);
+        let mut incr_stat = RingBufferStatistics::new("test");
+        incr_stat.count_bytes(100)
+            .count_events(5);
+        let msg = UpdateMessage::new(interval, &incr_stat);
+
+        stats.update(&msg);
+
+        // Check the rates should be pretty easy with intervals like 1.0:
+
+        assert_eq!(
+            StatisticsAndRates {
+                cum_statistics: incr_stat.clone(),
+                byte_rate: 100.0,
+                event_rate: 5.0,
+                byte_per_run_rate : 100.0,
+                evts_per_run_rate: 5.0
+            }
+            ,stats
+        );
+
     }
 }
