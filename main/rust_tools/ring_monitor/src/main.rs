@@ -843,4 +843,33 @@ mod analyze_tests {
         assert_eq!(125 - 2*size_of::<u32>(), offset);
 
     }
+
+    #[test]
+    fn begin_2() {
+        // Begin run and a chunk at the end of the data that isn't big enough for
+        // a ring item:
+
+        // begin with a 'next offset'...by adding part of a physics item. after the begin item:
+
+        let begin_run = state_change::StateChange::new_without_body_header(
+            state_change::StateChangeType::Begin,
+            123, 0, 1, "This is a title", None
+        );
+
+        // Now we need to put it in the buffer:
+        let raw   = begin_run.to_raw();
+        let mut buffer: [u8;BUFFER_SIZE] = [0;BUFFER_SIZE];
+        let mut nbytes = add_item(&raw, &mut buffer, 0);
+
+        let sbresid = size_of::<u32>()*2 - 1;  // Item header size -1.
+        nbytes += sbresid;                            // Don't actually need data.
+
+        let mut offset = 0; 
+        let mut resid = 0;      // Should become sbresid.
+
+        let _ = analyze_ring_data(nbytes, &buffer, &mut offset, &mut resid);
+
+        assert_eq!(sbresid, resid);
+    
+    }
 }
