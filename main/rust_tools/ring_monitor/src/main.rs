@@ -258,6 +258,7 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
         let size = u32::from_ne_bytes(data[p..p+lsize].try_into().unwrap());
         p += lsize;
         let item_type     = u32::from_ne_bytes(data[p..p+lsize].try_into().unwrap());
+        p += lsize;                       // Count the type field.
 
         // Count events.
         if item_type == rust_ringitem_format::PHYSICS_EVENT {
@@ -720,5 +721,77 @@ mod port_tests {
         // New should show as advertised:
 
         assert!(already_advertised(&mut c, svc));
+    }
+}
+#[cfg(test)]
+mod analyze_tests {
+    // Tests for analyze_ring_data
+
+    // Utitity to put a ring item in a buffer:
+    // Returns the next offset:
+    fn add_item(item: &RingItem, buffer: &mut[u8], offset : usize) -> usize {
+
+        // Get the bits and pieces of the ring item as byte things.
+        let mut o = offset;
+        let bytes = item.size().to_ne_bytes();
+        let t          = item.type_id().to_ne_bytes();
+        let body            = item.payload().as_slice();
+
+        buffer[o..o+size_of::<u32>()].copy_from_slice(&bytes);
+        o += size_of::<u32>();
+        buffer[o..o+size_of::<u32>()].copy_from_slice(&t);
+        o += size_of::<u32>();
+
+        buffer[o..o+body.len()].copy_from_slice(body);
+
+
+        item.size() as usize
+    }
+
+    // Zero bytes is well handled (though we get insulated from that)
+
+    
+    use crate::*;
+    use rust_ringitem_format::*;
+    #[test]
+    fn zero() {
+        let data : [u8;BUFFER_SIZE] = [0;BUFFER_SIZE];
+        let mut resid = 0;
+        let mut next = 0;
+        let result = analyze_ring_data(0, &data, &mut next, &mut resid );
+        assert_eq!(false, result.0);
+        assert!( result.1.is_none());
+        assert_eq!(0, result.2);
+        assert!(result.3.is_none());
+        assert_eq!(0, resid);
+        assert_eq!(0, next);
+    }
+    #[test]
+    fn begin_0() {
+        // Buffer contains  a begin run but no event.
+
+        let begin_run = state_change::StateChange::new_without_body_header(
+            state_change::StateChangeType::Begin,
+            123, 0, 1, "This is a title", None
+        );
+
+        // Now we need to put it in the buffer:
+        let raw   = begin_run.to_raw();
+        let mut buffer: [u8;BUFFER_SIZE] = [0;BUFFER_SIZE];
+        let nbytes = add_item(&raw, &mut buffer, 0);
+
+        let mut offset = 0;
+        let mut residual = 0;
+        let result = analyze_ring_data(nbytes, &buffer, &mut offset, &mut residual);
+
+        assert_eq!(0, offset);
+        assert_eq!(0, residual);
+
+        assert!(result.0);
+        assert!(result.1.is_none());
+        assert_eq!(0, result.2);
+        assert!(result.3.is_some());
+        assert_eq!(raw.size() as usize, result.3.unwrap());
+
     }
 }
