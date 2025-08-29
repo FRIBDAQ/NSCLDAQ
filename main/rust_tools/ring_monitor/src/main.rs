@@ -953,4 +953,59 @@ mod analyze_tests {
         assert_eq!((brunsize + 5*raw.size()) as usize, result.3.unwrap());   // 
 
     }
+
+    #[test]
+    fn event_2() {
+        // Some events, then a begin run, the more events.
+
+        let mut buffer: [u8;BUFFER_SIZE] = [0;BUFFER_SIZE];
+        let mut nbytes = 0;                // NO bytes there yet
+
+        // A couple of physics events:
+
+        let mut event = event_item::PhysicsEvent::new(None);
+        event.add(1 as u16); event.add(2 as u16); event.add(3 as u16);
+        let raw = event.to_raw();
+        let evsize = raw.size();
+
+        nbytes = add_item(&raw, &mut buffer, nbytes);
+
+        // Create and add a begin run item:
+
+        let begin_run = state_change::StateChange::new_without_body_header(
+            state_change::StateChangeType::Begin,
+            123, 0, 1, "This is a title", None
+        );
+
+        // Now we need to put it in the buffer:
+        let raw   = begin_run.to_raw();
+        let brunsize = raw.size();
+        nbytes = add_item(&raw, &mut buffer, nbytes);
+
+        // Now some more events:
+
+        let raw = event.to_raw();
+        for _ in 0..3 {
+            nbytes = add_item(&raw, &mut buffer, nbytes);
+        }
+
+        // Review, we have 1 events of size evsize.
+        // followed by a begin run item of brunsize
+        // followed by 3 more events of evsize.
+        let mut next_offset = 0;
+        let mut residual = 1234;
+        let result = 
+            analyze_ring_data(nbytes, &buffer, &mut next_offset, &mut residual);
+        
+        assert_eq!(0, next_offset);
+        assert_eq!(0, residual);
+
+        assert!(result.0);     // There is a begin run.
+        assert!(result.1.is_some()); // THere are events after the begin:
+        assert_eq!(3, result.1.unwrap()); // 3 of them.
+        assert_eq!(4, result.2);  // 5 total events however.
+        assert!(result.3.is_some());  // there are bytes after the begin.
+        assert_eq!((brunsize+3*evsize) as usize, result.3.unwrap());
+
+    }
 }
