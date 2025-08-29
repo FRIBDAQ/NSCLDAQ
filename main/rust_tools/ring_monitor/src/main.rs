@@ -288,7 +288,7 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
         // If that took us off the end of the ring item, 
         // We need to set next_offset accordingly and return what we have:
 
-        if p > nbytes {
+        if p >= nbytes {
             *next_offset = p - nbytes;
             return result;
         }
@@ -301,7 +301,11 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
     } else {
         *residual = 0;
     }
+    // offset is always zero if we fell out of the loop.  Caller will put the residual at the
+    // beginning of the next data buffer.
 
+    *next_offset = 0;                   
+                                 
 
     result
 }
@@ -745,7 +749,7 @@ mod analyze_tests {
         buffer[o..o+body.len()].copy_from_slice(body);
 
 
-        item.size() as usize
+        item.size() as usize + offset
     }
 
     // Zero bytes is well handled (though we get insulated from that)
@@ -871,5 +875,37 @@ mod analyze_tests {
 
         assert_eq!(sbresid, resid);
     
+    }
+
+    #[test]
+    fn offset_1() {
+        // Test that input offsets are properly handled:
+
+        let begin_run = state_change::StateChange::new_without_body_header(
+            state_change::StateChangeType::Begin,
+            123, 0, 1, "This is a title", None
+        );
+
+        // Now we need to put it in the buffer:
+        let raw   = begin_run.to_raw();
+        let mut buffer: [u8;BUFFER_SIZE] = [0;BUFFER_SIZE];
+        let mut offset = 10;
+        let nbytes = add_item(&raw, &mut buffer, offset);  // 10 bytes in.
+        
+        let mut resid =0;
+        let result = analyze_ring_data(nbytes, &buffer, &mut offset, &mut resid);
+
+        // offset and resid should back to zero.
+
+        assert_eq!(0, offset);
+        assert_eq!(0, resid);
+
+        // Check the results of the analysis:
+
+        assert!(result.0);              // there was a begin run.
+        assert!(result.1.is_none());    // no physics events.
+        assert_eq!(0, result.2);
+        assert!(result.3.is_some());
+        assert_eq!(raw.size() as usize, result.3.unwrap());
     }
 }
