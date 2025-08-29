@@ -19,7 +19,7 @@ const RING_POLL_INTERVAL : u64  = 1; // Secs between polls for new rings.
 ///
 /// The information we want to maintain for each ringbuffer is:
 /// 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, PartialEq)]
 struct RingBufferStatistics {
     name:  String,         // name of the ringbuffer.
     bytes: usize,          // Total bytes observed through the ring.
@@ -481,5 +481,64 @@ fn monitor(port : u16) {
         }
 
         thread::sleep(time::Duration::from_secs(RING_POLL_INTERVAL));
+    }
+}
+
+#[cfg(test)]
+mod rbstat_tests {
+    // Tests for the RingBufferStatistics implementation.
+    use crate::*;
+
+    #[test]
+    fn new_1() {
+        let stats = RingBufferStatistics::new("testing");
+        assert_eq!(
+            RingBufferStatistics {
+                name: String::from("testing"), 
+                bytes : 0, events: 0, bytes_this_run : 0, events_this_run: 0
+            },
+            stats
+        );
+    }
+    #[test]
+    fn count_bytes_1() {
+        let mut stats = RingBufferStatistics::new("testing");
+        stats.count_bytes(10);
+        assert_eq!(
+            RingBufferStatistics {
+                name: String::from("testing"), 
+                bytes : 10, events: 0, bytes_this_run : 10, events_this_run: 0
+            },
+            stats
+        );
+    }
+    #[test]
+    fn count_events_1() {
+        let mut stats = RingBufferStatistics::new("testing");
+        stats.count_events(5);
+        assert_eq!(
+             RingBufferStatistics {
+                name: String::from("testing"), 
+                bytes : 0, events: 5, bytes_this_run : 0, events_this_run: 5
+            },
+            stats
+        );
+    }
+    #[test]
+    fn new_run_1() {
+        let mut stats = RingBufferStatistics::new("testing");
+        stats.count_events(5);
+        stats.count_bytes(10);
+
+        stats.new_run();   // Should only clear the *this_run values:
+
+        assert_eq!(
+            RingBufferStatistics {
+                name: String::from("testing"), 
+                bytes : 10, events: 5, bytes_this_run : 0, events_this_run: 0
+            },
+            stats
+        );
+
     }
 }
