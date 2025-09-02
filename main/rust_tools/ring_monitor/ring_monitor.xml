@@ -1,0 +1,205 @@
+<!-- manpage 1daq -->
+<refentry>
+    <refmeta>
+        <refentrytitle>ring_monitor</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>ring_monitor</refname>
+        <refpurpose>Monitor ring throughput statistics</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+         <cmdsynopsis>
+            <command>
+nohup $DAQBIN/ring_monitor &
+            </command>
+         </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This server is intended to be started at system start up time.  It attaches a consumer to
+            every ringbuffer that has been and will be created and monitors the throughput in 
+            total bytes, total physics items (events) as well as bytes/events since the last begin 
+            run item.  It also computes rates of bytes and events per second.
+        </para>
+        <para>
+            The server advertises with the NSCLDAQ port manager as the service:
+            <literal>RING_MONITOR</literal>.  Connecting to that service results in the
+            monitor spitting out the statistics in JSON format (see <literal>STATISTICS FORMAT</literal>
+            below).  After providing the statistics, the ring monitor willl shutdown the connection
+            to the client.
+        </para>
+        <para>
+            A word about the ring monitor structure that is important.  The NSCLDAQ ringmaster
+            reacts to the destruction of a ringbuffer by attempting to kill processes that are
+            attached to the ringbuffer either as the producer or a consumer.   THerefore, the
+            ringmonitor is actually a pair of processes.  The parent process starts the
+            actual monitor program and, when it exits, restarts it.  This implies that deleting
+            a ringbuffer resets the statistics on all rings.  This also implies that while the
+            monitor program needs, and does react to the creation of new ringbuffers, it does not
+            need to react to the destruction of ringbuffers as the ringmaster will force
+            a restart, which will re-inventory the rings.
+        </para>
+        <para>
+            The rng monitor program does not restrict the set of hosts that can connect to it.
+            This implies that ring statistics can be moniotored from  non DAQ nodes.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>STATISTICS FORMAT</title>
+        <para>
+            The ring monitor returns statistics to clients in JavaScript Object Notation (JSON).  See 
+            <ulink url='https://www.json.org/json-en.html' /> for a description of JSON.  Fortunately,
+            JSON decoding libraries exist for many programming languages.  FRIB containers provide 
+            JSON decoding libraries for several languages.  This section describes the JSON that
+            the ring monitor returns.  The server returns an array of JSON objects. each object
+            provides statistics for a single ringbuffer.   The proxy rings that represent remote ringbuffer
+            are included in the array.  
+        </para>
+        <para>
+            Below is an example of an idle system with a single ring named <literal>ring2</literal>
+            that has never had data produced into it. I have prettified the JSON to make it more readable.
+        </para>
+        <informalexample>
+            <programlisting>
+[
+  {
+    "name":"ring2",
+    "cum_statistics":{
+        "name":"ring2",
+        "bytes":0,
+        "events":0,
+        "bytes_this_run":0,
+        "events_this_run":0
+    },
+    "byte_rate":0.0,
+    "event_rate":0.0,
+    "byte_per_run_rate":0.0,
+    "evts_per_run_rate":0.0
+ }
+]           
+            </programlisting>
+        </informalexample>
+        <para>
+            If there were additional ring buffers, they would be separated from the structure shown additional
+            each other by commas, per JSON array notation.  The object that describes ring buffer statistics
+            has the following attributes:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><structfield>name</structfield> (string)</term>
+                    <listitem>
+                        <para>
+                            The name of the ringbuffer.  Note this is a local ringbuffer name, not
+                            a URI.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><structfield>cum_statistics</structfield> (object)</term>
+                    <listitem>
+                        <para>
+                            An object that describes the cumulative statistics fromt he ring.
+                            These are the statistics since the last restart of the ring monitor.
+                            The attributes of this object will be described below.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><structfield>byte_rate</structfield>(float)</term>
+                    <listitem>
+                        <para>
+                            Instantaneous bytes per second through the ring.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><structfield>event_rate</structfield> (float)</term>
+                    <listitem>
+                        <para>
+                            Instantaneous rate of <literal>PHYSICS_EVENT</literal> items through the
+                            ringbuffers.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><structfield>byte_per_run_rate</structfield> (float)</term>
+                    <listitem>
+                        <para>
+                            Same as <structfield>byte_rate</structfield> once a run is stable.
+                            At the start of the run there may be a perturbation.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><structfield>evts_per_run_rate (float)</structfield></term>
+                    <listitem>
+                        <para>
+                            Same as <structfield>event_rate</structfield> though there can be a
+                            downward perturbation at the start of the run.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            The <structfield>cum_statistics</structfield> is itelf an object which has the following
+            attributes:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><structfield>name</structfield> (string)</term>
+                    <listitem>
+                        <para>
+                            The name of the ring buffer again.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><structfield>bytes</structfield> (integer)</term>
+                    <listitem>
+                        <para>
+                            Number of bytes that have gone through the ringbuffer since the
+                            server started.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><structfield>events</structfield> (integer)</term>
+                    <listitem>
+                        <para>
+                            Number of <literal>PHYSICS_EVENT</literal> ring items that
+                            have gone through the ring sinc the server was started.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><structfield>bytes_this_run</structfield> (integer)</term>
+                    <listitem>
+                        <para>
+                            Number of bytes that have gone through the ring buffers since
+                            the most recent <literal>BEGIN_RUN</literal> item was observed.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><structfield>events_this_run</structfield> (integer)</term>
+                    <listitem>
+                        <para>
+                            Number of <literal>PHYSICS_EVENT</literal> ring items that
+                            were observed since the most recent <literal>BEGIN_RUN</literal>
+                            was observed.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            Note:  The countes for the run begin counting when the server starts and don't wait for
+            a begin run item.  Thus if the server is started in the middle of the run, the counters and
+            rates will be from the start of the server until a <literal>BEGIN_RUN</literal> is observed
+            at which time the totals for a run will be reset.
+        </para>
+    </refsect1>
+</refentry>
+
+<!-- /manpage -->
