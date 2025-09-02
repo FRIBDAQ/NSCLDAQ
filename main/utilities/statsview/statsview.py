@@ -16,8 +16,11 @@
 #
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QTableView
-from PyQt5.QtCore import    QAbstractTableModel
+from PyQt5.QtGui import    QStandardItemModel
 from nscldaq.portmanager.PortManager import PortManager
+
+import socket
+import json
 
 SERVICENAME="RING_MONITOR"
 UPDATE_MILLISECONDS=5000   # I don't think the server updates faster.
@@ -38,9 +41,16 @@ def getServerPort(host) :
         return None
 
 def getStatistics(host, port):
-    pass
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((host, port))
+    data = sock.recv(1000000)
+    sock.shutdown(socket.SHUT_RDWR)
+    info = json.loads(data)
+    
+    return info
+    
 
-def populateModel(data):
+def populateModel(data, model):
     pass
 
 if __name__ == '__main__':
@@ -62,13 +72,17 @@ if __name__ == '__main__':
     # 2. Create a QWidget (our window)
     window = QTableView()
     window.setShowGrid(True)
-    model = QAbstractTableModel(window)
+    model = QStandardItemModel(window)
+    window.setModel(model)
+    
+    # Here we'd set up a timer
     
     #  Get the initial data, populate the model, and 
     #  Schedule updates.
     
     data = getStatistics(host, port)
-    populateModel(data)
+    print(data)
+    populateModel(data, model)
     
 
     # Optional: Set window properties
