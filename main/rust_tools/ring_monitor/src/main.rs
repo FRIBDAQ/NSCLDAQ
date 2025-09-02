@@ -322,6 +322,7 @@ fn send_statistics(ch : &mpsc::Sender<UpdateMessage>, elapsed : time::Duration, 
 ///  Thread to monitor a single, named ringbuffer.
 /// 
 fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
+    println!("Ring monitor thread starting for {}", name);
     // Become a consumer of the ring that was passed in:
 
     let mut statistics = RingBufferStatistics::new(name);
@@ -372,8 +373,11 @@ fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
 
 }
 
-fn follow_rings(list : &Vec<ringmaster_client::RingInformation>, sender : &mpsc::Sender<UpdateMessage>) {
-    let mut thread_map : HashMap<String, thread::JoinHandle<()>> = HashMap::new(); // Map of threads we have.
+fn follow_rings(
+    list : &Vec<ringmaster_client::RingInformation>, 
+    sender : &mpsc::Sender<UpdateMessage>, 
+    thread_map: &mut HashMap<String, thread::JoinHandle<()>>) {
+    
     for ring in list.iter() {
         if !thread_map.contains_key(&ring.name) {
             let name = ring.name.clone();
@@ -439,10 +443,11 @@ fn serve_statistics(sock: &mut TcpStream, stats: &HashMap<String, StatisticsAndR
 /// Ring deletion is a rare occurence.
 /// 
 fn monitor(port : u16) {
+    let mut thread_map : HashMap<String, thread::JoinHandle<()>> = HashMap::new(); // Map of threads we have.
     let (sender, receiver) = mpsc::channel::<UpdateMessage>();
     let mut aggregated_stats = HashMap::<String, StatisticsAndRates>::new();
-
-    let ip_spec = format!("127.0.0.1:{}", port);     // Listener specification.
+    
+    let ip_spec = format!("0.0.0.0:{}", port);     // Listener specification.
     let server = TcpListener::bind(&ip_spec).expect("Cant start server");
     let _ = server.set_nonblocking(true);                           // don't stop the loop for connections.
     loop {
@@ -450,7 +455,7 @@ fn monitor(port : u16) {
         
         match c.list_rings() {
             Ok(list) => {
-                follow_rings(&list, &sender)
+                follow_rings(&list, &sender, &mut thread_map)
             },
             Err(reason) => eprintln!("Failed to list rings {}", reason),
         }
