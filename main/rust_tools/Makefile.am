@@ -61,6 +61,15 @@ install-exec-local:
 		$(INSTALL_PROGRAM) $${files} $(INSTALL_DIR); \
 	fi
 
+##
+#   tests:
+#   For each in RUST_BUILTIN we do a cargo test:
+#
+
+check-local:
+	for tool in $(RUST_BUILTIN); do (cd @srcdir@/$$tool;  @RUST_CARGO@ test --target-dir @abs_builddir@/$$tool/target); done
+
+
 # Finally, since the Rust built ins are not known to the
 # autotools directly, we need to include them in the tarball too:
 
