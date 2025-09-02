@@ -194,7 +194,6 @@ fn main() {
         return;
     } 
     let port = allocate_port(&mut pman, SERVICE_NAME);
-    println!("Allocated port {}", port);
     let port_string = port.to_string();
     loop {
         let output = process::Command::new(&executable)
@@ -322,7 +321,6 @@ fn send_statistics(ch : &mpsc::Sender<UpdateMessage>, elapsed : time::Duration, 
 ///  Thread to monitor a single, named ringbuffer.
 /// 
 fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
-    println!("Ring monitor thread starting for {}", name);
     // Become a consumer of the ring that was passed in:
 
     let mut statistics = RingBufferStatistics::new(name);
