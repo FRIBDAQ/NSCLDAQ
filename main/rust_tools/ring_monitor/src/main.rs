@@ -81,6 +81,7 @@ impl UpdateMessage {
 /// 
 #[derive(Clone, Serialize, Debug, PartialEq)]
 struct StatisticsAndRates {
+    name             : String,               // yes duplicate info but for easier JSON processing.
     cum_statistics   : RingBufferStatistics, // Note this has the ring name.
     byte_rate         : f64,
     event_rate        : f64,
@@ -93,7 +94,7 @@ impl StatisticsAndRates {
     // This requires a ring name.
 
     fn new(ring: &str) -> StatisticsAndRates {
-        StatisticsAndRates { cum_statistics: RingBufferStatistics::new(ring), 
+        StatisticsAndRates {name: String::from(ring), cum_statistics: RingBufferStatistics::new(ring), 
              byte_rate: 0.0, event_rate: 0.0, byte_per_run_rate: 0.0, evts_per_run_rate: 0.0 }
     }
     fn update(&mut self, info : &UpdateMessage) -> &mut Self {
