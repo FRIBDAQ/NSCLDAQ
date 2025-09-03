@@ -40,16 +40,29 @@ TB = float(GB*KB)
 #
 def vol_units(bytes) :
     if bytes > TB :
-        return f"{bytes/TB} TB"
+        return "{:.2f} TB".format(bytes/TB)
     elif bytes > GB :
-        return f"{bytes/GB} GB"
+        return "{:.2f} GB".format(bytes/GB)
     elif bytes > MB :
-        return f"{bytes/MB} MB"
+        return "{:.2f} MB".format(bytes/MB)
     elif bytes > KB :
-        return f"{bytes/KB} KB"
+        return "{:.2f} KB".format(bytes/KB)
     else :
         return f"{bytes} B"
 
+def events_units(events) :
+    if events > TB :
+        return "{:.2f} TEvents".format(events/TB)
+    elif events > GB :
+        return "{:.2f} GEvents".format(events/GB)
+    elif events > MB :
+        return "{:.2f} MEvents".format(events/MB)
+    elif events > KB :
+        return "{:.2f} KEvents".format(events/KB)
+    else :
+        return f"{events} Events"
+def rate_events(rate) :
+    return events_units(rate) + "/s"
 # Same as vol_units but the resulting string
 # gets /s appended to it:
 def rate_units(rate) :    
@@ -108,10 +121,10 @@ def populateModel(data, model):
             QStandardItem(ring_data['name']), 
             QStandardItem(vol_units(ring_data['cum_statistics']['bytes'])),
             QStandardItem(vol_units(ring_data['cum_statistics']['bytes_this_run'])),
-            QStandardItem(vol_units(ring_data['cum_statistics']['events'])),
-            QStandardItem(vol_units(ring_data['cum_statistics']['events_this_run'])),
+            QStandardItem(events_units(ring_data['cum_statistics']['events'])),
+            QStandardItem(events_units(ring_data['cum_statistics']['events_this_run'])),
             QStandardItem(rate_units(ring_data['byte_rate'])),
-            QStandardItem(rate_units(ring_data['event_rate']))
+            QStandardItem(rate_events(ring_data['event_rate']))
         )
         matches = model.findItems(ring_data['name'])  #  Exists?
         if len(matches) > 0 :
@@ -129,7 +142,6 @@ def populateModel(data, model):
 # That allows this to also be a timer slot.
            
 def update():
-    print("Update")
     data = getStatistics(host, port)
     populateModel(data, model)
     
@@ -176,7 +188,7 @@ if __name__ == '__main__':
 
     # Optional: Set window properties
     window.setWindowTitle('Minimal PyQt Window')
-    window.setGeometry(100, 100, 400, 200) # x, y, width, height
+    window.setGeometry(100, 100, 800, 200) # x, y, width, height
 
     # 3. Show the window
     window.show()
