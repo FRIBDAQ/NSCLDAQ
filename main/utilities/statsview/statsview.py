@@ -17,7 +17,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QTableView
 from PyQt5.QtGui import    QStandardItemModel, QStandardItem
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from nscldaq.portmanager.PortManager import PortManager
 
 import socket
@@ -129,6 +129,7 @@ def populateModel(data, model):
 # That allows this to also be a timer slot.
            
 def update():
+    print("Update")
     data = getStatistics(host, port)
     populateModel(data, model)
     
@@ -163,11 +164,15 @@ if __name__ == '__main__':
 
     
     #  Get the initial data, populate the model, and 
-    #  Schedule updates.
+    #  Schedule periodic
     
     update()
     
-    
+    timer = QTimer()
+    timer.setInterval(UPDATE_MILLISECONDS)
+    timer.setSingleShot(False)
+    timer.timeout.connect(update)
+    timer.start()
 
     # Optional: Set window properties
     window.setWindowTitle('Minimal PyQt Window')
