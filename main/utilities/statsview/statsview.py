@@ -17,6 +17,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QTableView
 from PyQt5.QtGui import    QStandardItemModel
+from PyQt5.QtCore import Qt
 from nscldaq.portmanager.PortManager import PortManager
 
 import socket
@@ -40,16 +41,38 @@ def getServerPort(host) :
     else:
         return None
 
+#  Get the statistics from the server and return it
+# sorted by ring name.
+
 def getStatistics(host, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
     data = sock.recv(1000000)
     sock.shutdown(socket.SHUT_RDWR)
     info = json.loads(data)
-    
+    info = sorted(info, key=lambda item : item['name'])
     return info
     
-
+# 
+#   Setup the model characteristics...specifically
+#   We need the titles.
+#
+def setupModel(model) :
+    model.setHorizontalHeaderLabels((
+        "Ring", 
+        "Total Volume", 
+        "Volume This Run", 
+        "Total Events", 
+        "Events This Run", 
+        "Data Volume Rate", 
+        "Event Rate"))
+#
+#  Popluate the model with data.
+#  data comes from getStatistics and
+#  The model is assumed to be a standard item model.
+#  If the name already exists, we just replace the statistics
+#  If the name does not exist, we figure out where to insert it
+# 
 def populateModel(data, model):
     pass
 
@@ -72,8 +95,15 @@ if __name__ == '__main__':
     # 2. Create a QWidget (our window)
     window = QTableView()
     window.setShowGrid(True)
+    window.setGridStyle(Qt.SolidLine)
     model = QStandardItemModel(window)
     window.setModel(model)
+    window.horizontalHeader().show()
+    window.verticalHeader().show()
+    
+    # Set up the model:
+    
+    setupModel(model)
     
     # Here we'd set up a timer
     
