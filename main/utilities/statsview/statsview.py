@@ -15,8 +15,8 @@
 #     show rings from all the requested hosts.
 #
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QTableView
-from PyQt5.QtGui import    QStandardItemModel
+from PyQt5.QtWidgets import QApplication, QTableView
+from PyQt5.QtGui import    QStandardItemModel, QStandardItem
 from PyQt5.QtCore import Qt
 from nscldaq.portmanager.PortManager import PortManager
 
@@ -26,6 +26,34 @@ import json
 SERVICENAME="RING_MONITOR"
 UPDATE_MILLISECONDS=5000   # I don't think the server updates faster.
 
+KB = float(1024)
+MB = float(KB*KB)
+GB = float(MB*KB)
+TB = float(GB*KB)
+
+# vol_units
+#   Given a number, returns a string containing
+#   An appropriate number and units.
+# 
+#  E.g. given a number like 2048 returns 2 KB
+#  Units go up to TB.
+#
+def vol_units(bytes) :
+    if bytes > TB :
+        return f"{bytes/TB} TB"
+    elif bytes > GB :
+        return f"{bytes/GB} GB"
+    elif bytes > MB :
+        return f"{bytes/MB} MB"
+    elif bytes > KB :
+        return f"{bytes/KB} KB"
+    else :
+        return f"{bytes} B"
+
+# Same as vol_units but the resulting string
+# gets /s appended to it:
+def rate_units(rate) :    
+    return vol_units(rate) + "/s"
 ##
 # getServerPort
 #    Return the port the Ring monitor is on.
@@ -70,25 +98,52 @@ def setupModel(model) :
 #  Popluate the model with data.
 #  data comes from getStatistics and
 #  The model is assumed to be a standard item model.
-#  If the name already exists, we just replace the statistics
-#  If the name does not exist, we figure out where to insert it
+#  If the name already exists, we just append it to the
+#  model...sorting is done by the table.
 # 
 def populateModel(data, model):
-    pass
+    for ring_data in data:
+        #  Set up the data:
+        line = (
+            QStandardItem(ring_data['name']), 
+            QStandardItem(vol_units(ring_data['cum_statistics']['bytes'])),
+            QStandardItem(vol_units(ring_data['cum_statistics']['bytes_this_run'])),
+            QStandardItem(vol_units(ring_data['cum_statistics']['events'])),
+            QStandardItem(vol_units(ring_data['cum_statistics']['events_this_run'])),
+            QStandardItem(rate_units(ring_data['byte_rate'])),
+            QStandardItem(rate_units(ring_data['event_rate']))
+        )
+        matches = model.findItems(ring_data['name'])  #  Exists?
+        if len(matches) > 0 :
+            itemIndex = model.indexFromItem(matches[0])
+            row = itemIndex.row()
+            for col, item in enumerate(line) :
+                model.setItem(row, col, item)
+        else : 
+            # new row:
+            model.appendRow(line)
 
+# Update the model.. we take advantage
+# Of the fact that host, port, data, model
+# are defined at the global level
+# That allows this to also be a timer slot.
+           
+def update():
+    data = getStatistics(host, port)
+    populateModel(data, model)
+    
 if __name__ == '__main__':
     host = "localhost"
     if len(sys.argv) > 1:
         host = sys.argv[1]
-    print("Getting statistics from host: ", host)
     
     #  Get the ring monitor port:
     
     port = getServerPort(host)
     if port is None:
         print('The ring monitor server is not running in ', host)
+        sys.exit(-1)
     
-    print("Ring monitor is running  on", port)
     
     # 1. Create an instance of QApplication
     app = QApplication(sys.argv)
@@ -100,19 +155,18 @@ if __name__ == '__main__':
     window.setModel(model)
     window.horizontalHeader().show()
     window.verticalHeader().show()
+    window.setSortingEnabled(True)
     
     # Set up the model:
     
     setupModel(model)
-    
-    # Here we'd set up a timer
+
     
     #  Get the initial data, populate the model, and 
     #  Schedule updates.
     
-    data = getStatistics(host, port)
-    print(data)
-    populateModel(data, model)
+    update()
+    
     
 
     # Optional: Set window properties
