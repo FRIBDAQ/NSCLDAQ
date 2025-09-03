@@ -12,7 +12,7 @@ use std::net::{TcpListener, TcpStream};
 
 
 const SERVICE_NAME : &str = "RING_MONITOR";
-const BUFFER_SIZE : usize = 1024;
+const BUFFER_SIZE : usize = 1024*1024;
 const UPDATE_TIME : u64  = 5;       // How often to update statistics -> main thread.
 const RING_POLL_INTERVAL : u64  = 1; // Secs between polls for new rings.
 
@@ -194,18 +194,15 @@ fn main() {
         return;
     } 
     let port = allocate_port(&mut pman, SERVICE_NAME);
+    eprintln!("Server will use port {}", port);
     let port_string = port.to_string();
     loop {
-        let output = process::Command::new(&executable)
-            .arg("--server").arg(&port_string)
-            .output()
-            .expect("Failed to respawn");
-        println!("Subprocess exited stdout: ");
-        io::stdout().write_all(&output.stdout).unwrap();
-        println!("\nStderr: ");
-        io::stdout().write_all(&output.stderr).unwrap();
-        io::stdout().flush().unwrap();
-    }
+        let mut  child = process::Command::new(&executable)
+            .arg("--server").arg(&port_string).spawn()
+            .expect("Failed to spawn server");
+        child.wait().expect("Could not wait on server completion");
+        println!("Subprocess exited ");
+    }    
 }
 ///
 /// Called to see if our service is already advertised.
@@ -335,11 +332,12 @@ fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
     let mut next_item_offset = 0;
     let mut residual = 0;
     let mut start_time = time::Instant::now();         // Start of stats gathering.
+    eprintln!("Ring_monitor");
     loop {
         if let Ok(n) = consumer
             .consumer
             .timed_get(&mut data[residual..BUFFER_SIZE-1], time::Duration::from_secs(1)) {
-            
+            eprintln!("Got {} bytes", n);
             let (new_run, run_events, events, run_bytes) =
                 analyze_ring_data(n+residual, &data, &mut next_item_offset, &mut residual);
             statistics.count_bytes(n)
@@ -350,6 +348,7 @@ fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
                 statistics.bytes_this_run   = run_bytes.unwrap();
                
             }
+            eprintln!("Analyzed");
             // If there's a residual, we need to move those bytes to the bottom of the buffer for the next
             // read.  The number of bytes will be small (less than the size of a ring item header) so we
             // don't need to be fancy:
@@ -357,14 +356,16 @@ fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
             for i in 0..residual {
                 data[i] = data[(n-1) - residual + i];
             }
-        }
+        } 
         // See if we need to dump the statistics to the main thread:
         // if so we start then ext interval
 
        let elapsed = start_time.elapsed();
        if elapsed.as_secs() >= UPDATE_TIME {
+            eprintln!("sending update message");
             send_statistics(&chan, elapsed, &statistics);
-            start_time = time::Instant::now();                    
+            start_time = time::Instant::now();   
+            eprintln!("Sent");                
        }
     }
     
