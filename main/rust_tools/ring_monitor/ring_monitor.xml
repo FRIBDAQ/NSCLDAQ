@@ -11,7 +11,7 @@
     <refsynopsisdiv>
          <cmdsynopsis>
             <command>
-nohup $DAQBIN/ring_monitor &
+nohup $DAQBIN/rust/ring_monitor &
             </command>
          </cmdsynopsis>
     </refsynopsisdiv>
@@ -198,6 +198,17 @@ nohup $DAQBIN/ring_monitor &
             a begin run item.  Thus if the server is started in the middle of the run, the counters and
             rates will be from the start of the server until a <literal>BEGIN_RUN</literal> is observed
             at which time the totals for a run will be reset.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>BUGS</title>
+        <para>
+            WHen a ringbuffer is deleted, the ring master, in the system the ringbuffer lived in
+            will kill all clients (producer and consumers) that are attached to that ring.
+            This means that the ring_monitor will be killed as well.  The ring_monitor, however
+            consists of a parent process that spawns off the actual monitor and, when the actual
+            monitor exits restarts it.  Unfortunately that means that all counters maintained
+            by the ring_monitor are reset when a ringbuffer is deleted.  This is not expected to be fixed.
         </para>
     </refsect1>
 </refentry>
