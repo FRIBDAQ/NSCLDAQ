@@ -12,7 +12,7 @@ use std::net::{TcpListener, TcpStream};
 
 
 const SERVICE_NAME : &str = "RING_MONITOR";
-const BUFFER_SIZE : usize = 1024;
+const BUFFER_SIZE : usize = 1024*1024;
 const UPDATE_TIME : u64  = 5;       // How often to update statistics -> main thread.
 const RING_POLL_INTERVAL : u64  = 1; // Secs between polls for new rings.
 
@@ -194,19 +194,15 @@ fn main() {
         return;
     } 
     let port = allocate_port(&mut pman, SERVICE_NAME);
-    println!("Allocated port {}", port);
+    eprintln!("Server will use port {}", port);
     let port_string = port.to_string();
     loop {
-        let output = process::Command::new(&executable)
-            .arg("--server").arg(&port_string)
-            .output()
-            .expect("Failed to respawn");
-        println!("Subprocess exited stdout: ");
-        io::stdout().write_all(&output.stdout).unwrap();
-        println!("\nStderr: ");
-        io::stdout().write_all(&output.stderr).unwrap();
-        io::stdout().flush().unwrap();
-    }
+        let mut  child = process::Command::new(&executable)
+            .arg("--server").arg(&port_string).spawn()
+            .expect("Failed to spawn server");
+        child.wait().expect("Could not wait on server completion");
+        println!("Subprocess exited ");
+    }    
 }
 ///
 /// Called to see if our service is already advertised.
@@ -254,13 +250,14 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
     
     let lsize = size_of::<u32>();
     
-    while nbytes - p >= lsize * 2 {    // there's room for a header.
+    while (nbytes - p) >= lsize * 2 {    // there's room for a header.
     
         let size = u32::from_ne_bytes(data[p..p+lsize].try_into().unwrap());
         p += lsize;
         let item_type     = u32::from_ne_bytes(data[p..p+lsize].try_into().unwrap());
         p += lsize;                       // Count the type field.
 
+        
         // Count events.
         if item_type == rust_ringitem_format::PHYSICS_EVENT {
             result.2 += 1;
@@ -285,32 +282,43 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
             result.1 = None;                             // no new events.
             result.3 = Some(size as usize);                             // For data we've had this item.
         }
+        
+       
         p += size as usize - 2*lsize;                            // next ring item.
         // If that took us off the end of the ring item, 
         // We need to set next_offset accordingly and return what we have:
-
+        // Two cases:
+        //   The item exactly fits in the buffer:  p == nbytes then the next
+        //       item will start at the beginning of the next block of data.
+        //   The item does not fit in the block, the next item starts
+        //        at p-nbytes...that is the amount this item hangs over into 
+        //        the next block.
+        //
         if p >= nbytes {
-            *next_offset = p - nbytes;
+            
+            *next_offset = p - nbytes;  
+            *residual  = 0;
             if p == nbytes {
-                *residual  = 0;
+                *next_offset = 0;
             }
+            
             return result;
         }
     }
-    // If we got here and p < the data size?, there's a partial header left in we need to hold on to
-    // so that we can glue that to the next chunk of data
+    // If we got here and p is pointing to a partial header that doesn't fit in the
+    // block.  We have a residual, that is the remaining size 
+    // the next event will begin at the start of the next block.
 
     if p  <  nbytes {              // This gets a resid if needed.
-        *residual = nbytes - p;
+        *residual = nbytes - p;    // The amount of remaining data.
     } else {
-        *residual = 0;
+        *residual = 0;             // Should not actually get here.
     }
     // offset is always zero if we fell out of the loop.  Caller will put the residual at the
     // beginning of the next data buffer.
 
     *next_offset = 0;                   
                                  
-
     result
 }
 ///  send statistics updates to the main thread.
@@ -322,7 +330,6 @@ fn send_statistics(ch : &mpsc::Sender<UpdateMessage>, elapsed : time::Duration, 
 ///  Thread to monitor a single, named ringbuffer.
 /// 
 fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
-    println!("Ring monitor thread starting for {}", name);
     // Become a consumer of the ring that was passed in:
 
     let mut statistics = RingBufferStatistics::new(name);
@@ -337,11 +344,11 @@ fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
     let mut next_item_offset = 0;
     let mut residual = 0;
     let mut start_time = time::Instant::now();         // Start of stats gathering.
+    
     loop {
         if let Ok(n) = consumer
             .consumer
             .timed_get(&mut data[residual..BUFFER_SIZE-1], time::Duration::from_secs(1)) {
-            
             let (new_run, run_events, events, run_bytes) =
                 analyze_ring_data(n+residual, &data, &mut next_item_offset, &mut residual);
             statistics.count_bytes(n)
@@ -352,21 +359,25 @@ fn ring_monitor(name: &str, chan : mpsc::Sender<UpdateMessage>) {
                 statistics.bytes_this_run   = run_bytes.unwrap();
                
             }
+    
             // If there's a residual, we need to move those bytes to the bottom of the buffer for the next
             // read.  The number of bytes will be small (less than the size of a ring item header) so we
             // don't need to be fancy:
 
+            
             for i in 0..residual {
-                data[i] = data[(n-1) - residual + i];
+                let from = n - residual + i;
+                data[i] = data[from];
             }
-        }
+            
+        } 
         // See if we need to dump the statistics to the main thread:
         // if so we start then ext interval
 
        let elapsed = start_time.elapsed();
        if elapsed.as_secs() >= UPDATE_TIME {
             send_statistics(&chan, elapsed, &statistics);
-            start_time = time::Instant::now();                    
+            start_time = time::Instant::now();     
        }
     }
     
@@ -605,6 +616,7 @@ mod sandr_tests {
         let stats = StatisticsAndRates::new("test");
         assert_eq!(
             StatisticsAndRates {
+                name: String::from("test"),
                 cum_statistics : RingBufferStatistics {
                      name: String::from("test"), 
                      bytes: 0, events: 0, bytes_this_run: 0, events_this_run: 0 },
@@ -630,6 +642,7 @@ mod sandr_tests {
 
         assert_eq!(
             StatisticsAndRates {
+                name: String::from("test"),
                 cum_statistics: incr_stat.clone(),
                 byte_rate: 100.0,
                 event_rate: 5.0,
@@ -661,6 +674,7 @@ mod sandr_tests {
         
         assert_eq!(
             StatisticsAndRates {
+                name: String::from("test"),
                 cum_statistics : RingBufferStatistics {
                     name : String::from("test"), 
                     bytes: 150, events: 7, bytes_this_run: 50, events_this_run: 2
@@ -692,6 +706,7 @@ mod sandr_tests {
         
         assert_eq!(
             StatisticsAndRates {
+                name: String::from("test"),
                 cum_statistics : RingBufferStatistics {
                     name : String::from("test"), 
                     bytes: 150, events: 7, bytes_this_run: 150, events_this_run: 7

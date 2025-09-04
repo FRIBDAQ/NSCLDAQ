@@ -122,7 +122,9 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/caen-nextgen \
 	@top_srcdir@/utilities/ringdiagnostics \
 	@top_srcdir@/usb/vmusb/sis3316examples \
-	@top_srcdir@/mvlc
+	@top_srcdir@/mvlc \
+	@top_srcdir@/rust_tools/ring_monitor \
+	@top_srcdir@/utilities/statsview
 
 daq.html: daq.xml
 	- rm -rf html
