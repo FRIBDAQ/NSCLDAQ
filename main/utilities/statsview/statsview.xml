@@ -1,0 +1,129 @@
+<!-- manpage 1daq -->
+<refentry>
+    <refmeta>
+        <refentrytitle>statsview</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>statsview</refname>
+        <refpurpose>View ringbuffer statistics in a system</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis>
+            <command>
+$DAQBIN/statsview  <optional>host</optional>       
+            </command>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This program periodically polls the ring monitor and displays
+            statistics for all ringbuffers in the system.  If the optional
+            <parameter>host</parameter>  is provided the statistics for the
+            ringbuffers in <parameter>host</parameter> are displayed.
+            If omitted, the statistics for the ringbuffers in  <literal>localhost</literal>
+            are displayed.  Note that proxy rings are also displayed.
+        </para>
+        <para>
+            For this to work properly, the ring_monitor server must be running in the
+            host being viewed.  See the man page entry for <command>ring_monitor</command>.
+            Normally this should be started at system startup.
+        </para>
+        <para>
+            The statistics are displayed in a simple table with the following columns:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><literal>ring</literal></term>
+                    <listitem>
+                        <para>
+                            The name of the ring buffer whose statistics are displayed on this line.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>Total Volume</literal></term>
+                    <listitem>
+                        <para>
+                            The total number of bytes that have passed through the ring since the
+                            ring_monitor started (see <literal>BUGS</literal> below).
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>Volume This Run</literal></term>
+                    <listitem>
+                        <para>
+                            Same as <literal>Total Volume</literal> however this statistic is
+                            cleared  when a <literal>BEGIN_RUN</literal> is observed in the
+                            ring.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>Total Events</literal></term>
+                    <listitem>
+                        <para>
+                            Total number of <literal>PHYSICS_EVENT</literal> items observed in the 
+                            ring since the ring_monitor was statrted.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>Events This Run</literal></term>
+                    <listitem>
+                        <para>
+                            Total number of <literal>PHYSICS_EVENT</literal> items but reset when
+                            a <literal>BEGIN_RUN</literal> item is observed in the ring.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>Data Volume Rate</literal></term>
+                    <listitem>
+                        <para>
+                            Instantaneous bytes per second throughput through the ringbuffer.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>Event Rate</literal></term>
+                    <listitem>
+                        <para>
+                            Instantaneous rate of <literal>PHYSICS_EVENT</literal> items
+                            observed in the ringbuffer.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            You can sort the table by any of the columns by clicking on that column's header.
+            You can stretch each column's width as well.  The initial sort is by ring buffer name,
+            though you may find it useful to sort by rate.
+        </para>
+        <para>
+            Note that since there is only one ring_monitor server running in the target system,
+            the impact of the <command>statsview</command> program on the system and throughput is
+            negligible.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>BUGS</title>
+        <para>
+            WHen a ringbuffer is deleted, the ring master, in the system the ringbuffer lived in
+            will kill all clients (producer and consumers) that are attached to that ring.
+            This means that the ring_monitor will be killed as well.  The ring_monitor, however
+            consists of a parent process that spawns off the actual monitor and, when the actual
+            monitor exits restarts it.  Unfortunately that means that all counters maintained
+            by the ring_monitor are reset when a ringbuffer is deleted.  This is not expected to be fixed.
+        </para>
+        <para>
+            Since all of the <command>statsview</command> statistics come from the ring_monitor,
+            the totals columns will be reset for all remaining rings.   The <command>statsview</command>
+            program will, however remove deleted rings from the table and will tolarate being unable to
+            update statistics during the time the <command>ring_monitor</command> restarts.
+        </para>
+    </refsect1>
+</refentry>
+<!-- /manpage -->

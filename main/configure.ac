@@ -874,7 +874,8 @@ AC_CONFIG_FILES([
     utilities/managercontrol/Makefile
     utilities/readoutREST/Makefile
     utilities/udpBroker/Makefile
-	utilities/ringdiagnostics/Makefile
+    utilities/ringdiagnostics/Makefile
+    utilities/statsview/Makefile
     epics/epicslib/Makefile
     epics/chanlog/Makefile
     epics/controlpush/Makefile
