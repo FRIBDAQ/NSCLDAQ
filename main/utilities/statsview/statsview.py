@@ -84,15 +84,20 @@ def getServerPort(host) :
 
 #  Get the statistics from the server and return it
 # sorted by ring name.
-
+# note that if the serer is restarting, it's possible that
+# this stuff may fail in which case None is returned.
+#
 def getStatistics(host, port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((host, port))
-    data = sock.recv(1000000)
-    sock.shutdown(socket.SHUT_RDWR)
-    info = json.loads(data)
-    info = sorted(info, key=lambda item : item['name'])
-    return info
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((host, port))
+        data = sock.recv(1000000)
+        sock.shutdown(socket.SHUT_RDWR)
+        info = json.loads(data)
+        info = sorted(info, key=lambda item : item['name'])
+        return info
+    except:
+        return  None
     
 # 
 #   Setup the model characteristics...specifically
@@ -107,6 +112,33 @@ def setupModel(model) :
         "Events This Run", 
         "Data Volume Rate", 
         "Event Rate"))
+    
+#  Remove rings that no longer are in the data
+#  from the model (these rings were deleted).
+#
+
+def trimRings(data, model):
+    #  Build a list of rings in the model
+    
+    rings = []
+
+    for datum in data :
+        rings.append(datum['name'])
+        
+    # Get the row  numbers to delete:
+    delete_rows = []    
+    for i in range(0, model.rowCount()):
+        name = model.item(i, 0).text()
+        if name not in rings:
+            delete_rows.append(i)
+    
+    # Now delete the rows (in reverse so subsequent indices don't change)
+    
+    for row in reversed(delete_rows) :
+        model.takeRow(row)
+    
+    # Iterate backwards through the rows of the
+    # table removing rows that are not 
 #
 #  Popluate the model with data.
 #  data comes from getStatistics and
@@ -114,6 +146,8 @@ def setupModel(model) :
 #  If the name already exists, we just append it to the
 #  model...sorting is done by the table.
 # 
+# TODO:  remove rings that vanished from the statistics!!!
+
 def populateModel(data, model):
     for ring_data in data:
         #  Set up the data:
@@ -136,6 +170,7 @@ def populateModel(data, model):
             # new row:
             model.appendRow(line)
 
+        trimRings(data, model)
 # Update the model.. we take advantage
 # Of the fact that host, port, data, model
 # are defined at the global level
@@ -143,7 +178,8 @@ def populateModel(data, model):
            
 def update():
     data = getStatistics(host, port)
-    populateModel(data, model)
+    if data is not None:
+        populateModel(data, model)   # Try later if fetch failed.
     
 if __name__ == '__main__':
     host = "localhost"
