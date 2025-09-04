@@ -88,6 +88,7 @@ def getServerPort(host) :
 # this stuff may fail in which case None is returned.
 #
 def getStatistics(host, port):
+    
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((host, port))
@@ -146,7 +147,7 @@ def trimRings(data, model):
 #  If the name already exists, we just append it to the
 #  model...sorting is done by the table.
 # 
-# TODO:  remove rings that vanished from the statistics!!!
+
 
 def populateModel(data, model):
     for ring_data in data:
@@ -170,7 +171,7 @@ def populateModel(data, model):
             # new row:
             model.appendRow(line)
 
-        trimRings(data, model)
+    trimRings(data, model)
 # Update the model.. we take advantage
 # Of the fact that host, port, data, model
 # are defined at the global level
