@@ -202,6 +202,9 @@ fn main() {
             .expect("Failed to spawn server");
         child.wait().expect("Could not wait on server completion");
         println!("Subprocess exited ");
+        // Restarting too soon is not a good idea so sleep a second.
+
+        thread::sleep(Duration::from_secs(1));
     }    
 }
 ///
