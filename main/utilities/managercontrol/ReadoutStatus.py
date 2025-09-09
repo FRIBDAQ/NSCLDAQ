@@ -12,6 +12,10 @@ from PyQt5.QtGui import ( QStandardItemModel, QStandardItem)
 from PyQt5.QtCore import (pyqtSignal, Qt, QTimer)
 
 class ReadoutStatusModel(QStandardItemModel) :
+    K = 1024
+    M = K*K
+    G = M*K
+    T = G*K
     '''
         This model is intended to be used with a table for the
         states/statistics of the readout programs.  It maintains the following
@@ -29,7 +33,7 @@ class ReadoutStatusModel(QStandardItemModel) :
         * run bytes - bytes of event data payload since last begin run.
     '''
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
         
         # Define the headings.  We assume the 
         # table has this header turned on.
@@ -62,6 +66,23 @@ class ReadoutStatusModel(QStandardItemModel) :
             result.append(item['name'])
         return result
     
+    # Given an integer stringize it with an appropariate suffixe 
+    # eg. K, M, G, T, 
+    
+    @staticmethod
+    def _suffix(value):
+        value = float(value)
+        if value > ReadoutStatusModel.T:
+            return "{:.2f} T".format(value/ReadoutStatusModel.T)
+        elif value > ReadoutStatusModel.G:
+            return "{:.2f} G".format(value/ReadoutStatusModel.G)
+        elif value > ReadoutStatusModel.M:
+            return "{:.2f} M".format(value/ReadoutStatusModel.M)
+        elif value > ReadoutStatusModel.K:
+            return "{:.2f} K".format(value/ReadoutStatusModel.K)
+        else:
+            return f'{value}'
+        
     def update(self, info):
         '''
             We update the table from an iterable of dicts where each dict has been returned
@@ -77,6 +98,7 @@ class ReadoutStatusModel(QStandardItemModel) :
         existingPrograms  = self._enumeratePrograms()
         names = existingPrograms.keys()
         for item in info :
+            
             if item['name'] not in names:
                 existingPrograms[item['name']] = self.rowCount()
                 self.appendRow(QStandardItem(item['name']))   # Make a new row.
@@ -85,13 +107,13 @@ class ReadoutStatusModel(QStandardItemModel) :
             row = existingPrograms[item['name']]
             self.setItem(row, 1, QStandardItem(item['state']))
             
-            self.setItem(row, 2, QStandardItem(item['cumulative']['triggers']))
-            self.setItem(row, 3, QStandardItem(item['cumulative']['acceptedTriggers']))
-            self.setItem(row, 4, QStandardItem(item['cumulative']['bytes']))
+            self.setItem(row, 2, QStandardItem(self._suffix(item['cumulative']['triggers'])))
+            self.setItem(row, 3, QStandardItem(self._suffix(item['cumulative']['acceptedTriggers'])))
+            self.setItem(row, 4, QStandardItem(self._suffix(item['cumulative']['bytes'])))
             
-            self.setItem(row, 5, QStandardItem(item['perRun']['triggers']))    
-            self.setItem(row, 6, QStandardItem(item['perRun']['acceptedTriggers']))
-            self.setItem(row, 7, QStandardItem(item['perRun']['bytes']))
+            self.setItem(row, 5, QStandardItem(self._suffix(item['perRun']['triggers'])))    
+            self.setItem(row, 6, QStandardItem(self._suffix(item['perRun']['acceptedTriggers'])))
+            self.setItem(row, 7, QStandardItem(self._suffix(item['perRun']['bytes'])))
         
         # Now Set the state of rows that are not in info list
         
@@ -123,20 +145,21 @@ class ReadoutStatusView(QTableView):
     '''
     def __init__(self, *args):
         super().__init__(*args)
-        self.timer = QTimer(self)
-        self.model = ReadoutStatusModel(self)
-        self.setModel(self.model)
+        self._timer = QTimer(self)
+        self._model = ReadoutStatusModel()
+        self.setModel(self._model)
         self.horizontalHeader().show()
+        self.resizeColumnsToContents()
         
         #  Connect the timer's timeout to our relay:
         
-        self.timer.timeout.connect(self._timerRelay)
+        self._timer.timeout.connect(self._timerRelay)
         
     #  private methods 
     
     #  Fir our onUpdateSignal
     
-    def __timerRelay(self):
+    def _timerRelay(self):
             self.onUpdate.emit(self)
     
     # Set the update interval in seconds.
@@ -145,9 +168,70 @@ class ReadoutStatusView(QTableView):
     
     def setInterval(self, seconds):
         if seconds == 0:
-            self.timer.stop()
+            self._timer.stop()
         else :
             ms = seconds*1000
-            self.timer.setSingleShot(False)   # Repeating
-            self.timer.start(ms)              # Start with new interval
+            self._timer.setSingleShot(False)   # Repeating
+            self._timer.start(ms)              # Start with new interval
             
+
+
+##
+#  Test code for the model view:
+
+if __name__ == "__main__":
+    num_updates = 30   # Then it disappears and should be disconnected.
+    run_len     = 20   # After 20 updates, reset per run counts.
+    trg_inc     = 100
+    byte_inc    = 1024
+    
+    stats = {
+        'name' : 'atest@somehost',
+        'state': 'Active',
+        'cumulative' : {
+            'triggers': 0, 'acceptedTriggers': 0, 'bytes' : 0
+        },
+        'perRun': {
+            'triggers': 0, 'acceptedTriggers': 0, 'bytes' : 0
+        }
+    }
+    def stat_update() :
+        global run_len
+        run_len -= 1
+        if run_len == 0:
+            stats['perRun']['triggers'] = 0
+            stats['perRun']['acceptedTriggers'] = 0
+            stats['perRun']['bytes'] = 0
+            
+        stats['cumulative']['triggers'] += trg_inc
+        stats['cumulative']['acceptedTriggers'] += trg_inc
+        stats['cumulative']['bytes'] += byte_inc
+        stats['perRun']['triggers'] += trg_inc
+        stats['perRun']['acceptedTriggers'] += trg_inc
+        stats['perRun']['bytes'] += byte_inc
+    
+        
+    def test_update(view):
+        global num_updates, stats
+        m = view.model()
+        update_list = []
+        if num_updates < 0:
+            m.update(update_list)
+        else:
+            stat_update()
+            update_list.append(stats)
+            m.update(update_list)
+        num_updates -= 1
+        view.resizeColumnsToContents()
+    
+    from PyQt5.QtWidgets import (QApplication, QMainWindow)
+    import sys
+    app = QApplication(sys.argv)
+    main_window = QMainWindow()
+    main_widget = ReadoutStatusView()
+    main_widget.onUpdate.connect(test_update)
+    main_widget.setInterval(2)
+    main_window.setCentralWidget(main_widget)
+    
+    main_window.show()
+    app.exec()
