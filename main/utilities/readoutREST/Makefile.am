@@ -5,6 +5,9 @@ library_scripts=ReadoutREST.tcl ReadoutRESTClient.tcl ReadoutRESTUI.tcl \
 	rdo_utils.tcl
 share_scripts=rest_init_script.tcl
 
+PythonLibDest = @prefix@/pythonLibs/nscldaq/readoutREST
+PythonModules = readoutRestClient.py
+
 test_scripts=
 
 LIBRARY_DIR=@prefix@/TclLibs/readoutREST
@@ -12,7 +15,7 @@ SERVER_DIR=$(LIBRARY_DIR)/server
 
 
 EXTRA_DIST=$(program_scripts) $(library_scripts) $(test_scripts) \
-	$(server_scripts) $(share_scripts) rdoManager.xml
+	$(server_scripts) $(share_scripts) rdoManager.xml $(PythonModules)
 
 
 
@@ -28,6 +31,10 @@ install-exec-local:
 	$(mkinstalldirs) @datarootdir@/scripts
 	for f in $(share_scripts); do \
 		$(INSTALL_DATA) @srcdir@/$$f @datarootdir@/scripts; \
+	done
+	$(mkinstalldirs) $(PythonLibDest)
+	for f in $(PythonModules); do \
+		$(INSTALL_SCRIPT) @srcdir@/$$f $(PythonLibDest); \
 	done
 
 
