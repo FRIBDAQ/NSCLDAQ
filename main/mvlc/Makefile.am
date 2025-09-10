@@ -1,5 +1,13 @@
 bin_PROGRAMS=mvlcgenerate mvlc_xlmload
 
+# I had an out of tree build fail in a weird way that
+# makes me believe this is not fully parallel safe.
+# Specifically a link of the tests claimed
+# that the libmvlcGenerator.la was not present
+# but after the dust settled it was...and  clean
+# build serial and parallel worked....
+
+NOTPARALLEL:
 
 #------------------ build the generator:
 
@@ -51,7 +59,7 @@ main_modules=utilities.h utilities.cpp \
 	vme_interface_class.h sis_vmusb_interface.h sis_vmusb_interface.cpp
 
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
-mvlcgenerate_DEPENDENCIES=libmvlcGenerator.la
+mvlcgenerate_DEPENDENCIES=@builddir@/libmvlcGenerator.la
 
 mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
 	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os \
@@ -111,7 +119,7 @@ mvlc_xlmload_CPPFLAGS=@MVLC_CPPFLAGS@ \
 	-I@top_srcdir@/usb/common/configurableobject \
 	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os
 
-mvlc_xlmload_LDFLAGS=libmvlcGenerator.la \
+mvlc_xlmload_LDFLAGS=@builddir@/libmvlcGenerator.la \
 	@MVLC_LDFLAGS@ \
 	@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
@@ -123,7 +131,7 @@ xlm_options.c: xlm_options.h
 xlm_options.h: xlmload_options.ggo
 	$(GENGETOPT) --output-dir=@builddir@ --file-name=xlm_options <@srcdir@/xlmload_options.ggo
 
-mvlc_xlmload_DEPENDENCIES=libmvlcGenerator.la
+mvlc_xlmload_DEPENDENCIES=@builddir@/libmvlcGenerator.la
 
 #------------------------------ build/runtests
 
