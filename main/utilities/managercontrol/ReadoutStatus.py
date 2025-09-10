@@ -104,16 +104,19 @@ class ReadoutStatusModel(QStandardItemModel) :
                 self.appendRow(QStandardItem(item['name']))   # Make a new row.
                 
             # Update the row rest of the row in place:
+            
             row = existingPrograms[item['name']]
             self.setItem(row, 1, QStandardItem(item['state']))
             
-            self.setItem(row, 2, QStandardItem(self._suffix(item['cumulative']['triggers'])))
-            self.setItem(row, 3, QStandardItem(self._suffix(item['cumulative']['acceptedTriggers'])))
-            self.setItem(row, 4, QStandardItem(self._suffix(item['cumulative']['bytes'])))
+            if "cumulative" in item.keys():
             
-            self.setItem(row, 5, QStandardItem(self._suffix(item['perRun']['triggers'])))    
-            self.setItem(row, 6, QStandardItem(self._suffix(item['perRun']['acceptedTriggers'])))
-            self.setItem(row, 7, QStandardItem(self._suffix(item['perRun']['bytes'])))
+                self.setItem(row, 2, QStandardItem(self._suffix(item['cumulative']['triggers'])))
+                self.setItem(row, 3, QStandardItem(self._suffix(item['cumulative']['acceptedTriggers'])))
+                self.setItem(row, 4, QStandardItem(self._suffix(item['cumulative']['bytes'])))
+                
+                self.setItem(row, 5, QStandardItem(self._suffix(item['perRun']['triggers'])))    
+                self.setItem(row, 6, QStandardItem(self._suffix(item['perRun']['acceptedTriggers'])))
+                self.setItem(row, 7, QStandardItem(self._suffix(item['perRun']['bytes'])))
         
         # Now Set the state of rows that are not in info list
         
