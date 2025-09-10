@@ -80,9 +80,10 @@ CopyPopUntilR(c1type& c1, c2type& c2, UnaryPredicate& pred)
 }
 
 /**
- * CopyPopUntil
+ * CopyPopUntil_BinarySearch
  *    pushes back the front of a container to the back of another container
- *    popping until a predicate is true.
+ *    by findning a partition point via binary search if the container is 
+ *    "large", otherwise falls back to CopyPopUntil
  *
  * @param c1 - container 1 must support front(), empty() and pop_front().
  * @param c2 - container 2 must support push_back and contain the same type
@@ -94,7 +95,7 @@ template <class c1type, class c2type, class UnaryPredicate>
 void
 CopyPopUntil_BinarySearch(c1type& c1, c2type& c2, UnaryPredicate& pred)
 {
-    if (c1.size() < 1000) {
+    if (c1.size() < 5000) {
 	CopyPopUntil(c1, c2, pred);
 	return;
     }
@@ -113,10 +114,11 @@ CopyPopUntil_BinarySearch(c1type& c1, c2type& c2, UnaryPredicate& pred)
 }
 
 /**
- * CopyPopUntilR
- *    Same as CopyPopUntil but works from the back end of  the source
- *    until the predicate is not satisfied.
- *    parameters are all the same.
+ * CopyPopUntilR_BinarySearch
+ *    Same as CopyPopUntil but works from the back end of the source
+ *    until finding the partition point via binary search if the containers
+ *    are "large", otherwise falls back to CopyPopUntilR.
+ *    Parameters are all the same.
  *
  */
 template <class c1type, class c2type, class UnaryPredicate>
@@ -124,7 +126,7 @@ void
 CopyPopUntilR_BinarySearch(c1type& c1, c2type& c2, UnaryPredicate& pred)
 {
 
-    if (c1.size() < 1000) {
+    if (c1.size() < 5000) {
 	CopyPopUntilR(c1, c2, pred);
 	return;
     }

@@ -1,9 +1,5 @@
 == 12.1-016 ==
-<<<<<<< HEAD
 * Resolve inconsistent behavior between data read and unpacking for fail bit in VX2740 modules
-=======
-* Resolve inconsistency in fail bit data read and unpacking for CAEN VX2740
->>>>>>> df2663c91590d76578b31d6383ef6efe936a5b1e
 == 12.1-016 ==
 
 == 12.1-015 ==

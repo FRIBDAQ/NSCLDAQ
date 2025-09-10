@@ -1915,17 +1915,13 @@ CFragmentHandler::DequeueUntilStamp(
   
   if (m_fBarrierPending) {
     TsLargerThan pred(timestamp);
-    CopyPopUntil(q, result, pred);
-    // CopyPopUntil_BinarySearch(q, result, pred);
+    CopyPopUntil_BinarySearch(q, result, pred);
   } else {
     TsSmallerThan pred(timestamp);
-    CopyPopUntilR(q, result,pred);
-    // CopyPopUntilR_BinarySearch(q,result,pred);
+    CopyPopUntilR_BinarySearch(q, result, pred);
   }
-  // If the front of the queue is a barrier, then we have barrier in progress.
-  
- // m_fBarrierPending = !q.empty() && (q.front().second->s_header.s_barrier != 0);
 }
+
 /**
  * DequeueUntilAbsTime
  *   Removes queue elements from the queue and puts them in the output list
@@ -1944,10 +1940,7 @@ CFragmentHandler::DequeueUntilAbsTime(
 )
 {
   TimeLargerThan pred(time);
-  CopyPopUntil(q, result, pred);
-  // CopyPopUntil_BinarySearch(q, result, pred);
-    
-  
+  CopyPopUntil_BinarySearch(q, result, pred);  
 }
 
 

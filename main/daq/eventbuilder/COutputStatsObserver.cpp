@@ -31,9 +31,8 @@ COutputStatsObserver::COutputStatsObserver()  :
 {
   CFragmentHandler* pHandler = CFragmentHandler::getInstance();
   pHandler->addObserver(this);
-
-  m_perSourceStatistics.reserve(100);
 }
+
 /**
  * destructor:
  *   Remove us from the observer list:
