@@ -23,7 +23,7 @@ class ReadoutClient:
     def _port(self) :
         pm = PortManager(self.host)
         info = pm.find(service=self.serviceName, user = self.readoutUser)    
-        if info.len == 1:
+        if len(info) == 1:
             return info[0]["port"]
         else:
             raise KeyError(
