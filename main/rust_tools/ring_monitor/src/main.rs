@@ -1,7 +1,7 @@
 
 use std::{env, net, process, thread, time};
 use std::sync::mpsc;
-use std::io::{self, Write};
+use std::io::Write;
 use portman_client;
 use ringmaster_client;
 use rust_ringitem_format;
@@ -204,7 +204,7 @@ fn main() {
         println!("Subprocess exited ");
         // Restarting too soon is not a good idea so sleep a second.
 
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(time::Duration::from_secs(1));
     }    
 }
 ///
