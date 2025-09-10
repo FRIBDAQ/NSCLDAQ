@@ -8,7 +8,7 @@ import requests
 
 
 
-import nscldaq.portmanager.PortManager
+from nscldaq.portmanager.PortManager import PortManager
 class ReadoutClient:
     
     def __init__(self, host, serviceName, readoutUser):
@@ -121,9 +121,9 @@ class ReadoutClient:
             
     def setTitle(self, newTitle):
         ''' set a new title string. '''
-        self._setParameter(title, newTitle)
+        self._setParameter("title", newTitle)
     
     def setRunNumber(self, newRun):
         ''' Set a new run number '''
-        self._setParameter(run newRun)
+        self._setParameter("run", newRun)
         
