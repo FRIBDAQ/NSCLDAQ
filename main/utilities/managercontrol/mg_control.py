@@ -58,6 +58,7 @@ def updateProgramsTab():
     programs = Programs(config.host(), config.user(), config.rest_service())
 
     programlist.model().update(programs.status())
+    programlist.resizeColumnsToContents()
 
 
 #-------------------------------------------------------------------- 
@@ -188,6 +189,7 @@ def UpdateLoggers():
     client = Logger(config.host(), config.user(), config.rest_service())
     listing = client.list()
     eventlogWidget.updateData(listing)
+    eventlogWidget.resizeColumnsToContents()
     gui.controls().runControls().setLoggerState(client.isRecording())
                     
 def enableDisableLogger(info):
@@ -215,7 +217,8 @@ def eventlogToggle(state):
 # then hold the results...but there is the chance the user futzes
 # the database between runs so...this is the most reliable.
 #
-def updateReadoutStatus(model):
+def updateReadoutStatus(view):
+    model = view.model()
     # Get the readout programs and their hosts (from the db):
     global config
     readout_names = config.readouts()
@@ -230,22 +233,29 @@ def updateReadoutStatus(model):
         name = program['name']
         if name in readout_names:
             readout_dict[name] = program['host']         
-    
     # readout_dict is name -> host  only for the readouts  now.
     # Pull together the statuses - failure to get status from a readout
     # Could just mean it's not running so we omit it from the list
     # If it comes online later it'll get added and, if it comes offline
     # The model will mark it disconneted:
     # For now we only support a single service name ReadoutREST
+    #
+    # TODO:  Make the model understand if only name is present in an item
+    #        The readout is disconnected.
     modeldata = []
     for (name, host) in readout_dict.items():
-        rdo_client = readoutRestClient.ReadoutClient(host, "ReadoutREST", config.user())
-        state = rdo_client.getState()
-        statistics = rdo_client.getStatistics()
-        statistics['name'] = name
-        statistics['state'] = state
-        modeldata.append(statistics)
+        try:
+            rdo_client = readoutRestClient.ReadoutClient(host, "ReadoutREST", config.user())
+            state = rdo_client.getState()
+            statistics = rdo_client.getStatistics()
+            statistics['name'] = name
+            statistics['state'] = state
+            modeldata.append(statistics)
+        except:
+            modeldata.append({'name':name, 'state': "Discon"})
+
     model.update(modeldata)
+    view.resizeColumnsToContents()
         
     
 
