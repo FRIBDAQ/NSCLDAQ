@@ -8,6 +8,8 @@ from nscldaq.manager_control.programlist import ProgramView
 from nscldaq.manager_control.cfgwizard import ConfigWizard
 from nscldaq.manager_control.maingui import MainGui
 from nscldaq.manager_control.loggerlist import LoggerTable
+from nscldaq.manager_control.loggerlist import ReadoutStatus
+from nscldaq.readoutRest import readoutRestClient
 from nscldaq.manager_client import Programs, OutputMonitor, KVStore, State, Logger
 from PyQt5.QtWidgets import (
     QApplication, QLabel, QLineEdit,
@@ -207,6 +209,46 @@ def eventlogToggle(state):
     else:
         client.record(False)
     
+# Update the readout status tab with statistics from the readouts:
+# We'll have to see if redoing the program/host translation each time
+# is not performant, in which case we can do it the first time and
+# then hold the results...but there is the chance the user futzes
+# the database between runs so...this is the most reliable.
+#
+def updateReadoutStatus(model):
+    # Get the readout programs and their hosts (from the db):
+    global config
+    readout_names = config.readouts()
+    client = Programs(config.host(), config.user(), config.rest_service())
+    program_info = client.status()['programs']
+    
+    # Better for us to have dict of program names => hosts for
+    # readouts
+    #
+    readout_dict = dict()
+    for program in program_info:
+        name = program['name']
+        if name in readout_names:
+            readout_dict[name] = program['host']         
+    
+    # readout_dict is name -> host  only for the readouts  now.
+    # Pull together the statuses - failure to get status from a readout
+    # Could just mean it's not running so we omit it from the list
+    # If it comes online later it'll get added and, if it comes offline
+    # The model will mark it disconneted:
+    # For now we only support a single service name ReadoutREST
+    modeldata = []
+    for (name, host) in readout_dict.items():
+        rdo_client = readoutRestClient.ReadoutClient(host, "ReadoutREST", config.user())
+        state = rdo_client.getState()
+        statistics = rdo_client.getStatistics()
+        statistics['name'] = name
+        statistics['state'] = state
+        modeldata.append(statistics)
+    model.update(modeldata)
+        
+    
+
 #---------------------------------- Entry point -----------------------
 #
 
@@ -254,12 +296,22 @@ Updater.timeout.connect(updateControls)
 eventlogWidget = LoggerTable(gui)
 gui.tabs().addTab(eventlogWidget, 'Loggers')
 
+#  Setup the Readout status widget:
+
+readoutStatusWidget = ReadoutStatus.ReadoutStatusView(gui)
+gui.tabs().addTab(readoutStatusWidget, "Readouts")
+readoutStatusWidget.onUpdate.connect(updateReadoutStatus)
+readoutStatusWidget.setInterval(2)
+
+
 # Hook in slots for updating the eventlog widget and
 # the toggle signal so we can change the enables of event loggers:
 
 Updater.timeout.connect(UpdateLoggers)
 eventlogWidget.toggle.connect(enableDisableLogger)
 gui.controls().runControls().logtoggle.connect(eventlogToggle)
+
+
 
 # Show the main window and run the app.
 
