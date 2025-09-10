@@ -9,6 +9,7 @@
 
      Author:
              Ron Fox
+	     Aaron Chester
 	     NSCL
 	     Michigan State University
 	     East Lansing, MI 48824-1321
@@ -34,6 +35,12 @@
 #include <signal.h>
 #include <os.h>
 #include <stdio.h>
+
+///
+// Issue #307: glom performance
+// Lets try some buffered I/O:
+//
+#include <CBufferedFragmentReader.h>
 
 // File scoped  variables:
 
@@ -283,11 +290,11 @@ outputEventCount(pRingItemHeader pItem)
  *
  */
 static void
-outputBarrier(ufmt::EVB::pFragment p)
+outputBarrier(/*ufmt::EVB::pFragment p*/ ufmt::EVB::pFlatFragment p)
 {
   pRingItemHeader pH = 
-      reinterpret_cast<pRingItemHeader>(p->s_pBody); 
-  if(CRingItemFactory::isKnownItemType(p->s_pBody)) {
+      reinterpret_cast<pRingItemHeader>(p->s_body); 
+  if(CRingItemFactory::isKnownItemType(p->s_body)) {
     
     // This is correct if there is or isn't a body header in the payload
     // ring item.
@@ -322,7 +329,7 @@ outputBarrier(ufmt::EVB::pFragment p)
 
     outputter->put( &unknownHdr, sizeof(RingItemHeader));
     outputter->put( p, sizeof(ufmt::EVB::FragmentHeader));
-    outputter->put(p->s_pBody, p->s_header.s_size);
+    outputter->put(p->s_body, p->s_header.s_size);
     outputter->flush();  // So end runs are always seen quickly.
   }
 }
@@ -334,7 +341,8 @@ void emitAbnormalEnd()
 {
     CAbnormalEndItem end;
     pRingItem pItem= end.getItemPointer();
-    ufmt::EVB::Fragment frag = {{NULL_TIMESTAMP, 0xffffffff, pItem->s_header.s_size, 0}, pItem};
+    // ufmt::EVB::Fragment frag = {{NULL_TIMESTAMP, 0xffffffff, pItem->s_header.s_size, 0}, pItem};
+    ufmt::EVB::FlatFragment frag = {NULL_TIMESTAMP, 0xffffffff, pItem->s_header.s_size, 0};
     outputBarrier(&frag);
 }
 
@@ -360,7 +368,7 @@ void emitAbnormalEnd()
  * @param pFrag - Pointer to the next event fragment.
  */
 void
-accumulateEvent(uint64_t dt, ufmt::EVB::pFragment pFrag)
+accumulateEvent(uint64_t dt, /*ufmt::EVB::pFragment pFrag*/ ufmt::EVB::pFlatFragment pFrag)
 {
   // See if we need to flush:
 
@@ -410,7 +418,8 @@ accumulateEvent(uint64_t dt, ufmt::EVB::pFragment pFrag)
     // Add the data to the accumulated event:
   
   addDataToAccumulatedEvent(&pFrag->s_header, sizeof(ufmt::EVB::FragmentHeader));
-  addDataToAccumulatedEvent(pFrag->s_pBody, pFrag->s_header.s_size);
+  // addDataToAccumulatedEvent(pFrag->s_pBody, pFrag->s_header.s_size);
+  addDataToAccumulatedEvent(&pFrag->s_body, pFrag->s_header.s_size);
 
 }
 
@@ -490,21 +499,30 @@ main(int argc, char**  argv)
 
   bool firstBarrier(true);
   bool consecutiveBarrier(false);
+  
+ ///
+ // Issue #307: glom performance
+ //
+  CBufferedFragmentReader reader(STDIN_FILENO);
+   
   try {
     while (1) {
-      ufmt::EVB::pFragment p = CFragIO::readFragment(STDIN_FILENO);
+      // ufmt::EVB::pFragment p = CFragIO::readFragment(STDIN_FILENO);
+	
+	ufmt::EVB::pFlatFragment p = reader.getFragment();
       
       // If error or EOF flush the event and break from
       // the loop:
       
-      if (!p) {
-        flushEvent();
-        std::cerr << "glom: EOF on input\n";
-            if(stateChangeNesting) {
-                emitAbnormalEnd();
-            }
-        break;
-      }
+      // if (!p) {
+      //   flushEvent();
+      //   std::cerr << "glom: EOF on input\n";
+      //       if(stateChangeNesting) {
+      //           emitAbnormalEnd();
+      //       }
+      //   break;
+      // }
+	
       // We have a fragment:
       
       if (p->s_header.s_barrier) {
@@ -534,13 +552,13 @@ main(int argc, char**  argv)
         // an event fragment it goes out out of band but without flushing
         // the event.
     
-        pRingItemHeader pH = reinterpret_cast<pRingItemHeader>(p->s_pBody);
-        if (CRingItemFactory::isKnownItemType(p->s_pBody)) {
+        pRingItemHeader pH = reinterpret_cast<pRingItemHeader>(&p->s_body);
+        if (CRingItemFactory::isKnownItemType(&p->s_body)) {
             
             if (pH->s_type == PHYSICS_EVENT) {
-              accumulateEvent(dt, p); // Ring item physics event.
+		accumulateEvent(dt, p); // Ring item physics event.
             } else {
-              outputBarrier(p);	// Ring item non-physics event.
+		outputBarrier(p);	// Ring item non-physics event.
             }
         } else {		// non ring item..treat like event.
           std::cerr << "GLOM: Unknown ring item type encountered: \n";
@@ -549,8 +567,16 @@ main(int argc, char**  argv)
           outputBarrier(p);
         }
     }
-      freeFragment(p);
+      //freeFragment(p);
     }
+  }
+  catch (const std::ios_base::failure& e) {
+      // Actually EOF on poll??
+      std::cerr << e.what() << std::endl;
+      flushEvent();
+      if(stateChangeNesting) {
+	  emitAbnormalEnd();
+      }
   }
   catch (std::string msg) {
     std::cerr << "glom: " << msg << std::endl;

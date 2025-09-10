@@ -10,6 +10,7 @@
      Authors:
              Ron Fox
              Giordano Cerriza
+	     Aaron Chester
 	     NSCL
 	     Michigan State University
 	     East Lansing, MI 48824-1321
@@ -34,8 +35,9 @@
 #include <ios>
 #include <iostream>
 
-
 static const size_t DefaultReadSize(32768);
+
+using namespace ufmt::EVB;
 
 /**
  * constructor
@@ -55,16 +57,20 @@ CBufferedFragmentReader::CBufferedFragmentReader(int fd) :
     m_nFd(fd), m_pBuffer(nullptr), m_nBufferSize(0), m_nBytesInBuffer(0),
     m_nReadSize(0), m_nOffset(0)
 {
-    // Figure out the read size and allocate the block etc:
-    
-    int nPipeDepth = fcntl(m_nFd, F_GETPIPE_SZ);
+    // Figure out the read size and allocate the block etc. If reading
+    // from a pipe, try to set the buffer size to 1MB (see issue #307):
+
+    fcntl(STDIN_FILENO, F_SETPIPE_SZ, 1024*1024);
+    int nPipeDepth = fcntl(m_nFd, F_GETPIPE_SZ); 
     if (nPipeDepth > 0) {
         m_nReadSize = nPipeDepth;
     } else {
         m_nReadSize = DefaultReadSize;
     }
-    // Allocate the block but make it look like it's been exactly fully read:
-    
+
+    // We know its stdin so lets allocate the block but make it look like
+    // it's been exactly fully read:
+   
     m_pBuffer = malloc(m_nReadSize);
     if (!m_pBuffer) {
         throw std::bad_alloc();
@@ -99,7 +105,7 @@ CBufferedFragmentReader::~CBufferedFragmentReader()
 {
    free(m_pBuffer); 
 }
-const EVB::pFlatFragment
+const pFlatFragment
 CBufferedFragmentReader::getFragment()
 {
     // This blocks until we have at least one fragment:
@@ -110,7 +116,7 @@ CBufferedFragmentReader::getFragment()
     // At thist time, m_nOffset is an offset in to m_pBuffer
     // at which we can find a fragment.
     
-    const EVB::pFlatFragment result = cursor();
+    const pFlatFragment result = cursor();
     updateOffset(result);
     
     return result;
@@ -134,11 +140,11 @@ bool
 CBufferedFragmentReader::mustRead()
 {
     size_t unread = m_nBytesInBuffer - m_nOffset;
-    if (unread < sizeof(EVB::FragmentHeader)) return true;
+    if (unread < sizeof(FragmentHeader)) return true;
     
     // So we have a header,  let's see how much more space we need:
     
-    EVB::pFlatFragment here = cursor();
+    pFlatFragment here = cursor();
     size_t s = fragSize(here);
     if (unread < s) return true;
     
@@ -250,14 +256,14 @@ CBufferedFragmentReader::readData()
 }
 /**
  * cursor
- *   @return const EVB::pFlatFragment - Where the current fragment lives.
+ *   @return const pFlatFragment - Where the current fragment lives.
  */
-const EVB::pFlatFragment
+const pFlatFragment
 CBufferedFragmentReader::cursor()
 {
     uint8_t* p = static_cast<uint8_t*>(m_pBuffer);
     p         += m_nOffset;
-    return reinterpret_cast<EVB::pFlatFragment>(p);
+    return reinterpret_cast<pFlatFragment>(p);
 }
 /**
  * updateOffset
@@ -269,7 +275,7 @@ CBufferedFragmentReader::cursor()
  *   
  */
 void
-CBufferedFragmentReader::updateOffset(const EVB::pFlatFragment pFrag)
+CBufferedFragmentReader::updateOffset(const pFlatFragment pFrag)
 {
     m_nOffset += fragSize(pFrag);
 }
@@ -279,7 +285,7 @@ CBufferedFragmentReader::updateOffset(const EVB::pFlatFragment pFrag)
  *    @return size_t - number of bytes in the fragment pointed to by pFrag
  */
 size_t
-CBufferedFragmentReader::fragSize(const EVB::pFlatFragment pFrag)
+CBufferedFragmentReader::fragSize(const pFlatFragment pFrag)
 {
-    return sizeof(EVB::FragmentHeader) + pFrag->s_header.s_size;
+    return sizeof(FragmentHeader) + pFrag->s_header.s_size;
 }
