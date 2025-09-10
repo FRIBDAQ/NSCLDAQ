@@ -31,6 +31,8 @@ COutputStatsObserver::COutputStatsObserver()  :
 {
   CFragmentHandler* pHandler = CFragmentHandler::getInstance();
   pHandler->addObserver(this);
+
+  m_perSourceStatistics.reserve(100);
 }
 /**
  * destructor:
@@ -60,8 +62,8 @@ COutputStatsObserver::operator()(const EvbFragments& event)
 {
   m_nTotalFragments += event.size();
   CriticalSection c(m_perSourceStatGuard);
-  for (auto p = event.begin(); p != event.end(); p++) {
-    EVB::pFragment pf = p->second;
+  for (const auto& p : event) {
+    EVB::pFragment pf = p.second;
     uint32_t sourceId = pf->s_header.s_sourceId;
     m_perSourceStatistics[sourceId]++;
   }

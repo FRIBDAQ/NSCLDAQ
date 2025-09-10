@@ -20,6 +20,7 @@
 #include <tcl.h>
 #include <stdint.h>
 #include <map>
+#include <unordered_map>
 #include <CMutex.h>
 
 /**
@@ -47,7 +48,7 @@ public:
 
   // private types/data:
 private:
-  typedef std::map<uint32_t, uint64_t> PerSourceStats, *pPerSourceStats;
+  typedef std::unordered_map<uint32_t, uint64_t> PerSourceStats, *pPerSourceStats;
 private:
  
   uint64_t                     m_nTotalFragments;
