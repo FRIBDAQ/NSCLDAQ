@@ -12,4 +12,12 @@ by COutputThread (nummap_chunk() issue fixed)
 * Updated MADC-32 for indpendent bank operation
 * Fix for window configuration in V1x90 digitizers
 * Resolve inconsistent behavior between VX2740 readout and unpacker handling of fail bit
+* Add --enable-rust-tools to configuration options.  If enabled:
+    *  Brings in ringmaster, portmanager, ring2stdout Rust programs from github
+    *  Builds those external programs and installs them in @bindir@/rust
+    *  Builds rust programs in main/rust_tools and installs them in @bindir@/rust
+* Add statistics server for ringbuffer throughput and aggregate transfer. (rust_tools/ring_monitor)
+    * statsview python script can view the statistics it accumulates utilities/statsview)
+* Issue # 251 - add statistics to the python managed environment control panel
+   
 == 12.2-dev ==

@@ -67,7 +67,7 @@ install-exec-local:
 #
 
 check-local:
-	for tool in $(RUST_BUILTIN); do (cd @srcdir@/$$tool;  @RUST_CARGO@ test --target-dir @abs_builddir@/$$tool/target); done
+	for tool in $(RUST_BUILTIN); do (cd @srcdir@/$$tool;  @RUST_CARGO@ test --target-dir @abs_builddir@/$$tool/target) -- --test-threads 1; done
 
 
 # Finally, since the Rust built ins are not known to the
