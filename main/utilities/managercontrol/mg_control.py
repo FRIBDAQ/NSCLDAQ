@@ -8,8 +8,8 @@ from nscldaq.manager_control.programlist import ProgramView
 from nscldaq.manager_control.cfgwizard import ConfigWizard
 from nscldaq.manager_control.maingui import MainGui
 from nscldaq.manager_control.loggerlist import LoggerTable
-from nscldaq.manager_control.loggerlist import ReadoutStatus
-from nscldaq.readoutRest import readoutRestClient
+from nscldaq.manager_control import ReadoutStatus
+from nscldaq.readoutREST import readoutRestClient
 from nscldaq.manager_client import Programs, OutputMonitor, KVStore, State, Logger
 from PyQt5.QtWidgets import (
     QApplication, QLabel, QLineEdit,
