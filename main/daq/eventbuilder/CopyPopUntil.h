@@ -95,7 +95,7 @@ template <class c1type, class c2type, class UnaryPredicate>
 void
 CopyPopUntil_BinarySearch(c1type& c1, c2type& c2, UnaryPredicate& pred)
 {
-    if (c1.size() < 5000) {
+    if (c1.size() < 1000) {
 	CopyPopUntil(c1, c2, pred);
 	return;
     }
@@ -126,7 +126,7 @@ void
 CopyPopUntilR_BinarySearch(c1type& c1, c2type& c2, UnaryPredicate& pred)
 {
 
-    if (c1.size() < 5000) {
+    if (c1.size() < 1000) {
 	CopyPopUntilR(c1, c2, pred);
 	return;
     }

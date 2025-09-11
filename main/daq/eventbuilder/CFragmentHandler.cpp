@@ -1915,10 +1915,10 @@ CFragmentHandler::DequeueUntilStamp(
   
   if (m_fBarrierPending) {
     TsLargerThan pred(timestamp);
-    CopyPopUntil_BinarySearch(q, result, pred);
+    CopyPopUntil(q, result, pred);
   } else {
     TsSmallerThan pred(timestamp);
-    CopyPopUntilR_BinarySearch(q, result, pred);
+    CopyPopUntilR(q, result, pred);
   }
 }
 
@@ -1940,7 +1940,7 @@ CFragmentHandler::DequeueUntilAbsTime(
 )
 {
   TimeLargerThan pred(time);
-  CopyPopUntil_BinarySearch(q, result, pred);  
+  CopyPopUntil(q, result, pred);  
 }
 
 
