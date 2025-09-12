@@ -12,6 +12,7 @@
         <cmdsynopsis>
             <command>
 mvlcgenerate <optional><option>--output</option>=<replaceable>outfile</replaceable></optional> 
+    <optional><option>--template</option>=<replaceable>template-file</replaceable></optional>
     <replaceable>infile</replaceable>
             </command>
         </cmdsynopsis>
@@ -135,13 +136,31 @@ if {$istranslator ne ""} {
         </para>
     </refsect1>
     <refsect1>
+        <title>Custom templates</title>
+        <para>
+            In the event you want to use an event trigger other than the default, the translator
+            can be told via the <option>--template</option> option to use a custom template 
+            YAML.  There are some requirements for that.
+        </para>
+        <para>
+            Use mvme to generate the template file, by specifying your desired trigger and exporting
+            the resulting configuration to yaml.   If you want a periodic stack, e.g. for scaler readout, 
+            you should creatre a second emtpy event stack and configure its condition to be 
+            <literal>Periodc (via MVLC StackTimer)</literal> and then set the period to be whatever you want
+            it to be.
+        </para>
+        <para>
+            When running mvlcgenerate, specify the <option>--template</option> to point to the configuration
+            you saved.  
+        </para>
+    </refsect1>
+    <refsect1>
         <title>FILES</title>
         <itemizedlist>
             <listitem>
                 <para>
                     <filename>$DAQSHARE/mvlc/triggeronly.yaml</filename> - is a template  yaml configuration
-                    file with the appropriate trigger setup and a marker indicating where to modify the event stack 
-                    delay.
+                    file with the appropriate trigger setup.
                 </para>
             </listitem>
         </itemizedlist>
