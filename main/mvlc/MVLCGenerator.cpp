@@ -284,7 +284,7 @@ MVLCGenerate::createInitIfNeeded(YAML::Node& node, const char* stackname) {
     // the YAML we want to add to node is:
 
     std::stringstream yamlstream;
-    yamlstream << "name: " << stackname << std::endl;
+    yamlstream << "name: " << stackname << ".init" << std::endl;
     yamlstream << "contents:\n";
 
     std::string yamlstring = yamlstream.str();
