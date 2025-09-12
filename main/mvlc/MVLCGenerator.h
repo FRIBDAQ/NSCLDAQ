@@ -81,6 +81,7 @@ private:
     void fillEndStack(YAML::Node& doc, const char* name, CStack& stack);
     void createRdoIfNeeded(YAML::Node& stacks,  const char* stackname);
     void createInitIfNeeded(YAML::Node& stacks, const char* stackname);
+    void createStopIfNeeded(YAML::Node& stacks, const char* stackname);
 };
 
 #endif

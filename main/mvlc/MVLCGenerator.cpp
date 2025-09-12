@@ -210,6 +210,7 @@ MVLCGenerate::fillEndStack(YAML::Node& doc, const char* name, CStack& stack) {
     // Find and fill in the appropriate stack:
 
     auto stacks = doc["crate"]["stop_commands"]["groups"];
+    createStopIfNeeded(stacks, name);
     for (int g = 0; g < stacks.size(); g++) {
         auto sname = stacks[g]["name"];
         if (sname.as<std::string>() == name) {
@@ -284,10 +285,38 @@ MVLCGenerate::createInitIfNeeded(YAML::Node& node, const char* stackname) {
     // the YAML we want to add to node is:
 
     std::stringstream yamlstream;
-    yamlstream << "name: " << stackname << ".init" << std::endl;
+    yamlstream << "name: " << stackname << std::endl;
     yamlstream << "contents:\n";
 
     std::string yamlstring = yamlstream.str();
     YAML::Node yaml = YAML::Load(yamlstring);
+    node.push_back(yaml);
+}
+/**
+ *  createStopIfNeeded
+ *    If it does not exist yet, create an empty stop stack.
+ * 
+ * @param node the [crate][stop_commands][groups] node.
+ * @param stackname - name of the stack to generate.
+ */
+void
+MVLCGenerate::createStopIfNeeded(YAML::Node& node, const char* stackname) {
+    // If the stack is already there assume its template is complete and 
+    // return.
+
+    for (int i =0; i < node.size(); i++) {
+        if (node[i]["name"].as<std::string>() == stackname) {
+            return;
+        }
+    }
+    // Generate this teamplate:
+
+    std::stringstream yamlstream;
+    yamlstream << "name: " << stackname << std::endl;
+    yamlstream << "contesnts:\n";
+
+    std::string yamlstring = yamlstream.str();
+    YAML::Node yaml = YAML::Load(yamlstring);
+
     node.push_back(yaml);
 }

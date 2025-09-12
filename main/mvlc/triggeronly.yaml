@@ -548,10 +548,6 @@ crate:
   stop_commands:
     name: stop_commands
     groups:
-      - name: event0.stop
-        contents:
-      - name: event1.stop
-        contents:
   mcst_daq_start:
     name: mcst_daq_start
     groups:
