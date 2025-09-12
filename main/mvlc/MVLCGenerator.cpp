@@ -139,6 +139,8 @@ MVLCGenerate::fillReadoutStack(YAML::Node& doc, const char* name,  CStack& stack
     // locate what we fill in:
 
     auto stacks = doc["crate"]["readout_stacks"];
+    createRdoIfNeeded(stacks, name);
+    std::cerr << stacks << std::endl;
     // Need to find the correct stack:
 
     for (int i =0; i < stacks.size(); i++) {
@@ -217,4 +219,46 @@ MVLCGenerate::fillEndStack(YAML::Node& doc, const char* name, CStack& stack) {
         }
     }
     m_pVMUSBCommand->clearController();
+}
+/**
+ * Given the readout_stacks node, if the given stack isn't in that,
+ * generate its skeleton.
+ * 
+ * @param doc - [crate][readout_stacks] node
+ * @param stackname -name of the stack to create ifneeded.
+ * 
+ * The structure we create is:
+ * 
+ * - name: {stackname}
+ *   groups:
+ *    -name: readout
+ *     contents: []
+ *    -name: readout_end
+ *     contents: []
+ * 
+ */
+void
+MVLCGenerate::createRdoIfNeeded(YAML::Node& stacks, const char* stackname) {
+    // if stacks already has stackname, do nothing:
+
+    for (int s = 0; s < stacks.size(); s++) {
+        auto sname = stacks[s]["name"];
+        if (sname.as<std::string>() == stackname) {
+            return;                     // Already have it, assume it's complete.
+        }
+    }
+    // Have to add it:
+
+    std::stringstream nodeText;
+    nodeText << "name: " << stackname << std::endl;
+    nodeText << "groups:\n";
+    nodeText << "  - name: readout\n";
+    nodeText << "    contents:\n";
+    nodeText << "  - name: readout_end\n";
+    nodeText << "    contents:\n";
+    std::string nodestring = nodeText.str();
+
+    YAML::Node stack = YAML::Load(nodestring);
+    stacks.push_back(stack);
+
 }

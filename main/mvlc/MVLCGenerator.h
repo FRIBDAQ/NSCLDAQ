@@ -79,6 +79,7 @@ private:
     void fillReadoutStack(YAML::Node& doc, const char* name, CStack& stack);
     void fillInitStack(YAML::Node& doc, const char* name, CStack& stack);
     void fillEndStack(YAML::Node& doc, const char* name, CStack& stack);
+    void createRdoIfNeeded(YAML::Node& stacks,  const char* stackname);
 
 };
 

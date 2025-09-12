@@ -7,20 +7,6 @@ crate:
     ethHost: ""
     ethJumboEnable: false
   readout_stacks:
-    - name: event0
-      groups:
-        - name: readout
-          contents:
-        - name: readout_end
-          contents:
-            - vme_write 0x09 d16 0xbb006034 0x00000001
-    - name: event1
-      groups:
-        - name: readout
-          contents:
-        - name: readout_start
-          contents:
-            - vme_write 0x09 d16 0xbc006034 0x00000001
   stack_triggers:
     - 0x60
     - 0x54
