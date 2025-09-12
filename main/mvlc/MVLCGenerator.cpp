@@ -140,7 +140,7 @@ MVLCGenerate::fillReadoutStack(YAML::Node& doc, const char* name,  CStack& stack
 
     auto stacks = doc["crate"]["readout_stacks"];
     createRdoIfNeeded(stacks, name);
-    std::cerr << stacks << std::endl;
+
     // Need to find the correct stack:
 
     for (int i =0; i < stacks.size(); i++) {
@@ -178,6 +178,7 @@ MVLCGenerate::fillInitStack(YAML::Node& doc, const char* name, CStack& stack) {
     // Locate the stack we fill in:
 
     auto stacks = doc["crate"]["init_commands"]["groups"];
+    createInitIfNeeded(stacks, name);
     for (int g = 0; g < stacks.size(); g++) {
         if (stacks[g]["name"].as<std::string>() == name) {
             auto stack = stacks[g]["contents"];
@@ -261,4 +262,32 @@ MVLCGenerate::createRdoIfNeeded(YAML::Node& stacks, const char* stackname) {
     YAML::Node stack = YAML::Load(nodestring);
     stacks.push_back(stack);
 
+}
+/**
+ * createInitIfNeeded
+ *     If it does not yet exist, create an empty init entry for a stack.
+ * 
+ * @param node the ["crate"]["init_commands"]["groups"] node
+ * @param stackname - name of the stack to create.
+ * 
+ */
+void
+MVLCGenerate::createInitIfNeeded(YAML::Node& node, const char* stackname) {
+    // If the stack already exists, assume its complete:
+
+    for (int i = 0; i < node.size(); i++) {
+        if (node[i]["name"].as<std::string>() == stackname) {
+            return;                 // already exists.
+        }
+    }
+
+    // the YAML we want to add to node is:
+
+    std::stringstream yamlstream;
+    yamlstream << "name: " << stackname << std::endl;
+    yamlstream << "contents:\n";
+
+    std::string yamlstring = yamlstream.str();
+    YAML::Node yaml = YAML::Load(yamlstring);
+    node.push_back(yaml);
 }

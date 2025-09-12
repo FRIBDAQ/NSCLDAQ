@@ -545,10 +545,6 @@ crate:
   init_commands:
     name: init_commands
     groups:
-      - name: event0.init
-        contents:
-      - name: event1.init
-        contents:
   stop_commands:
     name: stop_commands
     groups:
