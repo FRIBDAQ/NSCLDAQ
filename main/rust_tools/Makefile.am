@@ -30,9 +30,9 @@ RUST_BUILTIN=ring_monitor
 INSTALL_DIR=@bindir@/rust     # Segragate the rust bins..
 
 all-local:
-	for tool in @RUST_SUBDIRS@ ; do (cd $${tool}; @RUST_CARGO@ build --release); done
+	for tool in @RUST_SUBDIRS@ ; do (cd $${tool}; PATH=${PATH}:@RUST_TOOL_DIR@  @RUST_CARGO@ build --release); done
 	for tool in $(RUST_BUILTIN); do \
-		(cd @srcdir@/$$tool; @RUST_CARGO@ build --release --target-dir @abs_builddir@/$$tool/target); \
+		(cd @srcdir@/$$tool; PATH=${PATH}:@RUST_TOOL_DIR@ @RUST_CARGO@ build --release --target-dir @abs_builddir@/$$tool/target); \
 	done
 
 
@@ -67,10 +67,8 @@ install-exec-local:
 #
 
 check-local:
-	for tool in $(RUST_BUILTIN); do (cd @srcdir@/$$tool;  @RUST_CARGO@ test --target-dir @abs_builddir@/$$tool/target) -- --test-threads 1; done
-
-
-# Finally, since the Rust built ins are not known to the
+	for tool in $(RUST_BUILTIN); do (cd @srcdir@/$$tool;  PATH=${PATH}:@RUST_TOOL_DIR@ @RUST_CARGO@ test --target-dir @abs_builddir@/$$tool/target -- --test-threads 1); \
+	done # Finally, since the Rust built ins are not known to the
 # autotools directly, we need to include them in the tarball too:
 
 EXTRA_DIST=$(RUST_BUILTIN)
