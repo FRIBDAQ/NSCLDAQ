@@ -69,10 +69,12 @@ private:
     int operator!=(const MVLCGenerate) const;
 
 public:
+    static void setTemplate(const char* templatePath);
     void generate();             // Generate/write the config file.
   
     // utilities:
 private:
+    
     YAML::Node loadTemplate();
     void fillReadoutStack(YAML::Node& doc, const char* name, CStack& stack);
     void fillInitStack(YAML::Node& doc, const char* name, CStack& stack);

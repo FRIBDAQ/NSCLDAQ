@@ -57,7 +57,17 @@ MVLCGenerate::MVLCGenerate(std::string outfile, TCLConfigParser* config) :
 MVLCGenerate::~MVLCGenerate() {
     delete m_pVMUSBCommand;
 }
-
+/**
+ * setTemplate
+ *    Override the default template file 
+ * 
+ * @param path - template file path  This must remain in scope for the lifetime of this
+ * object.
+ */
+void
+MVLCGenerate::setTemplate(const char* templatePath) {
+    m_YamlTemplate = templatePath;
+}
 
 /**
  *  generate
