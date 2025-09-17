@@ -54,6 +54,7 @@ bin_PROGRAMS=SoftwareTrigger EventFilter Transformer EventEditor  FullEventEdito
 libSwTrigger_la_SOURCES=CReceiver.cpp CTestTransport.cpp CTestTransport.h zhelpers.hpp \
 	CZMQTransport.cpp CZMQClientTransport.cpp CZMQServerTransport.cpp \
 	CSender.cpp CRingItemFileTransport.cpp CRingBufferTransport.cpp \
+	CRingBufferTransportEJFAT.cpp \
 	CDispatcher.cpp CClientRegistry.cpp CZMQRouterTransport.cpp \
 	CZMQDealerTransport.cpp CDataSourceElement.cpp CParallelWorker.cpp \
 	CDataSinkElement.cpp CThreadedProcessingElement.cpp		\
@@ -85,6 +86,7 @@ libSwTrigger_la_CPPFLAGS=-I@top_srcdir@/daq/IO -I@top_srcdir@/base/dataflow \
 include_HEADERS = CTransport.h CReceiver.h CZMQTransport.h CZMQClientTransport.h \
 	CZMQServerTransport.h CSender.h CRingItemTransport.h CRingItemFileTransport.h \
 	CRingBufferTransport.h CDispatcher.h CClientRegistry.h CZMQRouterTransport.h \
+	CRingBufferTransportEJFAT.h \
 	CZMQDealerTransport.h CFanoutClientTransport.h CProcessingElement.h \
 	CDataSourceElement.h CParallelWorker.h CDataSinkElement.h  \
 	CThreadedProcessingElement.h CRingItemTransportFactory.h	\

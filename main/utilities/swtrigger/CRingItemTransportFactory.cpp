@@ -39,6 +39,8 @@
 #include <os.h>
 #include <stdio.h>
 
+#include "CRingBufferTransportEJFAT.h"
+
 // Stupid class to ensure that the chunk accessors delete the ring buffers
 // we make -- otherwise killing the transprot kills us.  We don't
 // want the base class to assume the ring buffer is dynamic.
@@ -90,7 +92,7 @@ CRingItemTransportFactory::createTransport(
             CRingBuffer* pRing = CRingAccess::daqConsumeFrom(uri);
             CRingBufferChunkAccess* accessor =
                 new _CRingBufferChunkAccess(pRing);
-            return new CRingBufferTransport(*accessor);
+            return new CRingBufferTransportEJFAT(*accessor);
             
         }
     } else if (proto == "file") {
