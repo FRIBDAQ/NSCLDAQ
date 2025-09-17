@@ -27,6 +27,8 @@
 #include <stdexcept>
 #include <new>
 
+#include <chrono>
+
 static const int CHUNK_SIZE(1024*1024);
 static const int POLL_COUNT(100);
 static const int POLL_TIMING(10);
@@ -37,7 +39,7 @@ static const int POLL_TIMING(10);
  */
 CRingBufferTransport::CRingBufferTransport(CRingBuffer& writer) :
     m_pWriter(&writer), m_pReader(nullptr), m_pCurrentChunk(nullptr),
-    m_pIterator(nullptr)
+    m_pIterator(nullptr), m_seenData(false)
 {}
 /**
  * constructor (read)
@@ -48,7 +50,6 @@ CRingBufferTransport::CRingBufferTransport(CRingBufferChunkAccess& reader) :
     m_pWriter(nullptr), m_pReader(&reader), m_pCurrentChunk(nullptr),
     m_pIterator(nullptr)
 {
-    
 }
 /**
  * destructor
@@ -80,16 +81,15 @@ CRingBufferTransport::recv(void** ppData, size_t& size)
     if (!m_pReader) {
         throw std::logic_error(
             "CRingBufferTransport attempted recv from a write-only transport instance"    
-        );
+	    );
     }
     if (!m_pCurrentChunk) {
         nextChunk();                // Note this can take a _long_ time.
     }
-    
     RingItemHeader& rHeader(**m_pIterator);
     void*           pResult = malloc(rHeader.s_size);
     if (!pResult) {
-        throw std::bad_alloc();
+	throw std::bad_alloc();
     }
     memcpy(pResult, &rHeader, rHeader.s_size);
     *ppData = pResult;
@@ -99,8 +99,9 @@ CRingBufferTransport::recv(void** ppData, size_t& size)
     
     (*m_pIterator)++;
     if ((*m_pIterator) == m_pCurrentChunk->end()) {
-        finishChunk();
+	finishChunk();
     }
+    
 }
 /**
  * send
@@ -137,11 +138,10 @@ CRingBufferTransport::send(iovec* parts, size_t numParts)
  */
 void
 CRingBufferTransport::nextChunk()
-{
-  size_t dataAvail;
-    while(!(dataAvail = m_pReader->waitChunk(CHUNK_SIZE, POLL_COUNT, POLL_TIMING)))
-        ;
-        
+{    
+    size_t dataAvail;
+    while(!(dataAvail = m_pReader->waitChunk(CHUNK_SIZE, POLL_COUNT, POLL_TIMING)));
+    
     // Now a chunk should be ready... doing this allows for m_pCurrentChunk
     // to be a nullptr indicating we need a next chunk.
     
@@ -153,7 +153,7 @@ CRingBufferTransport::nextChunk()
     m_pIterator     =
         new CRingBufferChunkAccess::Chunk::iterator(
             m_pCurrentChunk->getStorage(), m_pCurrentChunk->size()
-        );
+	    );
 }
 /**
  * finishChunk

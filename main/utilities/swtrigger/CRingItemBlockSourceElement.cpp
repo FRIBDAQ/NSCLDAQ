@@ -32,6 +32,7 @@
 #include <array>
 #include <fragment.h>
 
+#include <iostream>
 
 /**
  * Constructor
@@ -47,7 +48,7 @@ CRingItemBlockSourceElement::CRingItemBlockSourceElement(
         *(new CReceiver(*CRingItemTransportFactory::createTransport(
             ringUri, CRingBuffer::consumer
         ))), fanout
-    ), m_nChunkSize(chunkSize), m_nLastTimestamp(0)
+	), m_nChunkSize(chunkSize), m_nLastTimestamp(0), m_beginSeen(0), m_endSeen(0)
 {}
 
 
@@ -64,9 +65,13 @@ CRingItemBlockSourceElement::operator()()
     void* pData;
     size_t nBytes(0);
     do {
+	// if (m_beginSeen && (m_beginSeen == m_endSeen)) {
+	//     if (m_chunk.size()) sendChunk();     // Send any partial chunk.
+	//     getSender()->end();
+	//     return;
+	// }
         getSource()->getMessage(&pData, nBytes);
         process(pData, nBytes);
- 
     } while(nBytes > 0);
 }
 /**
@@ -83,33 +88,38 @@ CRingItemBlockSourceElement::operator()()
 void
 CRingItemBlockSourceElement::process(void* pData, size_t nBytes)
 {
-    if (nBytes == 0) {                       // End of data.
+    if (nBytes == 0) {   // End of data.
         if (m_chunk.size()) sendChunk();     // Send any partial chunk.
-        getSender()->end();
-        
+        getSender()->end();       
     } else {                               // Real data.
         Message m;
         m.s_pData = pData;
         m.s_nBytes = nBytes;
         
-        // Figure out the timestamp.. if there's a body header it comes from there.
-        // otherwise it comes from the last timestamp seen.
+        // Figure out the timestamp... if there's a body header it comes
+	// from there. Otherwise it comes from the last timestamp seen.
         
         pRingItem pItem = static_cast<pRingItem>(pData);
+	if (itemType(pItem) == BEGIN_RUN) {
+	    m_beginSeen++;
+	}
+	if (itemType(pItem) == END_RUN) {
+	    m_endSeen++;
+	}
+	
         if (itemType(pItem) == RING_FORMAT) {
             // Beginning of a run so:
             
             m_nLastTimestamp = 0;
         } else if (hasBodyHeader(pItem)) {   // have a body header else:
             pBodyHeader pB = reinterpret_cast<pBodyHeader>(bodyHeader(pItem));
-            uint64_t bheadertstamp =
-                pB->s_timestamp;
+            uint64_t bheadertstamp =  pB->s_timestamp;
             if (bheadertstamp == NULL_TIMESTAMP) {
-                bheadertstamp = m_nLastTimestamp;            // Null timestamp means last
+                bheadertstamp = m_nLastTimestamp; // Null timestamp means last
             }
             m_nLastTimestamp = bheadertstamp;
-           
         }
+	
         // By now m_nLasTimetamp is what we want.
         m.s_timestamp = m_nLastTimestamp;
         m_chunk.push_back(m);

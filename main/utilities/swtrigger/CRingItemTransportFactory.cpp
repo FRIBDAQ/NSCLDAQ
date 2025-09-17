@@ -35,6 +35,10 @@
 #include <stdexcept>
 #include <system_error>
 
+#include <signal.h>
+#include <os.h>
+#include <stdio.h>
+
 // Stupid class to ensure that the chunk accessors delete the ring buffers
 // we make -- otherwise killing the transprot kills us.  We don't
 // want the base class to assume the ring buffer is dynamic.
