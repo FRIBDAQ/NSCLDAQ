@@ -124,7 +124,8 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/usb/vmusb/sis3316examples \
 	@top_srcdir@/mvlc \
 	@top_srcdir@/rust_tools/ring_monitor \
-	@top_srcdir@/utilities/statsview
+	@top_srcdir@/utilities/statsview \
+	@top_srcdir@/utilities/swtrigger
 
 daq.html: daq.xml
 	- rm -rf html
