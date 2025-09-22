@@ -499,7 +499,7 @@ $MVLCROOT/bin/fribdaq-readout <replaceable>options...</replaceable> <replaceable
                 <para>
                     Note that the crate configuration file can also specify the MVLC to use however as that
                     comes from a template file used by <filename>mvlcgenerate</filename> it, normally, should
-                    be overidden by one o fthe options above.
+                    be overidden by one of the options above.
                 </para>
 
                 <variablelist>
@@ -636,17 +636,50 @@ $MVLCROOT/bin/fribdaq-readout <replaceable>options...</replaceable> <replaceable
                             </para>
                         </listitem>
                     </varlistentry>
+                    <varlistentry>
+                            <term><option>-convert-tcl</option></term>
+                            <listitem>
+                                <para>
+                                    The configureation file is taken to be a Tcl DAQ configuration script compatible
+                                    with <command>mvlcgenerate</command> and converted to yaml at the beginning of each run
+                                    before being used as the configuration file.  For this to work, FRIB/NSCLDAQ environment
+                                    variables must have been set up by sourcing a <filename>daqsetup.bash</filename> for
+                                    a version of FRIB/NSCLDAQ that includes <command>mvlcgenerate</command> as that program 
+                                    is used to perform the translation.
+                                </para>
+                                <para>
+                                    If this option is used, <command>mvlcgenerate</command> produces an output file
+                                    in the same directory as the configuration file, prepending the filename with
+                                    a <literal>.</literal> to make it hidden and appending <literal>.yaml</literal>
+                                    to make it clear this is a yaml file.  For example, if the configuration file
+                                    is <filename>/users/ron/configs/daqconfig.tcl</filename>, 
+                                    the generated file will be
+                                    <filename>/users/ron/configs/.daqconfig.tcl.yaml</filename>.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                            <term><option>--template</option> <replaceable>yaml-template-file</replaceable></term>
+                            <listitem>
+                                <para>
+                                    Supports the use of a custom trigger for <command>mclcgenerate</command> when run
+                                    from <command>fribdaq-readout</command>.  See <link linkend="mvlcgen_man" endterm='mvlcgen_man_title' /> 
+                                    for the requirements of this template.  If not supplied, the system installed tamplate is used which 
+                                    triggers the event stack on on the bottom-most NIM connector and triggers the scaler stack every 2 seconds.
+                                </para>
+                            </listitem>
+                    </varlistentry>
                 </variablelist>
             </refsect1>
             <refsect1>
                 <title>Commands</title>
                 <para>
                     The <filename>fribdaq-readout</filename> is controlled by commands that are accepted on
-                    its stdin.  These commands are complmetely compatible with t
-		    he standard FRIB/NSCLDAQ readout command sets and, like all
-		    FRIB/NSCLDAQ readout command interpreters run inside
-		    an event driven Tcl intpereter making it compatible with
-		    the ReST server and ReadoutShell.
+                    its stdin.  These commands are complmetely compatible with the 
+                    standard FRIB/NSCLDAQ readout command sets and, like all
+                    FRIB/NSCLDAQ readout command interpreters run inside
+                    an event driven Tcl intpereter making it compatible with
+                    the ReST server and ReadoutShell.
                 </para>
 
             </refsect1>
