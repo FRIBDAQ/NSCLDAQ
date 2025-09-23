@@ -313,7 +313,7 @@ MVLCGenerate::createStopIfNeeded(YAML::Node& node, const char* stackname) {
 
     std::stringstream yamlstream;
     yamlstream << "name: " << stackname << std::endl;
-    yamlstream << "contesnts:\n";
+    yamlstream << "contents:\n";
 
     std::string yamlstring = yamlstream.str();
     YAML::Node yaml = YAML::Load(yamlstring);
