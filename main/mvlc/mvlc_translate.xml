@@ -2601,14 +2601,15 @@ adc cget <replaceable>name ?option?</replaceable>
             <command>caenchain</command> module command.
         </para>
         <para>
-            One important difference between the <command>VMUSBReadout</command> and
+            Important ifferences between the <command>VMUSBReadout</command> and
             <command>mvlcgenerate</command> support for these modules is the offline nature of
             <command>mvlcgenerate</command>.  The <command>VMUSBReadout</command> could do module
             type specific initialization by querying the module itself for its type.  This is
             not possible for the <command>mvlcgenerate</command> command.  Therefore the
             additional option <option>-type</option> was added to the configurable options
             to allow you to specify the module type.  See <literal>OPTIONS</literal> below for
-            more information about this.
+            more information about this.  Furthermore, see the cautions in the <option>-geo</option> 
+            documentation.
         </para>
     </refsect1>
     <refsect1>
@@ -2626,17 +2627,20 @@ adc cget <replaceable>name ?option?</replaceable>
             <varlistentry>
                 <term><option>-geo </option> <replaceable>9-bit-value </replaceable></term>
                 <listitem><para>
-                    Specifies the value of the id placed in the id field of the data.  Note that
-                    this value is ignored in modules/backplanes with the CERN P3 extensions.
+                    Specifies the value of the id placed in the id field of the data. 
+                </para><para>
+                     Note that the <option>-geo</option>
+                    option must not be specified in  modules/backplanes with the CERN P3 extensions.
                     Modules/backplanes of that sort will have three connecters (adding a small
                     middle connector to the standard 2 larger VME connectors).  These modules/backplanes
                     get a physical slot number through that extra connector and use that for the
-                    module id.
+                    module id.   Writing to the register that sets the geographical address results in
+                    an initialization error when using <literal>fribdaq-readout</literal>
                 </para><para>
                     Furthermore, Modules that have a middle connector get power through that
                     connector and cannot be used in crates that do not have it without modification.
                     Modules without a middle connector can be used with extended backplanes but
-                    they must have a <option>-geo</option> specified.
+                    they <emphasis>must</emphasis> have a <option>-geo</option> specified.
                 </para></listitem>
             </varlistentry>
             <varlistentry>
