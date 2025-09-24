@@ -395,7 +395,15 @@ C785::Initialize(CVMUSB& controller)
   // Set the GEOgraphical address of the module.
 
   uint16_t geo = getIntegerParameter("-geo");
-  controller.vmeWrite16(base+GEO, initamod, geo);
+  // With the MVLC< writing the geo register on a
+  // crate/module with a middle connector buserrs
+  // and we can't have that.  If the user doe4s not specify
+  // geo it is initialized to 0 _and_ in any event, that's
+  // not a legal slot (though it is a legal GEO actually.
+  //
+  if (geo > 0) {
+      controller.vmeWrite16(base+GEO, initamod, geo);
+  }
   controller.vmeWrite16(base+BSet1, initamod, (uint16_t)0x80);
   controller.vmeWrite16(base+BClear1, initamod, (uint16_t)0x80);
 
