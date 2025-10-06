@@ -5582,6 +5582,52 @@ mqdc cget <replaceable>name</replaceable>
                   tightly coupled to the value of the <option>-resetlogic</option> option. 
                 </para>
                 <para>
+                  If this option is set with <option>-customecl</option> is false, Bit 1 of
+                  ts_sources register (0x6096) is automatically set to 1.
+                </para>
+                <para>
+                  The default value is false.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-eclgate1osc</option> <replaceable>0,1</replaceable></term>
+              <listitem>
+                <para>
+                  0 - Gate 1 input, 1 - Oscillator input.
+                </para>
+                <para>
+                  Setting this option to 1 automatically sets Bit 1 of ts_sources register
+                  (0x6096) to 1.
+                </para>
+                <para>
+                  Only valid when <option>-customecl</option> is <option>true</option>.
+                  The default value is 0.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-eclfcreset</option> <replaceable>0,1,2</replaceable></term>
+              <listitem>
+                <para>
+                  0 - Fast clear input(="not Gate"), 1 - Reset timestamp counter,
+                  2 - input for experiment trigger.
+                </para>
+                <para>
+                  Only valid when <option>-customecl</option> is <option>true</option>.
+                  The default value is 0.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-customecl</option> <replaceable>onoff</replaceable></term>
+              <listitem>
+                <para>
+                  When true, ECL_gate1_osc and ECL_FC_Reset registers become customizable.
+                  In this case, <option>-ecltiming</option> will be ignored regardless of
+                  the value set.
+                </para>
+                <para>
                   The default value is false.
                 </para>
               </listitem>
@@ -5600,7 +5646,53 @@ mqdc cget <replaceable>name</replaceable>
                   the reset depends on the value of the <option>-resetlogic</option>.
                 </para>
                 <para>
+                  If this option is set with <option>-customnim</option> is false, Bit 1 of
+                  ts_sources register (0x6096) is automatically set to 1.
+                </para>
+                <para>
                   The default value is false.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-nimgate1osc</option> <replaceable>0,1</replaceable></term>
+              <listitem>
+                <para>
+                  0 - Gate 1 input, 1 - Oscillator input.
+                </para>
+                <para>
+                  Setting this option to 1 automatically sets Bit 1 of ts_sources register
+                  (0x6096) to 1.
+                </para>
+                <para>
+                  Only valid when <option>-customnim</option> is true.
+                  The default value is 0.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-nimfcreset</option> <replaceable>0,1,2</replaceable></term>
+              <listitem>
+                <para>
+                  0 - Fast clear input(="not Gate"), 1 - Reset timestamp counter,
+                  2 - input for experiment trigger.
+                </para>
+                <para>
+                  Only valid when <option>-customnim</option> is true.
+                  The default value is 0.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-customnim</option> <replaceable>onoff</replaceable></term>
+              <listitem>
+                <para>
+                  When true, NIM_gate1_osc and NIM_FC_Reset registers become customizable.
+                  In this case, <option>-nimtiming</option> will be ignored regardless of
+                  the value set.
+                </para>
+                <para>
+                  The default value if false.
                 </para>
               </listitem>
             </varlistentry>
