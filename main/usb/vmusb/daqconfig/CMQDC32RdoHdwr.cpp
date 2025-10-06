@@ -569,6 +569,13 @@ void CMQDC32RdoHdwr::configureNIMBusy(CVMUSBReadoutList& list) {
  */
 void CMQDC32RdoHdwr::configureTimeBaseSource(CVMUSBReadoutList& list) {
   uint16_t id = m_pConfig->getEnumParameter("-timingsource",TimingSourceValues);
+  if ((m_pConfig->getBooleanParameter("-customecl") && m_pConfig->getIntegerParameter("-eclgate1osc") == 1)
+      || (m_pConfig->getBooleanParameter("-customnim") && m_pConfig->getIntegerParameter("-nimgate1osc") == 1)) {
+    id = id&0x1 + 0x2;
+  } // The conditions must be separate as the above ignores the below
+  else if (m_pConfig->getBooleanParameter("-ecltiming") || m_pConfig->getBooleanParameter("-nimtiming")) {
+    id = id&0x1 + 0x2;
+  }
   m_logic.addWriteTimeBaseSource(list,id);
 }
 
