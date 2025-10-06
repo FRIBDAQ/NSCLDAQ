@@ -1,6 +1,12 @@
 == 12.1-016 ==
 * Resolve inconsistency in fail bit data read and unpacking for CAEN VX2740
 * Build docs for NSCLDAQ parallel processing framework
+* MQDC-32
+    * Adding customized control registers: ECL_gate1_osc, ECL_FC_Reset, NIM_gate1_osc, NIM_FC_Reset
+    * Adding Gate_select register control method
+    * Fixing bug NIM_FC_Reset is always 1 regardless of -nimtiming option
+    * Fixing potential issue not correctly setting ts_sources register
+    * Documentation update
 == 12.1-016 ==
 
 == 12.1-015 ==
