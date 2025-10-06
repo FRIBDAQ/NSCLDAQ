@@ -120,6 +120,8 @@ class CMQDC32StackBuilder
 
     void addWriteECLTermination(CVMUSBReadoutList& list, uint16_t type);
 
+    void addWriteGateSelect(CVMUSBReadoutList& list, uint16_t type)
+
     void addWriteECLGate1Input(CVMUSBReadoutList& list, uint16_t type);
     void addWriteECLFCInput(CVMUSBReadoutList& list, uint16_t type);
 

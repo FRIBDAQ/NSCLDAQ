@@ -56,6 +56,7 @@ static const char* InputCouplingValues[] = {"AC","DC",0};
 static const char* NIMBusyModes[] = {"busy", "rcbus", "full", "overthreshold",0};
 static const char* SyncModeValues[] = {"never","begin_run","extern_oneshot",0};
 static const char* MultiEventModeValues[] = {"off","on","limited",0};
+static const char* GateSelect[] = {"nim", "ecl", 0};
 // Legal values for the resolution...note in this case the default is explicitly defined as 8k
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -173,6 +174,14 @@ CMQDC32RdoHdwr::onAttach(CReadoutModule& configuration)
   m_pConfig->addBooleanParameter("-nimtiming", false);
   m_pConfig->addEnumParameter("-nimbusy", NIMBusyModes, NIMBusyModes[0]);
 
+  m_pConfig->addEnumParameter("-gateselect", GateSelect, GateSelect[0]);
+  m_pConfig->addBooleanParameter("-customecl", false);
+  m_pConfig->addIntegerParameter("-eclgate1osc", 0, 1, 0);
+  m_pConfig->addIntegerParameter("-eclfcreset", 0, 2, 0);
+  m_pConfig->addBooleanParameter("-customnim", false);
+  m_pConfig->addIntegerParameter("-nimgate1osc", 0, 1, 0);
+  m_pConfig->addIntegerParameter("-nimfcreset", 0, 2, 0);
+
   // timing 
   m_pConfig->addEnumParameter("-timingsource", 
                                      TimingSourceValues, 
@@ -246,6 +255,7 @@ CMQDC32RdoHdwr::Initialize(CVMUSB& controller)
   configureMemoryBankSeparation(*pList);
   
   // configure inputs/outputs
+  configureGateSelect(*pList);
   configureECLInputs(*pList);
   configureNIMInputs(*pList);
   configureNIMBusy(*pList);
@@ -470,6 +480,16 @@ void CMQDC32RdoHdwr::configureECLTermination(CVMUSBReadoutList& list) {
   }
 }
 
+/*! \brief Set which input, ECL or NIM, to take as gate inputs.
+ *
+ * \param list a readout list
+ */
+
+void QMQDC32RdoHdwr::configureGateSelect(CVMUSBReadoutList &list) {
+  int nimOrEcl = m_pConfig->getEnumParameter("-gateselect", GateSelect);
+  m_logic.addWriteGateSelect(list, nimOrEcl);
+}
+
 /*! \brief Set up the ECL inputs to be consistent with the mode of the module
  *
  *  If the user is sending an external oscillator for a timestamp, they should
@@ -477,18 +497,26 @@ void CMQDC32RdoHdwr::configureECLTermination(CVMUSBReadoutList& list) {
  *  and the other clears the timestamp. Othewise, they just behave as normal. One
  *  is the Gate1 input and the other is the Fast clear.
  *
+ *  If -customecl is set, users can customize registers using -eclgate1osc
+ *  and -eclfcreset options. In this case, -ecltiming is ignored
+ *
  *  \param list   a readout list
  */
 void CMQDC32RdoHdwr::configureECLInputs(CVMUSBReadoutList& list) {
   
   using namespace MQDC32;
 
-  if (m_pConfig->getBoolParameter("-ecltiming")) {
-    m_logic.addWriteECLGate1Input(list, ECLGate1::Oscillator);
-    m_logic.addWriteECLFCInput(list,  ECLFC::ResetTstamp);
+  if (m_pConfig->getBoolParameter("-customecl")) {
+    m_logic.addWriteNIMGate1Input(list, m_pConfig->getIntegerInput("-eclgate1osc"));
+    m_logic.addWriteNIMFCInput(list, m_pConfig->getIntegerInput("-eclfcreset"));
   } else {
-    m_logic.addWriteECLGate1Input(list, ECLGate1::Gate);
-    m_logic.addWriteECLFCInput(list,  ECLFC::FastClear);
+    if (m_pConfig->getBoolParameter("-ecltiming")) {
+      m_logic.addWriteECLGate1Input(list, ECLGate1::Oscillator);
+      m_logic.addWriteECLFCInput(list,  ECLFC::ResetTstamp);
+    } else {
+      m_logic.addWriteECLGate1Input(list, ECLGate1::Gate);
+      m_logic.addWriteECLFCInput(list,  ECLFC::FastClear);
+    }
   }
 }
 
@@ -499,18 +527,26 @@ void CMQDC32RdoHdwr::configureECLInputs(CVMUSBReadoutList& list) {
  *  and the other clears the timestamp. Othewise, they just behave as normal. One
  *  is the Gate1 input and the other is the Fast clear.
  *
+ *  If -customnim is set, users can customize registers using -nimgate1osc
+ *  and -nimfcreset options. This case, -nimtiming is ignored.
+ *
  *  \param list   a readout list
  */
 void CMQDC32RdoHdwr::configureNIMInputs(CVMUSBReadoutList& list) {
   
   using namespace MQDC32;
-  if (m_pConfig->getBoolParameter("-nimtiming")) {
-    m_logic.addWriteNIMGate1Input(list, NIMGate1::Oscillator); 
-    m_logic.addWriteNIMFCInput(list, NIMFC::ResetTstamp);
-  }
-  else {
-    m_logic.addWriteNIMGate1Input(list, NIMGate1::Gate);
-    m_logic.addWriteNIMFCInput(list, NIMFC::ResetTstamp);
+  if (m_pConfig->getBoolParameter("-customnim")) {
+    m_logic.addWriteNIMGate1Input(list, m_pConfig->getIntegerInput("-nimgate1osc"));
+    m_logic.addWriteNIMFCInput(list, m_pConfig->getIntegerInput("-nimfcreset"));
+  } else {
+    if (m_pConfig->getBoolParameter("-nimtiming")) {
+      m_logic.addWriteNIMGate1Input(list, NIMGate1::Oscillator);
+      m_logic.addWriteNIMFCInput(list, NIMFC::ResetTstamp);
+    }
+    else {
+      m_logic.addWriteNIMGate1Input(list, NIMGate1::Gate);
+      m_logic.addWriteNIMFCInput(list, NIMFC::FastClear);
+    }
   }
 }
 
