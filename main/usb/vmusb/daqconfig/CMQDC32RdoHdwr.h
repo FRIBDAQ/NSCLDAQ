@@ -77,8 +77,15 @@ class CVMUSBReadoutList;
    -pulser              bool (false)        Enables/disables pulser
    -pulseramp           int [0-255]         Amplitude of pulser for useramplitdue mode
    -ecltermination      bool                Enable termination of the ECL inputs.
+   -gateselect          enum (nim,ecl)      Select the port to take gate inputs
+   -customecl           bool                Customize ECL input setting. Ignoring -ecltiming
+   -eclgate1osc         integer 0           Setting ECL_gate1_osc register
+   -eclfcreset          integer 0           Setting ECL_FC_reset register
    -ecltming            bool                Enables ECL timestamp inputs
                                             (oscillator and reset).
+   -customnim           bool                Customize NIM input setting. Ignoring -ecltiming
+   -nimgate1osc         integer 0           Setting NIM_gate1_osc register
+   -nimfcreset          integer 0           Setting NIM_FC_reset register
    -nimtiming           bool                Enables NIM input for timestamp inputs
                                             (oscillator & rset).
    -timestamp           bool  (false)       If true enables the extended timestamp.
@@ -141,6 +148,7 @@ private:
   void configureInputCoupling(CVMUSBReadoutList& list);
   void configureTimeDivisor(CVMUSBReadoutList& list);
   void configureECLTermination(CVMUSBReadoutList& list);
+  void configureGateSelect(CVMUSBReadoutList& list);
   void configureECLInputs(CVMUSBReadoutList& list);
   void configureNIMInputs(CVMUSBReadoutList& list);
   void configureNIMBusy(CVMUSBReadoutList& list);

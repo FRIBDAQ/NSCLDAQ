@@ -279,6 +279,11 @@ namespace MQDC32 {
     list.addDelay(MQDCDELAY);
   }
 
+  void CMQDC32Stackuilder::addWriteGateSelect(CVMUSBReadoutList& list, uint16_t type)
+  {
+    list.addWrite16(m_base + Reg::GateSelect, initamod, type);
+  }
+
   void CMQDC32StackBuilder::addWriteECLGate1Input(CVMUSBReadoutList& list, uint16_t type)
   {
     list.addWrite16(m_base + Reg::ECLGate1, initamod, type);
