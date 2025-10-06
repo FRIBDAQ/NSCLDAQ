@@ -485,7 +485,7 @@ void CMQDC32RdoHdwr::configureECLTermination(CVMUSBReadoutList& list) {
  * \param list a readout list
  */
 
-void QMQDC32RdoHdwr::configureGateSelect(CVMUSBReadoutList &list) {
+void CMQDC32RdoHdwr::configureGateSelect(CVMUSBReadoutList &list) {
   int nimOrEcl = m_pConfig->getEnumParameter("-gateselect", GateSelect);
   m_logic.addWriteGateSelect(list, nimOrEcl);
 }
@@ -507,8 +507,8 @@ void CMQDC32RdoHdwr::configureECLInputs(CVMUSBReadoutList& list) {
   using namespace MQDC32;
 
   if (m_pConfig->getBoolParameter("-customecl")) {
-    m_logic.addWriteNIMGate1Input(list, m_pConfig->getIntegerInput("-eclgate1osc"));
-    m_logic.addWriteNIMFCInput(list, m_pConfig->getIntegerInput("-eclfcreset"));
+    m_logic.addWriteNIMGate1Input(list, m_pConfig->getIntegerParameter("-eclgate1osc"));
+    m_logic.addWriteNIMFCInput(list, m_pConfig->getIntegerParameter("-eclfcreset"));
   } else {
     if (m_pConfig->getBoolParameter("-ecltiming")) {
       m_logic.addWriteECLGate1Input(list, ECLGate1::Oscillator);
@@ -536,8 +536,8 @@ void CMQDC32RdoHdwr::configureNIMInputs(CVMUSBReadoutList& list) {
   
   using namespace MQDC32;
   if (m_pConfig->getBoolParameter("-customnim")) {
-    m_logic.addWriteNIMGate1Input(list, m_pConfig->getIntegerInput("-nimgate1osc"));
-    m_logic.addWriteNIMFCInput(list, m_pConfig->getIntegerInput("-nimfcreset"));
+    m_logic.addWriteNIMGate1Input(list, m_pConfig->getIntegerParameter("-nimgate1osc"));
+    m_logic.addWriteNIMFCInput(list, m_pConfig->getIntegerParameter("-nimfcreset"));
   } else {
     if (m_pConfig->getBoolParameter("-nimtiming")) {
       m_logic.addWriteNIMGate1Input(list, NIMGate1::Oscillator);
