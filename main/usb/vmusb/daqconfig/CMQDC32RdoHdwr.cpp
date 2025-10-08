@@ -13,14 +13,18 @@
 	     NSCL
 	     Michigan State University
 	     East Lansing, MI 48824-1321
+
+      @note if compiled for mvlcgnerator the MVLC_GENERATOR preprocessor symbol will be defined.
 */
 
 #include <config.h>
 #include "CMQDC32RdoHdwr.h"
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
-
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 #include <tcl.h>
 
 #include <assert.h>
@@ -52,6 +56,7 @@ static const char* InputCouplingValues[] = {"AC","DC",0};
 static const char* NIMBusyModes[] = {"busy", "rcbus", "full", "overthreshold",0};
 static const char* SyncModeValues[] = {"never","begin_run","extern_oneshot",0};
 static const char* MultiEventModeValues[] = {"off","on","limited",0};
+static const char* GateSelect[] = {"nim", "ecl", 0};
 // Legal values for the resolution...note in this case the default is explicitly defined as 8k
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +70,9 @@ CMQDC32RdoHdwr::CMQDC32RdoHdwr() :
   m_pConfig(0) 
 {}
 
+CMQDC32RdoHdwr::~CMQDC32RdoHdwr() {}
 
+#ifndef MVLC_GENERATOR
 /*! Copy construction involves a deep copy */
 
 CMQDC32RdoHdwr::CMQDC32RdoHdwr(const CMQDC32RdoHdwr& rhs) :
@@ -77,7 +84,7 @@ CMQDC32RdoHdwr::CMQDC32RdoHdwr(const CMQDC32RdoHdwr& rhs) :
   }
 }
 
-CMQDC32RdoHdwr::~CMQDC32RdoHdwr() {}
+
 
 CMQDC32RdoHdwr&
 CMQDC32RdoHdwr::operator=(const CMQDC32RdoHdwr& rhs)
@@ -85,6 +92,7 @@ CMQDC32RdoHdwr::operator=(const CMQDC32RdoHdwr& rhs)
   CMesytecBase::operator=(rhs);
   return *this;
 }
+#endif
 /////////////////////////////////////////////////////////////////////////////////
 // Object operations:
 //
@@ -100,7 +108,11 @@ CMQDC32RdoHdwr::operator=(const CMQDC32RdoHdwr& rhs)
 
 */
 void
+#ifdef MVLC_GENERATOR
+CMQDC32RdoHdwr::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CMQDC32RdoHdwr::onAttach(CReadoutModule& configuration)
+#endif
 {
 
   m_pConfig = &configuration;
@@ -162,6 +174,14 @@ CMQDC32RdoHdwr::onAttach(CReadoutModule& configuration)
   m_pConfig->addBooleanParameter("-nimtiming", false);
   m_pConfig->addEnumParameter("-nimbusy", NIMBusyModes, NIMBusyModes[0]);
 
+  m_pConfig->addEnumParameter("-gateselect", GateSelect, GateSelect[0]);
+  m_pConfig->addBooleanParameter("-customecl", false);
+  m_pConfig->addIntegerParameter("-eclgate1osc", 0, 1, 0);
+  m_pConfig->addIntegerParameter("-eclfcreset", 0, 2, 0);
+  m_pConfig->addBooleanParameter("-customnim", false);
+  m_pConfig->addIntegerParameter("-nimgate1osc", 0, 1, 0);
+  m_pConfig->addIntegerParameter("-nimfcreset", 0, 2, 0);
+
   // timing 
   m_pConfig->addEnumParameter("-timingsource", 
                                      TimingSourceValues, 
@@ -189,6 +209,8 @@ CMQDC32RdoHdwr::onAttach(CReadoutModule& configuration)
    \param CVMUSB&controller   References a VMSUB controller that will be used
           to initilize the module (the module is in a VME crate connected to that
           VMUSB object.
+    @note in MVLC_GENERATOR mode, execute list always works and just adds the list to the
+       memeorized operations in the controller.
 */
 void
 CMQDC32RdoHdwr::Initialize(CVMUSB& controller)
@@ -206,13 +228,15 @@ CMQDC32RdoHdwr::Initialize(CVMUSB& controller)
   // this is a workaround for a bug in the VMUSB,
   // addWriteAcquisitionState is used because it does not add a 
   // delay to the stack after the write.
+
   unique_ptr<CVMUSBReadoutList> pList(controller.createReadoutList());
   m_logic.addWriteAcquisitionState(*pList,0);
   auto result = ctlr.executeList(*pList, 2);
+#ifndef MVLC_GENERATOR
   if (result.size() == 0) {
     throw std::runtime_error("Failure while disabling MQDC32 acquisition mode.");
   }
-
+#endif
   pList.reset(controller.createReadoutList());
   // First disable the interrupts so that we can't get any spurious ones during init.
   m_logic.addDisableInterrupts(*pList);
@@ -231,6 +255,7 @@ CMQDC32RdoHdwr::Initialize(CVMUSB& controller)
   configureMemoryBankSeparation(*pList);
   
   // configure inputs/outputs
+  configureGateSelect(*pList);
   configureECLInputs(*pList);
   configureNIMInputs(*pList);
   configureNIMBusy(*pList);
@@ -253,22 +278,28 @@ CMQDC32RdoHdwr::Initialize(CVMUSB& controller)
   m_logic.addInitializeFifo(*pList);
 
   result = ctlr.executeList(*pList, 2);
+#ifndef MVLC_GENERATOR
   if (result.size()==0) {
     throw std::runtime_error("Failure while executing list.");
   }
-
+#endif
   // allow time for that configuration to set in before accepting gates
   // because some of the config will effect the digitized values.
+#ifdef MVLC_GENERATOR
+  controller.delay(1000000);        // Delaying here does no good.
+#else
   sleep(1);
-
+#endif
   // begin accepting gates.
   pList->clear();
   m_logic.addWriteAcquisitionState(*pList,true);
   m_logic.addResetReadout(*pList);
   result = ctlr.executeList(*pList, 2);
+#ifndef MVLC_GENERATOR
   if (result.size()==0) {
     throw std::runtime_error("Failure while executing list.");
   }
+#endif
 
 }
 
@@ -449,6 +480,16 @@ void CMQDC32RdoHdwr::configureECLTermination(CVMUSBReadoutList& list) {
   }
 }
 
+/*! \brief Set which input, ECL or NIM, to take as gate inputs.
+ *
+ * \param list a readout list
+ */
+
+void CMQDC32RdoHdwr::configureGateSelect(CVMUSBReadoutList &list) {
+  int nimOrEcl = m_pConfig->getEnumParameter("-gateselect", GateSelect);
+  m_logic.addWriteGateSelect(list, nimOrEcl);
+}
+
 /*! \brief Set up the ECL inputs to be consistent with the mode of the module
  *
  *  If the user is sending an external oscillator for a timestamp, they should
@@ -456,18 +497,26 @@ void CMQDC32RdoHdwr::configureECLTermination(CVMUSBReadoutList& list) {
  *  and the other clears the timestamp. Othewise, they just behave as normal. One
  *  is the Gate1 input and the other is the Fast clear.
  *
+ *  If -customecl is set, users can customize registers using -eclgate1osc
+ *  and -eclfcreset options. In this case, -ecltiming is ignored
+ *
  *  \param list   a readout list
  */
 void CMQDC32RdoHdwr::configureECLInputs(CVMUSBReadoutList& list) {
   
   using namespace MQDC32;
 
-  if (m_pConfig->getBoolParameter("-ecltiming")) {
-    m_logic.addWriteECLGate1Input(list, ECLGate1::Oscillator);
-    m_logic.addWriteECLFCInput(list,  ECLFC::ResetTstamp);
+  if (m_pConfig->getBoolParameter("-customecl")) {
+    m_logic.addWriteNIMGate1Input(list, m_pConfig->getIntegerParameter("-eclgate1osc"));
+    m_logic.addWriteNIMFCInput(list, m_pConfig->getIntegerParameter("-eclfcreset"));
   } else {
-    m_logic.addWriteECLGate1Input(list, ECLGate1::Gate);
-    m_logic.addWriteECLFCInput(list,  ECLFC::FastClear);
+    if (m_pConfig->getBoolParameter("-ecltiming")) {
+      m_logic.addWriteECLGate1Input(list, ECLGate1::Oscillator);
+      m_logic.addWriteECLFCInput(list,  ECLFC::ResetTstamp);
+    } else {
+      m_logic.addWriteECLGate1Input(list, ECLGate1::Gate);
+      m_logic.addWriteECLFCInput(list,  ECLFC::FastClear);
+    }
   }
 }
 
@@ -478,18 +527,26 @@ void CMQDC32RdoHdwr::configureECLInputs(CVMUSBReadoutList& list) {
  *  and the other clears the timestamp. Othewise, they just behave as normal. One
  *  is the Gate1 input and the other is the Fast clear.
  *
+ *  If -customnim is set, users can customize registers using -nimgate1osc
+ *  and -nimfcreset options. This case, -nimtiming is ignored.
+ *
  *  \param list   a readout list
  */
 void CMQDC32RdoHdwr::configureNIMInputs(CVMUSBReadoutList& list) {
   
   using namespace MQDC32;
-  if (m_pConfig->getBoolParameter("-nimtiming")) {
-    m_logic.addWriteNIMGate1Input(list, NIMGate1::Oscillator); 
-    m_logic.addWriteNIMFCInput(list, NIMFC::ResetTstamp);
-  }
-  else {
-    m_logic.addWriteNIMGate1Input(list, NIMGate1::Gate);
-    m_logic.addWriteNIMFCInput(list, NIMFC::ResetTstamp);
+  if (m_pConfig->getBoolParameter("-customnim")) {
+    m_logic.addWriteNIMGate1Input(list, m_pConfig->getIntegerParameter("-nimgate1osc"));
+    m_logic.addWriteNIMFCInput(list, m_pConfig->getIntegerParameter("-nimfcreset"));
+  } else {
+    if (m_pConfig->getBoolParameter("-nimtiming")) {
+      m_logic.addWriteNIMGate1Input(list, NIMGate1::Oscillator);
+      m_logic.addWriteNIMFCInput(list, NIMFC::ResetTstamp);
+    }
+    else {
+      m_logic.addWriteNIMGate1Input(list, NIMGate1::Gate);
+      m_logic.addWriteNIMFCInput(list, NIMFC::FastClear);
+    }
   }
 }
 
@@ -533,6 +590,13 @@ void CMQDC32RdoHdwr::configureNIMBusy(CVMUSBReadoutList& list) {
  */
 void CMQDC32RdoHdwr::configureTimeBaseSource(CVMUSBReadoutList& list) {
   uint16_t id = m_pConfig->getEnumParameter("-timingsource",TimingSourceValues);
+  if ((m_pConfig->getBooleanParameter("-customecl") && m_pConfig->getIntegerParameter("-eclgate1osc") == 1)
+      || (m_pConfig->getBooleanParameter("-customnim") && m_pConfig->getIntegerParameter("-nimgate1osc") == 1)) {
+    id = id&0x1 + 0x2;
+  } // The conditions must be separate as the above ignores the below
+  else if (m_pConfig->getBooleanParameter("-ecltiming") || m_pConfig->getBooleanParameter("-nimtiming")) {
+    id = id&0x1 + 0x2;
+  }
   m_logic.addWriteTimeBaseSource(list,id);
 }
 
@@ -683,12 +747,13 @@ CMQDC32RdoHdwr::onEndRun(CVMUSB& ctlr) {
 }
 
 // Cloning supports a virtual copy constructor.
-
+#ifndef MVLC_GENERATOR
 CReadoutHardware*
 CMQDC32RdoHdwr::clone() const
 {
   return new CMQDC32RdoHdwr(*this);
 }
+#endif
 //////////////////////////////////////////////////////////////////////////////////
 //
 // Code here provides support for the madcchain pseudo module that use these 
@@ -808,4 +873,32 @@ CMQDC32RdoHdwr::initCBLTReadout(CVMUSB& ctlr, uint32_t mcast, int rdoSize)
   ctlr.vmeWrite16(mcast + Reg::ReadoutReset, initamod, (uint16_t)0);
   ctlr.vmeWrite16(mcast + Reg::StartAcq , initamod, (uint16_t)1);
 }
+
+#ifdef MVLC_GENERATOR
+  //Support device instance creation:
+
+/**
+ *  constructor
+ */
+MqdcCommand::MqdcCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "mqdc", parser) {}
+
+/**
+ * destructor
+ */
+MqdcCommand::~MqdcCommand() {}
+
+
+/**
+ *  createDevice
+ *      Create an MQDCRdoHdwr Wrapped in a CReadoutModule.
+ */
+CReadoutModule*
+MqdcCommand::createDevice(std::string name) {
+  CReadoutModule* result  = new CReadoutModule;
+  result->SetDriver(new CMQDC32RdoHdwr);
+
+  return result;
+}
+#endif
 

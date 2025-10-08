@@ -35,37 +35,49 @@ includedir=@prefix@/include/mvlc
 # Done this way so we don't need a lib and we don't need to repeat ourselves for
 # test sources
 
-DEVICE_MODULES= CMarker.h CMarker.cpp \
+IMPORT_DIR=@top_srcdir@/usb/vmusb/daqconfig
+IMPORTED_MODULES=$(IMPORT_DIR)/CMQDC32RdoHdwr.h \
+	$(IMPORT_DIR)/CMQDC32RdoHdwr.cpp \
+	$(IMPORT_DIR)/CMQDC32StackBuilder.h \
+	$(IMPORT_DIR)/CMQDC32StackBuilder.cpp \
+	$(IMPORT_DIR)/MQDC32Registers.h 
+
+LOCAL_MODULES= CMarker.h CMarker.cpp \
 	C785.h C785.cpp C3820.h C3820.cpp \
 	CDelay.h CDelay.cpp \
-	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h MADC32Registers.h \
+	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h \
+	MADC32Registers.h \
 	CCAENChain.h CCAENChain.cpp CMADCChain.h CMADCChain.cpp \
 	CMADCScaler.h CMADCScaler.cpp CMTDC32.h CMTDC32.cpp \
 	C3804.h C3804.cpp \
-	CMQDC32RdoHdwr.h CMQDC32RdoHdwr.cpp CMQDC32StackBuilder.h CMQDC32StackBuilder.cpp MQDC32Registers.h \
-	CMDPP16QDC.cpp  CMDPP16QDC.h  CMDPP32QDC.cpp  CMDPP32QDC.h  CMDPP32SCP.cpp  CMDPP32SCP.h  CMDPP.h  CMDPPQDC.h \
+	CMDPP16QDC.cpp  CMDPP16QDC.h  CMDPP32QDC.cpp  CMDPP32QDC.h \
+	CMDPP32SCP.cpp  CMDPP32SCP.h  CMDPP.h  CMDPPQDC.h \
 	C830.h C830.cpp CNADC2530.h CNADC2530.cpp CV977.h CV977.cpp \
 	CV1495sc.h CV1495sc.cpp CV1729.h CV1729.cpp \
 	CCAENV1x90Opcodes.h CCAENV1x90Registers.h CV1x90.cpp CV1x90.h \
 	sis3316.h sis3316Registers.h \
-	CXLM.h CXLM.cpp CXLMTimestamp.cpp CXLMTimestamp.h CXLMFERA.cpp CXLMFERA.h \
-	VMUSBCommand.h VMUSBCommand.cpp VMUSBListCommand.h VMUSBListCommand.cpp \
+	CXLM.h CXLM.cpp CXLMTimestamp.cpp CXLMTimestamp.h \
+	CXLMFERA.cpp CXLMFERA.h \
+	VMUSBCommand.h VMUSBCommand.cpp VMUSBListCommand.h \
+	VMUSBListCommand.cpp \
 	TclWrapper.h TclWrapper.cpp
 
 main_modules=utilities.h utilities.cpp \
 	 MVLCConfigParser.cpp \
-	$(DEVICE_MODULES) \
+	$(LOCAL_MODULES) \
+	$(IMPORTED_MODULES) \
 	MVLCGenerator.h MVLCGenerator.cpp \
 	vme_interface_class.h sis_vmusb_interface.h sis_vmusb_interface.cpp
 
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
 mvlcgenerate_DEPENDENCIES=@builddir@/libmvlcGenerator.la
 
-mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
+mvlcgenerate_CPPFLAGS= -I@srcdir@ -I@top_srcdir@/usb/common/configurableobject \
 	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os \
 	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ @YAML_CFLAGS@ \
 	-DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" \
-	-DMVLC_TCLLIBDIR=\"@datarootdir@/mvlc/TclLibs\"
+	-DMVLC_TCLLIBDIR=\"@datarootdir@/mvlc/TclLibs\" \
+	-DMVLC_GENERATOR -I@top_srcdir@/usb/vmusb/daqconfig
 
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@ @YAML_LIBS@ @builddir@/libmvlcGenerator.la

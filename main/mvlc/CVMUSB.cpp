@@ -152,3 +152,12 @@ CVMUSB::executeList(CVMUSBReadoutList& list, int maxbytes) {
     
     return result;
 }
+/**
+ *  createReatouList
+ *  
+ *  Creates a readout list apropriate to this controller (note that VMUSB has test lists).
+ */
+CVMUSBReadoutList*
+CVMUSB::createReadoutList() {
+    return new CVMUSBReadoutList;
+}
