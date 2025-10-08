@@ -7,6 +7,10 @@
 #include <string>
 #include <memory>
 
+/**
+ * @note MVLC_GENERATE is #define-d if compiling in mvlcgenerate.
+ */
+
 using namespace std;
 
 namespace MQDC32 {
@@ -27,7 +31,11 @@ namespace MQDC32 {
     unique_ptr<CVMUSBReadoutList> pList(ctlr.createReadoutList());
     addSoftReset(*pList);
     ctlr.executeList(*pList, 2);
+#ifdef MVLC_GENERATE
+    cltr.delay(1000000);
+#else
     sleep(1);
+#endif
   }
 
   void CMQDC32StackBuilder::addSoftReset(CVMUSBReadoutList& list) {

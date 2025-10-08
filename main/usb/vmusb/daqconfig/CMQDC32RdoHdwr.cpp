@@ -13,14 +13,18 @@
 	     NSCL
 	     Michigan State University
 	     East Lansing, MI 48824-1321
+
+      @note if compiled for mvlcgnerator the MVLC_GENERATOR preprocessor symbol will be defined.
 */
 
 #include <config.h>
 #include "CMQDC32RdoHdwr.h"
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
-
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 #include <tcl.h>
 
 #include <assert.h>
@@ -65,7 +69,9 @@ CMQDC32RdoHdwr::CMQDC32RdoHdwr() :
   m_pConfig(0) 
 {}
 
+CMQDC32RdoHdwr::~CMQDC32RdoHdwr() {}
 
+#ifndef MVLC_GENERATOR
 /*! Copy construction involves a deep copy */
 
 CMQDC32RdoHdwr::CMQDC32RdoHdwr(const CMQDC32RdoHdwr& rhs) :
@@ -77,7 +83,7 @@ CMQDC32RdoHdwr::CMQDC32RdoHdwr(const CMQDC32RdoHdwr& rhs) :
   }
 }
 
-CMQDC32RdoHdwr::~CMQDC32RdoHdwr() {}
+
 
 CMQDC32RdoHdwr&
 CMQDC32RdoHdwr::operator=(const CMQDC32RdoHdwr& rhs)
@@ -85,6 +91,7 @@ CMQDC32RdoHdwr::operator=(const CMQDC32RdoHdwr& rhs)
   CMesytecBase::operator=(rhs);
   return *this;
 }
+#endif
 /////////////////////////////////////////////////////////////////////////////////
 // Object operations:
 //
@@ -100,7 +107,11 @@ CMQDC32RdoHdwr::operator=(const CMQDC32RdoHdwr& rhs)
 
 */
 void
+#ifdef MVLC_GENERATOR
+CMQDC32RdoHdwr::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CMQDC32RdoHdwr::onAttach(CReadoutModule& configuration)
+#endif
 {
 
   m_pConfig = &configuration;
@@ -189,6 +200,8 @@ CMQDC32RdoHdwr::onAttach(CReadoutModule& configuration)
    \param CVMUSB&controller   References a VMSUB controller that will be used
           to initilize the module (the module is in a VME crate connected to that
           VMUSB object.
+    @note in MVLC_GENERATOR mode, execute list always works and just adds the list to the
+       memeorized operations in the controller.
 */
 void
 CMQDC32RdoHdwr::Initialize(CVMUSB& controller)
@@ -206,13 +219,15 @@ CMQDC32RdoHdwr::Initialize(CVMUSB& controller)
   // this is a workaround for a bug in the VMUSB,
   // addWriteAcquisitionState is used because it does not add a 
   // delay to the stack after the write.
+
   unique_ptr<CVMUSBReadoutList> pList(controller.createReadoutList());
   m_logic.addWriteAcquisitionState(*pList,0);
   auto result = ctlr.executeList(*pList, 2);
+#ifndef MVLC_GENERATOR
   if (result.size() == 0) {
     throw std::runtime_error("Failure while disabling MQDC32 acquisition mode.");
   }
-
+#endif
   pList.reset(controller.createReadoutList());
   // First disable the interrupts so that we can't get any spurious ones during init.
   m_logic.addDisableInterrupts(*pList);
@@ -253,22 +268,28 @@ CMQDC32RdoHdwr::Initialize(CVMUSB& controller)
   m_logic.addInitializeFifo(*pList);
 
   result = ctlr.executeList(*pList, 2);
+#ifndef MVLC_GENERATOR
   if (result.size()==0) {
     throw std::runtime_error("Failure while executing list.");
   }
-
+#endif
   // allow time for that configuration to set in before accepting gates
   // because some of the config will effect the digitized values.
+#ifdef MVLC_GENERATOR
+  controller.delay(1000000);        // Delaying here does no good.
+#else
   sleep(1);
-
+#endif
   // begin accepting gates.
   pList->clear();
   m_logic.addWriteAcquisitionState(*pList,true);
   m_logic.addResetReadout(*pList);
   result = ctlr.executeList(*pList, 2);
+#ifndef MVLC_GENERATOR
   if (result.size()==0) {
     throw std::runtime_error("Failure while executing list.");
   }
+#endif
 
 }
 
@@ -683,12 +704,13 @@ CMQDC32RdoHdwr::onEndRun(CVMUSB& ctlr) {
 }
 
 // Cloning supports a virtual copy constructor.
-
+#ifndef MVLC_GENERATOR
 CReadoutHardware*
 CMQDC32RdoHdwr::clone() const
 {
   return new CMQDC32RdoHdwr(*this);
 }
+#endif
 //////////////////////////////////////////////////////////////////////////////////
 //
 // Code here provides support for the madcchain pseudo module that use these 
@@ -808,4 +830,32 @@ CMQDC32RdoHdwr::initCBLTReadout(CVMUSB& ctlr, uint32_t mcast, int rdoSize)
   ctlr.vmeWrite16(mcast + Reg::ReadoutReset, initamod, (uint16_t)0);
   ctlr.vmeWrite16(mcast + Reg::StartAcq , initamod, (uint16_t)1);
 }
+
+#ifdef MVLC_GENERATOR
+  //Support device instance creation:
+
+/**
+ *  constructor
+ */
+MqdcCommand::MqdcCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "mqdc", parser) {}
+
+/**
+ * destructor
+ */
+MqdcCommand::~MqdcCommand() {}
+
+
+/**
+ *  createDevice
+ *      Create an MQDCRdoHdwr Wrapped in a CReadoutModule.
+ */
+CReadoutModule*
+MqdcCommand::createDevice(std::string name) {
+  CReadoutModule* result  = new CReadoutModule;
+  result->SetDriver(new CMQDC32RdoHdwr);
+
+  return result;
+}
+#endif
 

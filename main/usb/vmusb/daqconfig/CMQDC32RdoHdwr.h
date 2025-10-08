@@ -17,31 +17,14 @@
 #ifndef __CMQDC32RdoHdwr_H
 #define __CMQDC32RdoHdwr_h
 
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
+#include <CReadoutHardware.h>
+#ifdef MVLC_GENERATOR
+#include "DeviceCommand.h"
 #endif
 
-#ifndef __CRT_STDINT_H
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
-#endif
-#endif
-
 #include <CMQDC32StackBuilder.h>
 #include <CMesytecBase.h>
 
@@ -50,7 +33,11 @@
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
-
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurableObject;
+}
+#endif
 
 /*!
    The MQDC32 is a 32 channel QDC module produced by Mesytec.
@@ -90,17 +77,26 @@ class CVMUSBReadoutList;
    -thresholds          int[32] [0-4095]    Threshold settings (0 means unused).
    -usethresholds       bool                Determines whether to use thresholds
 
+   
 \endverbatim
+@note If compiled for the mvlcgenerator MVLC_GENERATOR will be a defined preprocessor symbol.
 */
 class CMQDC32RdoHdwr : public CMesytecBase
 {
 private:
   MQDC32::CMQDC32StackBuilder     m_logic;
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*     m_pConfig;
+#else
   CReadoutModule*     m_pConfig;
+#endif
 public:
   CMQDC32RdoHdwr();
-  CMQDC32RdoHdwr(const CMQDC32RdoHdwr& rhs);
   virtual ~CMQDC32RdoHdwr();
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CMQDC32RdoHdwr(const CMQDC32RdoHdwr& rhs);
   CMQDC32RdoHdwr& operator=(const CMQDC32RdoHdwr& rhs);
 private:
   int operator==(CMQDC32RdoHdwr& rhs) const;
@@ -108,11 +104,18 @@ private:
 
 public:
   // The interface for CReadoutHardware:
-  virtual void onAttach(CReadoutModule& configuration);
+
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
+  virtual void onAttach(CReadoutModule& configuration);  
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
   virtual void onEndRun(CVMUSB& ctlr);
+#ifndef MVLC_GENERATOR  
   virtual CReadoutHardware* clone() const;
+#endif
 
   // The following functions are used by the madcchain module.
   //
@@ -154,6 +157,26 @@ private:
 
 };
 
+#ifdef MVLC_GENERATOR
+
+// for devoceinstance creation in the configuration:
+
+
+/**
+ *  @class MqdcCommand
+ * 
+ *    Derive from DevicCommand to create CMQDCRdoHardware wrapped in CReadoutModule object.
+ */
+class MqdcCommand : public DeviceCommand {
+public:
+  MqdcCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~MqdcCommand();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+
+#endif
 
 
 #endif
