@@ -32,8 +32,6 @@
 #include <array>
 #include <fragment.h>
 
-#include <iostream>
-
 /**
  * Constructor
  *   @param ringUri - URI of the source of ring items.  This
@@ -48,7 +46,7 @@ CRingItemBlockSourceElement::CRingItemBlockSourceElement(
         *(new CReceiver(*CRingItemTransportFactory::createTransport(
             ringUri, CRingBuffer::consumer
         ))), fanout
-	), m_nChunkSize(chunkSize), m_nLastTimestamp(0), m_beginSeen(0), m_endSeen(0)
+	), m_nChunkSize(chunkSize), m_nLastTimestamp(0)
 {}
 
 
@@ -65,11 +63,6 @@ CRingItemBlockSourceElement::operator()()
     void* pData;
     size_t nBytes(0);
     do {
-	// if (m_beginSeen && (m_beginSeen == m_endSeen)) {
-	//     if (m_chunk.size()) sendChunk();     // Send any partial chunk.
-	//     getSender()->end();
-	//     return;
-	// }
         getSource()->getMessage(&pData, nBytes);
         process(pData, nBytes);
     } while(nBytes > 0);
@@ -100,12 +93,6 @@ CRingItemBlockSourceElement::process(void* pData, size_t nBytes)
 	// from there. Otherwise it comes from the last timestamp seen.
         
         pRingItem pItem = static_cast<pRingItem>(pData);
-	if (itemType(pItem) == BEGIN_RUN) {
-	    m_beginSeen++;
-	}
-	if (itemType(pItem) == END_RUN) {
-	    m_endSeen++;
-	}
 	
         if (itemType(pItem) == RING_FORMAT) {
             // Beginning of a run so:

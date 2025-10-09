@@ -80,7 +80,7 @@ CRingItemTransportFactory::createTransport(
             if (CRingAccess::local(ringUri.getHostName())) {
                 std::string ringName = ringUri.getPath();
                 CRingBuffer* pRing = CRingBuffer::createAndProduce(ringName);
-                return new CRingBufferTransport(*pRing);
+                return new CRingBufferTransportEJFAT(*pRing);
             } else {
                 throw std::invalid_argument(
                     "CRingItemTransportFactory: Producer hosts must be local!"    
