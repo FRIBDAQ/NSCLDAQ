@@ -7,6 +7,7 @@
     * Fixing bug NIM_FC_Reset is always 1 regardless of -nimtiming option
     * Fixing potential issue not correctly setting ts_sources register
     * Documentation update
+    * Resolve issue #380 - missing #include <iotream> from a couple of files.
 == 12.1-016 ==
 
 == 12.1-015 ==
