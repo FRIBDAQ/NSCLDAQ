@@ -19,5 +19,6 @@ by COutputThread (nummap_chunk() issue fixed)
 * Add statistics server for ringbuffer throughput and aggregate transfer. (rust_tools/ring_monitor)
     * statsview python script can view the statistics it accumulates utilities/statsview)
 * Issue # 251 - add statistics to the python managed environment control panel
-* Build docs for parallel processing framework   
+* Build docs for parallel processing framework
+* Fix issue #380- compile fails if not MPI due to missing #include <iostream>
 == 12.2-dev ==
