@@ -1,3 +1,17 @@
+##
+#  A bit about this makefile.  once it's fully done,
+# The device support compiled modules will all come from
+# main/usb/vmusb/daqconfig.  The modules in the IMPORTED_MODULES
+# variable have been imported.  When compiled
+# with this makefile, those modules have the preprocessor symbol
+# MVLC_GENERATOR defined and ifedefs are sprinkled through the modules
+# so that they can work correctly in both frameworks.
+#  This comes at a cost, however.  Specifically if not done
+# carefully, changes to main/usb/vmusb/daqconfig modules can trigger
+# compilation errors here.  Such problems are usually remedied
+# by appropriate #ifdefery.  This means that you may need to udnerstand
+# how this framework differs from the VMUSBRedout framework.
+
 bin_PROGRAMS=mvlcgenerate mvlc_xlmload
 
 # I had an out of tree build fail in a weird way that
