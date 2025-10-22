@@ -109,10 +109,11 @@ public:
   C785();
 #ifdef MVLC_GENERATOR
 private:                      // MVLCGenerator does not implement these
+#endif
   C785(const C785& rhs);      // canonicals but VMUSB does.
   C785& operator=(const C785& rhs);
 public:
-#endif
+
   virtual ~C785();
   
 private:

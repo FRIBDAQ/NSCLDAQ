@@ -21,7 +21,7 @@
 #ifndef MVLC_GENERATOR
 #include <config.h>
 #endif
-#include "C785.h"
+#include <C785.h>
 
 #include <CReadoutModule.h>
 #include <CVMUSB.h>
