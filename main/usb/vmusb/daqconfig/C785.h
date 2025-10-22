@@ -14,32 +14,22 @@
 	     East Lansing, MI 48824-1321
 */
 
+/**
+ * @file C785.h
+ * @brief Header for the VMUSB/MVLC driver for the CAEN 32 channel analog converters.
+ * @note When compiled for the MVLCGenerator the preprocessor symbo MVLC_GENERATOR is defined.
+ */
+
 #ifndef __C785_H
 #define __C785_H
 
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
 
-#ifndef __CRT_STDINT_H
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
-#endif
+#ifdef MVLC_GENERATOR
+#include "DeviceCommand.h"
 #endif
 
 
@@ -49,6 +39,11 @@ class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
 
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurableObject;
+}
+#endif
 /*!
    The V785 is an ADC module that will be read out during physics triggers.
    We will run the module in multievent singles mode.  The module will be set
@@ -63,6 +58,7 @@ class CVMUSBReadoutList;
    Parameter               Value type          Value meaning.
    -base                   integer             Base address of the module.
    -geo                    integer             Geographical address programmed into the module
+                                               defaults to 0 which, won't program the GEO [1]
    -thresholds             integer[32]         32 threshold values that manage the 0 supression
    -smallthresholds        bool                True if 'small' thresholds used.
    -ipl                    integer             Interrupt priority level
@@ -77,11 +73,20 @@ class CVMUSBReadoutList;
                                                a granularity of 35ps to the range.
                                                this must be an integer between 140 and 1200.
                                                Defaults to 600ns.
-   \endverbatim
+   -inputs              ribbon | NIM          implicitly defines the number of inputs the module has
+                                               ribbon - 32, NIN - 16.  Used by SpecTcl in decoding.                                           
+    The MVLC generator version also adds:
+   
+    -type                 adc* | tdc | qdc     type of module for module dependent code.
 
    These will also have reasonable defaults programmed into them.. see
    the implementation of onAttach for more information about the defaults.
 
+  NOTES:
+    @note [1] - programming the GEO on a module with CERN backplane extensions (gets the GEO from the 
+          P3 connector) with the MVLC is a fatal error.  If -geo is 0, the GEO register is not programmed.
+          since on the other modules the reset will set GEO to zero this works fine on modules which require
+          GEO Programming, however the use of -geo 0 is discouraged.
 */
 class C785 : public CReadoutHardware
 {
@@ -93,14 +98,23 @@ public:
     rightmost
   } Position;
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject* m_pConfiguration;
+#else
   CReadoutModule*    m_pConfiguration;
+#endif
 public:
   // Class canonicals:
 
   C785();
-  C785(const C785& rhs);
-  virtual ~C785();
+#ifdef MVLC_GENERATOR
+private:                      // MVLCGenerator does not implement these
+  C785(const C785& rhs);      // canonicals but VMUSB does.
   C785& operator=(const C785& rhs);
+public:
+#endif
+  virtual ~C785();
+  
 private:
   int operator==(const C785& rhs) const;
   int operator!=(const C785& rhs) const;
@@ -115,11 +129,16 @@ public:
   // overridable : operations on constructed objectgs:
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
-
+#endif
 
   // utilities:
 private:
@@ -130,4 +149,17 @@ private:
 };
 
 
+
+#ifdef MVLC_GENERATOR
+// The command to add the 'adc' command to the generator's interpreter:
+
+class C785Command : public DeviceCommand {
+public:
+  C785Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~C785Command();
+
+protected:
+  virtual CReadoutModule* createDevice(std::string name);
+};
+#endif
 #endif

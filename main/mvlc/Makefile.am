@@ -40,10 +40,11 @@ IMPORTED_MODULES=$(IMPORT_DIR)/CMQDC32RdoHdwr.h \
 	$(IMPORT_DIR)/CMQDC32RdoHdwr.cpp \
 	$(IMPORT_DIR)/CMQDC32StackBuilder.h \
 	$(IMPORT_DIR)/CMQDC32StackBuilder.cpp \
-	$(IMPORT_DIR)/MQDC32Registers.h 
+	$(IMPORT_DIR)/MQDC32Registers.h \
+	$(IMPORT_DIR)/C785.cpp $(IMPORT_DIR)/C785.h
 
 LOCAL_MODULES= CMarker.h CMarker.cpp \
-	C785.h C785.cpp C3820.h C3820.cpp \
+	C3820.h C3820.cpp \
 	CDelay.h CDelay.cpp \
 	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h \
 	MADC32Registers.h \
