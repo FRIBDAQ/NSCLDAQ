@@ -44,13 +44,14 @@ IMPORTED_MODULES=$(IMPORT_DIR)/CMQDC32RdoHdwr.h \
 	$(IMPORT_DIR)/C785.cpp $(IMPORT_DIR)/C785.h \
 	$(IMPORT_DIR)/C830.cpp $(IMPORT_DIR)/C830.h \
 	$(IMPORT_DIR)/C3804.cpp $(IMPORT_DIR)C3804.h \
-	$(IMPORT_DIR)/C3820.cpp $(IMPORT_DIR)C3820.h
+	$(IMPORT_DIR)/C3820.cpp $(IMPORT_DIR)C3820.h \
+	$(IMPORT_DIR)/CCAENChain.h $(IMPORT_DIR)/CCAENChain.cpp
 
 LOCAL_MODULES= CMarker.h CMarker.cpp \
 	CDelay.h CDelay.cpp \
 	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h \
 	MADC32Registers.h \
-	CCAENChain.h CCAENChain.cpp CMADCChain.h CMADCChain.cpp \
+	CMADCChain.h CMADCChain.cpp \
 	CMADCScaler.h CMADCScaler.cpp CMTDC32.h CMTDC32.cpp \
 	CMDPP16QDC.cpp  CMDPP16QDC.h  CMDPP32QDC.cpp  CMDPP32QDC.h \
 	CMDPP32SCP.cpp  CMDPP32SCP.h  CMDPP.h  CMDPPQDC.h \
