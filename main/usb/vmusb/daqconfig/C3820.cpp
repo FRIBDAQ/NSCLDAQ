@@ -16,7 +16,7 @@
 
 #include <config.h>
 #include "C3820.h"
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 
@@ -26,6 +26,12 @@
 #include <stdint.h>
 #include <map>
 #include <set>
+#include <iostream>
+
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
+
 using namespace std;
 
 //////////////////////////////////////////////////////////////////////////
@@ -151,14 +157,15 @@ static std::map<std::string, uint32_t> outputModeValues = {
    Construction is a no-op.
 */
 C3820::C3820() {}
-C3820::C3820(const C3820& rhs) {} // m_pConfiguration gets set by onAttach next.
-C3820::~C3820() {}
 
+C3820::~C3820() {}
+#ifndef MVLC_GENERATOR
+C3820::C3820(const C3820& rhs) {} // m_pConfiguration gets set by onAttach next.
 C3820&
 C3820::operator=(const C3820& rhs) {
   return *this;
 }
-
+#endif
 
 /////////////////////////////////////////////////////////////////////////
 //////////////////////// Object operations //////////////////////////////
@@ -171,7 +178,11 @@ C3820::operator=(const C3820& rhs) {
       Reference to the module that holds our configuration.
 */
 void
+#ifdef MVLC_GENERATOR
+C3820::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 C3820::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration;
 
@@ -211,10 +222,12 @@ C3820::Initialize(CVMUSB& controller)
   // on the correct module being installed, and in case there is a delay required
   // between reset and next acces...hopefully the USB turnaround will take care of
   // it or, if not, we can insert a usleep as needed.
+  // This can only be done with the VMUSB :
   //
-
+  int status;
+#ifndef MVLC_GENERATOR
   uint32_t id;
-  int status = controller.vmeRead32(base+ModuleID,  CVMUSBReadoutList::a32UserData,
+  status = controller.vmeRead32(base+ModuleID,  CVMUSBReadoutList::a32UserData,
 				    &id);
   if (status) {
     throw string("C3820::Initialize Single shot vme to read id register failed");
@@ -225,6 +238,7 @@ C3820::Initialize(CVMUSB& controller)
 	    base);
     throw string(msg);
   }
+#endif
   status = controller.vmeWrite32(base+KeyReset, CVMUSBReadoutList::a32UserData, 
 				static_cast<uint32_t>(0));
   if(status) {
@@ -288,9 +302,11 @@ C3820::Initialize(CVMUSB& controller)
   size_t   bytesRead;
   status = controller.executeList(initList,
 				      &inBuffer, sizeof(inBuffer), &bytesRead);
+#ifndef MVLC_GENERATOR              // NO failures in MVLC mode.
   if (status < 0) {
     throw string("C3820::Could not initialize via executeList.");
   }
+#endif
 }
 /*!
   Add the event read of this module to the list.  All we need to do is
@@ -303,24 +319,26 @@ void
 C3820::addReadoutList(CVMUSBReadoutList& list)
 {
   uint32_t base = getBase();
-  list.addWrite32(base+KeyLNE, CVMUSBReadoutList::a32UserData, (uint32_t)0);
+  
   bool tsMode = m_pConfiguration->getBoolParameter("-timestamp");
   if (tsMode) {
-    // Timestamped mode, only read channel 1, 17 and the highbits register.
+    // Timestampe mode, only read channel 1, 17 and the highbits register.
     // Note the SIS 3820 manual numbers channels from 1 hence the 0/16 below.
+    // The LNE is external.
     
     list.addRead32(base+ShadowCounters+0*sizeof(uint32_t), CVMUSBReadoutList::a32UserData);
     list.addRead32(base+ShadowCounters+16*sizeof(uint32_t), CVMUSBReadoutList::a32UserData);
     list.addRead32(base+HighBits, CVMUSBReadoutList::a32UserData);
   } else {
     // Non timestamp mode, read all scalers.
+      list.addWrite32(base+KeyLNE, CVMUSBReadoutList::a32UserData, (uint32_t)0);
       list.addBlockRead32(base+ShadowCounters, CVMUSBReadoutList::a32UserBlock,
 		      (uint32_t)32);
   }
 
 
 }
-
+#ifndef MVLC_GENERATOR
 /*!
    Create a dynamic copy of *this.
 */
@@ -329,13 +347,40 @@ C3820::clone() const
 {
   return new C3820(*this);
 }
+#endif
 ///////////////////////////////////////////////////////////////////////////
 ////////////////////////// Private utilities /////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 uint32_t
 C3820::getBase() const
 {
-  string baseString = m_pConfiguration->cget("-base");
-  uint32_t base     = strtoul(baseString.c_str(), NULL, 0); // must work!
-  return base;
+  return m_pConfiguration->getIntegerParameter("-base");
+  
 }
+
+#ifdef MVLC_GENERATOR
+
+/** constructor
+ *    Create a DeviceCommand, "sis3820" that can manage Struck 3820 scalers.
+ */
+C3820Command::C3820Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "sis3820", parser) {}
+
+/** destructor */
+
+C3820Command::~C3820Command() {}
+
+/**
+ * createDevice - make the device module wrapping a C3820 object:
+ * 
+ * @param name - ignored name of the module.
+ */
+CReadoutModule*
+C3820Command::createDevice(std::string name) {
+    CReadoutModule* result = new CReadoutModule;
+    result->SetDriver(new C3820);
+
+    return result;
+}
+
+#endif
