@@ -18,29 +18,13 @@
 #ifndef __CDELAY_H
 #define __CDELAY_H
 
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
-
-#ifndef __CRT_STDINT_H
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
-#endif
+
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
 #endif
 
 
@@ -50,6 +34,11 @@ class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
 
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurableObject;
+}
+#endif
 /*!
   The CDelay class is a module that inserts a delay into the stack execution.
   The delay is provided in 200-ns units.
@@ -67,14 +56,22 @@ Parameter      Value type              value meaning
 class CDelay : public CReadoutHardware
 {
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*    m_pConfiguration;
+#else
   CReadoutModule*    m_pConfiguration;
+#endif
 public:
   // Class canonicals:
 
   CDelay();
-  CDelay(const CDelay& CDelay);
   virtual ~CDelay();
+#ifdef MVLC_GENERATE
+private:
+#endif
+  CDelay(const CDelay& CDelay);
   CDelay& operator=(const CDelay& rhs);
+public:
 
 private:
   int operator==(const CDelay& rhs);
@@ -82,16 +79,36 @@ private:
 
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
-
+#endif
 private:
   unsigned int getIntegerParameter(std::string name);
 
 
 };
+
+#ifdef MVLC_GENERATOR
+/**
+ * @class CDelayCmmand
+ *     Derivation of UserCommand to create an instace of CDelay bound into a module.
+ */
+class CDelayCommand : public DeviceCommand {
+public:
+  CDelayCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CDelayCommand();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+
+#endif
 
 
 #endif
