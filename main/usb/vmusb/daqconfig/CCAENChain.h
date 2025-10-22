@@ -131,6 +131,7 @@ public:
 };
 
 #ifdef MVLC_GENERATOR
+
 /*
    @class CAENChainCommand 
        Generator command.  Note that we'll need to store the config parser to hand
