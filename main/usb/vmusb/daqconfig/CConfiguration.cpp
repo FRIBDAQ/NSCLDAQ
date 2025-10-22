@@ -57,6 +57,7 @@
 #include "CMDPP16QDC.h"
 #include "CMDPP32QDC.h"
 #include "CMDPP32SCP.h"
+#include "CMDPP32PADC.h"
 
 #include <CReadoutModule.h>
 #include <TCLInterpreter.h>
@@ -129,6 +130,7 @@ CConfiguration::CConfiguration() :
   m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "mdpp16qdc", new CMDPP16QDC));
   m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "mdpp32qdc", new CMDPP32QDC));
   m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "mdpp32scp", new CMDPP32SCP));
+  m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "mdpp32padc", new CMDPP32PADC));
   m_Commands.push_back(new CUserCommand(
        *m_pInterp, *this, "sis3316", new CSIS3316)
   );
