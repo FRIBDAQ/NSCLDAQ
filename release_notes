@@ -1,3 +1,7 @@
+== 12.1-017 ==
+* Support of MDPP-32 PADC firmware
+== 12.1-017 ==
+
 == 12.1-016 ==
 * Resolve inconsistency in fail bit data read and unpacking for CAEN VX2740
 * Build docs for NSCLDAQ parallel processing framework
