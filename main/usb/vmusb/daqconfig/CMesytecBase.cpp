@@ -13,7 +13,7 @@
 # @author Ron Fox (rfoxkendo@gmail.com)
 
 */
-#include "CMesytecBase.h"
+#include <CMesytecBase.h>
 #include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
