@@ -21,7 +21,7 @@
  * @brief header for supporting SIS 3804 scaler in MVLC an VMUSB
  * @note when compiling for mvlcgenerate, MVLC_GENERATOR is defined.
  */
-#include "CReadoutHardware.h"
+#include <CReadoutHardware.h>
 #include <string>
 #include <stdint.h>
 #ifdef MVLC_GENERATOR
