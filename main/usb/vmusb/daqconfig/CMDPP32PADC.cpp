@@ -49,7 +49,7 @@ static const uint16_t IrqSourceValues[]  = {0, 1};
 /**
  * Constructor
  */
-CMDPP32PADC::CMDPP32QDC() 
+CMDPP32PADC::CMDPP32PADC() 
 {
   m_pConfiguration = 0;
 }
@@ -60,7 +60,7 @@ CMDPP32PADC::CMDPP32QDC()
  * 
  * @param rhs  - MDPP32PADC is being copied to create the new device.
  */
-CMDPP32PADC::CMDPP32QDC(const CMDPP32QDC& rhs)
+CMDPP32PADC::CMDPP32PADC(const CMDPP32PADC& rhs)
 {
   m_pConfiguration = 0;
   if (rhs.m_pConfiguration) {
@@ -70,7 +70,7 @@ CMDPP32PADC::CMDPP32QDC(const CMDPP32QDC& rhs)
 /**
  * Destruction.  If your object creatd any dynamic data it must be freed here:
  */
-CMDPP32PADC::~CMDPP32QDC() 
+CMDPP32PADC::~CMDPP32PADC() 
 {
 }
 ///////////////////////////////////////////////////////////////////////////////////////
