@@ -21,17 +21,6 @@
 #include "CMDPP.h"
 #endif
 
-Const(TFIntDiff)            0x6110;
-Const(PZ0)                  0x6112;
-Const(PZ1)                  0x6114;
-Const(PZ2)                  0x6116;
-Const(PZ3)                  0x6118;
-Const(Gain)                 0x611a;
-Const(ShapingTime)          0x6124;
-Const(BLR)                  0x6126;
-Const(SignalRiseTime)       0x612a;
-
-
 /*!
    The MDPP-32 is a 32 channel fast high resolution time and amplitude digitizer module produced by Mesytec.
    The following configuration parameters can be sued to tailor
