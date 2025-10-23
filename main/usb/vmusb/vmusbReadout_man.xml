@@ -5582,6 +5582,52 @@ mqdc cget <replaceable>name</replaceable>
                   tightly coupled to the value of the <option>-resetlogic</option> option. 
                 </para>
                 <para>
+                  If this option is set with <option>-customecl</option> is false, Bit 1 of
+                  ts_sources register (0x6096) is automatically set to 1.
+                </para>
+                <para>
+                  The default value is false.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-eclgate1osc</option> <replaceable>0,1</replaceable></term>
+              <listitem>
+                <para>
+                  0 - Gate 1 input, 1 - Oscillator input.
+                </para>
+                <para>
+                  Setting this option to 1 automatically sets Bit 1 of ts_sources register
+                  (0x6096) to 1.
+                </para>
+                <para>
+                  Only valid when <option>-customecl</option> is <option>true</option>.
+                  The default value is 0.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-eclfcreset</option> <replaceable>0,1,2</replaceable></term>
+              <listitem>
+                <para>
+                  0 - Fast clear input(="not Gate"), 1 - Reset timestamp counter,
+                  2 - input for experiment trigger.
+                </para>
+                <para>
+                  Only valid when <option>-customecl</option> is <option>true</option>.
+                  The default value is 0.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-customecl</option> <replaceable>onoff</replaceable></term>
+              <listitem>
+                <para>
+                  When true, ECL_gate1_osc and ECL_FC_Reset registers become customizable.
+                  In this case, <option>-ecltiming</option> will be ignored regardless of
+                  the value set.
+                </para>
+                <para>
                   The default value is false.
                 </para>
               </listitem>
@@ -5600,7 +5646,53 @@ mqdc cget <replaceable>name</replaceable>
                   the reset depends on the value of the <option>-resetlogic</option>.
                 </para>
                 <para>
+                  If this option is set with <option>-customnim</option> is false, Bit 1 of
+                  ts_sources register (0x6096) is automatically set to 1.
+                </para>
+                <para>
                   The default value is false.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-nimgate1osc</option> <replaceable>0,1</replaceable></term>
+              <listitem>
+                <para>
+                  0 - Gate 1 input, 1 - Oscillator input.
+                </para>
+                <para>
+                  Setting this option to 1 automatically sets Bit 1 of ts_sources register
+                  (0x6096) to 1.
+                </para>
+                <para>
+                  Only valid when <option>-customnim</option> is true.
+                  The default value is 0.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-nimfcreset</option> <replaceable>0,1,2</replaceable></term>
+              <listitem>
+                <para>
+                  0 - Fast clear input(="not Gate"), 1 - Reset timestamp counter,
+                  2 - input for experiment trigger.
+                </para>
+                <para>
+                  Only valid when <option>-customnim</option> is true.
+                  The default value is 0.
+                </para>
+              </listitem>
+            </varlistentry>
+            <varlistentry>
+              <term><option>-customnim</option> <replaceable>onoff</replaceable></term>
+              <listitem>
+                <para>
+                  When true, NIM_gate1_osc and NIM_FC_Reset registers become customizable.
+                  In this case, <option>-nimtiming</option> will be ignored regardless of
+                  the value set.
+                </para>
+                <para>
+                  The default value if false.
                 </para>
               </listitem>
             </varlistentry>
@@ -10531,6 +10623,673 @@ mdpp32scp config scp -tfintdiff $tfintdiff \
                  Defines a module with base address <literal>0x00030000</literal>.
                  While many register values are defined with lists, not all of them are
                  used to configure the module.
+             </para>
+             <para>
+                 If any of the parameters are not specified in <literal>config</literal>,
+                 it uses the default values. It is recommeneded only define variables
+                 need to change and omit others for taking default values.
+             </para>
+         </refsect1>
+     </refentry>
+
+     <!--  mdpp32padc command reference -->
+     <refentry id="vmusb3-mdpp32padc">
+         <refentryinfo>
+             <author>
+                 <personname>
+                     <firstname>Genie</firstname>
+                     <surname>Jhang</surname>
+                 </personname>
+                 <personblurb><para></para></personblurb>
+             </author>
+             <productname>NSCLDAQ</productname>
+             <productnumber></productnumber>
+         </refentryinfo>
+         <refmeta>
+             <refentrytitle>mdpp32padc</refentrytitle>
+             <manvolnum>3vmusb</manvolnum>
+             <refmiscinfo class='empty'></refmiscinfo>
+         </refmeta>
+         <refnamediv>
+             <refname>mdpp32padc</refname>
+             <refpurpose>Mesytec MDPP-32 module with PADC firmware</refpurpose>
+         </refnamediv>
+         <refsynopsisdiv>
+             <cmdsynopsis>
+                 <command>
+mdpp32padc create <replaceable>name -base base [option1 value1 option2 value2 ...]</replaceable>
+                 </command>
+             </cmdsynopsis>
+             <cmdsynopsis>
+                 <command>
+mdpp32padc config <replaceable>name option value ...</replaceable>
+                 </command>
+             </cmdsynopsis>
+             <cmdsynopsis>
+                 <command>
+mdpp32padc cget <replaceable>name</replaceable>
+                 </command>
+             </cmdsynopsis>
+         </refsynopsisdiv>
+         <refsect1>
+             <title>DESCRIPTION</title>
+             <para>
+                 This command creates, configures and retrieves the configuration of
+                 Mesytec MDPP-32 module with PADC firmware.
+             </para>
+             <para>
+                 Use the <command>create</command> subcommand to create a new module instance
+                 providing it with a unique <parameter>name</parameter> that will
+                 be used to identify it in future commands.  The <parameter>-base</parameter>
+                 parameter is the base address of the module as set in the module rotary
+                 switches. Options and corresponding values can be provided with the
+                 <command>create</command> subcommand instead of using <command>config</command>
+                 subcommand to configure.
+             </para>
+             <para>
+                 Use the <command>config</command> subcommand to configure
+                 a module named <parameter>name</parameter>  the <parameter>option</parameter>
+                 options and legal values are described in the section OPTIONS below.
+             </para>
+             <para>
+                 The <command>cget</command> subcommand returns as its value the configuration
+                 of the module <parameter>name</parameter>.  The configuration is
+                 returned as a list of two element sublists where each sublist
+                 contains, in order, an option from OPTIONS below, and its value.
+                 Note that some values may themselves be lists.
+             </para>
+         </refsect1>
+         <refsect1>
+             <title>
+                 OPTIONS
+             </title>
+             <variablelist>
+                 <varlistentry>
+                     <term><option>-base</option> <replaceable>value</replaceable></term>
+                     <listitem>
+                         <para>
+                             Allows you to reconfigure the base address of a module.
+                             This defaults to <literal>0</literal>. The required
+                             <parameter>-base</parameter> parameter of the create
+                             option for this device overrides the default value.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-id</option> <replaceable>vsn</replaceable></term>
+                     <listitem>
+                         <para>
+                             <parameter>vsn</parameter> will be used as the module's
+                             identifier or <firstterm>virtual slot number</firstterm>.
+                             The <parameter>vsn</parameter> will be encoded into the
+                             event data that is returned by the module. This, in turn
+                             is normally used by event decoders to determine which parameters
+                             the channels of the module should be unpacked into.
+                         </para>
+                         <para>
+                             Each module should be given a unique <parameter>vsn</parameter>.
+                         </para>
+                         <para>
+                             By default, the value is <literal>0</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-ipl</option> <replaceable>0-7</replaceable></term>
+                     <listitem>
+                         <para>
+                             The interrupt priority level the module should use to request
+                             a VME bus interrupt. Normally interrupts will be used
+                             to trigger an interrupt triggered stack.
+                         </para>
+                         <para>
+                             By default, the value is <literal>0</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-vector</option> <replaceable>0-255</replaceable></term>
+                     <listitem>
+                         <para>
+                             The interrupt vector the module should use. The vector value is ignored if
+                             the module interrupts are disabled.
+                         </para>
+                         <para>
+                             Note that the VMUSB processes 16 bit vectors, but the
+                             vector produced by this module is 8 bits wide.
+                             The VME standard is ambiguous about how such modules
+                             produce the top eight bits of the vector under these
+                             circumstances. Mesytec modules set those top bits
+                             to 0xFF.  E.g. <option>-vector </option> <literal>0x80</literal>
+                             produces a vector, as see by the VMUSB of <literal>0xFF80</literal>.
+                             One important thing to note in this case is that one must pass
+                             <option>-vector</option> option to the stack as <literal>0xFF80</literal>
+                             to use interrupt-triggered stack. <literal>0x0080</literal> won't work.
+                         </para>
+                         <para>
+                             By default, the value is <literal>0</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-irqeventthreshold</option> <replaceable>0-32767</replaceable></term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 PADC documentation) Every time the number of events in the FIFO
+                             exceeds this threshold, an IRQ is emitted.
+                         </para>
+                         <para>
+                             The register length is 15 bit. Thus, the maximum number it can take should be
+                             <literal>0x3FFF (32757)</literal>
+                         </para>
+                         <para>
+                             By default, the value is <literal>3</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-irqdatathreshold</option> <replaceable>0-32256</replaceable></term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 PADC documentation) Every time the number of 32 bit words in
+                             the FIFO exceeds this threshold, an IRQ is emitted. Maximum allowed threshold
+                             is "FIFO size".
+                         </para>
+                         <para>
+                             "FIFO size" in the PADC documentation is 32k-512=32256.
+                         </para>
+                         <para>
+                             By default, the value is <literal>1</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-irqsource</option> <replaceable>event|data</replaceable></term>
+                     <listitem>
+                         <variablelist>
+                             <varlistentry>
+                                 <term><literal>event</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Use the value provided with <option>-irqeventthreshold</option> as
+                                         the IRQ threshold.
+                                     </para>
+                                 </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                                 <term><literal>data</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Use the value provided with <option>-irqdatathreshold</option> as
+                                         the IRQ threshold.
+                                     </para>
+				     
+                                 </listitem>
+                             </varlistentry>
+                         </variablelist>
+                         <para>
+                           By default, the value is <literal>event</literal>
+                         </para>
+
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-maxtransfer</option> <replaceable>0-32256</replaceable></term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 PADC documentation) With
+                             "<option>-multievent</option> <literal>3</literal>", the value specifies
+                             the amount of data read from FIFO before Berr is emitted. Transfer stops
+                             only after full events.
+                         </para>
+                         <para>
+                             e.g. With "<option>-maxtransfer</option> <literal>1</literal>", 1 event
+                             per transfer is emitted.
+                         </para>
+                         <para>
+                             With "<option>-multievent</option> <literal>0xb</literal>", the value specifies
+                             the number of events read from FIFO before Berr is emitted.
+                         </para>
+                         <para>
+                             Setting this option to <literal>0</literal> allows unlimited transfer.
+                         </para>
+                         <para>
+                             By default, the value is <literal>1</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-datalenformat</option>
+                         <replaceable>8bit | 16bit | 32bit | 64bit | numevents</replaceable>
+                     </term>
+                     <listitem>
+                         <variablelist>
+                             <varlistentry>
+                               <term><literal>numevents</literal></term>
+			       <listitem>
+                                 <para>Show number of events in FIFO</para>
+			       </listitem>
+                             </varlistentry>
+                         </variablelist>
+                         <para>
+                             (From MDPP-32 PADC documnetation) The number of 32 bit words is always even.
+                             If necessary the fill word "0" is added. For the setting <literal>0</literal>
+                             and <literal>1</literal>, the max value <literal>0xFFFF</literal> is shown
+                             when number exceeds the 16 bit format. The FIFO is not affected.
+                         </para>
+                         <para>
+                             By default, the value is <literal>32bit</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-multievent</option> <replaceable>See detail</replaceable></term>
+                     <listitem>
+                         <para>
+                             By default, the value is <literal>0xb</literal>.
+                         </para>
+                         <informalexample>
+                             <programlisting>
++-----------------------------------------+
+|     Bit[3]     |   Bit[2]   | Bit[1:0]  |
++-----------------------------------------+
+|  count events  | skip Berr, | mode[1:0] |
+|   not words    | send EOB   |           |
+| (reg. 0x601A)  |            |           |
++-----------------------------------------+
+                             </programlisting>
+                         </informalexample>
+                         <variablelist>
+                             <varlistentry>
+                                 <term><literal>Bit[1:0]</literal></term>
+                                 <listitem>
+                                     <para>
+                                         (From MDPP-32 PADC documentation)
+                                     </para>
+                                     <para>
+                                         Allow multi event buffering.
+                                     </para>
+                                     <variablelist>
+                                         <varlistentry>
+                                             <term><literal>0</literal></term>
+                                             <listitem>
+                                                 <para>
+                                                     Not allowing multi event buffering
+                                                 </para>
+                                                 <para>
+                                                     Register <literal>0x6034</literal> clears events
+                                                     allowing new conversion.
+                                                 </para>
+                                             </listitem>
+                                         </varlistentry>
+                                         <varlistentry>
+                                             <term><literal>1</literal></term>
+                                             <listitem>
+                                                 <para>
+                                                     Allowing multi event buffering
+                                                 </para>
+                                                 <para>
+                                                     Unlimited transfer. No readout reset required.
+                                                     Register <literal>0x6034</literal> can be written
+                                                    after block readout. Don't use for CBLT.
+                                                 </para>
+                                             </listitem>
+                                         </varlistentry>
+                                         <varlistentry>
+                                             <term><literal>3</literal></term>
+                                             <listitem>
+                                                 <para>
+                                                     Allowing multi event buffering, but MDPP transfers
+                                                     limited amount of data.
+                                                 </para>
+                                                 <para>
+                                                     The number of data words can be specified via
+                                                     register <literal>0x601A</literal> After word limit is
+                                                     reached, the next end of event mark terminates transfer
+                                                     by emitting Berr. So, register <literal>0x601A</literal>=1
+                                                     means event by event transfer (Berr after each event).
+                                                 </para>
+                                                 <para>
+                                                     The next data block can be transferred after writing
+                                                     the register <literal>0x6034</literal> (resets Berr).
+                                                 </para>
+                                             </listitem>
+                                         </varlistentry>
+                                     </variablelist>
+                                 </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                                 <term><literal>Bit[2]</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Berr handling. If set, send <literal>EOB=bit[31:30]=bx10</literal>
+                                         instead of Berr.
+                                     </para>
+                                 </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                                 <term><literal>Bit[3]</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Compare number of transmitted events (not words!) with the register
+                                         <literal>0x601A</literal> value (<option>-maxtransfer</option> value)
+                                         for Berr condition.
+                                     </para>
+                                 </listitem>
+                             </varlistentry>
+                         </variablelist>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-marktype</option>
+                         <replaceable>eventcount | timestamp | extended-timestamp</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             By default, the value is <literal>timestamp</literal>.
+                         </para>
+                         <variablelist>
+                             <varlistentry>
+                                 <term><literal>eventcount</literal></term>
+                                 <term><literal>timestamp</literal></term>
+                                 <listitem>
+                                     <para>
+                                         The last 32 bit word in the data contains either event counts
+                                         or timestamp according to the setting.
+                                     </para>
+                                     <informalexample>
+                                         <programlisting>
++------------------------------+
+|  2  |           30           |
++------------------------------+
+| b11 | eventcount / timestamp |
++------------------------------+
+                                         </programlisting>
+                                     </informalexample>
+                                 </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                                 <term><literal>extended-timestamp</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Following 32 bit word will be added to the data.
+                                     </para>
+                                     <informalexample>
+                                         <programlisting>
++------------------------------------------------------+
+|  2  |  2  |       12       |           16            |
++------------------------------------------------------+
+| b00 | b10 | xxxx xxxx xxxx | 16 high bits time stamp |
++------------------------------------------------------+
+                                         </programlisting>
+                                     </informalexample>
+                                 </listitem>
+                             </varlistentry>
+                         </variablelist>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-tdcresolution</option>
+                         <replaceable>24ps | 49ps | 98ps | 195ps | 391ps | 781ps</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             Just for your information, TDC resolution is calculated using the
+                             raw register value with formula: 25ns/pow(2, 10-value)
+                         </para>
+                         <para>
+                             By default, the value is <literal>24ps</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-outputformat</option> <replaceable>0 | 1 | 2</replaceable></term>
+                     <listitem>
+                         <variablelist>
+                             <varlistentry>
+                                 <term><literal>0</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Time and peak amplitude data
+                                     </para>
+                                 </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                                 <term><literal>1</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Time only data
+                                     </para>
+                                 </listitem>
+                             </varlistentry>
+                             <varlistentry>
+                                 <term><literal>2</literal></term>
+                                 <listitem>
+                                     <para>
+                                         Peak amplitude only data
+                                     </para>
+                                 </listitem>
+                             </varlistentry>
+                         </variablelist>
+                         <para>
+                             By default, the value is <literal>0</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-windowstart</option> <replaceable>int 0-32767 (0-0x7fff)</replaceable></term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 documentation) Unit: 1.56 ns (=25ns/16)
+                        </para>
+                        <para>
+                             Start window of interest: 0x0000 start at -25.56us, 0x7FFF start at +25.56us, 0x4000 = 16k no delay.
+                        </para>
+                        <para>
+                             &lt; 16k, window starts before Trigger, &gt; 16k, window is delayed.
+                        </para>
+                        <para>
+                             By default, this parameter is 0x3fbe(=16318).
+                        </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-windowwidth</option> <replaceable>int 0-16383 (0-0x3fff)</replaceable></term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 documentation) Unit: 1.56 ns, max 16k = 25.56 us
+                        </para>
+                        <para>
+                             By default, this parameter is 0x80(=128).
+                        </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-firsthit</option> <replaceable>0 | 1</replaceable></term>
+                     <listitem>
+                         
+                            <variablelist>
+                                <varlistentry>
+                                    <term><literal>0</literal></term>
+                                    <listitem>
+                                        <para>
+                                            transmit all hits in the window
+                                        </para>
+                                    </listitem>
+                                </varlistentry>
+                                <varlistentry>
+                                    <term><literal>1</literal> (default)</term>
+                                    <listitem>
+                                        <para>
+                                            only transmit first hit
+                                        </para>
+                                    </listitem>
+                                </varlistentry>
+                            </variablelist>
+                    
+                        
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-testpulser</option> <replaceable>0 | 1</replaceable></term>
+                     <listitem>
+                         <para>
+                             Switch for the internal test pulser.
+                        </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-pulseramplitude</option> <replaceable>int 0-4095 (0-0xfff)</replaceable></term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 documentation) Max value corresponds to about 30% at gain=1.
+                             Gain jumpers are situated before pulser coupling,
+                             so have no effect on the pulser amplitude.
+                         </para>
+                         <para>
+                             This value has no effect unless <option>-testpulser</option> is set <literal>1</literal>.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-triggersource</option> <replaceable>int 0-1023 (0-0x3ff)</replaceable></term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 documentation) Defines the trigger which creates the window of interest.
+                             This can be: one or both of the trigger inputs, lower 16 channels(B0), upper 16 channels(B1),
+                             or both banks (all channels). 
+                         </para>
+                         <para>
+                           MDPPTriggerControl GUI is included in the FRIBDAQ package. This value needs to be set to 0x400
+                           to use the GUI controller. In this case, the last setting is preserved while start/stop runs.
+                         </para>
+                         <informalexample>
+                             <programlisting>
++-------------------------------------------+
+| Whole bank |    16 channels     |  trig   |
+|   2 bits   |       6 bits       | 2 bits  |
++-------------------------------------------+
+|  B1  | B0  | active | Chan[4:0] | T1 | T0 |
++-------------------------------------------+
+                             </programlisting>
+                         </informalexample>
+                         <para>
+                             The default value is 0x400.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-triggersource</option> <replaceable>int 0-1023 (0-0x3ff)</replaceable></term>
+                     <listitem>
+                         <para>
+                             (From MDPP-32 documentation) Defines the trigger which creates output trigger.
+                             This can be: one or both of the trigger inputs, lower 16 channels(B0), upper 16 channels(B1),
+                             or both banks (all channels). 
+                         </para>
+                         <para>
+                           MDPPTriggerControl GUI is included in the FRIBDAQ package. This value needs to be set to 0x400
+                           to use the GUI controller. In this case, the last setting is preserved while start/stop runs.
+                         </para>
+                         <informalexample>
+                             <programlisting>
++-----------------------------------------+
+| Whole bank |    16 channels     |   00  |
++-----------------------------------------+
+|  B1  | B0  | active | Chan[4:0] | 0 | 0 |
++-----------------------------------------+
+                             </programlisting>
+                         </informalexample>
+                         <para>
+                             The default value is 0x400.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-signalwidth</option>
+                         <replaceable>int[8] 8-2000 (in unit of 12.5 ns)</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             FWHM value of the input pulse in unit of 12.5 ns.
+                         </para>
+                         <para>
+                             The parameter provided must be a list of 8 integers.
+                             The value of an element at <literal>index[0-7]</literal> is applied
+                             to the channels <literal>[4*index, 4*index+3]</literal>.
+                         </para>
+                         <para>
+                             By default, the value is <literal>[list 80 80 80 80  80 80 80 80]</literal>,
+                             which is 6.4ns (80/12.5) for all channels.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-threshold</option> <replaceable>int[32] 1-65535</replaceable></term>
+                     <listitem>
+                         <para>
+                         </para>
+                         <para>
+                             The parameter provided must be a list of 32 integers. Each element sets
+                             the threshold to each channel.
+                         </para>
+                         <para>
+                             By default, the value is
+                             <literal>[list 0x4FF 0x4FF 0x4FF 0x4FF ... 0x4FF 0x4FF 0x4FF 0x4FF]</literal>,
+                             which is 1279 (~1.95%) for all channels.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term><option>-printregisters</option> <replaceable>0 | 1</replaceable></term>
+                     <listitem>
+                         <para>
+                             Print out register values from the module. The values are not from the user input,
+                             but from the actual register values read from the module after processing the input.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+             </variablelist>
+         </refsect1>
+         <refsect1>
+             <title>EXAMPLES</title>
+             <example>
+                 <title>Sample MDPP-32 PADC commands</title>
+                 <programlisting>
+set signalWidth         [list 80 80 80 80  80 80 80 80]
+set threshold           [list 0xfff 0xfff 0xfff 0xfff  0xfff 0xfff 0xfff 0xfff \
+                              0xfff 0xfff 0xfff 0xfff  0xfff 0xfff 0xfff 0xfff \
+                              0xfff 0xfff 0xfff 0xfff  0xfff 0xfff 0xfff 0xfff \
+                              0xfff 0xfff 0xfff 0xfff  0xfff 0xfff 0xfff 0xfff]
+set windowStart         16368
+set windowWidth         32
+set firstHit            1
+set testPulser          1
+set pulserAmplitude     400
+set triggerSource       0x100
+set triggerOutput       0x100
+
+mdpp32padc create padc -base 0x00030000
+mdpp32padc config padc -signalwidth $signalWidth \
+                     -threshold $threshold \
+                     -windowstart $windowStart \
+                     -windowwidth $windowWidth \
+                     -firsthit $firstHit \
+                     -testpulser $testPulser \
+                     -pulseramplitude $pulserAmplitude \
+                     -triggersource $triggerSource \
+                     -triggeroutput $triggerOutput \
+                     -printregisters 1
+                 </programlisting>
+             </example>
+             <para>
+                 Defines a module with base address <literal>0x00030000</literal>.
+                 While many register values are defined with lists, not all of them are
+                 used to configure the module (<literal>padcJumper</literal>
+                 is not used).
              </para>
              <para>
                  If any of the parameters are not specified in <literal>config</literal>,

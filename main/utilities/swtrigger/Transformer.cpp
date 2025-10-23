@@ -28,6 +28,8 @@
 #ifdef HAVE_MPI
 #include "CMPITransformerApp_mpi.h"
 #endif
+
+#include <iostream>
 /**
  * The main program, like all of our main programs just parses
  * arguments, selects which application class to instantiate,

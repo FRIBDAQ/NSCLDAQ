@@ -168,12 +168,39 @@ Const(Bank0LowLimit)        0x60b2;
 
 Const(ChannelSelection)     0x6100;
 
+// QDC & PADC & SCP
+Const(SignalWidth)          0x6110;
+
+// QDC
+Const(InputAmplitude)       0x6112;
+Const(JumperRange)          0x6114;
+Const(QDCJumper)            0x6116;
+Const(IntegrationLong)      0x6118;
+Const(IntegrationShort)     0x611a;
+Const(LongGainCorrection)   0x612a;
+Const(ShortGainCorrection)  0x612e;
+
+// QDC & PADC & SCP
 Const(Threshold0)           0x611c;
 Const(Threshold1)           0x611e;
 Const(Threshold2)           0x6120;
 Const(Threshold3)           0x6122;
 
+// QDC & PADC
+Const(BLR)                  0x6126;
+
+// RCP
 Const(ResetTime)            0x6128;
+
+// SCP
+Const(TFIntDiff)            0x6110;
+Const(PZ0)                  0x6112;
+Const(PZ1)                  0x6114;
+Const(PZ2)                  0x6116;
+Const(PZ3)                  0x6118;
+Const(Gain)                 0x611a;
+Const(ShapingTime)          0x6124;
+Const(SignalRiseTime)       0x612a;
 
 // Sample registers
 Const(PreSamples)           0x6146;

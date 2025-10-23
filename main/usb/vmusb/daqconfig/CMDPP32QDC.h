@@ -21,10 +21,6 @@
 #include "CMDPP.h"
 #endif
 
-#ifndef __CMDPPQDC_H
-#include "CMDPPQDC.h"
-#endif
-
 /*!
    The MDPP-32 is a 32 channel fast high resolution time and amplitude digitizer module produced by Mesytec.
    The following configuration parameters can be sued to tailor
