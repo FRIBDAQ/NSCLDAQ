@@ -357,22 +357,6 @@ CMDPP32PADC::clone() const
   return new CMDPP32PADC(*this);
 }
 
-/*
-  Creates a map from the value of -gaincorrectionlong and -gaincorrectionshort
-  to the values that can be programmed into the system.
-*/
-CMDPP32PADC::EnumMap
-CMDPP32PADC::gainCorrectionMap()
-{
-  EnumMap result;
-  
-  result["div4"]  = 0x0100;
-  result["mult4"] = 0x1000; 
-  result["none"]  = 0x0400;
-
-  return result;
-}
-
 /**
  * setChainAddresses
  *
