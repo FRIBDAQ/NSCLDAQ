@@ -14,36 +14,25 @@
 	     East Lansing, MI 48824-1321
 */
 
-
+/** 
+ * @file CMarker.h
+ * @brief Header for Makers in the VMUSB and MVLC
+ * @note When compiling for mvlc, MVLC_GENERATOR is defined
+ */
 #ifndef __CMARKER_H
 #define __CMARKER_H
 
-#ifndef __CREADOUTHARDWARE_H
 #include "CReadoutHardware.h"
-#endif
-
-#ifndef __CRT_STDINT_H
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
-#endif
-#endif
 
-
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
+namespace XXUSB {
+  class CConfigurableObject;
+}
+#endif
 // Forward class definitions:
 
 class CReadoutModule;
@@ -68,13 +57,21 @@ Parameter      Value type              value meaning
 class CMarker : public CReadoutHardware
 {
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*    m_pConfiguration;
+#else
   CReadoutModule*    m_pConfiguration;
+#endif
 public:
   // Class canonicals:
 
   CMarker();
-  CMarker(const CMarker& CMarker);
+  
   virtual ~CMarker();
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CMarker(const CMarker& CMarker);  
   CMarker& operator=(const CMarker& rhs);
 
 private:
@@ -83,16 +80,39 @@ private:
 
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
+#endif
 
 private:
   unsigned int getIntegerParameter(std::string name);
 
 
 };
+
+
+#ifdef MVLC_GENEATOR
+/**
+ * @class CMarkerCommand
+ *    Derived class from DeviceCommand that generates
+ * CMarker objects.
+ */
+class CMarkerCommand : public DeviceCommand {
+public:
+  CMarkerCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CMarkerCommand();
+protected:
+  virtual CReadoutModule* createDevice(std::string name);
+};
+
+#endif
 
 
 #endif
