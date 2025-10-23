@@ -26,7 +26,6 @@
 #define Const(name) static const int name =
 #endif
 
-Const(SignalWidth)          0x6110;
 Const(InputAmplitude)       0x6112;
 Const(JumperRange)          0x6114;
 Const(QDCJumper)            0x6116;
