@@ -22,7 +22,7 @@
 #ifndef __CMARKER_H
 #define __CMARKER_H
 
-#include "CReadoutHardware.h"
+#include <CReadoutHardware.h>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -98,7 +98,7 @@ private:
 };
 
 
-#ifdef MVLC_GENEATOR
+#ifdef MVLC_GENERATOR
 /**
  * @class CMarkerCommand
  *    Derived class from DeviceCommand that generates
