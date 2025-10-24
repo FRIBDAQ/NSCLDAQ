@@ -13,39 +13,30 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
-
+/**
+ * @file CNADC2530.h
+ * @brief Header for support for the Northern 2530 ADC
+ * @note Both VMUSB and MVLC are supported via the MVLC_GENERATOR definition.
+ */
 #ifndef __CNADC2530_H
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
-
-#ifndef __CRT_STDINT_H
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
 #endif
-#endif
-
 
 // Forward class definitions:
 
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurableObject;
+}
+#endif
 
 /*!
    The Hytec NADC 2530 is an 8 channel high resolution 13 bit ADC.  The ADC
@@ -80,7 +71,11 @@ Parameter        Value Type             Value meaning
 class CNADC2530 : public CReadoutHardware
 {
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*   m_pConfiguration;
+#else
   CReadoutModule*   m_pConfiguration;
+#endif
   uint32_t          m_csr;
   uint16_t          m_csrValue;
   uint32_t          m_eventBase;
@@ -90,9 +85,12 @@ public:
   // Class canonicals.
   
   CNADC2530();
-  CNADC2530(const CNADC2530& rhs);
+  
   virtual ~CNADC2530();
-
+#ifdef MVCL_GENERATOR
+private:
+#endif  
+  CNADC2530(const CNADC2530& rhs);
   CNADC2530& operator=(const CNADC2530& rhs);
 private:
   int operator==(const CNADC2530& rhs);
@@ -104,11 +102,16 @@ private:
   // overridable : operations on constructed objectgs:
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
-
+#endif
   // utililites:
 
 private:
@@ -116,5 +119,22 @@ private:
   uint16_t hldToRegister(double hld);
   
 };
+
+#ifdef MVLC_GENERATOR
+/**
+ *  @class Nadc2530Command
+ * 
+ * Specialization of the DeviceCommand class which creates modules that encpasulate the
+ * CNADC2530 driver class.
+ */
+class Nadc2530Command : public DeviceCommand {
+public:
+  Nadc2530Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~Nadc2530Command();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+
+#endif
 
 #endif
