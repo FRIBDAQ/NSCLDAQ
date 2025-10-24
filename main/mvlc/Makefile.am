@@ -53,38 +53,32 @@ includedir=@prefix@/include/mvlc
 # test sources
 
 IMPORT_DIR=@top_srcdir@/usb/vmusb/daqconfig
-IMPORTED_MODULES=$(IMPORT_DIR)/CMQDC32RdoHdwr.h \
+IMPORTED_MODULES= \
 	$(IMPORT_DIR)/CMQDC32RdoHdwr.cpp \
-	$(IMPORT_DIR)/CMQDC32StackBuilder.h \
 	$(IMPORT_DIR)/CMQDC32StackBuilder.cpp \
-	$(IMPORT_DIR)/MQDC32Registers.h \
-	$(IMPORT_DIR)/C785.cpp $(IMPORT_DIR)/C785.h \
-	$(IMPORT_DIR)/C830.cpp $(IMPORT_DIR)/C830.h \
-	$(IMPORT_DIR)/C3804.cpp $(IMPORT_DIR)C3804.h \
-	$(IMPORT_DIR)/C3820.cpp $(IMPORT_DIR)C3820.h \
-	$(IMPORT_DIR)/CCAENChain.h $(IMPORT_DIR)/CCAENChain.cpp \
-	$(IMPORT_DIR)/CCAENV1x90Opcodes.h $(IMPORT_DIR)/CCAENV1x90Registers.h\
-	$(IMPORT_DIR)/CDelay.h $(IMPORT_DIR)/CDelay.cpp \
-	$(IMPORT_DIR)/CMesytecBase.cpp $(IMPORT_DIR)/CMesytecBase.h \
-	$(IMPORT_DIR)/CMADC32.cpp $(IMPORT_DIR)/CMADC32.h   \
-	$(IMPORT_DIR)/CMADCChain.h $(IMPORT_DIR)/CMADCChain.cpp  \
-	$(IMPORT_DIR)/CMADCScaler.h $(IMPORT_DIR)/CMADCScaler.cpp \
-	$(IMPORT_DIR)/CMarker.h $(IMPORT_DIR)/CMarker.cpp \
-	$(IMPORT_DIR)/ CMDPP.h \
-	$(IMPORT_DIR)/CMDPP16QDC.cpp  $(IMPORT_DIR)/CMDPP16QDC.h \
-	$(IMPORT_DIR)/CMDPP32QDC.cpp  	$(IMPORT_DIR)/CMDPP32QDC.h \
-	$(IMPORT_DIR)/CMDPP32SCP.cpp  $(IMPORT_DIR)/CMDPP32SCP.h \
-	$(IMPORT_DIR)/CMDPPQDC.h  \
-	$(IMPORT_DIR)/CMTDC32.h $(IMPORT_DIR)/CMTDC32.cpp \
-	$(IMPORT_DIR)/CNADC2530.h $(IMPORT_DIR)/CNADC2530.cpp \
-	$(IMPORT_DIR)/CCAENV1x90Opcodes.h $(IMPORT_DIR)/CCAENV1x90Registers.h \
-	$(IMPORT_DIR)/CV1x90.cpp $(IMPORT_DIR)/CV1x90.h \
-	$(IMPORT_DIR)/ CV977.h $(IMPORT_DIR)/CV977.cpp \
-	$(IMPORT_DIR)/CV1495sc.h $(IMPORT_DIR)/CV1495sc.cpp \
-	$(IMPORT_DIR)/CV1729.h $(IMPORT_DIR)/CV1729.cpp \
-	$(IMPORT_DIR)/CXLM.h $(IMPORT_DIR)/CXLM.cpp \
-	$(IMPORT_DIR)/CXLMTimestamp.cpp $(IMPORT_DIR)/CXLMTimestamp.h \
-	$(IMPORT_DIR)/CXLMFERA.cpp $(IMPORT_DIR)/CXLMFERA.h 
+	$(IMPORT_DIR)/C785.cpp \
+	$(IMPORT_DIR)/C830.cpp \
+	$(IMPORT_DIR)/C3804.cpp \
+	$(IMPORT_DIR)/C3820.cpp \
+	$(IMPORT_DIR)/CCAENChain.cpp \
+	$(IMPORT_DIR)/CDelay.cpp \
+	$(IMPORT_DIR)/CMesytecBase.cpp \
+	$(IMPORT_DIR)/CMADC32.cpp \
+	$(IMPORT_DIR)/CMADCChain.cpp  \
+	$(IMPORT_DIR)/CMADCScaler.cpp \
+	$(IMPORT_DIR)/CMarker.cpp \
+	$(IMPORT_DIR)/CMDPP16QDC.cpp \
+	$(IMPORT_DIR)/CMDPP32QDC.cpp  \
+	$(IMPORT_DIR)/CMDPP32SCP.cpp  \
+	$(IMPORT_DIR)/CMTDC32.cpp \
+	$(IMPORT_DIR)/CNADC2530.cpp \
+	$(IMPORT_DIR)/CV1x90.cpp  \
+	$(IMPORT_DIR)/CV977.cpp \
+	$(IMPORT_DIR)/CV1495sc.cpp \
+	$(IMPORT_DIR)/CV1729.cpp \
+	$(IMPORT_DIR)/CXLM.cpp \
+	$(IMPORT_DIR)/CXLMTimestamp.cpp \
+	$(IMPORT_DIR)/CXLMFERA.cpp 
 
 
 LOCAL_MODULES= \
@@ -156,7 +150,6 @@ mvlc_xlmload_SOURCES = xlmload.cpp \
 	$(IMPORT_DIR)/CXLM.h $(IMPORT_DIR)/CXLM.cpp \
 	xlm_options.h xlm_options.c
 
-mvlc_xlmload_DEPENDENCIES=xlm_options.c
 
 mvlc_xlmload_CPPFLAGS=@MVLC_CPPFLAGS@ \
 	-I@top_srcdir@/usb/common/configurableobject \
@@ -175,7 +168,7 @@ xlm_options.c: xlm_options.h
 xlm_options.h: xlmload_options.ggo
 	$(GENGETOPT) --output-dir=@builddir@ --file-name=xlm_options <@srcdir@/xlmload_options.ggo
 
-mvlc_xlmload_DEPENDENCIES=@builddir@/libmvlcGenerator.la
+mvlc_xlmload_DEPENDENCIES=@builddir@/libmvlcGenerator.la xlm_options.c
 
 #------------------------------ build/runtests
 
