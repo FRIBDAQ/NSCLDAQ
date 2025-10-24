@@ -69,7 +69,10 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "CXLMFERA.h"
+#include <CXLMFERA.h>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 // VME Interface addresses
 static const uint32_t Interrupt   (0x000004); // Interrupt/reset register.
@@ -109,7 +112,7 @@ CXLMFERA::CXLMFERA() : XLM::CXLM()
     //  m_pConfiguration = 0;	
 
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * Copy construction.  This cannot be virtual by the rules of C++ the clone()
  * method normally creates a new object from an existing template object.
@@ -120,6 +123,7 @@ CXLMFERA::CXLMFERA(const CXLMFERA& rhs) : XLM::CXLM(rhs)
 {
 
 }
+#endif
 /**
  * Destruction.  If your object creatd any dynamic data it must be freed here:
  */
@@ -146,7 +150,11 @@ CXLMFERA::~CXLMFERA()
  * @parm configuration - Reference to the configuration object for this instance of the driver.
  */
 void
+#ifdef MVLC_GENERATOR
+CXLMFERA::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CXLMFERA::onAttach(CReadoutModule& configuration)
+#endif
 {
   
   CXLM::onAttach(configuration);      // superclass adds the -base and -firmware flags
@@ -200,8 +208,12 @@ CXLMFERA::Initialize(CVMUSB& controller)
           // Load firmware file and also boot the XLM
           // loadFirmware(controller,firmwareFname);
          // myloadFirmware(controller,firmwareFname);
-         
+#ifdef MVLC_GENERATOR
+         controller.delay(2000000);
+
+#else
          usleep(2000000);
+
          
          if (!isConfigured(controller)) {
 
@@ -215,12 +227,12 @@ CXLMFERA::Initialize(CVMUSB& controller)
           } else {
             std::cout << " COMPLETE" << std::endl;
           }
+        
+#endif       
+            initializeFPGA(controller);
+            Clear(controller);
+            loader.releaseBusses();           // Be damned sure we're off the buses
         }
-       
-        initializeFPGA(controller);
-        Clear(controller);
-        loader.releaseBusses();           // Be damned sure we're off the buses
-
     }
     
     catch (std::string& what) {
@@ -263,7 +275,7 @@ void CXLMFERA::initializeFPGA(CVMUSB& controller)
     if (status<0) {
         std::cout << "after write nloops...error " << status << std::endl;
     }
-
+#ifndef MVLC_GENERATOR
     status = controller.vmeRead32(nWaitLoopsAddr,registerAmod,&data);
     if (status<0) {
         std::cout << "after read nloops...error " << status << std::endl;
@@ -277,7 +289,7 @@ void CXLMFERA::initializeFPGA(CVMUSB& controller)
         errmsg << " but read back = " << data;
         throw errmsg.str();
     }
-
+#endif
     std::cout << " COMPLETED" << std::endl;
 }
 
@@ -313,7 +325,9 @@ void CXLMFERA::addClear(CVMUSBReadoutList& list)
 */
 bool CXLMFERA::isConfigured(CVMUSB& controller)
 {
-
+#ifdef MVLC_GENERATOR
+    return false;                     // Force firmware load to be safe.
+#else
 
     uint32_t configID 
         = m_pConfiguration->getUnsignedParameter("-configurationID");
@@ -347,7 +361,7 @@ bool CXLMFERA::isConfigured(CVMUSB& controller)
             << std::dec << std::endl;
     }
     return (data==configID);
-
+#endif
 }
 
 /**
@@ -407,7 +421,7 @@ void CXLMFERA::addSramAReadout(CVMUSBReadoutList& list)
     // the prevous driver never cleared the fpga so I wont as well.
 
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * This method virtualizes copy construction by providing a virtual method that
  * invokes it.  Usually you don't have to modify this code.
@@ -422,7 +436,7 @@ CXLMFERA::clone() const
   return new CXLMFERA(*this);
 }
 
-
+#endif
 CXLMFERA::CXLMBusController::CXLMBusController(CVMUSB& controller, 
                             CXLMFERA& xlm, 
                             uint32_t request, 
@@ -454,13 +468,13 @@ CXLMFERA::CXLMBusController::CXLMBusController(CVMUSB& controller,
     size_t nbytes = 0;
     uint32_t data=0;
     int status = controller.executeList(list,(void*)&data,sizeof(data),&nbytes);
-
+#ifndef MVLC_GENERATOR
     if (status<0) {
         std::cerr << "CXLMBusController::CXLMBusController(CVMUSB&,uint32_t,uint32_t,uint32_t,uint8_t) ";
         std::cerr << "readout list failed to execute with error " << status;
         std::cerr << std::endl;
     }
-
+#endif
 #ifdef PRINTBUSLOCK
     std::cout << "### XLM VMEBus successfully accquired : ";
     if ((m_request&0x000001)!=0) std::cout << "BUS_A ";
@@ -500,3 +514,30 @@ void CXLMFERA::CXLMBusController::releaseBusses()
 
 }
 
+#ifdef MVLC_GENERATOR
+///////////// Implement the creational:
+
+/**
+ *  constructor:
+ */
+XLMFERACmd::XLMFERACmd(CTCLInterpreter& interp, TCLConfigParser& parser) :
+    DeviceCommand(interp, "XLMFERA", parser) {}
+
+/**
+ *  destructor
+ */
+XLMFERACmd::~XLMFERACmd() {}
+
+/**
+ *  createDevice
+ *     Create the device:
+ */
+CReadoutModule*
+XLMFERACmd::createDevice(std::string name) {
+    auto dev = new CXLMFERA;
+    auto result = new CReadoutModule;
+    result->SetDriver(dev);
+
+    return result;
+}
+#endif

@@ -4,7 +4,7 @@
 
 #include <CXLM.h>
 #ifdef MVLC_GENERATOR
-#include <DeviceCommand.h>>
+#include <DeviceCommand.h>
 #endif
 class CXLMTimestamp : public XLM::CXLM
 {

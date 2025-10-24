@@ -109,7 +109,7 @@ CXLMTimestamp::~CXLMTimestamp()
  */
 void
 #ifdef MVLC_GENERATOR
-CXLMTimestamp::onAttach(CConfigurableObject& configuration)
+CXLMTimestamp::onAttach(XXUSB::CConfigurableObject& configuration)
 #else
 CXLMTimestamp::onAttach(CReadoutModule& configuration)
 #endif
