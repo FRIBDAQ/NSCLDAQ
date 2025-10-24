@@ -82,11 +82,11 @@ IMPORTED_MODULES=$(IMPORT_DIR)/CMQDC32RdoHdwr.h \
 	$(IMPORT_DIR)/ CV977.h $(IMPORT_DIR)/CV977.cpp \
 	$(IMPORT_DIR)/CV1495sc.h $(IMPORT_DIR)/CV1495sc.cpp \
 	$(IMPORT_DIR)/CV1729.h $(IMPORT_DIR)/CV1729.cpp \
-	$(IMPORT_DIR)/CXLM.h $(IMPORT_DIR)/CXLM.cpp
+	$(IMPORT_DIR)/CXLM.h $(IMPORT_DIR)/CXLM.cpp \
+	$(IMPORT_DIR)/CXLMTimestamp.cpp $(IMPORT_DIR)/CXLMTimestamp.h 
 
 
 LOCAL_MODULES= \
-	 CXLMTimestamp.cpp CXLMTimestamp.h \
 	CXLMFERA.cpp CXLMFERA.h \
 	VMUSBCommand.h VMUSBCommand.cpp VMUSBListCommand.h \
 	VMUSBListCommand.cpp \
