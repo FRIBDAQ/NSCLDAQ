@@ -1,4 +1,4 @@
-##
+#
 #  A bit about this makefile.  once it's fully done,
 # The device support compiled modules will all come from
 # main/usb/vmusb/daqconfig.  The modules in the IMPORTED_MODULES
@@ -11,6 +11,9 @@
 # compilation errors here.  Such problems are usually remedied
 # by appropriate #ifdefery.  This means that you may need to udnerstand
 # how this framework differs from the VMUSBRedout framework.
+# The IMPORT_DIR symbol defines where modules are imoprted from.
+# this is normally @top_srcdir@/usb/vmusb/daqconfig
+#
 
 bin_PROGRAMS=mvlcgenerate mvlc_xlmload
 
@@ -78,11 +81,12 @@ IMPORTED_MODULES=$(IMPORT_DIR)/CMQDC32RdoHdwr.h \
 	$(IMPORT_DIR)/CV1x90.cpp $(IMPORT_DIR)/CV1x90.h \
 	$(IMPORT_DIR)/ CV977.h $(IMPORT_DIR)/CV977.cpp \
 	$(IMPORT_DIR)/CV1495sc.h $(IMPORT_DIR)/CV1495sc.cpp \
-	$(IMPORT_DIR)/CV1729.h $(IMPORT_DIR)/CV1729.cpp 
+	$(IMPORT_DIR)/CV1729.h $(IMPORT_DIR)/CV1729.cpp \
+	$(IMPORT_DIR)/CXLM.h $(IMPORT_DIR)/CXLM.cpp
 
 
 LOCAL_MODULES= \
-		CXLM.h CXLM.cpp CXLMTimestamp.cpp CXLMTimestamp.h \
+	 CXLMTimestamp.cpp CXLMTimestamp.h \
 	CXLMFERA.cpp CXLMFERA.h \
 	VMUSBCommand.h VMUSBCommand.cpp VMUSBListCommand.h \
 	VMUSBListCommand.cpp \
@@ -148,14 +152,16 @@ options.h: options.ggo
 
 mvlc_xlmload_SOURCES = xlmload.cpp \
 	CVMUSB.h CVMUSB.cpp CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
-	CMVLCDirect.h CMVLCDirect.cpp CXLM.h CXLM.cpp \
+	CMVLCDirect.h CMVLCDirect.cpp \
+	$(IMPORT_DIR)/CXLM.h $(IMPORT_DIR)/CXLM.cpp \
 	xlm_options.h xlm_options.c
 
 mvlc_xlmload_DEPENDENCIES=xlm_options.c
 
 mvlc_xlmload_CPPFLAGS=@MVLC_CPPFLAGS@ \
 	-I@top_srcdir@/usb/common/configurableobject \
-	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os
+	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os \
+	-I$(IMPORT_DIR) -DMVLC_GENERATOR
 
 mvlc_xlmload_LDFLAGS=@builddir@/libmvlcGenerator.la \
 	@MVLC_LDFLAGS@ \
