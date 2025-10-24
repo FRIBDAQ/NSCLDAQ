@@ -17,37 +17,28 @@
 #ifndef __C977_H
 #define __C977_H
 
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
 
-#ifndef __CRT_STDINT_H
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
 #endif
-#endif
-
 
 // Forward class definitions:
 
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
+
+#ifdef MVLC_GENERATOR
+namespace XXUSB
+{
+  class CConfigurableObject;
+} // namespace XXUSB
+#endif
+
 
 /*!
    The V977 is a 16 bit input register that can be read during a physics
@@ -92,16 +83,22 @@ Defaults:
 class CV977 : public CReadoutHardware
 {
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*    m_pConfiguration;
+#else
   CReadoutModule*    m_pConfiguration;
+#endif
 
   // Canonicals:
 
 public:
   CV977();
+  ~CV977();
+#ifdef MVLC_GENERATOR
+private:
+#endif
   CV977(const CV977& rhs);
   CV977& operator=(const CV977& rhs);
-  ~CV977();
-  
   // unsupported canonicals:
 private:
   int operator==(const CV977& rhs) const;
@@ -110,11 +107,33 @@ private:
   // CReadoutHardware mandatory interface:
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
-
+#endif
 };
+
+#ifdef MVLC_GENERATOR
+
+/** 
+ * @class V977Command
+ *    Derivation of a DeviceCommand that can make module instances encapsulating
+ * instances of the CV977 CAEN V977 input register driver.
+ */
+class V977Command :  public DeviceCommand {
+public:
+  V977Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~V977Command();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+
+#endif
 
 #endif
