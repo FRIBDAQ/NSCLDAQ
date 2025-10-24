@@ -92,7 +92,8 @@ CRingItemTransportFactory::createTransport(
             CRingBuffer* pRing = CRingAccess::daqConsumeFrom(uri);
             CRingBufferChunkAccess* accessor =
                 new _CRingBufferChunkAccess(pRing);
-            return new CRingBufferTransportEJFAT(*accessor);
+	    return new CRingBufferTransport(*accessor);
+            // return new CRingBufferTransportEJFAT(*accessor);
             
         }
     } else if (proto == "file") {
