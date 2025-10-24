@@ -18,29 +18,24 @@
 #define _CV1495SC_H
 
 
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
-
-#ifndef __CRT_STDINT_H
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
 #endif
-#endif
-
 // Forward class definitions:
 
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
+#ifdef MVLC_GENERATOR
+namespace XXUSB
+{
+    class CConfigurableObject;
+} // namespace XXUSB
+
+#endif
 
 /**
  * CV1495sc is a scaler module with 128 channels that will be typically read out
@@ -73,21 +68,35 @@ class CVMUSBReadoutList;
 class CV1495sc : public CReadoutHardware
 {
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*   m_pConfiguration;
+#else
   CReadoutModule*   m_pConfiguration;
+#endif
 public:
   CV1495sc();
-  CV1495sc(const CV1495sc& rhs);
   virtual ~CV1495sc();
+
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CV1495sc(const CV1495sc& rhs);
   CV1495sc& operator=(const CV1495sc& rhs);
 private:
   int operator==(const CV1495sc& rhs) const;
   int operator!=(const CV1495sc& rhs) const;
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR  
   virtual CReadoutHardware* clone() const;
+#endif
 
 private:
   uint32_t mapEnum(std::string value, 
@@ -95,6 +104,22 @@ private:
   size_t countBits(uint32_t mask);
 };
 
+#ifdef MVLC_GENERATOR
+
+/**
+ * @class V1495Command
+ *    Deriviation from DeviceCommand to instantiate CV1495sc modues from scrip.
+ * 
+ */
+class V1495Command: public DeviceCommand {
+public:
+  V1495Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~V1495Command();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+#endif
 
 
 #endif
