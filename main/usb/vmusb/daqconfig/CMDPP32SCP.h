@@ -13,13 +13,16 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
-
+/**
+ * @file CMDPP32SCP.h
+ * @brief header for MDPP with 32 channel SCP firmware enabled.
+ * @note This works for both VMUSB and MVLC. MVLC_GENERATOR is defined by mvlc compilations.,
+ */
 #ifndef __CMDPP32SCP_H
 #define __CMDPP32SCP_H
 
-#ifndef __CMDPP_H
-#include "CMDPP.h"
-#endif
+
+#include <CMDPP.h>
 
 Const(TFIntDiff)            0x6110;
 Const(PZ0)                  0x6112;
@@ -31,7 +34,12 @@ Const(ShapingTime)          0x6124;
 Const(BLR)                  0x6126;
 Const(SignalRiseTime)       0x612a;
 
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurablObject;
+}
 
+#endif
 /*!
    The MDPP-32 is a 32 channel fast high resolution time and amplitude digitizer module produced by Mesytec.
    The following configuration parameters can be sued to tailor
@@ -71,16 +79,23 @@ Const(SignalRiseTime)       0x612a;
 class CMDPP32SCP : public CMesytecBase
 {
 public:
+
   typedef std::map<std::string, uint16_t> EnumMap;
 
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject* m_pConfiguration;
+#else
   CReadoutModule* m_pConfiguration;
-
+#endif
 public:
   CMDPP32SCP();
-  CMDPP32SCP(const CMDPP32SCP& rhs);
+  
   virtual ~CMDPP32SCP();
-
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CMDPP32SCP(const CMDPP32SCP& rhs);
 private:
   CMDPP32SCP& operator=(const CMDPP32SCP& rhs); // assignment not allowed.
   int operator==(const CMDPP32SCP& rhs) const;	  // Comparison for == and != not suported.
@@ -88,12 +103,17 @@ private:
 
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
   virtual void onEndRun(CVMUSB& controller);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const; 
-
+#endif
 public:
   void setChainAddresses(CVMUSB& controller,
                          CMesytecBase::ChainPosition position,
@@ -106,7 +126,26 @@ public:
 
 
 private:
+#ifndef MVLC_GENERATOR
   void printRegisters(CVMUSB& controller);
+#endif
 };
+
+#ifdef MVLC_GENERATOR
+
+
+/**
+ * @class mddp32scp
+ *    Derivation from DeviceCommand to provide the mdpp32scp command.
+ */
+class Mdpp32ScpCommand : public DeviceCommand {
+public:
+  Mdpp32ScpCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~Mdpp32ScpCommand();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+#endif
 
 #endif
