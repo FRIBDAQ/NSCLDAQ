@@ -16,47 +16,29 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
-
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
-
-
-#ifndef __CRT_STDINT_H
+/**
+ * @file CVx190.h 
+ * @brief Header for CAEN V1x90 multihit TDc module.
+ * @note Supports both VMUSB and MVLC.  MVLC_GENERATOR defined for mvlc compilations.
+ */
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
-#endif
-#endif
-
-
-#ifndef __STL_MAP
 #include <map>
-#ifndef __STL_MAP
-#define __STL_MAP
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
 #endif
-#endif
-
 // Forward class definitions:
 
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
-
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurableObject;
+}
+#endif
 
 /*!
   This class supports the CAEN V1190 and V1290 multihit TDC.  The two modules
@@ -201,6 +183,14 @@ Parameter Name      Value Type     Value Meaning
                                    its offset. e.g. {{10 6} {32 5}}  sets the channel
                                    offsets for channel 10 to 6 and for channel 32 to 5.
 \endverbatim
+MVLC SUpport cannot read model number information from the device because code is generated
+offline therefore in that environment, we add:
+
+\verbatim
+-model                             TDC Model number can be one of "v1190" or "v1290"
+                                   defaults to "v1290".  Needed for the mvlc because we can't
+                                   do interactive initialization.
+\endverbatim
 The following configuration parameters are simply hunted for by SpecTcl and not actually
 used in the configuration of the module:
 
@@ -233,7 +223,11 @@ private:
   static EnumMap    m_maxhitsMap;
 
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*   m_pConfiguration;
+#else
   CReadoutModule*   m_pConfiguration;
+#endif
   int               m_Model;	// Module e.g. 1190, or 1290.
   char              m_Suffix;   // Module suffix, e.g. A,B,N.
 
@@ -243,8 +237,11 @@ private:
   // Class canonicals:
 public:
   CV1x90();
-  CV1x90(const CV1x90& rhs);
   virtual ~CV1x90();
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CV1x90(const CV1x90& rhs);
   CV1x90& operator=(const CV1x90& rhs);
 
 private:
@@ -256,11 +253,17 @@ public:
   // Implementation member funbctuions
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
-  
+#endif
+
   // Utilities:
 
 private:
@@ -293,6 +296,22 @@ public:
 };
 
                                    
+#ifdef MVLC_GENERATOR
+/**
+ *  @class V1x90Command
+ *     Implements the tdc1x90 command that creates/configs CV1x90 instances
+ * 
+ */
+class V1x90Command : public DeviceCommand {
+public:
+  V1x90Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~V1x90Command();
+
+protected:
+  CReadoutModule*  createDevice(std::string name);
+};
+
+#endif
 
 
 #endif

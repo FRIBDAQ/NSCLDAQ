@@ -15,12 +15,12 @@
 */
 
 // Implementation of the C785 class VM-USB support for the CAEN V785.
-
+// Note MVLC_GENERATOR defined switches on support in the MVLC.
 
 #include <config.h>
-#include "CV1x90.h"
+#include <CV1x90.h>
 
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 #include <os.h>
@@ -39,6 +39,10 @@
 
 #include <CCAENV1x90Opcodes.h>
 #include <CCAENV1x90Registers.h>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#include <sstream>
+#endif
 
 using namespace std;
 
@@ -155,7 +159,9 @@ static XXUSB::CConfigurableObject::isEnumParameter
 static const XXUSB::CConfigurableObject::limit listSize(2);
 static  XXUSB::CConfigurableObject::ListSizeConstraint globalListSize = {listSize, listSize};
 
-
+#ifdef MVLC_GENERATOR
+static const char* modelEnum[] = {"v1190A", "v1190B", "v1290A", "v1290N", 0};  // Allowed model numbers.
+#endif
 
 // Static member data:
 
@@ -186,6 +192,7 @@ CV1x90::CV1x90() :
 {
   
 }
+#ifndef MVLC_GENERATOR
 /*!
    Copy construction:
 */
@@ -200,12 +207,12 @@ CV1x90::CV1x90(const CV1x90& rhs) :
   m_nChipCount    = rhs.m_nChipCount;
   m_nChannelCount = rhs.m_nChannelCount;
 }
-
+#endif
 /*! null copy construction */
 
 CV1x90::~CV1x90() {}
 
-
+#ifndef MVLC_GENERATOR
 CV1x90&
 CV1x90::operator=(const CV1x90& rhs)
 {
@@ -228,7 +235,7 @@ CV1x90::operator=(const CV1x90& rhs)
   return *this;
 }
 
-
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -240,7 +247,11 @@ CV1x90::operator=(const CV1x90& rhs)
    \param configuration - configuration object associated with this object.
 */
 void
+#ifdef MVLC_GENERATOR
+CV1x90::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CV1x90::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration;
   createConfiguration();
@@ -293,7 +304,11 @@ CV1x90::Initialize(CVMUSB& controller)
 
   controller.vmeWrite16(base + CCAENV1x90Registers::WReset, initamod, (uint16_t)0);
   WaitMicro(controller, base);
+  #ifdef MVLC_GENERATOR
+  controller.delay(50000);
+  #else
   Os::usleep(1000);			// Wait another msec just in case.
+  #endif
   WaitMicro(controller,base);	// ..and wait for the micro to be ready.
 
   // Figure out m_Model, m_Suffix, m_nChipCount, and m_nChannelCount
@@ -378,9 +393,11 @@ CV1x90::Initialize(CVMUSB& controller)
              &dummy,
              sizeof(dummy),
              &dummy);
+#ifndef MVLC_GENERATOR
   if (status < 0) {
     throw std::string("CCAENV1x90 initialization register writ list failed");
   }
+#endif
   // Before setting anything else up, we should put the device in
   // trigger matching mode:
 
@@ -553,6 +570,7 @@ CV1x90::addReadoutList(CVMUSBReadoutList& list)
   list.addBlockRead32(base, readamod, (size_t)1024);
   list.addWrite16(base + CCAENV1x90Registers::WClear, initamod, (uint16_t)0);
 }
+#ifndef MVLC_GENERATOR
 /*!
    Clone oursevles.. well this is really just a virtual copy constructor:
 
@@ -562,6 +580,7 @@ CV1x90::clone() const
 {
   return new CV1x90(*this);
 }
+#endif
 ///////////////////////////////////////////////////////////////////////////////////
 // Utilities and factorizations.
 //
@@ -618,6 +637,11 @@ CV1x90::createConfiguration()
   m_pConfiguration->addParameter("-channelcount",
 				 XXUSB::CConfigurableObject::isInteger, NULL,
 				 "");
+#ifdef MVLC_GENERATOR
+  m_pConfiguration->addEnumParameter(
+    "-model", modelEnum, "v1190A"              // MVLCGenerator has to be told the model number.
+  );
+#endif
 
 }
 /*
@@ -631,6 +655,33 @@ CV1x90::createConfiguration()
 void
 CV1x90::moduleType(CVMUSB& controller, uint32_t base)
 {
+#ifdef MVLC_GENERATOR
+  std::string model =  m_pConfiguration->cget("-model");
+
+  if (model == "v1190A") {
+    m_Model = 1190;
+    m_Suffix = 'A';
+  } else if (model == "v1190B") {
+    m_Model = 1190;
+    m_Suffix = 'B';
+
+  } else if (model == "v1290A") {
+    m_Model = 1290;
+    m_Suffix = 'A';
+
+  } else if (model == "v1290N") {
+    m_Model = 1290;
+    m_Suffix = 'N';
+  } else {
+    std::stringstream error;
+    error << "Bug, the -model value was: " << model << " wich should have not been allowed";
+    std::string msg(error.str());
+
+    throw msg;
+  }
+
+
+#else
   uint16_t modelLow, modelMiddle, modelHigh;
   uint32_t model;
   uint16_t version;
@@ -681,6 +732,7 @@ CV1x90::moduleType(CVMUSB& controller, uint32_t base)
     m_Suffix = 'N';
     break;
   }
+#endif
 }
 
 /*
@@ -704,7 +756,7 @@ CV1x90::computeCounts()
     }
   }
   if (m_Model == 1290) {
-    if (m_Suffix = 'A') {
+    if (m_Suffix == 'A') {
       m_nChannelCount = 32;
       m_nChipCount    = 4;	// Hi res mode uses several channels in each chip per box channel
     }
@@ -731,6 +783,13 @@ void
 CV1x90::WaitMicro(CVMUSB& controller, uint32_t base)
 {
   uint32_t address = base + CCAENV1x90Registers::WMicroHandshake;
+#ifdef MVLC_GENERATOR
+  controller.loopUntil16(
+    address, initamod, 
+    CCAENV1x90Registers::MicroHandshake::WRITE_OK, CCAENV1x90Registers::MicroHandshake::WRITE_OK
+  );
+#else
+  
 
   while (1) {
     uint16_t status;
@@ -741,7 +800,7 @@ CV1x90::WaitMicro(CVMUSB& controller, uint32_t base)
     if (status & CCAENV1x90Registers::MicroHandshake::WRITE_OK) return;
     
   }
-
+#endif
 }
 /*
 **  Many transactions with the module involve writing an operation code and
@@ -924,10 +983,11 @@ CV1x90::validateChannelOffsets(string name, string value, void* arg)
  * throws an exception.
  *
  * \throws std::string when data returned from read operation does not match our expectations.
- *
+ *  This is a no-op in the mvlc generator.
  */
 void CV1x90::validateModule(CVMUSB &controller, uint32_t base)
 {
+#ifndef MVLC_GENERATOR
     // check that the values of the config prom are what we expect based on the manual.
     // the manual does not quite give us all the information... the module does not return
     // exactly what is described. Rather, we need to mask off the upper byte of the
@@ -956,7 +1016,7 @@ void CV1x90::validateModule(CVMUSB &controller, uint32_t base)
     } else if ((value&0xff) != 0x01) {
         throw std::string("CV1x90::validateModule() failed to identify device as a V1x90");
     }
-
+#endif
 }
 
 
@@ -1090,3 +1150,32 @@ CV1x90::maxhitsMap()
   return result;
   
 }
+
+
+#ifdef MVLC_GENERATOR
+/////////////////////// implement the V1x90Comman d class.
+
+/**
+ *  constructor
+ */
+V1x90Command::V1x90Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "tdc1x90", parser)
+  {}
+
+/**
+ * destructor
+ */
+V1x90Command::~V1x90Command() {}
+
+
+/**
+ * createDevice:
+ */
+CReadoutModule* 
+V1x90Command::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CV1x90);
+
+  return result;
+}
+#endif
