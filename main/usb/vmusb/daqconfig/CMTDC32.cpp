@@ -16,11 +16,11 @@
 */
 
 
-#include "CMTDC32.h"
+#include <CMTDC32.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
-#include "MADC32Registers.h"
-#include "CReadoutModule.h"
+#include <MADC32Registers.h>
+#include <CReadoutModule.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -29,6 +29,9 @@
 #include <sstream>
 #include <errno.h> 
 #include <string.h>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 /* Parameter constraint data structures: */
 
@@ -128,11 +131,11 @@ static const uint16_t bank0TriggerSrcRegisterValues[] = {
 static const char** bank1TriggerSources             = bank0TriggerSources;
 static const uint16_t* bank1TriggerSrcRegisterValues = bank0TriggerSrcRegisterValues;
 
-
+#ifndef MVLC_GENERATOR
 // for debugging :
 
 static void dumpRegisters(CVMUSB& controller, uint32_t base);
-
+#endif
 /**
  * constructor
  *   initialize the configuration member to null since it does not get
@@ -146,7 +149,7 @@ CMTDC32::CMTDC32() :
  * destructor - nothing to do
  */
 CMTDC32::~CMTDC32() {}
-
+#ifndef MVLC_GENERATOR
 /**
  * copy construction, if rhs has a configuration copy it into this
  *
@@ -159,6 +162,7 @@ CMTDC32::CMTDC32(const CMTDC32& rhs) :
         m_pConfiguration = new CReadoutModule(*(rhs.m_pConfiguration));
     }
 }
+
 
 /**
  * assignment
@@ -181,7 +185,7 @@ CMTDC32::operator=(const CMTDC32& rhs)
     }
     return *this;
 }
-
+#endif
 /*---------------------------------------------------------------------------
  * Implementations of the CReadout hardware interface:
  *
@@ -198,7 +202,11 @@ CMTDC32::operator=(const CMTDC32& rhs)
  *  @param configuration - reference to our new configuration object
  */
 void
+#ifdef MVLC_GENERATOR
+CMTDC32::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CMTDC32::onAttach(CReadoutModule& configuration)
+#endif
 {
     
     // Take care of the existing configuraiton and
@@ -448,17 +456,14 @@ CMTDC32::Initialize(CVMUSB& controller)
     uint8_t rdBuffer[128];
 
     int status = controller.executeList(list, &rdBuffer, sizeof(rdBuffer), &readSize);
-
-    //    dumpRegisters(controller, base);
-
+#ifndef MVLC_GENERATOR
     if (status < 0) {
       std::cerr << "MTDC initialization list failed " << status << std::endl;
       std::cerr << strerror(errno) << std::endl;
       throw std::string("Init failed - list execution failed");
     }
     
-
-    //    std::cerr << std::dec;
+#endif
     
 }
 /**
@@ -595,7 +600,7 @@ CMTDC32::initCBLTReadout(CVMUSB& controller,
   controller.vmeWrite16(cbltAddress + ReadoutReset, initamod, (uint16_t)0);
   controller.vmeWrite16(cbltAddress + StartAcq , initamod, (uint16_t)1);
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * clone 
  *  Clones this object returning a new dynamically allocated copy.
@@ -604,7 +609,7 @@ CReadoutHardware*
 CMTDC32::clone() const {
   return new CMTDC32(*this);
 }
-
+#endif
 /*-----------------------------------------------------------------------------------------
  * Private utilities:
  */
@@ -622,9 +627,11 @@ void
 CMTDC32::addWrite(CVMUSBReadoutList& list, uint32_t address, uint16_t value)
 {
   int delay = m_pConfiguration->getIntegerParameter("-initdelay");
-  //  std::cerr << (address & 0xffff) << " " << value << std::endl;
+  
     list.addWrite16(address, initamod, value);
-    //    list.addDelay(delay);
+    // NO longer delaying; not needed but I'm too lazy to remove 
+    // addWrite everywhere it's used.
+    // list.addDelay(delay);
 }
 /**
  * computeMultiEventRegister
@@ -668,7 +675,7 @@ CMTDC32::getTermination()
 }
 
 //--------------------------------------------------------------------
-
+#ifndef MVLC_GENERATOR
 /**
  * dumpRegisters
  *   Dumps the register values to a file named:  MTDC_base  where
@@ -779,3 +786,32 @@ dumpRegisters(CVMUSB& controller, uint32_t base)
 
   
 }
+#endif
+
+#ifdef MVLC_GENERATOR
+/////////////////////// Implement the MTDCCommand class:
+
+/**
+ *  constructor
+ */
+MTDCCommand::MTDCCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+    DeviceCommand(interp, "mtdc", parser) {
+
+}
+/**
+ *  destructor:
+ */
+MTDCCommand::~MTDCCommand() {}
+
+
+/**
+ * creatDevice - make the module wrapping an MTDC32 object.
+ */
+CReadoutModule*
+MTDCCommand::createDevice(std::string name) {
+    CReadoutModule* result = new CReadoutModule;
+    result->SetDriver(new CMTDC32);
+
+    return result;
+}
+#endif

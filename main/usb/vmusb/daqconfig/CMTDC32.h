@@ -9,29 +9,21 @@
 
 ##
 # @file MTDC32.h
-# @brief Support for the Mesytec MTDC32  (header)
+# @brief Support for the Mesytec MTDC32  (header) 
+# @note Works for both VMUSB and MVCL given MVLC_GENERATOR is defined when compiling MVLC
+# @note This file was contributed to the FRIB/NSCLDAQ source tree with permission from 
+#        CAEN Technologies.
 # @author Ron Fox (rfoxkendo@gmail.com)
 
 */
 #ifndef __MTDC32_H
 #define __MTDC32_H
 
-
-#ifndef __CMESYTECBASE_H
 #include "CMesytecBase.h"
-#endif
-#ifndef __CRT_STDINT_H
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
 #endif
 
 // Forward definitions:
@@ -39,6 +31,11 @@
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+    class CConfigurableObject;
+}
+#endif
 
 /**
  *  The MTDC32 is a 32 channel time digitizer from Mesytec. The module
@@ -83,12 +80,20 @@ class CVMUSBReadoutList;
 class CMTDC32 : public CMesytecBase    // Can participate in chained readouts.
 {
 private:
+#ifdef MVLC_GENERATOR
+    XXUSB::CConfigurableObject*    m_pConfiguration;
+#else
     CReadoutModule*    m_pConfiguration;
+#endif
 public:
     CMTDC32();
-    CMTDC32(const CMTDC32& rhs);
+    
     virtual ~CMTDC32();
     CMTDC32& operator=(const CMTDC32& rhs);
+#ifdef MVLC_GENERATOR
+private:
+#endif
+    CMTDC32(const CMTDC32& rhs);
 private:
     int operator==(CMTDC32& rhs);
     int operator!=(CMTDC32& rhs);
@@ -97,11 +102,17 @@ private:
     // Interface for CReadout hardware
     
 public:
+#ifdef MVLC_GENERATOR
+    virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
     virtual void onAttach(CReadoutModule& configuration);
+#endif
     virtual void Initialize(CVMUSB& controller);
     virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR    
     virtual CReadoutHardware* clone() const;
-    
+#endif
+
     // Interface demanded by CMesytecBase.
     
     virtual void setChainAddresses( CVMUSB& controller,
@@ -123,5 +134,22 @@ private:
     uint16_t getTermination();
 
 };
+
+#ifdef MVLC_GENERATOR
+
+/**
+ *  @class MTDCCommand
+ *     Derivation of DeviceCommand that creates CMTDC32 objects.
+ */
+class MTDCCommand : public DeviceCommand {
+public:
+    MTDCCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+    virtual ~MTDCCommand();
+protected:
+    CReadoutModule* createDevice(std::string name);
+};
+
+#endif
+
 
 #endif
