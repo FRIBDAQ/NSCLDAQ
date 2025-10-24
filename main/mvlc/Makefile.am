@@ -79,9 +79,9 @@ IMPORTED_MODULES=$(IMPORT_DIR)/CMQDC32RdoHdwr.h \
 	$(IMPORT_DIR)/ CV977.h $(IMPORT_DIR)/CV977.cpp 
 
 
-
-LOCAL_MODULES= 	MADC32Registers.h \
-	CV1495sc.h CV1495sc.cpp CV1729.h CV1729.cpp \
+LOCAL_MODULES= \
+	CV1495sc.h CV1495sc.cpp \
+	CV1729.h CV1729.cpp \
 	CXLM.h CXLM.cpp CXLMTimestamp.cpp CXLMTimestamp.h \
 	CXLMFERA.cpp CXLMFERA.h \
 	VMUSBCommand.h VMUSBCommand.cpp VMUSBListCommand.h \
