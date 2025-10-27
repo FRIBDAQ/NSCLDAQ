@@ -7621,6 +7621,10 @@ mdpp32qdc cget <replaceable>name</replaceable>
                              Each module should be given a unique <parameter>vsn</parameter>.
                          </para>
                          <para>
+                             Make sure to assign non-duplicate number explicitly to use
+                             VMUSBSpecTcl.
+                         </para>
+                         <para>
                              By default, the value is <literal>0</literal>.
                          </para>
                      </listitem>
@@ -8692,6 +8696,10 @@ mdpp16qdc cget <replaceable>name</replaceable>
                              Each module should be given a unique <parameter>vsn</parameter>.
                          </para>
                          <para>
+                             Make sure to assign non-duplicate number explicitly to use
+                             VMUSBSpecTcl.
+                         </para>
+                         <para>
                              By default, the value is <literal>0</literal>.
                          </para>
                      </listitem>
@@ -9755,6 +9763,10 @@ mdpp32scp cget <replaceable>name</replaceable>
                              Each module should be given a unique <parameter>vsn</parameter>.
                          </para>
                          <para>
+                             Make sure to assign non-duplicate number explicitly to use
+                             VMUSBSpecTcl.
+                         </para>
+                         <para>
                              By default, the value is <literal>0</literal>.
                          </para>
                      </listitem>
@@ -10730,6 +10742,10 @@ mdpp32padc cget <replaceable>name</replaceable>
                              Each module should be given a unique <parameter>vsn</parameter>.
                          </para>
                          <para>
+                             Make sure to assign non-duplicate number explicitly to use
+                             VMUSBSpecTcl.
+                         </para>
+                         <para>
                              By default, the value is <literal>0</literal>.
                          </para>
                      </listitem>
@@ -11272,7 +11288,7 @@ set pulserAmplitude     400
 set triggerSource       0x100
 set triggerOutput       0x100
 
-mdpp32padc create padc -base 0x00030000
+mdpp32padc create padc -base 0x00030000 -id 1
 mdpp32padc config padc -signalwidth $signalWidth \
                      -threshold $threshold \
                      -windowstart $windowStart \
