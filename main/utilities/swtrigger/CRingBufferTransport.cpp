@@ -27,8 +27,6 @@
 #include <stdexcept>
 #include <new>
 
-#include <chrono>
-
 static const int CHUNK_SIZE(1024*1024);
 static const int POLL_COUNT(100);
 static const int POLL_TIMING(10);
