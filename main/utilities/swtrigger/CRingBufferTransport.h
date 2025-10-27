@@ -45,8 +45,6 @@ private:
     CRingBufferChunkAccess::Chunk           m_CurrentChunk;  // Reads...
     CRingBufferChunkAccess::Chunk*          m_pCurrentChunk;
     CRingBufferChunkAccess::Chunk::iterator* m_pIterator;
-
-    bool m_seenData;
     
 public:
     CRingBufferTransport(CRingBuffer& writer);           // For writes.

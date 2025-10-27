@@ -39,7 +39,7 @@ static const int POLL_TIMING(10);
  */
 CRingBufferTransport::CRingBufferTransport(CRingBuffer& writer) :
     m_pWriter(&writer), m_pReader(nullptr), m_pCurrentChunk(nullptr),
-    m_pIterator(nullptr), m_seenData(false)
+    m_pIterator(nullptr)
 {}
 /**
  * constructor (read)
