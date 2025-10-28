@@ -2,9 +2,9 @@ bin_PROGRAMS = ddasdumper.bin
 lib_LTLIBRARIES = libddasrootformat.la
 include_HEADERS = DDASRootEvent.h DDASRootHit.h
 
-BUILT_SOURCES = dumperargs.h dumperargs.cpp
+BUILT_SOURCES = dumperargs.c 
 
-ddasdumper_bin_SOURCES = dumperargs.cpp dumperargs.h ddasdumper.cpp 	\
+ddasdumper_bin_SOURCES = ddasdumper.cpp dumperargs.c 	\
 	DataSource.cpp DataSource.h					\
 	FdDataSource.cpp FdDataSource.h					\
 	StreamDataSource.cpp StreamDataSource.h				\
@@ -28,9 +28,9 @@ libddasrootformat_la_LDFLAGS = @ROOT_LDFLAGS@
 nodist_libddasrootformat_la_SOURCES = ddasrootformatDictionary.cpp ddasrootformatDictionary.h
 
 
-dumperargs.cpp: dumperargs.h
-	cp @builddir@/dumperargs.c @builddir@/dumperargs.cpp
-dumperargs.h: dumperargs.ggo
+
+
+dumperargs.c: dumperargs.ggo
 	$(GENGETOPT) < @srcdir@/dumperargs.ggo --file=dumperargs --output-dir=@builddir@
 
 ddasrootformatDictionary.cpp: ddasrootformatDictionary.h
@@ -48,7 +48,7 @@ install-exec-local:
 
 
 clean-local:
-	rm -f @srcdir@/dumperargs.{h,c,cpp}
+	rm -f @builddir@/dumperargs.{h,c}
 	rm -f ddasrootformatDictionary*
 	rm -f libddasrootformat.rootmap
 
