@@ -43,6 +43,8 @@
    -outputformat        integer [0-2]       0:Time(T) and Peak Amplitude(A), 1:A, 2:T
    -signalwidth         int[8] [2-2000]     FWHM in unit of 12.5 ns
    -threshold           int[32] [1-65535]   Threshold to start measuring. Calculated as value/0xFFFF percentage.
+   -blrthreshold        int[8] [16-128]     BLR threshold
+   -blr                 int[8] [0-2]        0: off, 1: int time = 4 shaping time, 2: int time = 8 shaping time
    -printregisters      bool                Print out all the register values on screen.
 \endverbatim
 */

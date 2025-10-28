@@ -127,6 +127,7 @@ CMDPP32PADC::onAttach(CReadoutModule& configuration)
  
   m_pConfiguration -> addIntListParameter("-signalwidth",    8,   2000,  8,  8,  8,    80);
   m_pConfiguration -> addIntListParameter("-threshold",      1, 0xffff, 32, 32, 32,   400);
+  m_pConfiguration -> addIntListParameter("-blrthreshold",  16,    128,  8,  8,  8,    32);
   m_pConfiguration -> addIntListParameter("-blr",            0,      2,  8,  8,  8,     2);
 
   /* For future
@@ -208,6 +209,7 @@ CMDPP32PADC::Initialize(CVMUSB& controller)
 
   auto           signalwidths        = m_pConfiguration -> getIntegerList("-signalwidth");
   auto           threshold           = m_pConfiguration -> getIntegerList("-threshold");
+  auto           blrthreshold        = m_pConfiguration -> getIntegerList("-blrthreshold");
   auto           blr                 = m_pConfiguration -> getIntegerList("-blr");
 
   /* For future
@@ -262,6 +264,8 @@ CMDPP32PADC::Initialize(CVMUSB& controller)
     list.addWrite16(base + Threshold2,          initamod, (uint16_t)threshold.at(channelPair*4 + 2));
     list.addDelay(MDPPCHCONFIGDELAY);
     list.addWrite16(base + Threshold3,          initamod, (uint16_t)threshold.at(channelPair*4 + 3));
+    list.addDelay(MDPPCHCONFIGDELAY);
+    list.addWrite16(base + BLRTHRESHOLD,        initamod, (uint16_t)blrthreshold.at(channelPair));
     list.addDelay(MDPPCHCONFIGDELAY);
     list.addWrite16(base + BLR,                 initamod, (uint16_t)blr.at(channelPair));
     list.addDelay(MDPPCHCONFIGDELAY);
@@ -682,6 +686,26 @@ CMDPP32PADC::printRegisters(CVMUSB& controller)
       cout << setw(30) << "Signal width: " << data << " [*12.5 ns (FWHM)]" << endl;
     }
 
+    status = controller.vmeRead16(base + BLRTHRESHOLD, initamod, &data);
+    if (status < 0) {
+        cerr << "Error in reading register" << endl;
+    } else {
+        cout << setw(30) << "Base line restorer threshold: " << data << endl;;
+    }
+
+    status = controller.vmeRead16(base + BLR, initamod, &data);
+    if (status < 0) {
+        cerr << "Error in reading register" << endl;
+    } else {
+        cout << setw(30) << "Base line restorer: " << data;
+        switch (data) {
+            case 0: cout << " (Off)" << endl; break;
+            case 1: cout << " (Strict)" << endl; break;
+            case 2: cout << " (SOft)" << endl; break;
+            default: cout << " (error)" << endl; break;
+        }
+    }
+
     status = controller.vmeRead16(base + Threshold0, initamod, &data);
     if (status < 0) {
       cerr << "Error in reading register" << endl;
@@ -728,19 +752,6 @@ CMDPP32PADC::printRegisters(CVMUSB& controller)
       char percentageString[8] = "";
       sprintf(percentageString, "%.02f %%", percentage);
       cout << setw(30) << channelNumber << data << " (0x" << std::hex << data << std::dec << ", " << percentageString << ")" << endl;
-    }
-
-    status = controller.vmeRead16(base + BLR, initamod, &data);
-    if (status < 0) {
-        cerr << "Error in reading register" << endl;
-    } else {
-        cout << setw(30) << "Base line restorer: " << data;
-        switch (data) {
-            case 0: cout << " (Off)" << endl; break;
-            case 1: cout << " (Strict)" << endl; break;
-            case 2: cout << " (SOft)" << endl; break;
-            default: cout << " (error)" << endl; break;
-        }
     }
 
     /*
