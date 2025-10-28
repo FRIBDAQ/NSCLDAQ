@@ -22,6 +22,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <set>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 using namespace std;
 
@@ -90,6 +93,7 @@ C830::C830() :
 {
 
 }
+#ifndef MVLC_GENERATOR
 /*!
    In copy construction, we want to copy the configuration if it already exists,
    so that we have a faithful copy of the rhs object .. including configuration.
@@ -102,12 +106,13 @@ C830::C830(const C830& rhs) :
     m_pConfiguration = new CReadoutModule(*(rhs.m_pConfiguration));
   }
 }
+#endif
 /*!
    Destructor...see above.
 */
 C830::~C830()
 {}
-
+#ifndef MVLC_GENERATOR
 /*!
   Assignment returns self else copying the configuration can lead to an
   infinite recursion loop.
@@ -117,6 +122,7 @@ C830::operator=(const C830& rhs)
 {
   return *this;
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////// CReadoutHardware interface implementations ///////////////
@@ -159,7 +165,12 @@ Name        Type/range      Default       Purpose
     The configuration that will be attached to this module.
 
 */
-void C830::onAttach(CReadoutModule& configuration)
+void 
+#ifdef MVLC_GENERATOR
+C830::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
+C830::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration; 
 
@@ -184,8 +195,10 @@ void C830::onAttach(CReadoutModule& configuration)
   m_pConfiguration->addParameter("-setgeo",    XXUSB::CConfigurableObject::isBool,   NULL,            "false");
   m_pConfiguration->addParameter("-ipl",       XXUSB::CConfigurableObject::isInteger, &iplRange,      "0");
   m_pConfiguration->addParameter("-vector",    XXUSB::CConfigurableObject::isInteger, &vectorRange,   "0");
-  m_pConfiguration->addParameter("-highwatermark",
-				               XXUSB::CConfigurableObject::isInteger, &highwaterRange, "1");
+  m_pConfiguration->addParameter(
+    "-highwatermark",
+		XXUSB::CConfigurableObject::isInteger, &highwaterRange, "1"
+  );
   
 
 }
@@ -264,10 +277,11 @@ C830::Initialize(CVMUSB& controller)
 
   int status = controller.executeList(initList,
 			 &dummyLong, sizeof(size_t), &dummyLong);
-
+#ifndef MVLC_GENERATOR                      // This just loads the controller so ....pfft.
   if (status < 0) {
     throw std::string("C830 initialization list failed");
   }
+#endif
 }
 
 /*!
@@ -318,7 +332,7 @@ C830::addReadoutList(CVMUSBReadoutList& list)
   list.addWrite16(baseAddress + CLEAR, configAmod, (uint16_t)0);
   
 }
-
+#ifndef MVLC_GENERATOR
 /*!
   Produce a dynamically allocated, faithful copy of *this.
   This is effectively a virtualized copy constructor.
@@ -329,6 +343,7 @@ C830::clone() const
 {
   return new C830(*this);
 }
+#endif
 //////////////////////////////////////////////////////////////////////
 /////////////////////// Support functions ////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -387,3 +402,32 @@ C830::getTriggerSource() const
 
   assert(0);			// should not happen!
 }
+
+
+#ifdef MVLC_GENERATOR
+/////////////////////////////////// V830Command implementation
+
+/**
+ * constructor - nothing special
+ */
+V830Command::V830Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "v830", parser) {}
+
+/** 
+ * destructor.
+*/
+V830Command::~V830Command() {}
+
+
+/**
+ *  createDevice
+ *     Return a dynamically created readout module wrapping a C830 object.
+ */
+CReadoutModule*
+V830Command::createDevice(std::string name) {
+  auto result= new CReadoutModule;
+  result->SetDriver(new C830);
+
+  return result;
+}
+#endif

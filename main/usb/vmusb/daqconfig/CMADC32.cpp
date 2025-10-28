@@ -12,10 +12,15 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
+/**
+ * @file CMADC32.cpp
+ * @brief Implements support for the Mesytec MADC32 for VMUSB and MVLC
+ * @note  MVLC_GENERATOR is defined when compileing for mvlcgenerte
+ */
 
 #include <config.h>
 #include "CMADC32.h"
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 
@@ -31,7 +36,11 @@
 #include <set>
 
 #include <iostream>
-#include "MADC32Registers.h"
+#include <MADC32Registers.h>
+
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 
 using namespace std;
@@ -176,6 +185,10 @@ CMADC32::CMADC32() :
 {}
 
 
+
+CMADC32::~CMADC32() {}
+
+#ifndef MVLC_GENERATOR
 /*! Copy construction involves a deep copy */
 
 CMADC32::CMADC32(const CMADC32& rhs) :
@@ -186,13 +199,13 @@ CMADC32::CMADC32(const CMADC32& rhs) :
   }
 }
 
-CMADC32::~CMADC32() {}
 
 CMADC32&
 CMADC32::operator=(const CMADC32& rhs)
 {
   return *this;
 }
+#endif
 /////////////////////////////////////////////////////////////////////////////////
 // Object operations:
 //
@@ -208,7 +221,11 @@ CMADC32::operator=(const CMADC32& rhs)
 
 */
 void
+#ifdef MVLC_GENERATOR
+CMADC32::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CMADC32::onAttach(CReadoutModule& configuration)
+#endif
 {
 
   m_pConfiguration = &configuration;
@@ -331,7 +348,11 @@ CMADC32::Initialize(CVMUSB& controller)
 
   uint32_t base = m_pConfiguration->getUnsignedParameter("-base");
   controller.vmeWrite16(base + Reset,    initamod, (uint16_t)1);
+  #ifdef MVLC_GENERATOR
+  controller.delay(1000);
+  #else
   sleep(1);
+  #endif
   controller.vmeWrite16(base + StartAcq, initamod, (uint16_t)0);
   controller.vmeWrite16(base + ReadoutReset, initamod, (uint16_t)1);
 
@@ -561,9 +582,11 @@ CMADC32::Initialize(CVMUSB& controller)
   char readBuffer[100];		// really a dummy as these are all write...
   size_t bytesRead;
   int status = controller.executeList(list, readBuffer, sizeof(readBuffer), &bytesRead);
+  #ifndef MVLC_GENERATE
   if (status  < 0) {
      throw string("List excecution to initialize an MADC32 failed");
    }
+  #endif
 
 }
 /*!
@@ -585,6 +608,7 @@ CMADC32::addReadoutList(CVMUSBReadoutList& list)
   //  list.addDelay(5);
 }
 
+#ifndef MVLC_GENERATOR
 // Cloning supports a virtual copy constructor.
 
 CReadoutHardware*
@@ -592,6 +616,7 @@ CMADC32::clone() const
 {
   return new CMADC32(*this);
 }
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Code here provides support for the madcchain pseudo module that use these devices
@@ -765,3 +790,29 @@ CMADC32::computeUseGGregister(int gdgEnables, std::string gatemode)
 	
 	return gdgEnables;
 }
+
+#ifdef MVLC_GENERATOR
+////////////////////////////////////////  Implement CMADCommand class:
+
+/**
+ *  constructor
+ */
+CMADC32Command::CMADC32Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "madc", parser) {}
+
+/** destructor */
+
+CMADC32Command::~CMADC32Command() {}
+
+
+/**
+ *  createDevice - create a device instance wrapped in a ReadoutModule.
+ */
+CReadoutModule*
+CMADC32Command::createDevice(std::string name) {
+  auto result = new CReadoutModule;
+  result->SetDriver(new CMADC32);
+
+  return result;
+}
+#endif

@@ -21,7 +21,7 @@
 #include <CV1729.h>
 
 
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 
@@ -38,6 +38,10 @@
 #include <os.h>
 
 #include <iostream>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
+
 using namespace std;
 
 /**
@@ -180,7 +184,7 @@ CV1729::CV1729() :
 CV1729::~CV1729()
 {
 }
-
+#ifndef MVLC_GENERATOR
 /* 
  * The only data we have is the configuration so clone that:
  */
@@ -199,7 +203,7 @@ CV1729::operator=(const CV1729& rhs)
 {
   return *this;
 }
-
+#endif
 
 
 /*--------------------------------------------------------------------------------------------
@@ -212,7 +216,11 @@ CV1729::operator=(const CV1729& rhs)
  * @param configuration - The readout moduile that will hold our configuration.
  */
 void
+#ifdef MVLC_GENERATOR
+CV1729::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CV1729::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration;
 
@@ -267,8 +275,11 @@ CV1729::Initialize(CVMUSB& controller)
   uint32_t base = m_pConfiguration->getUnsignedParameter("-base"); // module base address.
 
   controller.vmeWrite32(base+RESET, setupAmod, (uint32_t)0); // Reset board.
+#ifdef MVLC_GENERATOR
+  controller.delay(5000);
+#else
   Os::usleep(500);					   // Wait a bit to ensure it complete.
-
+#endif
   // After reset is done all of the parameters can be set by list operations:
 
   CVMUSBReadoutList setupList;
@@ -343,10 +354,11 @@ CV1729::Initialize(CVMUSB& controller)
 				      &rbuffer, 
 				      sizeof(rbuffer),
 				      &readSize);
+#ifndef MVLC_GENERATOR
   if(status < 0) {
     throw std::string(strerror(errno)) + std::string("CV1729::Initialize - list execution failed");
   }
-
+#endif
   // start data taking:
 
   controller.vmeWrite32(base + STARTACQ, setupAmod, (uint32_t)0);
@@ -414,7 +426,7 @@ CV1729::addReadoutList(CVMUSBReadoutList& list)
   
 
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * Clone the object:  This is basically a virtual constructor:
  * @return CReadoutHardware*
@@ -424,6 +436,7 @@ CV1729::clone() const
 {
   return new CV1729(*this);
 }
+#endif
 /*--------------------------------------------------------------------------------------------
  * Private utilities
  */
@@ -452,3 +465,29 @@ CV1729::enumToValue(const char* pValue, const char** ppLegalValues, const unsign
   msg       += " in CV1729::enumToValue";
   throw msg;
 }
+
+#ifdef MVLC_GENERATOR
+///////////////////////////// Impelement the V1729aCommand class:
+
+/**
+ *  constructor - nothing special.
+ */
+V1729aCommand::V1729aCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "v1729a", parser) {}
+/**
+ * destructor:
+ */
+V1729aCommand::~V1729aCommand() {}
+
+
+/** createDevice
+ *     Return a Readout Module that wraps a CV1729 object.
+ */
+CReadoutModule*
+V1729aCommand::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CV1729);
+
+  return result;
+}
+#endif

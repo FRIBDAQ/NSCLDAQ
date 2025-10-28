@@ -5,7 +5,7 @@
  */
 #include "xlm_options.h"
 #include "CMVLCDirect.h"
-#include "CXLM.h"
+#include <CXLM.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <iostream>

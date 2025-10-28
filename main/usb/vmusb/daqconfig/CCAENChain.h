@@ -17,29 +17,13 @@
 #ifndef __CCAENCHAIN_H
 #define __CCAENCHAIN_H
 
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
 
-#ifndef __CRT_STDINT_H
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif 
-#endif
-
-#ifndef __STL_LIST
 #include <list>
-#ifndef __STL_LIST
-#define __STL_LIST
-#endif
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
 #endif
 
 
@@ -47,6 +31,14 @@ class CReadouModule;
 class CVMUSB;
 class CVMUSBReadoutList;
 class C785;
+
+#ifdef MVLC_GENERATOR
+class TclConfigParser;
+namespace XXUSB {
+  class CConfigurableObject;
+}
+#endif
+
 
 /*!
   This class implements a CAEN chain.  A CAEN chain represents a 
@@ -80,8 +72,14 @@ private:
   typedef ChainList::iterator  ChainListIterator;
 
 private:
-  ChainList         m_Chain;
+#ifdef MVLC_GENERATOR
+  TCLConfigParser* m_pParser;
+  XXUSB::CConfigurableObject* m_pConfiguration;
+#else
   CReadoutModule*   m_pConfiguration;
+#endif
+  ChainList         m_Chain;
+  
 
   int               m_moduleCount; // Saved at init time.
   uint32_t          m_baseAddress; // Saved at init time.
@@ -89,11 +87,18 @@ private:
   // class canonicals:
 
 public:
+#ifdef MVLC_GENERATOR
+  CCAENChain(TCLConfigParser* parser);
+#else  
   CCAENChain();
-  CCAENChain(const CCAENChain& rhs);
+#endif  
   virtual ~CCAENChain();
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CCAENChain(const CCAENChain& rhs);
   CCAENChain& operator=(const CCAENChain& rhs);
-
+public:
   // Disallowed canonicals:
 
 private:
@@ -105,10 +110,16 @@ public:
   // overridable oeprations on constructed objects:
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else  
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
+#endif
 
   // utilities:
 
@@ -118,4 +129,24 @@ public:
   static bool moduleChecker(std::string name, std::string value, void* arg);
   
 };
+
+#ifdef MVLC_GENERATOR
+
+/*
+   @class CAENChainCommand 
+       Generator command.  Note that we'll need to store the config parser to hand
+       to generated modules.
+*/
+class CAENChainCommand : public DeviceCommand {
+private:
+  TCLConfigParser* m_parser;
+public:
+  CAENChainCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CAENChainCommand();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+#endif
+
+
 #endif

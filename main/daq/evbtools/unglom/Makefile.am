@@ -15,12 +15,12 @@ unglom_LDADD = @top_builddir@/daq/format/libdataformat.la  \
 	@top_builddir@/base/os/libdaqshm.la	\
 	@LIBTCLPLUS_LDFLAGS@
 
-BUILT_SOURCES = @srcdir@/cmdline.c @srcdir@/cmdline.h
+BUILT_SOURCES = cmdline.c cmdline.h
 
-@srcdir@/cmdline.c: @srcdir@/cmdline.h
+cmdline.c: cmdline.h
 
 @srcdir@/cmdline.h: @srcdir@/cmdline.ggo
 	@GENGETOPT@ --input=@srcdir@/cmdline.ggo \
-		--output-dir=@srcdir@
+		--output-dir=@builddir@
 
 EXTRA_DIST=cmdline.ggo unglom.xml config.h

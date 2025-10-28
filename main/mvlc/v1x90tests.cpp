@@ -24,7 +24,7 @@
 
 #include "CReadoutModule.h"
 #define private public             // Wanna test wait micro.
-#include "CV1x90.h"
+#include <CV1x90.h>
 #undef private
 
 #include "MVLCConfigParser.h"

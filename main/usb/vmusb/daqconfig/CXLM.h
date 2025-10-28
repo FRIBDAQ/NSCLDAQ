@@ -17,30 +17,13 @@
 #ifndef __CXLM_H
 #define __CXLM_H
 
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
-
-#ifndef __CRT_STDINT_H
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
-#endif
-#endif
+
+// note there's no 'xlm' command so we don't (in MVLC)
+// have a device command object to create.
 
 
 // Forward class definitions:
@@ -67,8 +50,11 @@ namespace XLM
 class CXLM : public CReadoutHardware
 {
 protected:			// Data available to derived classes:
-
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject* m_pConfiguration;
+#else
   CReadoutModule* m_pConfiguration;
+#endif
 
 public:				// 'constants'.
   // Bus access bits:
@@ -79,8 +65,11 @@ public:				// 'constants'.
 
 public:				// Canonicals:
   CXLM();
-  CXLM(const CXLM& rhs);
   virtual ~CXLM();
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CXLM(const CXLM& rhs);
   CXLM& operator=(const CXLM& rhs);
 
  private:			// Unimplemented canonicals:
@@ -90,7 +79,12 @@ public:				// Canonicals:
   // Element of the standard readout hardware interface we implement:
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);  
+#else
   virtual void onAttach(CReadoutModule& configuration);  
+#endif
+
 
   // XLM support functions derived classes can use these:
 protected:

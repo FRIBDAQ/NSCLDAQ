@@ -20,11 +20,20 @@
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 #include <C785.h>
+#ifdef MVLC_GENERATOR
+#include <TCLConfigParser.h>
+#include <TCLObject.h>
+#include <XXUSBConfigurableObject.h>
+#include <TCLInterpreter.h>
+#else
 #include <CConfiguration.h>
 #include <Globals.h>
+#endif
+
 #include <tcl.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <vector>
 
 using namespace std;
 
@@ -52,10 +61,28 @@ static const uint16_t CLEAR_DATA(0x4); // The clear data bit in the above.
   Construction is largely a no-op as all the action happens
   at attach time.
 */
+#ifdef MVLC_GENERATOR
+CCAENChain::CCAENChain(TCLConfigParser* parser) :
+  m_pConfiguration(0),
+  m_pParser(parser),
+  m_moduleCount(0),
+  m_baseAddress(0)
+{}
+
+#else
 CCAENChain::CCAENChain() :
   m_pConfiguration(0)
 {
 }
+#endif
+/*! Destroy the module.  This is pretty much a no-op as configurations
+    take care of their own destruction:
+*/
+CCAENChain::~CCAENChain()
+{
+}
+
+#ifndef MVLC_GENERATOR
 /*!
   Copy construction requires duplication of the configuration as
   well as the list.
@@ -68,12 +95,7 @@ CCAENChain::CCAENChain(const CCAENChain& rhs) :
   }
   m_Chain = rhs.m_Chain; 
 }
-/*! Destroy the module.  This is pretty much a no-op as configurations
-    take care of their own destruction:
-*/
-CCAENChain::~CCAENChain()
-{
-}
+
 
 /*!
    Assignment for now is not really good
@@ -83,6 +105,7 @@ CCAENChain::operator=(const CCAENChain& rhs)
 {
   return *this;
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////
 ///////////// overridable object operations ///////////////////////
@@ -98,15 +121,23 @@ CCAENChain::operator=(const CCAENChain& rhs)
    are allowed to be in a chain.
 */
 void
+#ifdef MVLC_GENERATOR
+CCAENChain::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CCAENChain::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration;
 
   m_pConfiguration->addParameter("-base", XXUSB::CConfigurableObject::isInteger,
 				 NULL,"0");
-
+#ifdef MVLC_GENERATOR
+  m_pConfiguration->addParameter("-modules", CCAENChain::moduleChecker,
+      m_pParser, "");
+#else
   m_pConfiguration->addParameter("-modules", CCAENChain::moduleChecker,
 				 NULL, "");
+#endif
 }
 
 /*!
@@ -133,8 +164,10 @@ CCAENChain::Initialize(CVMUSB& controller)
 {
   m_baseAddress                = getCBLTAddress();
   m_moduleCount                = 0;
-  CConfiguration*  pModules    = Globals::pConfig;	// This has the full set of modules.
   list<string>     moduleNames = getModules();  // From my configuration.
+  #ifndef MVLC_GENERATOR
+  CConfiguration*  pModules    = Globals::pConfig;	// This has the full set of modules.
+  
 
   // Now iterate through all the modules, finding them, initializing them and
   // counting them.  We know that each module is a valid C785 because they were
@@ -166,8 +199,34 @@ CCAENChain::Initialize(CVMUSB& controller)
       where   = C785::rightmost;
     }
     pAdc->addToChain(controller, m_baseAddress, where);
+  }
+#else 
+for (auto name : moduleNames) {
+    CReadoutModule*  pModule = m_pParser->findDevice(name); // Locate the module.
+    C785*            pAdc    = dynamic_cast<C785*>(pModule->getDriver()); // Should never fail so...
+    assert(pAdc);
+
+    pAdc->Initialize(controller);
+    m_moduleCount++;            // Count the module.
+
+    // To add to the chain we need to know the module position.
+    // if isFirst is true, it's the first module (we'll reset that below).
+    // if pName == end() it's the last module..
+    // if neither it's middle.
+    // Can't be both because our validator would have caught that.
+
+    C785::Position where = C785::middle; // Most common case.
+    if (name == moduleNames.front()) {
+      where   = C785::leftmost;     // Actually the first element (leftmost).
+    }
+    if (name == moduleNames.back()) {
+      where   = C785::rightmost;    // Actually the last element (rightmost).
+    }
+    pAdc->addToChain(controller, m_baseAddress, where);
 
   }
+#endif
+
   //By this time all of the modules have had their MCST/CBLT address set.
   // and enabled.  We're going to do an MCST data reset to the chain.
   // this will ensure that all devices have got a simultaneously zeroed
@@ -230,7 +289,7 @@ CCAENChain::addReadoutList(CVMUSBReadoutList& list)
   list.addWrite16(m_baseAddress + BCLR2, mcstamod, CLEAR_DATA);
 
 }
-
+#ifndef MVLC_GENERATOR
 /*!
    Need to be able to clone ourselves.. and that's just a new -> copy construction.. but
    this is essentially a 'virtualized' copy constructor.
@@ -242,6 +301,7 @@ CCAENChain::clone() const
 {
   return new CCAENChain(*this);
 }
+#endif
 ////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////// utilities /////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
@@ -315,6 +375,35 @@ NOTE:
 bool
 CCAENChain::moduleChecker(string name, string value, void* arg)
 {
+#ifdef MVLC_GENERATOR
+  TCLConfigParser* parser = reinterpret_cast<TCLConfigParser*>(arg); 
+  CTCLObject moduleList;
+  auto interp = parser->getInterpreter();
+  moduleList.Bind(interp);
+  
+  std::vector<CTCLObject> modules;
+  try {
+    moduleList = value;
+    modules = moduleList.getListElements();
+  }
+  catch (...) {
+    return false;                        // Not a valid list format
+  }
+
+  for (auto module : modules) {
+    module.Bind(interp);
+    std::string moduleName = std::string(module);
+    auto pModule = parser->findDevice(moduleName);
+
+    // It's bad if the module can't be found _or_ if the driver isn't a C785 object:
+
+    if (!pModule || !dynamic_cast<C785*>(pModule->getDriver())) {
+      return false;
+    }
+  }
+
+  
+#else
   int     argc;			// Returns from Tcl_SplitList
   const char**  argv;
 
@@ -349,5 +438,40 @@ CCAENChain::moduleChecker(string name, string value, void* arg)
   // Control only gets here if all validations passed
 
   Tcl_Free((char*)argv);
+#endif
   return true;		       
 }
+
+
+#ifdef MVLC_GENERATOR
+////////////////////////// Implement the CAENChainCommand:
+
+/**
+ *  constructor
+ *     Construct the base class with the command name "caenchain" and save the parser
+ * object for device construction.
+ * 
+ */
+CAENChainCommand::CAENChainCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "caenchain", parser), 
+  m_parser(&parser) 
+  {}
+
+/** destructor 
+ *    We don't own the parser so we dont' delete it.
+*/
+CAENChainCommand::~CAENChainCommand() {}
+
+/**
+ * createDevice
+ *     Create a new Readout module that encapsulates a CCAENChain instance.
+ * Ownership passes to the caller.
+ */
+CReadoutModule*
+CAENChainCommand::createDevice(std::string  name) {
+  auto result = new CReadoutModule;
+  result->SetDriver(new CCAENChain(m_parser));
+
+  return result;
+}
+#endif

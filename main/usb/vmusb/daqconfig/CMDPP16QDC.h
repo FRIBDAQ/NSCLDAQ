@@ -17,8 +17,14 @@
 #ifndef __CMDPP16QDC_H
 #define __CMDPP16QDC_H
 
-#ifndef __CMDPP_H
-#include "CMDPP.h"
+
+#include <CMDPP.h>
+#include <CMDPPQDC.h>
+
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurableObject;
+}
 #endif
 
 /*!
@@ -67,12 +73,18 @@ public:
   typedef std::map<std::string, uint16_t> EnumMap;
 
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject* m_pConfiguration;
+#else
   CReadoutModule* m_pConfiguration;
-
+#endif
 public:
   CMDPP16QDC();
-  CMDPP16QDC(const CMDPP16QDC& rhs);
   virtual ~CMDPP16QDC();
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CMDPP16QDC(const CMDPP16QDC& rhs);
 
 private:
   CMDPP16QDC& operator=(const CMDPP16QDC& rhs); // assignment not allowed.
@@ -81,11 +93,17 @@ private:
 
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
   virtual void onEndRun(CVMUSB& controller);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const; 
+#endif
 
 public:
   static EnumMap gainCorrectionMap();
@@ -101,7 +119,27 @@ public:
 
 
 private:
+#ifndef MVLC_GENERATOR
   void printRegisters(CVMUSB& controller);
+#endif
 };
+
+#ifdef MVLC_GENERATOR
+/**
+ *  @class Mdpp16QdcCommand
+ * 
+ * class derived from DeviceCommand to create and manipulate mdpp32qdc devices.
+ */
+class CMdpp16QdcCommand : public DeviceCommand {
+public:
+  CMdpp16QdcCommand(CTCLInterpreter& interp,  TCLConfigParser& parser);
+  virtual ~CMdpp16QdcCommand();
+protected:
+
+  CReadoutModule* createDevice(std::string name);
+};
+
+#endif
+
 
 #endif

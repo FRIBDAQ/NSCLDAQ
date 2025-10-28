@@ -13,6 +13,11 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
+/**
+ * @file CMADCChain.cpp
+ * @brief Implementation of Mesytec CBLT chains for VMUSB and MVLC
+ * @note MVLC_GENERATOR is defined if compiling for mvlcgenerate.
+ */
 #include <config.h>
 #include <CMADCChain.h>
 #include <CReadoutModule.h>
@@ -20,16 +25,24 @@
 #include <CVMUSBReadoutList.h>
 #include <CMADC32.h>
 #include <CConfiguration.h>
+#ifndef MVLC_GENERATOR
 #include <Globals.h>
+#endif
 #include <tcl.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include "MADC32Registers.h"
+#include <MADC32Registers.h>
 
 #include <iostream>
 #include <unistd.h>
+
+#ifdef MVLC_GENERATOR
+#include <TCLConfigParser.h>
+#include <XXUSBConfigurableObject.h>
+#endif
+
 using namespace std;
 
 static XXUSB::CConfigurableObject::limit Zero(0);
@@ -41,12 +54,29 @@ static XXUSB::CConfigurableObject::Limits WordLimit(Zero, MaxWords);
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 /*!
-  Constructino is a noop.
+  Constructino is a noop unless this is MVLC in which case the configuation
+  parser has to be saved to check modules.
 */
+#ifdef MVLC_GENERATOR
+CMADCChain::CMADCChain(TCLConfigParser* parser) :
+  m_pConfig(0),
+  m_pParser(parser)
+{
+}
+#else
 CMADCChain::CMADCChain() :
   m_pConfig(0)
 {
 }
+#endif
+
+/*!
+  Configurations get destroyed by themseves so:
+*/
+CMADCChain::~CMADCChain()
+{
+}
+#ifndef MVLC_GENERATOR
 /*!
    Copy construction requires configuration duplication as well as duplicatino of the
    chain list.
@@ -60,12 +90,6 @@ CMADCChain::CMADCChain(const CMADCChain& rhs) :
   }
 }
 /*!
-  Configurations get destroyed by themseves so:
-*/
-CMADCChain::~CMADCChain()
-{
-}
-/*!
    Assignment:
 */
 CMADCChain&
@@ -73,6 +97,7 @@ CMADCChain::operator=(const CMADCChain& rhs)
 {
   return *this;			// not really implemented or needed.
 }
+#endif
 ///////////////////////////////////////////////////////////////////////////
 // Implementation of the CReadoutHardware interface.
 ///////////////////////////////////////////////////////////////////////////
@@ -88,7 +113,11 @@ CMADCChain::operator=(const CMADCChain& rhs)
    @param configuration - The configuration object to attach to us.
 */
 void
+#ifdef MVLC_GENERATOR
+CMADCChain::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CMADCChain::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfig  = &configuration;
   configuration.addParameter("-cbltaddress",
@@ -100,9 +129,15 @@ CMADCChain::onAttach(CReadoutModule& configuration)
   configuration.addParameter("-maxwordspermodule",
 			     XXUSB::CConfigurableObject::isInteger,
 			     &WordLimit, "512");
+#ifdef MVLC_GENERATOR
+  configuration.addParameter("-modules",
+			     CMADCChain::moduleChecker,
+			     m_pParser, "");    
+#else
   configuration.addParameter("-modules",
 			     CMADCChain::moduleChecker,
 			     NULL, "");
+#endif
 }
 /*!
   Initialize prior to data taking.
@@ -190,6 +225,7 @@ CMADCChain::addReadoutList(CVMUSBReadoutList& rdolist)
   
   rdolist.addWrite16(mcast + ReadoutReset, initamod, (uint16_t)1);
 }
+#ifndef MVLC_GENERATOR
 /*!
  * Virtual copy constructor.
  */
@@ -198,7 +234,7 @@ CMADCChain::clone() const
 {
   return new CMADCChain(*this);
 }
-
+#endif
 /////////////////////////////////////////////////////////////////////////////////////////
 // Utility functions (private).
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -239,8 +275,18 @@ CMADCChain::getModules()
 void
 CMADCChain::namesToList(list<string> moduleNames)
 {
-  CConfiguration*   pModules = Globals::pConfig;
   m_Chain.clear();
+#ifdef MVLC_GENERATOR
+   
+  for (auto name : moduleNames) {
+    CReadoutModule* pModule = m_pParser->findDevice(name);
+    CMesytecBase* pAdc = dynamic_cast<CMesytecBase*>(pModule->getDriver());
+    assert(pAdc);    // Validation ensured this.
+    m_Chain.push_back(pAdc);
+  }
+#else
+  CConfiguration*   pModules = Globals::pConfig;
+  
 
 
   list<string>::iterator pName = moduleNames.begin();
@@ -253,6 +299,7 @@ CMADCChain::namesToList(list<string> moduleNames)
 
     pName++;
   }
+#endif
 }
 /**
  * Checks that a module list consists of valid Mesytec modules.
@@ -260,6 +307,26 @@ CMADCChain::namesToList(list<string> moduleNames)
 bool
 CMADCChain::moduleChecker(string name, string value, void* arg)
 {
+#ifdef MVLC_GENERATOR
+  TCLConfigParser* parser = reinterpret_cast<TCLConfigParser*>(arg);
+  CTCLInterpreter* pInterp = parser->getInterpreter();
+  
+  // Use CTCLObject to produce a vector of object encapsulated names:
+
+  CTCLObject valueObj;
+  valueObj.Bind(pInterp);
+  valueObj = value;
+  auto valueVec = valueObj.getListElements();
+
+  for (auto nameObj : valueVec) {
+    nameObj.Bind(pInterp);
+    std::string name = nameObj;
+    auto pModule = parser->findDevice(name);
+    if (!pModule || !dynamic_cast<CMesytecBase*>(pModule->getDriver())) {
+      return false;
+    }
+  }
+#else
   // value should be a properly formatted list of strings.
   // each string should be the name of an Mesytec module.
 
@@ -297,6 +364,36 @@ CMADCChain::moduleChecker(string name, string value, void* arg)
   // Control only gets here if all validations passed
   
   Tcl_Free((char*)argv);
+#endif
   return true;		       
 }
 
+#ifdef MVLC_GENERATOR
+/////////////////////////////// Implementation of the CMADCChainCommand 
+
+/**
+ *  constructor
+ *    We need to save the parser to pass to instances of CMADCChain we create:
+ */
+
+CMADCChainCommand::CMADCChainCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "madcchain", parser), m_parser(&parser) {}
+
+  /**
+   * destructor
+   */
+
+CMADCChainCommand::~ CMADCChainCommand() {}
+
+   /**
+    *  create the module wrapping a device:
+    */
+CReadoutModule*
+CMADCChainCommand::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CMADCChain(m_parser));
+
+  return result;
+}
+
+#endif

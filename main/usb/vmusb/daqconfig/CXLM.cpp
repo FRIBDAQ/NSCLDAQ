@@ -16,7 +16,7 @@
 #include <config.h>
 #include "CXLM.h"
 
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
@@ -37,6 +37,10 @@
 #include <chrono>
 #include <thread>
 #include <sstream>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+using  XXUSB::CConfigurableObject;
+#endif
 
 using namespace std;
 
@@ -88,6 +92,7 @@ const uint32_t CXLM::REQ_X(0x00010000);
 CXLM::CXLM() :
   m_pConfiguration(0)
 {}
+#ifndef MVLC_GENERATOR
 /*!
   The copy constructor will clone the configuration if it's define in the
   object being copied:
@@ -100,6 +105,7 @@ CXLM::CXLM(const CXLM& rhs) :
     m_pConfiguration = new CReadoutModule(*rhs.m_pConfiguration);
   }
 }
+#endif
 /*!
   Destruction:
   Well if we were copy constructed, we will leak our configuration.
@@ -111,7 +117,7 @@ CXLM::CXLM(const CXLM& rhs) :
 CXLM::~CXLM()
 {
 }
-
+#ifndef MVCL_GENERATOR
 /*!
    Assignment.. we're just going return *this .. really assignment should
    not have been implemented. There's evidently an infinite recursion loop if we
@@ -125,6 +131,7 @@ CXLM::operator=(const CXLM& rhs)
 {
   return *this;
 }
+#endif
 ////////////////////////////////////////////////////////////////////////////////////
 ///////////////// CReadoutHardware interface methods   /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
@@ -143,7 +150,11 @@ CXLM::operator=(const CXLM& rhs)
 
 */
 void
+#ifdef MVLC_GENERATOR
+CXLM::onAttach(CConfigurableObject& configuration)
+#else
 CXLM::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration; // Save for later use
 
@@ -177,8 +188,13 @@ void
 CXLM::loadFirmware(CVMUSB& controller, string path) 
 {
   uint32_t base = m_pConfiguration->getUnsignedParameter("-base");
+#ifdef MVLC_GENERATOR
+  std::cout << "Will generate codee to load firmware from  " << path << " for module at "
+    << std::hex << base << std::dec <<std::endl;
+#else    
   std::cout << "XLM::loadFirmware " << path << " for module at "
     << std::hex << base << std::dec <<std::endl;
+#endif    
   CFirmwareLoader loader(controller, base);
   loader(path);
 }
@@ -334,8 +350,11 @@ void CFirmwareLoader::loadFirmware(const string& pathToFirmware)
     loadSRAM0(m_baseAddr+XLM::SRAMA, sramAImage, bytesInFile*sizeof(uint32_t));
 
     // wait a little bit for things to settle
+#ifdef MVLC_GENERATOR
+    m_ctlr.delay(1000);
+#else
     this_thread::sleep_for( chrono::milliseconds(100) );
-
+#endif
     // Release the SRAMA Bus, 
     // release the 'force'.
     releaseBusses();
@@ -343,8 +362,11 @@ void CFirmwareLoader::loadFirmware(const string& pathToFirmware)
     bootFPGA();
 
     // rest a bit while it loads
+#ifdef MVLC_GENERATOR
+    m_ctlr.delay(100000);
+#else    
     this_thread::sleep_for( chrono::milliseconds(1000) );
-
+#endif
     delete []contents;
     delete []sramAImage;
 
@@ -443,6 +465,7 @@ void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBy
   dump << hex << setfill('0');
 #endif  
   uint32_t* p  = image;
+  
   while (nRemainingBytes > blockSize*sizeof(uint32_t)) {
     CVMUSBReadoutList  loadList;
     for (int i =0; i < blockSize; i++) {
@@ -457,15 +480,18 @@ void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBy
     }
     nRemainingBytes -= blockSize*sizeof(uint32_t);
     // Write the block:
-
+#ifdef MVLC_GENERATOR
+    m_ctlr.executeList(loadList, blockSize*sizeof(uint32_t));
+#else
     std::vector<uint8_t> retData = m_ctlr.executeList(loadList, sizeof(uint16_t));
+
     if (retData.size() == 0) {
       string error = strerror(errno);
       string msg   = "XLM::CFirmwareLoader::loadSRAMA - list execution failed to load the SRAM: ";
       msg         += error;
       throw msg;
     }
-
+#endif
   }
 
   // Handle any odd partial block:
@@ -483,7 +509,9 @@ void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBy
       nRemainingBytes -= sizeof(uint32_t);
     }
     // Write the block:
-
+#ifdef MVLC_GENERATOR
+    m_ctlr.executeList(loadList, blockSize*sizeof(uint32_t));
+#else
     std::vector<uint8_t> retData = m_ctlr.executeList(loadList, sizeof(uint16_t));
     if (retData.size() == 0) {
       string error = strerror(errno);
@@ -491,6 +519,7 @@ void CFirmwareLoader::loadSRAM0(uint32_t destAddr, uint32_t* image, uint32_t nBy
       msg         += error;
       throw msg;
     }
+  #endif
   }
 #ifdef DUMPDEBUG  
   dump << endl;
@@ -513,13 +542,14 @@ void CFirmwareLoader::loadSRAM1(uint32_t destAddr, uint32_t* image, uint32_t nBy
   loadList.dump(dump);
 #endif 
   std::vector<uint8_t> retData = m_ctlr.executeList(loadList, sizeof(uint16_t));
+#ifndef MVLC_GENERATOR
   if (retData.size() == 0) {
     string error = strerror(errno);
     string msg   = "XLM::CFirmwareLoader::loadSRAMA - list execution failed to load the SRAM: ";
     msg         += error;
     throw msg;
   }
-
+#endif
 }
 void CFirmwareLoader::setBootSource()
 {
@@ -528,7 +558,7 @@ void CFirmwareLoader::setBootSource()
   list.addRead32(m_baseAddr + FPGABootSrc, registerAmod);
 
   auto retData = m_ctlr.executeList(list, sizeof(uint32_t));
-
+#ifndef MVLC_GENERATOR
   if (retData.size()==0) {
       string error = strerror(errno);
       string msg   = "CXM::setBootSource - list execution failed to set boot source to SRAMA: ";
@@ -536,9 +566,16 @@ void CFirmwareLoader::setBootSource()
       throw msg;
 
   }
+#endif
 }
 uint32_t CFirmwareLoader::readFwSignature(uint32_t signatureAddr)
 {
+#ifdef MVLC_GENERATOR
+// WE can't read the firmware signature in this .
+  // acquire bus
+  std::cerr << "The generator does not support checking the firmware signature\n";
+  return 0;
+#else
   // acquire bus
   accessBus(m_ctlr, m_baseAddr, CXLM::REQ_X | CXLM::REQ_A | CXLM::REQ_B);
   m_ctlr.vmeWrite32(m_baseAddr + ForceOffBus, registerAmod, ForceOffBusForce); // Inhibit FPGA Bus access.
@@ -552,12 +589,17 @@ uint32_t CFirmwareLoader::readFwSignature(uint32_t signatureAddr)
   accessBus(m_ctlr, m_baseAddr, 0);
 
   return value;
+#endif
 }
 
 bool CFirmwareLoader::validate(uint32_t signatureAddr, uint32_t expectedSignature)
 {
+#ifndef MVLC_GENERATOR             // Could not have read a signature.
+  return true;
+#else
   uint32_t actualSignature = readFwSignature(signatureAddr);
   return  (expectedSignature == actualSignature);
+#endif
 }
 
 
@@ -604,8 +646,13 @@ void CFirmwareLoader::acquireBusses()
 
   // run the list:
   
+
+
   unsigned  retries = 10;
   vector<uint8_t> retData;
+#ifdef MVLC_GENERATOR
+  retData = m_ctlr.executeList(initList, sizeof(uint16_t));
+#else
   do {
     retries--;
     retData = m_ctlr.executeList(initList, sizeof(uint16_t));
@@ -641,7 +688,7 @@ void CFirmwareLoader::acquireBusses()
 
     throw msg.str();
   }
-
+#endif
 }
 
 // Booting the fpga amounts to setting the FPGA reset register and releasing it.
@@ -653,13 +700,14 @@ void CFirmwareLoader::bootFPGA()
 
   // send the commands to the VM-USB
   auto retData = m_ctlr.executeList(bootList, sizeof(uint16_t));
+#ifndef MVLC_GENERATOR
   if (retData.size() == 0) {
     string reason = strerror(errno);
     string message = "XLM::CFirmwareLoader::bootFPGA failed to execute reset list ";
     message       += reason;
     throw message;
   }
-
+#endif
 }
 
 void CFirmwareLoader::releaseBusses()
@@ -669,12 +717,14 @@ void CFirmwareLoader::releaseBusses()
   list.addWrite32(m_baseAddr + ForceOffBus, registerAmod, uint32_t(0)); // Remove force
 
   auto retData = m_ctlr.executeList(list, sizeof(uint16_t));
+  #ifndef MVLC_GENERATOR
   if (retData.size() == 0) {
     string reason = strerror(errno);
     string message = "XLM::CFirmwareLoader::releaseBusses failed to execute reset list ";
     message       += reason;
     throw message;
   }
+#endif
 
 }
 

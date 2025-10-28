@@ -23,15 +23,23 @@
 #include "CDelay.h"
 
 #include <CReadoutHardware.h>
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#else
 #include <CUserCommand.h>
+#endif
 #include <CVMUSBReadoutList.h>
 #include <stdlib.h>
 
 static XXUSB::CConfigurableObject::limit valueLow(0);
+#ifdef MVCL_GENERATOR
+static XXUSB::CConfigurableObject::limit valueHigh(65536);   // 65 seconds should be more than long.
+#else
 static XXUSB::CConfigurableObject::limit valueHigh(255);
+#endif
 static XXUSB::CConfigurableObject::Limits valueLimits(valueLow, valueHigh);
 
 
@@ -43,6 +51,9 @@ CDelay::CDelay() :
   m_pConfiguration(0)
 {}
 
+CDelay::~CDelay() {}
+
+#ifndef MVLC_GENERATOR
 CDelay::CDelay(const CDelay& rhs) :
   m_pConfiguration(0)
 {
@@ -51,13 +62,13 @@ CDelay::CDelay(const CDelay& rhs) :
   }
 }
 
-CDelay::~CDelay() {}
 
 CDelay&
 CDelay::operator=(const CDelay& rhs)
 {
   return *this;
 }
+#endif
 /////////////////////////////////////////////////////////////////////////////////
 //////////////////////// Overridable operations /////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
@@ -69,7 +80,11 @@ CDelay::operator=(const CDelay& rhs)
 
 */
 void
+#ifdef MVLC_GENERATOR
+CDelay::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CDelay::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration;
 
@@ -94,7 +109,7 @@ CDelay::addReadoutList(CVMUSBReadoutList& list)
 
   list.addDelay(static_cast<uint16_t>(value));
 }
-
+#ifndef MVLC_GENERATOR
 /*!
   Virtual constructor:
 
@@ -104,6 +119,7 @@ CDelay::clone() const
 {
   return new CDelay(*this);
 }
+#endif
 /////////////////////////////////////////////////////////////////////
 //////////////////// Private utility functions //////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -124,3 +140,36 @@ CDelay::getIntegerParameter(std::string name)
 
   return value;
 }
+
+#ifdef MVLC_GENERATOR
+
+//////////////////////////// Implement CDelayCommand
+
+
+/** constructor
+ * @param interp - interpreter the delay command is registered on
+ * @param parser - The parser into which modules will be registered.
+ * 
+ */
+CDelayCommand::CDelayCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "delay", parser) {
+
+}
+
+/**
+ *  destructor.
+ */
+CDelayCommand::~CDelayCommand() {}
+
+/**
+ *  createDevice
+ *      Create the module that wraps the device instance.
+ */
+CReadoutModule*
+CDelayCommand::createDevice(std::string name) {
+  auto result = new CReadoutModule();
+  result->SetDriver(new CDelay);
+
+  return result;
+}
+#endif

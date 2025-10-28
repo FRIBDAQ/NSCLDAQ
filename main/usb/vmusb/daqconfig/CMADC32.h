@@ -13,34 +13,23 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
+/**
+ * @file CMADC32.h 
+ * @brief Header for support for mesytec MADC32 in VMUSB and MVLC.
+ * @note When compiled for mvlcgenerator MVLC_GENERATOR is defined.
+ * 
+ */
 
 #ifndef __CMADC32_H
 #define __CMADC32_h
 
-#ifndef __CMESYTECBASE_H
 #include "CMesytecBase.h"
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
 #endif
-
-#ifndef __CRT_STDINT_H
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
-#endif
-#endif
 
 
 // Forward class definitions:
@@ -48,6 +37,11 @@
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurableOjbect;
+}
+#endif
 
 
 /*!
@@ -88,11 +82,19 @@ class CMADC32 : public CMesytecBase
 {
 
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*     m_pConfiguration;
+#else
   CReadoutModule*     m_pConfiguration;
+#endif
 public:
   CMADC32();
-  CMADC32(const CMADC32& rhs);
+  
   virtual ~CMADC32();
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CMADC32(const CMADC32& rhs);
   CMADC32& operator=(const CMADC32& rhs);
 private:
   int operator==(CMADC32& rhs) const;
@@ -101,10 +103,16 @@ private:
   // The interface for CReadoutHardware:
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
+#endif
 
   // The following functions are used by the madcchain module.
   //
@@ -120,6 +128,21 @@ public:
   int computeUseGGregister(int gdgEnables, std::string gatemode);
 };
 
+#ifdef MVLC_GENERATOR
+/**
+ * @class CMADC32Command - 
+ * generating command for an MADC32 instance.Address
+ * 
+ */
+class CMADC32Command : public DeviceCommand {
+public:
+  CMADC32Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CMADC32Command();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+
+#endif
 
 
 #endif

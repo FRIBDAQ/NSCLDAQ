@@ -15,8 +15,8 @@
 */
 
 #include <config.h>
-#include "CMADCScaler.h"
-#include "CReadoutModule.h"
+#include <CMADCScaler.h>
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 
@@ -30,6 +30,9 @@
 #include <vector>
 #include <set>
 
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 using namespace std;
 
 
@@ -59,6 +62,16 @@ static const int time_reset(0x6090);
 CMADCScaler::CMADCScaler() :
   m_pConfiguration(0)
 {}
+
+
+/*!  Destructor is a no-op...as configuration may attach and not be dynamic.
+    This makes a slight memory leak of at most one longword per destrution,
+    but modules are really never copy constructed.
+ */
+CMADCScaler::~CMADCScaler()
+{}
+
+#ifndef MVLC_GENERATOR
 /*! copy constructor is adeep copy */
 
 CMADCScaler::CMADCScaler(const CMADCScaler& rhs) :
@@ -69,17 +82,11 @@ CMADCScaler::CMADCScaler(const CMADCScaler& rhs) :
   }
 }
 
-/*!  Destructor is a no-op...as configuration may attach and not be dynamic.
-    This makes a slight memory leak of at most one longword per destrution,
-    but modules are really never copy constructed.
- */
-CMADCScaler::~CMADCScaler()
-{}
-
 CMADCScaler&
 CMADCScaler::operator=(const CMADCScaler& rhs) {
   return *this;
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // object operations.
@@ -91,7 +98,11 @@ CMADCScaler::operator=(const CMADCScaler& rhs) {
   \param configuration - reference to the module's configuration object.
 */
 void
+#ifdef MVLC_GENERATOR
+CMADCScaler::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CMADCScaler::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration;
 
@@ -133,7 +144,7 @@ CMADCScaler::addReadoutList(CVMUSBReadoutList& list)
   list.addWrite16((uint32_t)(base+time_reset), (uint8_t)amod, (uint16_t)2);
 
 }
-
+#ifndef MVLC_GENERATOR
 /*!
   Provide the virtual constructor clone method:
 
@@ -143,3 +154,36 @@ CMADCScaler::clone() const
 {
   return new CMADCScaler(*this);
 }
+#endif
+
+#ifdef MVLC_GENERATOR
+/////////////////////////////////// Implement the CMADCScalerCommand class.
+
+
+/**
+ *  consructor
+ *    We add the madcscaler command.
+ */
+CMADCScalerCommand::CMADCScalerCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "madcscaler", parser) {
+
+}
+
+/**
+ *  destructor
+ */
+
+CMADCScalerCommand::~CMADCScalerCommand() {}
+
+ /**
+  *  createDevice
+  *     Create a CReadoutModule that encapsulates a CMADCScaler driver object.
+  */
+CReadoutModule*
+CMADCScalerCommand::createDevice(std::string name) {
+  auto result = new CReadoutModule;
+  result->SetDriver(new CMADCScaler);
+
+  return result;
+}
+#endif

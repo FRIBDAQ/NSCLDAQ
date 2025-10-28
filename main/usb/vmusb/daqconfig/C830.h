@@ -13,25 +13,20 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
+
+/**
+ * @file C830.h
+ * @brief Definition of VMUSB and MVLC device support for the V830 scaler.
+ * @note when compiled for mvlcgenerator  MVLC_GENERATOR is defined.
+ */
 #ifndef __C830_H
 #define __C830_H
 
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
-
-#ifndef __CRT_STDINT_H
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
+#ifdef MVLC_GENERATOR
+#include "DeviceCommand.h"
 #endif
 
 // Forward class definitions:
@@ -39,6 +34,12 @@
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
+
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurableObject;
+}
+#endif
 
 /*!
    The C830 supports the CAEN V830 scaler module.  This module will be created via a command like:
@@ -92,14 +93,21 @@ private:
     vme
   } TriggerSource;
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*    m_pConfiguration;
+#else  
   CReadoutModule*    m_pConfiguration;
+#endif
 
 public:
   C830();
-  C830(const C830& rhs);
   virtual ~C830();
+#ifdef MVLC_GENERATOR
+private:                      // These are not impolementyed in mvlc
+#endif
+  C830(const C830& rhs);
   C830& operator=(const C830& rhs);
-
+public:
 private:
   int operator==(const C830& rhs) const;
   int operator!=(const C830& rhs) const;
@@ -108,10 +116,16 @@ public:
   // Operations:
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else  
   virtual void onAttach(CReadoutModule& configuration);
+#endif  
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
+#endif
 
 private:
   uint32_t getIntegerParameter(std::string name) const;
@@ -120,5 +134,20 @@ private:
 
 
 };
+
+#ifdef MVLC_GENERATOR
+/**
+ * @class V830Command 
+ *    Derivation from DeviceCommand to build modules that wrap C830 drivers.
+ */
+class V830Command : public DeviceCommand {
+public:
+  V830Command(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~V830Command();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+#endif
 
 #endif

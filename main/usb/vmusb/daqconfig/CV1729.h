@@ -17,38 +17,26 @@
 #ifndef _CV1729_H
 #define _CV1729_H
 
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
-
-#ifndef __CRT_STDINT_H
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
 #endif
-#endif
-
 
 // Forward class definitions:
 
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
+#ifdef MVLC_GENERATOR
+namespace XXUSB
+{
+  class CConfigurableObject;
+} // namespace XXUSB
 
+#endif
 
 
 /**
@@ -100,13 +88,21 @@ class CV1729 : public CReadoutHardware
   // Exported data types
 
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*    m_pConfiguration;
+#else
   CReadoutModule*    m_pConfiguration;
+#endif
 public:
   // Class canonicals:
 
   CV1729();
-  CV1729(const CV1729& rhs);
+  
   virtual ~CV1729();
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CV1729(const CV1729& rhs);
   CV1729& operator=(const CV1729& rhs);
 private:
   int operator==(const CV1729& rhs) const;
@@ -116,11 +112,16 @@ private:
   // overridable : operations on constructed objectgs:
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
-
+#endif
 
   // utilities:
 private:
@@ -130,5 +131,22 @@ private:
 
 
 };
+
+#ifdef MVLC_GENERATOR
+/**
+ *  @class V1729aCommand
+ *     Derived from DeviceCommand to provide the v1729a command to create/config those drivers.
+ */
+class V1729aCommand : public DeviceCommand {
+public:
+  V1729aCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~V1729aCommand();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+
+#endif
+
 
 #endif

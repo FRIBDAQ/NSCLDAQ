@@ -14,12 +14,17 @@
 	     East Lansing, MI 48824-1321
 */
 
-#include "CMDPP16QDC.h"
-#include "CReadoutModule.h"
+#include <CMDPP16QDC.h>
+#include <CReadoutModule.h>
 #include <unistd.h>
 #include <CVMUSB.h>
 #include <bitset>
 #include <iomanip>
+#include <iostream>
+
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 using std::vector;
 using std::string;
@@ -59,7 +64,7 @@ CMDPP16QDC::CMDPP16QDC()
 {
   m_pConfiguration = 0;
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * Copy construction.  This cannot be virtual by the rules of C++ the clone()
  * method normally creates a new object from an existing template object.
@@ -73,6 +78,7 @@ CMDPP16QDC::CMDPP16QDC(const CMDPP16QDC& rhs)
     m_pConfiguration = new CReadoutModule(*(rhs.m_pConfiguration));
   }
 }
+#endif
 /**
  * Destruction.  If your object creatd any dynamic data it must be freed here:
  */
@@ -97,7 +103,11 @@ CMDPP16QDC::~CMDPP16QDC()
  * @parm configuration - Reference to the configuration object for this instance of the driver.
  */
 void
+#ifdef MVLC_GENERATOR
+CMDPP16QDC::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CMDPP16QDC::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration; 
 
@@ -167,16 +177,25 @@ CMDPP16QDC::Initialize(CVMUSB& controller)
 
   // Retreiving trigger information before the module reset
   uint16_t triggersource = m_pConfiguration -> getIntegerParameter("-triggersource");
+  #ifndef MVLC_GENERATOR           // Can't read 'default' value here.
   if (triggersource == 0x400) {
     controller.vmeRead16(base + TriggerSource, initamod, &triggersource);
   } 
+  #endif
 
   uint16_t triggeroutput = m_pConfiguration -> getIntegerParameter("-triggeroutput");
+
+  #ifndef MVLC_GENERATOR
   if (triggeroutput == 0x400) {
     controller.vmeRead16(base + TriggerOutput, initamod, &triggeroutput);
   } 
+  #endif
   controller.vmeWrite16(base + Reset,        initamod, 1);
+  #ifdef MVLC_GENERATOR
+  controller.delay(10000);               // not interacting live with device.
+  #else
   sleep(1);
+  #endif
   controller.vmeWrite16(base + StartAcq,     initamod, 0);
   controller.vmeWrite16(base + InitFifo,     initamod, 1);
   controller.vmeWrite16(base + ReadoutReset, initamod, 1);
@@ -321,13 +340,16 @@ CMDPP16QDC::Initialize(CVMUSB& controller)
   char readBuffer[100];		// really a dummy as these are all write...
   size_t bytesRead;
   int status = controller.executeList(list, readBuffer, sizeof(readBuffer), &bytesRead);
+#ifndef MVLC_GENERATOR
   if (status < 0) {
      throw string("List excecution to initialize an MDPP16QDC failed");
   }
-
-  if (isPrintRegisters) {
+#endif
+#ifndef MVLC_GENERATOR
+  if (isPrintRegisters) {                  // Can't actually pring regs in mvlc.
     printRegisters(controller);
   }
+#endif
 }
 
 /**
@@ -360,7 +382,7 @@ void
 CMDPP16QDC::onEndRun(CVMUSB& controller)
 {
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * This method virtualizes copy construction by providing a virtual method that
  * invokes it. Usually you don't have to modify this code.
@@ -374,7 +396,7 @@ CMDPP16QDC::clone() const
 {
   return new CMDPP16QDC(*this);
 }
-
+#endif
 /*
   Creates a map from the value of -gaincorrectionlong and -gaincorrectionshort
   to the values that can be programmed into the system.
@@ -503,7 +525,7 @@ CMDPP16QDC::initCBLTReadout(CVMUSB& controller,
   controller.vmeWrite16(cbltAddress + ReadoutReset, initamod, 1);
   controller.vmeWrite16(cbltAddress + StartAcq,     initamod, 1);
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * Printing all register values in MDPP-16 module with QDC firmware
  * read from the module, not the user-input values.
@@ -858,4 +880,26 @@ CMDPP16QDC::printRegisters(CVMUSB& controller)
     cout << endl;
   }
 }
+#endif
 //////////////////////////////////////////////////////////////////////////////////////////
+
+
+#ifdef MVLC_GENERATOR
+///////////////////////////////////////////// implement the Mdpp16QdcCommand.
+
+/**
+ *  constructor
+ */
+CMdpp16QdcCommand::CMdpp16QdcCommand(CTCLInterpreter& interp,  TCLConfigParser& parser) :
+  DeviceCommand(interp, "mdpp16qdc", parser) {}
+
+CMdpp16QdcCommand::~CMdpp16QdcCommand() {}
+
+CReadoutModule*
+CMdpp16QdcCommand::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CMDPP16QDC);
+
+  return result;
+}
+#endif

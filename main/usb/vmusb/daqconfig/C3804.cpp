@@ -13,11 +13,16 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
+/**
+ * @file C3804.cpp
+ * @brief implementation for supporting SIS 3804 scaler in MVLC an VMUSB
+ * @note when compiling for mvlcgenerate, MVLC_GENERATOR is defined.
+ */
 
 #include <config.h>
 #include "C3804.h"
 
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 
@@ -25,6 +30,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 using namespace std;
 
@@ -104,14 +112,16 @@ static const uint8_t READAMOD       = CVMUSBReadoutList::a32UserBlock;
 // configuration is done with onAttach:
 
 C3804::C3804()                 {}
-C3804::C3804(const C3804& rhs) {}
+
 C3804::~C3804() {}
 
+#ifndef MVLC_GENERATOR
+C3804::C3804(const C3804& rhs) {}
 C3804&
 C3804::operator=(const C3804& rhs) {
   return *this;
 }
-
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -127,7 +137,11 @@ C3804::operator=(const C3804& rhs) {
    \param configuration - Reference to our configuration.
 */
 void
+#ifdef MVLC_GENERATOR
+C3804::onAttach(XXUSB::CConfigurableObject& configuration) 
+#else
 C3804::onAttach(CReadoutModule& configuration) 
+#endif
 {
   m_pConfiguration = &configuration;
 
@@ -169,8 +183,8 @@ C3804::Initialize(CVMUSB& controller)
   bool     refpulser= getBoolParameter("-refpulser");
 
 
-  // Check we have a 3804:
-
+  // Check we have a 3804  only for VMUSB:
+#ifndef MVLC_GENERATOR
   uint32_t id;
   checkRead(controller, base + IDIRQ, id);
   if ((id & 0xffff0000) != 0x38040000) {
@@ -180,6 +194,7 @@ C3804::Initialize(CVMUSB& controller)
     throw string(message);
 
   }
+  #endif
   // We've got a 3804, so now we can program the beast.. user led is off until
   // the beast is programmed, then turned back on.
   //
@@ -233,7 +248,7 @@ C3804::addReadoutList(CVMUSBReadoutList& list)
   }
 
 }
-
+#ifndef MVLC_GENERATOR
 /*!
    Clone is essentially a virtual copy constructor.  We return a new *this.
 */
@@ -242,6 +257,7 @@ C3804::clone() const
 {
   return new C3804(*this);
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -295,17 +311,46 @@ C3804::getBoolParameter(string name) const
 void
 C3804::checkRead(CVMUSB& controller, uint32_t address, uint32_t& value) 
 {
+#ifdef MVLC_GENERATOR
+  throw string("Cannot do checkRead in C3804 in mvlcgenerator <BUG>");
+#else
   int status = controller.vmeRead32(address, CONTROLAMOD, &value);
   if (status != 0) {
     throw string("Read from 3804 failed!!");
   }
+#endif
 }
 void
 C3804::checkWrite(CVMUSB& controller, uint32_t address, uint32_t value)
 {
   int status = controller.vmeWrite32(address, CONTROLAMOD, value);
+#ifndef MVLC_GENERATOR         // VMUSB Writes can fail. MVLCgenerator can't.
   if (status != 0) {
     throw string("Write to 3804 failed!");
   }
-
+#endif
 }
+
+#ifdef MVLC_GENERATOR
+
+//////////////////// Implement SIS3804Command
+
+/** constructor
+ * 
+ */
+SIS3804Command::SIS3804Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "sis3804", parser) {}
+
+SIS3804Command::~SIS3804Command() {}
+
+  /** 
+   * createDevice 
+  */
+CReadoutModule* SIS3804Command::createDevice(std::string name) {
+    auto result = new CReadoutModule;
+    result->SetDriver(new C3804);
+
+    return result;
+}
+
+#endif
