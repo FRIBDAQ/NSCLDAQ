@@ -636,6 +636,26 @@ $MVLCROOT/bin/fribdaq-readout <replaceable>options...</replaceable> <replaceable
                             </para>
                         </listitem>
                     </varlistentry>
+                    <varlistentry>
+                            <term><option>--convert-tcl</option></term>
+                            <listitem>
+                                <para>
+                                    Specifies that the configuration file is a .tcl file which will be converted prior to starting
+                                    each run.  This requires that the <literal>DAQBIN</literal> environment variable
+                                    point to a directory that includes the <filename>mvlcgenerate</filename> program.
+                                </para>
+                            </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                            <term><option>--template</option> <replaceable>yaml-template</replaceable></term>
+                            <listitem>
+                                <para>
+                                    Only used with <option>--convert-tcl</option> supplies the
+                                    <option>--template</option> to the generator so that the default trigger conditions
+                                    an be overidden with a user generated one.
+                                </para>
+                            </listitem>
+                    </varlistentry>
                 </variablelist>
             </refsect1>
             <refsect1>
