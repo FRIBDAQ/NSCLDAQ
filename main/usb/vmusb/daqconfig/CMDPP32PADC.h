@@ -18,7 +18,13 @@
 #define __CMDPP32PADC_H
 
 #ifndef __CMDPP_H
-#include "CMDPP.h"
+#include <CMDPP.h>
+#endif
+
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurableObject;
+}
 #endif
 
 /*!
@@ -55,12 +61,20 @@ public:
   typedef std::map<std::string, uint16_t> EnumMap;
 
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject* m_pConfiguration;
+#else
   CReadoutModule* m_pConfiguration;
+#endif
 
 public:
   CMDPP32PADC();
-  CMDPP32PADC(const CMDPP32PADC& rhs);
   virtual ~CMDPP32PADC();
+
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CMDPP32PADC(const CMDPP32PADC& rhs);
 
 private:
   CMDPP32PADC& operator=(const CMDPP32PADC& rhs); // assignment not allowed.
@@ -69,11 +83,17 @@ private:
 
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
   virtual void onEndRun(CVMUSB& controller);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const; 
+#endif
 
 public:
   void setChainAddresses(CVMUSB& controller,
@@ -87,7 +107,23 @@ public:
 
 
 private:
+#ifndef MVLC_GENERATOR
   void printRegisters(CVMUSB& controller);
+#endif
 };
+
+#ifdef MVLC_GENERATOR
+/**
+ *  @class Mdpp32padcCommand
+ *    Provide the mdpp32padc command.  A derivation of DeviceCommand.
+ */
+class Mdpp32padcCommand : public DeviceCommand {
+public:
+  Mdpp32padcCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~Mdpp32padcCommand();
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+#endif
 
 #endif
