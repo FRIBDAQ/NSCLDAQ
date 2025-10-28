@@ -11260,6 +11260,49 @@ mdpp32padc cget <replaceable>name</replaceable>
                      </listitem>
                  </varlistentry>
                  <varlistentry>
+                     <term>
+                         <option>-blrthreshold</option>
+                         <replaceable>int[8] 16-128</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             Base line restorer threshold setting.
+                         </para>
+                         <para>
+                             The parameter provided must be a list of 8 integers.
+                             The value of an element at <literal>index[0-7]</literal> is applied
+                             to the channels <literal>[4*index, 4*index+3]</literal>.
+                         </para>
+                         <para>
+                             By default, the value is <literal>[list 32 32 32 32  32 32 32 32]</literal>,
+                             which is 32 for all channels.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
+                     <term>
+                         <option>-blr</option>
+                         <replaceable>int[8] 0 | 1 | 2</replaceable>
+                     </term>
+                     <listitem>
+                         <para>
+                             Base line restorer setting.
+                         </para>
+                         <para>
+                             0: Off, 1: Strict (int. time = 4 shaping times), 2: Soft (int. time = 8 shaping times)
+                         </para>
+                         <para>
+                             The parameter provided must be a list of 8 integers.
+                             The value of an element at <literal>index[0-7]</literal> is applied
+                             to the channels <literal>[4*index, 4*index+3]</literal>.
+                         </para>
+                         <para>
+                             By default, the value is <literal>[list 2 2 2 2  2 2 2 2]</literal>,
+                             which is soft for all channels.
+                         </para>
+                     </listitem>
+                 </varlistentry>
+                 <varlistentry>
                      <term><option>-printregisters</option> <replaceable>0 | 1</replaceable></term>
                      <listitem>
                          <para>
@@ -11280,6 +11323,8 @@ set threshold           [list 0xfff 0xfff 0xfff 0xfff  0xfff 0xfff 0xfff 0xfff \
                               0xfff 0xfff 0xfff 0xfff  0xfff 0xfff 0xfff 0xfff \
                               0xfff 0xfff 0xfff 0xfff  0xfff 0xfff 0xfff 0xfff \
                               0xfff 0xfff 0xfff 0xfff  0xfff 0xfff 0xfff 0xfff]
+set blrthreshold        [list 32 32 32 32  32 32 32 32]
+set blr                 [list 2 2 2 2  2 2 2 2]
 set windowStart         16368
 set windowWidth         32
 set firstHit            1
@@ -11291,6 +11336,8 @@ set triggerOutput       0x100
 mdpp32padc create padc -base 0x00030000 -id 1
 mdpp32padc config padc -signalwidth $signalWidth \
                      -threshold $threshold \
+                     -blrthreshold $blrthreshold \
+                     -blr $blr \
                      -windowstart $windowStart \
                      -windowwidth $windowWidth \
                      -firsthit $firstHit \

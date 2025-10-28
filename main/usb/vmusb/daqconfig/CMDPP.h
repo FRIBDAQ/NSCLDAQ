@@ -187,6 +187,7 @@ Const(Threshold2)           0x6120;
 Const(Threshold3)           0x6122;
 
 // QDC & PADC
+Const(BLRTHRESHOLD)         0x6112;
 Const(BLR)                  0x6126;
 
 // RCP
