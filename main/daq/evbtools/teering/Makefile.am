@@ -1,10 +1,10 @@
 bin_PROGRAMS = teering
 
-teering_SOURCES = teering.cpp @srcdir@/tcmdline.c 
+teering_SOURCES = teering.cpp tcmdline.c 
 
 BUILT_SOURCES=tcmdline.c
 
-@srcdir@/tcmdline.c: tcmdline.h
+tcmdline.c: tcmdline.h
 
 
 tcmdline.h: @srcdir@/options.ggo
