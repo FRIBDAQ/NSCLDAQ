@@ -81,7 +81,7 @@ public:
   CMDPP32QDC();
   virtual ~CMDPP32QDC();
 
-#ifdef MVCL_GENERATOR
+#ifdef MVLC_GENERATOR
 private:
 #endif
   CMDPP32QDC(const CMDPP32QDC& rhs);

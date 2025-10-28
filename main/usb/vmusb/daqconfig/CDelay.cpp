@@ -35,7 +35,7 @@
 #include <stdlib.h>
 
 static XXUSB::CConfigurableObject::limit valueLow(0);
-#ifdef MVCL_GENERATOR
+#ifdef MVLC_GENERATOR
 static XXUSB::CConfigurableObject::limit valueHigh(65536);   // 65 seconds should be more than long.
 #else
 static XXUSB::CConfigurableObject::limit valueHigh(255);

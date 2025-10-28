@@ -117,7 +117,7 @@ CXLM::CXLM(const CXLM& rhs) :
 CXLM::~CXLM()
 {
 }
-#ifndef MVCL_GENERATOR
+#ifndef MVLC_GENERATOR
 /*!
    Assignment.. we're just going return *this .. really assignment should
    not have been implemented. There's evidently an infinite recursion loop if we

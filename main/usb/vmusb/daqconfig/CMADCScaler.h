@@ -16,7 +16,7 @@
 /**
  * @file CMADCScaler.h 
  * @brief Support the Mesytec MADC32 internal counter as a scaler in VMUSB and MVLC
- * @note MVCL_GENERATOR will be defined when compiling for mvlcgenerate.
+ * @note MVLC_GENERATOR will be defined when compiling for mvlcgenerate.
  */
 #ifndef __CMADCSCALER_H
 #define __CMADCSCALER_h

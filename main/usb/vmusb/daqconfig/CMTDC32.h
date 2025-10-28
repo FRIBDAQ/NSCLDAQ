@@ -10,7 +10,7 @@
 ##
 # @file MTDC32.h
 # @brief Support for the Mesytec MTDC32  (header) 
-# @note Works for both VMUSB and MVCL given MVLC_GENERATOR is defined when compiling MVLC
+# @note Works for both VMUSB and MVLC given MVLC_GENERATOR is defined when compiling MVLC
 # @note This file was contributed to the FRIB/NSCLDAQ source tree with permission from 
 #        CAEN Technologies.
 # @author Ron Fox (rfoxkendo@gmail.com)

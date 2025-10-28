@@ -87,7 +87,7 @@ public:
   CNADC2530();
   
   virtual ~CNADC2530();
-#ifdef MVCL_GENERATOR
+#ifdef MVLC_GENERATOR
 private:
 #endif  
   CNADC2530(const CNADC2530& rhs);
