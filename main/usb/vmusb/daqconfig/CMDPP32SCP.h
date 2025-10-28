@@ -24,15 +24,7 @@
 
 #include <CMDPP.h>
 
-Const(TFIntDiff)            0x6110;
-Const(PZ0)                  0x6112;
-Const(PZ1)                  0x6114;
-Const(PZ2)                  0x6116;
-Const(PZ3)                  0x6118;
-Const(Gain)                 0x611a;
-Const(ShapingTime)          0x6124;
-Const(BLR)                  0x6126;
-Const(SignalRiseTime)       0x612a;
+
 
 #ifdef MVLC_GENERATOR
 namespace XXUSB {

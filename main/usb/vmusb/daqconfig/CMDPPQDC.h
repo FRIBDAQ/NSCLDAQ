@@ -22,16 +22,5 @@
 #ifndef __CMDPPQDC_H
 #define __CMDPPQDC_H
 
-#ifndef Const
-#define Const(name) static const int name =
-#endif
-
-Const(InputAmplitude)       0x6112;
-Const(JumperRange)          0x6114;
-Const(QDCJumper)            0x6116;
-Const(IntegrationLong)      0x6118;
-Const(IntegrationShort)     0x611a;
-Const(LongGainCorrection)   0x612a;
-Const(ShortGainCorrection)  0x612e;
 
 #endif
