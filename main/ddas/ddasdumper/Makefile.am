@@ -29,9 +29,9 @@ nodist_libddasrootformat_la_SOURCES = ddasrootformatDictionary.cpp ddasrootforma
 
 
 dumperargs.cpp: dumperargs.h
-	cp @srcdir@/dumperargs.c @srcdir@/dumperargs.cpp
+	cp @builddir@/dumperargs.c @builddir@/dumperargs.cpp
 dumperargs.h: dumperargs.ggo
-	$(GENGETOPT) < @srcdir@/dumperargs.ggo --file=dumperargs --output-dir=@srcdir@
+	$(GENGETOPT) < @srcdir@/dumperargs.ggo --file=dumperargs --output-dir=@builddir@
 
 ddasrootformatDictionary.cpp: ddasrootformatDictionary.h
 ddasrootformatDictionary_rdict.pcm: ddasrootformatDictionary.h
