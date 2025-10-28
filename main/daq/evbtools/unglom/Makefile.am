@@ -1,6 +1,6 @@
 bin_PROGRAMS=unglom
 
-unglom_SOURCES=unglom.cpp @srcdir@/cmdline.c
+unglom_SOURCES=unglom.cpp cmdline.c
 
 unglom_CPPFLAGS=-I@top_srcdir@/daq/eventbuilder \
 	-I@top_srcdir@/daq/format       \
