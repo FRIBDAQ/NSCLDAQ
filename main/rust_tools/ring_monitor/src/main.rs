@@ -6,7 +6,7 @@ use portman_client;
 use ringmaster_client;
 use rust_ringitem_format;
 use std::collections::HashMap;
-use serde::Serialize;
+
 use serde_json;
 use std::net::{TcpListener, TcpStream};
 use ring_monitor::{*};
