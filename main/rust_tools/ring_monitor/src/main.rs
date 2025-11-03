@@ -9,73 +9,13 @@ use std::collections::HashMap;
 use serde::Serialize;
 use serde_json;
 use std::net::{TcpListener, TcpStream};
-
+use ring_monitor::{*};
 
 const SERVICE_NAME : &str = "RING_MONITOR";
 const BUFFER_SIZE : usize = 1024*1024;
 const UPDATE_TIME : u64  = 5;       // How often to update statistics -> main thread.
 const RING_POLL_INTERVAL : u64  = 1; // Secs between polls for new rings.
 
-///
-/// The information we want to maintain for each ringbuffer is:
-/// 
-#[derive(Clone, Debug, Serialize, PartialEq)]
-struct RingBufferStatistics {
-    name:  String,         // name of the ringbuffer.
-    bytes: usize,          // Total bytes observed through the ring.
-    events: usize,         // Total PHYSICS_EVENT items observed through the ring.
-    bytes_this_run: usize, // Total bytes through the ring since last BEGIN_RUN.
-    events_this_run: usize, // Total PHYSICS_EVENT items since last BEGIN_RUN.
-}
-impl RingBufferStatistics {
-    /// Create a ring buffer statistics item
-    /// that has all counters zeroed:
-    fn new(name :&str) -> RingBufferStatistics {
-        RingBufferStatistics {
-            name: String::from(name),
-            bytes: 0, events: 0,
-            bytes_this_run: 0, events_this_run: 0
-        }
-    }
-    /// Zero the per run statistics:
-    /// 
-    fn new_run(&mut self) -> &mut RingBufferStatistics {
-        self.bytes_this_run = 0;
-        self.events_this_run = 0;
-        self              // So chaining can be done.
-    }
-    /// Count some bytes:
-    /// 
-    fn count_bytes(&mut self, bytes : usize) -> &mut RingBufferStatistics {
-        self.bytes = self.bytes.wrapping_add(bytes);
-        self.bytes_this_run =self.bytes_this_run.wrapping_add(bytes);
-        self
-    }
-    /// Count some events:
-    ///
-    fn count_events(&mut self, events: usize) -> &mut RingBufferStatistics {
-        self.events = self.events.wrapping_add(events);
-        self.events_this_run = self.events_this_run.wrapping_add(events);
-        self
-    }
-}
-
-///  This is the structure of statistics update messages sent
-///  to the main thread by the monitor threads:
-/// 
-#[derive(Debug, PartialEq)]
-struct UpdateMessage {
-    interval : time::Duration,
-    statistics : RingBufferStatistics,
-}
-
-impl UpdateMessage {
-    fn new(i : time::Duration, stats : &RingBufferStatistics) -> UpdateMessage {
-        UpdateMessage { interval: i, 
-            statistics : stats.clone()
-        }
-    }
-}
 
 /// The statistics the user is interested in also include rates:
 /// 
