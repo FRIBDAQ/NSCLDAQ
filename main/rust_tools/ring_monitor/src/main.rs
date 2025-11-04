@@ -9,14 +9,25 @@ use std::collections::HashMap;
 
 use serde_json;
 use std::net::{TcpListener, TcpStream};
-use ring_monitor::{*};
+use ring_monitor::*;
 
 const SERVICE_NAME : &str = "RING_MONITOR";
 const BUFFER_SIZE : usize = 1024*1024;
 const UPDATE_TIME : u64  = 5;       // How often to update statistics -> main thread.
 const RING_POLL_INTERVAL : u64  = 1; // Secs between polls for new rings.
 
-
+/// Usage:
+///     portman ?stats-db-file?
+///  Where:
+///       stats-db-file is the path to an sqlite3 database (will be created
+///       if needed) into which statistics data will be shoved.
+///  Or:
+///     portman --server port ?stats-deb-file?
+///  
+///  This form is spawned by the parent and respawned on exit.
+/// 
+/// See below:
+/// 
 ///  This program provides an FRIB/NSCLDAQ ringbuffer statistics
 ///  monitor.  Note that when run, it will run itself with an
 ///  added --server (portnum) option.  The spawned subprocess
@@ -38,7 +49,7 @@ const RING_POLL_INTERVAL : u64  = 1; // Secs between polls for new rings.
 /// 
 ///
 ///   To get the current idea of the statistics over all rings,
-/// Forma connection to this program and you will receive a JSON string
+/// Form a connection to this program and you will receive a JSON string
 /// containing the statistics.  This will be a serialization of an array of
 /// StatistcsAdRates structs.
 ///
@@ -48,12 +59,18 @@ fn main() {
 
     // Run ourself with the --server 12345 parameter. e.g...unless we
     // have been run with the --server parameter.
-
+    // note that there could also be a data base file
+    //
     let args : Vec<String> = env::args().collect();
-    if args.len() == 3 {
+    if args.len() == 3 || args.len() == 4 {
+        let dbfile : Option<String> = if args.len() == 3 {
+            None
+        } else {
+            Some(args[3].clone())
+        };
         if args[1] == "--server" {
             let port = args[2].parse::<u16>().unwrap();
-            monitor(port);
+            monitor(port, dbfile);
             return;
         }
     }
@@ -75,9 +92,16 @@ fn main() {
     eprintln!("Server will use port {}", port);
     let port_string = port.to_string();
     loop {
-        let mut  child = process::Command::new(&executable)
+        let mut  child = if args.len() == 1 {  // no db file.
+            process::Command::new(&executable)
             .arg("--server").arg(&port_string).spawn()
-            .expect("Failed to spawn server");
+            .expect("Failed to spawn server")
+        } else {                                // db file.
+            process::Command::new(&executable)
+            .arg("--server").arg(&port_string)
+            .arg(args[1].clone()).spawn()
+            .expect("Failed to spawn server")
+        };
         child.wait().expect("Could not wait on server completion");
         println!("Subprocess exited ");
         // Restarting too soon is not a good idea so sleep a second.
@@ -334,7 +358,8 @@ fn serve_statistics(sock: &mut TcpStream, stats: &HashMap<String, StatisticsAndR
 /// 
 /// Ring deletion is a rare occurence.
 /// 
-fn monitor(port : u16) {
+fn monitor(port : u16, dbfile : Option<String>) {
+    
     let mut thread_map : HashMap<String, thread::JoinHandle<()>> = HashMap::new(); // Map of threads we have.
     let (sender, receiver) = mpsc::channel::<UpdateMessage>();
     let mut aggregated_stats = HashMap::<String, StatisticsAndRates>::new();
@@ -342,6 +367,16 @@ fn monitor(port : u16) {
     let ip_spec = format!("0.0.0.0:{}", port);     // Listener specification.
     let server = TcpListener::bind(&ip_spec).expect("Cant start server");
     let _ = server.set_nonblocking(true);                           // don't stop the loop for connections.
+
+    // If there's a statistics database, open it:
+
+    let mut stat_connection = if let Some(statsdb) = dbfile {
+        println!("Logging stats to database: {}", statsdb);
+        Some(database::Connection::new(&statsdb).expect("Failed to open stats db"))
+    } else {
+        println!("Will not log database statistics.");
+        None
+    };
     loop {
         let mut c = ringmaster_client::Client::new("localhost");
         
@@ -364,7 +399,7 @@ fn monitor(port : u16) {
                     // Insert a new entry for this ring:
 
                     aggregated_stats.insert(
-                        name, 
+                        name.clone(), 
                         StatisticsAndRates::new(&msg.statistics.name)
                     );
                 }
@@ -373,6 +408,12 @@ fn monitor(port : u16) {
                     .get_mut(&msg.statistics.name.clone())
                     .unwrap()
                     .update(&msg);
+                // Log the statistics to file if specified:
+
+                if let Some(db) = stat_connection.as_mut() {
+                    let n = name.clone();
+                    db.log(aggregated_stats.get(&n).unwrap());
+                }
             } else {
                 break;                  // No more messages this time.
             }
