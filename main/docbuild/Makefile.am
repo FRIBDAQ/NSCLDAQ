@@ -100,6 +100,7 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/utilities/compatibility \
 	@top_srcdir@/utilities/tkbufdump \
 	@top_srcdir@/utilities/reglom	\
+	@top_srcdir@/utilities/swtrigger	\
 	@top_srcdir@/epics/controlpush \
 	@top_srcdir@/epics/epicsdisplay \
 	@top_srcdir@/epics/chanlog \
