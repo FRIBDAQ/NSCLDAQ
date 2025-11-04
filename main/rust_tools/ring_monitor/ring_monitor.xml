@@ -11,7 +11,7 @@
     <refsynopsisdiv>
          <cmdsynopsis>
             <command>
-nohup $DAQBIN/rust/ring_monitor &
+nohup $DAQBIN/rust/ring_monitor <replaceable><optional>stats-log-file</optional></replaceable> &
             </command>
          </cmdsynopsis>
     </refsynopsisdiv>
@@ -29,6 +29,15 @@ nohup $DAQBIN/rust/ring_monitor &
             monitor spitting out the statistics in JSON format (see <literal>STATISTICS FORMAT</literal>
             below).  After providing the statistics, the ring monitor willl shutdown the connection
             to the client.
+        </para>
+        <para>
+            If the optional <parameter>stats-log-file</parameter> command
+            parameter is supplied, it must be a file path that either points
+            into a writable directory or points to a writable sqlite3 database
+            file.  Periodically, statistics will be written to that file.
+            If omitted, statistics will not be written.
+            See <literal>STATISTICS DATABASE SCHEMA</literal> below for
+            the database schema.
         </para>
         <para>
             A word about the ring monitor structure that is important.  The NSCLDAQ ringmaster
@@ -199,6 +208,134 @@ nohup $DAQBIN/rust/ring_monitor &
             rates will be from the start of the server until a <literal>BEGIN_RUN</literal> is observed
             at which time the totals for a run will be reset.
         </para>
+    </refsect1>
+    <refsect1>
+        <title>STATISTICS DATABASE SCHEMA</title>
+        <para>
+            Statistics are logged, if requested, into two tables, which are
+            created as follows:
+        </para>
+        <informalexample>
+            <programlisting>
+CREATE TABLE IF NOT EXISTS ring_names (
+    id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    name  STRING
+)            
+CREATE TABLE IF NOT EXISTS statistics (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    ring_id      INTEGER,   -- FK to ring_names
+    timestamp    STRING,
+    volume       INTEGER,   -- Total bytes
+    run_vol      INTEGER,   -- bytes this run
+    events       INTEGER,   -- total events.
+    run_events   INTEGER,   -- events this run.
+    rate         REAL,      -- bytes/per second.
+    event_rate   REAL      -- Events/second.
+)
+            </programlisting>
+        </informalexample>
+        <para>
+            The <literal>ring_names</literal> table contains one entry for 
+            each ringbuffer file that has been seen by the server.  The name
+            (not path or URI) is stored in the <literal>name</literal> 
+            field and the <literal>id</literal>
+            primary key is used as a foreign key in the <literal>statistics</literal>
+            table.
+        </para>
+        <para>
+            The <literal>statistics</literal> table is where the statistics 
+            are stored.  Each update provides a timstamped entry:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term>id</term>
+                    <listitem>
+                        <para>
+                            Is a unique primary key for each record.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>ring_id</term>
+                    <listitem>
+                        <para>
+                            Is a foreign key into the <literal>ring_names</literal>
+                            table indicating to which ring buffer, this statistic
+                            entry belongs.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>timestamp</term>
+                    <listitem>
+                        <para>
+                            Is a timestamp field in RFC 3339 ISO 8601 date/time format.
+                            In this format, 
+                            <literal>2025-11-04T08:57:44.270119696-05:00</literal>
+                            represents November 4, 2025 8:57:44AM (and change) in
+                            a timezome 5 hours behind GMT (EST).
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>volume</term>
+                    <listitem>
+                        <para>
+                            The total data volume in bytes observed 
+                            to pass through the ringbuffer since the server started.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>run_vol</term>
+                    <listitem>
+                        <para>
+                            The data volume in bytes observed to pass through the
+                            ring buffer since the most recent <literal>BEGIN_RUN</literal>
+                            ring item (or server start if data was flowing at the time
+                            the server started).
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>events</term>
+                    <listitem>
+                        <para>
+                            Total number of <literal>PHYSICS_EVENT</literal>
+                            ring items observed in the ringbuffer since the server
+                            started.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>run_events</term>
+                    <listitem>
+                        <para>
+                            Number of <literal>PHYSICS_EVENT</literal>
+                            ring items observed in the ring buffer since the
+                            most rcent <literal>BEGIN_RUN</literal> item.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>rate</term>
+                    <listitem>
+                        <para>
+                            The instantaneous of data through the ring buffer
+                            in bytes/sec.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>event_rate</term>
+                    <listitem>
+                        <para>
+                            The instantaneous rate of <literal>PHYSICS_EVENT</literal>
+                            items through the ring buffer as items/sec.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
     </refsect1>
     <refsect1>
         <title>BUGS</title>
