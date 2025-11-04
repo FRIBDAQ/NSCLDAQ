@@ -138,7 +138,8 @@ void
 CRingBufferTransport::nextChunk()
 {    
     size_t dataAvail;
-    while(!(dataAvail = m_pReader->waitChunk(CHUNK_SIZE, POLL_COUNT, POLL_TIMING)));
+    while(!(dataAvail = m_pReader->waitChunk(CHUNK_SIZE, POLL_COUNT, POLL_TIMING)))
+	;
     
     // Now a chunk should be ready... doing this allows for m_pCurrentChunk
     // to be a nullptr indicating we need a next chunk.
