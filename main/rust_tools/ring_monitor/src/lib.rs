@@ -138,6 +138,7 @@ pub mod database {
     use rusqlite;
     use std::collections::HashMap;
     use chrono::prelude::*;
+    use crate::*;
     /// This struct is provided to manipulate the database:
     /// 
     pub struct Connection {
@@ -205,7 +206,9 @@ pub mod database {
                 self.connection.execute("
                     INSERT INTO ring_names (name) VALUES (?)
                 ", [name]).expect("Failed to make a new ring buffer name entry.");
-                return self.connection.last_insert_rowid()
+                let result = self.connection.last_insert_rowid();
+                self.ring_cache.insert(String::from(name), result);
+                result
             }
         }
 
@@ -231,7 +234,7 @@ pub mod database {
 
             Ok(result)
         }
-        pub fn log(&mut self, info : &crate::StatisticsAndRates) {
+        pub fn log(&mut self, info : &StatisticsAndRates) {
             // If needed, add the ringbuffer to the ring table:
 
             let ring_id = self.get_ring_id(&info.name);
@@ -241,7 +244,7 @@ pub mod database {
             // Now insert the statistics entry:
 
             if let Err(e) =  self.connection.execute(
-                "INSERT INTO statistic 
+                "INSERT INTO statistics 
                     (ring_id, timestamp, volume, run_vol, events, run_events, rate, event_rate)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ",
@@ -260,7 +263,7 @@ pub mod database {
     #[cfg(test)]
     mod db_tests {
         // Tests for the database operations.
-
+        use crate::*;
         use super::*;
         use rusqlite;
         #[test]
@@ -295,6 +298,8 @@ pub mod database {
         #[test]
         fn loadrc_1() {
             // the ring cache is loaded correctly if there is a ring buffer in the ring_names table.
+            // Note the URI and query params form of the open force both connections
+            // to use the same databases.
 
             let raw = rusqlite::Connection::open("file::memory:?cache=shared").expect("Failed to connect sqlite.");
             raw.execute("
@@ -312,7 +317,101 @@ pub mod database {
             assert_eq!(1, db.ring_cache.len());
             assert!(db.ring_cache.contains_key("aring"));
         }
+        #[test]
+        fn log_1() {
+            // Log a statistic to the database and check the ring buffer is added to the table and cache:
+
+            let mut db = Connection::new(":memory:").expect("Failed to make database");
+            let stats = StatisticsAndRates::new("aring");
+            db.log(&stats);
+
+            // Ring was added to the cache.
+            assert_eq!(1, db.ring_cache.len());
+
+            // THere's a new ring_name entry....that's enough of a test for now.
+            let mut stmt = db.connection.prepare(
+                "SELECT COUNT(*) FROM ring_names WHERE name ='aring'"
+            ).expect("Failed to prepare a statement");
+            let mut rows = stmt.query([]).expect("Failed to query the statement");
+            let row = rows.next().expect("Failed to get a row").expect("Failed to unwrap a row");
+            assert_eq!(1i64, row.get(0).expect("Failed to get the count"));
+
+        }
+        #[test]
+        fn log_2() {
+            // Test that logging a statistic gets the right row values....we don't compare the timestamp.
+            // For rates we'll use a duration of a second.
+
+            let mut db = Connection::new(":memory:").expect("Failed to make database");
+            let mut stats = StatisticsAndRates::new("aring");
+            let mut totals = RingBufferStatistics::new("aring");
+            totals.count_bytes(100);
+            totals.count_events(10);
+            let msg = UpdateMessage::new(time::Duration::from_secs(1), &totals);
+            stats.update(&msg);
+
+            // NOw we can log the stats:
+
+            db.log(&stats);
+
+            // THere should be one stat line:
+
+            let mut count_stmt = db.connection.prepare(
+                "SELECT COUNT(*) FROM statistics"
+            ).expect("Failed to make line count stmt");
+            let mut rows = count_stmt.query([]).expect("Failed to query # of lines");
+            let row = rows.next().expect("Failed next").expect("Failed to unwrap row");
+            assert_eq!(1i64, row.get(0).expect("Failed to get count"));
+
+            // Get the data we can verify from the row:
+
+            let mut stmt = db.connection.prepare("
+                SELECT ring_id, volume, run_vol, events, run_events, rate, event_rate
+                FROM statistics
+            ").expect("Failed to prep stats get query");
+            let mut rows = stmt.query([]).expect("Failed to run stats query");
+            let row = rows.next().expect("Failed next on rows").expect("Failed to unwrap row");
+
+            assert_eq!(*db.ring_cache.get("aring").unwrap(), row.get(0).unwrap());
+            assert_eq!(100, row.get(1).unwrap());         // total bytes
+            assert_eq!(100, row.get(2).unwrap());         // bytes this run.
+            assert_eq!(10, row.get(3).unwrap());          // total events.
+            assert_eq!(10, row.get(4).unwrap());          // events this run
+            assert_eq!(100.0, row.get(5).unwrap());       // byte rate.
+
+        }
     }
+    #[test]
+    fn log_3() {
+        // Two logs to the same ring buffer result in only one
+        // entry in ring_names.
+
+        let mut db = Connection::new(":memory:").expect("Failed to make database");
+        let mut stats = StatisticsAndRates::new("aring");
+        let mut totals = RingBufferStatistics::new("aring");
+        totals.count_bytes(100);
+        totals.count_events(10);
+        let msg = UpdateMessage::new(time::Duration::from_secs(1), &totals);
+        stats.update(&msg);
+
+        // NOw we can log the stats 2x
+
+        db.log(&stats);
+        db.log(&stats);
+
+        // How may ring names do we have?
+
+        let mut stmt = db.connection.prepare("
+            SELECT COUNT(*) FROM ring_names
+        ").expect("Could not prepare statement");
+        let mut rows = stmt.query([]).expect("Failed to run count query");
+        let row = rows.next()
+            .expect("failed to iterate row")
+            .expect("Failed to unwrap row");
+        assert_eq!(1, row.get(0).unwrap());
+
+    }
+
 }
 
 //  ----- tests -----
