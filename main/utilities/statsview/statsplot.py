@@ -40,10 +40,12 @@ from PyQt5.QtWidgets import (QWidget, QApplication, QDateTimeEdit,
     QVBoxLayout, QHBoxLayout, QGridLayout,
     QAction
 )
-from PyQt5.QtCore import (Qt, QDate, QTime, QDateTime, pyqtSignal)
+from PyQt5.QtCore import (Qt, QDate, QTime, QDateTime, QTimeZone,
+  pyqtSignal)
 
 
 import sqlite3
+import datetime
 import matplotlib
 matplotlib.use('Qt5Agg')
 
@@ -65,8 +67,10 @@ class DateRange(QWidget):
          refresh - Refresh button clicked.
          
     '''
+    refresh = pyqtSignal()
+    
     def __init__(self, parent=None):
-        refresh = pyqtSignal
+        
         
         super(DateRange, self).__init__(parent)
         
@@ -76,9 +80,13 @@ class DateRange(QWidget):
         self._end_label   = QLabel("To", self)
         
         self._begin       = QDateTimeEdit(self)
+        self._begin.setCalendarPopup(True)
         self._end         = QDateTimeEdit(self)
+        self._end.setCalendarPopup(True)
+        self._end.setEnabled(False)         # Initial state is Since.
         
         self._since       = QRadioButton("Since", self)
+        self._since.setChecked(True)        # INitially Since is checked.
         self._between     = QRadioButton("Between", self)
         self._before      = QRadioButton("Before", self)
         
@@ -101,18 +109,141 @@ class DateRange(QWidget):
         
         self._layout.addWidget(self._update, 3, 1)
         
+        # Hook in the signals (internal and external)
+        
+        # the check buttons update the enables (purely internal).
+        
+        self._since.clicked.connect(self._adjustEnables)
+        self._between.clicked.connect(self._adjustEnables)
+        self._before.clicked.connect(self._adjustEnables)
+        
+        # The "Update" button signals Refresh:
+        
+        self._update.clicked.connect(self.refresh)
+        
+
+    # Internal methods:
+    
+    def _adjustEnables(self):
+      # Enable/disable the appropriate date/time edits depending on
+      # the time range type selected:
+      
+      if self._since.isChecked():
+        begin = True
+        end   = False
+      elif self._between.isChecked():
+        begin = True
+        end   = True
+      elif self._before.isChecked():
+        begin = False
+        end   = True
+      else:                     # Should not happen but...
+        begin = False
+        end = False
+      
+      self._begin.setEnabled(begin)
+      self._end.setEnabled(end)
+  
+    # Public methods.
+    #   Implement the properties:
+    
+    #    Type property:  
+    def type(self):
+      ''' Return the currently selected date/time type.''' 
+      if self._since.isChecked():
+        return 'since'
+      if self._between.isChecked():
+        return 'between'
+      if self._before.isChecked():
+        return 'before'    
+        
+    def setType(self, new):
+      if new == 'since':
+        self._since.setChecked(True)
+      elif new == 'between':
+        self._between.setChecked(True)
+      elif new == 'before':
+        self._before.setChecked(True)
+      else:                              # Illegal value
+        raise ValueError(f'{new} is not a valid time type must be one of since | between | before')
+      
+      #  Adjust the enables:
+      
+        self._adjustEnables()
+      
+    # Start, the start time:
+      
+    def start(self):
+      ''' Returns the QDateTime of the start editor '''
+      return self._begin.dateTime()
+  
+    def setStart(self, newdt):
+      ''' sets the QDateTime of the start editor 
+           newdt must be a QDateTime object.
+      '''
+      self._begin.setDateTime(newdt)
+    
+    # end, the end time.
+    
+    def end(self):
+      ''' Returns the QDateTime of the end editor '''
+      return self._end.dateTime()
+    
+    def setEnd(self, newdt):
+      ''' Set tthe end date/time editor. 
+              newdt - must be a QDateTime object.
+      '''
+      self._end.setDateTime(newdt)
+      
+      
         
 # Main entry:
 
+def initTimeChooser(window):
+  # Set begin to today and the end to now.
+  
+  now = datetime.datetime.now()    # Beginning of today.
+  
+  
+  today = QDate(now.year, now.month, now.day)
+  
+  nowtime = QTime(now.hour, now.minute, now.second, int(now.microsecond/1000))
+  midnight = QTime(0, 0, 0, 0)
+  
+  tz = QTimeZone.systemTimeZone()
+  
+  begin = QDateTime(today, midnight, tz)
+  end   = QDateTime(today, nowtime, tz)
+  
+  window.setStart(begin)
+  window.setEnd(end)
+
+def dumpTimeChooser():
+  selectionType = window.type()
+  if selectionType == 'since':
+    print('Select times since: ', window.start().toString(Qt.RFC2822Date))
+  elif selectionType == 'between':
+    print("Select time between ", 
+          window.start().toString(Qt.RFC2822Date), " and ", 
+          window.end().toString(Qt.RFC2822Date))
+  elif selectionType == 'before':
+    print("Select time before ", window.end().toString(Qt.RFC2822Date))
+
+  
 if __name__ == "__main__":
 
-    app = QApplication(sys.argv)
-    window = DateRange()
-    
-    
-    window.show()
-    sys.exit(app.exec())
-    
-    
-        
-        
+  app = QApplication(sys.argv)
+  window = DateRange()
+  
+  # Initialize the window and connect refresh to
+  # something that dumps selection.
+  
+  initTimeChooser(window)
+  window.refresh.connect(dumpTimeChooser)
+  
+  window.show()
+  sys.exit(app.exec())
+  
+  
+      
+      
