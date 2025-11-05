@@ -24,8 +24,6 @@
 #define COPYPOPUNTIL_H
 #include <algorithm>
 
-
-
 /**
  * CopyPopUntil
  *    pushes back the front of a container to the back of another container

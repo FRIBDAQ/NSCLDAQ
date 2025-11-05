@@ -105,6 +105,7 @@ CMPIFanoutTransport::end()
   }
   std::cerr << " all ended\n";
 }
+
 /////////////////////////////////////////////////////////////////
 // Private methods.
 //

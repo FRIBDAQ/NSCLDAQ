@@ -74,7 +74,7 @@ CRingItemTransportFactory::createTransport(
             if (CRingAccess::local(ringUri.getHostName())) {
                 std::string ringName = ringUri.getPath();
                 CRingBuffer* pRing = CRingBuffer::createAndProduce(ringName);
-                return new CRingBufferTransport(*pRing);
+		return new CRingBufferTransport(*pRing);
             } else {
                 throw std::invalid_argument(
                     "CRingItemTransportFactory: Producer hosts must be local!"    
@@ -86,8 +86,7 @@ CRingItemTransportFactory::createTransport(
             CRingBuffer* pRing = CRingAccess::daqConsumeFrom(uri);
             CRingBufferChunkAccess* accessor =
                 new _CRingBufferChunkAccess(pRing);
-            return new CRingBufferTransport(*accessor);
-            
+	    return new CRingBufferTransport(*accessor);            
         }
     } else if (proto == "file") {
         // accessing file

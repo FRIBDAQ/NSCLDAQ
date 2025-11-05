@@ -1854,7 +1854,7 @@ private:
 public:
   TsLargerThan(uint64_t ts) : m_timestamp(ts) {
   }
-  bool operator()(std::pair<time_t, EVB::pFragment>& qel) {
+  bool operator()(const std::pair<time_t, EVB::pFragment>& qel) const {
     return (m_timestamp < qel.second->s_header.s_timestamp ) ||
           (qel.second->s_header.s_barrier != 0);
   }
@@ -1866,7 +1866,7 @@ private:
 public:
   TsSmallerThan(uint64_t ts) : m_timestamp(ts) {
   }
-  bool operator()(std::pair<time_t, EVB::pFragment>& qel) {
+  bool operator()(const std::pair<time_t, EVB::pFragment>& qel) const {
     
     // Don't need to consider barriers as this is only used when there
     // are no inflight barriers.
@@ -1886,7 +1886,7 @@ private:
   time_t m_time;
 public:
   TimeLargerThan(time_t t) : m_time(t) {}
-  bool operator()(std::pair<time_t, EVB::pFragment>& qel) {
+  bool operator()(const std::pair<time_t, EVB::pFragment>& qel) const {
     return (m_time < qel.first)     ||
        (qel.second->s_header.s_barrier != 0);
   }
@@ -1918,12 +1918,10 @@ CFragmentHandler::DequeueUntilStamp(
     CopyPopUntil(q, result, pred);
   } else {
     TsSmallerThan pred(timestamp);
-    CopyPopUntilR(q, result,pred);
+    CopyPopUntilR(q, result, pred);
   }
-  // If the front of the queue is a barrier, then we have barrier in progress.
-  
- // m_fBarrierPending = !q.empty() && (q.front().second->s_header.s_barrier != 0);
 }
+
 /**
  * DequeueUntilAbsTime
  *   Removes queue elements from the queue and puts them in the output list
@@ -1942,9 +1940,7 @@ CFragmentHandler::DequeueUntilAbsTime(
 )
 {
   TimeLargerThan pred(time);
-  CopyPopUntil(q, result, pred);
-    
-  
+  CopyPopUntil(q, result, pred);  
 }
 
 

@@ -44,7 +44,7 @@ private:
     
  
     std::vector<Message>   m_chunk;
-    
+
 public:
     CRingItemBlockSourceElement(
         const char* ringUri, CFanoutTransport& fanout, size_t chunkSize = 1

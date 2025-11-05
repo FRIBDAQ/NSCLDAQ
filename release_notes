@@ -1,3 +1,7 @@
+== 12.1-018 ==
+* Use buffered fragment reader to improve glom (event building) performance
+== 12.1-018 ==
+
 == 12.1-017 ==
 * Support of MDPP-32 PADC firmware
 == 12.1-017 ==
