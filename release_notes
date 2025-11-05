@@ -21,4 +21,7 @@ by COutputThread (nummap_chunk() issue fixed)
 * Issue # 251 - add statistics to the python managed environment control panel
 * Build docs for parallel processing framework
 * Fix issue #380- compile fails if not MPI due to missing #include <iostream>
+* Fix issue #385 - glom uses buffered fragment reader
+* Make CFragmentHandler predicate classes operator() const and take const ref as parameter for compliance with some handy STL algos for future fragment handler development
+* Build docs for swtrigger
 == 12.2-dev ==
