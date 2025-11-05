@@ -195,7 +195,12 @@ class DateRange(QWidget):
       '''
       self._end.setDateTime(newdt)
       
-      
+def TimePlotWidge(FigureCanvasQTAgg):
+  ''' This is a widget that will plot the time evolution of 
+    One item of a time indexed pandas data frame.  The datafram index
+    is times in RFC2822 format.
+  '''
+  pass      
         
 # Main entry:
 
@@ -218,16 +223,31 @@ def initTimeChooser(window):
   window.setStart(begin)
   window.setEnd(end)
 
+def formatDateTime(dt) :
+  # Given a QDateTime formats it to match
+  # the format in the database which is
+  # an ISODateWithMs that also needs more decimal precision
+  # ns from rust 
+  
+  result = dt.toString(Qt.ISODateWithMs) + '000000'  # needs a timezone now.
+  tzsecs = dt.timeZone().offsetFromUtc(dt)  # Seconds offset from UTC.
+  hrs    = tzsecs/3600                    # Keeps the sign.
+  abstzsecs = abs(tzsecs)                 # Strip the sign.
+  min    = abstzsecs/60 - abs(hrs*60)
+  tz = f'{int(hrs):+03d}:{int(min):02d}'
+  result += tz
+  
+  return result
 def dumpTimeChooser():
   selectionType = window.type()
   if selectionType == 'since':
-    print('Select times since: ', window.start().toString(Qt.RFC2822Date))
+    print('Select times since: ', formatDateTime(window.start()))
   elif selectionType == 'between':
     print("Select time between ", 
-          window.start().toString(Qt.RFC2822Date), " and ", 
-          window.end().toString(Qt.RFC2822Date))
+          window.start().toString(Qt.ISODateWithMs), " and ", 
+          window.end().toString(Qt.ISODateWithMs))
   elif selectionType == 'before':
-    print("Select time before ", window.end().toString(Qt.RFC2822Date))
+    print("Select time before ", window.end().toString(Qt.ISODateWithMs))
 
   
 if __name__ == "__main__":
