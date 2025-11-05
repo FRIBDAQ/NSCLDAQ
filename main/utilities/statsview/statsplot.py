@@ -46,7 +46,14 @@ from PyQt5.QtCore import (Qt, QDate, QTime, QDateTime, QTimeZone,
 
 import sqlite3
 import datetime
-import matplotlib
+
+import matplotlib.figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+import pandas as pd
+import numpy as np
+
+
+
 matplotlib.use('Qt5Agg')
 
 
@@ -195,12 +202,95 @@ class DateRange(QWidget):
       '''
       self._end.setDateTime(newdt)
       
-def TimePlotWidge(FigureCanvasQTAgg):
+class TimePlotWidget(FigureCanvasQTAgg):
   ''' This is a widget that will plot the time evolution of 
-    One item of a time indexed pandas data frame.  The datafram index
-    is times in RFC2822 format.
+    One item of a time indexed pandas data frame.  The dataframe index
+    is times in RFC3339 format:
+    
+    Public methods:
+       plot - Plot a time series. given a dataframe and a data selector.
+              See plot below.
+    Attributes:
+       title - The plot title.
+       xlabel- The xaxis label.
+       ylabel- The yaxis label.
+              
+    
   '''
-  pass      
+  def __init__(self, parent=None):
+    
+    self._fig = matplotlib.figure.Figure()
+    self._axis= None
+    super().__init__(self._fig)
+
+  def plot(self, frame, series):
+    ''' Plots the requested series deleting any prior one
+      frame is a time series data frame and series
+      selects which of those will be plotted.
+      The valid series are 
+        volume - bytes sent to the ringbuffer.
+        run_volum - Bytes sent to the ring buffer since the last BEGIN_RUN item.
+        events - PHYSICS_EVENT items sent to the ringbuffer.
+        run_events _ PHYSCIS_EVENT items sent to the ring buffer since the last BEGIN_RUN item.
+        rate -  bytes/sec being sent to the ring.
+        event_rate - PHYSICS_EVENT items/sec being sent to the ring.
+        
+        Naturally if the data frame is ever expanded, any column can be selected for plotting.
+    '''
+    
+    #  Kill off any old data
+    
+    if self._axis is not None:
+      self._fig.delaxis(self._axis)
+      self._axis = None
+    
+    self._axis = self._fig.add_subplot()
+    self._axis.plot(frame[series].index, frame[series].values)
+    self.draw()                        # Draw the plot seems needed.
+    
+  #  Title attribute:
+    
+  def title(self):
+    if self._axis is None:
+      return None                     # There's no axis.
+    else:
+      return self._axis.get_title()
+    
+  def setTitle(self, title):
+    if self._axis is None:
+      raise RuntimeError("Attempted to set the title of a plot with no data")
+    else:
+      self._axis.set_title(title)
+      self.draw()
+  
+  # xlabel attribute:
+  
+  def xlabel(self):
+    if self._axis is None:
+      return None
+    else:
+      return self._axis.get_xlabel()   
+  
+  def setXLabel(self, label):
+    if self._axis is None:
+      raise RuntimeError("Attemped to set x label of a plot with no data")
+    else:
+      self._axis.set_xlabel(label)
+      
+  # Ylabel attribute
+  
+  def ylabel(self):
+    if self._axis is None:
+      return None
+    else:
+      return self._axis.get_ylabel()
+    
+  def setYLabel(self, label):
+    if self._axis is None:
+      raise RuntimeError("Attempted to set y label of  plot with no data")      
+    else:
+      self._axis.set_ylabel(label)
+      
         
 # Main entry:
 
@@ -249,17 +339,60 @@ def dumpTimeChooser():
   elif selectionType == 'before':
     print("Select time before ", window.end().toString(Qt.ISODateWithMs))
 
+def plot(w, dbfile, ring):
+  db = sqlite3.connect('file:' + dbfile + '?mode=ro', uri=True)
+  
+  # Just use all the data from the 'ron' ring for tests:
+  
+  stats = []
+  cursor = db.cursor()
+  for row in cursor.execute('''
+                              SELECT timestamp, volume, run_vol, events, run_events, rate, event_rate 
+                              FROM statistics
+                              INNER JOIN ring_names ON statistics.ring_id = ring_names.id
+                              WHERE ring_names.name = ?
+                              ''', (ring,)):
+      record = {'time': row[0], 'volume': row[1], 'run_volume': row[2], 
+                'events' : row[3], 'run_events': row[4], 'rate': row[5], 'event_rate': row[6]
+                }
+      stats.append(record)
+        
+  # Make the times, series and data frame:
+  
+  
+  times = pd.DatetimeIndex([ t['time'] for t in stats ])
+
+  # Make a Series for each statistic:
+
+  volume = pd.Series([s['volume'] for s in stats], index=times)
+  run_volume = pd.Series([s['run_volume'] for s in stats], index=times)
+  events = pd.Series([s['events'] for s in stats], index=times)
+  run_events  = pd.Series([s['run_events'] for s in stats], index=times)
+  rate  = pd.Series([s['rate'] for s in stats], index=times)
+  event_rate = pd.Series([s['event_rate'] for s in stats], index=times)
+
+  series = {'volume': volume, 
+            'run_volume': run_volume, 
+            'events': events, 
+            'run_events': run_events, 
+            'rate': rate, 
+            'event_rate': event_rate}
+
+  frame = pd.DataFrame(series)
+  
+  # Plot the run volume data:
+  
+  w.plot(frame, 'run_volume')
+  w.setTitle("Run volume")
+  w.setXLabel("Time")
+  w.setYLabel("Bytes")
   
 if __name__ == "__main__":
 
   app = QApplication(sys.argv)
-  window = DateRange()
+  window = TimePlotWidget()
   
-  # Initialize the window and connect refresh to
-  # something that dumps selection.
-  
-  initTimeChooser(window)
-  window.refresh.connect(dumpTimeChooser)
+  plot(window, 'statistics.db',  'ron')
   
   window.show()
   sys.exit(app.exec())
