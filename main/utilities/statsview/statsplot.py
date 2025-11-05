@@ -48,6 +48,8 @@ import sqlite3
 import datetime
 
 import matplotlib.figure
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdate
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 import pandas as pd
 import numpy as np
@@ -55,6 +57,7 @@ import numpy as np
 
 
 matplotlib.use('Qt5Agg')
+plt.style.use('seaborn-v0_8-whitegrid')
 
 
 #  The control class for the bottom of each
@@ -222,6 +225,13 @@ class TimePlotWidget(FigureCanvasQTAgg):
     self._fig = matplotlib.figure.Figure()
     self._axis= None
     super().__init__(self._fig)
+    
+  #  private methods:
+  
+  def _date_format(self, value, tickno):
+    print(value, tickno)
+    return 't'
+  # Public methods
 
   def plot(self, frame, series):
     ''' Plots the requested series deleting any prior one
@@ -245,7 +255,13 @@ class TimePlotWidget(FigureCanvasQTAgg):
       self._axis = None
     
     self._axis = self._fig.add_subplot()
-    self._axis.plot(frame[series].index, frame[series].values)
+    
+    self._xformat = mdate.DateFormatter('%m/%d  %H:%M')
+    spacing = np.round(np.linspace(0, len(frame[series].index)-1, 5)).astype(int)
+    date_ticks = frame[series].iloc[spacing].index
+    frame[series].plot(ax=self._axis,  xticks=date_ticks, use_index=True)
+    self._axis.xaxis.set_major_formatter(self._xformat)
+    
     self.draw()                        # Draw the plot seems needed.
     
   #  Title attribute:
@@ -262,6 +278,7 @@ class TimePlotWidget(FigureCanvasQTAgg):
     else:
       self._axis.set_title(title)
       self.draw()
+      
   
   # xlabel attribute:
   
@@ -275,7 +292,9 @@ class TimePlotWidget(FigureCanvasQTAgg):
     if self._axis is None:
       raise RuntimeError("Attemped to set x label of a plot with no data")
     else:
-      self._axis.set_xlabel(label)
+      self._axis.set_xlabel(label, labelpad=50)
+      plt.subplots_adjust()
+      self.draw()
       
   # Ylabel attribute
   
@@ -290,6 +309,7 @@ class TimePlotWidget(FigureCanvasQTAgg):
       raise RuntimeError("Attempted to set y label of  plot with no data")      
     else:
       self._axis.set_ylabel(label)
+      self.draw()
       
         
 # Main entry:
@@ -360,7 +380,8 @@ def plot(w, dbfile, ring):
   # Make the times, series and data frame:
   
   
-  times = pd.DatetimeIndex([ t['time'] for t in stats ])
+  times = pd.DatetimeIndex([ datetime.datetime.fromisoformat(t['time']) for t in stats ])
+
 
   # Make a Series for each statistic:
 
