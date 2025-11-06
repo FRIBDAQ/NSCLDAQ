@@ -256,7 +256,7 @@ class TimePlotWidget(FigureCanvasQTAgg):
     
     self._axis = self._fig.add_subplot()
     
-    self._xformat = mdate.DateFormatter('%m/%d  %H:%M')
+    self._xformat = mdate.DateFormatter('%m/%d/%Y\n%H:%M')
     spacing = np.round(np.linspace(0, len(frame[series].index)-1, 5)).astype(int)
     date_ticks = frame[series].iloc[spacing].index
     frame[series].plot(ax=self._axis,  xticks=date_ticks, use_index=True)
@@ -292,7 +292,7 @@ class TimePlotWidget(FigureCanvasQTAgg):
     if self._axis is None:
       raise RuntimeError("Attemped to set x label of a plot with no data")
     else:
-      self._axis.set_xlabel(label, labelpad=50)
+      self._axis.set_xlabel(label)
       plt.subplots_adjust()
       self.draw()
       
@@ -311,12 +311,134 @@ class TimePlotWidget(FigureCanvasQTAgg):
       self._axis.set_ylabel(label)
       self.draw()
       
-        
+class RingStatisticsPlot(QWidget):
+  ''' 
+  This class encapsulates the 6 TimePlotWidgets needed to
+  plot ring statistics for one ring buffer.  It is laid out like this:
+  
+  +---------------------------------------------------------------+
+  |                Ring buffer name  label                        |
+  |   Plot area with 6 TimePlotWidgets.                           |
+  |                     Date range widget                         |
+  +---------------------------------------------------------------+
+  
+  The intent, in this application, is that the widget be put in a 
+  page of the tabbed notebook so strictly speaking the ringbuffer name
+  may not be required.  For the contents of the TimePlotWidgets,
+  see the update method documentation.
+  
+  Signals:
+      refresh - passed this widget  when the Update button on the
+          data range widget is clicked.  The slot handling this is 
+          expected to provide new data in the data range specified
+          by that subwidget.
+  Attributes:
+      ringbuffer:  Ring buffer name that is displayed inthe ring buffer label and 
+                    should be used in database queries.
+      start:       Start date/time in the data range widget.
+      end:         End date/time value in the date range widget.
+      type:        Type of data range from the date range widget:
+                   * 'before' - the end represents the end time  the begining is 
+                                the earliest record in the database for this ring.
+                   * 'between' - The data should be after the start time and 
+                                 before the end time.
+                   * 'since'  - All data after the start time.
+    Public Methods:
+    update       - Plots are regenerated from a new dataframe of series.
+  '''
+  refresh = pyqtSignal(object)
+  
+  def __init__(self, parent=None):
+    super(RingStatisticsPlot, self).__init__(parent)
+    
+    # Make the widgets:
+    
+    self._ringname = QLabel(self)
+    
+    self._volume_plot  = TimePlotWidget(self)
+    self._run_vol_plot = TimePlotWidget(self)
+    self._events_plot  = TimePlotWidget(self)
+    self._run_events_plot = TimePlotWidget(self)
+    self._data_rate_plot  = TimePlotWidget(self)
+    self._event_rate_plot = TimePlotWidget(self)
+    
+    self._date_range = DateRange(self)
+    
+    # Layout with an overall VBox layout but the
+    # plots are in a  grid layout.
+    
+    layout = QVBoxLayout()
+    self.setLayout(layout)
+    layout.addWidget(self._ringname)
+    
+    plot_layout = QGridLayout()
+    plot_layout.addWidget(self._run_events_plot, 0, 0)
+    plot_layout.addWidget(self._data_rate_plot, 0, 1)
+    plot_layout.addWidget(self._event_rate_plot, 0, 2)
+    
+    plot_layout.addWidget(self._volume_plot, 1, 0)
+    plot_layout.addWidget(self._run_vol_plot, 1, 1)
+    plot_layout.addWidget(self._events_plot, 1, 2)
+    
+    layout.addLayout(plot_layout)
+    
+    layout.addWidget(self._date_range)
+    
+    # Connect the DateRange refresh signal to 
+    # our signal relay (we have to put 'self' in as the parameter).
+    
+    self._date_range.refresh.connect(self._updateRelay)
+    
+  # Slots:
+  
+  def _updateRelay(self):
+    self.refresh.emit(self)
+    
+  # Implement attributes:
+  
+  # rinbuffer attribute
+  def ringbuffer(self):
+    ''' return the contents of the ring name label: '''
+    return self._ringname.text()
+  
+  def setRingbuffer(self, ring):
+    ''' set value of ring name label to the 'ring' parameter value '''
+    self._ringname.setText(ring)
+    
+  # start attribute:
+  
+  def start(self):
+    ''' return the start time '''
+    return self._date_range.start()
+  
+  def setStart(self, dt):
+    ''' Set the start time value:  dt is a QDateTime object.'''
+    self._date_range.setStart(dt)
+    
+  #  end attribute:
+  
+  def end(self):
+    ''' return the end time'''
+    return self._date_range.end()
+  
+  def setEnd(self, dt):
+    ''' set the end time to dt which must be a QDateTime object. '''
+    self._date_range.setEnd(dt)
+    
+  # type attribute
+  
+  def type(self):
+    ''' Return the date range type:  'since', 'before or 'between' '''
+    return self._date_range.type()
+  def setType(self, t):
+    ''' Set the new date range type ValueError is raised if  t is
+        not one of 'since', 'before', or 'between'
+    '''
+    self._date_range.setType(t)
+      
 # Main entry:
 
-def initTimeChooser(window):
-  # Set begin to today and the end to now.
-  
+def createInitialTimes():
   now = datetime.datetime.now()    # Beginning of today.
   
   
@@ -330,8 +452,15 @@ def initTimeChooser(window):
   begin = QDateTime(today, midnight, tz)
   end   = QDateTime(today, nowtime, tz)
   
-  window.setStart(begin)
-  window.setEnd(end)
+  return (begin, end)
+
+def initTimeChooser(window):
+  # Set begin to today and the end to now.
+  
+  times = createInitialTimes()
+  
+  window.setStart(times[0])
+  window.setEnd(times[1])
 
 def formatDateTime(dt) :
   # Given a QDateTime formats it to match
@@ -408,12 +537,29 @@ def plot(w, dbfile, ring):
   w.setXLabel("Time")
   w.setYLabel("Bytes")
   
+def refreshPlots(w):
+  print("Asked to refresh plots for", w.ringbuffer())
+  range_type = w.type()
+  if range_type == 'since':
+    print("Since: ", formatDateTime(w.start()))
+  elif range_type == 'before':
+    print("Before: ", formatDateTime(w.end()))
+  elif range_type == 'between':
+    print('Between', formatDateTime(w.start()), 'and', formatDateTime(w.end()))
+  else:
+    print("Invalid type range type: ", range_type)
+      
+  
 if __name__ == "__main__":
 
   app = QApplication(sys.argv)
-  window = TimePlotWidget()
+  window = RingStatisticsPlot()
+  window.refresh.connect(refreshPlots)
+  window.setRingbuffer('ron')
+  (begin, end) = createInitialTimes()
+  window.setStart(begin)
+  window.setEnd(end)
   
-  plot(window, 'statistics.db',  'ron')
   
   window.show()
   sys.exit(app.exec())
