@@ -14,14 +14,17 @@
 	     East Lansing, MI 48824-1321
 */
 #include <config.h>
-#include "CV1495sc.h"
+#include <CV1495sc.h>
 
 #include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 #include <stdint.h>
-
 #include <iostream>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
+
 /**
  * Register definitions for the module:
  * Names uswed are from the table in section 3 of the CAEN V1495Scaler reference manual.
@@ -112,7 +115,7 @@ CV1495sc::CV1495sc() :
  */
 CV1495sc::~CV1495sc() 
 {}
-
+#ifndef MVLC_GENERATOR
 /**
  * Copy construction.  If necessary a new configuration is created..really copy construction shouild
  * be illegal as it can result in configuration leaks (see destructor).
@@ -140,7 +143,7 @@ CV1495sc::operator=(const CV1495sc& rhs)
 {
   return *this;
 }
-
+#endif
 /*------------------------------------------------------------------------------------------
 **
 ** Operations that are required of module implementations (pure virtual in the base class).
@@ -154,7 +157,11 @@ CV1495sc::operator=(const CV1495sc& rhs)
  * @param configuration - Reference to the module's configuration.
  */
 void
+#ifdef MVLC_GENERATOR
+CV1495sc::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CV1495sc::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration;
 
@@ -250,11 +257,11 @@ CV1495sc::Initialize(CVMUSB& controller)
   int32_t buffer;
   size_t  bytesread;
   int status  = controller.executeList(list, &buffer, sizeof(buffer), &bytesread);
-  
+#ifndef MVLC_GENERATOR
   if(status < 0) {
     throw std::string("V1495sc initialization list execution failed");
   }
-  
+#endif
 }
 /**
  * addReadoutList is called to produce the segment of a VMUSBReadoutList that
@@ -296,7 +303,7 @@ CV1495sc::addReadoutList(CVMUSBReadoutList& list)
   list.addDelay(200);
   list.addFifoRead32(base + MEB, rdoAmod, transfers);
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * Clone is essentially a virtual copy construtor:
  */
@@ -305,6 +312,7 @@ CV1495sc::clone() const
 {
   return new CV1495sc(*this);
 }
+#endif
 /*-----------------------------------------------------------------------------------*/
 
 // Private utilities:
@@ -356,3 +364,31 @@ CV1495sc::countBits(uint32_t mask)
 
   return result;
 }
+
+#ifdef MVLC_GENERATOR
+
+/////////////////////////////////////// Implementation of V1495Command class.
+
+/**
+ * constructor
+ */
+V1495Command::V1495Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "v1495sc", parser) {}
+
+/** 
+ * destructor
+  */
+ V1495Command::~V1495Command() {}
+
+ /**
+  * createDevice
+  *     Create/return a CReadoutModule that wraps a CV1495sc object:
+  */
+ CReadoutModule*
+ V1495Command::createDevice(std::string name) {
+    CReadoutModule* result = new CReadoutModule;
+    result->SetDriver(new CV1495sc);
+
+    return result;
+ }
+ #endif

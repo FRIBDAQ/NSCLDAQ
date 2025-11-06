@@ -14,22 +14,34 @@
 	     East Lansing, MI 48824-1321
 */
 
-// Implementation of the C785 class VM-USB support for the CAEN V785.
+/**
+ * @file CMarker.cpp
+ * @brief Implementation for marker implementation for VMUSB and MVLC
+ * @note MVLC_GENERATOR is defined when compiling for mvlcgenerate
+ * @note Markers in the MVLC are 32 bits wide while in the VMUSB 16 bits
+ */
 
 
 #include <config.h>
 
-#include "CMarker.h"
+#include <CMarker.h>
 
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSBReadoutList.h>
 #include <stdlib.h>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 using namespace std;
 
 
 static XXUSB::CConfigurableObject::limit valueLow(0);
+#ifdef MVLC_GENERATOR
+static XXUSB::CConfigurableObject::limit valueHigh(0xfffffff);
+#else
 static XXUSB::CConfigurableObject::limit valueHigh(0xffff);
+#endif
 static XXUSB::CConfigurableObject::Limits valueLimits(valueLow, valueHigh);
 
 
@@ -41,6 +53,11 @@ CMarker::CMarker() :
   m_pConfiguration(0)
 {}
 
+
+
+CMarker::~CMarker() {}
+
+#ifndef MVLC_GENERATOR
 CMarker::CMarker(const CMarker& rhs) :
   m_pConfiguration(0)
 {
@@ -48,14 +65,13 @@ CMarker::CMarker(const CMarker& rhs) :
     m_pConfiguration = new CReadoutModule(*(rhs.m_pConfiguration));
   }
 }
-
-CMarker::~CMarker() {}
-
 CMarker&
 CMarker::operator=(const CMarker& rhs)
 {
   return *this;
 }
+#endif
+
 /////////////////////////////////////////////////////////////////////////////////
 //////////////////////// Overridable operations /////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
@@ -67,7 +83,11 @@ CMarker::operator=(const CMarker& rhs)
 
 */
 void
+#ifdef MVLC_GENERATOR
+CMarker::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CMarker::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration;
 
@@ -92,9 +112,9 @@ CMarker::addReadoutList(CVMUSBReadoutList& list)
 {
   unsigned int value = getIntegerParameter("-value");
 
-  list.addMarker(static_cast<uint16_t>(value));
+  list.addMarker(value);
 }
-
+#ifndef MVLC_GENERATOR
 /*!
   Virtual constructor:
 
@@ -104,6 +124,7 @@ CMarker::clone() const
 {
   return new CMarker(*this);
 }
+#endif
 /////////////////////////////////////////////////////////////////////
 //////////////////// Private utility functions //////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -124,3 +145,37 @@ CMarker::getIntegerParameter(string name)
 
   return value;
 }
+
+
+#ifdef MVLC_GENERATOR
+
+////////////////////// Implement the marker command class.   ///////////////
+
+/**
+ *  constructor:
+ *    All the work is done in the base class constructor.
+ */
+CMarkerCommand::CMarkerCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "marker", parser) {}
+
+/**
+ * destructor:
+ */
+CMarkerCommand::~CMarkerCommand() {}
+
+
+/** createDevice
+ *    Responsible for creating a new CMarker object:
+ * 
+ * @param name (unused) - name of the marker object.
+ * @return CReadoutModule* - a readout module with a CMarker driver object installed.
+ * 
+ */
+CReadoutModule*
+CMarkerCommand::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CMarker);
+
+  return result;
+}
+#endif

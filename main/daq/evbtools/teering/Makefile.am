@@ -1,15 +1,15 @@
 bin_PROGRAMS = teering
 
-teering_SOURCES = teering.cpp @srcdir@/tcmdline.c 
+teering_SOURCES = teering.cpp tcmdline.c 
 
-BUILT_SOURCES=@srcdir@/tcmdline.c
+BUILT_SOURCES=tcmdline.c
 
-@srcdir@/tcmdline.c: @srcdir@/tcmdline.h
+tcmdline.c: tcmdline.h
 
 
-@srcdir@/tcmdline.h: @srcdir@/options.ggo
+tcmdline.h: @srcdir@/options.ggo
 	$(GENGETOPT) --input=@srcdir@/options.ggo \
-		--output-dir=@srcdir@ -F tcmdline
+		--output-dir=@builddir@ -F tcmdline
 
 teering_CPPFLAGS = -I@top_srcdir@/daq/eventbuilder  \
 	-I@top_srcdir@/daq/format \

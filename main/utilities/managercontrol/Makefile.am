@@ -1,4 +1,5 @@
-MODULE_FILES=config.py cfgwizard.py maingui.py programlist.py loggerlist.py
+MODULE_FILES=config.py cfgwizard.py maingui.py programlist.py loggerlist.py \
+	ReadoutStatus.py
 MODULE_DEST=@prefix@/pythonLibs/nscldaq/manager_control
 
 PROGRAM_FILE=mg_control.py

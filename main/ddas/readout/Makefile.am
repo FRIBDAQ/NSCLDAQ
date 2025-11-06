@@ -62,7 +62,7 @@ BUILT_SOURCES=ddasSortOptions.c ddasSortOptions.h
 ddasSortOptions.c: ddasSortOptions.h
 
 ddasSortOptions.h:  ddasSortOptions.ggo
-	$(GENGETOPT) <@srcdir@/ddasSortOptions.ggo --file=ddasSortOptions --output-dir=@srcdir@
+	$(GENGETOPT) <@srcdir@/ddasSortOptions.ggo --file=ddasSortOptions --output-dir=@builddir@
 
 #
 # Unit tests
@@ -101,6 +101,6 @@ install-exec-hook:
 	@INSTALL_SCRIPT@ @srcdir@/ddasReadout.tcl @bindir@/ddasReadout
 
 clean-local:
-	rm -f @srcdir@/ddasSortOptions.{h,c}
+	rm -f @builddir@/ddasSortOptions.{h,c}
 
 EXTRA_DIST=DDASFirmwareVersions.txt.in crate_1 ddasSortOptions.ggo ddasReadout.tcl readout.xml sorter.xml readoutdriver.xml readout.dox pixieserver.tcl.in

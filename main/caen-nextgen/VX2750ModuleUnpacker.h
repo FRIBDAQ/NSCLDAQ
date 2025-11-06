@@ -49,7 +49,6 @@ private:
     std::uint16_t               m_lowPriorityFlags[VX2750_MAX_CHANNELS];
     std::uint16_t               m_highPriorityFlags[VX2750_MAX_CHANNELS];
     std::uint16_t               m_downSampleSelection[VX2750_MAX_CHANNELS];
-    std::uint16_t               m_failFlags[VX2750_MAX_CHANNELS];
     std::uint16_t               m_analogProbe1Types[VX2750_MAX_CHANNELS];
     std::vector<std::uint32_t>  m_analogProbe1Samples[VX2750_MAX_CHANNELS];
     std::uint16_t               m_analogProbe2Types[VX2750_MAX_CHANNELS];
@@ -62,6 +61,7 @@ private:
     std::vector<std::uint8_t>   m_digitalProbe3Samples[VX2750_MAX_CHANNELS];
     std::uint32_t               m_digitalProbe4Types[VX2750_MAX_CHANNELS];
     std::vector<std::uint8_t>   m_digitalProbe4Samples[VX2750_MAX_CHANNELS];
+    std::uint16_t               m_failFlags[VX2750_MAX_CHANNELS];
 
 public:
     VX2750ModuleUnpacker(const char* moduleName, const char* paramBaseName);

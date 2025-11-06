@@ -18,9 +18,9 @@
 
 
 #include <config.h>
-#include "CV977.h"
+#include <CV977.h>
 
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 
@@ -36,6 +36,10 @@
 #include <set>
 
 #include <iostream>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
+
 using namespace std;
 
 /*
@@ -122,6 +126,7 @@ CV977::CV977() :
 {
 
 }
+#ifndef MVLC_GENERATOR
 /*!
    In copy construction, we want to copy the configuration if it already exists,
    so that we have a faithful copy of the rhs object .. including configuration.
@@ -134,13 +139,13 @@ CV977::CV977(const CV977& rhs) :
     m_pConfiguration = new CReadoutModule(*(rhs.m_pConfiguration));
   }
 }
-
+#endif
 /*!
    Destructor...see above.
 */
 CV977::~CV977()
 {}
-
+#ifdef MVLC_GENERATOR
 /*!
   Assignment returns self else copying the configuration can lead to an
   infinite recursion loop.
@@ -150,6 +155,7 @@ CV977::operator=(const CV977& rhs)
 {
   return *this;
 }
+#endif
 
 /*!
    onAttach is called when the configuration entity is attached to this
@@ -162,7 +168,12 @@ CV977::operator=(const CV977& rhs)
    @param configuration : CReadoutModule&
     The configuration that will be attached to this module.
 */
-void CV977::onAttach(CReadoutModule& configuration)
+void 
+#ifdef MVLC_GENERATOR
+CV977::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
+CV977::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration;
 
@@ -305,6 +316,7 @@ CV977::addReadoutList(CVMUSBReadoutList& list)
   list.addRead16(base + offset, amod);
 
 }
+#ifndef MVLC_GENERATOR
 /*!
    Virtual copy constructor
 */
@@ -313,3 +325,32 @@ CV977::clone() const
 {
   return new CV977(*this);
 }
+
+#endif
+
+#ifdef MVLC_GENERATOR
+//////////////////////////////////////  V977Command implementation:
+
+/**
+ * constructor - nothing spectacular here.
+ */
+V977Command::V977Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "v977", parser) {}
+
+/** 
+ * destructor
+ */
+V977Command::~V977Command() {}
+
+/**
+ *  creatDevice 
+ *    Encapsulate a new CV977 in a Readout module
+ */
+CReadoutModule* 
+V977Command::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CV977);
+
+  return result;
+}
+#endif

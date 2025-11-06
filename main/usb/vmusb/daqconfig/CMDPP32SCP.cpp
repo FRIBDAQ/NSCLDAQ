@@ -13,13 +13,21 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
-
-#include "CMDPP32SCP.h"
-#include "CReadoutModule.h"
+/**
+ * @file CMDPP32SCP.cpp
+ * @brief implementation of support for MDPP with 32 channel SCP firmware enabled.
+ * @note  Suports both VMUSB and MVLC.  MVLC_GENERATOR is defined for MVLC compilations.
+ */
+#include <CMDPP32SCP.h>
+#include <CReadoutModule.h>
 #include <unistd.h>
 #include <CVMUSB.h>
 #include <bitset>
 #include <iomanip>
+#include <iostream>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 using std::vector;
 using std::string;
@@ -50,7 +58,7 @@ CMDPP32SCP::CMDPP32SCP()
 {
   m_pConfiguration = 0;
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * Copy construction.  This cannot be virtual by the rules of C++ the clone()
  * method normally creates a new object from an existing template object.
@@ -64,6 +72,7 @@ CMDPP32SCP::CMDPP32SCP(const CMDPP32SCP& rhs)
     m_pConfiguration = new CReadoutModule(*(rhs.m_pConfiguration));
   }
 }
+#endif
 /**
  * Destruction.  If your object creatd any dynamic data it must be freed here:
  */
@@ -88,7 +97,11 @@ CMDPP32SCP::~CMDPP32SCP()
  * @parm configuration - Reference to the configuration object for this instance of the driver.
  */
 void
+#ifdef MVLC_GENERATOR
+CMDPP32SCP::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CMDPP32SCP::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration; 
 
@@ -150,21 +163,27 @@ CMDPP32SCP::onAttach(CReadoutModule& configuration)
 void
 CMDPP32SCP::Initialize(CVMUSB& controller)
 {
-  uint32_t base = m_pConfiguration -> getUnsignedParameter("-base");
+uint32_t base = m_pConfiguration -> getUnsignedParameter("-base");
 
   // Retreiving trigger information before the module reset
   uint16_t triggersource = m_pConfiguration -> getIntegerParameter("-triggersource");
+  #ifndef MVLC_GENERATOR
   if (triggersource == 0x400) {
     controller.vmeRead16(base + TriggerSource, initamod, &triggersource);
   }
-
+#endif
   uint16_t triggeroutput = m_pConfiguration -> getIntegerParameter("-triggeroutput");
+#ifndef MVLC_GENERATOR  
   if (triggeroutput == 0x400) {
     controller.vmeRead16(base + TriggerOutput, initamod, &triggeroutput);
   }
-
+#endif
   controller.vmeWrite16(base + Reset,        initamod, 1);
+#ifdef MVLC_GENERATOR
+  controller.delay(1000);
+#else
   sleep(1);
+#endif
   controller.vmeWrite16(base + StartAcq,     initamod, 0);
   controller.vmeWrite16(base + InitFifo,     initamod, 1);
   controller.vmeWrite16(base + ReadoutReset, initamod, 1);
@@ -310,13 +329,17 @@ CMDPP32SCP::Initialize(CVMUSB& controller)
   char readBuffer[100];		// really a dummy as these are all write...
   size_t bytesRead;
   int status = controller.executeList(list, readBuffer, sizeof(readBuffer), &bytesRead);
+#ifndef MVLC_GENERATOR
   if (status < 0) {
      throw string("List excecution to initialize an MDPP32SCP failed");
   }
+#endif
 
+#ifndef MVLC_GENERATOR
   if (isPrintRegisters) {
     printRegisters(controller);
   }
+#endif
 }
 
 /**
@@ -349,7 +372,7 @@ void
 CMDPP32SCP::onEndRun(CVMUSB& controller)
 {
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * This method virtualizes copy construction by providing a virtual method that
  * invokes it. Usually you don't have to modify this code.
@@ -363,6 +386,7 @@ CMDPP32SCP::clone() const
 {
   return new CMDPP32SCP(*this);
 }
+#endif
 /**
  * setChainAddresses
  *
@@ -475,7 +499,7 @@ CMDPP32SCP::initCBLTReadout(CVMUSB& controller,
   controller.vmeWrite16(cbltAddress + ReadoutReset, initamod, 0);
   controller.vmeWrite16(cbltAddress + StartAcq,     initamod, 1);
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * Printing all register values in MDPP-32 module with SCP firmware
  * read from the module, not the user-input values.
@@ -846,4 +870,32 @@ CMDPP32SCP::printRegisters(CVMUSB& controller)
     cout << endl;
   }
 }
+#endif
 //////////////////////////////////////////////////////////////////////////////////////////
+#ifdef MVLC_GENERATOR
+//////////////////////// implemenet the Mdpp32ScpCommand class:
+
+/** constructor
+ * 
+ */
+Mdpp32ScpCommand::Mdpp32ScpCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+DeviceCommand(interp, "mdpp32scp", parser) {}
+
+/** 
+ * destructor:
+ */
+Mdpp32ScpCommand::~Mdpp32ScpCommand() {}
+
+/**
+ *  createDevice 
+ * 
+ * wrap an CMDPP32SCP object in a readout module.
+ */
+CReadoutModule*
+Mdpp32ScpCommand::createDevice(std::string name) {
+  CReadoutModule* result = new CReadoutModule;
+  result->SetDriver(new CMDPP32SCP);
+
+  return result;
+}
+#endif

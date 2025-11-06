@@ -1,5 +1,30 @@
+#
+#  A bit about this makefile.  once it's fully done,
+# The device support compiled modules will all come from
+# main/usb/vmusb/daqconfig.  The modules in the IMPORTED_MODULES
+# variable have been imported.  When compiled
+# with this makefile, those modules have the preprocessor symbol
+# MVLC_GENERATOR defined and ifedefs are sprinkled through the modules
+# so that they can work correctly in both frameworks.
+#  This comes at a cost, however.  Specifically if not done
+# carefully, changes to main/usb/vmusb/daqconfig modules can trigger
+# compilation errors here.  Such problems are usually remedied
+# by appropriate #ifdefery.  This means that you may need to udnerstand
+# how this framework differs from the VMUSBRedout framework.
+# The IMPORT_DIR symbol defines where modules are imoprted from.
+# this is normally @top_srcdir@/usb/vmusb/daqconfig
+#
+
 bin_PROGRAMS=mvlcgenerate mvlc_xlmload
 
+# I had an out of tree build fail in a weird way that
+# makes me believe this is not fully parallel safe.
+# Specifically a link of the tests claimed
+# that the libmvlcGenerator.la was not present
+# but after the dust settled it was...and  clean
+# build serial and parallel worked....
+
+NOTPARALLEL:
 
 #------------------ build the generator:
 
@@ -27,37 +52,56 @@ includedir=@prefix@/include/mvlc
 # Done this way so we don't need a lib and we don't need to repeat ourselves for
 # test sources
 
-DEVICE_MODULES= CMarker.h CMarker.cpp \
-	C785.h C785.cpp C3820.h C3820.cpp \
-	CDelay.h CDelay.cpp \
-	CMADC32.cpp CMADC32.h CMesytecBase.cpp CMesytecBase.h MADC32Registers.h \
-	CCAENChain.h CCAENChain.cpp CMADCChain.h CMADCChain.cpp \
-	CMADCScaler.h CMADCScaler.cpp CMTDC32.h CMTDC32.cpp \
-	C3804.h C3804.cpp \
-	CMQDC32RdoHdwr.h CMQDC32RdoHdwr.cpp CMQDC32StackBuilder.h CMQDC32StackBuilder.cpp MQDC32Registers.h \
-	CMDPP16QDC.cpp  CMDPP16QDC.h  CMDPP32QDC.cpp  CMDPP32QDC.h  CMDPP32SCP.cpp  CMDPP32SCP.h  CMDPP.h  CMDPPQDC.h \
-	C830.h C830.cpp CNADC2530.h CNADC2530.cpp CV977.h CV977.cpp \
-	CV1495sc.h CV1495sc.cpp CV1729.h CV1729.cpp \
-	CCAENV1x90Opcodes.h CCAENV1x90Registers.h CV1x90.cpp CV1x90.h \
-	sis3316.h sis3316Registers.h \
-	CXLM.h CXLM.cpp CXLMTimestamp.cpp CXLMTimestamp.h CXLMFERA.cpp CXLMFERA.h \
-	VMUSBCommand.h VMUSBCommand.cpp VMUSBListCommand.h VMUSBListCommand.cpp \
+IMPORT_DIR=@top_srcdir@/usb/vmusb/daqconfig
+IMPORTED_MODULES= \
+	$(IMPORT_DIR)/CMQDC32RdoHdwr.cpp \
+	$(IMPORT_DIR)/CMQDC32StackBuilder.cpp \
+	$(IMPORT_DIR)/C785.cpp \
+	$(IMPORT_DIR)/C830.cpp \
+	$(IMPORT_DIR)/C3804.cpp \
+	$(IMPORT_DIR)/C3820.cpp \
+	$(IMPORT_DIR)/CCAENChain.cpp \
+	$(IMPORT_DIR)/CDelay.cpp \
+	$(IMPORT_DIR)/CMesytecBase.cpp \
+	$(IMPORT_DIR)/CMADC32.cpp \
+	$(IMPORT_DIR)/CMADCChain.cpp  \
+	$(IMPORT_DIR)/CMADCScaler.cpp \
+	$(IMPORT_DIR)/CMarker.cpp \
+	$(IMPORT_DIR)/CMDPP16QDC.cpp \
+	$(IMPORT_DIR)/CMDPP32QDC.cpp  \
+	$(IMPORT_DIR)/CMDPP32SCP.cpp  \
+	$(IMPORT_DIR)/CMTDC32.cpp \
+	$(IMPORT_DIR)/CNADC2530.cpp \
+	$(IMPORT_DIR)/CV1x90.cpp  \
+	$(IMPORT_DIR)/CV977.cpp \
+	$(IMPORT_DIR)/CV1495sc.cpp \
+	$(IMPORT_DIR)/CV1729.cpp \
+	$(IMPORT_DIR)/CXLM.cpp \
+	$(IMPORT_DIR)/CXLMTimestamp.cpp \
+	$(IMPORT_DIR)/CXLMFERA.cpp 
+
+
+LOCAL_MODULES= \
+	VMUSBCommand.h VMUSBCommand.cpp VMUSBListCommand.h \
+	VMUSBListCommand.cpp \
 	TclWrapper.h TclWrapper.cpp
 
 main_modules=utilities.h utilities.cpp \
 	 MVLCConfigParser.cpp \
-	$(DEVICE_MODULES) \
+	$(LOCAL_MODULES) \
+	$(IMPORTED_MODULES) \
 	MVLCGenerator.h MVLCGenerator.cpp \
 	vme_interface_class.h sis_vmusb_interface.h sis_vmusb_interface.cpp
 
 mvlcgenerate_SOURCES=generate.cpp $(main_modules) 
-mvlcgenerate_DEPENDENCIES=libmvlcGenerator.la
+mvlcgenerate_DEPENDENCIES=@builddir@/libmvlcGenerator.la
 
-mvlcgenerate_CPPFLAGS= -I@top_srcdir@/usb/common/configurableobject \
+mvlcgenerate_CPPFLAGS= -I@srcdir@ -I@top_srcdir@/usb/common/configurableobject \
 	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os \
 	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ @YAML_CFLAGS@ \
 	-DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" \
-	-DMVLC_TCLLIBDIR=\"@datarootdir@/mvlc/TclLibs\"
+	-DMVLC_TCLLIBDIR=\"@datarootdir@/mvlc/TclLibs\" \
+	-DMVLC_GENERATOR -I@top_srcdir@/usb/vmusb/daqconfig
 
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@ @YAML_LIBS@ @builddir@/libmvlcGenerator.la
@@ -102,16 +146,17 @@ options.h: options.ggo
 
 mvlc_xlmload_SOURCES = xlmload.cpp \
 	CVMUSB.h CVMUSB.cpp CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
-	CMVLCDirect.h CMVLCDirect.cpp CXLM.h CXLM.cpp \
+	CMVLCDirect.h CMVLCDirect.cpp \
+	$(IMPORT_DIR)/CXLM.h $(IMPORT_DIR)/CXLM.cpp \
 	xlm_options.h xlm_options.c
 
-mvlc_xlmload_DEPENDENCIES=xlm_options.c
 
 mvlc_xlmload_CPPFLAGS=@MVLC_CPPFLAGS@ \
 	-I@top_srcdir@/usb/common/configurableobject \
-	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os
+	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os \
+	-I$(IMPORT_DIR) -DMVLC_GENERATOR
 
-mvlc_xlmload_LDFLAGS=libmvlcGenerator.la \
+mvlc_xlmload_LDFLAGS=@builddir@/libmvlcGenerator.la \
 	@MVLC_LDFLAGS@ \
 	@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
@@ -123,7 +168,7 @@ xlm_options.c: xlm_options.h
 xlm_options.h: xlmload_options.ggo
 	$(GENGETOPT) --output-dir=@builddir@ --file-name=xlm_options <@srcdir@/xlmload_options.ggo
 
-mvlc_xlmload_DEPENDENCIES=libmvlcGenerator.la
+mvlc_xlmload_DEPENDENCIES=@builddir@/libmvlcGenerator.la xlm_options.c
 
 #------------------------------ build/runtests
 

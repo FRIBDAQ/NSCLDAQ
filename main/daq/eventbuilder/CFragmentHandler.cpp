@@ -1854,7 +1854,7 @@ private:
 public:
   TsLargerThan(uint64_t ts) : m_timestamp(ts) {
   }
-  bool operator()(std::pair<time_t, EVB::pFragment>& qel) {
+  bool operator()(const std::pair<time_t, EVB::pFragment>& qel) const {
     return (m_timestamp < qel.second->s_header.s_timestamp ) ||
           (qel.second->s_header.s_barrier != 0);
   }
@@ -1866,7 +1866,7 @@ private:
 public:
   TsSmallerThan(uint64_t ts) : m_timestamp(ts) {
   }
-  bool operator()(std::pair<time_t, EVB::pFragment>& qel) {
+  bool operator()(const std::pair<time_t, EVB::pFragment>& qel) const {
     
     // Don't need to consider barriers as this is only used when there
     // are no inflight barriers.
@@ -1886,7 +1886,7 @@ private:
   time_t m_time;
 public:
   TimeLargerThan(time_t t) : m_time(t) {}
-  bool operator()(std::pair<time_t, EVB::pFragment>& qel) {
+  bool operator()(const std::pair<time_t, EVB::pFragment>& qel) const {
     return (m_time < qel.first)     ||
        (qel.second->s_header.s_barrier != 0);
   }

@@ -57,7 +57,17 @@ MVLCGenerate::MVLCGenerate(std::string outfile, TCLConfigParser* config) :
 MVLCGenerate::~MVLCGenerate() {
     delete m_pVMUSBCommand;
 }
-
+/**
+ * setTemplate
+ *    Override the default template file 
+ * 
+ * @param path - template file path  This must remain in scope for the lifetime of this
+ * object.
+ */
+void
+MVLCGenerate::setTemplate(const char* templatePath) {
+    m_YamlTemplate = templatePath;
+}
 
 /**
  *  generate
@@ -129,6 +139,8 @@ MVLCGenerate::fillReadoutStack(YAML::Node& doc, const char* name,  CStack& stack
     // locate what we fill in:
 
     auto stacks = doc["crate"]["readout_stacks"];
+    createRdoIfNeeded(stacks, name);
+
     // Need to find the correct stack:
 
     for (int i =0; i < stacks.size(); i++) {
@@ -166,6 +178,7 @@ MVLCGenerate::fillInitStack(YAML::Node& doc, const char* name, CStack& stack) {
     // Locate the stack we fill in:
 
     auto stacks = doc["crate"]["init_commands"]["groups"];
+    createInitIfNeeded(stacks, name);
     for (int g = 0; g < stacks.size(); g++) {
         if (stacks[g]["name"].as<std::string>() == name) {
             auto stack = stacks[g]["contents"];
@@ -197,6 +210,7 @@ MVLCGenerate::fillEndStack(YAML::Node& doc, const char* name, CStack& stack) {
     // Find and fill in the appropriate stack:
 
     auto stacks = doc["crate"]["stop_commands"]["groups"];
+    createStopIfNeeded(stacks, name);
     for (int g = 0; g < stacks.size(); g++) {
         auto sname = stacks[g]["name"];
         if (sname.as<std::string>() == name) {
@@ -207,4 +221,102 @@ MVLCGenerate::fillEndStack(YAML::Node& doc, const char* name, CStack& stack) {
         }
     }
     m_pVMUSBCommand->clearController();
+}
+/**
+ * Given the readout_stacks node, if the given stack isn't in that,
+ * generate its skeleton.
+ * 
+ * @param doc - [crate][readout_stacks] node
+ * @param stackname -name of the stack to create ifneeded.
+ * 
+ * The structure we create is:
+ * 
+ * - name: {stackname}
+ *   groups:
+ *    -name: readout
+ *     contents: []
+ *    -name: readout_end
+ *     contents: []
+ * 
+ */
+void
+MVLCGenerate::createRdoIfNeeded(YAML::Node& stacks, const char* stackname) {
+    // if stacks already has stackname, do nothing:
+
+    for (int s = 0; s < stacks.size(); s++) {
+        auto sname = stacks[s]["name"];
+        if (sname.as<std::string>() == stackname) {
+            return;                     // Already have it, assume it's complete.
+        }
+    }
+    // Have to add it:
+
+    std::stringstream nodeText;
+    nodeText << "name: " << stackname << std::endl;
+    nodeText << "groups:\n";
+    nodeText << "  - name: readout\n";
+    nodeText << "    contents:\n";
+    nodeText << "  - name: readout_end\n";
+    nodeText << "    contents:\n";
+    std::string nodestring = nodeText.str();
+
+    YAML::Node stack = YAML::Load(nodestring);
+    stacks.push_back(stack);
+
+}
+/**
+ * createInitIfNeeded
+ *     If it does not yet exist, create an empty init entry for a stack.
+ * 
+ * @param node the ["crate"]["init_commands"]["groups"] node
+ * @param stackname - name of the stack to create.
+ * 
+ */
+void
+MVLCGenerate::createInitIfNeeded(YAML::Node& node, const char* stackname) {
+    // If the stack already exists, assume its complete:
+
+    for (int i = 0; i < node.size(); i++) {
+        if (node[i]["name"].as<std::string>() == stackname) {
+            return;                 // already exists.
+        }
+    }
+
+    // the YAML we want to add to node is:
+
+    std::stringstream yamlstream;
+    yamlstream << "name: " << stackname << std::endl;
+    yamlstream << "contents:\n";
+
+    std::string yamlstring = yamlstream.str();
+    YAML::Node yaml = YAML::Load(yamlstring);
+    node.push_back(yaml);
+}
+/**
+ *  createStopIfNeeded
+ *    If it does not exist yet, create an empty stop stack.
+ * 
+ * @param node the [crate][stop_commands][groups] node.
+ * @param stackname - name of the stack to generate.
+ */
+void
+MVLCGenerate::createStopIfNeeded(YAML::Node& node, const char* stackname) {
+    // If the stack is already there assume its template is complete and 
+    // return.
+
+    for (int i =0; i < node.size(); i++) {
+        if (node[i]["name"].as<std::string>() == stackname) {
+            return;
+        }
+    }
+    // Generate this teamplate:
+
+    std::stringstream yamlstream;
+    yamlstream << "name: " << stackname << std::endl;
+    yamlstream << "contesnts:\n";
+
+    std::string yamlstring = yamlstream.str();
+    YAML::Node yaml = YAML::Load(yamlstring);
+
+    node.push_back(yaml);
 }

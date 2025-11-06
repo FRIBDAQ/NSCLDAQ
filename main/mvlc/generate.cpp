@@ -61,6 +61,10 @@ int main(int argc, char** argv) {
     std::string infile = args.inputs[0];
     std::string outfile = computeOutfile(args);
 
+    if (args.template_given) {
+            MVLCGenerate::setTemplate(args.template_arg);
+        }
+
     // Now we need to process the input file.  This is done in a TclConfigParser object
     // Once that's done we can start to pull bits out of the object and push them into the templated
     // yaml configuration file...which is then written to outfile.
@@ -68,6 +72,7 @@ int main(int argc, char** argv) {
     try {
         setenv("MVLC_TRANSLATOR", "1", 1);
         setenv("TCLLIBPATH", MVLC_TCLLIBDIR, 1);
+        
         MVLCConfigParser tclparser(infile);
         tclparser.initialize();
         tclparser();

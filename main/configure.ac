@@ -772,6 +772,12 @@ then
 	fi
 	RUST_CARGO="${RUST_TOOL_DIR}/cargo"
 	
+	#  Select the default tool chain to be stable:
+	
+	${RUST_TOOL_DIR}/rustup default stable
+
+	AC_MSG_NOTICE([The default rust toolchain has been set to stable])
+	
 	AC_SUBST(RUST_TOOL_DIR)
 	AC_SUBST(RUST_CARGO)
 
@@ -874,7 +880,8 @@ AC_CONFIG_FILES([
     utilities/managercontrol/Makefile
     utilities/readoutREST/Makefile
     utilities/udpBroker/Makefile
-	utilities/ringdiagnostics/Makefile
+    utilities/ringdiagnostics/Makefile
+    utilities/statsview/Makefile
     epics/epicslib/Makefile
     epics/chanlog/Makefile
     epics/controlpush/Makefile

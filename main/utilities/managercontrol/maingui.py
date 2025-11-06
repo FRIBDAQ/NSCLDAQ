@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
     QTextEdit
     
 )
-from PyQt5.QtGui import ( QStandardItemModel, QStandardItem, QIntValidator)
+from PyQt5.QtGui import (QIntValidator)
 
 from PyQt5.QtCore import pyqtSignal, Qt
 
@@ -439,6 +439,7 @@ class RunControlWidget(QWidget):
             self._log.setDisabled(True)
         else:
             self._log.setDisabled(False)
+
 
 class RunControls(QWidget):
     """Container widget for the RunInfoWidget and RunControlWidgets.  These are the top part of the
@@ -868,9 +869,9 @@ if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
     main_window = QMainWindow()
-    test_widget = MainGui()
+    main_widget = MainGui()
     
-    main_window.setCentralWidget(test_widget)
+    main_window.setCentralWidget(main_widget)
     
 
     main_window.show()

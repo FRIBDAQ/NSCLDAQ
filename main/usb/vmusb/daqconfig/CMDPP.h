@@ -17,39 +17,15 @@
 #ifndef __CMDPP_H
 #define __CMDPP_H
 
-#ifndef __CMESYTECBASE_H
 #include "CMesytecBase.h"
-#endif
-
-#ifndef __CRT_STDINT_H
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
-#endif
-#endif
-
-#ifndef __STL_MAP
 #include <map>
-#ifndef __STL_MAP
-#define __STL_MAP
-#endif
-#endif
-
 #include <CVMUSBReadoutList.h>
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
+#endif
 
 #ifndef Const
 #define Const(name) static const int name =
@@ -168,12 +144,40 @@ Const(Bank0LowLimit)        0x60b2;
 
 Const(ChannelSelection)     0x6100;
 
+// QDC & PADC & SCP
+Const(SignalWidth)          0x6110;
+
+// QDC
+Const(InputAmplitude)       0x6112;
+Const(JumperRange)          0x6114;
+Const(QDCJumper)            0x6116;
+Const(IntegrationLong)      0x6118;
+Const(IntegrationShort)     0x611a;
+Const(LongGainCorrection)   0x612a;
+Const(ShortGainCorrection)  0x612e;
+
+// QDC & PADC & SCP
 Const(Threshold0)           0x611c;
 Const(Threshold1)           0x611e;
 Const(Threshold2)           0x6120;
 Const(Threshold3)           0x6122;
 
+// QDC & PADC
+Const(BLRTHRESHOLD)         0x6112;
+Const(BLR)                  0x6126;
+
+// RCP
 Const(ResetTime)            0x6128;
+
+// SCP
+Const(TFIntDiff)            0x6110;
+Const(PZ0)                  0x6112;
+Const(PZ1)                  0x6114;
+Const(PZ2)                  0x6116;
+Const(PZ3)                  0x6118;
+Const(Gain)                 0x611a;
+Const(ShapingTime)          0x6124;
+Const(SignalRiseTime)       0x612a;
 
 // Sample registers
 Const(PreSamples)           0x6146;

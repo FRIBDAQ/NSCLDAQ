@@ -1,5 +1,8 @@
 bin_PROGRAMS=glom
 
+##
+# Build glom with buffered fragment reader:
+#
 
 glom_SOURCES= glomMain.cpp CBufferedFragmentReader.cpp
 
@@ -26,7 +29,8 @@ glom.h: @srcdir@/glom.ggo
 EXTRA_DIST=glom.ggo glom.xml config.h
 
 ##
-# Make a buffered fragment reader library for testing
+# Make a buffered fragment reader library and install the header in case
+# its useful in other contexts:
 #
 
 lib_LTLIBRARIES = libBufferedFragmentReader.la

@@ -63,6 +63,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <CXLMTimestamp.h>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 static const uint32_t Interrupt              (0x000004); // Interrupt/reset register.
 static const uint8_t  registerAmod           (CVMUSBReadoutList::a32UserData);
@@ -75,10 +78,11 @@ using namespace XLM;
 
 
 CXLMTimestamp::CXLMTimestamp()  : CXLM() {}
-
+#ifndef MVLC_GENERATOR
 CXLMTimestamp::CXLMTimestamp(const CXLMTimestamp& rhs)
    : CXLM(rhs)
 {}
+#endif
 
 /**
  * Destruction.  If your object creatd any dynamic data it must be freed here:
@@ -104,7 +108,11 @@ CXLMTimestamp::~CXLMTimestamp()
  * @parm configuration - Reference to the configuration object for this instance of the driver.
  */
 void
+#ifdef MVLC_GENERATOR
+CXLMTimestamp::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 CXLMTimestamp::onAttach(CReadoutModule& configuration)
+#endif
 {
   // Call the base class's onAttach
   // This stores the m_pConfiguration pointer for later use
@@ -129,7 +137,11 @@ CXLMTimestamp::Initialize(CVMUSB& controller)
     std::cout << "Loading firmware from file : " << firmware << std::endl;
 
     loadFirmware(controller, firmware);
+#ifdef MVLC_GENERATOR
+    controller.delay(100000);
+#else    
     sleep(1);
+#endif    
   }
 
   // Clear the scaler
@@ -165,7 +177,7 @@ CXLMTimestamp::addReadoutList(CVMUSBReadoutList& list)
   addBusAccess(list, 0, static_cast<uint32_t>(0));
   list.addWrite32(Interface() + 0x0000c, registerAmod, static_cast<uint32_t>(0));
 }
-
+#ifndef MVLC_GENERATOR
 /**
  * This method virtualizes copy construction by providing a virtual method that
  * invokes it.  Usually you don't have to modify this code.
@@ -180,3 +192,30 @@ CXLMTimestamp::clone() const
   return new CXLMTimestamp(*this);
 }
 
+#endif
+
+#ifdef MVLC_GENERATOR
+
+////////////////////  Implement the creator command:
+/**
+ * construtor:
+ */
+XLMTSCommand::XLMTSCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "XLMTimestamp", parser) {}
+
+XLMTSCommand::~XLMTSCommand() {}
+
+/**
+ * createDevice
+ *     Create the device instance:
+ */
+CReadoutModule*
+XLMTSCommand::createDevice(std::string name) {
+  auto dev =  new CXLMTimestamp;
+  auto result = new CReadoutModule;
+  result->SetDriver(dev);
+
+  return result;
+}
+
+#endif

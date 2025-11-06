@@ -14,11 +14,14 @@
 	     East Lansing, MI 48824-1321
 */
 #include <config.h>
-#include "CNADC2530.h"
+#include <CNADC2530.h>
 #include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 #include <stdio.h>
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 using namespace std;
 
@@ -147,6 +150,7 @@ CNADC2530::CNADC2530() :
   m_pConfiguration(0)
 {
 }
+#ifndef MVLC_GENERATOR
 /*!
   Copy construction snapshots  the configuration
 
@@ -162,6 +166,7 @@ CNADC2530::CNADC2530(const CNADC2530& rhs) :
     m_pConfiguration = new CReadoutModule(*(rhs.m_pConfiguration));
   }
 }
+#endif
 /*!
    
 Destructor leaks for now... if copy constructed.
@@ -169,7 +174,10 @@ Destructor leaks for now... if copy constructed.
 CNADC2530::~CNADC2530()
 {
 }
-
+#ifndef MVLC_GENERATOR
+/*!
+  Assignment is also bogus for now due to danger of recursion loops.
+*/
 /*!
   Assignment is also bogus for now due to danger of recursion loops.
 */
@@ -179,6 +187,7 @@ CNADC2530::operator=(const CNADC2530& rhs)
   return *this;
 }
 
+#endif 
 /////////////////////////////////////////////////////////////////////////////
 // Implementing the base class interface:
 //
@@ -194,7 +203,11 @@ CNADC2530::operator=(const CNADC2530& rhs)
   \param configuration - reference to the configuration of the module. 
 */
 void
+#ifdef MVLC_GENERATOR
+CNADC2530::onAttach(XXUSB::CConfigurableObject& configuration) 
+#else
 CNADC2530::onAttach(CReadoutModule& configuration) 
+#endif
 {
   // Save our configuration so we can query it later.
 
@@ -287,7 +300,8 @@ CNADC2530::Initialize(CVMUSB& controller)
   // Check the validity of the -csr. If valid, program the memory base.
   // read failures are either VM-USB problem or, potentially I'm pointed into
   // VME addresses with no responders.
-  //
+  //  In the MVLC case we're not connected to a module so we have to take the user's word.
+#ifndef MVLC_GENERATOR
   uint16_t   id, model;
   int status  = controller.vmeRead16(csr + REG_ID, initamod, &id);
   if (status) {
@@ -303,7 +317,7 @@ CNADC2530::Initialize(CVMUSB& controller)
 	    csr, id, ID_VALUE, model, TYPE_VALUE);
     throw string(message);
   }
-
+#endif
   // Disable the module and set its counters to something reasonable.
 
   controller.vmeWrite16(csr + REG_CSR, initamod, (uint16_t)(CSR_RESET | CSR_CLTS));
@@ -377,7 +391,7 @@ CNADC2530::addReadoutList(CVMUSBReadoutList& list)
 
 
   list.addMarker(static_cast<uint16_t>(m_pConfiguration->getUnsignedParameter("-id")));
-  list.addDelay(1);
+  //list.addDelay(1);
   list.addMarker(transferMask);
   //  list.addDelay(1);
 
@@ -413,7 +427,7 @@ CNADC2530::addReadoutList(CVMUSBReadoutList& list)
 
   list.addWrite16(m_csr + REG_CSR, initamod, m_csrValue);
 }
-
+#ifndef MVLC_GENERATOR
 /*!
 
   Clone the object... produce an exact duplicate of this.
@@ -425,6 +439,7 @@ CNADC2530::clone() const
 {
   return new CNADC2530(*this);
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //  Private utility functions.
@@ -457,3 +472,31 @@ CNADC2530::hldToRegister(double hld)
   int intermediate = (int)(((hld/3.2764) - 2)/(0.5/4095));
   return (uint16_t)((intermediate << 2) & 0x3ffc);
 }
+
+#ifdef MVLC_GENERATOR
+////////////////////////////// implmenet the Nadc2530Command.
+
+/**
+ *  constructor - nothing special, register as "hytec"
+ */
+Nadc2530Command::Nadc2530Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "hytec", parser) {}
+
+
+/**
+ * destructor:
+ */
+Nadc2530Command::~Nadc2530Command() {}
+
+/** 
+ * createDevice.
+ * 
+ */
+CReadoutModule* 
+Nadc2530Command::createDevice(std::string name) {
+  auto result = new CReadoutModule;
+  result->SetDriver(new CNADC2530);
+
+  return result;
+}
+#endif

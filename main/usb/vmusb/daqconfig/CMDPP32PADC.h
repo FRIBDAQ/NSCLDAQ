@@ -1,6 +1,6 @@
 /*
     This software is Copyright by the Board of Trustees of Michigan
-    State University (c) Copyright 2024.
+    State University (c) Copyright 2025.
 
     You may use this software under the terms of the GNU public license
     (GPL).  The terms of this license are described at:
@@ -14,11 +14,18 @@
 	     East Lansing, MI 48824-1321
 */
 
-#ifndef MVLC_CMDPP32QDC_H
-#define MVLC_CMDPP32QDC_H
+#ifndef __CMDPP32PADC_H
+#define __CMDPP32PADC_H
 
-#include "CMDPP.h"
-#include "CMDPPQDC.h"
+#ifndef __CMDPP_H
+#include <CMDPP.h>
+#endif
+
+#ifdef MVLC_GENERATOR
+namespace XXUSB {
+  class CConfigurableObject;
+}
+#endif
 
 /*!
    The MDPP-32 is a 32 channel fast high resolution time and amplitude digitizer module produced by Mesytec.
@@ -39,58 +46,56 @@
    -multievent          integer             Multi event register. See Doc.
    -marktype            enum (eventcounter,timestamp,extended-timestamp)
    -tdcresolution       integer [0-5]       25ns/2^(10-value)
-   -adcresolution       enum (4k,8k,16k,32k,64k)
-   -outputformat        integer [0-3]       0:Time(T) and long integral(L), 1:L, 2:T, 3:LT and short integral
-   -signalwidth         int[8] [0-1023]     FWHM in ns
-   -inputamplitude      int[8] [0-65535]    0 to peak voltage in mV. Maximum value is the jumper range value.
-   -jumperrange         int[8] [0-65535]    Range printed on jumper top.
-   -qdcjumper           bool[8]             If QDC jumper is used.
-   -intlong             int[8] [2-506]      Long integration time. Multiple of 12.5 ns.
-   -intshort            int[8] [1-127]      Short integration time. Multiple of 12.5 ns.
-                                            This should be smaller than intlong.
+   -outputformat        integer [0-2]       0:Time(T) and Peak Amplitude(A), 1:A, 2:T
+   -signalwidth         int[8] [2-2000]     FWHM in unit of 12.5 ns
    -threshold           int[32] [1-65535]   Threshold to start measuring. Calculated as value/0xFFFF percentage.
-   -resettime           int[8] [0-1023]     When OF/UF, input preamp and digital section is resetted.
-   -gaincorrectionlong  enum (div4,mult4,none) Either divide by 4 or multiply by 4 to the integral value.
-   -gaincorrectionshort enum (div4,mult4,none) Either divide by 4 or multiply by 4 to the integral value.
+   -blrthreshold        int[8] [16-128]     BLR threshold
+   -blr                 int[8] [0-2]        0: off, 1: int time = 4 shaping time, 2: int time = 8 shaping time
    -printregisters      bool                Print out all the register values on screen.
 \endverbatim
-
-   Comment by Genie:
-     - MDPP-16 QDC firmware has tf_gain_correction at 0x612C while MDPP-32 doesn't have one listed in the doc.
-     - MDPP-32 QDC chain methods are implemented, but chain mode is not supported as of 05/24/22.
 */
-namespace XXUSB {
-  class CConfigurableObject;
-}
 
-class CMDPP32QDC : public CMesytecBase
+class CMDPP32PADC : public CMesytecBase
 {
 public:
   typedef std::map<std::string, uint16_t> EnumMap;
 
 private:
+#ifdef MVLC_GENERATOR
   XXUSB::CConfigurableObject* m_pConfiguration;
+#else
+  CReadoutModule* m_pConfiguration;
+#endif
 
 public:
-  CMDPP32QDC();
-  virtual ~CMDPP32QDC();
+  CMDPP32PADC();
+  virtual ~CMDPP32PADC();
+
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CMDPP32PADC(const CMDPP32PADC& rhs);
 
 private:
-  CMDPP32QDC(const CMDPP32QDC& rhs);
-  CMDPP32QDC& operator=(const CMDPP32QDC& rhs); // assignment not allowed.
-  int operator==(const CMDPP32QDC& rhs) const;	  // Comparison for == and != not suported.
-  int operator!=(const CMDPP32QDC& rhs) const;
+  CMDPP32PADC& operator=(const CMDPP32PADC& rhs); // assignment not allowed.
+  int operator==(const CMDPP32PADC& rhs) const;	  // Comparison for == and != not suported.
+  int operator!=(const CMDPP32PADC& rhs) const;
 
 
 public:
+#ifdef MVLC_GENERATOR
   virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
+  virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
   virtual void onEndRun(CVMUSB& controller);
-  
-public:
-  static EnumMap gainCorrectionMap();
+#ifndef MVLC_GENERATOR
+  virtual CReadoutHardware* clone() const; 
+#endif
 
+public:
   void setChainAddresses(CVMUSB& controller,
                          CMesytecBase::ChainPosition position,
                          uint32_t      cbltBase,
@@ -100,18 +105,25 @@ public:
                        uint32_t cbltAddress,
                        int wordsPermodule);
 
+
+private:
+#ifndef MVLC_GENERATOR
+  void printRegisters(CVMUSB& controller);
+#endif
 };
 
-
+#ifdef MVLC_GENERATOR
 /**
- *  @class Mdpp32qdcCommand
- *    Provide the mdpp32qdc command.  A derivation of DeviceCommand.
+ *  @class Mdpp32padcCommand
+ *    Provide the mdpp32padc command.  A derivation of DeviceCommand.
  */
-class Mdpp32qdcCommand : public DeviceCommand {
+class Mdpp32padcCommand : public DeviceCommand {
 public:
-  Mdpp32qdcCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
-  virtual ~Mdpp32qdcCommand();
+  Mdpp32padcCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~Mdpp32padcCommand();
 protected:
   CReadoutModule* createDevice(std::string name);
 };
+#endif
+
 #endif

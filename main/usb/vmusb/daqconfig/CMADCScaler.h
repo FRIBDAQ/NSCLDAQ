@@ -13,41 +13,34 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
+/**
+ * @file CMADCScaler.h 
+ * @brief Support the Mesytec MADC32 internal counter as a scaler in VMUSB and MVLC
+ * @note MVLC_GENERATOR will be defined when compiling for mvlcgenerate.
+ */
 #ifndef __CMADCSCALER_H
 #define __CMADCSCALER_h
 
 
-#ifndef __CREADOUTHARDWARE_H
-#include "CReadoutHardware.h"
-#endif
-
-#ifndef __CRT_STDINT_H
+#include <CReadoutHardware.h>
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
-#ifndef __STL_VECTOR
 #include <vector>
-#ifndef __STL_VECTOR
-#define __STL_VECTOR
+#ifdef MVLC_GENERATOR
+#include <DeviceCommand.h>
 #endif
-#endif
-
 
 // Forward class definitions:
 
 class CReadoutModule;
 class CVMUSB;
 class CVMUSBReadoutList;
+
+#ifdef MVLC_GENERATE
+namespace XXUSB {
+  class CConfigurableObject;
+}
+#endif
 
 /*!
   This module provides support for a 'scaler' that reads two of the time
@@ -68,11 +61,20 @@ Configuration parameters:
 class CMADCScaler : public CReadoutHardware
 {
 private:
+#ifdef MVLC_GENERATOR
+  XXUSB::CConfigurableObject*     m_pConfiguration;
+#else
   CReadoutModule*     m_pConfiguration;
+#endif
 public:
   CMADCScaler();
-  CMADCScaler(const CMADCScaler& rhs);
+  
   virtual ~CMADCScaler();
+
+#ifdef MVLC_GENERATOR
+private:
+#endif
+  CMADCScaler(const CMADCScaler& rhs);
   CMADCScaler& operator=(const CMADCScaler& rhs);
 private:
   int operator==(CMADCScaler& rhs) const;
@@ -81,12 +83,32 @@ private:
   // The interface for CReadoutHardware:
 
 public:
+#ifdef MVLC_GENERATOR
+  virtual void onAttach(XXUSB::CConfigurableObject& configuration);
+#else
   virtual void onAttach(CReadoutModule& configuration);
+#endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+#ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
-
+#endif
 
 };
+
+#ifdef MVLC_GENERATOR
+/**
+ *  @class CMADCScalerCommand 
+ *    DeviceCommand that crate CMADCSCaler objects.
+ */
+class CMADCScalerCommand : public DeviceCommand {
+public:
+  CMADCScalerCommand(CTCLInterpreter& interp, TCLConfigParser& parser);
+  virtual ~CMADCScalerCommand();
+
+protected:
+  CReadoutModule* createDevice(std::string name);
+};
+#endif
 
 #endif

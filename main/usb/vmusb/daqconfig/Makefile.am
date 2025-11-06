@@ -62,6 +62,7 @@ libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CMDPP16QDC.cpp \
 				CMDPP32QDC.cpp \
 				CMDPP32SCP.cpp  \
+				CMDPP32PADC.cpp  \
 				CSIS3316.cpp \
 				sis3316_class.cpp 
 
@@ -127,10 +128,10 @@ noinst_HEADERS		=	CADCCommand.h  		\
 				CMQDC32RdoHdwr.h \
 				MQDC32Registers.h \
 				CMDPP.h \
-				CMDPPQDC.h \
 				CMDPP16QDC.h \
 				CMDPP32QDC.h \
 				CMDPP32SCP.h  \
+				CMDPP32PADC.h  \
 				CSIS3316.h \
 				sis3316_class.h \
 				sis3316.h \

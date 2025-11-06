@@ -7,7 +7,10 @@ purpose "Generate .yaml to run the mvlc fribdaq-readout"
 args "-u"
 
 option "output" o "Output filename [defaults to name-of-input.yaml]" string optional
+option "template" t "Yaml template file [defaults to the system install template]" string optional
 
 text "Translate a VMUSB daqconfig file into an mvlc/fribdaq-readout yaml configuation."
 text "The resulting configuration will use NIM 1 as the event trigger and a timed stack "
 text "to read out the scaler stack every 2 seconds."
+text "If you have a different set of trigger conditions, you can use your own template"
+text "yaml file by specifying --template mytemplate-file"

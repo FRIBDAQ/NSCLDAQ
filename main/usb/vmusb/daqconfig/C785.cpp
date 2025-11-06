@@ -14,15 +14,22 @@
 	     East Lansing, MI 48824-1321
 */
 
-// Implementation of the C785 class VM-USB support for the CAEN V785.
-
-
+/**
+*  @file   C785.cpp
+*  @brief Implementation of the C785 class VM-USB/MVLC support for the CAEN V785.
+*/
+#ifndef MVLC_GENERATOR
 #include <config.h>
-#include "C785.h"
+#endif
+#include <C785.h>
 
-#include "CReadoutModule.h"
+#include <CReadoutModule.h>
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
+
+#ifdef MVLC_GENERATOR
+#include <XXUSBConfigurableObject.h>
+#endif
 
 #include <tcl.h>
 
@@ -174,6 +181,9 @@ static XXUSB::CConfigurableObject::limit ipedHigh(255);
 static XXUSB::CConfigurableObject::Limits ipedRange(ipedLow, ipedHigh);
 
 static const char* inputsEnum[] = {"ribbon", "nim", 0};
+#ifdef MVLC_GENERATOR
+static const char* typeEnum[] = {"adc", "qdc", "tdc"};
+#endif
 
 //////////////////////////////////////////////////////////////////////
 /////////////////// Canonical class/object operations ////////////////
@@ -189,6 +199,12 @@ static const char* inputsEnum[] = {"ribbon", "nim", 0};
 C785::C785() :
   m_pConfiguration(0)
  {}
+
+
+C785::~C785() {}
+
+
+#ifndef MVLC_GENERATOR               // THese canonicals don't get implemented for MVLC
 C785::C785(const C785& rhs) :
   m_pConfiguration(0)
 {
@@ -196,13 +212,11 @@ C785::C785(const C785& rhs) :
     m_pConfiguration = new CReadoutModule(*(rhs.m_pConfiguration));
   }
 }
-C785::~C785() {}
-
 C785&
 C785::operator=(const C785& rhs) {
   return *this;			// Else infinite recursion loop.
 }
-
+#endif
 
 ///////////////////////////////////////////////////////////////////////
 //////////////////////// object operations ////////////////////////////
@@ -247,7 +261,7 @@ C785::addToChain(CVMUSB& controller,
 
   // FIgure out the address modifier
 
-  uint8_t initamod;
+  uint8_t initamod =initamod32;
   if (baseAddress & 0xff000000) {
     //a32
 
@@ -306,6 +320,9 @@ C785::addToChain(CVMUSB& controller,
    -timescale                600 (ns).  (775 only)
    -commonstop               false      (775 only)
    -iped                     180        (QDC's only).
+   -inputs                   ribbon | nim - for spectcl decoding
+MVLC:
+   -type                     adc | qdc | tdc - default adc for variable code. 
 \endverbatim
 
    All others have no default values.   If, during initialization one of those
@@ -317,7 +334,11 @@ C785::addToChain(CVMUSB& controller,
 */
 
 void
+#ifdef MVLC_GENERATOR
+C785::onAttach(XXUSB::CConfigurableObject& configuration)
+#else
 C785::onAttach(CReadoutModule& configuration)
+#endif
 {
   m_pConfiguration = &configuration;
 
@@ -366,7 +387,10 @@ C785::onAttach(CReadoutModule& configuration)
   // Issue 201 :
 
   m_pConfiguration->addEnumParameter("-inputs", inputsEnum, "ribbon");
-  
+
+#ifdef MVLC_GENERATOR
+  m_pConfiguration->addEnumParameter("-type", typeEnum, "adc");
+#endif
 }
 /*!
     Initialize the module prior to data taking. We get the parameters
@@ -436,10 +460,11 @@ C785::Initialize(CVMUSB& controller)
   // Set the GEOgraphical address of the module.
 
   uint16_t geo = getIntegerParameter("-geo");
+
   controller.vmeWrite16(base+GEO, initamod, geo);
   controller.vmeWrite16(base+BSet1, initamod, (uint16_t)0x80);
   controller.vmeWrite16(base+BClear1, initamod, (uint16_t)0x80);
-
+  
   // Set the thresholds for the module:
   // As well as the meaning of the thresholds.
 
@@ -608,7 +633,7 @@ C785::addReadoutList(CVMUSBReadoutList& list)
       initamod, (uint16_t)4);
 
 }
-
+#ifndef MVLC_GENERATOR
 /*!
    Create a dynamically allocated copy of *this.
 */
@@ -617,6 +642,7 @@ C785::clone() const
 {
   return new C785(*this);
 }
+#endif
 
 /////////////////////////////////////////////////////////////////////
 //////////////////// Private utility functions //////////////////////
@@ -689,9 +715,23 @@ C785::getThresholds(vector<uint16_t>& thresholds)
 //    CVMUSB&  controller - USB controller to use to access VME bus.
 //    uint32_t base       - Base address of module.
 //
+// @note for the MVLC we have to rely on the module type since we are not
+//     connected to the module:
+//     adc -> 785
+//     tdc -> 775
+//     qdc -> 792
+// For the VMUSB, we can get the module type from the module itself.
+//
 int
 C785::getModuleType(CVMUSB& controller, uint32_t base)
 {
+#ifdef MVLC_GENERATOR
+  std::string type = m_pConfiguration->cget("-type");       // Constrained by enum.
+  if (type == "adc") return 785;
+  if (type == "tdc") return 775;
+  if (type == "qdc") return 792;
+  return 0;                              // should not reach here... but this will error.
+#else
   uint16_t basel, basem, baseh;
 
   uint8_t initamod;
@@ -710,5 +750,39 @@ C785::getModuleType(CVMUSB& controller, uint32_t base)
   baseh &= 0xff;
 
   return (basel | (basem << 8) | (baseh << 16));
-
+#endif
 }
+
+
+// For the mvlc generator add the device command class:
+
+#ifdef MVLC_GENERATOR
+/**
+ * constructor
+ * @param interp the interpreter on which to register.
+ * @param parser refernces the parser object
+ * 
+ */
+C785Command::C785Command(CTCLInterpreter& interp, TCLConfigParser& parser) :
+  DeviceCommand(interp, "adc", parser) {}
+
+/** 
+ * destructor
+ */
+C785Command::~C785Command() {}
+
+
+/**
+ *  createDevice
+ *      Create a new device bound into its containig module.
+ * @param name - ignored name of the device.
+ */
+CReadoutModule* 
+C785Command::createDevice(std::string name) {
+  auto dev = new C785;
+  auto result = new CReadoutModule;
+  result->SetDriver(dev);
+
+  return result;
+}
+#endif

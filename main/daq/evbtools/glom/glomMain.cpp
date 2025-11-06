@@ -9,6 +9,7 @@
 
      Author:
              Ron Fox
+	     Aaron Chester
 	     NSCL
 	     Michigan State University
 	     East Lansing, MI 48824-1321
@@ -289,7 +290,7 @@ outputEventCount(pRingItemHeader pItem)
  *
  */
 static void
-outputBarrier(/*ufmt::EVB::pFragment p*/ ufmt::EVB::pFlatFragment p)
+outputBarrier(ufmt::EVB::pFlatFragment p)
 {
   pRingItemHeader pH = 
       reinterpret_cast<pRingItemHeader>(p->s_body); 
@@ -340,7 +341,6 @@ void emitAbnormalEnd()
 {
     CAbnormalEndItem end;
     pRingItem pItem= end.getItemPointer();
-    // ufmt::EVB::Fragment frag = {{NULL_TIMESTAMP, 0xffffffff, pItem->s_header.s_size, 0}, pItem};
     ufmt::EVB::FlatFragment frag = {NULL_TIMESTAMP, 0xffffffff, pItem->s_header.s_size, 0};
     outputBarrier(&frag);
 }
@@ -367,7 +367,7 @@ void emitAbnormalEnd()
  * @param pFrag - Pointer to the next event fragment.
  */
 void
-accumulateEvent(uint64_t dt, /*ufmt::EVB::pFragment pFrag*/ ufmt::EVB::pFlatFragment pFrag)
+accumulateEvent(uint64_t dt, ufmt::EVB::pFlatFragment pFrag)
 {
   // See if we need to flush:
 
@@ -417,7 +417,6 @@ accumulateEvent(uint64_t dt, /*ufmt::EVB::pFragment pFrag*/ ufmt::EVB::pFlatFrag
     // Add the data to the accumulated event:
   
   addDataToAccumulatedEvent(&pFrag->s_header, sizeof(ufmt::EVB::FragmentHeader));
-  // addDataToAccumulatedEvent(pFrag->s_pBody, pFrag->s_header.s_size);
   addDataToAccumulatedEvent(&pFrag->s_body, pFrag->s_header.s_size);
 
 }
@@ -449,154 +448,137 @@ static void outputEventFormat()
 int
 main(int argc, char**  argv)
 {
-  // Parse the parameters;
+    // Parse the parameters;
 
-  gengetopt_args_info args;
-  cmdline_parser(argc, argv, &args);
-  int dtInt = static_cast<uint64_t>(args.dt_arg);
-  nobuild      = args.nobuild_given;
-  timestampPolicy = args.timestamp_policy_arg;
-  sourceId       = args.sourceid_arg;
-  maxFragments   = args.maxfragments_arg;
+    gengetopt_args_info args;
+    cmdline_parser(argc, argv, &args);
+    int dtInt = static_cast<uint64_t>(args.dt_arg);
+    nobuild      = args.nobuild_given;
+    timestampPolicy = args.timestamp_policy_arg;
+    sourceId       = args.sourceid_arg;
+    maxFragments   = args.maxfragments_arg;
 
-  ufmt::EVB::threadsafe = false;     // Don't need threadsafe fragment pools.
+    ufmt::EVB::threadsafe = false;     // Don't need threadsafe fragment pools.
 
-  outputter = new io::CBufferedOutput(STDOUT_FILENO, BUFFER_SIZE);
-  outputter->setTimeout(2);    // Flush every two sec if data rate is slow.
+    outputter = new io::CBufferedOutput(STDOUT_FILENO, BUFFER_SIZE);
+    outputter->setTimeout(2);    // Flush every two sec if data rate is slow.
   
-  // Ignore sigpipe - deal, instead, witht he synchronous endfile on the pipe
-  // read.  See NSCLDAQ Issue #159
+    // Ignore sigpipe - deal, instead, witht he synchronous endfile on the pipe
+    // read.  See NSCLDAQ Issue #159
 
- if (Os::blockSignal(SIGPIPE)) {
-    perror("Failed to block the SIGPIPE signal - end data may not be flushed");
- }
+    if (Os::blockSignal(SIGPIPE)) {
+	perror("Failed to block the SIGPIPE signal - end data may not be flushed");
+    }
 
-  outputEventFormat();
+    outputEventFormat();
   
 
-  std::cerr << (nobuild ? " glom: not building " : "glom: building events: ");
-  if (!nobuild) {
-    std::cerr << dtInt << std::endl;
-  } else {
-    std::cerr << std::endl;
-  }
+    std::cerr << (nobuild ? " glom: not building " : "glom: building events: ");
+    if (!nobuild) {
+	std::cerr << dtInt << std::endl;
+    } else {
+	std::cerr << std::endl;
+    }
 
-  if (!nobuild && (dtInt < 0)) {
-    std::cerr << "Coincidence window must be >= 0 was "
-	      << dtInt << std::endl;
-    exit(-1);
-  }
-  uint64_t dt = static_cast<uint64_t>(dtInt);
-  nobuild      = args.nobuild_flag;
+    if (!nobuild && (dtInt < 0)) {
+	std::cerr << "Coincidence window must be >= 0 was "
+		  << dtInt << std::endl;
+	exit(-1);
+    }
+    uint64_t dt = static_cast<uint64_t>(dtInt);
+    nobuild      = args.nobuild_flag;
 
-  /*
-     main loop.. .get fragments and handle them.
-     two targets for a fragment:
-     accumulateEvent - for non-barriers.
-     outputBarrier   - for barriers.
-  */
+    /*
+      main loop.. .get fragments and handle them.
+      two targets for a fragment:
+      accumulateEvent - for non-barriers.
+      outputBarrier   - for barriers.
+    */
 
-  bool firstBarrier(true);
-  bool consecutiveBarrier(false);
+    bool firstBarrier(true);
+    bool consecutiveBarrier(false);
   
- ///
- // Issue #307: glom performance
- //
-  CBufferedFragmentReader reader(STDIN_FILENO);
+    ///
+    // Issue #307: glom performance
+    //
+    CBufferedFragmentReader reader(STDIN_FILENO);
    
-  try {
-    while (1) {
-      // ufmt::EVB::pFragment p = CFragIO::readFragment(STDIN_FILENO);
-	
-	ufmt::EVB::pFlatFragment p = reader.getFragment();
+    try {
+	while (1) {
+	    ufmt::EVB::pFlatFragment p = reader.getFragment();
       
-      // If error or EOF flush the event and break from
-      // the loop:
+	    // We have a fragment:
       
-      // if (!p) {
-      //   flushEvent();
-      //   std::cerr << "glom: EOF on input\n";
-      //       if(stateChangeNesting) {
-      //           emitAbnormalEnd();
-      //       }
-      //   break;
-      // }
-      // We have a fragment:
-      
-      if (p->s_header.s_barrier) {
-        flushEvent();
-        outputBarrier(p);
+	    if (p->s_header.s_barrier) {
+		flushEvent();
+		outputBarrier(p);
         
-        
-        // Barrier type of 1 is a begin run.
-        // First begin run barrier will result in
-        // emitting a glom parameter record.
+		// Barrier type of 1 is a begin run.
+		// First begin run barrier will result in
+		// emitting a glom parameter record.
 
         
-        if(firstBarrier && (p->s_header.s_barrier == 1)) {
-            outputGlomParameters(dtInt, !nobuild);
-            firstBarrier = false;
-        }
-      } else {
+		if(firstBarrier && (p->s_header.s_barrier == 1)) {
+		    outputGlomParameters(dtInt, !nobuild);
+		    firstBarrier = false;
+		}
+	    } else {
 
-        // Once we have a non barrier, reset firstBarrier so that we'll
-        // emit a glom parameters next time we have a barrier.
-        // This is needed if the event builder is run in persistent mode.
-        // see gitlab issue #11 for nscldaq.
+		// Once we have a non barrier, reset firstBarrier so that we'll
+		// emit a glom parameters next time we have a barrier.
+		// This is needed if the event builder is run in persistent mode.
+		// see gitlab issue #11 for nscldaq.
         
-        firstBarrier = true;
+		firstBarrier = true;
         
-        // If we can determine this is a valid ring item other than
-        // an event fragment it goes out out of band but without flushing
-        // the event.
+		// If we can determine this is a valid ring item other than
+		// an event fragment it goes out out of band but without flushing
+		// the event.
     
-        pRingItemHeader pH = reinterpret_cast<pRingItemHeader>(&p->s_body);
-        if (CRingItemFactory::isKnownItemType(&p->s_body)) {
+		pRingItemHeader pH = reinterpret_cast<pRingItemHeader>(&p->s_body);
+		if (CRingItemFactory::isKnownItemType(&p->s_body)) {
             
-            if (pH->s_type == PHYSICS_EVENT) {
-		accumulateEvent(dt, p); // Ring item physics event.
-            } else {
-		outputBarrier(p);	// Ring item non-physics event.
-            }
-        } else {		// non ring item..treat like event.
-          std::cerr << "GLOM: Unknown ring item type encountered: \n";
-          dump(std::cerr, pH, pH->s_size < 100 ? pH->s_size : 100); 
-          
-          outputBarrier(p);
-        }
+		    if (pH->s_type == PHYSICS_EVENT) {
+			accumulateEvent(dt, p); // Ring item physics event.
+		    } else {
+			outputBarrier(p);	// Ring item non-physics event.
+		    }
+		} else {		// non ring item..treat like event.
+		    std::cerr << "GLOM: Unknown ring item type encountered: \n";
+		    dump(std::cerr, pH, pH->s_size < 100 ? pH->s_size : 100); 
+		    outputBarrier(p);
+		}
+	    }
+	}
     }
-      //freeFragment(p);
+    catch (const std::ios_base::failure& e) {
+	// Actually EOF on poll:
+	std::cerr << e.what() << std::endl;
+	flushEvent();
+	if(stateChangeNesting) {
+	    emitAbnormalEnd();
+	}
     }
-  }
-  catch (const std::ios_base::failure& e) {
-      // Actually EOF on poll??
-      std::cerr << e.what() << std::endl;
-      flushEvent();
-      if(stateChangeNesting) {
-	  emitAbnormalEnd();
-      }
-  }
-  catch (std::string msg) {
-    std::cerr << "glom: " << msg << std::endl;
-  }
-  catch (const char* msg) {
-    std::cerr << "glom: " << msg << std::endl;
-  }
-  catch (int e) {
-    std::string msg = "glom: Integer error: ";
-    msg += strerror(e);
-    std::cerr << msg << std::endl;
-  }
-  catch (std::exception& except) {
-    std::string msg = "glom: ";
-    msg += except.what();
-    std::cerr << msg << std::endl;
-  }
-  catch(...) {
-    std::cerr << "Unanticipated exception caught\n";
-
-  }
+    catch (std::string msg) {
+	std::cerr << "glom: " << msg << std::endl;
+    }
+    catch (const char* msg) {
+	std::cerr << "glom: " << msg << std::endl;
+    }
+    catch (int e) {
+	std::string msg = "glom: Integer error: ";
+	msg += strerror(e);
+	std::cerr << msg << std::endl;
+    }
+    catch (std::exception& except) {
+	std::string msg = "glom: ";
+	msg += except.what();
+	std::cerr << msg << std::endl;
+    }
+    catch(...) {
+	std::cerr << "Unanticipated exception caught\n";
+    }
     // Out of main loop because we need to exit.
 
-  return 0;
+    return 0;
 }
