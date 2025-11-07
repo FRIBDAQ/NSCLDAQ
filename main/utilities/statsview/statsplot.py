@@ -60,7 +60,7 @@ from zoneinfo import ZoneInfo
 matplotlib.use('Qt5Agg')
 plt.style.use('seaborn-v0_8-whitegrid')
 
-
+inform_no_data = False     # Turn that on after the initial plots are made.
 #  The control class for the bottom of each
 #  Tabbed notebook:
 
@@ -547,13 +547,15 @@ def doPlot(w, db, sql, params):
                 'events' : row[3], 'run_events': row[4], 'rate': row[5], 'event_rate': row[6]
                 }
     stats.append(record)
-        
+    
+  
   # Make the times, series and data frame. Note
   # THe timstamps are in seconds since the unix epoch.
   
-  if len(stats) == 0:
+  if len(stats) == 0 :
     # No data to plot so indicate that with a dialog.
-    QMessageBox.information(w, 'No Data', f'No data matches the query {sql} with parameters {params}')
+    if inform_no_data:
+      QMessageBox.information(w, 'No Data', f'No data matches the query {sql} with parameters {params}')
     return
   
   times =  [datetime.datetime.fromtimestamp(t['time'], ZoneInfo('UTC'))  for t in stats ] #t['time'][:32] + t['time'][33:]
@@ -592,6 +594,7 @@ def plotFrom(w, db, ring_name, fromDate):
   params = (ring_name, fromDate)
   doPlot(w, db, sql, params)
   
+  
 # Plot data before an end time:
 
 def plotBefore(w, db, ring_name, beforeDate):
@@ -604,6 +607,7 @@ def plotBefore(w, db, ring_name, beforeDate):
   '''
   params = (ring_name, beforeDate)
   doPlot(w, db, sql, params)
+  
   
 def plotBetween(w, db, ring_name, startDate, endDate):
   sql = '''
@@ -628,7 +632,7 @@ def refreshPlots(w):
     plotBetween(w, db, ring_name, formatDateTime(w.start()),  formatDateTime(w.end()))
   else:
     print("Invalid type range type: ", range_type)
-      
+  db.close()
   
 if __name__ == "__main__":
   if len(sys.argv) != 2:
@@ -639,15 +643,6 @@ if __name__ == "__main__":
   
   #  Get a list of the ring buffers in the database.
   
-  db = connect_database(dbFile)
-  cursor = db.cursor()
-  rings =[]
-  
-  for row in cursor.execute(
-    ''' SELECT name FROM ring_names
-    ''', []
-    ):
-    rings.append(row[0])
   
   app = QApplication(sys.argv)
   
@@ -656,9 +651,18 @@ if __name__ == "__main__":
   
   window = QTabWidget()
   
+  
+  # Make a tab for each ring.
   print("Plotting statistics since today for all rings")
   (begin, end) = createInitialTimes()
-  for ring in rings:
+  
+  db = connect_database(dbFile)
+  cursor = db.cursor()
+  for row  in cursor.execute(
+    ''' SELECT name FROM ring_names ORDER BY name ASC
+    ''', []
+    ):
+    ring = row[0]
     plot = RingStatisticsPlot(window)
     window.addTab(plot, ring)
     plot.refresh.connect(refreshPlots)
@@ -667,7 +671,9 @@ if __name__ == "__main__":
     plotFrom(plot, db, ring, formatDateTime(plot.start()))
     plot.setEnd(end)
   
-  
+  db.close()
+  inform_no_data = True   #From now on message box if a query yields no data.
+
   window.show()
   sys.exit(app.exec())
   
