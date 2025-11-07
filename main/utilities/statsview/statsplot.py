@@ -36,7 +36,7 @@ Future:
 import sys
 from PyQt5.QtWidgets import (QWidget, QApplication, QDateTimeEdit,
     QPushButton, QRadioButton, QLabel, QTabWidget,
-    QMenuBar, 
+    QMenuBar, QMessageBox,
     QVBoxLayout, QHBoxLayout, QGridLayout,
     QAction
 )
@@ -53,9 +53,10 @@ import matplotlib.dates as mdate
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 import pandas as pd
 import numpy as np
+from zoneinfo import ZoneInfo
 
 
-
+#matplotlib.rcParams['timezone'] = 'EST'
 matplotlib.use('Qt5Agg')
 plt.style.use('seaborn-v0_8-whitegrid')
 
@@ -228,9 +229,7 @@ class TimePlotWidget(FigureCanvasQTAgg):
     
   #  private methods:
   
-  def _date_format(self, value, tickno):
-    print(value, tickno)
-    return 't'
+  
   # Public methods
 
   def plot(self, frame, series):
@@ -251,14 +250,19 @@ class TimePlotWidget(FigureCanvasQTAgg):
     #  Kill off any old data
     
     if self._axis is not None:
-      self._fig.delaxis(self._axis)
+      self._fig.delaxes(self._axis)
       self._axis = None
     
     self._axis = self._fig.add_subplot()
     
-    self._xformat = mdate.DateFormatter('%m/%d/%Y\n%H:%M')
+    tz =  ZoneInfo('localtime')
+    
+    self._axis.xaxis_date(tz)
+    
+    self._xformat = mdate.DateFormatter('%m/%d/%Y\n%I:%M', tz=tz)
     spacing = np.round(np.linspace(0, len(frame[series].index)-1, 5)).astype(int)
     date_ticks = frame[series].iloc[spacing].index
+    
     frame[series].plot(ax=self._axis,  xticks=date_ticks, use_index=True)
     self._axis.xaxis.set_major_formatter(self._xformat)
     
@@ -435,6 +439,61 @@ class RingStatisticsPlot(QWidget):
         not one of 'since', 'before', or 'between'
     '''
     self._date_range.setType(t)
+    
+  # Public methods:
+  
+  def update(self, frame):
+    ''' 
+       Updates the plots in accordance with the data frame passed in.  All 6 plots are 
+       updated.
+       
+       frame is a data frame of an dict of series indexed by date/time.  The keys are:
+        'volume'     - the data volume
+        'run_volume' - the data volume since the last BEGIN_RUN item.
+        'events'     - Number of events.
+        'run_events  - Number of events since the last BEGIN_RUN item.
+        'rate'       - data rate in bytes/sec.
+        'event_rate  - event rate.
+        
+        
+        Note event is defined as PHYSICS_EVENT ring items.
+
+    '''
+    
+    self._run_events_plot.plot(frame, 'run_events')
+    self._data_rate_plot.plot(frame, 'rate')         # Top row.
+    self._event_rate_plot.plot(frame, 'event_rate')
+    
+    self._volume_plot.plot(frame, 'volume')
+    self._run_vol_plot.plot(frame, 'run_volume')
+    self._events_plot.plot(frame, 'events')
+    
+    #  Now label the plots and their axes:
+    
+    self._run_events_plot.setTitle('Events in the run')
+    self._run_events_plot.setXLabel("Date/Time")
+    self._run_events_plot.setYLabel('Events')
+    
+    self._data_rate_plot.setTitle("Data rate")
+    self._data_rate_plot.setXLabel('Date/Time')
+    self._data_rate_plot.setYLabel('Bytes/sec')
+    
+    self._event_rate_plot.setTitle("Event rate")
+    self._event_rate_plot.setXLabel("Date/Time")
+    self._event_rate_plot.setYLabel("Events/sec")
+    
+    self._volume_plot.setTitle("Data Volume")
+    self._volume_plot.setXLabel('Date/Time')
+    self._volume_plot.setYLabel('Bytes')
+    
+    self._run_vol_plot.setTitle('Data Volume in run')
+    self._run_vol_plot.setXLabel('Date/Time')
+    self._run_vol_plot.setYLabel('Bytes')
+    
+    self._events_plot.setTitle("Total Events")
+    self._events_plot.setXLabel('Date/Time')
+    self._events_plot.setYLabel('Events')
+    
       
 # Main entry:
 
@@ -536,26 +595,116 @@ def plot(w, dbfile, ring):
   w.setTitle("Run volume")
   w.setXLabel("Time")
   w.setYLabel("Bytes")
+
+#  Generic plot function, given the database connection,
+#  The SQL and its parameters, run the query
+#  Create the data frame and plot:
+
+def doPlot(w, db, sql, params):
+  
+  cursor = db.cursor()
+  stats = []
+  for row in cursor.execute(sql, params):
+    record = {'time': row[0], 'volume': row[1], 'run_volume': row[2], 
+                'events' : row[3], 'run_events': row[4], 'rate': row[5], 'event_rate': row[6]
+                }
+    stats.append(record)
+        
+  # Make the times, series and data frame. Note
+  # THe timstamps are in seconds since the unix epoch.
+  
+  if len(stats) == 0:
+    # No data to plot so indicate that with a dialog.
+    QMessageBox.information(w, 'No Data', f'No data matches the query {sql} with parameters {params}')
+    return
+  
+  times =  [datetime.datetime.fromtimestamp(t['time'], ZoneInfo('UTC'))  for t in stats ] #t['time'][:32] + t['time'][33:]
+  #times = pd.to_datetime(times, unit='s').tz_localize('UTC')
+  
+  
+
+  # Make a Series for each statistic:
+
+  volume = pd.Series([s['volume'] for s in stats], index=times)
+  run_volume = pd.Series([s['run_volume'] for s in stats], index=times)
+  events = pd.Series([s['events'] for s in stats], index=times)
+  run_events  = pd.Series([s['run_events'] for s in stats], index=times)
+  rate  = pd.Series([s['rate'] for s in stats], index=times)
+  event_rate = pd.Series([s['event_rate'] for s in stats], index=times)
+
+  series = {'volume': volume, 
+            'run_volume': run_volume, 
+            'events': events, 
+            'run_events': run_events, 
+            'rate': rate, 
+            'event_rate': event_rate}
+
+  frame = pd.DataFrame(series)
+  w.update(frame)
+
+#  Plot data since a time: 
+
+def plotFrom(w, db, fromDate):
+  
+  sql = '''
+    SELECT timestamp, volume, run_vol, events, run_events, rate, event_rate 
+    FROM statistics
+    INNER JOIN ring_names ON statistics.ring_id = ring_names.id
+    WHERE ring_names.name =? AND timestamp > unixepoch(?)
+  '''
+  params = (ringname, fromDate)
+  doPlot(w, db, sql, params)
+  
+# Plot data before an end time:
+
+def plotBefore(w, db, beforeDate):
+  
+  sql = '''
+    SELECT timestamp, volume, run_vol, events, run_events, rate, event_rate 
+    FROM statistics
+    INNER JOIN ring_names ON statistics.ring_id = ring_names.id
+    WHERE ring_names.name =? AND timestamp < unixepoch(?)
+  '''
+  params = (ringname, beforeDate)
+  doPlot(w, db, sql, params)
+  
+def plotBetween(w, db, startDate, endDate):
+  sql = '''
+  SELECT timestamp,  volume, run_vol, events, run_events, rate, event_rate 
+    FROM statistics
+    INNER JOIN ring_names ON statistics.ring_id = ring_names.id
+    WHERE ring_names.name =? AND 
+          timestamp BETWEEN unixepoch(?) AND unixepoch(?)
+  '''
+  params=(ringname, startDate, endDate)
+  doPlot(w, db, sql, params)
   
 def refreshPlots(w):
-  print("Asked to refresh plots for", w.ringbuffer())
+
+  db = sqlite3.connect('file:' + dbFile + '?mode=ro', uri=True)
   range_type = w.type()
   if range_type == 'since':
-    print("Since: ", formatDateTime(w.start()))
+    plotFrom(w, db, formatDateTime(w.start()))
   elif range_type == 'before':
-    print("Before: ", formatDateTime(w.end()))
+    plotBefore(w, db, formatDateTime(w.end()))
   elif range_type == 'between':
-    print('Between', formatDateTime(w.start()), 'and', formatDateTime(w.end()))
+    plotBetween(w, db, formatDateTime(w.start()),  formatDateTime(w.end()))
   else:
     print("Invalid type range type: ", range_type)
       
   
 if __name__ == "__main__":
-
+  if len(sys.argv) != 3:
+    print("Specify a data base file and a ring")
+    sys.exit(-1)
+  
+  dbFile = sys.argv[1]
+  ringname= sys.argv[2]
+  
   app = QApplication(sys.argv)
   window = RingStatisticsPlot()
   window.refresh.connect(refreshPlots)
-  window.setRingbuffer('ron')
+  window.setRingbuffer(ringname)
   (begin, end) = createInitialTimes()
   window.setStart(begin)
   window.setEnd(end)
