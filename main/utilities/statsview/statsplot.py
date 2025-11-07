@@ -37,7 +37,7 @@ import sys
 from PyQt5.QtWidgets import (QWidget, QApplication, QDateTimeEdit,
     QPushButton, QRadioButton, QLabel, QTabWidget,
     QMenuBar, QMessageBox,
-    QVBoxLayout, QHBoxLayout, QGridLayout,
+    QVBoxLayout,  QGridLayout,
     QAction
 )
 from PyQt5.QtCore import (Qt, QDate, QTime, QDateTime, QTimeZone,
@@ -513,13 +513,6 @@ def createInitialTimes():
   
   return (begin, end)
 
-def initTimeChooser(window):
-  # Set begin to today and the end to now.
-  
-  times = createInitialTimes()
-  
-  window.setStart(times[0])
-  window.setEnd(times[1])
 
 def formatDateTime(dt) :
   # Given a QDateTime formats it to match
@@ -536,65 +529,10 @@ def formatDateTime(dt) :
   result += tz
   
   return result
-def dumpTimeChooser():
-  selectionType = window.type()
-  if selectionType == 'since':
-    print('Select times since: ', formatDateTime(window.start()))
-  elif selectionType == 'between':
-    print("Select time between ", 
-          window.start().toString(Qt.ISODateWithMs), " and ", 
-          window.end().toString(Qt.ISODateWithMs))
-  elif selectionType == 'before':
-    print("Select time before ", window.end().toString(Qt.ISODateWithMs))
-
-def plot(w, dbfile, ring):
-  db = sqlite3.connect('file:' + dbfile + '?mode=ro', uri=True)
-  
-  # Just use all the data from the 'ron' ring for tests:
-  
-  stats = []
-  cursor = db.cursor()
-  for row in cursor.execute('''
-                              SELECT timestamp, volume, run_vol, events, run_events, rate, event_rate 
-                              FROM statistics
-                              INNER JOIN ring_names ON statistics.ring_id = ring_names.id
-                              WHERE ring_names.name = ?
-                              ''', (ring,)):
-      record = {'time': row[0], 'volume': row[1], 'run_volume': row[2], 
-                'events' : row[3], 'run_events': row[4], 'rate': row[5], 'event_rate': row[6]
-                }
-      stats.append(record)
-        
-  # Make the times, series and data frame:
-  
-  
-  times = pd.DatetimeIndex([ datetime.datetime.fromisoformat(t['time']) for t in stats ])
-
-
-  # Make a Series for each statistic:
-
-  volume = pd.Series([s['volume'] for s in stats], index=times)
-  run_volume = pd.Series([s['run_volume'] for s in stats], index=times)
-  events = pd.Series([s['events'] for s in stats], index=times)
-  run_events  = pd.Series([s['run_events'] for s in stats], index=times)
-  rate  = pd.Series([s['rate'] for s in stats], index=times)
-  event_rate = pd.Series([s['event_rate'] for s in stats], index=times)
-
-  series = {'volume': volume, 
-            'run_volume': run_volume, 
-            'events': events, 
-            'run_events': run_events, 
-            'rate': rate, 
-            'event_rate': event_rate}
-
-  frame = pd.DataFrame(series)
-  
-  # Plot the run volume data:
-  
-  w.plot(frame, 'run_volume')
-  w.setTitle("Run volume")
-  w.setXLabel("Time")
-  w.setYLabel("Bytes")
+   
+def connect_database(name):
+  db = sqlite3.connect('file:' + name + '?mode=ro', uri=True)
+  return db
 
 #  Generic plot function, given the database connection,
 #  The SQL and its parameters, run the query
@@ -644,20 +582,19 @@ def doPlot(w, db, sql, params):
 
 #  Plot data since a time: 
 
-def plotFrom(w, db, fromDate):
-  
+def plotFrom(w, db, ring_name, fromDate):
   sql = '''
     SELECT timestamp, volume, run_vol, events, run_events, rate, event_rate 
     FROM statistics
     INNER JOIN ring_names ON statistics.ring_id = ring_names.id
     WHERE ring_names.name =? AND timestamp > unixepoch(?)
   '''
-  params = (ringname, fromDate)
+  params = (ring_name, fromDate)
   doPlot(w, db, sql, params)
   
 # Plot data before an end time:
 
-def plotBefore(w, db, beforeDate):
+def plotBefore(w, db, ring_name, beforeDate):
   
   sql = '''
     SELECT timestamp, volume, run_vol, events, run_events, rate, event_rate 
@@ -665,10 +602,10 @@ def plotBefore(w, db, beforeDate):
     INNER JOIN ring_names ON statistics.ring_id = ring_names.id
     WHERE ring_names.name =? AND timestamp < unixepoch(?)
   '''
-  params = (ringname, beforeDate)
+  params = (ring_name, beforeDate)
   doPlot(w, db, sql, params)
   
-def plotBetween(w, db, startDate, endDate):
+def plotBetween(w, db, ring_name, startDate, endDate):
   sql = '''
   SELECT timestamp,  volume, run_vol, events, run_events, rate, event_rate 
     FROM statistics
@@ -676,38 +613,59 @@ def plotBetween(w, db, startDate, endDate):
     WHERE ring_names.name =? AND 
           timestamp BETWEEN unixepoch(?) AND unixepoch(?)
   '''
-  params=(ringname, startDate, endDate)
+  params=(ring_name, startDate, endDate)
   doPlot(w, db, sql, params)
   
 def refreshPlots(w):
-
+  ring_name = w.ringbuffer()
   db = sqlite3.connect('file:' + dbFile + '?mode=ro', uri=True)
   range_type = w.type()
   if range_type == 'since':
-    plotFrom(w, db, formatDateTime(w.start()))
+    plotFrom(w, db, ring_name, formatDateTime(w.start()))
   elif range_type == 'before':
-    plotBefore(w, db, formatDateTime(w.end()))
+    plotBefore(w, db, ring_name, formatDateTime(w.end()))
   elif range_type == 'between':
-    plotBetween(w, db, formatDateTime(w.start()),  formatDateTime(w.end()))
+    plotBetween(w, db, ring_name, formatDateTime(w.start()),  formatDateTime(w.end()))
   else:
     print("Invalid type range type: ", range_type)
       
   
 if __name__ == "__main__":
-  if len(sys.argv) != 3:
+  if len(sys.argv) != 2:
     print("Specify a data base file and a ring")
     sys.exit(-1)
   
   dbFile = sys.argv[1]
-  ringname= sys.argv[2]
+  
+  #  Get a list of the ring buffers in the database.
+  
+  db = connect_database(dbFile)
+  cursor = db.cursor()
+  rings =[]
+  
+  for row in cursor.execute(
+    ''' SELECT name FROM ring_names
+    ''', []
+    ):
+    rings.append(row[0])
   
   app = QApplication(sys.argv)
-  window = RingStatisticsPlot()
-  window.refresh.connect(refreshPlots)
-  window.setRingbuffer(ringname)
+  
+  # The top level window is a QTabWidget with tabs containing
+  # RingStatisticsPlot widgets for each ringbuffer:
+  
+  window = QTabWidget()
+  
+  print("Plotting statistics since today for all rings")
   (begin, end) = createInitialTimes()
-  window.setStart(begin)
-  window.setEnd(end)
+  for ring in rings:
+    plot = RingStatisticsPlot(window)
+    window.addTab(plot, ring)
+    plot.refresh.connect(refreshPlots)
+    plot.setRingbuffer(ring)
+    plot.setStart(begin)
+    plotFrom(plot, db, ring, formatDateTime(plot.start()))
+    plot.setEnd(end)
   
   
   window.show()
