@@ -137,7 +137,6 @@ impl StatisticsAndRates {
 pub mod database {
     use rusqlite;
     use std::collections::HashMap;
-    use chrono::prelude::*;
     use crate::*;
     /// This struct is provided to manipulate the database:
     /// 
@@ -170,7 +169,7 @@ pub mod database {
                 CREATE TABLE IF NOT EXISTS statistics (
                     id           INTEGER PRIMARY KEY AUTOINCREMENT,
                     ring_id      INTEGER,   -- FK to ring_names
-                    timestamp    STRING,
+                    timestamp    INTEGER,   -- unix epoch offset.
                     volume       INTEGER,   -- Total bytes
                     run_vol      INTEGER,   -- bytes this run
                     events       INTEGER,   -- total events.
@@ -239,23 +238,26 @@ pub mod database {
 
             let ring_id = self.get_ring_id(&info.name);
             // Get the timestamp string:
-            let now : DateTime<Local> = Local::now();
-            let timestamp = now.to_rfc3339();
+            let now = time::SystemTime::now();
+            if let Ok(t) = now.duration_since(time::UNIX_EPOCH)  {
             // Now insert the statistics entry:
 
-            if let Err(e) =  self.connection.execute(
-                "INSERT INTO statistics 
-                    (ring_id, timestamp, volume, run_vol, events, run_events, rate, event_rate)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ",
-                rusqlite::params!(ring_id, &timestamp, 
-                    info.cum_statistics.bytes, info.cum_statistics.bytes_this_run, 
-                    info.cum_statistics.events, info.cum_statistics.events_this_run,
-                    info.byte_rate, info.event_rate
-                )
+                if let Err(e) =  self.connection.execute(
+                    "INSERT INTO statistics 
+                        (ring_id, timestamp, volume, run_vol, events, run_events, rate, event_rate)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ",
+                    rusqlite::params!(ring_id, t.as_secs(),
+                        info.cum_statistics.bytes, info.cum_statistics.bytes_this_run, 
+                        info.cum_statistics.events, info.cum_statistics.events_this_run,
+                        info.byte_rate, info.event_rate
+                    )
 
-            ) {
-                eprintln!("Unable to make statistics entry for ring {} at {}: {}", info.name, timestamp, e);
+                ) {
+                    eprintln!("Unable to make statistics entry for ring {} at {}: {}", info.name, t.as_secs(), e);
+                }
+            } else {
+                eprintln!("Unable to convert date/tikme to unix epoch relative");
             }
         }
     }
