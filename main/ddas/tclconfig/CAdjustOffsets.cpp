@@ -15,8 +15,8 @@
 	     East Lansing, MI 48824-1321
 */
 
-/** @file:  CAdjustOffsts.cpp
- *  @brief:   Implements the CAdjustOffsets class.
+/** @file CAdjustOffsets.cpp
+ *  @brief Implements the CAdjustOffsets class.
  */
 #include "CAdjustOffsets.h"
 #include <config.h>

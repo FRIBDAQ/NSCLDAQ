@@ -33,8 +33,8 @@ static const char* apiErrors[3] = {
 
 /**
  * constructor
- *   @param interp - interpreter we register the pixie16::inventory  command.
- *   @param config - References the configuration from which we get slots.
+ *   @param pInterp Interpreter we register the pixie16::inventory  command.
+ *   @param config References the configuration from which we get slots.
  */
 CInventory::CInventory(Tcl_Interp* pInterp, DAQ::DDAS::Configuration& config) :
     CTclCommand(pInterp, "pixie16::inventory"),
