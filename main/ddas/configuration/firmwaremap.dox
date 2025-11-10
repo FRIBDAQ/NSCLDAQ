@@ -1,0 +1,41 @@
+/**
+@page firmwaremap Creating DDAS Firmware Map Files
+
+@authors Aaron Chester
+@date 3/26/25
+
+@section sec_fwmap_intro Introduction
+@par
+DDAS accepts custom firmware maps which override the default module firmware either for some subset of modules installed in the system or for the entire crate. The former is achieved by adding per-module firmware maps to the cfgPixie16.txt configuration file, see @ref cfgpixie16 "The cfgPixie16.txt File" for more information. Setting the environment variable FIRMWARE_FILE to point to a firmware map file will override the firmware for the entire crate. In this document we will describe the format of these firmware maps.
+
+@section sec_fwmap_format DDAS Firmware Map Format
+@par
+The basic format of the firmware map file is as follows:
+
+@verbatim
+[Rev([xXa-fA-F0-9]+)-(\d+)Bit-(\d+)MSPS\]
+/path/to/sys.bin
+/path/to/fippi.bin
+/path/to/dsp.ldr
+/path/to/dsp.var
+clock_calibration
+@endverbatim
+
+@par
+where `[Rev([xXa-fA-F0-9]+)-(\d+)Bit-(\d+)MSPS\]` is a regular expression describing the module type, the following four lines define the paths to the Pixie device firmware files, and the last line is an integer value which provides the timestamp calibration in nanoseconds per clock tick. The module type described by the regular expression must match a known hardware type in NSCLDAQ.
+
+@par
+As an example, consider a simple firmware map file containing alternate firmware for a 16-bit 250 MSPS rev. F module:
+
+@verbatim
+[Rev0xF-16Bit-250MSPS]
+/aaron/custom_firmware/syspixie16_current_16b250m.bin
+/aaron/custom_firmware/firmware/fippixie16_current_16b250m.bin
+/aaron/custom_firmware/dsp/Pixie16_current_16b250m.ldr
+/aaron/custom_firmware/dsp/Pixie16_current_16b250m.var
+8
+@endverbatim
+
+@par
+Firmware definitions for multiple module types are allowed in a single map file. The software is responsible for loading the correct firmware type onto each module. It is an error if a firmware map is provided but does not contain the necessary firmware paths for a module the system is attempting to boot.
+*/

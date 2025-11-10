@@ -2,15 +2,19 @@
 @page spectcl Analyzing DDAS Data in SpecTcl
 
 @authors Aaron Chester, Ron Fox, and Jeromy Tompkins
-@date 5/17/24
+@date 5/17/24 - Initial guide
+@date 11/10/25 - Updated for SpecTcl using DDASFormat 1.1+ and UnifiedFormat 2.2+, decoding DDASToys fit info in SpecTcl
 
 @tableofcontents
 
 @section sec_spectcl_intro Introduction
 @par
-NSCLDAQ supports a wide variety of data acquisition hardware which use different data formats. Even for a single piece of DAQ hardware data payloads may vary experiment to experiment based on which features of the digitizers are used. For example the Pixie data payload structure depends on whether trace data, QDC sums, etc. are enabled. For this reason, there is no pre-compiled version of SpecTcl provided to deal with DDAS data. Rather there are two unpackers that are provided by SpecTcl, DAQ::DDAS::DDASUnpacker and DAQ::DDAS::DDASBuiltUnpacker. The difference between the two is that the latter unpacks data that has been built with the NSCLDAQ event builder. In most applications you will be looking at event-built data. The unpackers provide a consistent interface for interacting with the DDAS data. In this tutorial, you will learn how to incorporate an unpacker and some simple custom code into your SpecTcl application. We will assume event-built data for the remainder of this tutorial.
+NSCLDAQ supports a wide variety of data acquisition hardware which use different data formats. Even for a single piece of DAQ hardware data payloads may vary experiment to experiment based on which features of the digitizers are used. For example the Pixie data payload structure depends on whether trace data, QDC sums, etc. are enabled. For this reason, there is no pre-compiled version of SpecTcl provided to deal with DDAS data. Rather there are two unpackers that are provided by SpecTcl, `DAQ::DDAS::DDASUnpacker` and `DAQ::DDAS::DDASBuiltUnpacker`. The difference between the two is that the latter unpacks data that has been built with the NSCLDAQ event builder. For trace data with fit info appeneded to the data using the [DDASToys](https://github.com/FRIBDAQ/DDASToys) processing pipeline, the `DAQ::DDAS::DDASBuiltFitUnpacker` and its associated library can be used if the SpecTcl was installed with DDASToys support. 
 
-@note If you are not working with event-built data, use the DAQ::DDAS::DDASUnpacker rather than DAQ::DDAS::DDASBuiltUnpacker. Everything else should remain the same.
+@par
+In most applications you will be looking at event-built data without fit extensions. The unpackers provide a consistent interface for interacting with the DDAS data. In this tutorial, you will learn how to incorporate an unpacker and some simple custom code into your SpecTcl application. We will assume event-built data for the remainder of this tutorial.
+
+@note If you are not working with event-built data, use the `DAQ::DDAS::DDASUnpacker` rather than `DAQ::DDAS::DDASBuiltUnpacker`. Everything else should remain the same.
 
 @par
 The source code for the example discussed in this tutorial can be found at PREFIX/VERSION/DDASSkel/ where PREFIX is the installation prefix path and VERSION is some SpecTcl version 5.14 or later. On FRIB computer systems the PREFIX path is most likely /usr/opt/spectcl. The user does not have deal with the low-level raw data when building a SpecTcl. Rather, they just need to implement a class that uses the unpacked DDAS data to set tree parameters for histogramming. In this way, the user is isolated from the details of the DDAS data structure. In any case, let's get down to business constructing a tailored SpecTcl.
@@ -23,7 +27,7 @@ The source code for the example discussed in this tutorial can be found at PREFI
 We will start the tailored SpecTcl tutorial by copying the DDAS SpecTcl skeleton code to some local working directory. Something like:
 
 @verbatim
-cp -r /usr/opt/spectcl/5.14-000/DDASSkel/ mySpecTcl
+cp -r /usr/opt/spectcl/5.14-006/DDASSkel/ mySpecTcl
 cd mySpecTcl
 @endverbatim
 
@@ -32,7 +36,7 @@ You can make and run this example code right away. But, in the interest of learn
 
 @subsection sec_spectcl_unpacker Using the DDAS Unpacker
 @par
-The provided unpackers understand how to navigate the fragments of DDAS data and unpack the event fragments into "hits." Each hit is represented by a DAQ::DDAS::DDASHit object. In addition to time and energy, and potentially traces or other data, this object identifies the channel the hit comes from by its crate, slot, and channel ID. Using the unpacker is a matter of defining the set of parameters you want your system to produce. Each channel minimally produces a timestamp and an energy. Users then provide the software to map the data in the vector of DAQ::DDAS::DDASHits extracted from the event into specific SpecTcl parameters. We'll take a closer look at this when we discuss the @ref sec_spectcl_mapper "parameter mapper".
+The provided unpackers understand how to navigate the fragments of DDAS data and unpack the event fragments into "hits." Each hit is represented by a `ddasfmt::DDASHit` object. In addition to time and energy, and potentially traces or other data, this object identifies the channel the hit comes from by its crate, slot, and channel ID. Using the unpacker is a matter of defining the set of parameters you want your system to produce. Each channel minimally produces a timestamp and an energy. Users then provide the software to map the data in the vector of `ddasfmt::DDASHit`s extracted from the event into specific SpecTcl parameters. We'll take a closer look at this when we discuss the @ref sec_spectcl_mapper "parameter mapper".
 
 @subsection sec_spectcl_paramtree Constructing the Parameter Tree
 @par
@@ -160,7 +164,7 @@ Note that the CTreeParameter::Initialize() method provides the parameter name an
 
 @subsection sec_spectcl_mapper Constructing a ParameterMapper
 @par
-The DAQ::DDAS::DDASBuiltUnpacker iterates over the fragments in events output by the event builder. The hits from each fragment are decoded into DAQ::DDAS::DDASHit objects. The next step is to determine what to do with the vector of DAQ::DDAS::DDASHit objects decoded from each event. Lets take a closer look at the MyParameterMapper source code where we set our raw parameters. The header file looks like:
+The `DAQ::DDAS::DDASBuiltUnpacker` iterates over the fragments in events output by the event builder. The hits from each fragment are decoded into `ddasfmt::DDASHit` objects. The next step is to determine what to do with the vector of `ddasfmt::DDASHit` objects decoded from each event. Lets take a closer look at the MyParameterMapper source code where we set our raw parameters. The header file looks like:
 
 @code{.cpp}
 #ifndef MYPARAMETERMAPPER_H
@@ -199,7 +203,7 @@ public:
      * @param channelData The hit data.
      * @param rEvent      The SpecTcl event
      */
-    virtual void mapToParameters(const std::vector<DAQ::DDAS::DDASHit>& channelData, CEvent& rEvent);
+    virtual void mapToParameters(const std::vector<ddasfmt::DDASHit>& channelData, CEvent& rEvent);
 
     /**
      * @brief Compute channel index from crate, slot, and channel information.
@@ -208,7 +212,7 @@ public:
      * 
      * @return The global channel index.
      */ 
-    int computeGlobalIndex(const DAQ::DDAS::DDASHit& hit);
+    int computeGlobalIndex(const ddasfmt::DDASHit& hit);
 };
 
 #endif
@@ -221,7 +225,7 @@ The class maintains a reference to our parameters and an m_chanMap data member, 
 In our case: We fill tree parameters so we don't need to refer directly to the rEvent parameter. We add the method computeGlobalIndex() which computes the index into the array of ChannelData objects. Remember that the ChannelData objects store the energy and timestamp for each channel in the system. This method does no range checking. If you use this example in your system, be sure that you've built your arrays big enough.
 
 @par
-So what does the mapToParameters() method do? Well, let's consider what is passed into the method as arguments. The most important of these is the first, which is a vector of DAQ::DDAS::DDASHit objects. A DAQ::DDAS::DDASHit object encapsulates the data contained in a single event. It contains things like the crate/slot/channel identifying information, energy, timestamp, trace data, as well as QDC and energy sum or baseline data, if enabled. It is essentially just a vehicle to access data elements at a higher level. The provided unpacker will parse the raw data and fill the DAQ::DDAS::DDASHit vector with all of the data in each event. If more than one DDAS hit was in an event, there will be more than one DDASHit object in the vector.
+So what does the mapToParameters() method do? Well, let's consider what is passed into the method as arguments. The most important of these is the first, which is a vector of `ddasfmt::DDASHit` objects. A `ddasfmt::DDASHit` object encapsulates the data contained in a single event. It contains things like the crate/slot/channel identifying information, energy, timestamp, trace data, as well as QDC and energy sum or baseline data, if enabled. It is essentially just a vehicle to access data elements at a higher level. The provided unpacker will parse the raw data and fill the `ddasfmt::DDASHit` vector with all of the data in each event. If more than one DDAS hit was in an event, there will be more than one DDASHit object in the vector.
 
 @par
 Here is the implementation of the mapToParameters() method (for the real code see MyParameterMapper.cpp):
@@ -251,7 +255,7 @@ void MyParameterMapper::mapToParameters(const std::vector<DDASHit>& channelData,
 @endcode
 
 @par
-Let's think a little about the computeGlobalIndex() method. The responsibility of this method is to map the hit to a global channel index in the range [0, 15] using the crate, slot, and channel information from the DAQ::DDAS::DDASHit object encapsulating a single hit. To do this, we need to input some information concerning the layout of the modules in the crates. The m_chanMap variable stores the channel index of the first module in each crate. See how this is defined in the constructor:
+Let's think a little about the computeGlobalIndex() method. The responsibility of this method is to map the hit to a global channel index in the range [0, 15] using the crate, slot, and channel information from the `ddasfmt::DDASHit` object encapsulating a single hit. To do this, we need to input some information concerning the layout of the modules in the crates. The m_chanMap variable stores the channel index of the first module in each crate. See how this is defined in the constructor:
 
 @code{.cpp}
 MyParameterMapper::MyParameterMapper(MyParameters& params) :
