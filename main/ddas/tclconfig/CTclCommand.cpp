@@ -24,7 +24,7 @@
 
 /**
  * constructor
- *   @param pIinterp Interpreter on which the command is registered.
+ *   @param pInterp Interpreter on which the command is registered.
  *   @param cmdName Command name string.
  *   @note The client data will be a pointer to this object so that
  *        the static commandRelay method actually registered as the
