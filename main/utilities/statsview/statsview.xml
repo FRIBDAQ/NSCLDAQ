@@ -126,4 +126,123 @@ $DAQBIN/statsview  <optional>host</optional>
         </para>
     </refsect1>
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>statsplot</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>statsplot</refname>
+        <refpurpose>Plot time evolution of ring statistics</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis>
+<command>$DAQBIN/statsplot <replaceable>statistics-file</replaceable></command>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>
+            DESCRIPTION
+        </title>
+        <para>
+            The ring monitor program can told to write a periodic log of ring buffer statistics.
+            The  <command>statsplot</command> program can then produce plots of that data over
+            any time range covered by the data in that file.
+        </para>
+        <para>
+            When started, the program opens the statistics-file read-only and  produces a
+            tabbed notebook with a tab page for each ring buffer seen in the statistics file.
+            The intial view covers all data since the beginning of the current day.
+        </para>
+        <para>
+            Each page of the notebook has a control panel. The control panel features a radio button set
+            which allows the user to select data either from a start date/time, before an end date/time,
+            or between a start and end date/time.
+        </para>
+        <para>
+            The date/times for the query are selected via date/time editors above the radio buttons.
+            Only the relevant date/time editors are enabled, depending on the state of the 
+            radio button set.   Dates can be selected from a calendar by clicking the down arrow to the 
+            right of the editor.   The date and time fields can also be selected by clicking on it and typing
+            new values for each Month/Day/Year field.  The up and down arrow keys can also be used to
+            increment date and time fields by one.
+        </para>
+        <para>
+            Once you have selected a date/time range, click the <guibutton>Update</guibutton> to
+            plot the data in the seleted tab.  Note that the date/time periods of each page in the
+            notebook are independent.
+        </para>
+        <para>
+            Each page provides 6 plots, from top left to right:
+            <itemizedlist>
+                <listitem>
+                <para>
+                    The number of events seen since the most recent <literal>BEGIN_RUN</literal>
+                    ring item in the ring.
+                </para>
+                </listitem>
+                <listitem><para>
+                    The instantaneous data rate in bytes/sec through the ring.
+                </para></listitem>
+                <listitem>
+                    <para>
+                        The event rate through the in events/sec through the ring.  An event
+                        is defined as a ring item of type <literal>PHYSICS_EVENT</literal>
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        The total data volume (bytes) through the ring.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        The total data volume (bytes) through the ring since the last
+                        <literal>BEGIN_RUN</literal> item was seen.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                         The total number of events through the ring since the last
+                         <literal>BEGIN_RUN</literal> item.  An event is defineds as a
+                         <literal>PHYSICS_EVENT</literal> ring item.
+                    </para>
+                </listitem>
+            </itemizedlist>
+        </para>
+        <para>
+            Notes:
+            <orderedlist>
+                <listitem>
+                    <para>
+                        If there is no data within the selected time range, a dialog box
+                        indicating that will pop up and the plots displayed will not be modified.
+                        If there is no data in the database since the beginning of the day in which
+                        the program is run, the initial plots will not be drawn.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        If the data in the file do not extend to the end date/time, the time axis
+                        on the plot will terminate at the date/time the data actually terminates.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        You can point the program at the file that the ring monitor program is
+                        accumulating into and, by setting the end date beyond the current date/time, watch
+                        the live statistics evolve by clicking the update button to observe new statistics 
+                        accumulated by the ring monitor.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        While the ring monitor timestamps data as times relative to the unix epoch, 
+                        the plots display the times in the local timezone for your convenience.
+                    </para>
+                </listitem>
+            </orderedlist>
+        </para>
+    </refsect1>
+</refentry>
 <!-- /manpage -->

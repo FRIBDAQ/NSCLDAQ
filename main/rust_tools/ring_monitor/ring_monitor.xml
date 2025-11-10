@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS ring_names (
 CREATE TABLE IF NOT EXISTS statistics (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     ring_id      INTEGER,   -- FK to ring_names
-    timestamp    STRING,
+    timestamp    INTEGER,
     volume       INTEGER,   -- Total bytes
     run_vol      INTEGER,   -- bytes this run
     events       INTEGER,   -- total events.
@@ -269,11 +269,9 @@ CREATE TABLE IF NOT EXISTS statistics (
                     <term>timestamp</term>
                     <listitem>
                         <para>
-                            Is a timestamp field in RFC 3339 ISO 8601 date/time format.
-                            In this format, 
-                            <literal>2025-11-04T08:57:44.270119696-05:00</literal>
-                            represents November 4, 2025 8:57:44AM (and change) in
-                            a timezome 5 hours behind GMT (EST).
+                            Is a unix timestamp.  Those have an implicit timezone of
+                            UTC.  To get local times, you will need to convert them to the local
+                            timzeone.
                         </para>
                     </listitem>
             </varlistentry>
