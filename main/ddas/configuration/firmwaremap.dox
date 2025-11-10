@@ -5,7 +5,8 @@
 @date 3/26/25
 
 @section sec_fwmap_intro Introduction
-@par DDAS accepts custom firmware maps which override the default module firmware either for some subset of modules installed in the system or for the entire crate. The former is achieved by adding per-module firmware maps to the cfgPixie16.txt configuration file, see @ref cfgpixie16 "The cfgPixie16.txt File" for more information. Setting the environment variable FIRMWARE_FILE to point to a firmware map file will override the firmware for the entire crate. In this document we will describe the format of these firmware maps.
+@par
+DDAS accepts custom firmware maps which override the default module firmware either for some subset of modules installed in the system or for the entire crate. The former is achieved by adding per-module firmware maps to the cfgPixie16.txt configuration file, see @ref cfgpixie16 "The cfgPixie16.txt File" for more information. Setting the environment variable FIRMWARE_FILE to point to a firmware map file will override the firmware for the entire crate. In this document we will describe the format of these firmware maps.
 
 @section sec_fwmap_format DDAS Firmware Map Format
 @par

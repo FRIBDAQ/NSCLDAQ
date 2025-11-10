@@ -87,7 +87,7 @@ namespace DAQ {
 	    /**
 	     * @brief Boot a single module
 	     * @param modIndex Index of the module in the system.
-	     * @param m_config The system configuration.
+	     * @param config The system configuration.
 	     * @param type Boot style (load firmware or settings only).
 	     * @throw std::runtime_error If hardware type is unknown.
 	     * @throw CDDASException If `Pixie16BootModule()` returns an error.
