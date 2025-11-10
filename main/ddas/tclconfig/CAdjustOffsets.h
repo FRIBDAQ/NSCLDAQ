@@ -15,8 +15,8 @@
 	     East Lansing, MI 48824-1321
 */
 
-/** @file:  AdjustOffsets.h
- *  @brief: Provides the pixie16::adjustOffsts command.
+/** @file CAdjustOffsets.h
+ *  @brief Provides the pixie16::adjustOffsts command.
  */
 #ifndef ADJUSTOFFSETS_H
 #define ADJUSTOFFSETS_H
