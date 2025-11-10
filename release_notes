@@ -17,7 +17,10 @@ by COutputThread (nummap_chunk() issue fixed)
     *  Builds those external programs and installs them in @bindir@/rust
     *  Builds rust programs in main/rust_tools and installs them in @bindir@/rust
 * Add statistics server for ringbuffer throughput and aggregate transfer. (rust_tools/ring_monitor)
-    * statsview python script can view the statistics it accumulates utilities/statsview)
+    * statsview python script can view the statistics it accumulates utilities/statsview), and logs it into a statistics database file.
+    * statsplot python script can view the time evoluton of ring statistics
+      logged by ring_monitor into an sqlite3 database file.
+    
 * Issue # 251 - add statistics to the python managed environment control panel
 * Build docs for parallel processing framework
 * Fix issue #380- compile fails if not MPI due to missing #include <iostream>
