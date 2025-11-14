@@ -58,6 +58,12 @@
                     your event files.
                 </para>
             </listitem>
+	    <listitem>
+                <para>
+                    <link linkend='ch.offlinereglom' endterm='ch.offlinereglom.title' />
+                    describes how to process data to rebuild events 
+                </para>
+            </listitem>
         </itemizedlist>
     </chapter>
     <chapter id='ch.readrings'>
@@ -2638,5 +2644,71 @@ set EPICS_UPDATED(Z001F-C) {2018-10-31 15:17:51}
                     run timing is based off of that.
                 </para>
         </section>
-    </chapter>
-</book> 
+      </chapter>
+      <chapter id='ch.offlinereglom'>
+        <title id='ch.offlinereglom.title'>Rebuilding data for offline analysis</title>
+        <para>
+	  It may be the case that you need to rebuild events for offline analysis, for example to recover from "data late" errors for multi-source systems with differing rates in each data source. A detailed description of the offline rebuilding process can be found in the NSCLDAQ documentation for the <literal>offlinereglom</literal> program. The GUI described in the <literal>offlinereglom</literal> documentation provides a convienient way to configure offline rebuild tasks but is impractical for reprocessing large volumes of data. We will discuss in this chapter how to use the NSCLDAQ <literal>Unglom</literal> and <literal>reglom</literal> programs to separate event-built data by source ID and rebuild an event file with properly time-ordered data in a way which supports batch processing or "fire-and-forget" reprocessing of entire datasets through the use of an example script.
+        </para>
+	<section id='sec.reglomscript'>
+	  <title id='sec.reglomscript.title'>The script</title>
+	  <para>
+	    An example script <filename>reglom.sh</filename> is located in the <filename class="directory">share/recipes/offlinereglom</filename> directory under the top-level NSCLDAQ installation. This script illustrates how to use <literal>Unglom</literal> and <literal>reglom</literal> commands in a framework that can be generalized to your particular purposes.
+	  </para>
+	  <informalexample>
+            <programlisting>
+#!/bin/bash
+
+input_dir=data                           <co id='offlinereglom.config'/>
+window=1000
+output_sid=0
+output_file=reglommed.evt
+
+input=($input_dir/run-*.evt)             <co id='offlinereglom.unglom'/>
+cat ${input[@]} | $DAQBIN/Unglom - 2>&1
+
+sid_files=(sid*)                         <co id='offlinereglom.createglominput'/>
+sid_uris=()
+for f in ${sid_files[@]}; do
+  uri=file://$PWD/$f
+  sid_uris+=($uri)
+done
+
+$DAQBIN/reglom --dt=$window --sourceid=$output_sid --output=$output_file ${sid_uris[@]} 2>&1 <co id='offlinereglom.rebuild'/>
+
+rm -f ${sid_files[@]}                    <co id='offlinereglom.cleanup'/>
+	    </programlisting>
+          </informalexample>
+          <para>
+	    <calloutlist>
+              <callout arearefs='offlinereglom.config'>
+                <para>
+                  Configuration for rebuilding events offline. We assume the input data file(s) are in a subdirectory <literal>input_dir</literal> called <filename class="directory">data</filename>. The event-building coincidence window <literal>window</literal> used to rebuild events is 1000 timestamp units. Note that the timestamp units may be calibrated (nanoseconds) or not (clock ticks). The rebuilt data requires a source ID, <literal>output_sid</literal>, in this case set to 0. And finally, the <literal>output_file</literal> will contain the rebuild data. Notice that no matter how many input files exist, only one output file is written.
+                </para>
+              </callout>
+	      <callout arearefs='offlinereglom.unglom'>
+                <para>
+                  Create an array of input files and dump them on stdout to feed to <literal>Unglom</literal>. The <literal>-</literal> argument passed to <literal>Unglom</literal> tells it to read data on stdin. <literal>2>&1</literal> redirects stderr to stdout - this is a common redirection in Bash which may be useful for logging purposes. We discuss the parts of this script below.
+                </para>
+              </callout>
+	      <callout arearefs='offlinereglom.createglominput'>
+                <para>
+                  Here we setup the properly-formatted input for rebuilding data. The <literal>Unglom</literal> step creates files <literal>sid-X</literal> where <literal>X</literal> is the input source ID of data in the file. One file is created for each source ID in the input data. We need to construct a properly formatted URI for the <literal>sid-*</literal> files in our current working directory. This is done by prepending the file name with the proper protocol <literal>file://</literal> and the path of the current directory stored in the environment variable <literal>PWD</literal>.
+                </para>
+	      </callout>
+	      <callout arearefs='offlinereglom.rebuild'>
+                <para>
+                  Use the <literal>reglom</literal> program to rebuild the event file. Note that in addition to the configuration options in (1), the <literal>reglom</literal> program expects URIs of all data being rebuilt as a command line argument: we achieve this by array expansion <literal>${sid_uris[@]}</literal>. 
+                </para>
+	      </callout>
+	      <callout arearefs='offlinereglom.cleanup'>
+                <para>
+                  Cleanup all temporary <literal>sid-*</literal> files.
+                </para>
+              </callout>     
+            </calloutlist>
+	  </para>
+	</section>
+      </chapter>
+    </book> 
+    
