@@ -133,13 +133,13 @@ fn allocate_port(client: &mut portman_client::Client, service_name: &str) -> u16
 ///       This will also be updated.
 /// 
 /// The returned tuple is in order:
-///     bool - new_run - true if a BEGIN_RUN item was encountered int the data.
+///     bool - new_run - true if a BEGIN_RUN or END_RUN tem was encountered int the data.
 ///     Option<usize> - Number of events in the data since the last BEGIN_RUN in the data.
 ///     usize - Total number of events in the data.
 ///     Option<usize> - Number of bytes since in the data since he last BEGIN_RUN in the data.
 /// 
 /// A note on the "Since the last BEGIN_RUN..." items. Those are only meaningful
-/// if the 
+/// if the program starts prior to a begin run.
 ///     
 fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, residual: &mut usize) ->
     (bool, Option<usize>, usize, Option<usize>) {
@@ -180,9 +180,10 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
         } else {
             result.3 = Some(result.3.unwrap() + size as usize);
         }
-        // Reset the per run counters if this is  a BEGIN_RUN item:
+        // Reset the per run counters if this is  a BEGIN_RUN or END_RUN item:
 
-        if item_type == rust_ringitem_format::BEGIN_RUN {
+        if item_type == rust_ringitem_format::BEGIN_RUN || 
+           item_type == rust_ringitem_format::END_RUN {
             result.0 = true;                             // There was a begin run.
             result.1 = None;                             // no new events.
             result.3 = Some(size as usize);                             // For data we've had this item.

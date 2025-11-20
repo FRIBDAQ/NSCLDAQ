@@ -35,10 +35,8 @@ Future:
 '''
 import sys
 from PyQt5.QtWidgets import (QWidget, QApplication, QDateTimeEdit,
-    QPushButton, QRadioButton, QLabel, QTabWidget,
-    QMenuBar, QMessageBox,
-    QVBoxLayout,  QGridLayout,
-    QAction
+    QPushButton, QRadioButton, QLabel, QTabWidget, QMessageBox,
+    QVBoxLayout,  QGridLayout
 )
 from PyQt5.QtCore import (Qt, QDate, QTime, QDateTime, QTimeZone,
   pyqtSignal)
@@ -60,7 +58,6 @@ from zoneinfo import ZoneInfo
 matplotlib.use('Qt5Agg')
 plt.style.use('seaborn-v0_8-whitegrid')
 
-inform_no_data = False     # Turn that on after the initial plots are made.
 #  The control class for the bottom of each
 #  Tabbed notebook:
 
@@ -323,7 +320,7 @@ class RingStatisticsPlot(QWidget):
   +---------------------------------------------------------------+
   |                Ring buffer name  label                        |
   |   Plot area with 6 TimePlotWidgets.                           |
-  |                     Date range widget                         |
+  |                                           |
   +---------------------------------------------------------------+
   
   The intent, in this application, is that the widget be put in a 
@@ -331,26 +328,12 @@ class RingStatisticsPlot(QWidget):
   may not be required.  For the contents of the TimePlotWidgets,
   see the update method documentation.
   
-  Signals:
-      refresh - passed this widget  when the Update button on the
-          data range widget is clicked.  The slot handling this is 
-          expected to provide new data in the data range specified
-          by that subwidget.
   Attributes:
       ringbuffer:  Ring buffer name that is displayed inthe ring buffer label and 
                     should be used in database queries.
-      start:       Start date/time in the data range widget.
-      end:         End date/time value in the date range widget.
-      type:        Type of data range from the date range widget:
-                   * 'before' - the end represents the end time  the begining is 
-                                the earliest record in the database for this ring.
-                   * 'between' - The data should be after the start time and 
-                                 before the end time.
-                   * 'since'  - All data after the start time.
     Public Methods:
     update       - Plots are regenerated from a new dataframe of series.
   '''
-  refresh = pyqtSignal(object)
   
   def __init__(self, parent=None):
     super(RingStatisticsPlot, self).__init__(parent)
@@ -366,7 +349,7 @@ class RingStatisticsPlot(QWidget):
     self._data_rate_plot  = TimePlotWidget(self)
     self._event_rate_plot = TimePlotWidget(self)
     
-    self._date_range = DateRange(self)
+  
     
     # Layout with an overall VBox layout but the
     # plots are in a  grid layout.
@@ -386,13 +369,6 @@ class RingStatisticsPlot(QWidget):
     
     layout.addLayout(plot_layout)
     
-    layout.addWidget(self._date_range)
-    
-    # Connect the DateRange refresh signal to 
-    # our signal relay (we have to put 'self' in as the parameter).
-    
-    self._date_range.refresh.connect(self._updateRelay)
-    
   # Slots:
   
   def _updateRelay(self):
@@ -409,37 +385,7 @@ class RingStatisticsPlot(QWidget):
     ''' set value of ring name label to the 'ring' parameter value '''
     self._ringname.setText(ring)
     
-  # start attribute:
   
-  def start(self):
-    ''' return the start time '''
-    return self._date_range.start()
-  
-  def setStart(self, dt):
-    ''' Set the start time value:  dt is a QDateTime object.'''
-    self._date_range.setStart(dt)
-    
-  #  end attribute:
-  
-  def end(self):
-    ''' return the end time'''
-    return self._date_range.end()
-  
-  def setEnd(self, dt):
-    ''' set the end time to dt which must be a QDateTime object. '''
-    self._date_range.setEnd(dt)
-    
-  # type attribute
-  
-  def type(self):
-    ''' Return the date range type:  'since', 'before or 'between' '''
-    return self._date_range.type()
-  def setType(self, t):
-    ''' Set the new date range type ValueError is raised if  t is
-        not one of 'since', 'before', or 'between'
-    '''
-    self._date_range.setType(t)
-    
   # Public methods:
   
   def update(self, frame):
@@ -494,10 +440,13 @@ class RingStatisticsPlot(QWidget):
     self._events_plot.setXLabel('Date/Time')
     self._events_plot.setYLabel('Events')
     
-      
-# Main entry:
+
+# Global level functios
 
 def createInitialTimes():
+  ''' Create an initial start/stop time string for the DateRange widget
+    start will be midnight today and end will be 'now'.
+  '''
   now = datetime.datetime.now()    # Beginning of today.
   
   
@@ -515,11 +464,12 @@ def createInitialTimes():
 
 
 def formatDateTime(dt) :
-  # Given a QDateTime formats it to match
-  # the format in the database which is
-  # an ISODateWithMs that also needs more decimal precision
-  # ns from rust 
-  
+  '''
+   Given a QDateTime formats it to match
+   the format in the database which is
+   an ISODateWithMs that also needs more decimal precision
+   ns from rust 
+  '''
   result = dt.toString(Qt.ISODateWithMs) + '000000'  # needs a timezone now.
   tzsecs = dt.timeZone().offsetFromUtc(dt)  # Seconds offset from UTC.
   hrs    = tzsecs/3600                    # Keeps the sign.
@@ -531,6 +481,7 @@ def formatDateTime(dt) :
   return result
    
 def connect_database(name):
+  ''' connect to the database 'name' and return the connection object. '''
   db = sqlite3.connect('file:' + name + '?mode=ro', uri=True)
   return db
 
@@ -539,7 +490,10 @@ def connect_database(name):
 #  Create the data frame and plot:
 
 def doPlot(w, db, sql, params):
-  
+  '''
+    Given some sql query from the statistics table do a plot for the results of that query
+    in the widget w.
+  '''
   cursor = db.cursor()
   stats = []
   for row in cursor.execute(sql, params):
@@ -552,10 +506,7 @@ def doPlot(w, db, sql, params):
   # Make the times, series and data frame. Note
   # THe timstamps are in seconds since the unix epoch.
   
-  if len(stats) == 0 :
-    # No data to plot so indicate that with a dialog.
-    if inform_no_data:
-      QMessageBox.information(w, 'No Data', f'No data matches the query {sql} with parameters {params}')
+  if len(stats) < 2 :
     return
   
   times =  [datetime.datetime.fromtimestamp(t['time'], ZoneInfo('UTC'))  for t in stats ] #t['time'][:32] + t['time'][33:]
@@ -585,6 +536,7 @@ def doPlot(w, db, sql, params):
 #  Plot data since a time: 
 
 def plotFrom(w, db, ring_name, fromDate):
+  ''' Update a pot from a specified date.'''
   sql = '''
     SELECT timestamp, volume, run_vol, events, run_events, rate, event_rate 
     FROM statistics
@@ -598,7 +550,7 @@ def plotFrom(w, db, ring_name, fromDate):
 # Plot data before an end time:
 
 def plotBefore(w, db, ring_name, beforeDate):
-  
+  ''' Update a plot with data prior to an end date  '''
   sql = '''
     SELECT timestamp, volume, run_vol, events, run_events, rate, event_rate 
     FROM statistics
@@ -610,6 +562,7 @@ def plotBefore(w, db, ring_name, beforeDate):
   
   
 def plotBetween(w, db, ring_name, startDate, endDate):
+  ''' Update a plot between two dates '''
   sql = '''
   SELECT timestamp,  volume, run_vol, events, run_events, rate, event_rate 
     FROM statistics
@@ -620,21 +573,32 @@ def plotBetween(w, db, ring_name, startDate, endDate):
   params=(ring_name, startDate, endDate)
   doPlot(w, db, sql, params)
   
-def refreshPlots(w):
-  ring_name = w.ringbuffer()
+def refreshPlots():
+  ''' Refresh all plots with a new date/time range.  '''
   db = sqlite3.connect('file:' + dbFile + '?mode=ro', uri=True)
-  range_type = w.type()
-  if range_type == 'since':
-    plotFrom(w, db, ring_name, formatDateTime(w.start()))
-  elif range_type == 'before':
-    plotBefore(w, db, ring_name, formatDateTime(w.end()))
-  elif range_type == 'between':
-    plotBetween(w, db, ring_name, formatDateTime(w.start()),  formatDateTime(w.end()))
-  else:
-    print("Invalid type range type: ", range_type)
+  range_type = dateTimeRange.type()
+  
+  # Iterate over the tabs now:
+  for tab_no in range(tabs.count()) :
+    tab_widget = tabs.widget(tab_no)
+    ring_name = tab_widget.ringbuffer()  
+    if range_type == 'since':
+      plotFrom(tab_widget, db, ring_name, formatDateTime(dateTimeRange.start()))
+    elif range_type == 'before':
+      plotBefore(tab_widget, db, ring_name, formatDateTime(dateTimeRange.end()))
+    elif range_type == 'between':
+      w = dateTimeRange       # For notational convenience.
+      plotBetween(tab_widget, db, ring_name, formatDateTime(w.start()),  formatDateTime(w.end()))
+    else:
+      print("Invalid type range type: ", range_type)
+      
+      
   db.close()
   
+# Entry point.
+  
 if __name__ == "__main__":
+  
   if len(sys.argv) != 2:
     print("Specify a data base file and a ring")
     sys.exit(-1)
@@ -649,12 +613,25 @@ if __name__ == "__main__":
   # The top level window is a QTabWidget with tabs containing
   # RingStatisticsPlot widgets for each ringbuffer:
   
-  window = QTabWidget()
+  window = QWidget()
+  layout = QVBoxLayout()
+  window.setLayout(layout)
+  
+  
+  tabs = QTabWidget(window)
+  layout.addWidget(tabs)
+  
+  (begin, end) = createInitialTimes()
+  dateTimeRange = DateRange(window)
+  dateTimeRange.setStart(begin)
+  dateTimeRange.setEnd(end)
+  
+  layout.addWidget(dateTimeRange)
   
   
   # Make a tab for each ring.
   print("Plotting statistics since today for all rings")
-  (begin, end) = createInitialTimes()
+  
   
   db = connect_database(dbFile)
   cursor = db.cursor()
@@ -663,16 +640,14 @@ if __name__ == "__main__":
     ''', []
     ):
     ring = row[0]
-    plot = RingStatisticsPlot(window)
-    window.addTab(plot, ring)
-    plot.refresh.connect(refreshPlots)
+    plot = RingStatisticsPlot(tabs)
+    tabs.addTab(plot, ring)
     plot.setRingbuffer(ring)
-    plot.setStart(begin)
-    plotFrom(plot, db, ring, formatDateTime(plot.start()))
-    plot.setEnd(end)
+    
+  refreshPlots()       # initial refresh.
+  dateTimeRange.refresh.connect(refreshPlots)
   
   db.close()
-  inform_no_data = True   #From now on message box if a query yields no data.
 
   window.show()
   sys.exit(app.exec())
