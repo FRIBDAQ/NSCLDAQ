@@ -35,10 +35,8 @@ Future:
 '''
 import sys
 from PyQt5.QtWidgets import (QWidget, QApplication, QDateTimeEdit,
-    QPushButton, QRadioButton, QLabel, QTabWidget,
-    QMenuBar, QMessageBox,
-    QVBoxLayout,  QGridLayout,
-    QAction
+    QPushButton, QRadioButton, QLabel, QTabWidget, QMessageBox,
+    QVBoxLayout,  QGridLayout
 )
 from PyQt5.QtCore import (Qt, QDate, QTime, QDateTime, QTimeZone,
   pyqtSignal)
@@ -60,7 +58,6 @@ from zoneinfo import ZoneInfo
 matplotlib.use('Qt5Agg')
 plt.style.use('seaborn-v0_8-whitegrid')
 
-inform_no_data = False     # Turn that on after the initial plots are made.
 #  The control class for the bottom of each
 #  Tabbed notebook:
 
@@ -323,7 +320,7 @@ class RingStatisticsPlot(QWidget):
   +---------------------------------------------------------------+
   |                Ring buffer name  label                        |
   |   Plot area with 6 TimePlotWidgets.                           |
-  |                     Date range widget                         |
+  |                                           |
   +---------------------------------------------------------------+
   
   The intent, in this application, is that the widget be put in a 
@@ -386,7 +383,7 @@ class RingStatisticsPlot(QWidget):
     
     layout.addLayout(plot_layout)
     
-    layout.addWidget(self._date_range)
+    #layout.addWidget(self._date_range)
     
     # Connect the DateRange refresh signal to 
     # our signal relay (we have to put 'self' in as the parameter).
@@ -552,10 +549,7 @@ def doPlot(w, db, sql, params):
   # Make the times, series and data frame. Note
   # THe timstamps are in seconds since the unix epoch.
   
-  if len(stats) == 0 :
-    # No data to plot so indicate that with a dialog.
-    if inform_no_data:
-      QMessageBox.information(w, 'No Data', f'No data matches the query {sql} with parameters {params}')
+  if len(stats) < 2 :
     return
   
   times =  [datetime.datetime.fromtimestamp(t['time'], ZoneInfo('UTC'))  for t in stats ] #t['time'][:32] + t['time'][33:]
@@ -620,18 +614,26 @@ def plotBetween(w, db, ring_name, startDate, endDate):
   params=(ring_name, startDate, endDate)
   doPlot(w, db, sql, params)
   
-def refreshPlots(w):
-  ring_name = w.ringbuffer()
+def refreshPlots():
+  ''' Refresh all plots with a new date/time range.  '''
   db = sqlite3.connect('file:' + dbFile + '?mode=ro', uri=True)
-  range_type = w.type()
-  if range_type == 'since':
-    plotFrom(w, db, ring_name, formatDateTime(w.start()))
-  elif range_type == 'before':
-    plotBefore(w, db, ring_name, formatDateTime(w.end()))
-  elif range_type == 'between':
-    plotBetween(w, db, ring_name, formatDateTime(w.start()),  formatDateTime(w.end()))
-  else:
-    print("Invalid type range type: ", range_type)
+  range_type = dateTimeRange.type()
+  
+  # Iterate over the tabs now:
+  for tab_no in range(tabs.count()) :
+    tab_widget = tabs.widget(tab_no)
+    ring_name = tab_widget.ringbuffer()  
+    if range_type == 'since':
+      plotFrom(tab_widget, db, ring_name, formatDateTime(dateTimeRange.start()))
+    elif range_type == 'before':
+      plotBefore(tab_widget, db, ring_name, formatDateTime(dateTimeRange.end()))
+    elif range_type == 'between':
+      w = dateTimeRange       # For notational convenience.
+      plotBetween(tab_widget, db, ring_name, formatDateTime(w.start()),  formatDateTime(w.end()))
+    else:
+      print("Invalid type range type: ", range_type)
+      
+      
   db.close()
   
 if __name__ == "__main__":
@@ -649,7 +651,17 @@ if __name__ == "__main__":
   # The top level window is a QTabWidget with tabs containing
   # RingStatisticsPlot widgets for each ringbuffer:
   
-  window = QTabWidget()
+  window = QWidget()
+  layout = QVBoxLayout()
+  window.setLayout(layout)
+  
+  
+  tabs = QTabWidget(window)
+  layout.addWidget(tabs)
+  
+  dateTimeRange = DateRange(window)
+  
+  layout.addWidget(dateTimeRange)
   
   
   # Make a tab for each ring.
@@ -663,16 +675,16 @@ if __name__ == "__main__":
     ''', []
     ):
     ring = row[0]
-    plot = RingStatisticsPlot(window)
-    window.addTab(plot, ring)
-    plot.refresh.connect(refreshPlots)
+    plot = RingStatisticsPlot(tabs)
+    tabs.addTab(plot, ring)
     plot.setRingbuffer(ring)
-    plot.setStart(begin)
     plotFrom(plot, db, ring, formatDateTime(plot.start()))
-    plot.setEnd(end)
+  
+  dateTimeRange.setStart(begin)
+  dateTimeRange.setEnd(end)
+  dateTimeRange.refresh.connect(refreshPlots)
   
   db.close()
-  inform_no_data = True   #From now on message box if a query yields no data.
 
   window.show()
   sys.exit(app.exec())
