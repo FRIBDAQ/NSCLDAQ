@@ -123,7 +123,7 @@ DAQ::DDAS::SystemBooter::initSystem(Configuration& config)
     
     int rv;
     if (m_offlineMode) {
-	int nModules = 3; // 4th module is Pixie-32.
+	int nModules = 4; // 4th module is Pixie-32.
 	config.setNumberOfModules(nModules);
 	rv = Pixie16InitSystem(nModules, nullptr, 1);
     } else {
@@ -188,9 +188,13 @@ DAQ::DDAS::SystemBooter::parallelBoot(Configuration& config, BootType type)
 	}
     }
 
-    // If there are any per-module firmware sets:
+    // If there are any per-module firmware sets:    
     setPerModuleFirmware(config);
 
+    // Set the channel map:
+    setChannelMap(config);
+
+    // Now we can boot:    
     rv = PixieBootCrate(config.getSettingsFilePath().c_str(),
 			getBootMode(type));
     if (rv < 0) {
@@ -217,6 +221,7 @@ DAQ::DDAS::SystemBooter::offlineBoot(Configuration& config, BootType type)
 	throw CXIAException("SystemBooter::offlineBoot() failed",
 			    "PixieBootCrate()", rv);
     }
+    setChannelMap(config);
 }
 
 /**
@@ -333,6 +338,17 @@ DAQ::DDAS::SystemBooter::setPerModuleDSP(Configuration& config)
 		      << dspPath << std::endl;
 	}
     }
+}
+
+void
+DAQ::DDAS::SystemBooter::setChannelMap(Configuration& config)
+{
+    std::vector<unsigned short> channelMap;
+    for (auto i = 0; i < config.getNumberOfModules(); i++) {
+	auto cfg = getModuleConfig(i);
+	channelMap.push_back(cfg.number_of_channels);
+    }
+    config.setChannelMap(channelMap);
 }
 
 void

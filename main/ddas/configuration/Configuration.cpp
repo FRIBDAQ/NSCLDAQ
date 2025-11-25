@@ -29,6 +29,7 @@ void
 DAQ::DDAS::Configuration::setNumberOfModules(size_t size)
 {
     m_slotMap.resize(size);
+    m_channelMap.resize(size);
     m_modEvtLengths.resize(size);
     m_hardwareMap.resize(size);
 }
@@ -38,7 +39,7 @@ DAQ::DDAS::Configuration::setNumberOfModules(size_t size)
  * It is important for the caller to first call `setNumberOfModules()`
  * before calling this to avoid an exception being thrown. To avoid
  * weird configurations, this ensures that the length of the slot map
- * is the same as the module event length vector at all times. If
+ * is the same as the number of modules in the system at all times. If
  * the user has not set the number of modules previously, this cannot
  * be gauranteed and the method will almost always throw.
  *
@@ -51,7 +52,7 @@ DAQ::DDAS::Configuration::setNumberOfModules(size_t size)
 void
 DAQ::DDAS::Configuration::setSlotMap(const std::vector<unsigned short> &map)
 {
-    if (map.size() != m_modEvtLengths.size()) {
+    if (map.size() != getNumberOfModules()) {
 	std::string errmsg = "Configuration::setSlotMap(): Inconsistent data "
 	    "for module evt lengths and slot mapping. Set number of modules "
 	    "first using Configuration::setNumberOfModules().";
@@ -59,6 +60,34 @@ DAQ::DDAS::Configuration::setSlotMap(const std::vector<unsigned short> &map)
     }
 
     m_slotMap = map;
+}
+
+/**
+ * @details
+ * It is important for the caller to first call `setNumberOfModules()`
+ * before calling this to avoid an exception being thrown. To avoid
+ * weird configurations, this ensures that the length of the channel map
+ * is the same as the number of modules in the system at all times. If
+ * the user has not set the number of modules previously, this cannot
+ * be guaranteed and the method will almost always throw.
+ *
+ * @code
+ *  Configuration config;
+ *  config.setNumberOfModules(2);
+ *  config.setChannelMap({16, 16});
+ * @endcode
+ */
+void
+DAQ::DDAS::Configuration::setChannelMap(const std::vector<unsigned short>& map)
+{
+    if (map.size() != getNumberOfModules()) {
+	std::string errmsg = "Configuration::setChannelMap(): Inconsistent "
+	    "data for module evt lengths and slot mapping. Set number of "
+	    "modules first using Configuration::setNumberOfModules().";
+	throw std::runtime_error(errmsg);
+    }
+
+    m_channelMap = map;
 }
 
 /**
@@ -141,20 +170,26 @@ DAQ::DDAS::Configuration::getModuleFirmwareConfiguration(
     }
 }
 
-/*!
+/**
  * @details
  * It is necessary that the caller has previously invoked 
  * `setNumberOfModules()` before calling this. The logic of this method aims 
- * to keep the slot map and module event length vectors the same length. 
+ * to keep the slot map and number of modules in the system the same length. 
  * Without invoking `setNumberOfModules()` this is most likely not going to be 
  * the case.
+ *
+ * @code
+ *  Configuration config;
+ *  config.setNumberOfModules(2);
+ *  config.setModuleEventLengthsMap({4, 4});
+ * @endcode
  */
 void
 DAQ::DDAS::Configuration::setModuleEventLengths(
     const std::vector<int> &lengths
     )
 {
-    if (lengths.size() != m_slotMap.size()) {
+    if (lengths.size() != getNumberOfModules()) {
 	std::string errmsg = "Configuration::setModuleEventLengths() "
 	    "Inconsistent data for module evt lengths and slot mapping. "
 	    "Set number of modules first using "
@@ -165,18 +200,24 @@ DAQ::DDAS::Configuration::setModuleEventLengths(
     m_modEvtLengths = lengths;
 }
 
-/*!
+/**
  * @details
  * It is necessary that the caller has previously invoked 
  * `setNumberOfModules()` before calling this. The logic of this method aims 
- * to keep the slot map and module event length vectors the same length. 
+ * to keep the slot map and number of modules in the system the same length. 
  * Without invoking `setNumberOfModules()` this is most likely not going to be 
  * the case.
+ *
+ * @code
+ *  Configuration config;
+ *  config.setNumberOfModules(2);
+ *  config.setModuleHardwareMap({RevD_100MHz_12Bit, RevF_250MHz_14Bit});
+ * @endcode
  */
 void
 DAQ::DDAS::Configuration::setHardwareMap(const std::vector<int> &map)
 {
-    if (map.size() != m_slotMap.size()) {
+    if (map.size() != getNumberOfModules()) {
 	std::string errmsg = "Configuration::setModuleEventLengths() "
 	    "Inconsistent data for hardware mapping and slot mapping. "
 	    "Set number of modules first using "

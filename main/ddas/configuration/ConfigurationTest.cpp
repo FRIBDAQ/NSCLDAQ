@@ -41,6 +41,9 @@ public:
     CPPUNIT_TEST(setHardwareMap_0);
     CPPUNIT_TEST(setHardwareMap_1);
     CPPUNIT_TEST(setHardwareMap_2);
+    CPPUNIT_TEST(setChannelMap_0);
+    CPPUNIT_TEST(setChannelMap_1);
+    CPPUNIT_TEST(setChannelMap_2);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -155,6 +158,47 @@ public:
 		);
 
 	}
+
+    /** @brief Check that setting the channel map modifies the map values. */
+    void setChannelMap_0()
+	{
+	    Configuration config;
+	    config.setNumberOfModules(2);
+	    CPPUNIT_ASSERT_NO_THROW_MESSAGE(
+		"Setting the channel map correctly succeeds",
+		config.setChannelMap({16, 16})
+		);
+	}
+    
+    /** 
+     * @brief Setting a channel map before setting the number of modules 
+     * is an error. 
+     */
+    void setChannelMap_1()
+	{
+	    Configuration config;
+	    CPPUNIT_ASSERT_THROW_MESSAGE(
+		"Setting channel map before setNumberOfModules is an error",
+		config.setChannelMap({16}),
+		std::runtime_error
+		);
+	}
+
+    /** @brief Check that setting the channel map modifies the map values. */
+    void setChannelMap_2()
+	{
+	    using namespace DAQ::DDAS::HardwareRegistry;
+	    Configuration config;
+	    config.setNumberOfModules(1);
+	    std::vector<unsigned short> mapping = {16};
+	    config.setChannelMap(mapping);
+	    ASSERTMSG(
+		"setting channel map actually creates change in map",
+		mapping == config.getChannelMap()
+		);
+
+	}
+    
 };
 
 // Register it with the test factory

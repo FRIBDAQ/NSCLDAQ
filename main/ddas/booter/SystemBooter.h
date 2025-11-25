@@ -132,6 +132,11 @@ namespace DAQ {
 	     */
 	    void setPerModuleDSP(Configuration& config);
 	    /**
+	     * @brief Set the channel map.
+	     * @param config References the system configuration.
+	     */
+	    void setChannelMap(Configuration& config);
+	    /**
 	     * @brief Read and store hardware info from each of the modules 
 	     * in the system.
 	     * @param config The system configuration.
