@@ -1,6 +1,10 @@
 lib_LTLIBRARIES		= libVMUSB.la libVMUSBRemote.la libCVMUSB.la \
 	libCVMUSBReadoutList.la
 
+# Install headers in the vmusb subdir.
+
+includedir=@prefix@/include/vmusb
+
 COMPILATION_FLAGS	= $(USBSWITCHES) -I@top_srcdir@/base/headers @LIBTCLPLUS_CFLAGS@  \
 			-I@top_srcdir@/base/tcpip \
 			-I@top_srcdir@/base/os	\
@@ -22,14 +26,14 @@ libVMUSBRemote_la_SOURCES = CVMUSBReadoutList.cpp \
 
 libVMUSBRemote_la_CPPFLAGS=$(COMPILATION_FLAGS)
 
-
-noinst_HEADERS		= CVMUSB.h   \
+include_HEADERS = CVMUSB.h   \
 	CVMUSBReadoutList.h  \
 	CVMUSBusb.h	\
 	CVMUSBEthernet.h \
 	CVMUSBRemote.h       \
-	CVMUSBFactory.h \
-	CMockVMUSB.h \
+	CVMUSBFactory.h
+
+noinst_HEADERS		=  CMockVMUSB.h \
 	CLoggingReadoutList.h \
 	vme_interface_class.h sis_vmusb_interface.h
 
