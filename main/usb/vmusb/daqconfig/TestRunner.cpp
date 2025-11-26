@@ -5,7 +5,7 @@
 #include <TCLInterpreter.h>
 #include <TCLObject.h>
 #include <stdexcept>
-
+#include <CRunState.h>
 
 using namespace std;
 
@@ -60,4 +60,23 @@ getConfigVal(CTCLInterpreter& interp, const char* option, std::string configStri
     }
   }
   throw std::runtime_error("No such key");
+}
+
+// Run state stubs: Not actually used in tests.
+// just satisfy globals.
+
+CRunState* CRunState::m_pTheInstance(nullptr);
+
+CRunState::CRunState() {}
+CRunState::~CRunState() {}
+
+CRunState* CRunState::getInstance() {
+  if (!m_pTheInstance) m_pTheInstance = new CRunState;
+  return m_pTheInstance;
+}
+
+
+uint16_t
+CRunState::getRunNumber() {
+  return 0;
 }
