@@ -227,7 +227,28 @@ S800TriggerRegisters::setRunNumber(CVMUSB& controller, std::uint32_t runNumber) 
         throw std::runtime_error("Could not write the high order run number bits.");
     }
 }
+/**
+ * describeJSON
+ *    Return a string that describes the module.
+ * @return std::string
+ */
+std::string 
+S800TriggerRegisters::describeJSON() {
+    std::stringstream desc;
+    std::string result;
 
+    auto device = m_registerSpec["Device"].asString();
+    auto firmware = m_registerSpec["Project"].asString();
+    auto built    = m_registerSpec["BuildDate"].asString();
+    
+    desc << "Device type: " << device << std::endl;
+    desc << "Firmware:    " << firmware << std::endl;
+    desc << "Build date:  " << built;
+
+    result = desc.str();
+
+    return result;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // Internal private utilities.
 
