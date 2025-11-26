@@ -5,10 +5,12 @@
 #undef private
 
 #include <json/json.h>
-
+#include <iostream>
 // Some simple tests for the s800 register parsing.
 
-const char* jsonFile="./RegisterFile.json";
+// RegisteFile.json is in the SOURCE_DIR directory.
+// 
+static const char* jsonFile=SOURCE_DIR "/" "RegisterFile.json";
 
 class RegTests : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(RegTests);
