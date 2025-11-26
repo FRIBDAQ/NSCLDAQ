@@ -64,7 +64,8 @@ libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CMDPP32SCP.cpp  \
 				CMDPP32PADC.cpp  \
 				CSIS3316.cpp \
-				sis3316_class.cpp 
+				sis3316_class.cpp \
+				s800TriggerRegisters.cpp s800TriggerRegisters.h
 
 
 
@@ -149,7 +150,8 @@ libVMUSBDaqConfig_la_CPPFLAGS = -I@top_srcdir@/usb/common/devices	\
 				@LIBTCLPLUS_CFLAGS@			\
 				-I@top_srcdir@/base/headers		\
 				-I@top_srcdir@/base/os		\
-				$(TCL_FLAGS)  @PIXIE_CPPFLAGS@
+				$(TCL_FLAGS)  @PIXIE_CPPFLAGS@ \
+				@JSON_CFLAGS@
 
 
 libVMUSBDaqConfig_la_LIBADD	= \
@@ -157,12 +159,14 @@ libVMUSBDaqConfig_la_LIBADD	= \
 				@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 				@top_builddir@/base/thread/libdaqthreads.la \
 				@LIBTCLPLUS_LDFLAGS@	\
-				$(TCL_LDFLAGS) @THREADLD_FLAGS@
+				$(TCL_LDFLAGS) @THREADLD_FLAGS@ @JSON_LIBS@
 
 install-data-local:
 	$(mkinstalldirs) @prefix@/vmusbdriver
 	$(mkinstalldirs) @prefix@/vmusbdriver/includes
+	$(mkinstalldirs) @prefix@/share/s800trigger
 	$(INSTALL_DATA)  @srcdir@/*.h @prefix@/vmusbdriver/includes
+	$(INSTALL_DATA)  @srcdir@/RegisterFile.json @prefix@/share/s800trigger
 
 
 noinst_PROGRAMS=cmdtests
@@ -174,14 +178,15 @@ cmdtests_SOURCES=TestRunner.cpp Asserts.h ad811test.cpp \
 	v977tests.cpp masetests.cpp mtdctests.cpp delaytests.cpp \
 	xlmferatests.cpp cbdtests.cpp xlmtimestamptests.cpp mqdctests.cpp \
 	cbdcratetests.cpp ulmtriggertests.cpp lrs4300tests.cpp lrs4434tests.cpp \
-	lrs2551tests.cpp mdpp32qdctests.cpp
+	lrs2551tests.cpp mdpp32qdctests.cpp s800triggerregistertests.cpp
 
 
 cmdtests_CXXFLAGS=@CPPUNIT_CFLAGS@ $(libVMUSBDaqConfig_la_CXXFLAGS) \
-	$(libVMUSBDaqConfig_la_CPPFLAGS) @PIXIE_CPPFLAGS@
-cmdtests_LDFLAGS=@CPPUNIT_LDFLAGS@ 
+	$(libVMUSBDaqConfig_la_CPPFLAGS) @PIXIE_CPPFLAGS@ \
+	-DSOURCE_DIR=\"@srcdir@\" @JSON_CFLAGS@
+cmdtests_LDFLAGS=@CPPUNIT_LDFLAGS@ @JSON_LIBS@
 cmdtests_LDADD=@builddir@/libVMUSBDaqConfig.la $(libVMUSBDaqConfig_la_LIBADD)
 
 TESTS=cmdtests
 
-EXTRA_DIST = CCamacCompat.hpp
+EXTRA_DIST = CCamacCompat.hpp RegisterFile.json
