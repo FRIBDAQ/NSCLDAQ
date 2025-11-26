@@ -80,7 +80,7 @@ public:
     void enableExternalClear(CVMUSB& controller, bool state);
     void setRunNumber(CVMUSB& controller, std::uint32_t runNumber);
     
-    std::string describeJSON(CVMUSB& controller);
+    std::string describeJSON();
 private:
     // internal utilities - mostly used for getting register addresses from the
     // Json and adding m_base to them
