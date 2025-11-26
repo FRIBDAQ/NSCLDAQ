@@ -65,7 +65,8 @@ libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CMDPP32PADC.cpp  \
 				CSIS3316.cpp \
 				sis3316_class.cpp \
-				s800TriggerRegisters.cpp s800TriggerRegisters.h
+			s800TriggerRegisters.cpp s800TriggerRegisters.h \
+				CS800TriggerNew.cpp CS800TriggerNew.h
 
 
 
@@ -146,12 +147,14 @@ libVMUSBDaqConfig_la_CPPFLAGS = -I@top_srcdir@/usb/common/devices	\
 				-I@top_srcdir@/usb/vmusb		\
 				-I@top_srcdir@/usb/vmusb/vmusb		\
 				-I@top_srcdir@/usb/common/devices	\
+				-I@top_srcdir@/usb/vmusb/core           \
 				-I@top_srcdir@/base/thread              \
 				@LIBTCLPLUS_CFLAGS@			\
 				-I@top_srcdir@/base/headers		\
 				-I@top_srcdir@/base/os		\
 				$(TCL_FLAGS)  @PIXIE_CPPFLAGS@ \
-				@JSON_CFLAGS@
+				@JSON_CFLAGS@ \
+	-DDEFAULT_S800REGFILE=\"@datarootdir@/s800triggers/RegisterFile.json\"
 
 
 libVMUSBDaqConfig_la_LIBADD	= \
@@ -185,7 +188,8 @@ cmdtests_CXXFLAGS=@CPPUNIT_CFLAGS@ $(libVMUSBDaqConfig_la_CXXFLAGS) \
 	$(libVMUSBDaqConfig_la_CPPFLAGS) @PIXIE_CPPFLAGS@ \
 	-DSOURCE_DIR=\"@srcdir@\" @JSON_CFLAGS@
 cmdtests_LDFLAGS=@CPPUNIT_LDFLAGS@ @JSON_LIBS@
-cmdtests_LDADD=@builddir@/libVMUSBDaqConfig.la $(libVMUSBDaqConfig_la_LIBADD)
+cmdtests_LDADD=@builddir@/libVMUSBDaqConfig.la \
+	$(libVMUSBDaqConfig_la_LIBADD)
 
 TESTS=cmdtests
 
