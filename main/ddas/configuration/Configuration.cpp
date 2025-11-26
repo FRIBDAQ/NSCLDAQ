@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include "FirmwareVersionFileParser.h"
 #include "ConfigurationParser.h"
@@ -88,6 +89,20 @@ DAQ::DDAS::Configuration::setChannelMap(const std::vector<unsigned short>& map)
     }
 
     m_channelMap = map;
+}
+
+unsigned short
+DAQ::DDAS::Configuration::getChannelCount(size_t mod)
+{
+    if (mod >= m_channelMap.size()) {
+	std::stringstream errmsg;
+	errmsg << "Configuration::getChannelCount(): Module index "
+	       << mod << " is out of range for system with "
+	       << getNumberOfModules() << " modules!";
+	throw std::runtime_error(errmsg.str());
+    }
+
+    return m_channelMap[mod];
 }
 
 /**

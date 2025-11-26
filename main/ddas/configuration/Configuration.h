@@ -157,6 +157,13 @@ namespace DAQ {
 	    std::vector<unsigned short> getChannelMap()
 		{ return m_channelMap; };
 	    /**
+	     * @brief Get the number of channels in a module.
+	     * @param mod The module number (index, not slot).
+	     * @return Number of channels in module.
+	     * @throw Runtime error if the module is out of range.
+	     */
+	    unsigned short getChannelCount(size_t mod);
+	    /**
 	     * @brief Set the path to the DSP settings file.
 	     * @param path The path to the settings file.
 	     */
