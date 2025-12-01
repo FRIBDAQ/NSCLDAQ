@@ -81,10 +81,11 @@ public:
     void setRunNumber(CVMUSB& controller, std::uint32_t runNumber);
     
     std::string describeJSON();
-private:
-    // internal utilities - mostly used for getting register addresses from the
-    // Json and adding m_base to them
 
+    // Open up register address getting 
+    // stuff to public (mainly for slowcontrols in
+    // mvlc).
+    
     std::uint32_t timestampLowBits() const;
     std::uint32_t timestampHighBits() const;
     std::uint32_t triggerMask() const;
@@ -93,7 +94,7 @@ private:
     std::uint32_t runNumberLowBits() const;
     std::uint32_t runNumberHighBits() const;
     std::uint32_t externalClearEnableRegister() const;
-
+private:
     std::uint32_t getRegister(const char* name) const;
 };
 #endif
