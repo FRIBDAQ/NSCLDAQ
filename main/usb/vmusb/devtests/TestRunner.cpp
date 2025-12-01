@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 #include <CVMUSB.h>
-#include <CRunState.h>
+
 using namespace std;
 
 int main(int argc, char** argv)
@@ -41,21 +41,3 @@ namespace Globals
 void* gpTCLApplication(0);
 
 
-// Run state stubs: Not actually used in tests.
-// just satisfy globals.
-
-CRunState* CRunState::m_pTheInstance(nullptr);
-
-CRunState::CRunState() {}
-CRunState::~CRunState() {}
-
-CRunState* CRunState::getInstance() {
-  if (!m_pTheInstance) m_pTheInstance = new CRunState;
-  return m_pTheInstance;
-}
-
-
-uint16_t
-CRunState::getRunNumber() {
-  return 0;
-}

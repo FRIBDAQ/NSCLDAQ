@@ -30,11 +30,7 @@
 #include <XXUSBConfigurableObject.h>
 #endif
 
-#ifdef MVLC_GENERATOR
-#include <tcl.h>       
-#else
-#include <CRunState.h> 
-#endif
+
 
 #include <iostream>
 
@@ -118,14 +114,10 @@ CS800TriggerNew::Initialize(CVMUSB& controller) {
 
     m_pAPI->swClear(controller);                  // reset(?)  the module.
 
-    // Set the run number register: BUGBUGBUG - this won't work in the
-    // mvlc-generator because we don't have the run number accesible at this time.
-    // Probably really need to use the OnBegin Tcl entry and set the run number there
-    // via the slow controls system.
-#ifdef MVLC_GENERATOR
-#else
-    m_pAPI->setRunNumber(controller, runNumber());
-#endif
+    // Setting the run number here results in some nasty
+    // circular build dependencies.  Therefore,
+    // we'll do a slow controls module for it.
+
     // If desired, enable the external clear:
 
     m_pAPI->enableExternalClear(controller, m_pConfiguration->getBoolParameter("-enable-extclear"));
@@ -153,17 +145,7 @@ CS800TriggerNew::addReadoutList(CVMUSBReadoutList& list) {
     // Do we need to clear the busy? If so, that has to happen after the last read....
 }
 
-/////////////////// Private utilitis
 
-/**
- *   return the run number.
- */
-unsigned
-CS800TriggerNew::runNumber() const {
-#ifndef MVLC_GENERATOR
-    return CRunState::getInstance()->getRunNumber();
-#endif
-}
 
 // For the MVLC - the device command:
 
