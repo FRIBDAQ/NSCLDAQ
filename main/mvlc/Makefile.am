@@ -43,7 +43,7 @@ libmvlcGenerator_la_SOURCES = CReadoutHardware.cpp CReadoutHardware.h \
 
 libmvlcGenerator_la_CPPFLAGS=@TCL_CPPFLAGS@ -I@top_srcdir@ \
 	-I@top_srcdir@/usb/common/configurableobject \
-	@LIBTCLPLUS_CFLAGS@
+	@LIBTCLPLUS_CFLAGS@ 
 
 # Put public incldes in $DAQINC/mvlcgenerate
 
@@ -78,7 +78,9 @@ IMPORTED_MODULES= \
 	$(IMPORT_DIR)/CV1729.cpp \
 	$(IMPORT_DIR)/CXLM.cpp \
 	$(IMPORT_DIR)/CXLMTimestamp.cpp \
-	$(IMPORT_DIR)/CXLMFERA.cpp 
+	$(IMPORT_DIR)/CXLMFERA.cpp \
+	$(IMPORT_DIR)/s800TriggerRegisters.cpp \
+	$(IMPORT_DIR)/CS800TriggerNew.cpp
 
 
 LOCAL_MODULES= \
@@ -101,10 +103,16 @@ mvlcgenerate_CPPFLAGS= -I@srcdir@ -I@top_srcdir@/usb/common/configurableobject \
 	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ @YAML_CFLAGS@ \
 	-DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" \
 	-DMVLC_TCLLIBDIR=\"@datarootdir@/mvlc/TclLibs\" \
-	-DMVLC_GENERATOR -I@top_srcdir@/usb/vmusb/daqconfig
+	-DMVLC_GENERATOR -I@top_srcdir@/usb/vmusb/daqconfig \
+	@JSON_CFLAGS@ \
+	-DDEFAULT_S800REGFILE=\"@datarootdir@/s800triggers/RegisterFile.json\"
 
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
-	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@ @YAML_LIBS@ @builddir@/libmvlcGenerator.la
+	@LIBTCLPLUS_LDFLAGS@ \
+	@TCL_LDFLAGS@ \
+	@YAML_LIBS@\
+	@builddir@/libmvlcGenerator.la \
+	@JSON_LIBS@
 
 include_HEADERS=TCLConfigParser.h  \
 	CVMUSBReadoutList.h  \

@@ -79,7 +79,7 @@ S800TriggerRegisters::~S800TriggerRegisters() {
 std::uint64_t
 S800TriggerRegisters::readTimestamp(CVMUSB& controller) {
 #ifdef MVLC_GENERATOR                               // Can't do that in the MVLC
-#error "The timestamp cannot be read in immediate mode in the MVLC Generator"
+    throw std::runtime_error("s800TriggerRegisters::readTimestamp is illegal in mvlc generate.");
 #else
     std::uint32_t data_low, data_high;
     if (controller.vmeRead32(timestampLowBits(), amod, &data_low) ) {
@@ -120,7 +120,7 @@ S800TriggerRegisters::addReadTimestamp(CVMUSBReadoutList& list) {
 std::uint32_t 
 S800TriggerRegisters::readTriggerMask(CVMUSB& controller) {
 #ifdef MVLC_GENERATOR
-#error "Immediate reads of the trigger mask register cannot be done in the MVLCGenerator"
+    throw std::runtime_error("S800TriggerRegisters::readTriggerMask is not available in mvlctranslate");
 #else
     std::uint32_t result;
     if (controller.vmeRead32(triggerMask(), amod, &result)) {

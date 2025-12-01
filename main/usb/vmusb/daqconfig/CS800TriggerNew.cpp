@@ -47,7 +47,7 @@ CS800TriggerNew::~CS800TriggerNew() {
 
 // Canonicals that are not defined for MVLC:
 // and clone:
-#ifndef MVLC_GENERATE
+#ifndef MVLC_GENERATOR
 CS800TriggerNew::CS800TriggerNew(const CS800TriggerNew& rhs) :
     m_pAPI(0), m_pConfiguration(nullptr)
 {

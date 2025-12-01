@@ -100,8 +100,7 @@ public:
   virtual CReadoutHardware* clone() const;
 #endif
     // Utilities:
-private:
-    unsigned runNumber() const;                // Get the run number.
+
 };
 
 #ifdef MVLC_GENERATOR
