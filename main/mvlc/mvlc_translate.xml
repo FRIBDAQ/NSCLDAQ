@@ -345,6 +345,77 @@ if {$istranslator ne ""} {
         </refsect2>
     </refsect1>
 </refentry>
+<refentry>
+    <refmeta>    
+        <refentrytitle>mvlc_sets800run</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>mvlc_sets800run</refname>
+        <refpurpose>Set s800 trigger module run number registers with mvlc</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis><command>
+$DAQBIN/mvlc_sets800run <replaceable>host port dev-name base-address run</replaceable>
+        </command></cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTIN</title>
+        <para>
+            This tool sets the run number for the s800 trigger module through the
+            fribdaq-readout program's slow controls server.  A prerequisite is that
+            a <literal>vmusb</literal> slow controls module was created and that the
+            slow controls server is enabled.
+        </para>
+        <para>
+            The program's parameters are:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term>host</term>
+                    <listitem>
+                        <para>
+                            The host in which fribdaq-readout is running.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>port</term>
+                    <listitem>
+                        <para>
+                            The port on which the fribdaq-readout's slow controls server
+                            is listening for connections.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>dev-name</term>
+                    <listitem>
+                        <para>
+                            The name given to the vmusb Module created in the slow controls
+                            server configuration.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>base-addresss</term>
+                <listitem><para>
+                    The base address assigned to the S800 FPGA trigger module.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term>run</term>
+                    <listitem>
+                        <para>
+                            The run number to set.  If, as designed, the program is run from the 
+                            <filename>ReadoutCallouts.tcl</filename> script's 
+                            OnBegin proc, this is the parameter passed to that proc.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
 <!-- /manpage -->
 
 <!-- chapter user-guide -->
