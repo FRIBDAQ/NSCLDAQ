@@ -112,7 +112,9 @@ CS800TriggerNew::Initialize(CVMUSB& controller) {
     std::cout << "S800 trigger module: \n"
         << m_pAPI->describeJSON() << std::endl;
 
-    m_pAPI->swClear(controller);                  // reset(?)  the module.
+    // reset(?)  the module... hopefully does not clear the run number register.
+    
+    m_pAPI->swClear(controller);                  
 
     // Setting the run number here results in some nasty
     // circular build dependencies.  Therefore,
