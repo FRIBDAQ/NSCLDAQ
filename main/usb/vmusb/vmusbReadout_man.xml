@@ -1,3 +1,67 @@
+<!-- manpage 1daq -->
+<refentry>
+    <refmeta>
+        <refentrytitle>s800triggerrun</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>s800triggerrun</refname>
+        <refpurpose>Program to set the s800 trigger module run number</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis><command>
+$DAQBIN/sets800triggerrun <replaceable>host port dev-name base-address run</replaceable>
+        </command></cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This program is intended to be run from within e.g. <filename>ReadoutCallouts.tcl</filename>
+            to set the run number register(s) of the s800 trigger module.  The program uses the
+            <literal>vmusb</literal> Module type.
+            The program
+            parameters are:
+        </para>
+        <variablelist>
+            <varlistentry>
+                <term>host</term>
+                <listitem><para>
+                    The host in which the VMUSBReadout is runing.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>port</term>
+                <listitem><para>
+                    The port on which the VMUSBReadout program's slow controls server is
+                    listening for connections.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>dev-name</term>
+                <listitem><para>
+                    The name given when creating the vmusb Module in the slow controls
+                    configuration file (<filename>ctlconfig.tcl</filename> e.g.).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>base-address</term>
+                <listitem><para>
+                    The base address of the trigger module in VME space.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>run</term>
+                <listitem><para>
+                    The value of the run number to set.  If used in 
+                    <filename>ReadoutCallouts.tcl</filename>'s 
+                    OnBegin proc, this will be the parameter passed in to that
+                    proc.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+<!-- /manpage -->
 <!-- manpage 3vmusb -->
             <!--  adc command reference -->
             

@@ -7265,7 +7265,7 @@ delay create delay0 -value 4
     </refmeta>
     <refnamediv>
         <refname>s800trigger</refname>
-        <refpurpose>Read and configure s800 trigger FPAG module</refpurpose>
+        <refpurpose>Read and configure s800 trigger FPGA module</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
     <cmdsynopsis><command>
