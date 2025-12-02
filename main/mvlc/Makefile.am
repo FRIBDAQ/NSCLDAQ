@@ -15,7 +15,7 @@
 # this is normally @top_srcdir@/usb/vmusb/daqconfig
 #
 
-bin_PROGRAMS=mvlcgenerate mvlc_xlmload
+bin_PROGRAMS=mvlcgenerate mvlc_xlmload mvlc_sets800run
 
 # I had an out of tree build fail in a weird way that
 # makes me believe this is not fully parallel safe.
@@ -81,6 +81,7 @@ IMPORTED_MODULES= \
 	$(IMPORT_DIR)/CXLMFERA.cpp \
 	$(IMPORT_DIR)/s800TriggerRegisters.cpp \
 	$(IMPORT_DIR)/CS800TriggerNew.cpp
+
 
 
 LOCAL_MODULES= \
@@ -177,6 +178,19 @@ xlm_options.h: xlmload_options.ggo
 	$(GENGETOPT) --output-dir=@builddir@ --file-name=xlm_options <@srcdir@/xlmload_options.ggo
 
 mvlc_xlmload_DEPENDENCIES=@builddir@/libmvlcGenerator.la xlm_options.c
+
+#  Slow controls client to set the run number in the trigger module:
+
+mvlc_sets800run_SOURCES=sets800run.cpp $(IMPORT_DIR)/s800TriggerRegisters.h \
+	$(IMPORT_DIR)/s800TriggerRegisters.cpp  CVMUSBReadoutList.cpp \
+	CVMUSBReadoutList.h
+
+mvlc_sets800run_CPPFLAGS=-I@top_srcdir@/usb/vmusb/daqconfig \
+	@MVLC_CPPFLAGS@ @JSON_CFLAGS@ -DMVLC_GENERATOR \
+	-DDEFAULT_S800REGFILE=\"@datarootdir@/s800triggers/RegisterFile.json\"
+
+mvlc_sets800run_LDFLAGS=@JSON_LIBS@ \
+	-L@MVLC_LIB@ -lslowControlsClient -Wl,-rpath=@MVLC_LIB@
 
 #------------------------------ build/runtests
 
