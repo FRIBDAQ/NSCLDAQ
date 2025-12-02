@@ -7258,7 +7258,98 @@ delay create delay0 -value 4
   </refsect1>
 
 </refentry>
-
+<refentry>
+    <refmeta>
+        <refentrytitle>s800trigger</refentrytitle>
+        <manvolnum>3vmusb</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>s800trigger</refname>
+        <refpurpose>Read and configure s800 trigger FPAG module</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+    <cmdsynopsis><command>
+s800trigger create <replaceable>name ?options?</replaceable>
+    </command></cmdsynopsis>
+    <cmdsynopsis><command>
+s800trigger config <replaceable> name option1 value1 ?option2 value2...?</replaceable>
+    </command></cmdsynopsis>
+    <cmdsynopsis><command>
+s800trigger cget <replaceable>name</replaceable>
+    </command></cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRPITION</title>
+        <para>
+            In 20025/2026, FRIB commissioned the production of a new trigger
+            module.  This trigger module is based on an VME FPGA from CAEN and
+            firmware developed collaboaritvely by Nuclear Instrumentd.
+        </para>
+        <para>
+            This driver supports configuring the module options and reading
+            out the timestamp and trigger mask in response to a trigger.
+            Event structure consist of:
+        </para>
+        <informalexample>
+            <programlisting>
++--------------------------------------+
+| low 32 bits of timestamp             |
++--------------------------------------+
+| high 32 bits of timestamp            |
++--------------------------------------+
+|  trigger mask                        |
++--------------------------------------+
+            </programlisting>
+        </informalexample>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <para>
+            This section documents the configuration optios of the driver.
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>base-address</replaceable></term>
+                    <listitem>
+                        <para>
+                            Configures the module's VME Base address.   The default
+                            value for this is 0 which is not a useful address.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-register-file</option> <replaceable>file-path</replaceable></term>
+                    <listitem>
+                        <para>
+                            The register definitions for the module are not hard coded.  Rather the
+                            Nuclear Instruments provides a register definition file that describes
+                            the offsets for each register given its name.
+                        </para>
+                        <para>
+                            The option value is the filesystem path to this file.  The default value is
+                            <filename>$DAQSHARE/s800trigger/RegisterFile.json</filename> which, unless
+                            you are using the modules with a newer firmware than the installed version
+                            is the correct value.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term><option>-enable-extclear</option> <replaceable>bool</replaceable></term>
+                <listitem><para>
+                    If <literal>true</literal>, the default, enables the external clear input.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>RELATED INFORMATION</title>
+        <para>
+            The <filename>$DAQBIN/sets800triggerrun</filename> should be invoked as the run starts
+            (e.g. from <literal>OnBegin</literal> of <filename>ReadoutCallouts.tcl</filename>) to set
+            the run number within the trigger module.
+        </para>
+    </refsect1>
+</refentry>
 <refentry id="vmusb3-CBDCamacBranch">
    <refentryinfo>
             <author>
