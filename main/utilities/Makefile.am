@@ -27,7 +27,8 @@ SUBDIRS = 				common	\
 					udpBroker \
 					ringdiagnostics \
 					managercontrol \
-					statsview
+					statsview \
+					s800scalers
 
 # scalerdisplay - removed in favor of newscaler
 
