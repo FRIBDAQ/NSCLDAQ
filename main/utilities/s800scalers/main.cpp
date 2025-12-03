@@ -5,10 +5,36 @@
 #include <set>    // THe register addresses will be in a set<uint32_t>
 #include <stdint.h>
 #include <iostream>
+#include <stdexcept>
+#include <fstream>
+#include <sstream>
+#include <json/json.h>
+
 // Patterns that identify the register names I care about.
 
 static const char* COUNTER_MATCH="*_CTR";
 static const char* FREQUENCY_MATCH="*/FRQ";
+
+
+// Read the JSON configuration file.
+// throws std::exception derived exception on failures
+// name - path to the configuration file.
+// result(out) - internal representation of the json.
+static void
+parse_definition_file(const std::string& name, Json::Value& result) {
+    std::ifstream f(name);
+    if (!f) {
+        std::stringstream msg_s;
+        msg_s << "Unable to open configuration file: " << name;
+        std::string msg(msg_s.str());
+
+        throw std::invalid_argument(msg);
+    }
+
+    // the parse could also throw
+
+    f >> result;
+}
 
 int main(int argc, char** argv) {
     gengetopt_args_info parsed_args;
@@ -43,6 +69,34 @@ int main(int argc, char** argv) {
         std::cout << "Frequencies and counters will both be included\n";
     } else {
         std::cout << "Only counter will be used.\n";
+    }
+
+    // Read in the definition file:
+
+    Json::Value root;
+    try {
+        parse_definition_file(config_file, root);
+    }
+    catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // open the output file:
+    
+    std::ofstream out(output_file);
+    if (!out) {
+        std::cerr << "Unable to open the output file: " << output_file << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // Process the counters and write them.
+
+
+    // Process the frequencies if asked and write them:
+
+    if (include_freqs) {
+
     }
 
     exit(EXIT_SUCCESS);

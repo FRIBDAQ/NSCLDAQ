@@ -15,7 +15,7 @@ bin_PROGRAMS=s800scaler_gen
 
 s800scaler_gen_SOURCES=main.cpp options.h options.cpp
 s800scaler_gen_CPPFLAGS = @JSON_CFLAGS@ \
-	-DDEFAULT_REGISTER_FILE=\"@datarootdir@/s800triggers/RegisterFile.json\" \
+	-DDEFAULT_REGISTER_FILE=\"@datarootdir@/s800trigger/RegisterFile.json\" \
 	@TCL_FLAGS@
 
 s800scaler_gen_LDFLAGS=@JSON_LIBS@ @TCL_LDFLAGS@
