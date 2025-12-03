@@ -21,8 +21,8 @@
  */
 
 
- #ifndef CS800TRIGGERNEW_H
- #define CS800TRIGGERNEW_H
+#ifndef CS800TRIGGERNEW_H
+#define CS800TRIGGERNEW_H
 
 #include <CReadoutHardware.h>
 #include <stdint.h>
@@ -114,4 +114,4 @@ protected:
      virtual CReadoutModule* createDevice(std::string name);
 };
 #endif
- #endif
+#endif

@@ -66,7 +66,8 @@ libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CSIS3316.cpp \
 				sis3316_class.cpp \
 			s800TriggerRegisters.cpp s800TriggerRegisters.h \
-				CS800TriggerNew.cpp CS800TriggerNew.h
+				CS800TriggerNew.cpp CS800TriggerNew.h \
+				CS800TriggerScalers.h CS800TriggerScalers.cpp
 
 
 
