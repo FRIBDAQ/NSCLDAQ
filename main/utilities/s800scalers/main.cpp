@@ -12,8 +12,8 @@
 
 // Patterns that identify the register names I care about.
 
-static const char* COUNTER_MATCH="*_CTR";
-static const char* FREQUENCY_MATCH="*/FRQ";
+static const char* COUNTER_MATCH="*_CNT";
+static const char* FREQUENCY_MATCH="*_FRQ";
 
 
 // Read the JSON configuration file.
@@ -34,6 +34,64 @@ parse_definition_file(const std::string& name, Json::Value& result) {
     // the parse could also throw
 
     f >> result;
+}
+
+// Build a set of the register addresses that match a specific name.
+// we use a set because these will be sorted by addresss so when we dump them
+// we can aggregate any blocks.
+static void
+make_register_set(std::set<uint32_t>& result, Json::Value& root, const char* match) {
+    if (! root.isMember("Registers")) {
+        throw std::invalid_argument("The JSON does not have a 'Registers' key!");
+    }
+    auto regs = root["Registers"];
+    for (auto& v : regs) {
+        std::string name = v["Name"].asString();
+        if (Tcl_StringMatch(name.c_str(), match)) {
+            result.insert(v["Address"].asUInt());
+        }
+    }
+}
+// Dump the registers in the form of 
+//  address n 
+//Where:
+// addresss is a base addresss and n is the number of consecutive uint32_t
+// addresses that follow.
+//   f = references the file stream to which the dump is done.
+//   regs - are the set of register addresses.
+static void
+dump_register_set(std::ostream& f, std::set<uint32_t>& regs) {
+    // Aggreation hinges on the idea that the regs will iterate out of the
+    // set in numeric order.
+
+    // COunt will be the count of consecutives.
+    // base - the current base.
+    // next - the next expected if it's consecutive.
+
+    unsigned count = 0;               // Number of consecutives.
+    unsigned base  = 0xffffffff;      // Special for the first one.
+    unsigned next  = 0xffffffff;
+    for(auto r: regs) {
+        // New clump.
+        if (r != next) {
+            if (base != 0xffffffff) {
+                f << base << " " << count << std::endl;
+            }
+            // Set up for the next clump:
+
+            base = r;
+            next = r + sizeof(uint32_t);
+            count = 1;
+        }  else {           // Continue current clump:
+            count++;
+            next += sizeof(uint32_t);
+        }
+    }
+    // Dump the last clump:
+
+    if (count != 0) {
+        f << base << " " << count << std::endl;
+    }
 }
 
 int main(int argc, char** argv) {
@@ -92,11 +150,27 @@ int main(int argc, char** argv) {
 
     // Process the counters and write them.
 
-
+    try {    
+        std::set<uint32_t> counters;
+        make_register_set(counters, root, COUNTER_MATCH);
+        dump_register_set(out, counters);
+    }
+    catch (std::exception& e) {
+        std::cerr << " Failed to process the counters: " << e.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
     // Process the frequencies if asked and write them:
 
     if (include_freqs) {
-
+        try {
+            std::set<uint32_t> frequencies;
+            make_register_set(frequencies, root, FREQUENCY_MATCH);
+            dump_register_set(out, frequencies);
+        }
+        catch (std::exception& e) {
+            std::cerr << "Failed to process the frequencies: " << e.what() << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
     exit(EXIT_SUCCESS);
