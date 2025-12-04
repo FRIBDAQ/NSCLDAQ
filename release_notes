@@ -27,4 +27,6 @@ by COutputThread (nummap_chunk() issue fixed)
 * Fix issue #385 - glom uses buffered fragment reader
 * Make CFragmentHandler predicate classes operator() const and take const ref as parameter for compliance with some handy STL algos for future fragment handler development
 * Build docs for swtrigger
+* Add suport for new FPGA Based S800 trigger module for VMUSB and MVLC readouts.
+* Move sbs device module headers from $DAQINC to $DAQINC/sbsmodules
 == 12.2-dev ==
