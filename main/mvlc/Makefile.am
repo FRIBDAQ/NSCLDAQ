@@ -80,7 +80,8 @@ IMPORTED_MODULES= \
 	$(IMPORT_DIR)/CXLMTimestamp.cpp \
 	$(IMPORT_DIR)/CXLMFERA.cpp \
 	$(IMPORT_DIR)/s800TriggerRegisters.cpp \
-	$(IMPORT_DIR)/CS800TriggerNew.cpp
+	$(IMPORT_DIR)/CS800TriggerNew.cpp \
+	$(IMPORT_DIR)/CS800TriggerScalers.cpp
 
 
 

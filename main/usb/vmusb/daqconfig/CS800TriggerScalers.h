@@ -75,7 +75,7 @@ public:
     // Canonicals unimplemented for mvlcgenerate:
 
 #ifdef MVLC_GENERATOR
-privte:
+private:
 #endif
     CS800TriggerScalers(const CS800TriggerScalers& rhs);
     CS800TriggerScalers& operator=(const CS800TriggerScalers& rhs);

@@ -151,13 +151,13 @@ CS800TriggerNew::addReadoutList(CVMUSBReadoutList& list) {
 
 // For the MVLC - the device command:
 
-#ifdef MVLC_GENERATE
-CS800TriggerNewCommand::CS800TriggerNewCommand(CTCLInterpreter& inerp, TCLConfigParser& parser) :
+#ifdef MVLC_GENERATOR
+CS800TriggerNewCommand::CS800TriggerNewCommand(CTCLInterpreter& interp, TCLConfigParser& parser) :
     DeviceCommand(interp, "s800trigger", parser) {}
 
 CS800TriggerNewCommand::~CS800TriggerNewCommand() {}
 
-ReadoutModule*
+CReadoutModule*
 CS800TriggerNewCommand::createDevice(std::string  name) {
     auto dev = new CS800TriggerNew;
     auto result = new CReadoutModule;
