@@ -7348,6 +7348,84 @@ s800trigger cget <replaceable>name</replaceable>
             (e.g. from <literal>OnBegin</literal> of <filename>ReadoutCallouts.tcl</filename>) to set
             the run number within the trigger module.
         </para>
+        <para>
+            See as well, <link linkend='vmusb3.s800scaler' endterm='vmusb3.s800scaler.title' />
+            if it is desired to read the counters the S800 FPGA trigger module maintains.
+        </para>
+    </refsect1>
+</refentry>
+<refentry id='vmusb3.s800scaler' >
+    <refmeta>
+        <refentrytitle id='vmusb3.s800scaler.title'>s800scaler</refentrytitle>
+        <manvolnum>3vmusb</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>s800scaler</refname>
+        <refpurpose>Read counters from the S800 FPGA trigger module</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis><command>
+s800scaler create <replaceable>name ?option value...?</replaceable>         
+        </command></cmdsynopsis>
+        <cmdsynopsis><command>
+s800scaler config <replaceable>name option value ?...?</replaceable>
+        </command></cmdsynopsis>
+        <cmdsynopsis><command>
+s800scaler cget <replaceable>name</replaceable>
+        </command></cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This driver is intended to be used in scaler stacks to read out the counters
+            maintained by the module.  The module creates both absolute counts and
+            frequencies.  See the <option>-file</option> in <literal>OPTIONS</literal>
+            below for a reference to how to determine what is read out.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-base</option> <replaceable>base-adress</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides the base address of the module.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-file</option> <replaceable>def-file-path</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides the definition file path.  This definition is not the register
+                            definition .json but can be built from it using the 
+                            <link linkend='s800scaler_gen' endterm='s800scaler_gen.title' /> tool.
+                            The format of the file is pairs of integers, one per line.  THe first integer
+                            is the offset to a scaler register, the second inteer is the number of
+                            scaler registers that are contiguousl in register space following that.
+                            (See <option>-block_read-threshold</option> below).
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-block_read-threshold</option> <replaceable>threshold</replaceable></term>
+                    <listitem>
+                        <para>
+                            Provides the minimum numbger of contiguous registers that will generate 
+                            a block transfer rather than a series of individual reads for the stack.
+                            This defaults to <literal>8</literal>.  It must be no larger than 128.  While
+                            <literal>1</literal> is legal, it will not improve perfromance.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>SEE ALSO</title>
+            <para>
+            <link linkend='s800scaler_gen' endterm='s800scaler_gen.title' />
+            </para>
     </refsect1>
 </refentry>
 <refentry id="vmusb3-CBDCamacBranch">

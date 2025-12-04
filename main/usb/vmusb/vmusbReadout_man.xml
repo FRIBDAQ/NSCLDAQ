@@ -61,6 +61,43 @@ $DAQBIN/sets800triggerrun <replaceable>host port dev-name base-address run</repl
         </variablelist>
     </refsect1>
 </refentry>
+<refentry id='s800scaler_gen'>
+        <refmeta>
+            <refentrytitle id='s800scaler_gen.title'>s800scaler_gen</refentrytitle>
+            <manvolnum>1daq</manvolnum>
+        </refmeta>
+        <refnamediv>
+            <refname>s800scaler_gen</refname>
+            <refpurpose>Generate definitionfile for 
+                <link linkend='vmusb3.s800scaler' endterm='vmusb3.s800scaler.title' />
+            </refpurpose>
+        </refnamediv>
+        <refsynopsisdiv>
+            <cmdsynopsis><command>
+$DAQBIN/s800scaler_gen  </command>
+<arg>--include-frequencies</arg>
+<arg choice='plain'><replaceable>output-file</replaceable></arg>
+<arg choice='opt'><replaceable>definition-file</replaceable></arg>
+           </cmdsynopsis>
+        </refsynopsisdiv>
+        <refsect1>
+            <title>DESCRIPTION</title>
+            <para>
+                This command takes, as input, an s800 trigger module register definition 
+                (JsON) file and generates  a scaler readout configuration file for the 
+                <link linkend='vmusb3.s800scaler' endterm='vmusb3.s800scaler.title' />
+                driver.  By default, only the raw count scalers are read.  If
+                <option>--include-frequencdes</option> are specified, the frequency counters
+                are also read.
+            </para>
+            <para>
+                IF not specified, the definition file used is 
+                <filename>$DAQSHARE/s800trigger/RegisterFile.json</filename>.  This is the register definition
+                file as of  when this version of NSCLDAQ was installed.
+            </para>
+        </refsect1>
+     </refentry>
+
 <!-- /manpage -->
 <!-- manpage 3vmusb -->
             <!--  adc command reference -->
@@ -14953,4 +14990,4 @@ class <ooclass><classname>CVMUSBReadoutList</classname></ooclass>
            </variablelist>
         </refsect1>
      </refentry>
-<!-- /manpage -->
+     <!-- /manpage -->
