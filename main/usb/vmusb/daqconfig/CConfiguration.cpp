@@ -44,6 +44,7 @@
 #include "CCBD8210ReadoutList.h"
 #include "CSIS3316.h"
 #include "CS800TriggerNew.h"
+#include "CS800TriggerScalers.h"
 #include "CUserCommand.h"
 
 #include <CMASE.h>
@@ -136,6 +137,7 @@ CConfiguration::CConfiguration() :
        *m_pInterp, *this, "sis3316", new CSIS3316)
   );
   m_Commands.push_back(new CUserCommand( *m_pInterp, *this, "s800trigger", new CS800TriggerNew));
+  m_Commands.push_back(new CUserCommand(*m_pInterp, *this, "s800scaler", new CS800TriggerScalers));
   
 
   // Add hybrid drivers
