@@ -1,9 +1,9 @@
 bin_PROGRAMS=unglom
 
 
-BUILT_SOURCES = cmdline.c
+BUILT_SOURCES = cmdline.c cmdline.h
 
-unglom_SOURCES=unglom.cpp cmdline.c
+unglom_SOURCES=unglom.cpp cmdline.c cmdline.h
 
 unglom_CPPFLAGS=-I@top_srcdir@/daq/eventbuilder \
 	-I@top_srcdir@/daq/format       \
@@ -19,6 +19,9 @@ unglom_LDADD = @top_builddir@/daq/format/libdataformat.la  \
 	@LIBTCLPLUS_LDFLAGS@
 
 
+cmdline.h: cmdline.c
+	GENGETOPT@ --input=@srcdir@/cmdline.ggo \
+		--output-dir=@builddir@
 
 cmdline.c: cmdline.ggo
 	@GENGETOPT@ --input=@srcdir@/cmdline.ggo \

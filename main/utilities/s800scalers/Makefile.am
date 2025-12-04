@@ -31,4 +31,5 @@ options.cpp: options.ggo
 	--input=@srcdir@/options.ggo \
 	--file options --c-extension=cpp
 
+EXTRA_DIST=options.ggo
 
