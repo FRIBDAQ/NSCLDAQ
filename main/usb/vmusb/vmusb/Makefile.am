@@ -62,11 +62,11 @@ libVMUSBRemote_la_LIBADD = @builddir@/libVMUSB.la \
 
 bin_PROGRAMS = tests
 
-tests_SOURCES = @srcdir@/TestRunner.cpp \
-		@srcdir@/regTests.cpp \
-		@srcdir@/vmeTests.cpp \
-		@srcdir@/../Globals.cpp \
-		@srcdir@/Asserts.h
+tests_SOURCES = TestRunner.cpp \
+		regTests.cpp \
+		vmeTests.cpp \
+		@top_srcdir@/usb/vmusb/Globals.cpp \
+		Asserts.h
 
 
 tests_CPPFLAGS = -std=c++11 -g -I@prefix@/include -I@top_srcdir@/base/thread \
@@ -94,11 +94,11 @@ remotetests: $(REMOTE_TEST_MODULES)
 	-lVMUSBRemote \
 	-Wl,"-rpath=@prefix@/lib" @TCL_LDFLAGS@ @LIBTCLPLUS_LDFLAGS@
 
-UNITTEST_MODULES = @srcdir@/TestRunner.cpp \
-		@srcdir@/vmusbrdolisttests.cpp \
-		@srcdir@/loggingrdolisttests.cpp \
-		@srcdir@/../Globals.cpp \
-		@srcdir@/mockvmusbtests.cpp
+UNITTEST_MODULES = TestRunner.cpp \
+		vmusbrdolisttests.cpp \
+		loggingrdolisttests.cpp \
+		@top_srcdir@/usb/vmusb/Globals.cpp \
+		mockvmusbtests.cpp
 
 noinst_PROGRAMS = unittests
 unittests_SOURCES = $(UNITTEST_MODULES)
