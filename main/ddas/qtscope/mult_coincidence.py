@@ -286,14 +286,14 @@ class MultCoincidence(QWidget):
             if not all (win == win_list[0] for win in win_list):
                 raise ValueError(
                     f"Inconsistent channel coincidence width values read " \
-                    "on Mod. {mod}"
+                    f"on Mod. {mod}"
                 )
         except ValueError as e:
             self.logger.exception(
                 f"Channel coincidence widths on Mod. {mod}: {win_list}"
             )
             print(
-                f"{e}:n\tVerify MultCoincidence settings and re-apply." \
+                f"{e}:\n\tVerify MultCoincidence settings and re-apply." \
                 "\n\tCheck your settings file, it may be corrupt."
             )
 
