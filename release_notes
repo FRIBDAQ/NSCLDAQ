@@ -1,5 +1,6 @@
 == 12.1-018 ==
 * Use buffered fragment reader to improve glom (event building) performance
+* Clear warning message when QtScope detects inconsistent channel coincidence widths on a single module
 == 12.1-018 ==
 
 == 12.1-017 ==
