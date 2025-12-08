@@ -207,7 +207,7 @@ int CMyEndCommand::readOutRemainingData()
 
 	// Write the stats to the output file:
         outputfile << "Module " << i << std::endl;	
-        for (int j = 0; j < 16; j++) {
+        for (int j = 0; j < m_pExp->GetChannelCount(i); j++) {
 	    double ocr = Pixie16ComputeOutputCountRate(
 		statistics.data(), i, j
 		);

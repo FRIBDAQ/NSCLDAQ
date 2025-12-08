@@ -252,10 +252,15 @@ void
 DAQ::DDAS::Configuration::print(std::ostream &stream)
 {
     stream << "Crate number " << m_crateId;
-    stream << ": " << m_slotMap.size() << " modules, in slots:";
+    stream << ": " << m_slotMap.size() << " modules, in slots: ";
     for(auto& slot : m_slotMap){
 	stream << slot << " ";
     }
+    stream << ", channel map: ";
+    for (auto c : m_channelMap) {
+	stream << c << " ";
+    }
+    stream << std::endl;
     stream << "DSPParFile: " << m_settingsFilePath;
 }
 

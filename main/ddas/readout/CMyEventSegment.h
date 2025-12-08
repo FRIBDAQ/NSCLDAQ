@@ -138,18 +138,25 @@ public:
     /** @brief Manage run resume operation. */
     virtual void onResume();
     /** @brief Just return. Sorting is offloaded into its own process. */
-    virtual void onEnd(CExperiment* pExperiment);
+    virtual void onEnd(CExperiment* pExperiment) { return; };
 
     /** 
      * @brief Get the number of modules in the crate.
      * @return Number of modules.
      */
     size_t GetNumberOfModules() { return m_nModules; }
+    /**
+     * @brief Get the channel count in a given module.
+     * @param mod The module index.
+     * @return The channel count of that module.
+     */
+    unsigned short GetChannelCount(unsigned int mod)
+	{ return m_config.getChannelCount(mod); }
     /** 
      * @brief Get the crate ID value from the configuration.
      * @return The crate ID.
      */
-    int GetCrateID() const;
+    int GetCrateID() const { return m_config.getCrateId(); }
 
     /**
      * @brief Perform clock synchronization.

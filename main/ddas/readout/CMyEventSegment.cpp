@@ -366,16 +366,6 @@ CMyEventSegment::onResume()
     }
 }
 
-void CMyEventSegment::onEnd(CExperiment* pExperiment) 
-{
-    return; // Sorting is offloaded.
-}
-
-int CMyEventSegment::GetCrateID() const
-{
-    return m_config.getCrateId();
-}
-
 /**
  * @details
  * More or less straight from the XIA Pixie SDK docs: configure the system to 
