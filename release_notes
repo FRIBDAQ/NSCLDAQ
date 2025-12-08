@@ -27,4 +27,5 @@ by COutputThread (nummap_chunk() issue fixed)
 * Fix issue #385 - glom uses buffered fragment reader
 * Make CFragmentHandler predicate classes operator() const and take const ref as parameter for compliance with some handy STL algos for future fragment handler development
 * Build docs for swtrigger
+* Clear warning message when QtScope detects inconsistent channel coincidence widths on a single module
 == 12.2-dev ==
