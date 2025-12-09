@@ -1,5 +1,6 @@
 #include "CNAF.h"
-
+#ifndef CNAF_CPP
+#define CNAF_CPP
 
 CNAF::CNAF(int n, int a, int f)
   : m_n(n), m_a(a), m_f(f)
@@ -20,3 +21,5 @@ CNAF& CNAF::operator=(const CNAF& rhs)
     }
     return *this;
 }
+
+#endif
