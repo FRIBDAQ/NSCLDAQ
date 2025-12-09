@@ -16,9 +16,9 @@ class CBCNAF {
         {}
         CBCNAF( int b, const CCNAF& cnaf) : m_b(b), m_cnaf(cnaf)
         {}
-        CBCNAF( const CBCNAF& cnaf) : m_b(rhs.m_b), m_cnaf(rhs.m_cnaf)
+        CBCNAF( const CBCNAF& rhs) : m_b(rhs.m_b), m_cnaf(rhs.m_cnaf)
         {}
-        CBCNAF& operator=( const CBCNAF& cnaf) {
+        CBCNAF& operator=( const CBCNAF& rhsf) {
             if (this!=&rhs) {
                 m_b = rhs.m_b;
                 m_cnaf = rhs.m_cnaf;
