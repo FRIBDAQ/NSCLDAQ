@@ -12,7 +12,6 @@ EXTRA_DIST = CamacSlotLimits.h \
 							CCamacCrate.hpp \
 							CCamacReadoutList.h \
 							CCrateController.h \
-							CCrateController.cpp \
 							CLeCroy2551.h \
 							CLeCroy2551.hpp \
 							CLeCroy4300B.h \
