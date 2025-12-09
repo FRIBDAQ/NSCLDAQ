@@ -43,13 +43,9 @@ libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CVMUSBControl.cpp \
 				CDelay.cpp \
 				CCBD8210CamacBranchDriver.cpp \
-				@top_srcdir@/usb/common/devices/CCrateController.cpp \
 				CCBD8210CrateController.cpp \
 				CCBD8210ReadoutList.cpp \
 				CCBDCamacBranch.cpp \
-				@top_srcdir@/usb/common/devices/CBCNAF.cpp \
-				@top_srcdir@/usb/common/devices/CCNAF.cpp \
-				@top_srcdir@/usb/common/devices/CNAF.cpp \
 				CULMTrigger.cpp \
 				CLeCroy4300B.cpp \
 				CLeCroy4434.cpp \
@@ -59,7 +55,7 @@ libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CMQDC32StackBuilder.cpp \
 				CMQDC32RdoHdwr.cpp	\
 				CDeviceCommand.cpp \
-				CMDPP16QDC.cpp \
+				CMDPP16QDC.cpp CMDPPQDC.h \
 				CMDPP32QDC.cpp \
 				CMDPP32SCP.cpp  \
 				CMDPP32PADC.cpp  \
@@ -118,13 +114,9 @@ noinst_HEADERS		=	CADCCommand.h  		\
 				CDelay.h \
 				CDeviceCommand.h \
 				CCBD8210CamacBranchDriver.h \
-				@top_srcdir@/usb/common/devices/CCrateController.h \
 				CCBD8210CrateController.h \
 				CCBD8210ReadoutList.h \
 				CCBDCamacBranch.h \
-				@top_srcdir@/usb/common/devices/CBCNAF.h \
-				@top_srcdir@/usb/common/devices/CCNAF.h \
-				@top_srcdir@/usb/common/devices/CNAF.h \
 				CXLMFERA.h \
 				CXLMTimestamp.h \
 				CMQDC32StackBuilder.h \
