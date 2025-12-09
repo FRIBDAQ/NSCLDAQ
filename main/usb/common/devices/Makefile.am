@@ -2,7 +2,6 @@
 EXTRA_DIST = CamacSlotLimits.h \
 							CBCNAF.h \
 							CCNAF.h \
-							CCNAF.cpp \
 							CNAF.h \
 							CNAF.cpp \
 							CCamacBranchDriver.h \
