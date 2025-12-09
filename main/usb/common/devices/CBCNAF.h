@@ -11,10 +11,20 @@ class CBCNAF {
         CCNAF m_cnaf;
 
     public:
-        CBCNAF( int b, int c, int n, int a, int f);
-        CBCNAF( int b, const CCNAF& cnaf);
-        CBCNAF( const CBCNAF& cnaf);
-        CBCNAF& operator=( const CBCNAF& cnaf);
+        CBCNAF( int b, int c, int n, int a, int f) : 
+        m_b(b), m_cnaf(c,n,a,f)
+        {}
+        CBCNAF( int b, const CCNAF& cnaf) : m_b(b), m_cnaf(cnaf)
+        {}
+        CBCNAF( const CBCNAF& cnaf) : m_b(rhs.m_b), m_cnaf(rhs.m_cnaf)
+        {}
+        CBCNAF& operator=( const CBCNAF& cnaf) {
+            if (this!=&rhs) {
+                m_b = rhs.m_b;
+                m_cnaf = rhs.m_cnaf;
+            }
+            return *this;
+        }
 
 
         int b() const { return m_b;}

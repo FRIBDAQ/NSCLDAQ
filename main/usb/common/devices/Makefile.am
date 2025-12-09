@@ -1,7 +1,6 @@
 
 EXTRA_DIST = CamacSlotLimits.h \
 							CBCNAF.h \
-							CBCNAF.cpp \
 							CCNAF.h \
 							CCNAF.cpp \
 							CNAF.h \
