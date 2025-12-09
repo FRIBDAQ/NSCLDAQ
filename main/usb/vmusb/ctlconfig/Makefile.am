@@ -102,8 +102,15 @@ install-data-local:
 
 # S800 trigger run number setter.
 
+DAQCONFIGDIR=@srcdir@/../daqconfig
+BUILT_SOURCES = s800TriggerRegisters.cpp
+nodist_SOURCES=s800TriggerRegisters.cpp
+
+s800TriggerRegisters.cpp:
+	cp $(DAQCONFIGDIR)/s800TriggerRegisters.cpp @builddir@
+
 sets800triggerrun_SOURCES=sets800triggerrun.cpp \
-	@srcdir@/../daqconfig/s800TriggerRegisters.cpp
+	s800TriggerRegisters.cpp
 
 sets800triggerrun_CPPFLAGS = @JSON_CFLAGS@ -I@srcdir@/../daqconfig \
 	-I@srcdir@/../vmusb \
