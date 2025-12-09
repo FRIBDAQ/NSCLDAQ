@@ -1,5 +1,6 @@
 #include "CCNAF.h"
-
+#ifndef CCNAF_CPP
+#define CCNAF_CPP
 
 CCNAF::CCNAF(int c, int n, int a, int f)
   : m_c(c), m_naf(n,a,f)
@@ -22,3 +23,5 @@ CCNAF& CCNAF::operator=(const CCNAF& rhs)
     }
     return *this;
 }
+
+#endif
