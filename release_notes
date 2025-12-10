@@ -29,4 +29,5 @@ by COutputThread (nummap_chunk() issue fixed)
 * Build docs for swtrigger
 * Add suport for new FPGA Based S800 trigger module for VMUSB and MVLC readouts.
 * Move sbs device module headers from $DAQINC to $DAQINC/sbsmodules
+* Fix some issues with the out of tree build from the source tarball
 == 12.2-dev ==
