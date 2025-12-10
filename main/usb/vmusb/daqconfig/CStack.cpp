@@ -554,10 +554,8 @@ CStack::enableStack(CVMUSB& controller)
   // Ensure the IPL's bit is not set in the interrupt mask:
   
   uint8_t irqmask = controller.readIrqMask();
-  irqmask        &= ~(1 << irq);                // Clear our irq bit.
+  irqmask        &= ~(1 << (irq - 1));                // Clear our irq bit.
   
-  
-  irqmask        =  0;		// Enable all the damned interrupts.
   controller.writeIrqMask(irqmask);
 }
 
