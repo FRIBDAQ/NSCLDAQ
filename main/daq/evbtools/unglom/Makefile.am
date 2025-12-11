@@ -20,7 +20,7 @@ unglom_LDADD = @top_builddir@/daq/format/libdataformat.la  \
 
 
 cmdline.h: cmdline.c
-	GENGETOPT@ --input=@srcdir@/cmdline.ggo \
+	@GENGETOPT@ --input=@srcdir@/cmdline.ggo \
 		--output-dir=@builddir@
 
 cmdline.c: cmdline.ggo
