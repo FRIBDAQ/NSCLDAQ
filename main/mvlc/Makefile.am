@@ -161,13 +161,13 @@ options.h: options.ggo
 
 #----------------------------------- build mvlc_xlmload
 
-nodist_xlmload_SOURCES=xlm_option.h xlm_options.c
+nodist_mvlc_xlmload_SOURCES=xlm_option.h xlm_options.c
 
 mvlc_xlmload_SOURCES = xlmload.cpp \
 	CVMUSB.h CVMUSB.cpp CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
 	CMVLCDirect.h CMVLCDirect.cpp \
-	CXLM.h CXLM.cpp \
-	xlm_options.h xlm_options.c
+	CXLM.h CXLM.cpp 
+
 
 
 mvlc_xlmload_CPPFLAGS=@MVLC_CPPFLAGS@ \
