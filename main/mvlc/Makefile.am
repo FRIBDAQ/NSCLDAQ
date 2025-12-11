@@ -19,7 +19,7 @@ bin_PROGRAMS=mvlcgenerate mvlc_xlmload mvlc_sets800run
 
 # I had an out of tree build fail in a weird way that
 # makes me believe this is not fully parallel safe.
-# Specifically a link of the tests claimed
+# Specifically a link of the tests claimed#
 # that the libmvlcGenerator.la was not present
 # but after the dust settled it was...and  clean
 # build serial and parallel worked....
@@ -219,7 +219,10 @@ UNIT_TESTS=utiltests.cpp parsertests.cpp \
 unittests_SOURCES = TestRunner.cpp \
 	$(UNIT_TESTS) \
 	options.h options.c \
-	$(main_modules)
+	$(main_modules) 
+
+nodist_unittests_SOURCES=$(IMPORTED_MODULES)
+
 unittests_CPPFLAGS = @CPPUNIT_CFLAGS@ $(mvlcgenerate_CPPFLAGS)
 unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
 
