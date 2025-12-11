@@ -882,6 +882,7 @@ AC_CONFIG_FILES([
     utilities/udpBroker/Makefile
     utilities/ringdiagnostics/Makefile
     utilities/statsview/Makefile
+    utilities/s800scalers/Makefile
     epics/epicslib/Makefile
     epics/chanlog/Makefile
     epics/controlpush/Makefile

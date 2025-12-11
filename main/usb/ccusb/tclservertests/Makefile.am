@@ -1,9 +1,9 @@
 noinst_PROGRAMS = unittests
 
-unittests_SOURCES = @srcdir@/TestRunner.cpp  @srcdir@/modulecommandtest.cpp \
-		@srcdir@/c894test.cpp @srcdir@/cph7106test.cpp \
-		@srcdir@/cccusbcontroltest.cpp\
-		@srcdir@/ctclmoduletest.cpp
+unittests_SOURCES = TestRunner.cpp  modulecommandtest.cpp \
+		c894test.cpp cph7106test.cpp \
+		cccusbcontroltest.cpp\
+		ctclmoduletest.cpp
 
 unittests_LDADD = @top_builddir@/usb/ccusb/ccusb/libCCUSB.la \
 		@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \

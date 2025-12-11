@@ -28,6 +28,8 @@
 #include <Exception.h>
 #include <stdexcept>
 #include <CXLM.h>
+#include <CRunState.h>
+
 
 /**
  * Usage:
@@ -212,4 +214,26 @@ main(int argc, char** argv)
     }
     delete controller;
     std::exit(exitStatus);
+}
+
+
+// Stubs needed to satisfy undef globals.:
+
+// Run state stubs: Not actually used in tests.
+// just satisfy globals.
+
+CRunState* CRunState::m_pTheInstance(nullptr);
+
+CRunState::CRunState() {}
+CRunState::~CRunState() {}
+
+CRunState* CRunState::getInstance() {
+  if (!m_pTheInstance) m_pTheInstance = new CRunState;
+  return m_pTheInstance;
+}
+
+
+uint16_t
+CRunState::getRunNumber() {
+  return 0;
 }

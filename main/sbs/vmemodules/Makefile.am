@@ -23,6 +23,13 @@ libSBSDeviceSupport_la_SOURCES =	CADC2530.cpp		\
 					CVC32CC32.cpp	\
 					CCAMACModule.cpp
 
+#
+#  This prevents collision with vmusb daqconfig
+#  headers of the same name when building e.g. mvlc_generate
+#  after an install...
+#
+includedir=@prefix@/include/sbsmodules
+
 
 include_HEADERS =	CADC2530.h	\
 			CAENcard_767.h	\

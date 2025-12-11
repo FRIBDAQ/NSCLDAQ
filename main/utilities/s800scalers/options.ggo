@@ -1,0 +1,4 @@
+package "s800scalers"
+purpose "Convert s800 trigger register definitions into driver for scaler reads"
+
+option "include-frequencies" f "Include frequency counters if present" flag off
