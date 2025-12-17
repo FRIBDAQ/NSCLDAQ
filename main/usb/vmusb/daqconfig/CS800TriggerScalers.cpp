@@ -138,7 +138,7 @@ CS800TriggerScalers::onAttach(
                 base += sizeof(uint32_t);
             }
         } else {
-            list.addBlockRead32(base_address + base, CVMUSBReadoutList::a32UserData, count);
+            list.addBlockRead32(base_address + base, CVMUSBReadoutList::a32UserBlock, count);
         }
     }
   }
