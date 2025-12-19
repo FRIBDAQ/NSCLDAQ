@@ -112,5 +112,15 @@ void CExit::exit(int status)
   // Exit the program:
 
   pApp->logStateChangeStatus("Exiting for real now.");
+
+  // If there's a controller, then we should enable all the
+  // interrupts see Issue #404  This allows
+  // us to switch off with older versions of mesytec/mdaq.
+
+  auto pController = Globals::pUSBController;
+  if (pController) {
+    pController->writeIrqMask(0);
+  }
+
   Tcl_Exit(status);
 }
