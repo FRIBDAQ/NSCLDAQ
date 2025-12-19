@@ -295,6 +295,8 @@ proc startAcqThread {ringUrl} {
     }
     
     #  The main loop will forward data to our handleData item.
+    #  The items allowed will only be begin run end run and
+    #  Scaler items (1,2, 20).
     
     set myThread [thread::id]
     set getItems "proc getItems {tid uri} { 

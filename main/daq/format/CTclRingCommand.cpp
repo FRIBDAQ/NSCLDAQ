@@ -205,7 +205,7 @@ CTclRingCommand::get(CTCLInterpreter& interp, std::vector<CTCLObject>& objv)
     CAllButPredicate all;
     CDesiredTypesPredicate some;
     CRingSelectionPredicate* pred;
-    pred = &all;
+    pred = &all;                  // Unless otherwise specified don't restrict item types.
     
     // If there's a 4th parameter it must be a list of item types to select
     // from
@@ -235,7 +235,7 @@ CTclRingCommand::get(CTCLInterpreter& interp, std::vector<CTCLObject>& objv)
             int type = int(types.lindex(i));
             some.addDesiredType(type);
         }
-        pred = &some;
+        pred = &some;                    //Restrict item types to desisred set.
     }
     
     // Get the item from the ring.
