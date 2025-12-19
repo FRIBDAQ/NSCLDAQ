@@ -166,19 +166,22 @@ nodist_mvlc_xlmload_SOURCES=xlm_option.h xlm_options.c
 mvlc_xlmload_SOURCES = xlmload.cpp \
 	CVMUSB.h CVMUSB.cpp CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
 	CMVLCDirect.h CMVLCDirect.cpp \
-	CXLM.h CXLM.cpp 
+	CXLM.cpp $(libmvlcGenerator_la_SOURCES)
 
 
 
 mvlc_xlmload_CPPFLAGS=@MVLC_CPPFLAGS@ \
 	-I@top_srcdir@/usb/common/configurableobject \
 	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os \
-	-I$(IMPORT_DIR) -DMVLC_GENERATOR
+	-I$(IMPORT_DIR) -DMVLC_GENERATOR \
+	-I@top_srcdir@/usb/vmusb/daqconfig \
+	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@
 
-mvlc_xlmload_LDFLAGS=@builddir@/libmvlcGenerator.la \
+mvlc_xlmload_LDFLAGS= \
 	@MVLC_LDFLAGS@ \
 	@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
+
 
 
 
@@ -224,7 +227,11 @@ unittests_SOURCES = TestRunner.cpp \
 nodist_unittests_SOURCES=$(IMPORTED_MODULES)
 
 unittests_CPPFLAGS = @CPPUNIT_CFLAGS@ $(mvlcgenerate_CPPFLAGS)
-unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
+unittests_LDFLAGS = \
+	@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
+	@LIBTCLPLUS_LDFLAGS@ \
+	@TCL_LDFLAGS@ \
+	@YAML_LIBS@\@CPPUNIT_LIBS@ @JSON_LIBS@
 
 TESTS=unittests
 
