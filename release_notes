@@ -31,4 +31,5 @@ by COutputThread (nummap_chunk() issue fixed)
 * Move sbs device module headers from $DAQINC to $DAQINC/sbsmodules
 * Fix some issues with the out of tree build from the source tarball
 * Clear warning message when QtScope detects inconsistent channel coincidence widths on a single module
+* Clear the VMUSB Interrupt mask on exit from VMUSBReadout.
 == 12.2-dev ==
