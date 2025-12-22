@@ -2,6 +2,7 @@
 * Build docs for parallel processing framework
 * Resolve issue #380 missing #include <iostream> in a pair of files.
 * Clear warning message when QtScope detects inconsistent channel coincidence widths on a single module
+* Clear the VMUSB IRQ mask on normal exit from VMUSBReadout
 == 12.0-028 ==
 
 == 12.0-027 ==
