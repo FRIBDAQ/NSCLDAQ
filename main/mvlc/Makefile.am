@@ -164,7 +164,6 @@ options.h: options.ggo
 nodist_mvlc_xlmload_SOURCES=xlm_option.h xlm_options.c
 
 mvlc_xlmload_SOURCES = xlmload.cpp \
-	CVMUSB.h CVMUSB.cpp CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
 	CMVLCDirect.h CMVLCDirect.cpp \
 	CXLM.cpp $(libmvlcGenerator_la_SOURCES)
 
@@ -217,14 +216,16 @@ UNIT_TESTS=utiltests.cpp parsertests.cpp \
 	delaytests.cpp madc32tests.cpp caenchaintests.cpp madcchaintests.cpp \
 	madcscalertests.cpp mtdctests.cpp mqdctests.cpp mdpptests.cpp sis3804tests.cpp \
 	v830tests.cpp hytectests.cpp v977tests.cpp v1495sctests.cpp v1729tests.cpp  \
-	v1x90tests.cpp sisvmusbTests.cpp
+	v1x90tests.cpp sisvmusbTests.cpp 
 
 unittests_SOURCES = TestRunner.cpp \
 	$(UNIT_TESTS) \
 	options.h options.c \
-	$(main_modules) 
+	$(IMPORTED_MODULES) $(LOCAL_MODULES) \
+	$(libmvlcGenerator_la_SOURCES) sis_vmusb_interface.cpp \
+	MVLCConfigParser.cpp utilities.cpp
 
-nodist_unittests_SOURCES=$(IMPORTED_MODULES)
+
 
 unittests_CPPFLAGS = @CPPUNIT_CFLAGS@ $(mvlcgenerate_CPPFLAGS)
 unittests_LDFLAGS = \
