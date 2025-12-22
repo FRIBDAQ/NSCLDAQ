@@ -1,4 +1,5 @@
 == 11.3-040 ==
+* Clear VMUSB IRQmask on normal exit from VMUSBReadout
 == 11.3-040 ==
 
 == 11.3-039 ==
