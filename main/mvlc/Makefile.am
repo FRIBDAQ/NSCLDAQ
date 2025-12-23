@@ -31,7 +31,11 @@ NOTPARALLEL:
 # Library for generator...needed for extended drivers
 # to link to.
 
-lib_LTLIBRARIES=libmvlcGenerator.la
+lib_LTLIBRARIES=libmvlcGenerator.la libmvlcSlowControlsClient.la
+
+libmvlcSlowControlsClient_la_SOURCES=CVMEClient.cpp TclVMEClient.cpp
+libmvlcSlowControlsClient_la_CPPFLAGS=@LIBTCLPLUS_CFLAGS@ @TCL_CPPFLAGS@
+libmvlcSlowControlsClient_la_LDFLAGS=@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
 
 libmvlcGenerator_la_SOURCES = CReadoutHardware.cpp CReadoutHardware.h \
 	CReadoutModule.cpp CReadoutModule.h \
@@ -132,7 +136,8 @@ include_HEADERS=TCLConfigParser.h  \
 	MVLCConfigParser.h \
 	DeviceCommand.h \
 	CReadoutModule.h \
-	CReadoutHardware.h
+	CReadoutHardware.h \
+	CVMEClient.h
 
 
 # Build SampleDriver example library -> TclLibs/mvlc
@@ -197,6 +202,8 @@ mvlc_xlmload_DEPENDENCIES=@builddir@/libmvlcGenerator.la xlm_options.c
 mvlc_sets800run_SOURCES=sets800run.cpp $(IMPORT_DIR)/s800TriggerRegisters.h \
 	CVMUSBReadoutList.cpp CVMUSBReadoutList.h
 
+mvlc_sets800run_DEPENDENCIES=libmvlcSlowControlsClient.la
+
 nodist_mvlc_sets800run_SOURCES=s800TriggerRegisters.cpp
 
 mvlc_sets800run_CPPFLAGS=-I@top_srcdir@/usb/vmusb/daqconfig \
@@ -204,7 +211,7 @@ mvlc_sets800run_CPPFLAGS=-I@top_srcdir@/usb/vmusb/daqconfig \
 	-DDEFAULT_S800REGFILE=\"@datarootdir@/s800triggers/RegisterFile.json\"
 
 mvlc_sets800run_LDFLAGS=@JSON_LIBS@ \
-	-L@MVLC_LIB@ -lslowControlsClient -Wl,-rpath=@MVLC_LIB@
+	libmvlcSlowControlsClient.la -Wl,-rpath=@libdir@
 
 #------------------------------ build/runtests
 
