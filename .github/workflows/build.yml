@@ -21,6 +21,8 @@ jobs:
       image: fribdaq/frib-${{ inputs.os-version }}-ci
       options: --cpus 2
     steps:
+      - name: Clearing old builds if there exist
+        run: rm -rf /usr/opt/nscldaq/*
       - uses: actions/checkout@v4
       - name: autoreconf
         working-directory: ./main
