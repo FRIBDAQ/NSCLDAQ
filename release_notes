@@ -33,4 +33,5 @@ by COutputThread (nummap_chunk() issue fixed)
 * Clear warning message when QtScope detects inconsistent channel coincidence widths on a single module
 * Clear the VMUSB Interrupt mask on exit from VMUSBReadout.
 * Issue #411 - use a local version of the MVLC Slow controls client library.
+* Issue #410 - better messages in config for incorporated builds.
 == 12.2-dev ==
