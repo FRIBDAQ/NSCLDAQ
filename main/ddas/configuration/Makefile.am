@@ -1,5 +1,5 @@
 lib_LTLIBRARIES=libConfiguration.la
-noinst_PROGRAMS = unittests
+test_PROGRAMS = unittests
 
 include_HEADERS = ConfigurationParser.h Configuration.h \
                     FirmwareVersionFileParser.h ModEvtFileParser.h \

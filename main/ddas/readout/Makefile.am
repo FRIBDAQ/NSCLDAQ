@@ -68,7 +68,7 @@ ddasSortOptions.h:  ddasSortOptions.ggo
 # Unit tests
 #
 
-noinst_PROGRAMS=unittests
+test_PROGRAMS=unittests
 
 unittests_SOURCES=TestRunner.cpp Asserts.h 				\
 	hitmgrtests.cpp refcounttests.cpp arenatests.cpp rawchtests.cpp \
