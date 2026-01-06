@@ -35,5 +35,6 @@ by COutputThread (nummap_chunk() issue fixed)
 * Issue #411 - use a local version of the MVLC Slow controls client library.
 * Issue #410 - better messages in config for incorporated builds.
 * Issue #409 - Improve perfromance of stats plot by doing refresh on demand.
+* Issue #400 - Only build the test binaries on make check rather than make all as before  
 == 12.2-dev ==
 
