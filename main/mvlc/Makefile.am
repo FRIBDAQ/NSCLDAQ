@@ -215,7 +215,7 @@ mvlc_sets800run_LDFLAGS=@JSON_LIBS@ \
 
 #------------------------------ build/runtests
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 UNIT_TESTS=utiltests.cpp parsertests.cpp \
     stacktests.cpp devcommandtests.cpp rdomoduletests.cpp \

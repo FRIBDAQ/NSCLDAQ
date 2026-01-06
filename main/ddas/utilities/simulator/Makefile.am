@@ -10,7 +10,7 @@ libDDASDataSimulator_la_LIBADD = @UFMT_LDFLAGS@ @LIBEXCEPTION_LDFLAGS@ \
 # Test suite
 #
 
-test_PROGRAMS = DDASDataSimulatorTests
+check_PROGRAMS = DDASDataSimulatorTests
 noinst_HEADERS = Asserts.h
 DDASDataSimulatorTests_SOURCES = TestRunner.cpp DDASDataSimulatorTests.cpp
 DDASDataSimulatorTests_CPPFLAGS = ${libDDASDataSimulator_la_CPPFLAGS} 	\
