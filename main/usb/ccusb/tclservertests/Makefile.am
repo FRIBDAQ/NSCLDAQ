@@ -1,4 +1,4 @@
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES = TestRunner.cpp  modulecommandtest.cpp \
 		c894test.cpp cph7106test.cpp \

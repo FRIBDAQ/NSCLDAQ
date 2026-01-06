@@ -1,4 +1,4 @@
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 
 TESTS = cccusbtest.cpp
