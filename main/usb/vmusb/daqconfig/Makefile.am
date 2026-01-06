@@ -164,7 +164,7 @@ install-data-local:
 	$(INSTALL_DATA)  @srcdir@/RegisterFile.json @prefix@/share/s800trigger
 
 
-noinst_PROGRAMS=cmdtests
+check_PROGRAMS=cmdtests
 
 cmdtests_SOURCES=TestRunner.cpp Asserts.h ad811test.cpp \
 	v830tests.cpp madcscaler.cpp \

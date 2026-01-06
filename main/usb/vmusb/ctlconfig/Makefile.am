@@ -122,7 +122,7 @@ sets800triggerrun_LDFLAGS=@JSON_LIBS@ @builddir@/../vmusb/libVMUSBRemote.la \
 EXTRA_DIST = WienerMDGG16Registers.h
 
 ## UNIT TESTS
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES = \
 			TestRunner.cpp \
