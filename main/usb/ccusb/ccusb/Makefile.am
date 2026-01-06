@@ -88,7 +88,7 @@ install-data-local:
 ##          TESTS
 ## -------------------------------------------
 
-noinst_PROGRAMS = unittests tests remotetests camactests
+check_PROGRAMS = unittests tests remotetests camactests
 
 ## These all link against installed libraries rather than
 ## the .la files produced before the installation. These are
