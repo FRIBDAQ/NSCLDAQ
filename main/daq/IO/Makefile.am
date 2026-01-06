@@ -56,7 +56,7 @@ libdaqio_la_CXXFLAGS = $(THREADCXX_FLAGS) $(AM_CXXFLAGS) @PIXIE_CPPFLAGS@
 
 ------------------- Tests:
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES	= TestRunner.cpp  \
 						filedatasinktests.cpp \
