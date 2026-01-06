@@ -49,7 +49,7 @@ libConversion_la_LIBADD = @top_builddir@/utilities/format/V8/libdataformatv8.la 
 			  @LIBTCLPLUS_LDFLAGS@
 
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES = TestRunner.cpp \
                     ctransform8p0to10p0tests.cpp \

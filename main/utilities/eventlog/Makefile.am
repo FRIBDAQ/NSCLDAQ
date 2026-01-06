@@ -54,7 +54,7 @@ install-exec-local:
 #
 # Test programs.
 #
-noinst_PROGRAMS		=	fakeruns eventlogTests
+check_PROGRAMS		=	fakeruns eventlogTests
 
 fakeruns_SOURCES	= 	fakeruns.cpp
 
