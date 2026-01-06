@@ -15,7 +15,7 @@ libbuffer_la_CXXFLAGS = -I@srcdir@ \
 
 libbuffer_la_LIBADD = @LIBTCLPLUS_LDFLAGS@
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES = TestRunner.cpp \
                     translatorptrtest.cpp \

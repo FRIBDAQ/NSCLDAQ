@@ -209,7 +209,7 @@ EXTRA_DIST=swtriggerflags.ggo eventfilterflags.ggo ConceptsAndPrograms.xml \
 ####################################################################################
 # unit testing:
 
-noinst_PROGRAMS=unittests
+check_PROGRAMS=unittests
 unittests_SOURCES=TestRunner.cpp Asserts.h testxporttests.cpp zmqxporttests.cpp \
 	zmqsvrxporttests.cpp zmqclitests.cpp zmqdealertests.cpp zmqrtrtests.cpp \
 	zmqsendertests.cpp zmqreceivertests.cpp zmqdispattests.cpp	\

@@ -13,7 +13,7 @@ libLicense_la_LDFLAGS =  -version-info $(SOVERSION) \
 
 TESTS = ./test
 
-noinst_PROGRAMS = test
+check_PROGRAMS = test
 
 test_SOURCES       = test.cpp
 

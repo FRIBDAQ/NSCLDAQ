@@ -68,7 +68,7 @@ EXTRA_DIST =$(TCLPACKAGES) $(TCLAPPS) $(TCLTESTS) $(PYTHON_PACKAGES) $(PYTHON_TE
 #  We rely on the value of TCLSH_CMD from configure to know how to run the
 #  shell.  TCLSH_CMD must represent a tcl shell of at least version 8.4.
 #
-noinst_PROGRAMS = cpptest
+check_PROGRAMS = cpptest
 
 cpptest_SOURCES = cpptest.cpp
 cpptest_LDADD= @builddir@/libPortManager.la @LIBEXCEPTION_LDFLAGS@

@@ -98,7 +98,7 @@ UNITTEST_MODULES = TestRunner.cpp \
 		loggingrdolisttests.cpp \
 		mockvmusbtests.cpp
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 unittests_SOURCES = $(UNITTEST_MODULES)
 
 unittests_CPPFLAGS = -I@srcdir@ -I@prefix@/include \

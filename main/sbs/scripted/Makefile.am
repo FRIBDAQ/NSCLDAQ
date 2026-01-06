@@ -155,7 +155,7 @@ install-exec-local:
 #  Tests
 #
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 unittests_SOURCES = TestRunner.cpp factorytests.cpp \
 	CModuleCommand.cpp  CDigitizerDictionary.cpp \
 	CModuleCreator.cpp \

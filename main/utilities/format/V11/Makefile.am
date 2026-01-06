@@ -41,7 +41,7 @@ libdataformatv11_la_CXXFLAGS = -I@srcdir@/.. \
 libdataformatv11_la_LDFLAGS = @top_builddir@/base/os/libdaqshm.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LIBS@
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES	= TestRunner.cpp \
 			ringitemtests.cpp teststate.cpp	\

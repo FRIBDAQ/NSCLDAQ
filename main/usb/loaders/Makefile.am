@@ -34,7 +34,7 @@ xlmloadparams.h: xlmloadparams.ggo
 # Unit tests:
 #
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 unittests_SOURCES = TestRunner.cpp skiptest.cpp skipHeader.cpp
 unittests_LDADD= $(CPPUNIT_LDFLAGS)
 unittests_CPPFLAGS=-DSRCDIR='"@srcdir@/"' @PIXIE_CPPFLAGS@

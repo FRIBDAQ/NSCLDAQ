@@ -25,7 +25,7 @@ TCLPACKAGES=actions.tcl defaultActions.tcl
 TCLTESTS =    actions.test tclTests.tcl
 
 
-noinst_PROGRAMS=testacts
+check_PROGRAMS=testacts
 
 testacts_SOURCES=TestActionPackage.cpp
 testacts_CPPFLAGS=$(libActions_la_CPPFLAGS)

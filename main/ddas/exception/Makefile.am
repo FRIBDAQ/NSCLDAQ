@@ -8,7 +8,7 @@ libDDASException_la_CPPFLAGS = @LIBTCLPLUS_CFLAGS@ \
 libDDASException_la_LIBADD = @LIBEXCEPTION_LDFLAGS@ \
 	@PIXIE_LDFLAGS@
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 unittests_SOURCES = TestRunner.cpp Asserts.h ExceptionTests.cpp
 unittests_CPPFLAGS = $(libDDASException_la_CPPFLAGS) @CPPUNIT_CFLAGS@
 unittests_LDADD = $(libDDASException_la_LIBADD) @CPPUNIT_LIBS@ @builddir@/libDDASException.la
