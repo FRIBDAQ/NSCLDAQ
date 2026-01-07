@@ -108,8 +108,6 @@ unittests_LDADD = $(CPPUNIT_LDFLAGS) \
 		@TCL_LDFLAGS@ @LIBTCLPLUS_LDFLAGS@
 unittests_LDFLAGS = -Wl,"-rpath=@prefix@/lib"
 
-installcheck-local: unittests
-	./unittests
 
 
 
@@ -126,8 +124,8 @@ clean-local:
 	rm -f $(BUILT_SOURCES)
 
 
-check-TESTS :  unittests
-	./unittests
+TESTS = unittests
+	
 
 # Swig interface generation:
 
