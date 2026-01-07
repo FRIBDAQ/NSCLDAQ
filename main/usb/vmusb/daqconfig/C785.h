@@ -20,8 +20,8 @@
  * @note When compiled for the MVLCGenerator the preprocessor symbo MVLC_GENERATOR is defined.
  */
 
-#ifndef __C785_H
-#define __C785_H
+#ifndef C785_H
+#define C785_H
 
 
 #include <CReadoutHardware.h>

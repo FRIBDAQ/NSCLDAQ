@@ -36,20 +36,23 @@ libCCUSB_la_LIBADD	= \
 
 ## SWIG wrapper generation
 
-libCCCUSB_la_SOURCES  = @srcdir@/CCCUSB_wrap.cxx
+libCCCUSB_la_SOURCES  = CCCUSB_wrap.cxx
 libCCCUSB_la_CPPFLAGS =$(COMPILATION_FLAGS)
 
-libCCCUSBReadoutList_la_SOURCES = @srcdir@/CCCUSBReadoutList_wrap.cxx
+libCCCUSBReadoutList_la_SOURCES = CCCUSBReadoutList_wrap.cxx
 libCCCUSBReadoutList_la_CPPFLAGS= $(COMPILATION_FLAGS)
 
-BUILT_SOURCES=@srcdir@/CCCUSB_wrap.cxx @srcdir@/CCCUSBReadoutList_wrap.cxx
+BUILT_SOURCES = CCCUSB_wrap.cxx CCCUSBReadoutList_wrap.cxx
+noidst_SOURCES= $(BUILT_SOURCES)
 
-@srcdir@/CCCUSB_wrap.cxx:	 @srcdir@/CCCUSB.h
-	@SWIG@ -c++ -debug-classes  -tcl  -namespace  -pkgversion 1.0  -outdir @srcdir@ \
-						@srcdir@/CCCUSB.i
+CCCUSB_wrap.cxx:	CCCUSB.h
+	@SWIG@ -c++ -debug-classes  -tcl  -namespace  -pkgversion 1.0  \
+	-outdir @builddir@ \
+	@srcdir@/CCCUSB.i
 
-@srcdir@/CCCUSBReadoutList_wrap.cxx:  @srcdir@/CCCUSBReadoutList.h
-		@SWIG@ -c++ -debug-classes  -tcl  -namespace  -pkgversion 1.0  -outdir @srcdir@ \
+CCCUSBReadoutList_wrap.cxx:  CCCUSBReadoutList.h
+		@SWIG@ -c++ -debug-classes  -tcl  -namespace \
+		-pkgversion 1.0  -outdir @builddir@ \
 		@srcdir@/CCCUSBReadoutList.i
 
 
@@ -85,7 +88,7 @@ install-data-local:
 ##          TESTS
 ## -------------------------------------------
 
-noinst_PROGRAMS = unittests tests remotetests camactests
+check_PROGRAMS = unittests tests remotetests camactests
 
 ## These all link against installed libraries rather than
 ## the .la files produced before the installation. These are

@@ -42,7 +42,10 @@
 #include "CV1x90.h"
 #include "CXLMTimestamp.h"
 #include "CXLMFERA.h"
+#include <CS800TriggerNew.h>
+#include <CS800TriggerScalers.h>
 #include "TclWrapper.h"
+
 
 
 #include <stdexcept>
@@ -94,5 +97,7 @@ MVLCConfigParser::addExtensions() {
     addExtension(new XLMTSCommand(interp, *this));
     addExtension(new XLMFERACmd(interp, *this));
     addExtension(new AddTclDriver(interp, *this));
+    addExtension(new CS800TriggerNewCommand(interp, *this));
+    addExtension(new CS800TriggerScalerCommand(interp, *this));
 }
 

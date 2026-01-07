@@ -61,3 +61,4 @@ getConfigVal(CTCLInterpreter& interp, const char* option, std::string configStri
   }
   throw std::runtime_error("No such key");
 }
+

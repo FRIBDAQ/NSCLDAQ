@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <CVMUSB.h>
+
 using namespace std;
 
 int main(int argc, char** argv)
@@ -38,3 +39,5 @@ namespace Globals
   CVMUSB* pUSBController(0);
 };
 void* gpTCLApplication(0);
+
+

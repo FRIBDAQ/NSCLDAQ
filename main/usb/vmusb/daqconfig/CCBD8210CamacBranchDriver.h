@@ -9,8 +9,8 @@
 #include "CCBD8210ReadoutList.h"
 #include "CCamacBranchException.h"
 
-class CBCNAF;
-class CCNAF;
+#include <CBCNAF.h> 
+
 
 class CCBD8210CamacBranchDriver : public CCamacBranchDriver
 {

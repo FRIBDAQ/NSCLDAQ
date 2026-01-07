@@ -92,7 +92,7 @@ install-exec-hook:
 
 #------------------- Tests:
 
-noinst_PROGRAMS = unittests ringTests
+check_PROGRAMS = unittests ringTests
 
 unittests_SOURCES	= TestRunner.cpp selecttest.cpp desiredtests.cpp	\
 			  allbuttests.cpp ringitemtests.cpp teststate.cpp	\

@@ -34,7 +34,7 @@ libdataformatv8_la_CXXFLAGS = -I@srcdir@/.. \
 libdataformatv8_la_LDFLAGS = @LIBTCLPLUS_LDFLAGS@ \
                              @top_builddir@/utilities/Buffer/libbuffer.la
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES	= TestRunner.cpp \
                             ccontrolbuffertest.cpp \

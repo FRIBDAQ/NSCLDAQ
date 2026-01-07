@@ -42,7 +42,7 @@ noinst_HEADERS=Asserts.h
 #  These are test programs but can only be run
 #  If there is hardware to run them on.
 
-noinst_PROGRAMS=fejackettests triggertests configtests
+check_PROGRAMS=fejackettests triggertests configtests
 
 ONLINETESTSCPPFLAGS=@CAENNG_CPPFLAGS@ @CPPUNIT_CFLAGS@ @JSON_CFLAGS@ \
     -I@top_srcdir@/base/os

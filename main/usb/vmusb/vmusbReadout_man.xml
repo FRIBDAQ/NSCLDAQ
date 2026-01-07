@@ -1,3 +1,104 @@
+<!-- manpage 1daq -->
+<refentry>
+    <refmeta>
+        <refentrytitle>s800triggerrun</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>s800triggerrun</refname>
+        <refpurpose>Program to set the s800 trigger module run number</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis><command>
+$DAQBIN/sets800triggerrun <replaceable>host port dev-name base-address run</replaceable>
+        </command></cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This program is intended to be run from within e.g. <filename>ReadoutCallouts.tcl</filename>
+            to set the run number register(s) of the s800 trigger module.  The program uses the
+            <literal>vmusb</literal> Module type.
+            The program
+            parameters are:
+        </para>
+        <variablelist>
+            <varlistentry>
+                <term>host</term>
+                <listitem><para>
+                    The host in which the VMUSBReadout is runing.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>port</term>
+                <listitem><para>
+                    The port on which the VMUSBReadout program's slow controls server is
+                    listening for connections.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>dev-name</term>
+                <listitem><para>
+                    The name given when creating the vmusb Module in the slow controls
+                    configuration file (<filename>ctlconfig.tcl</filename> e.g.).
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>base-address</term>
+                <listitem><para>
+                    The base address of the trigger module in VME space.
+                </para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>run</term>
+                <listitem><para>
+                    The value of the run number to set.  If used in 
+                    <filename>ReadoutCallouts.tcl</filename>'s 
+                    OnBegin proc, this will be the parameter passed in to that
+                    proc.
+                </para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+<refentry id='s800scaler_gen'>
+        <refmeta>
+            <refentrytitle id='s800scaler_gen.title'>s800scaler_gen</refentrytitle>
+            <manvolnum>1daq</manvolnum>
+        </refmeta>
+        <refnamediv>
+            <refname>s800scaler_gen</refname>
+            <refpurpose>Generate definitionfile for 
+                <link linkend='vmusb3.s800scaler' endterm='vmusb3.s800scaler.title' />
+            </refpurpose>
+        </refnamediv>
+        <refsynopsisdiv>
+            <cmdsynopsis><command>
+$DAQBIN/s800scaler_gen  </command>
+<arg>--include-frequencies</arg>
+<arg choice='plain'><replaceable>output-file</replaceable></arg>
+<arg choice='opt'><replaceable>definition-file</replaceable></arg>
+           </cmdsynopsis>
+        </refsynopsisdiv>
+        <refsect1>
+            <title>DESCRIPTION</title>
+            <para>
+                This command takes, as input, an s800 trigger module register definition 
+                (JsON) file and generates  a scaler readout configuration file for the 
+                <link linkend='vmusb3.s800scaler' endterm='vmusb3.s800scaler.title' />
+                driver.  By default, only the raw count scalers are read.  If
+                <option>--include-frequencdes</option> are specified, the frequency counters
+                are also read.
+            </para>
+            <para>
+                IF not specified, the definition file used is 
+                <filename>$DAQSHARE/s800trigger/RegisterFile.json</filename>.  This is the register definition
+                file as of  when this version of NSCLDAQ was installed.
+            </para>
+        </refsect1>
+     </refentry>
+
+<!-- /manpage -->
 <!-- manpage 3vmusb -->
             <!--  adc command reference -->
             
@@ -14889,4 +14990,4 @@ class <ooclass><classname>CVMUSBReadoutList</classname></ooclass>
            </variablelist>
         </refsect1>
      </refentry>
-<!-- /manpage -->
+     <!-- /manpage -->

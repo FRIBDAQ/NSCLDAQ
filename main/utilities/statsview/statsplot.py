@@ -575,11 +575,17 @@ def plotBetween(w, db, ring_name, startDate, endDate):
   
 def refreshPlots():
   ''' Refresh all plots with a new date/time range.  '''
-  db = sqlite3.connect('file:' + dbFile + '?mode=ro', uri=True)
-  range_type = dateTimeRange.type()
+  tab_no = tabs.currentIndex()
   
-  # Iterate over the tabs now:
-  for tab_no in range(tabs.count()) :
+  if tab_no != -1:
+    cursor = tabs.cursor()
+    tabs.setCursor(Qt.WaitCursor)
+    db = sqlite3.connect('file:' + dbFile + '?mode=ro', uri=True)
+    range_type = dateTimeRange.type()
+    
+    # Iterate over the tabs now -1 means no widget.
+  
+  
     tab_widget = tabs.widget(tab_no)
     ring_name = tab_widget.ringbuffer()  
     if range_type == 'since':
@@ -593,7 +599,13 @@ def refreshPlots():
       print("Invalid type range type: ", range_type)
       
       
-  db.close()
+    db.close()
+    tabs.setCursor(cursor)
+  
+# For the signal handler:
+
+def updateplot(index):
+  refreshPlots()
   
 # Entry point.
   
@@ -629,9 +641,6 @@ if __name__ == "__main__":
   layout.addWidget(dateTimeRange)
   
   
-  # Make a tab for each ring.
-  print("Plotting statistics since today for all rings")
-  
   
   db = connect_database(dbFile)
   cursor = db.cursor()
@@ -646,6 +655,10 @@ if __name__ == "__main__":
     
   refreshPlots()       # initial refresh.
   dateTimeRange.refresh.connect(refreshPlots)
+  
+  # If the tab changes, then refresh the current widget too:
+  
+  tabs.currentChanged.connect(updateplot)   # index expected as a parameter.
   
   db.close()
 

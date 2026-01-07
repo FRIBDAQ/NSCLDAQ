@@ -86,7 +86,7 @@ libVMUSBCore_la_LIBADD	= \
 #-----------------------------------------------------------------------------------
 # Tests:
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES  = TestRunner.cpp \
 	monvartests.cpp \

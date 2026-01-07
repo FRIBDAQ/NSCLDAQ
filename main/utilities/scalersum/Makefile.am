@@ -26,7 +26,7 @@ install-exec-hook:
 clean-local:
 	-rm -rf options.h options.c
 
-noinst_PROGRAMS=unittests
+check_PROGRAMS=unittests
 
 unittests_SOURCES=Asserts.h TestRunner.cpp channelTests.cpp runTests.cpp \
 	CRun.cpp CCumulativeChannel.cpp CIncrementalChannel.cpp 

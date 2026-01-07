@@ -43,13 +43,9 @@ libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CVMUSBControl.cpp \
 				CDelay.cpp \
 				CCBD8210CamacBranchDriver.cpp \
-				@top_srcdir@/usb/common/devices/CCrateController.cpp \
 				CCBD8210CrateController.cpp \
 				CCBD8210ReadoutList.cpp \
 				CCBDCamacBranch.cpp \
-				@top_srcdir@/usb/common/devices/CBCNAF.cpp \
-				@top_srcdir@/usb/common/devices/CCNAF.cpp \
-				@top_srcdir@/usb/common/devices/CNAF.cpp \
 				CULMTrigger.cpp \
 				CLeCroy4300B.cpp \
 				CLeCroy4434.cpp \
@@ -59,12 +55,15 @@ libVMUSBDaqConfig_la_SOURCES	= 	CADCCommand.cpp		\
 				CMQDC32StackBuilder.cpp \
 				CMQDC32RdoHdwr.cpp	\
 				CDeviceCommand.cpp \
-				CMDPP16QDC.cpp \
+				CMDPP16QDC.cpp CMDPPQDC.h \
 				CMDPP32QDC.cpp \
 				CMDPP32SCP.cpp  \
 				CMDPP32PADC.cpp  \
 				CSIS3316.cpp \
-				sis3316_class.cpp 
+				sis3316_class.cpp \
+			s800TriggerRegisters.cpp s800TriggerRegisters.h \
+				CS800TriggerNew.cpp CS800TriggerNew.h \
+				CS800TriggerScalers.h CS800TriggerScalers.cpp
 
 
 
@@ -115,13 +114,9 @@ noinst_HEADERS		=	CADCCommand.h  		\
 				CDelay.h \
 				CDeviceCommand.h \
 				CCBD8210CamacBranchDriver.h \
-				@top_srcdir@/usb/common/devices/CCrateController.h \
 				CCBD8210CrateController.h \
 				CCBD8210ReadoutList.h \
 				CCBDCamacBranch.h \
-				@top_srcdir@/usb/common/devices/CBCNAF.h \
-				@top_srcdir@/usb/common/devices/CCNAF.h \
-				@top_srcdir@/usb/common/devices/CNAF.h \
 				CXLMFERA.h \
 				CXLMTimestamp.h \
 				CMQDC32StackBuilder.h \
@@ -149,7 +144,9 @@ libVMUSBDaqConfig_la_CPPFLAGS = -I@top_srcdir@/usb/common/devices	\
 				@LIBTCLPLUS_CFLAGS@			\
 				-I@top_srcdir@/base/headers		\
 				-I@top_srcdir@/base/os		\
-				$(TCL_FLAGS)  @PIXIE_CPPFLAGS@
+				$(TCL_FLAGS)  @PIXIE_CPPFLAGS@ \
+				@JSON_CFLAGS@ \
+	-DDEFAULT_S800REGFILE=\"@datarootdir@/s800triggers/RegisterFile.json\"
 
 
 libVMUSBDaqConfig_la_LIBADD	= \
@@ -157,15 +154,17 @@ libVMUSBDaqConfig_la_LIBADD	= \
 				@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 				@top_builddir@/base/thread/libdaqthreads.la \
 				@LIBTCLPLUS_LDFLAGS@	\
-				$(TCL_LDFLAGS) @THREADLD_FLAGS@
+				$(TCL_LDFLAGS) @THREADLD_FLAGS@ @JSON_LIBS@
 
 install-data-local:
 	$(mkinstalldirs) @prefix@/vmusbdriver
 	$(mkinstalldirs) @prefix@/vmusbdriver/includes
+	$(mkinstalldirs) @prefix@/share/s800trigger
 	$(INSTALL_DATA)  @srcdir@/*.h @prefix@/vmusbdriver/includes
+	$(INSTALL_DATA)  @srcdir@/RegisterFile.json @prefix@/share/s800trigger
 
 
-noinst_PROGRAMS=cmdtests
+check_PROGRAMS=cmdtests
 
 cmdtests_SOURCES=TestRunner.cpp Asserts.h ad811test.cpp \
 	v830tests.cpp madcscaler.cpp \
@@ -174,14 +173,16 @@ cmdtests_SOURCES=TestRunner.cpp Asserts.h ad811test.cpp \
 	v977tests.cpp masetests.cpp mtdctests.cpp delaytests.cpp \
 	xlmferatests.cpp cbdtests.cpp xlmtimestamptests.cpp mqdctests.cpp \
 	cbdcratetests.cpp ulmtriggertests.cpp lrs4300tests.cpp lrs4434tests.cpp \
-	lrs2551tests.cpp mdpp32qdctests.cpp
+	lrs2551tests.cpp mdpp32qdctests.cpp s800triggerregistertests.cpp
 
 
 cmdtests_CXXFLAGS=@CPPUNIT_CFLAGS@ $(libVMUSBDaqConfig_la_CXXFLAGS) \
-	$(libVMUSBDaqConfig_la_CPPFLAGS) @PIXIE_CPPFLAGS@
-cmdtests_LDFLAGS=@CPPUNIT_LDFLAGS@ 
-cmdtests_LDADD=@builddir@/libVMUSBDaqConfig.la $(libVMUSBDaqConfig_la_LIBADD)
+	$(libVMUSBDaqConfig_la_CPPFLAGS) @PIXIE_CPPFLAGS@ \
+	-DSOURCE_DIR=\"@srcdir@\" @JSON_CFLAGS@
+cmdtests_LDFLAGS=@CPPUNIT_LDFLAGS@ @JSON_LIBS@
+cmdtests_LDADD=@builddir@/libVMUSBDaqConfig.la \
+	$(libVMUSBDaqConfig_la_LIBADD)
 
 TESTS=cmdtests
 
-EXTRA_DIST = CCamacCompat.hpp
+EXTRA_DIST = CCamacCompat.hpp RegisterFile.json

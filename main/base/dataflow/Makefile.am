@@ -96,7 +96,7 @@ stdintoring_CPPFLAGS =	$(THREADCXX_FLAGS) $(AM_CXXFLAGS) $(COMPILATION_FLAGS)
 #---------------- Tests
 
 
-noinst_PROGRAMS = unittests producer consumer
+check_PROGRAMS = unittests producer consumer
 
 unittests_SOURCES = TestRunner.cpp StaticTests.cpp TransferTests.cpp testcommon.cpp \
 		DifferenceTests.cpp BlockingTests.cpp InfoTests.cpp \

@@ -35,7 +35,7 @@ libdaqformatio_la_CXXFLAGS = $(THREADCXX_FLAGS) $(AM_CXXFLAGS)
 
 ------------------- Tests:
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES	= TestRunner.cpp  \
                             daq8test.cpp \

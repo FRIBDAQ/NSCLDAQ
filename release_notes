@@ -27,4 +27,14 @@ by COutputThread (nummap_chunk() issue fixed)
 * Fix issue #385 - glom uses buffered fragment reader
 * Make CFragmentHandler predicate classes operator() const and take const ref as parameter for compliance with some handy STL algos for future fragment handler development
 * Build docs for swtrigger
+* Add support for new FPGA Based S800 trigger module for VMUSB and MVLC readouts.
+* Move sbs device module headers from $DAQINC to $DAQINC/sbsmodules
+* Fix some issues with the out of tree build from the source tarball
+* Clear warning message when QtScope detects inconsistent channel coincidence widths on a single module
+* Clear the VMUSB Interrupt mask on exit from VMUSBReadout.
+* Issue #411 - use a local version of the MVLC Slow controls client library.
+* Issue #410 - better messages in config for incorporated builds.
+* Issue #409 - Improve perfromance of stats plot by doing refresh on demand.
+* Issue #400 - Only build the test binaries on make check rather than make all as before  
 == 12.2-dev ==
+
