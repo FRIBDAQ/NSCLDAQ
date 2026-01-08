@@ -93,9 +93,10 @@ public:
     virtual void disable() {};
     /** 
      * @brief Return the size of the scaler data.
-     * @return Always 32 (only for 16-channel cards!)
+     * @return Size of scalar data = 2 x number of channels on the module.
+     * Does not include the crate ID word!
      */
-    virtual unsigned int size() { return 32; };
+    virtual unsigned int size() { return 2*m_nChannels; };
     /** 
      * @brief Get the run statistics.
      * @return Reference to the statistics storage object.
