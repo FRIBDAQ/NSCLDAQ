@@ -79,7 +79,7 @@ public:
      * @warning Offline boot mode is currently only allowed for XIA API 2!
      * @param mode  Set the boot mode to this value.
      */
-    void SetBootMode(int mode) {m_bootMode = mode;};
+    void SetBootMode(int mode) { m_bootMode = mode; };
     /**
      * @brief Get the boot mode.
      * @warning Offline boot mode is currently only allowed for XIA API 2!
@@ -87,27 +87,33 @@ public:
      * @retval 0 Online mode.
      * @retval 1 Offline mode (no hardware).
      */
-    int GetBootMode() {return m_bootMode;};
+    int GetBootMode() { return m_bootMode; };
     /**
      * @brief Get the crate boot status.
      * @return bool
      * @retval true  If the system has been booted.
      * @retval false Otherwise.
      */
-    bool GetBootStatus() {return m_booted;};
+    bool GetBootStatus() { return m_booted; };
     /**
      * @brief Get the number of installed modules.
      * @return The number of modules in the crate.
      */
-    unsigned short GetNumModules() {return m_numModules;};
+    unsigned short GetNumModules() { return m_numModules; };
     /**
      * @brief Get the module ADC sampling rate in MSPS.
+     * @param module Module number (zero-indexed).
      * @throws std::runtime_error If the module number is invalid.
      * @returns The module ADC sampling rate in MSPS.
      * @retval -1 if the system is not booted.
      * @retval -2 if the module number is invalid.
      */
     int GetModuleMSPS(int module);
+    /**
+     * @brief Get the number of channels on the module.
+     * @param module Module number (zero-indexed).
+     */
+    unsigned short GetChannelCount(int module);
 };
 
 /** @} */
