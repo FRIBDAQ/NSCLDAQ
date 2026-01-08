@@ -5,28 +5,29 @@
 
 #include "CMyEventSegment.h"
 
-#include <stdlib.h>
-#include <signal.h>
-#include <string.h>
-#include <math.h>
 #include <float.h>
+#include <math.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
-#include <algorithm>
 #include <iterator>
+#include <sstream>
 #include <stdexcept>
 
 #include <config.h>
 #include <config_pixie16api.h>
-#include <CReadoutMain.h>
 #include <CExperiment.h>
+#include <CReadoutMain.h>
+#include <CXIAException.h>
+
 #include "HardwareRegistry.h"
 #include "CMyTrigger.h"
-#include <CXIAException.h>
 
 using namespace DAQ::DDAS;
 

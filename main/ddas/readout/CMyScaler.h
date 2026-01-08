@@ -60,19 +60,21 @@ public:
     
 private:
     unsigned short m_crate;  //!< Crate ID value.
-    unsigned short m_module; //!< Module number.
-    double m_prevIC[16];     //!< Previous input counts (# raw fast triggers.).
-    double m_prevOC[16];     //!< Previous output counts (# accepted triggers).
+    unsigned short m_module; //!< Module number.    
+    unsigned short m_nChannels; //!< Channels for this scaler object
+    std::vector<unsigned int> m_prevIC; //!< Previous raw trigger count
+    std::vector<unsigned int> m_prevOC; //!< Previous accepted trigger count
     std::vector<uint32_t> m_scalers; //!< Vector of scaler data for the module.
     Statistics m_statistics;         //!< Storage for calculated scaler data.
 
 public:
     /**
      * @brief Constructor.
-     * @param mod The module number.
      * @param crate The crate ID where the module resides.
+     * @param mod The module number.
+     * @param nchan Number of channels in the module.
      */
-    CMyScaler(unsigned short mod, unsigned short crate);
+    CMyScaler(unsigned short crate, unsigned short mod, unsigned short nchan);
     /** @brief Destructor. */
     ~CMyScaler();
 

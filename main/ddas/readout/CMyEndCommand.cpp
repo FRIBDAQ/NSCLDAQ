@@ -9,21 +9,21 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <iostream>
+#include <chrono>
 #include <fstream>
 #include <functional>
-#include <tuple>
-#include <chrono>
+#include <iostream>
 #include <thread>
-
-#include <TCLInterpreter.h>
-#include <TCLObject.h>
+#include <tuple>
 
 #include <config.h>
 #include <config_pixie16api.h>
 #include <CVMEInterface.h>
-#include <RunState.h>
 #include <CXIAException.h>
+#include <RunState.h>
+#include <TCLInterpreter.h>
+#include <TCLObject.h>
+
 #include <CExperiment.h>
 #include "CMyEventSegment.h"
 
@@ -31,7 +31,7 @@ CMyEndCommand::CMyEndCommand(
     CTCLInterpreter& rInterp, CMyEventSegment *pSeg, CExperiment* pExp
     ) : CEndCommand(rInterp), m_pSeg(pSeg), m_pExp(pExp)
 {
-    m_nModules = m_pSeg->GetNumberOfModules();
+    m_nModules = m_pSeg->getNumberOfModules();
 }
 
 CMyEndCommand::~CMyEndCommand()
@@ -207,7 +207,7 @@ int CMyEndCommand::readOutRemainingData()
 
 	// Write the stats to the output file:
         outputfile << "Module " << i << std::endl;	
-        for (int j = 0; j < m_pExp->GetChannelCount(i); j++) {
+        for (int j = 0; j < m_pSeg->getChannelCount(i); j++) {
 	    double ocr = Pixie16ComputeOutputCountRate(
 		statistics.data(), i, j
 		);

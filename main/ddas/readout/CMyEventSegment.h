@@ -13,6 +13,11 @@
 #include <Configuration.h>
 #include <SystemBooter.h>
 
+/**
+ * @todo (ASC 1/8/25): See Github issue #417: simplify readout and pass system
+ * information around via the Configuation class.
+ */ 
+
 const int MAX_MODULES_PER_CRATE = 13; //!< A full crate is 13 modules.
 
 class CMyTrigger;
@@ -144,19 +149,19 @@ public:
      * @brief Get the number of modules in the crate.
      * @return Number of modules.
      */
-    size_t GetNumberOfModules() { return m_nModules; }
+    size_t getNumberOfModules() { return m_nModules; }
     /**
      * @brief Get the channel count in a given module.
      * @param mod The module index.
      * @return The channel count of that module.
      */
-    unsigned short GetChannelCount(unsigned int mod)
+    unsigned short getChannelCount(unsigned int mod)
 	{ return m_config.getChannelCount(mod); }
     /** 
      * @brief Get the crate ID value from the configuration.
      * @return The crate ID.
      */
-    int GetCrateID() const { return m_config.getCrateId(); }
+    int getCrateID() const { return m_config.getCrateId(); }
 
     /**
      * @brief Perform clock synchronization.

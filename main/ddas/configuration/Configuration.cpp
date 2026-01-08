@@ -5,19 +5,18 @@
 
 #include "Configuration.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 
-#include "FirmwareVersionFileParser.h"
 #include "ConfigurationParser.h"
+#include "FirmwareVersionFileParser.h"
 #include "ModEvtFileParser.h"
 
 /**
- * @todo (ASC 3/21/25): Once parallel boot is implemented, clean up this class
- * and remove everything which we do not need (e.g. default maps) and remove
- * any hardware types which are not real or we do not supprot
- * (e.g. 500m-16b rev F??)
+ * @todo (ASC 3/21/25): Clean up this class and remove everything which we
+ * do not need (e.g. default maps) and remove any hardware types which are
+ * not real or we do not support (e.g. 500m-16b rev F??)
  */ 
 
 /*!
