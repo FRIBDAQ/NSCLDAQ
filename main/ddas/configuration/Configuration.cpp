@@ -256,11 +256,10 @@ DAQ::DDAS::Configuration::print(std::ostream &stream)
     for(auto& slot : m_slotMap){
 	stream << slot << " ";
     }
-    stream << ", channel map: ";
+    stream << "Channel map: ";
     for (auto c : m_channelMap) {
 	stream << c << " ";
     }
-    stream << std::endl;
     stream << "DSPParFile: " << m_settingsFilePath;
 }
 

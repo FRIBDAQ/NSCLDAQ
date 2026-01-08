@@ -57,16 +57,17 @@ public:
 	{
 	    Configuration config;
 	    config.setNumberOfModules(2);
+	    config.setChannelMap({16, 32});
 	    config.setCrateId(123);
-	    config.setModuleEventLengths({123,345});
-	    config.setSlotMap({2,3});
+	    config.setModuleEventLengths({123, 345});
+	    config.setSlotMap({2, 3});
 	    config.setSettingsFilePath("/path/to/settings.file");
 	    
 	    std::stringstream stream;
 	    config.print(stream);
 	    std::string msg(
-		"Crate number 123: 2 modules, in slots:2 3 DSPParFile: "
-		"/path/to/settings.file"
+		"Crate number 123: 2 modules, in slots: 2 3 "
+		"Channel map: 16 32 DSPParFile: /path/to/settings.file"
 		);
 	    EQMSG("Print output", msg, stream.str());
 	}
