@@ -32,14 +32,14 @@ class DSPManager:
         dependant parameter names.
     _nmodules : int
         Number of modules installed in the crate.
-    _nchannels : int 
-        Number of channels per module.
+    _channel_map : list
+        List of number of channels per module (zero-)indexed by module number.
     _logger : Logger
         QtScope Logger object.
 
     Methods
     -------
-    initialize_dsp(nmod, nchan): 
+    initialize_dsp(nmod, channel_map): 
         Create and fill the DSP dictionary.
     get_chan_par(mod, chan, pname): 
         Get a channel parameter value from the dataframe.
@@ -71,7 +71,7 @@ class DSPManager:
             "SLOW_FILTER_RANGE": ["ENERGY_RISETIME", "ENERGY_FLATTOP"]
         }
 
-    def initialize_dsp(self, nmod, nchan=16):
+    def initialize_dsp(self, nmod, channel_map):
         """Initialize the DSP dataframe. 
 
         Read DSP parameters from the modules into the dataframe storage.
@@ -80,15 +80,15 @@ class DSPManager:
         ----------
         nmod : int 
             Number of modules installed in the system.
-        nchan : int, default=16
-            Number of channels per module.
+        channel_map : list
+            Map of channels per module.
         """
         self._dsp = {}
         
         self._logger = logging.getLogger("qtscope_logger")
         
         self._nmodules = nmod
-        self._nchannels = nchan
+        self._channel_map = channel_map
         
         for i in range(self._nmodules):            
             self._dsp[i] = {}  # dict of dicts. Key is module number.
@@ -97,7 +97,7 @@ class DSPManager:
             cpars = {}
             for pname in xia.CHAN_PARS:
                 p = []
-                for j in range(self._nchannels):
+                for j in range(self._channel_map[i]):
                     p.append(self._utils.read_chan_par(i, j, pname))
                 cpars[pname] = p
             self._dsp[i]["chan_par"] = pd.DataFrame.from_dict(cpars)                     

@@ -48,11 +48,12 @@ public:
      * @brief Begin a histogram (MCA) run for a single module. Explicitly sets 
      * module synchronization to OFF.
      * @param module Module number.
+     * @param nChannels Channels per module.
      * @return int  
      * @retval 0   Success.
      * @retval !=0 XIA API error code.
      */
-    int BeginHistogramRun(int module);
+    int BeginHistogramRun(int module, int nChannels);
     /**
      * @brief End a histogram (MCA) run for a single module. Assumes module 
      * synchronization is OFF __but__ only stops a run in a single module.
@@ -73,10 +74,12 @@ public:
 
     /**
      * @brief Begin a baseline run.
+     * @param module Module number.
+     * @param nChannels Channels per module.
      * @return int
      * @retval 0 Always.
      */
-    int BeginBaselineRun(int module);
+    int BeginBaselineRun(int module, int nChannels);
     /**
      * @brief "End" a baseline run.
      * @param module Module number.
@@ -143,10 +146,10 @@ extern "C" {
 
     /** @brief Wrapper to begin a list-mode histogram data run. */
     int CPixieRunUtilities_BeginHistogramRun(
-	CPixieRunUtilities* utils, int mod
+	CPixieRunUtilities* utils, int mod, unsigned nchan
 	)
     {
-	return utils->BeginHistogramRun(mod);
+	return utils->BeginHistogramRun(mod, nchan);
     }
     /** @brief Wrapper to end a list-mode histogram data run. */
     int CPixieRunUtilities_EndHistogramRun(
@@ -165,10 +168,10 @@ extern "C" {
   
     /** @brief Wrapper to begin a baseline data run. */
     int CPixieRunUtilities_BeginBaselineRun(
-	CPixieRunUtilities* utils, int mod
+	CPixieRunUtilities* utils, int mod, unsigned nchan
 	)
     {
-	return utils->BeginBaselineRun(mod);
+	return utils->BeginBaselineRun(mod, nchan);
     }
     /** @brief Wrapper to end a baseline data run. */
     int CPixieRunUtilities_EndBaselineRun(CPixieRunUtilities* utils, int mod)

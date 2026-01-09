@@ -250,26 +250,30 @@ class MainWindow(QMainWindow):
     def _on_boot(self):
         """Configure the system following a successful boot."""
         if self.sys_utils.get_boot_status() == True:            
-            # Populate list of module MSPS. Length of list == number of
-            # installed modules in the crate:
-            
+            # Populate list of module MSPS and channel map.
+            # Length of list == number of installed modules in the crate:
+
+            num_modules = self.sys_utils.get_num_modules()
             msps_list = []
-            for i in range(self.sys_utils.get_num_modules()):
+            channel_map = []
+            for i in range(num_modules):
                 msps_list.append(self.sys_utils.get_module_msps(i))
+                channel_map.append(self.sys_utils.get_channel_count(i))
                 
             # Configure DSP and managers. Performs first time load of DSP
             # settings from the Pixie modules.
             
-            self.dsp_mgr.initialize_dsp(len(msps_list))
-            self.chan_gui.configure(self.dsp_mgr, msps_list)
-            self.mod_gui.configure(self.dsp_mgr, len(msps_list))
+            self.dsp_mgr.initialize_dsp(num_modules, channel_map)
+            self.chan_gui.configure(self.dsp_mgr, msps_list, channel_map)
+            self.mod_gui.configure(self.dsp_mgr, num_modules)
             
             # Repaint boot button, configure spinboxes, enable widgets:
             
             self.sys_toolbar.b_boot.setText("Booted")
             self.sys_toolbar.b_boot.setStyleSheet(colors.GREEN)
-            self.acq_toolbar.current_mod.setRange(0, len(msps_list)-1)
-            self.acq_toolbar.current_chan.setRange(0, 15)
+            self.acq_toolbar.current_mod.setRange(0, num_modules-1)
+            nchan = self.sys_utils.get_channel_count(0) # First module
+            self.acq_toolbar.current_chan.setRange(0, nchan-1)
             
             self.sys_toolbar.enable()
             self.acq_toolbar.enable()            
@@ -306,18 +310,18 @@ class MainWindow(QMainWindow):
                         raise RuntimeError(f"Unrecognized option '{opt}'")
                     elif fext != ".set" and fext != ".json":
                         raise RuntimeError(
-                            "Unsupported extension for settings file: " \
+                            f"Unsupported extension for settings file: " \
                             f"'{fext}.'\n\tSupported extenstions are: .set" \
-                            "or .json. Your settings file has not been saved"
+                            f"or .json. Your settings file has not been saved"
                         )
                 else:
                     if opt != "XIA settings file (*.set)":
                         raise RuntimeError(f"Unrecognized option '{opt}'")
                     elif fext != ".set":
                         raise RuntimeError(
-                            "Unsupported extension for settings file:" \
+                            f"Unsupported extension for settings file:" \
                             f"'{fext}.'\n\tSupported extension are: .set." \
-                            "Your settings file has not been saved"
+                            f"Your settings file has not been saved"
                         )                
             except RuntimeError as e:
                 self.logger.exception("Error saving settings file")
@@ -455,7 +459,10 @@ class MainWindow(QMainWindow):
 
         nthreads = self.pool_mgr.get_active_thread_count()
         if nthreads > 0:
-            print(f"{nthreads} threads are currently communicating with the module(s). Waiting...")
+            print(
+                f"{nthreads} threads are currently communicating with "
+                f"the module(s). Waiting..."
+            )
             self.pool_mgr.wait()
             
         # Access thread from global thread pool for the begin/end operation
@@ -489,8 +496,9 @@ class MainWindow(QMainWindow):
         self.logger.debug(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Beginning {self.active_type} run in Mod. {module}")
         
         # XIA API call to begin run in the current module:
-        
-        self.run_utils.begin_run(module, self.active_type)
+
+        nchannels = self.sys_utils.get_channel_count(module)
+        self.run_utils.begin_run(module, nchannels, self.active_type)
         self.run_active = self.run_utils.get_run_active()
         self.logger.debug(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Started, run active {self.run_active}")        
             
@@ -573,15 +581,19 @@ class MainWindow(QMainWindow):
         """        
         self.mplplot.figure.clear()
         module = self.acq_toolbar.current_mod.value()
+        nchans = self.sys_utils.get_channel_count(module)
         channel = self.acq_toolbar.current_chan.value()
 
         # Read from module and get data, then draw:
         
         if self.acq_toolbar.read_all.isChecked():
-            for i in range(16):
+            for i in range(nchans):
                 self.run_utils.read_data(module, i, self.active_type)
                 data = self.run_utils.get_data(self.active_type)
-                self.mplplot.draw_run_data(data, self.active_type, 4, 4, i+1)
+                # Expect either 16 or 32 channels, so 4x4 or 8x4:
+                self.mplplot.draw_run_data(
+                    data, self.active_type, nchans/4, 4, i+1
+                )
             self.mplplot.update_canvas()
         else:           
             self.run_utils.read_data(module, channel, self.active_type)
@@ -596,6 +608,7 @@ class MainWindow(QMainWindow):
         """        
         self.mplplot.figure.clear()
         module = self.acq_toolbar.current_mod.value()
+        nchans = self.sys_utils.get_channel_count(module)
         channel = self.acq_toolbar.current_chan.value()
 
         # Retrieve trace from this module and channel and get its data. If
@@ -604,14 +617,15 @@ class MainWindow(QMainWindow):
         # signals until it either finds a good trace or hits a retry limit.
         
         if self.acq_toolbar.read_all.isChecked(): # Read all.
-            for i in range(16):             
+            for i in range(nchans):             
                 if self.acq_toolbar.fast_acq.isChecked():
                     self.trace_utils.read_fast_trace(module, i)
                 else:
                     self.trace_utils.read_trace(module, i)
 
                 data = self.trace_utils.get_trace_data()
-                self.mplplot.draw_trace_data(data, module, i, 4, 4, i+1)
+                # Expect either 16 or 32 channels, so 4x4 or 8x4:
+                self.mplplot.draw_trace_data(data, module, i, nchans/4, 4, i+1)
                     
                 # Keep the single channel trace information:
                 
@@ -696,7 +710,11 @@ class MainWindow(QMainWindow):
                 # Module number changed between acquisition and
                 # analysis, user needs to acquire new trace for
                 # the currently selected channel:                
-                raise ValueError(f"Stored trace data for Mod. {self.trace_info['module']} Ch. {self.trace_info['channel']} does not match the current selection box Mod. {module} Ch. {channel}")
+                raise ValueError(
+                    f"Stored trace data for Mod. {self.trace_info['module']} "
+                    f"Ch. {self.trace_info['channel']} does not match the "
+                    f"current selection box Mod. {module} Ch. {channel}"
+                )
             elif (
                     self.acq_toolbar.read_all.isChecked()
                     and channel != self.trace_info["channel"]
@@ -716,10 +734,19 @@ class MainWindow(QMainWindow):
                 # Channel number changed between acquisition and
                 # analysis. We have _not_ read all channel trace
                 # data so user needs to re-acquire:
-                raise ValueError(f"Stored trace data for Mod. {self.trace_info['module']} Ch. {self.trace_info['channel']} does not match the current selection box Mod. {module} Ch. {channel}")
+                raise ValueError(
+                    f"Stored trace data for Mod. {self.trace_info['module']} "
+                    f"Ch. {self.trace_info['channel']} does not match the "
+                    f"current selection box Mod. {module} Ch. {channel}"
+                )
         except ValueError as e:
-            self.logger.exception("Channel selection changed between acquisition and analysis")
-            print(f"{e}:\n\tNew trace data must be acquired by clicking the 'Read trace' button prior to analysis.")
+            self.logger.exception(
+                "Channel selection changed between acquisition and analysis"
+            )
+            print(
+                f"{e}:\n\tNew trace data must be acquired by clicking "
+                f"the 'Read trace' button prior to analysis."
+            )
         else:            
             # No exceptions, analyze and draw:
             try:

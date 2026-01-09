@@ -48,7 +48,7 @@ class ChanDSPWidget(QWidget):
     """
     
     def __init__(
-            self, param_names=None, param_labels=None, nchannels=16,
+            self, param_names=None, param_labels=None, nchannels=16, 
             *args, **kwargs
     ):
         """ChanDSPWidget class constructor.
@@ -66,9 +66,9 @@ class ChanDSPWidget(QWidget):
             Column labels for the GUI.
         nchannels : int, default=16
             Number of channels per module. 
-        """        
+        """
         super().__init__(*args, **kwargs)
-
+        
         self.logger = logging.getLogger("qtscope_logger")
         
         self.param_names = param_names
@@ -148,7 +148,7 @@ class ChanDSPWidget(QWidget):
             DSP manager for calls to XIA API.
         mod : int
             Currently selected module tab index.
-        """        
+        """
         for i in range(self.nchannels):
             for col, name in enumerate(self.param_names, 1):
                 val = np.format_float_positional(

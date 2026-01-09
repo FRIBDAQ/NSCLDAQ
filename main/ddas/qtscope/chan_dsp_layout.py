@@ -1,22 +1,25 @@
-from PyQt5.QtWidgets import QTabWidget, QWidget
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QTabWidget, QWidget, QScrollArea
 
 class ChanDSPLayout(QTabWidget):
     """Layout of channel DSP parameters.
 
-    Uses the chan_dsp_factory to configure a set of tabs. Each of these tabbed 
-    widgets belong to a module tab; this is the lowest level of the nested 
-    tab interface for configuring channel DSP settings.
+    Create the underlying widgets the users interact with the set and read
+    channel parameters. The underlying widget is a QWidget wrapped in a
+    QScrollArea. Each of these widgets is added as a tab to a module tab in
+    the main channel parameter window. This is the lowest level of the nested
+    tabs for channel parameters.
     """
     
-    def __init__(self, factory, module, *args, **kwargs):
+    def __init__(self, factory, nchannels, *args, **kwargs):
         """ChanDSPLayout class constructor.
         
         Parameters
         ----------
         factory : WidgetFactory
             Factory object for creating channel DSP widgets.
-        module : int
-            Module number from ChanDSPManager. 
+        nchannels : int
+            Number of channels for this module tab.
         """        
         super().__init__(*args, **kwargs)
         
@@ -25,20 +28,26 @@ class ChanDSPLayout(QTabWidget):
         # when an unknown create method is called.
         
         tabs = [
-            "AnalogSignal",
+            #"AnalogSignal",
             "TriggerFilter",
-            "EnergyFilter",
-            "CFD",
-            "Tau",
-            "Trace",
-            "CSRA",
-            "Baseline",
-            "MultCoincidence",
-            "TimingControl",
-            "Histogram"
+            #"EnergyFilter",
+            #"CFD",
+            #"Tau",
+            #"Trace",
+            #"CSRA",
+            #"Baseline",
+            #"MultCoincidence",
+            #"TimingControl",
+            #"Histogram"
         ]
 
         # Define layout:
         
         for i, tab in enumerate(tabs):
-            self.insertTab(i, factory.create(tab), tab)
+            widget = factory.create(tab, nchannels=nchannels)
+            scrollable = QScrollArea()
+            scrollable.setWidgetResizable(True)
+            scrollable.setWidget(widget)
+            scrollable.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+            scrollable.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+            self.insertTab(i, scrollable, tab)

@@ -67,12 +67,12 @@ public:
      * @brief Return the trace data.
      * @return Pointer to the underlying trace storage.
      */
-    unsigned short* GetTraceData() {return m_trace.data();}
+    unsigned short* GetTraceData() { return m_trace.data(); }
     /**
      * @brief Set the flag for offline mode using the data generator.
      * @param mode The generator flag is set to this input value.
      */
-    void SetUseGenerator(bool mode) {m_useGenerator = mode;}
+    void SetUseGenerator(bool mode) { m_useGenerator = mode; }
   
 private:
     /**

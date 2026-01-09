@@ -23,14 +23,6 @@
  * responsible for managing it.
  */
 CPixieRunUtilities::CPixieRunUtilities() :
-    m_histogram(MAX_HISTOGRAM_LENGTH, 0),
-    m_baseline(MAX_HISTOGRAM_LENGTH, 0),
-    m_baselineHistograms(
-	16, std::vector<unsigned int>(MAX_HISTOGRAM_LENGTH, 0)
-	),
-    m_genHistograms(
-	16, std::vector<unsigned int>(MAX_HISTOGRAM_LENGTH, 0)
-	),
     m_runActive(false),
     m_useGenerator(false),
     m_pGenerator(new CDataGenerator)
@@ -49,13 +41,15 @@ CPixieRunUtilities::~CPixieRunUtilities()
  * @todo Disable multiple modules from running in non-sync mode.
  */
 int
-CPixieRunUtilities::BeginHistogramRun(int module)
-{   
-    // Reset internal histogram data:  
+CPixieRunUtilities::BeginHistogramRun(int module, int nChannels)
+{
+    std::cout << "Beginning histogram run in Mod. " << module << std::endl;
+    
+    // Reset internal histogram data:    
+    m_genHistograms.assign(
+	nChannels, std::vector<unsigned int>(MAX_HISTOGRAM_LENGTH, 0)
+	);
     std::fill(m_histogram.begin(), m_histogram.end(), 0);
-    for (auto& v : m_genHistograms) {
-	std::fill(v.begin(), v.end(), 0);
-    }
     
     int retval;    
     try {
@@ -220,14 +214,16 @@ CPixieRunUtilities::ReadHistogram(int module, int channel)
  * [0, MAX_HISTOGRAM_LENGTH). This data structure is reset on begin.
  */
 int
-CPixieRunUtilities::BeginBaselineRun(int module)
+CPixieRunUtilities::BeginBaselineRun(int module, int nChannels)
 {
     std::cout << "Beginning baseline run in Mod. " << module << std::endl;
-    // Clear data vectors and set run active:  
-    for (auto& v : m_baselineHistograms) {
-	std::fill(v.begin(), v.end(), 0);
-    }  
-    std::fill(m_baseline.begin(), m_baseline.end(), 0);  
+
+    // Reset internal histogram data:
+    m_baselineHistograms.assign(
+	nChannels, std::vector<unsigned int>(MAX_HISTOGRAM_LENGTH, 0)
+	);
+    std::fill(m_baseline.begin(), m_baseline.end(), 0);
+
     m_runActive = true;
   
     return 0;

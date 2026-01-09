@@ -96,6 +96,7 @@ class ChanDSPGUI(QMainWindow):
         #
         
         self.chan_params = QTabWidget()
+        self.chan_params.setMinimumSize(600, 580)
         self.chan_dsp_factory = chan_dsp_factory
         
         self.toolbar = toolbar_factory.create("dsp")
@@ -131,7 +132,7 @@ class ChanDSPGUI(QMainWindow):
         
         self.chan_params.currentChanged.connect(self._display_new_tab)
         
-    def configure(self, dsp_manager, msps_list):
+    def configure(self, dsp_manager, msps_list, channel_map):
         """Configure channel DSP manager.
 
         Setup the toolbar, get the DSP, and create the tabbed widget. This 
@@ -145,8 +146,12 @@ class ChanDSPGUI(QMainWindow):
             operations.
         msps_list : list
             List of module ADC MSPS values.
-        """        
+        channel_map : list
+            List of channels per module.
+        """
         self.dsp_mgr = dsp_manager
+
+        nmodules = len(msps_list)
 
         # Length of msps_list == number of modules:
         
@@ -154,15 +159,15 @@ class ChanDSPGUI(QMainWindow):
             "{}.{}: Configuring GUI for {} modules using {}".format(
                 self.__class__.__name__,
                 inspect.currentframe().f_code.co_name,
-                len(msps_list),
+                nmodules,
                 self.dsp_mgr
             )
         )
 
         # Configure toolbar:
         
-        self.toolbar.copy_mod.setRange(0, len(msps_list)-1)
-        self.toolbar.copy_chan.setRange(0, 15)
+        self.toolbar.copy_mod.setRange(0, nmodules-1)
+        self.toolbar.copy_chan.setRange(0, channel_map[0])
 
         # Initialize tab indices and widget:
         
@@ -171,12 +176,13 @@ class ChanDSPGUI(QMainWindow):
         self.tab = None
         self.tab_name = ""
         
-        for i, msps in enumerate(msps_list):
+        for i, (msps, nchans) in enumerate(zip(msps_list, channel_map)):
             
             # DSP tab layout for each module in the system:
-            
+           
             self.chan_params.insertTab(
-                i, ChanDSPLayout(self.chan_dsp_factory, i), "Mod. %i" %i
+                i, ChanDSPLayout(self.chan_dsp_factory, nchans),
+                "Mod. %i" %i
             )
             
             # DSP tabs load from dataframe when switching. Just added the
@@ -193,7 +199,7 @@ class ChanDSPGUI(QMainWindow):
             # feels more Pythonic is desired.
             
             for j in range(self.chan_params.widget(i).count()):                 
-                tab = self.chan_params.widget(i).widget(j)
+                tab = self.chan_params.widget(i).widget(j).widget()
                 tab.configure(self.dsp_mgr, i)
                 
                 # Extra configuration for channel parameter widgets. Disable
@@ -222,7 +228,7 @@ class ChanDSPGUI(QMainWindow):
         _fcn = lambda: self._write_chan_dsp(self.mod_idx, self.tab)
         _running = [self.toolbar.disable]
         _finished = [
-            lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx),
+            lambda: self.tab.widget().display_dsp(self.dsp_mgr, self.mod_idx),
             self.toolbar.enable
         ]
         
@@ -249,7 +255,7 @@ class ChanDSPGUI(QMainWindow):
         _fcn = lambda: self._read_chan_dsp(self.mod_idx, self.tab)
         _running = [self.toolbar.disable]
         _finished = [
-            lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx),
+            lambda: self.tab.widget().display_dsp(self.dsp_mgr, self.mod_idx),
             self.toolbar.enable
         ]
         
@@ -268,7 +274,9 @@ class ChanDSPGUI(QMainWindow):
     def copy_mod_dsp(self):
         """Copy DSP from one module to another."""        
         self._set_current_tab_info()
-        self.tab.display_dsp(self.dsp_mgr, self.toolbar.copy_mod.value())
+        self.tab.widget().display_dsp(
+            self.dsp_mgr, self.toolbar.copy_mod.value()
+        )
             
     def copy_chan_dsp(self):
         """Copy DSP from one channel to all others on the same module."""
@@ -354,7 +362,7 @@ class ChanDSPGUI(QMainWindow):
         if m != self.mod_idx:
             self.chan_params.widget(m).setCurrentIndex(self.par_idx)
         self._set_current_tab_info()
-        self.tab.display_dsp(self.dsp_mgr, self.mod_idx)        
+        self.tab.widget().display_dsp(self.dsp_mgr, self.mod_idx)        
         self._configure_toolbar(
             self.chan_params.widget(self.mod_idx).tabText(self.par_idx)
         ) 

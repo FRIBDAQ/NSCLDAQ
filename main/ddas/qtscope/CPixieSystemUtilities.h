@@ -108,12 +108,15 @@ public:
      * @retval -1 if the system is not booted.
      * @retval -2 if the module number is invalid.
      */
-    int GetModuleMSPS(int module);
+    int GetModuleMSPS(int module);      
     /**
      * @brief Get the number of channels on the module.
      * @param module Module number (zero-indexed).
+     * @throws std::runtime_error If the module number is invalid.
+     * @retval -1 if the system is not booted.
+     * @retval -2 if the module number is invalid.
      */
-    unsigned short GetChannelCount(int module);
+    int GetChannelCount(int module);
 };
 
 /** @} */
@@ -180,6 +183,13 @@ extern "C" {
 	)
     {
 	return utils->GetModuleMSPS(mod);
+    }
+    /** @brief Wrapper to get the channel count for a single module. */
+    int CPixieSystemUtilities_GetChannelCount(
+	CPixieSystemUtilities* utils, int mod
+	)
+    {
+	return utils->GetChannelCount(mod);
     }
 
     /** @brief Wrapper for the class destructor. */

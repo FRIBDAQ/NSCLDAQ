@@ -56,7 +56,7 @@ class WidgetFactory:
         ------
         ValueError
             If the key doesn't correspond to a registered builder.
-        """        
+        """
         builder = self.builders.get(key)        
         if not builder:
             raise ValueError(key)        
