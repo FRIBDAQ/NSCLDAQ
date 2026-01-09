@@ -25,6 +25,7 @@ from run_type import RunType
 from trace_analyzer import TraceAnalyzer
 from thread_pool_manager import ThreadPoolManager
 
+##
 # @todo Would like to run the system as per custom DSP parameter formatted
 # text file output -- as currently implemented the save DSP settings do not
 # contain a full set of DSP parameters and are written using some standard
@@ -169,10 +170,11 @@ class MainWindow(QMainWindow):
         self.acq_toolbar = toolbar_factory.create("acq")
         self.mplplot = Plot(self.dsp_mgr, toolbar_factory, fit_factory)
 
-        # Set initial run state information from the manager and toolbar:
+        # Set initial state information from the manager and toolbar:
         
         self.run_active = False
         self.active_type = RunType.INACTIVE
+        self.channel_map = []
 
         # Define the main layout and add widgets:
         
@@ -202,6 +204,11 @@ class MainWindow(QMainWindow):
         self.acq_toolbar.b_analyze_trace.clicked.connect(self._analyze_trace)
         self.acq_toolbar.b_read_data.clicked.connect(self._read_data)
         self.acq_toolbar.b_run_control.clicked.connect(self._run_control)
+        self.acq_toolbar.current_mod.valueChanged.connect(
+            lambda m: self.acq_toolbar.set_channel_spinbox_range(
+                self.channel_map[m]
+            )
+        )
         
     ##
     # Public methods
@@ -244,16 +251,15 @@ class MainWindow(QMainWindow):
             
         self.adjustSize()
 
-    # @todo (ASC 10/31/23): Module MSPS information should be easily accessible
-    # to other parts of the program, most notably the trace analyzer to set the
-    # CFD values.
     def _on_boot(self):
         """Configure the system following a successful boot."""
-        if self.sys_utils.get_boot_status() == True:            
-            # Populate list of module MSPS and channel map.
-            # Length of list == number of installed modules in the crate:
-
+        if self.sys_utils.get_boot_status() == True:
             num_modules = self.sys_utils.get_num_modules()
+            
+            # Populate list of module MSPS and channel map. In principle
+            # could try and grab the whole array at once but would have
+            # to pass variable-sized array via ctype and... well, this works
+            # without too much effot:
             msps_list = []
             channel_map = []
             for i in range(num_modules):
@@ -261,22 +267,27 @@ class MainWindow(QMainWindow):
                 channel_map.append(self.sys_utils.get_channel_count(i))
                 
             # Configure DSP and managers. Performs first time load of DSP
-            # settings from the Pixie modules.
+            # settings from the Pixie modules. DSP toolbar spinbox ranges
+            # are set in DSPGUI::configure().
+
+            self.channel_map = channel_map
             
-            self.dsp_mgr.initialize_dsp(num_modules, channel_map)
-            self.chan_gui.configure(self.dsp_mgr, msps_list, channel_map)
+            self.dsp_mgr.initialize_dsp(num_modules, self.channel_map)
+            self.chan_gui.configure(
+                self.dsp_mgr, num_modules, msps_list, self.channel_map
+            )
             self.mod_gui.configure(self.dsp_mgr, num_modules)
             
-            # Repaint boot button, configure spinboxes, enable widgets:
+            # Configure toolbars, enable widgets:
             
             self.sys_toolbar.b_boot.setText("Booted")
             self.sys_toolbar.b_boot.setStyleSheet(colors.GREEN)
-            self.acq_toolbar.current_mod.setRange(0, num_modules-1)
-            nchan = self.sys_utils.get_channel_count(0) # First module
-            self.acq_toolbar.current_chan.setRange(0, nchan-1)
-            
             self.sys_toolbar.enable()
+
+            self.acq_toolbar.set_module_spinbox_range(num_modules)
+            self.acq_toolbar.set_channel_spinbox_range(self.channel_map[0])
             self.acq_toolbar.enable()            
+
             self.mplplot.toolbar.enable()
 
             print("QtScope system configuration complete!")
@@ -497,8 +508,9 @@ class MainWindow(QMainWindow):
         
         # XIA API call to begin run in the current module:
 
-        nchannels = self.sys_utils.get_channel_count(module)
-        self.run_utils.begin_run(module, nchannels, self.active_type)
+        self.run_utils.begin_run(
+            module, self.sys_utils.get_channel_count(module), self.active_type
+        )
         self.run_active = self.run_utils.get_run_active()
         self.logger.debug(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Started, run active {self.run_active}")        
             
@@ -580,19 +592,20 @@ class MainWindow(QMainWindow):
         update the main display.
         """        
         self.mplplot.figure.clear()
+        
         module = self.acq_toolbar.current_mod.value()
-        nchans = self.sys_utils.get_channel_count(module)
+        nchannels = self.sys_utils.get_channel_count(module)
         channel = self.acq_toolbar.current_chan.value()
 
         # Read from module and get data, then draw:
         
         if self.acq_toolbar.read_all.isChecked():
-            for i in range(nchans):
+            for i in range(nchannels):
                 self.run_utils.read_data(module, i, self.active_type)
                 data = self.run_utils.get_data(self.active_type)
                 # Expect either 16 or 32 channels, so 4x4 or 8x4:
                 self.mplplot.draw_run_data(
-                    data, self.active_type, nchans/4, 4, i+1
+                    data, self.active_type, int(nchannels/4), 4, i+1
                 )
             self.mplplot.update_canvas()
         else:           
@@ -607,8 +620,9 @@ class MainWindow(QMainWindow):
         update the main display. 
         """        
         self.mplplot.figure.clear()
+        
         module = self.acq_toolbar.current_mod.value()
-        nchans = self.sys_utils.get_channel_count(module)
+        nchannels = self.sys_utils.get_channel_count(module)
         channel = self.acq_toolbar.current_chan.value()
 
         # Retrieve trace from this module and channel and get its data. If
@@ -617,7 +631,7 @@ class MainWindow(QMainWindow):
         # signals until it either finds a good trace or hits a retry limit.
         
         if self.acq_toolbar.read_all.isChecked(): # Read all.
-            for i in range(nchans):             
+            for i in range(nchannels):             
                 if self.acq_toolbar.fast_acq.isChecked():
                     self.trace_utils.read_fast_trace(module, i)
                 else:
@@ -625,7 +639,9 @@ class MainWindow(QMainWindow):
 
                 data = self.trace_utils.get_trace_data()
                 # Expect either 16 or 32 channels, so 4x4 or 8x4:
-                self.mplplot.draw_trace_data(data, module, i, nchans/4, 4, i+1)
+                self.mplplot.draw_trace_data(
+                    data, module, i, int(nchannels/4), 4, i+1
+                )
                     
                 # Keep the single channel trace information:
                 
@@ -772,8 +788,4 @@ class MainWindow(QMainWindow):
                     "trace": np.empty(0),
                     "module": None,
                     "channel": None 
-                })            
-            
-    def _test(self):
-        """A dummy function which can be hooked up to signals for testing."""
-        print(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Hey I just wrote you, and this is crazy\nBut here's my purpose, you should call me, maybe")
+                })

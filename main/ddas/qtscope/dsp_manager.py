@@ -322,7 +322,7 @@ class DSPManager:
             If the parameter name is not known.
         """
         if pname in xia.CHAN_PARS:
-            for i in range(self._nchannels):
+            for i in range(self._channel_map[mod]):
                 self._read_and_set_chan_par(mod, i, pname)
         elif pname in xia.MOD_PARS:
             self._read_and_set_mod_par(mod, pname)         
@@ -379,12 +379,12 @@ class DSPManager:
             If the parameter name is not known.
         """
         if pname in xia.CHAN_PARS:
-            for i in range(self._nchannels):
+            for i in range(self._channel_map[mod]):
                 self._get_and_write_chan_par(mod, i, pname)
                 self._check_and_write_dependent_pars(mod, i, pname)
         elif pname in xia.MOD_PARS:
             self._get_and_write_mod_par(mod, pname)              
-            for i in range(self._nchannels):
+            for i in range(self._channel_map[mod]):
                 self._check_and_write_dependent_pars(mod, i, pname)
         else:
             raise ValueError(

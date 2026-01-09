@@ -44,10 +44,17 @@ class ChanDSPLayout(QTabWidget):
         # Define layout:
         
         for i, tab in enumerate(tabs):
+            # The widget is the QWidget object that actually displays the DSP:
             widget = factory.create(tab, nchannels=nchannels)
+
+            # QScrollArea to ensure 16-channel and 32-channel channel DSP fit
+            # in the same master window area, otherwise it will default
+            # to the largest widget:
             scrollable = QScrollArea()
             scrollable.setWidgetResizable(True)
             scrollable.setWidget(widget)
             scrollable.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
             scrollable.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+            # The tab is the DSP widget wrapped in the QScrollArea
             self.insertTab(i, scrollable, tab)

@@ -8,14 +8,12 @@ from PyQt5.QtWidgets import QMainWindow, QTabWidget, QVBoxLayout, QLabel
 
 from chan_dsp_layout import ChanDSPLayout
 from thread_pool_manager import ThreadPoolManager
-
-# @todo Control draw width on widgets either by fixing sizes (not ideal) or by
-# using separators which expand to fill the full window (better, probably).
+from sugar import QTabWidget
 
 class ChanDSPGUI(QMainWindow):
     """Channel DSP GUI class.
 
-    DSP GUI for configuring channel parameters. Settings are dispalyed in a 
+    DSP GUI for configuring channel parameters. Settings are displayed in a 
     nested tabbed widget where each module tab has a series of tabs assigned 
     to it corresponding to the channel DSP settings for that module.
 
@@ -32,6 +30,8 @@ class ChanDSPGUI(QMainWindow):
     dsp_mgr : DSPManager 
         Manager for internal DSP and interface for XIA API read/write 
         operations.
+    channel_map : list
+        Number of channels in each module.
     mod_idx : int 
         Currently selected module index.
     par_idx : int 
@@ -96,7 +96,7 @@ class ChanDSPGUI(QMainWindow):
         #
         
         self.chan_params = QTabWidget()
-        self.chan_params.setMinimumSize(600, 580)
+        self.chan_params.setMinimumSize(580, 580)
         self.chan_dsp_factory = chan_dsp_factory
         
         self.toolbar = toolbar_factory.create("dsp")
@@ -108,8 +108,9 @@ class ChanDSPGUI(QMainWindow):
         # the diagram and add some padding to the edges of the image because
         # its very tightly cropped:
 
-        fig = QPixmap(str(os.environ.get("DAQROOT"))
-                      + "/ddas/qtscope/figures/timing_diagram.png")
+        daqroot = str(os.environ.get("DAQROOT"))
+        fig_path = daqroot + "/ddas/qtscope/figures/timing_diagram.png"
+        fig = QPixmap(fig_path)
         self.timing_diagram = QLabel()
         self.timing_diagram.setWindowTitle("Timing diagram")
         self.timing_diagram.setPixmap(fig)
@@ -124,15 +125,21 @@ class ChanDSPGUI(QMainWindow):
         self.toolbar.b_copy_mod.clicked.connect(self.copy_mod_dsp)
         self.toolbar.b_copy_chan.clicked.connect(self.copy_chan_dsp)
         self.toolbar.b_cancel.clicked.connect(self.cancel)
+        self.toolbar.copy_mod.valueChanged.connect(
+            lambda m: self.toolbar.set_channel_spinbox_range(
+                self.channel_map[m]
+            )
+        )
 
-        # @todo This appears to load twice. Really want to reload parameters
-        # on _currently displayed_ widget when we switch _any_ widget, module
-        # or not. Try to do with a single function or in a way that doesn't
-        # load multiple times.
+        ##
+        # @todo (ASC 1/9/25): This appears to load twice. Really want to
+        # reload parameters on _currently displayed_ widget when we switch
+        # _any_ widget, module or not. Try to do with a single function or
+        # in a way that doesn't load multiple times. Resolved???
         
         self.chan_params.currentChanged.connect(self._display_new_tab)
         
-    def configure(self, dsp_manager, msps_list, channel_map):
+    def configure(self, dsp_manager, num_modules, msps_list, channel_map):
         """Configure channel DSP manager.
 
         Setup the toolbar, get the DSP, and create the tabbed widget. This 
@@ -144,30 +151,28 @@ class ChanDSPGUI(QMainWindow):
         dsp_manager : DSPManager
             Manager for internal DSP and interface for XIA API read/write 
             operations.
+        num_modules : int
+            Number of modules in the system
         msps_list : list
             List of module ADC MSPS values.
         channel_map : list
             List of channels per module.
         """
         self.dsp_mgr = dsp_manager
+        self.channel_map = channel_map
 
-        nmodules = len(msps_list)
-
-        # Length of msps_list == number of modules:
-        
         logging.getLogger("qtscope_logger").debug(
             "{}.{}: Configuring GUI for {} modules using {}".format(
                 self.__class__.__name__,
                 inspect.currentframe().f_code.co_name,
-                nmodules,
+                num_modules,
                 self.dsp_mgr
             )
         )
 
         # Configure toolbar:
-        
-        self.toolbar.copy_mod.setRange(0, nmodules-1)
-        self.toolbar.copy_chan.setRange(0, channel_map[0])
+
+
 
         # Initialize tab indices and widget:
         
@@ -176,21 +181,20 @@ class ChanDSPGUI(QMainWindow):
         self.tab = None
         self.tab_name = ""
         
-        for i, (msps, nchans) in enumerate(zip(msps_list, channel_map)):
+        for i in range(num_modules):
             
             # DSP tab layout for each module in the system:
            
             self.chan_params.insertTab(
-                i, ChanDSPLayout(self.chan_dsp_factory, nchans),
+                i, ChanDSPLayout(self.chan_dsp_factory, self.channel_map[i]),
                 "Mod. %i" %i
             )
             
             # DSP tabs load from dataframe when switching. Just added the
             # module tabbed widget so add the signal here as well:
             
-            self.chan_params.widget(i).currentChanged.connect(
-                self._display_new_tab
-            )                     
+            self.chan_params[i].currentChanged.connect(self._display_new_tab)
+            
             # Configure each DSP tab. Module number is the dictionary key:
             # @todo (ASC 3/20/23): QTabWidget does not keep a container with
             # the child widgets, so we use a C-style for loop indexed by j.
@@ -198,16 +202,16 @@ class ChanDSPGUI(QMainWindow):
             # channel dsp layouts and iterate over _those_ if something that
             # feels more Pythonic is desired.
             
-            for j in range(self.chan_params.widget(i).count()):                 
-                tab = self.chan_params.widget(i).widget(j).widget()
+            for j in range(self.chan_params[i].count()):                 
+                tab = self.chan_params[i][j].widget()
                 tab.configure(self.dsp_mgr, i)
                 
                 # Extra configuration for channel parameter widgets. Disable
                 # CFD settings for 500 MSPS modules, hook up some tab-specific
                 # signals e.g. adjust offsets:
                 
-                tab_name = self.chan_params.widget(i).tabText(j)
-                if tab_name == "CFD" and msps == 500:
+                tab_name = self.chan_params[i].tabText(j)
+                if tab_name == "CFD" and msps_list[i] == 500:
                     tab.disable_settings() 
                 if tab_name == "AnalogSignal":
                     tab.b_adjust_offsets.clicked.connect(self.adjust_offsets)
@@ -228,7 +232,7 @@ class ChanDSPGUI(QMainWindow):
         _fcn = lambda: self._write_chan_dsp(self.mod_idx, self.tab)
         _running = [self.toolbar.disable]
         _finished = [
-            lambda: self.tab.widget().display_dsp(self.dsp_mgr, self.mod_idx),
+            lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx),
             self.toolbar.enable
         ]
         
@@ -255,7 +259,7 @@ class ChanDSPGUI(QMainWindow):
         _fcn = lambda: self._read_chan_dsp(self.mod_idx, self.tab)
         _running = [self.toolbar.disable]
         _finished = [
-            lambda: self.tab.widget().display_dsp(self.dsp_mgr, self.mod_idx),
+            lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx),
             self.toolbar.enable
         ]
         
@@ -272,17 +276,20 @@ class ChanDSPGUI(QMainWindow):
         )
     
     def copy_mod_dsp(self):
-        """Copy DSP from one module to another."""        
+        """Copy DSP from one module to another."""
         self._set_current_tab_info()
-        self.tab.widget().display_dsp(
-            self.dsp_mgr, self.toolbar.copy_mod.value()
-        )
+        copy_mod = self.toolbar.copy_mod.value()
+        if self.channel_map[self.mod_idx] != self.channel_map[copy_mod]:
+            print(f": Cannot copy parameter values from module with "
+                  f"{self.channel_map[copy_mod]} channels to module with "
+                  f"{self.channel_map[self.mod_idx]} channels!")
+        else:
+            self.tab.display_dsp(self.dsp_mgr, self.toolbar.copy_mod.value())
             
     def copy_chan_dsp(self):
         """Copy DSP from one channel to all others on the same module."""
         self._set_current_tab_info()
-        cchan_idx = self.toolbar.copy_chan.value() # Copy from here.
-        self.tab.copy_chan_dsp(cchan_idx)
+        self.tab.copy_chan_dsp(self.toolbar.copy_chan.value())
 
     def adjust_offsets(self):
         """Adjust DC offsets for the selected module.
@@ -346,11 +353,11 @@ class ChanDSPGUI(QMainWindow):
         """Set current tab information: module idx, tab, tab name, tab index.
         """
         m = self.chan_params.currentIndex()
-        p = self.chan_params.widget(m).currentIndex()
+        p = self.chan_params[m].currentIndex()
         self.mod_idx = m
         self.par_idx = p
-        self.tab = self.chan_params.widget(m).widget(p)
-        self.tab_name = self.chan_params.widget(m).tabText(p)
+        self.tab = self.chan_params[m][p].widget()
+        self.tab_name = self.chan_params[m].tabText(p)
         
     def _display_new_tab(self):
         """Display channel DSP from the dataframe when switching tabs. 
@@ -360,27 +367,26 @@ class ChanDSPGUI(QMainWindow):
         """
         m = self.chan_params.currentIndex()  # Currently selected module.
         if m != self.mod_idx:
-            self.chan_params.widget(m).setCurrentIndex(self.par_idx)
+            self.chan_params[m].setCurrentIndex(self.par_idx)
         self._set_current_tab_info()
-        self.tab.widget().display_dsp(self.dsp_mgr, self.mod_idx)        
+        self.tab.display_dsp(self.dsp_mgr, self.mod_idx)        
         self._configure_toolbar(
-            self.chan_params.widget(self.mod_idx).tabText(self.par_idx)
-        ) 
+            m , self.chan_params[self.mod_idx].tabText(self.par_idx),
+        )
     
-    def _configure_toolbar(self, name):
-        """Display tab-specific buttons.
+    def _configure_toolbar(self, mod, name):
+        """Display tab-specific buttons. Set correct channel spinbox range if
+        the module tab is changed.
 
         Parameters
         ----------
+        mod : int
+            Module index.
         name : str
             DSP parameter tab name.
-        """        
-        if name == "MultCoincidence":
-            self.toolbar.copy_chan_action.setVisible(False)
-            self.toolbar.copy_chan_sb_action.setVisible(False)
-        else:
-            self.toolbar.copy_chan_action.setVisible(True)
-            self.toolbar.copy_chan_sb_action.setVisible(True)
+        """
+        self.toolbar.set_channel_spinbox_range(self.channel_map[mod])
+        self.toolbar.set_visible(name)
 
     def _write_chan_dsp(self, mod, tab):
         """Write channel parameters to the dataframe for specified module.
