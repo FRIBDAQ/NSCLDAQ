@@ -106,6 +106,24 @@ proc usage {} {
     puts stderr " ringbuffer list   ?--host=hostname?"
 
 }
+#---------------------------------------------------------------------------
+# Given a PID, use ps to get the program name:
+#
+# Parameters:
+#   pid - the process id to get info from
+# Returns:
+#   name of the program as  PS gives it.  
+# Note:
+#   If the pro cess has exited e.g. 'None' is returned.
+#
+proc processName {pid} {
+
+    set status [catch [list exec ps -p $pid -o cmd=] info]
+    if {$status} {
+        return None
+    }
+    return [lindex $info 0]   ;  # Rest is program args.
+}
 
 #--------------------------------------------------------------------------
 #
@@ -254,9 +272,12 @@ proc displayUsageData info {
 
 	foreach client $clients {
 	    set pid [lindex $client 0]
+        set program [processName $pid]
 	    set get [lindex $client 1]
 	    set get [expr $get/1024]
-	    reportData insert row end [list - - - - - - - $pid $get]
+        set consumer "$pid\n ([file tail $program])"
+    
+	    reportData insert row end [list - - - - - - - $consumer $get]
 	}
     }
     # Format the report:
