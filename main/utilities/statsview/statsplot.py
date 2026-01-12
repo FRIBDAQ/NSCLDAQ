@@ -626,6 +626,7 @@ if __name__ == "__main__":
   # RingStatisticsPlot widgets for each ringbuffer:
   
   window = QWidget()
+  window.setWindowTitle("Ring buffer history plots powered by Qt5")
   layout = QVBoxLayout()
   window.setLayout(layout)
   
