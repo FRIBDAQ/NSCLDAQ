@@ -326,6 +326,7 @@ gui.controls().runControls().logtoggle.connect(eventlogToggle)
 # Show the main window and run the app.
 
 main_window.setCentralWidget(gui)
+main_window.setWindowTitle("Managed experiment control panel -- Powered by Qt5")
 
 main_window.show()
 
