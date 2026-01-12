@@ -47,6 +47,12 @@ class WidgetFactory:
         key : str 
             Get the builder method from the dictionary corresponding to this 
             key string.
+        *args : tuple
+            Other positional arguments passed to widget builder (generally
+            not used).
+        **kwargs : tuple
+            Keyword arguments passed to widget builder (e.g. number of
+            channels for this module via `nchannels`).
 
         Returns
         -------

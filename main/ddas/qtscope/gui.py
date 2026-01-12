@@ -259,7 +259,8 @@ class MainWindow(QMainWindow):
             # Populate list of module MSPS and channel map. In principle
             # could try and grab the whole array at once but would have
             # to pass variable-sized array via ctype and... well, this works
-            # without too much effot:
+            # without too much effort:
+            
             msps_list = []
             channel_map = []
             for i in range(num_modules):
@@ -268,7 +269,7 @@ class MainWindow(QMainWindow):
                 
             # Configure DSP and managers. Performs first time load of DSP
             # settings from the Pixie modules. DSP toolbar spinbox ranges
-            # are set in DSPGUI::configure().
+            # are set in ChanDSPGUI::configure().
 
             self.channel_map = channel_map
             

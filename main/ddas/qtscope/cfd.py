@@ -16,9 +16,19 @@ class CFD(ChanDSPWidget):
     display_dsp(mgr, mod) 
         Display DSP settings from the dataframe. Overridden from base class.
     """
-    def __init__(self, *args, **kwargs):
-        """CFD class constructor."""
-        
+    
+    def __init__(self, *args, nchannels=16, **kwargs):
+        """CFD class constructor.
+
+        Parameters
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nchannels : int, default=16
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
+        """        
         # XIA API parameter names:
         
         param_names = [
@@ -37,7 +47,7 @@ class CFD(ChanDSPWidget):
         
         # Create instance of the parent class with these variables:
         
-        super().__init__(param_names, param_labels, *args, **kwargs)
+        super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
 
     def disable_settings(self):
         """Disable CFD delay and scale.

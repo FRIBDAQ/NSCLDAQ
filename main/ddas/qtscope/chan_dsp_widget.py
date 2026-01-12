@@ -48,7 +48,7 @@ class ChanDSPWidget(QWidget):
     """
     
     def __init__(
-            self, param_names=None, param_labels=None, nchannels=16, 
+            self, param_names=None, param_labels=None, nchannels=16,
             *args, **kwargs
     ):
         """ChanDSPWidget class constructor.
@@ -60,12 +60,12 @@ class ChanDSPWidget(QWidget):
         
         Parameters
         ----------
-        param_names : list 
+        param_names : list, default=None
             DSP parameter names for API read/write calls.
-        param_labels : list
+        param_labels : list, default=None
             Column labels for the GUI.
         nchannels : int, default=16
-            Number of channels per module. 
+            Number of channels per module.
         """
         super().__init__(*args, **kwargs)
         

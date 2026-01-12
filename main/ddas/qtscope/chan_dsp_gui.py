@@ -96,7 +96,7 @@ class ChanDSPGUI(QMainWindow):
         #
         
         self.chan_params = QTabWidget()
-        self.chan_params.setMinimumSize(580, 580)
+        self.chan_params.setMinimumSize(580, 620)
         self.chan_dsp_factory = chan_dsp_factory
         
         self.toolbar = toolbar_factory.create("dsp")
@@ -169,10 +169,6 @@ class ChanDSPGUI(QMainWindow):
                 self.dsp_mgr
             )
         )
-
-        # Configure toolbar:
-
-
 
         # Initialize tab indices and widget:
         

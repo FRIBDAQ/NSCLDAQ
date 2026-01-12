@@ -6,10 +6,14 @@ class TriggerFilter(ChanDSPWidget):
     def __init__(self, *args, nchannels=16, **kwargs):
         """TriggerFilter class constructor.  
 
-        Keyword arguments
+        Parameters
         -----------------
-        nchannels : int
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nchannels : int, default=16
             Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
         """        
         # XIA API parameter names:
         
@@ -29,9 +33,7 @@ class TriggerFilter(ChanDSPWidget):
         
         # Create instance of the parent class with these variables:
         
-        super().__init__(
-            param_names, param_labels, nchannels, *args, **kwargs
-        )
+        super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
         
 class TriggerFilterBuilder:
     """Builder method for factory creation."""

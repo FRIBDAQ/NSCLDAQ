@@ -30,15 +30,16 @@ class ChanDSPLayout(QTabWidget):
         tabs = [
             #"AnalogSignal",
             "TriggerFilter",
-            #"EnergyFilter",
-            #"CFD",
-            #"Tau",
-            #"Trace",
+            "EnergyFilter",
+            "CFD",
+            "Tau",
+            "Trace",
             #"CSRA",
-            #"Baseline",
+            "Baseline",
             #"MultCoincidence",
-            #"TimingControl",
-            #"Histogram"
+            "TimingControl",
+            "Histogram",
+            "QDCLen"
         ]
 
         # Define layout:
