@@ -224,7 +224,7 @@ if __name__ == '__main__':
     timer.start()
 
     # Optional: Set window properties
-    window.setWindowTitle('Minimal PyQt Window')
+    window.setWindowTitle('Ringbuffer live statistics powered by Qt5')
     window.setGeometry(100, 100, 800, 200) # x, y, width, height
 
     # 3. Show the window
