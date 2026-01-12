@@ -71,10 +71,11 @@ install-data-local:
 	$(INSTALL_DATA) @srcdir@/ChangeLog @prefix@
 	$(INSTALL_SCRIPT) daqsetup.bash @prefix@
 	$(INSTALL_DATA) @srcdir@/figures/*.png @prefix@/share/html/figures
+	$(INSTALL_DATA) @srcdir@/QT5LICENSE @prefix@
 	$(mkinstalldirs) @prefix@/share/tclhttpd
 	(cd @srcdir@/tclhttpd3.5.1; tar czf - .)|(cd @prefix@/share/tclhttpd; tar xzf -)
 	chmod a+x @prefix@/share/tclhttpd/bin/*
 
 EXTRA_DIST=dotests introduction.xml libtcl $(INTROFIGURES) cookbooks \
-	tclhttpd3.5.1 unifiedformat ddasformat
+	tclhttpd3.5.1 unifiedformat ddasformat QT5LICENSE
 

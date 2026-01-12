@@ -63,6 +63,7 @@ class MainWindow(QtGui.QMainWindow):
 def main():
     app = QtGui.QApplication(sys.argv)
     ex  = MainWindow()
+    ex.setWindowTitle("Experiment configuration editor --  Powered by Qt5")
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
