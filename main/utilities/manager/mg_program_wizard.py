@@ -552,6 +552,7 @@ db = sqlite3.connect(config)
 
 app = QApplication(sys.argv)
 wizard = ProgramWizard(db)
+wizard.setWindowTitle("Managed experiment program creation wizard -- Powered by Qt5")
 wizard.show()
 wizard.rejected.connect(abort)
 app.exec()
