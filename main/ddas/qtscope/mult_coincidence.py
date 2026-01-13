@@ -66,7 +66,7 @@ class MultCoincidence(QWidget):
         Print the multiplicity mask and channel coincidence information.
     """
     
-    def __init__(self, module=None, nchannels=16, *args, **kwargs):
+    def __init__(self, *args, nchannels=16, **kwargs):
         """Multiplicity and coincidence class constructor.
 
         Initialize the widget, set parameter validators and group configuration
@@ -74,11 +74,13 @@ class MultCoincidence(QWidget):
         channels on the selected module.
 
         Parameters
-        ----------
-        module : int
-            Module number from factory create method.
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent QWidget.
         nchannels : int, default=16
-            Number of channels per module.
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent QWidget.
         """        
         super().__init__(*args, **kwargs)
 

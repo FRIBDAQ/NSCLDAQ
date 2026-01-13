@@ -131,7 +131,7 @@ class MainWindow(QMainWindow):
         self.pool_mgr = ThreadPoolManager()
             
         # XIA API managers:
-        
+
         self.dsp_mgr = DSPManager()
         self.sys_utils = SystemUtilities()
         self.trace_utils = TraceUtilities()
@@ -154,7 +154,7 @@ class MainWindow(QMainWindow):
         }
 
         # Create managers for manipulating DSP settings:
-        
+
         self.mod_gui = ModDSPGUI(
             mod_dsp_factory, toolbar_factory, self.pool_mgr
         )
@@ -277,7 +277,7 @@ class MainWindow(QMainWindow):
             self.chan_gui.configure(
                 self.dsp_mgr, num_modules, msps_list, self.channel_map
             )
-            self.mod_gui.configure(self.dsp_mgr, num_modules)
+            self.mod_gui.configure(self.dsp_mgr, num_modules, self.channel_map)
             
             # Configure toolbars, enable widgets:
             

@@ -6,9 +6,13 @@ else:
     from converters import ba2int, int2ba, zeros
 
 from PyQt5.QtCore import Qt, QBitArray
-from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QComboBox, QGridLayout, QLabel, QButtonGroup, QRadioButton
+from PyQt5.QtWidgets import (
+    QWidget, QPushButton, QVBoxLayout, QComboBox, QLabel, QButtonGroup,
+    QRadioButton
+    )
 
 import colors
+from extensions import MyGridLayout
 import xia_constants as xia
 
 class TrigConfig0(QWidget):
@@ -28,11 +32,11 @@ class TrigConfig0(QWidget):
         Dictionary of DSP parameter GUI column titles and tooltips.
     nmodules : int 
         Number of installed modules in the crate.
-    nchannels : int 
-        Number of channels per moduele.
+    channel_map : list 
+        List of number of channels per moduele.
     grid : QWidget 
         Grid widget shown on the GUI.
-    param_grid : QGridLayout 
+    param_grid : MyGridLayout 
         Gridded layout for the CSRB GUI.
     rb_group : QButtonGroup 
         Radio button group for common crate configurations.
@@ -54,20 +58,26 @@ class TrigConfig0(QWidget):
         Setup TrigConfig0 for known trigger settings.
     """
     
-    def __init__(self, nmodules=None, nchannels=16, *args, **kwargs):
+    def __init__(self, *args, nmodules=None, channel_map=None, **kwargs):
         """
         TrigConfig0 class constructor.
 
-        Arguments:
-            nmodules (int): Number of modules installed in the system.
-            nchannels (int): Number of channels per module (optional, 
-                             default=16).
+        Parameters
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nmodules : int, default=None
+            Module count from factory create method.
+        channel_map : list, default=None
+            List of channels per module.
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
         """        
         super().__init__(*args, **kwargs)
         
         self.param_names = ["TrigConfig0"]
         self.nmodules = nmodules
-        self.nchannels = nchannels
+        self.channel_map = channel_map
         
         ##
         # Display widget
@@ -131,7 +141,7 @@ class TrigConfig0(QWidget):
         
         self.grid = QWidget()
         self.grid.setWindowTitle("TrigConfig0 settings")
-        self.param_grid = QGridLayout(self.grid)
+        self.param_grid = MyGridLayout(self.grid)
         
         for idx, param in self.param_labels.items():
             w = QLabel(param["label"])
@@ -162,7 +172,7 @@ class TrigConfig0(QWidget):
                     for option in pdict["options"]:
                         cb.insertItem(pdict["options"].index(option), option)
                 else:
-                    for ch in range(self.nchannels):
+                    for ch in range(self.channel_map[i]):
                         cb.insertItem(ch, str(ch))
                 self.param_grid.addWidget(cb, i+1, j+1)
         self.display_dsp(mgr, set_state=True)
@@ -181,7 +191,7 @@ class TrigConfig0(QWidget):
             tc = zeros(32, "little")
             for j, pdict in self.param_labels.items():                
                 # Number of bits for this TrigConfig0 setting:                
-                tc[pdict["bit_low"]:pdict["bit_high"]] = int2ba(int(self.param_grid.itemAtPosition(i+1, j+1).widget().currentIndex()), pdict["bit_high"]-pdict["bit_low"], "little")
+                tc[pdict["bit_low"]:pdict["bit_high"]] = int2ba(int(self.param_grid[i+1, j+1].currentIndex()), pdict["bit_high"]-pdict["bit_low"], "little")
 
             #print(f"Mod. {i} TrigConfig0: 0x{ba2int(tc):08x}")
             mgr.set_mod_par(i, self.param_names[0], ba2int(tc))
@@ -205,7 +215,7 @@ class TrigConfig0(QWidget):
             val = mgr.get_mod_par(i, self.param_names[0])
             tc = int2ba(int(val), 32, "little")            
             for j, pdict in self.param_labels.items():                    
-                self.param_grid.itemAtPosition(i+1, j+1).widget().setCurrentIndex(ba2int(tc[pdict["bit_low"]:pdict["bit_high"]]))
+                self.param_grid[i+1, j+1].setCurrentIndex(ba2int(tc[pdict["bit_low"]:pdict["bit_high"]]))
 
         self._disable_settings()
 
@@ -224,7 +234,7 @@ class TrigConfig0(QWidget):
         if self.rbgroup.checkedId() == 0:
             for i in range(self.nmodules):
                 for j, _ in enumerate(self.param_labels):                    
-                    self.param_grid.itemAtPosition(i+1, j+1).widget().setCurrentIndex(0)                    
+                    self.param_grid[i+1, j+1].setCurrentIndex(0)                    
             self._disable_settings()
         else:
             self.display_dsp(mgr)    
@@ -276,11 +286,11 @@ class TrigConfig0(QWidget):
         if self.rbgroup.checkedButton().text() == "Custom":
             for i in range(self.nmodules):
                 for j in self.param_labels:
-                    self.param_grid.itemAtPosition(i+1, j+1).widget().setEnabled(True)
+                    self.param_grid[i+1, j+1].setEnabled(True)
         else:
             for i in range(self.nmodules):
                 for j in self.param_labels:
-                    self.param_grid.itemAtPosition(i+1, j+1).widget().setEnabled(False)
+                    self.param_grid[i+1, j+1].setEnabled(False)
 
 class TrigConfig0Builder:
     """Builder method for factory creation."""

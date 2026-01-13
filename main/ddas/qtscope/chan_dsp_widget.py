@@ -4,10 +4,11 @@ import numpy as np
 
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import (
-    QWidget, QGridLayout, QLabel, QLineEdit, QVBoxLayout, QSizePolicy
+    QWidget, QLabel, QLineEdit, QVBoxLayout, QSizePolicy
 )
 
 import colors
+from extensions import MyGridLayout
 
 # @todo Some visual indication settings are changed but not applied.
 
@@ -30,7 +31,7 @@ class ChanDSPWidget(QWidget):
         Number of channels per module.
     has_extra_params : bool
         Extra parameter flag.
-    param_grid : QGridLayout
+    param_grid : MyGridLayout
         Grid of QWidgets to display DSP parameters.
     logger : Logger
         QtScope Logging instance.
@@ -79,7 +80,7 @@ class ChanDSPWidget(QWidget):
         # Subwidget configuration:
         
         dsp_grid = QWidget()
-        self.param_grid = QGridLayout(dsp_grid)
+        self.param_grid = MyGridLayout(dsp_grid)
 
         self.param_grid.addWidget(QLabel("Ch."), 0, 0)
         for col, label in enumerate(self.param_labels, 1):
@@ -134,7 +135,7 @@ class ChanDSPWidget(QWidget):
         for i in range(self.nchannels):
             for col, name in enumerate(self.param_names, 1):
                 val = float(
-                    self.param_grid.itemAtPosition(i+1, col).widget().text()
+                    self.param_grid[i+1, col].text()
                 )
                 mgr.set_chan_par(mod, i, name, val)
                 
@@ -156,7 +157,7 @@ class ChanDSPWidget(QWidget):
                     precision=3,
                     unique=False
                 )
-                self.param_grid.itemAtPosition(i+1, col).widget().setText(val)
+                self.param_grid[i+1, col].setText(val)
             
     def copy_chan_dsp(self, idx):
         """Copy channel parameters to all other channels on the module. 
@@ -171,5 +172,5 @@ class ChanDSPWidget(QWidget):
         """
         for i in range(self.nchannels):
             for col, p in enumerate(self.param_names, 1):
-                val = self.param_grid.itemAtPosition(idx+1, col).widget().text()
-                self.param_grid.itemAtPosition(i+1, col).widget().setText(val)
+                val = self.param_grid[idx+1, col].text()
+                self.param_grid[i+1, col].setText(val)

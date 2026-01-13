@@ -65,10 +65,8 @@ class Histogram(ChanDSPWidget):
         col1 = self.param_names.index("EMIN") + 1
         col2 = self.param_names.index("BINFACTOR") + 1        
         for row in range(1, self.nchannels+1):
-            w1 = self.param_grid.itemAtPosition(row, col1).widget()
-            w1.setValidator(QIntValidator(0, 65535))
-            w2 = self.param_grid.itemAtPosition(row, col2).widget()
-            w2.setValidator(QIntValidator(1, 16))
+            self.param_grid[row, col1].setValidator(QIntValidator(0, 65535))
+            self.param_grid[row, col2].setValidator(QIntValidator(1, 16))
         super().configure(mgr, mod)
 
     def display_dsp(self, mgr, mod):
@@ -91,7 +89,7 @@ class Histogram(ChanDSPWidget):
                     precision=1,
                     unique=False, trim="-"
                 )
-                self.param_grid.itemAtPosition(i+1, col).widget().setText(val)
+                self.param_grid[i+1, col].setText(val)
 
 class HistogramBuilder:
     """Builder method for factory creation."""

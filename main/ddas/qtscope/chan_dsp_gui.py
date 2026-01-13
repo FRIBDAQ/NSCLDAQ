@@ -4,11 +4,11 @@ import os
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCloseEvent, QPixmap
-from PyQt5.QtWidgets import QMainWindow, QTabWidget, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QLabel
 
 from chan_dsp_layout import ChanDSPLayout
 from thread_pool_manager import ThreadPoolManager
-from sugar import QTabWidget
+from extensions import MyTabWidget
 
 class ChanDSPGUI(QMainWindow):
     """Channel DSP GUI class.
@@ -21,7 +21,7 @@ class ChanDSPGUI(QMainWindow):
     ----------
     pool_mgr : ThreadPoolManager 
         Global thread pool manager.
-    chan_params : QTabWidget 
+    chan_params : MyTabWidget 
         Tabbed widget of module DSP settings.
     chan_dsp_factory : WidgetFactory 
         Factory for implemented channel DSP widgets.
@@ -95,8 +95,8 @@ class ChanDSPGUI(QMainWindow):
         # Main layout
         #
         
-        self.chan_params = QTabWidget()
-        self.chan_params.setMinimumSize(580, 620)
+        self.chan_params = MyTabWidget()
+        self.chan_params.setMinimumSize(840, 620)
         self.chan_dsp_factory = chan_dsp_factory
         
         self.toolbar = toolbar_factory.create("dsp")
@@ -192,13 +192,13 @@ class ChanDSPGUI(QMainWindow):
             self.chan_params[i].currentChanged.connect(self._display_new_tab)
             
             # Configure each DSP tab. Module number is the dictionary key:
-            # @todo (ASC 3/20/23): QTabWidget does not keep a container with
+            # @todo (ASC 3/20/23): MyTabWidget does not keep a container with
             # the child widgets, so we use a C-style for loop indexed by j.
             # Can do something like add lists of widgets to the module and
             # channel dsp layouts and iterate over _those_ if something that
             # feels more Pythonic is desired.
             
-            for j in range(self.chan_params[i].count()):                 
+            for j in range(len(self.chan_params[i])):                 
                 tab = self.chan_params[i][j].widget()
                 tab.configure(self.dsp_mgr, i)
                 

@@ -81,7 +81,7 @@ class TimingControl(ChanDSPWidget):
         """
         
         for i in range(self.nchannels):
-            self.param_grid.itemAtPosition(i+1, 4).widget().setEnabled(False)
+            self.param_grid[i+1, 4].setEnabled(False)
         super().configure(mgr, mod)
 
 class TimingControlBuilder:

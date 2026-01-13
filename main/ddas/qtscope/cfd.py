@@ -56,8 +56,8 @@ class CFD(ChanDSPWidget):
         configurable. See Pixie-16 User's Manual Sec. 3.3.8.2 for details.
         """        
         for i in range(self.nchannels):
-            self.param_grid.itemAtPosition(i+1, 1).widget().setEnabled(False)
-            self.param_grid.itemAtPosition(i+1, 2).widget().setEnabled(False)
+            self.param_grid[i+1, 1].setEnabled(False)
+            self.param_grid[i+1, 2].setEnabled(False)
         
     ##
     # Overridden class methods
@@ -78,8 +78,7 @@ class CFD(ChanDSPWidget):
         """        
         col = self.param_names.index("CFDScale") + 1        
         for row in range(1, self.nchannels+1):
-            w = self.param_grid.itemAtPosition(row, col).widget()
-            w.setValidator(QIntValidator(0, 7))            
+            w = self.param_grid[row, col].setValidator(QIntValidator(0, 7))
         super().configure(mgr, mod)
     
     def display_dsp(self, mgr, mod):
@@ -109,7 +108,7 @@ class CFD(ChanDSPWidget):
                         precision=3,
                         unique=False
                     )
-                self.param_grid.itemAtPosition(i+1, col).widget().setText(val)
+                self.param_grid[i+1, col].setText(val)
          
 class CFDBuilder:
     """Builder method for factory creation."""

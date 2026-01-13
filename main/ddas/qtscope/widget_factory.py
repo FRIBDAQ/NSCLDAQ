@@ -52,7 +52,8 @@ class WidgetFactory:
             not used).
         **kwargs : tuple
             Keyword arguments passed to widget builder (e.g. number of
-            channels for this module via `nchannels`).
+            channels for this module via `nchannels` for channel params or
+            number of modules in the system via `nmodules` for module params).
 
         Returns
         -------
@@ -65,6 +66,6 @@ class WidgetFactory:
         """
         builder = self.builders.get(key)        
         if not builder:
-            raise ValueError(key)        
+            raise ValueError(key)
         return builder(*args, **kwargs)
 

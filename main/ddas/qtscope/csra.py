@@ -9,8 +9,10 @@ else:
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QWidget, QGridLayout, QLabel, QLineEdit, QVBoxLayout, QCheckBox, QFrame
+    QWidget, QLabel, QLineEdit, QVBoxLayout, QCheckBox, QFrame
 )
+
+from extensions import MyGridLayout
 
 class CSRA(QWidget):
     """Channel CSRA grid widget.
@@ -31,7 +33,7 @@ class CSRA(QWidget):
         Number of channels per module.
     has_extra_params : bool 
         Extra parameter flag.
-    param_grid : QGridLayout 
+    param_grid : MyGridLayout 
         Grid of QWidgets to display DSP parameters.
     
     Methods
@@ -46,7 +48,7 @@ class CSRA(QWidget):
         Copy DSP from channel idx in GUI.
     """
     
-    def __init__(self, module=None, nchannels=16, *args, **kwargs):
+    def __init__(self, *args, nchannels=16, **kwargs):
         """CSRA class constructor.
         
         Initialize CSRA widget and set labels. Channel DSP is displayed on an 
@@ -54,11 +56,13 @@ class CSRA(QWidget):
         parameters are 1-indexed while the grid is 0-indexed. 
         
         Parameters
-        ----------
-        module : int
-            Module number from factory create method.
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent QWidget.
         nchannels : int, default=16
-            Number of channels per module.
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent QWidget.
         """
         super().__init__(*args, **kwargs)
         
@@ -105,7 +109,7 @@ class CSRA(QWidget):
         # label dict):
         
         grid = QWidget()
-        self.param_grid = QGridLayout(grid)
+        self.param_grid = MyGridLayout(grid)
 
         self.param_grid.addWidget(QLabel("Ch."),0,0)        
         for bit, pdict in self.param_labels.items():
@@ -175,7 +179,7 @@ class CSRA(QWidget):
         for i in range(self.nchannels):
             csra = zeros(32, "little")
             for bit in self.param_labels:
-                csra[bit] = self.param_grid.itemAtPosition(i+1, bit+1).widget().isChecked()
+                csra[bit] = self.param_grid[i+1, bit+1].isChecked()
             mgr.set_chan_par(mod, i, "CHANNEL_CSRA", float(ba2int(csra)))
             
     def display_dsp(self, mgr, mod):
@@ -195,7 +199,7 @@ class CSRA(QWidget):
             )
             
             for bit, val in zip(self.param_labels, csra):
-                self.param_grid.itemAtPosition(i+1, bit+1).widget().setChecked(val)
+                self.param_grid[i+1, bit+1].setChecked(val)
                 
     def copy_chan_dsp(self, idx):
         """Copy channel DSP parameters.
@@ -211,11 +215,11 @@ class CSRA(QWidget):
         copy_params = []       
         for col, _ in enumerate(self.param_labels, 1):
             copy_params.append(
-                self.param_grid.itemAtPosition(idx+1, col).widget().isChecked()
+                self.param_grid[idx+1, col].isChecked()
             )
         for i in range(self.nchannels):
             for col, p in enumerate(copy_params, 1):
-                self.param_grid.itemAtPosition(i+1, col).widget().setChecked(p)
+                self.param_grid[i+1, col].setChecked(p)
 
     ##
     # Private methods
@@ -232,7 +236,7 @@ class CSRA(QWidget):
             The bit state to set for all channels.
         """
         for i in range(self.nchannels):
-            self.param_grid.itemAtPosition(i+1, bit+1).widget().setChecked(state)
+            self.param_grid[i+1, bit+1].setChecked(state)
          
 class CSRABuilder:
     """Builder method for factory creation."""

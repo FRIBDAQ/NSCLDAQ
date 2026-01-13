@@ -1,7 +1,9 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QTabWidget, QWidget, QScrollArea
+from PyQt5.QtWidgets import QWidget, QScrollArea
 
-class ChanDSPLayout(QTabWidget):
+from extensions import MyTabWidget
+
+class ChanDSPLayout(MyTabWidget):
     """Layout of channel DSP parameters.
 
     Create the underlying widgets the users interact with the set and read
@@ -28,15 +30,15 @@ class ChanDSPLayout(QTabWidget):
         # when an unknown create method is called.
         
         tabs = [
-            #"AnalogSignal",
+            "AnalogSignal",
             "TriggerFilter",
             "EnergyFilter",
             "CFD",
             "Tau",
             "Trace",
-            #"CSRA",
+            "CSRA",
             "Baseline",
-            #"MultCoincidence",
+            "MultCoincidence",
             "TimingControl",
             "Histogram",
             "QDCLen"
