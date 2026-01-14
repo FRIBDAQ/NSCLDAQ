@@ -38,12 +38,13 @@ libCCUSB_la_LIBADD	= \
 
 libCCCUSB_la_SOURCES  = CCCUSB_wrap.cxx
 libCCCUSB_la_CPPFLAGS =$(COMPILATION_FLAGS)
+nodist_libCCCUSB_la_SOURECS=CCCUSB_wrap.cxx
 
 libCCCUSBReadoutList_la_SOURCES = CCCUSBReadoutList_wrap.cxx
 libCCCUSBReadoutList_la_CPPFLAGS= $(COMPILATION_FLAGS)
+nodist_libCCCUSBReadoutList_la_SOURCES = CCCUSBReadoutList_wrap.cxx
 
 BUILT_SOURCES = CCCUSB_wrap.cxx CCCUSBReadoutList_wrap.cxx
-noidst_SOURCES= $(BUILT_SOURCES)
 
 CCCUSB_wrap.cxx:	CCCUSB.h
 	@SWIG@ -c++ -debug-classes  -tcl  -namespace  -pkgversion 1.0  \
