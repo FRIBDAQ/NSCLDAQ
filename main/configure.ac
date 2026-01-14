@@ -52,10 +52,9 @@ AC_LANG_POP
 # Pandoc is needed for printed versions of the logbook:
 
 AC_CHECK_PROG(HAVE_PANDOC, [pandoc], [true], [false])
-if test "$HAVE_PANDOC" == "false"
+if test "x$HAVE_PANDOC" = "xfalse"
 then
 	AC_MSG_FAILURE([pandoc is required to produce PDF output from the logbook utilities])
-	
 fi
 
 #  CAEN Digitizer support is optional:
@@ -63,7 +62,7 @@ fi
 AC_ARG_ENABLE([caen-digitizer-support],
 	AS_HELP_STRING([--enable-caen-digitizer-support],
 		[Build support for CAEN Digitizers]),
-	[],
+	[enable_caen=$enableval],
 	[enable_caen=no])
 
 if test "x$enable_caen" = "xyes"
@@ -93,7 +92,7 @@ AM_CONDITIONAL([CAENSUPPORT], [test "x$enable_caen" = "xyes"])
 AC_ARG_ENABLE([mvlc-stack-generator],
 	AS_HELP_STRING([--enable-mvlc-stack-generator],
 		[Build support for generating MVLX fribdaq-readout config files requires --with-mvlcdir]),
-	[], 
+	[enable_mvlc=$enableval], 
 	[enable_mvlc=no])
 
 AC_ARG_WITH([mvlcdir],
@@ -145,7 +144,7 @@ AM_CONDITIONAL([MVLC_GENERATOR], [test "x$mvlc_generator" = "xtrue"])
 AC_ARG_ENABLE([caen-nextgen],
 	[AS_HELP_STRING([--enable-caen-nextgen],
 		[To enable support for CAEN Nextgen digitizers.])],	
-	[],
+	[enable_caennextgen=$enableval],
 	[enable_caennextgen="no"]) 
 
 if test "x$enable_caennextgen" = "xyes"
@@ -184,7 +183,7 @@ PKG_CHECK_MODULES([JSON], [jsoncpp])
 AC_ARG_ENABLE([docs],
     AS_HELP_STRING([--enable-docs], 
 		[Build the documentation]),
-    [],
+    [enable_docs=$enableval],
 	[enable_docs="no"])
 
 if test "x$enable_docs" == "xyes"
@@ -192,7 +191,7 @@ then
 	AC_MSG_NOTICE([Documentation enabled])
 	
 	AC_CHECK_PROG(HAVE_DOCBOOK2PDF, [docbook2pdf], [true], [false])	
-	if test "$HAVE_DOCBOOK2PDF" == "false"
+	if test "x$HAVE_DOCBOOK2PDF" = "xfalse"
 	then
 		AC_MSG_FAILURE([docbook2pdf is required to build documentation but was not found])
 	else
@@ -200,7 +199,7 @@ then
 	fi
 
 	AC_CHECK_PROG(HAVE_DOCBOOK2HTML, [docbook2html], [true], [false])	
-	if test "$HAVE_DOCBOOK2HTML" == "false"
+	if test "x$HAVE_DOCBOOK2HTML" = "xfalse"
 	then
 		AC_MSG_FAILURE([docbook2html is required to build documentation but was not found])
 	else
@@ -208,7 +207,7 @@ then
 	fi
 
 	AC_CHECK_PROG(HAVE_XMLTO, [xmlto], [true], [false])	
-	if test "$HAVE_XMLTO" == "false"
+	if test "x$HAVE_XMLTO" = "xfalse"
 	then
 		AC_MSG_FAILURE([xmlto is required to build documentation but was not found])
 	else
@@ -216,7 +215,7 @@ then
 	fi
 
 	AC_CHECK_PROG(HAVE_MANDB, mandb, [true], [false])	
-	if test "$HAVE_MANDB" == "false"
+	if test "x$HAVE_MANDB" = "xfalse"
 	then
 		AC_MSG_FAILURE([mandb is required to build documentation but was not found])
 	else
@@ -235,15 +234,15 @@ AM_CONDITIONAL([BUILD_DOCS], [test "x$enable_docs" = "xyes"])
 AC_ARG_ENABLE([ddas-docs],
     AS_HELP_STRING([--enable-ddas-docs], 
 		[Build the DDAS documentation]),
-    [], 
+    [enable_ddas_docs=$enableval], 
 	[enable_ddas_docs=no])
 
-if test "$enable_ddas_docs" = "yes"
+if test "x$enable_ddas_docs" = "xyes"
 then
 	AC_MSG_NOTICE([DDAS documentation enabled])
 
   	AC_CHECK_PROG(HAVE_DOXYGEN, [doxygen], [true], [false])
-  	if test "$HAVE_DOXYGEN" = "false"
+  	if test "x$HAVE_DOXYGEN" = "xfalse"
 	then
 		AC_MSG_FAILURE([Doxygen is required to build the DDAS documentation but was not found])
   	else
@@ -251,7 +250,7 @@ then
   	fi
 
   	AC_CHECK_PROG(HAVE_DOT, [dot], [true], [false])
-  	if test "$HAVE_DOT" = "false"
+  	if test "x$HAVE_DOT" = "xfalse"
   	then
 		AC_MSG_FAILURE([dot is required by Doxygen to build the DDAS documentation but was not found])
   	fi
@@ -383,8 +382,8 @@ AC_ARG_ENABLE([vmusb-prompt-busy],
 	[AS_HELP_STRING(
 		[--disable-vmusb-prompt-busy], 
 		[Turn off the workaround for VMUSB not giving a prompt busy])], 
-	[], 
-	[enable_prompt="yes"] )
+	[enable_prompt=$enableval], 
+	[enable_prompt=yes] )
 
 if test "x$enable_prompt" = "xyes"
 then
@@ -394,8 +393,8 @@ fi
 AC_ARG_ENABLE([vmusb-end-event],
 	AS_HELP_STRING([--disable-vmusb-end-event], 
 		[Turn off the workaround for the VMUSB not always giving an end of event pulse]),
-	[], 
-	[enable_eoe="yes"])
+	[enable_eoe=$enableval], 
+	[enable_eoe=yes])
 
 if test "x$enable_eoe" = "xyes"
 then
@@ -405,8 +404,8 @@ fi
 AC_ARG_ENABLE([vmusb-idle-busy],
 	AS_HELP_STRING([--disable-vmusb-idle-busy],
 		[Turn off the workaround for the VMUSB not asserting Busy when the run ends]),
-	[], 
-	[enable_idlebusy="yes"])
+	[enable_idlebusy=$enableval], 
+	[enable_idlebusy=yes])
 
 if test "x$enable_idlebusy" = "xyes"
 then
@@ -449,7 +448,7 @@ TCL_FLAGS="${TCL_CPPFLAGS} ${TK_CPPFLAGS}"
 TCL_LDFLAGS=${TK_LIBS}
 for tclname in ${TCL_LIBS}
 do
-    if test $tclname != "-lieee" 
+    if test "x$tclname" != "x-lieee" 
     then 
         TCL_LDFLAGS="$TCL_LDFLAGS $tclname"
     fi
@@ -501,7 +500,7 @@ AS_VAR_IF([result], [0], AC_MSG_NOTICE([Installed tclhttpd]), AC_MSG_ERROR([Fail
 AC_ARG_ENABLE([epics-tools],
 	AS_HELP_STRING([--enable-epics-tools], 
 		[Build software that requires EPICS (default no)]),
-	[], 
+	[enable_epics_tools=$enableval], 
 	[enable_epics_tools=no])
 
 if test "x$enable_epics_tools" = "xyes"
@@ -579,7 +578,7 @@ AC_SUBST(DDASFMT_LDFLAGS)
 AC_ARG_ENABLE([ddas],
 	AS_HELP_STRING([--enable-ddas], 
 		[Build the DDAS support software (default no)]),
-	[], 
+	[enable_ddas=$enableval], 
 	[enable_ddas=no])
 
 if test "x$enable_ddas" = "xyes"
@@ -629,7 +628,7 @@ then
 		[  --with-rootsys=path - Path to the ROOT installation to use. Required if DDAS support is enabled.],
 		[rootdir=$withval])
 	
-	if test x$rootdir = x 
+	if test "x$rootdir" = "x" 
 	then
 		AC_MSG_ERROR([use --with-rootsys to specify where ROOT is installed])
 	fi
@@ -664,7 +663,7 @@ AM_CONDITIONAL([BUILD_DDAS], [test "x$enable_ddas" = "xyes"])
 AC_ARG_ENABLE([sbs],
 	AS_HELP_STRING([--enable-sbs], 
 		[Build SBS software with a configured kernel source]),
-	[],
+	[enable_sbs=$enableval],
 	[enable_sbs=no])
 
 if test "x$enable_sbs" = "xyes"
@@ -673,7 +672,7 @@ then
 		[  --with-sbsdir=path - Specify path to the configured SBS kernel directory. Required if SBS support is enabled.],
 		[sbsdir=$withval])
 
-	if test x$sbsdir = x
+	if test "x$sbsdir" = "x"
 	then
 		AC_MSG_ERROR([specifiying an SBS kernel directory using --with-sbsdir is a mandatory option if SBS kernel support is enabled])
 	fi
@@ -698,7 +697,7 @@ AM_CONDITIONAL([BUILD_SBS_DRIVER], test ["x$enable_sbs" = "xyes"])
 AC_ARG_ENABLE([usb],
 	AS_HELP_STRING([--enable-usb], 
 		[Build support for CC/VM usb data taking]),
-	[],
+	[enable_usb=$enableval],
 	[enable_usb=no])
 
 #  If building is turned on we need to locate the headers and the includes.
@@ -722,7 +721,7 @@ PKG_CHECK_MODULES([SQLITE3], [sqlite3])
 
 AC_SEARCH_LIBS([zmq_init], [zmq], [result=$ac_cv_search_zmq_init], [AC_MSG_ERROR([the ZeroMQ library was not found and is now required for NSCLDAQ])])
 
-if test $result = "none required"
+if test "x$result" = "xnone required"
 then
 	ZMQ_LDFLAGS=""
 else
@@ -772,7 +771,7 @@ AC_CONFIG_LINKS([utilities/filter/run-0000-00.evt:utilities/filter/run-0000-00.e
 AC_ARG_ENABLE([rust-tools],
 	AS_HELP_STRING([--enable-rust-tools], 
 		[Build RUST tools and toys]),
-	[], 
+	[enable_rust=$enableval], 
 	[enable_rust=no]
 )
 if test "x$enable_rust" = "xyes"
