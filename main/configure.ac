@@ -43,7 +43,10 @@ AC_SUBST(GIT) # Only if we have it
 # MPI defined/usable to build MPI chunks:
 
 AC_LANG_PUSH(C++)
-AX_MPI([AM_CONDITIONAL([MPI], true) AC_DEFINE([HAVE_MPI], 1, [MPI exists])], [AM_CONDITIONAL([MPI], false)])
+AX_MPI(
+	[AM_CONDITIONAL([MPI], true) AC_DEFINE([HAVE_MPI], 1, [MPI exists])],
+	[AM_CONDITIONAL([MPI], false)]
+)
 AC_LANG_POP
 
 # Pandoc is needed for printed versions of the logbook:
@@ -58,48 +61,55 @@ fi
 #  CAEN Digitizer support is optional:
 
 AC_ARG_ENABLE([caen-digitizer-support],
-	AS_HELP_STRING([--enable-caen-digitizer-support],[Build support for CAEN Digitizers]),
-	[enable_caen=$enableval],
+	AS_HELP_STRING([--enable-caen-digitizer-support],
+		[Build support for CAEN Digitizers]),
+	[],
 	[enable_caen=no])
 
 if test "x$enable_caen" = "xyes"
 then
 	AC_ARG_WITH([caen-digitizer-libroot],
-	AS_HELP_STRING([ --with-caen-digitizer-libroot],[Root directory for CAEN Digitizer/VME/Comm library installation]),
-	[caen_root=$withval], [caen_root=""])
+		AS_HELP_STRING([ --with-caen-digitizer-libroot],
+		[Root directory for CAEN Digitizer/VME/Comm library installation]),
+		[caen_root=$withval],
+		[caen_root=""])
 
-	if test "xx$caen_root" != "xx"
+	if test "x$caen_root" != "x"
 	then
 		AC_MSG_NOTICE([Enabling CAEN digitizer DPP support])
 		CAENCCFLAGS=-I$caen_root/include
 		CAENLDFLAGS="-L$caen_root/lib -lCAENDigitizer -lCAENVME -lCAENComm -Wl,-rpath=$caen_root/lib"
-		AM_CONDITIONAL([CAENSUPPORT], [true])
 		AC_SUBST(CAENCCFLAGS)
 		AC_SUBST(CAENLDFLAGS)
 	else
-		AM_CONDITIONAL([CAENSUPPORT], [false])
-		AC_MSG_ERROR([using --enable-caen-digitizer-support also requires --with-caen-dgitizer-libroot to specifiy where the CAEN libraries/headers are])
+		AC_MSG_ERROR([using --enable-caen-digitizer-support also requires --with-caen-digitizer-libroot to specify where the CAEN libraries/headers are])
 	fi
-else
-	AM_CONDITIONAL([CAENSUPPORT], [false])
 fi
+
+AM_CONDITIONAL([CAENSUPPORT], [test "x$enable_caen" = "xyes"])
 
 #  Enabled MVLC code generation:
 
 AC_ARG_ENABLE([mvlc-stack-generator],
 	AS_HELP_STRING([--enable-mvlc-stack-generator],
-	[Build support for generating MVLX fribdaq-readout config files requires --with-mvlcdir]),
-	[enable_mvlc=$enableval], [enable_mvlc=no])
+		[Build support for generating MVLX fribdaq-readout config files requires --with-mvlcdir]),
+	[], 
+	[enable_mvlc=no])
 
 AC_ARG_WITH([mvlcdir],
-	AS_HELP_STRING([--with-mvlcdir],[Root directory of the MVLC driver installation]),
-	[mvlcdir=$withval],[mvlcdir=""]
+	AS_HELP_STRING([--with-mvlcdir],
+	[Root directory of the MVLC driver installation]),
+	[mvlcdir=$withval],
+	[mvlcdir=""]
 )
+
+mvlc_generator=false # Conditional to check
 
 if test "x$enable_mvlc" == "xyes"
 then
 	AC_MSG_NOTICE([Including mvlc usb config generation support])
-	AM_CONDITIONAL([MVLC_GENERATOR],[true])
+	mvlc_generator=true # Set the conditional
+
 	# MVLC Generator needs to have the yaml-cpp package and its flags defined:
 
 	PKG_CHECK_MODULES([YAML], [yaml-cpp])
@@ -124,33 +134,34 @@ then
 	else
 		AC_MSG_ERROR([--enable-mvlc-stack-generator also requires --with-mvlcdir])
 	fi
-	
-else	
-	AM_CONDITIONAL([MVLC_GENERATOR], [false])
 fi
 
-
-
+AM_CONDITIONAL([MVLC_GENERATOR], [test "x$mvlc_generator" = "xtrue"])
 
 #  CAEN Nextgen digitizer support is also optional  the CAEN support
 #  libraries are awful in that they require installation in
 #  specific locations:
 
 AC_ARG_ENABLE([caen-nextgen],
-	[AS_HELP_STRING([--enable-caen-nextgen], [To enable support for CAEN Nextgen digitizers.])],
-	[AC_MSG_CHECKING([Checking for CAEN FElib installed])
-	AC_CHECK_FILE([/usr/local/include/CAEN_FELib.h], 
-        [AC_MSG_RESULT([Found header])],
-        [AC_MSG_ERROR([cannot find /usr/local/CAEN_FELib.h - install CAEN Nextgen digitizer support libraries])])
-	AC_CHECK_FILES([/usr/local/lib/libCAEN_Dig2.so /usr/local/lib/libCAEN_FELib.so],
-        [AC_MSG_RESULT([Found CAEN FELib library files])],
-        [AC_MSG_ERROR([cannot find the /usr/local/lib/{libCAEN_Dig2.so, libCAEN_FELib.so files - install CAEN nextgen digitizer support libraries}]
-        )])
-	enable_caennextgen="true"], [enable_caennextgen="false"])  
+	[AS_HELP_STRING([--enable-caen-nextgen],
+		[To enable support for CAEN Nextgen digitizers.])],	
+	[],
+	[enable_caennextgen="no"]) 
 
-if test "${enable_caennextgen}" = "true"
+if test "x$enable_caennextgen" = "xyes"
 then
 	AC_MSG_NOTICE([Enabled support for CAEN Nextgen digitizers])
+
+	# Check for the files if enabled:
+
+ 	AC_MSG_CHECKING([for CAEN FElib header])
+	AC_CHECK_FILE([/usr/local/include/CAEN_FELib.h],
+		[AC_MSG_RESULT([yes])],
+		[AC_MSG_ERROR([cannot find /usr/local/include/CAEN_FELib.h - install CAEN Nextgen digitizer support libraries])])
+	AC_MSG_CHECKING([for CAEN FElib libraries])
+	AC_CHECK_FILES([/usr/local/lib/libCAEN_Dig2.so /usr/local/lib/libCAEN_FELib.so],
+	        [AC_MSG_RESULT([yes])],
+	        [AC_MSG_ERROR([cannot find the /usr/local/lib/{libCAEN_Dig2.so, libCAEN_FELib.so} files - install CAEN nextgen digitizer support libraries])])
 
 	#  Set the make file variables:
 
@@ -158,11 +169,11 @@ then
 	CAENNG_LDFLAGS="-L/usr/local/lib -lCAEN_FELib -lCAEN_Dig2"
 	AC_SUBST([CAENNG_CPPFLAGS])
 	AC_SUBST([CAENNG_LDFLAGS])
-	AM_CONDITIONAL([CAENNEXTGEN], [true])
 else 
      AC_MSG_NOTICE([Disabled support for  CAEN Nextgen digitizers])
-     AM_CONDITIONAL([CAENNEXTGEN], [false])
 fi
+
+AM_CONDITIONAL([CAENNEXTGEN], [test "x$enable_caennextgen" = "xyes"])
 
 # CAEN Nextgen digitizers, if used require jsoncpp:
 
@@ -171,8 +182,10 @@ PKG_CHECK_MODULES([JSON], [jsoncpp])
 # Documentation
 
 AC_ARG_ENABLE([docs],
-              AS_HELP_STRING([--enable-docs], [Build the documentation]),
-              [], [enable_docs=no])
+    AS_HELP_STRING([--enable-docs], 
+		[Build the documentation]),
+    [],
+	[enable_docs="no"])
 
 if test "x$enable_docs" == "xyes"
 then
@@ -209,19 +222,21 @@ then
 	else
 		AC_SUBST(MANDB,[mandb])
 	fi
-	AM_CONDITIONAL([BUILD_DOCS],[true])
 else
-	AM_CONDITIONAL([BUILD_DOCS],[false])
 	AC_MSG_NOTICE([Documentation disabled])
 fi
+
+AM_CONDITIONAL([BUILD_DOCS], [test "x$enable_docs" = "xyes"])
 
 # DDAS documentation
 # DDAS docs are written in Doxygen, so if enabled check to make sure that
 # Doxygen and dot (for graphs) are installed
 
 AC_ARG_ENABLE([ddas-docs],
-              AS_HELP_STRING([--enable-ddas-docs], [Build the DDAS documentation]),
-              [], [enable_ddas_docs=no])
+    AS_HELP_STRING([--enable-ddas-docs], 
+		[Build the DDAS documentation]),
+    [], 
+	[enable_ddas_docs=no])
 
 if test "$enable_ddas_docs" = "yes"
 then
@@ -240,12 +255,11 @@ then
   	then
 		AC_MSG_FAILURE([dot is required by Doxygen to build the DDAS documentation but was not found])
   	fi
-
-  	AM_CONDITIONAL([BUILD_DDAS_DOCS],[true])
 else
-	AM_CONDITIONAL([BUILD_DDAS_DOCS],[false])
   	AC_MSG_NOTICE([DDAS documentation disabled])
 fi
+
+AM_CONDITIONAL([BUILD_DDAS_DOCS], [test "x$enable_ddas_docs" = "xyes"])
 
 AC_CHECK_LIB([X11], [XSetWindowBackground])
 AC_CHECK_LIB([Xt], [XtManage])
@@ -369,7 +383,8 @@ AC_ARG_ENABLE([vmusb-prompt-busy],
 	[AS_HELP_STRING(
 		[--disable-vmusb-prompt-busy], 
 		[Turn off the workaround for VMUSB not giving a prompt busy])], 
-		[enable_prompt=$enableval], [enable_prompt="yes"] )
+	[], 
+	[enable_prompt="yes"] )
 
 if test "x$enable_prompt" = "xyes"
 then
@@ -378,8 +393,9 @@ fi
 
 AC_ARG_ENABLE([vmusb-end-event],
 	AS_HELP_STRING([--disable-vmusb-end-event], 
-	[Turn off the workaround for the VMUSB not always giving an end of event pulse]),
-	[enable_eoe=$enableval], [enable_eoe="yes"])
+		[Turn off the workaround for the VMUSB not always giving an end of event pulse]),
+	[], 
+	[enable_eoe="yes"])
 
 if test "x$enable_eoe" = "xyes"
 then
@@ -388,8 +404,9 @@ fi
 
 AC_ARG_ENABLE([vmusb-idle-busy],
 	AS_HELP_STRING([--disable-vmusb-idle-busy],
-	[Turn off the workaround for the VMUSB not asserting Busy when the run ends]),
-	[enable_idlebusy=$enableval], [enable_idlebusy="yes"])
+		[Turn off the workaround for the VMUSB not asserting Busy when the run ends]),
+	[], 
+	[enable_idlebusy="yes"])
 
 if test "x$enable_idlebusy" = "xyes"
 then
@@ -482,15 +499,18 @@ AS_VAR_IF([result], [0], AC_MSG_NOTICE([Installed tclhttpd]), AC_MSG_ERROR([Fail
 #
 
 AC_ARG_ENABLE([epics-tools],
-	AS_HELP_STRING([--enable-epics-tools], [Build software that requires EPICS (default no)]),
-	[], [enable_epics_tools=no])
+	AS_HELP_STRING([--enable-epics-tools], 
+		[Build software that requires EPICS (default no)]),
+	[], 
+	[enable_epics_tools=no])
 
-if test "$enable_epics_tools" = "yes"
+if test "x$enable_epics_tools" = "xyes"
 then
 	AX_EPICS
 fi
-AM_CONDITIONAL(EPICS, test "x$enable_epics_tools" = "xyes")
-AM_CONDITIONAL(BUILD_EPICS_TOOLS, test "x$enable_epics_tools" = "xyes")
+
+AM_CONDITIONAL([EPICS], [test "x$enable_epics_tools" = "xyes"])
+AM_CONDITIONAL([BUILD_EPICS_TOOLS], [test "x$enable_epics_tools" = "xyes"])
 
 #   Build the format libraries.
 #
@@ -557,17 +577,19 @@ AC_SUBST(DDASFMT_LDFLAGS)
 # ROOT_LDFLAGS     - ROOT libraries (automatically generated from ROOT config)
 
 AC_ARG_ENABLE([ddas],
-	AS_HELP_STRING([--enable-ddas], [Build the DDAS support software (default no)]),
-	[], [enable_ddas=no])
+	AS_HELP_STRING([--enable-ddas], 
+		[Build the DDAS support software (default no)]),
+	[], 
+	[enable_ddas=no])
 
-if test "$enable_ddas" = "yes"
+if test "x$enable_ddas" = "xyes"
 then
 	AC_MSG_NOTICE([The XIA-DDAS support software will be built])
 	AC_DEFINE([USING_DDAS], [1], [DDAS support enabled])
 
 	AC_ARG_WITH([xiaapidir],
-	[  --with-xiaapidir=path - Path to the XIA API installation. Required if DDAS support is enabled.],
-	[xiaapidir=$withval], [AC_MSG_ERROR([use --with-xiaapidir to point to the actual installation of the XIA API])])
+		[  --with-xiaapidir=path - Path to the XIA API installation. Required if DDAS support is enabled.],
+		[xiaapidir=$withval], [AC_MSG_ERROR([use --with-xiaapidir to point to the actual installation of the XIA API])])
 
 	# Check that the XIA API installation directory is correct by looking
 	# for the pixie16.h header there. If found, define vars; if not,
@@ -576,8 +598,8 @@ then
 	# as a supported option as of release 4.x.y and later:
 	
 	AC_CHECK_FILE([${xiaapidir}/include/pixie16/pixie16.h],
-	[PIXIE_LDFLAGS="-L${xiaapidir}/lib -lPixie16Api -lm -Wl,-rpath=${xiaapidir}/lib"],
-	[AC_MSG_ERROR([invalid XIA API installation directory ${xiaapidir}, use --with-xiaapidir to point to the correct one (this version of NSCLDAQ supports only XIA API major version 3+)])])
+		[PIXIE_LDFLAGS="-L${xiaapidir}/lib -lPixie16Api -lm -Wl,-rpath=${xiaapidir}/lib"],
+		[AC_MSG_ERROR([invalid XIA API installation directory ${xiaapidir}, use --with-xiaapidir to point to the correct one (this version of NSCLDAQ supports only XIA API major version 3+)])])
 
 	PIXIE_API_DIR=$xiaapidir
 	PIXIE_CPPFLAGS="-I${xiaapidir}/include"
@@ -592,7 +614,7 @@ then
 		[  --with-firmwaredir=path - Specify path to firmware directory tree. Required if DDAS support is enabled.],
 		[firmwaredir=$withval])
 
-	if test x$firmwaredir = x
+	if test "x$firmwaredir" = "x"
 	then
 		AC_MSG_ERROR([specifying a firmware install directory using --with-firmwaredir is a mandatory option if DDAS support is enabled])
 	fi
@@ -630,11 +652,9 @@ then
 	AC_SUBST(ROOT_LDFLAGS)
 
 	#  Now export all the variables to the Makefile:
-
-	AM_CONDITIONAL([BUILD_DDAS], [true])
-else
-	AM_CONDITIONAL([BUILD_DDAS],[false])
 fi
+
+AM_CONDITIONAL([BUILD_DDAS], [test "x$enable_ddas" = "xyes"])
 
 # The SBS software will only be built if --enable-sbs was supplied.
 # In that case, the configured kernel source path is set using
@@ -642,11 +662,12 @@ fi
 # device driver as well. The default is to _not_ build the sbs stuff.
 
 AC_ARG_ENABLE([sbs],
-	AS_HELP_STRING([--enable-sbs], [Build SBS software with a configured kernel source]),
+	AS_HELP_STRING([--enable-sbs], 
+		[Build SBS software with a configured kernel source]),
 	[],
 	[enable_sbs=no])
 
-if test "$enable_sbs" = "yes"
+if test "x$enable_sbs" = "xyes"
 then
 	AC_ARG_WITH([sbsdir],
 		[  --with-sbsdir=path - Specify path to the configured SBS kernel directory. Required if SBS support is enabled.],
@@ -664,32 +685,32 @@ then
 
 	KERNEL_SOURCE_DIR=$sbsdir
 	AC_SUBST(KERNEL_SOURCE_DIR)
-	AM_CONDITIONAL([BUILD_SBS_DRIVER], [true])
 	AC_MSG_NOTICE([Building SBS software with kernel source at: $KERNEL_SOURCE_DIR])
 	
 else
-	AM_CONDITIONAL([BUILD_SBS_DRIVER], [false])
 	AC_MSG_NOTICE([SBS software is not enabled.])
 fi
+
+AM_CONDITIONAL([BUILD_SBS_DRIVER], test ["x$enable_sbs" = "xyes"])
 
 # If --enable-usb is turned on, we build the VM/CC-usb support directories
 
 AC_ARG_ENABLE([usb],
-	AS_HELP_STRING([--enable-usb], [Build support for CC/VM usb data taking]),
+	AS_HELP_STRING([--enable-usb], 
+		[Build support for CC/VM usb data taking]),
 	[],
 	[enable_usb=no])
 
 #  If building is turned on we need to locate the headers and the includes.
 
-if test "$enable_usb" = "yes"
+if test "x$enable_usb" = "xyes"
 then
 	AX_LIBUSB
 	PKG_CHECK_MODULES([libusb_1_0], [libusb-1.0])
 	PKG_CHECK_MODULES([libusb], [libusb])
-	AM_CONDITIONAL([BUILD_USB], [true])
-else
-	AM_CONDITIONAL([BUILD_USB], [false])
 fi
+
+AM_CONDITIONAL([BUILD_USB], [test "x$enable_usb" = "xyes"])
 
 # Check for libsqlite3:
 
@@ -749,8 +770,10 @@ AC_CONFIG_LINKS([utilities/filter/run-0000-00.evt:utilities/filter/run-0000-00.e
 #  Start support for integrating rust tools:
 
 AC_ARG_ENABLE([rust-tools],
-	AS_HELP_STRING([--enable-rust-tools], [Build RUST tools and toys]),
-	[enable_rust=$enableval], [enable_rust=no]
+	AS_HELP_STRING([--enable-rust-tools], 
+		[Build RUST tools and toys]),
+	[], 
+	[enable_rust=no]
 )
 if test "x$enable_rust" = "xyes"
 then
@@ -805,6 +828,7 @@ then
 	AC_SUBST(RUST_SUBDIRS)
 
 fi
+
 AM_CONDITIONAL(BUILD_RUST_TOOLS, [test "x$enable_rust" = "xyes"])
 
 AC_MSG_NOTICE([RUST STuff done])
