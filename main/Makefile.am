@@ -78,4 +78,3 @@ install-data-local:
 
 EXTRA_DIST=dotests introduction.xml libtcl $(INTROFIGURES) cookbooks \
 	tclhttpd3.5.1 unifiedformat ddasformat QT5LICENSE
-

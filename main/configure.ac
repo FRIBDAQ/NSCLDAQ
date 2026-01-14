@@ -29,7 +29,8 @@ PKG_PROG_PKG_CONFIG
 # Set parallel build for incorps:
 
 AC_ARG_WITH([incorp-build-cores],
-	AS_HELP_STRING([--with-incorp-build-cores=N],[Number of cores used to build incorporated packages (default=1)]),
+	AS_HELP_STRING([  --with-incorp-build-cores=N],
+		[Number of cores used to build incorporated packages (default=1)]),
 	[incorp_cores=$withval],
 	[incorp_cores=1])
 AC_MSG_NOTICE([Building incorporated packages with ${incorp_cores} cores])
@@ -44,9 +45,10 @@ AC_SUBST(GIT) # Only if we have it
 
 AC_LANG_PUSH(C++)
 AX_MPI(
-	[AM_CONDITIONAL([MPI], true) AC_DEFINE([HAVE_MPI], 1, [MPI exists])],
-	[AM_CONDITIONAL([MPI], false)]
+	[have_mpi=yes AC_DEFINE([HAVE_MPI], 1, [MPI exists])],
+	[have_mpi=no]
 )
+AM_CONDITIONAL([MPI], [test "x$have_mpi" = "xyes"])
 AC_LANG_POP
 
 # Pandoc is needed for printed versions of the logbook:
@@ -69,7 +71,7 @@ if test "x$enable_caen" = "xyes"
 then
 	AC_ARG_WITH([caen-digitizer-libroot],
 		AS_HELP_STRING([ --with-caen-digitizer-libroot],
-		[Root directory for CAEN Digitizer/VME/Comm library installation]),
+			[Root directory for CAEN Digitizer/VME/Comm library installation]),
 		[caen_root=$withval],
 		[caen_root=""])
 
@@ -96,8 +98,8 @@ AC_ARG_ENABLE([mvlc-stack-generator],
 	[enable_mvlc=no])
 
 AC_ARG_WITH([mvlcdir],
-	AS_HELP_STRING([--with-mvlcdir],
-	[Root directory of the MVLC driver installation]),
+	AS_HELP_STRING([  --with-mvlcdir],
+		[Root directory of the MVLC driver installation]),
 	[mvlcdir=$withval],
 	[mvlcdir=""]
 )
@@ -587,8 +589,10 @@ then
 	AC_DEFINE([USING_DDAS], [1], [DDAS support enabled])
 
 	AC_ARG_WITH([xiaapidir],
-		[  --with-xiaapidir=path - Path to the XIA API installation. Required if DDAS support is enabled.],
-		[xiaapidir=$withval], [AC_MSG_ERROR([use --with-xiaapidir to point to the actual installation of the XIA API])])
+		AS_HELP_STRING([  --with-xiaapidir=path], 
+			[Path to the XIA API installation. Required if DDAS support is enabled.]),
+		[xiaapidir=$withval], 
+		[AC_MSG_ERROR([use --with-xiaapidir to point to the actual installation of the XIA API])])
 
 	# Check that the XIA API installation directory is correct by looking
 	# for the pixie16.h header there. If found, define vars; if not,
@@ -610,7 +614,8 @@ then
 	# Also need to know where the Pixie firmware is installed:
 
 	AC_ARG_WITH([firmwaredir],
-		[  --with-firmwaredir=path - Specify path to firmware directory tree. Required if DDAS support is enabled.],
+		AS_HELP_STRING([  --with-firmwaredir=path], 
+			[Specify path to firmware directory tree. Required if DDAS support is enabled.]),
 		[firmwaredir=$withval])
 
 	if test "x$firmwaredir" = "x"
@@ -625,7 +630,8 @@ then
 
 	rootdir=$ROOTSYS
 	AC_ARG_WITH([rootsys],
-		[  --with-rootsys=path - Path to the ROOT installation to use. Required if DDAS support is enabled.],
+		AS_HELP_STRING([  --with-rootsys=path], 
+			[Path to the ROOT installation to use. Required if DDAS support is enabled.]),
 		[rootdir=$withval])
 	
 	if test "x$rootdir" = "x" 
@@ -669,7 +675,8 @@ AC_ARG_ENABLE([sbs],
 if test "x$enable_sbs" = "xyes"
 then
 	AC_ARG_WITH([sbsdir],
-		[  --with-sbsdir=path - Specify path to the configured SBS kernel directory. Required if SBS support is enabled.],
+		AS_HELP_STRING([  --with-sbsdir=path], 
+			[Specify path to the configured SBS kernel directory. Required if SBS support is enabled.]),
 		[sbsdir=$withval])
 
 	if test "x$sbsdir" = "x"
@@ -830,7 +837,7 @@ fi
 
 AM_CONDITIONAL(BUILD_RUST_TOOLS, [test "x$enable_rust" = "xyes"])
 
-AC_MSG_NOTICE([RUST STuff done])
+AC_MSG_NOTICE([RUST stuff done])
 #---------------------------------------------------------------------------
 # Generate the following from their .in's (note that Automake takes
 # *.am -> *.in.

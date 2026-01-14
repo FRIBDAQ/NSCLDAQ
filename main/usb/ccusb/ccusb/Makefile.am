@@ -36,11 +36,11 @@ libCCUSB_la_LIBADD	= \
 
 ## SWIG wrapper generation
 
-libCCCUSB_la_SOURCES  = CCCUSB_wrap.cxx
+libCCCUSB_la_SOURCES  = 
 libCCCUSB_la_CPPFLAGS =$(COMPILATION_FLAGS)
-nodist_libCCCUSB_la_SOURECS=CCCUSB_wrap.cxx
+nodist_libCCCUSB_la_SOURCES=CCCUSB_wrap.cxx
 
-libCCCUSBReadoutList_la_SOURCES = CCCUSBReadoutList_wrap.cxx
+libCCCUSBReadoutList_la_SOURCES = 
 libCCCUSBReadoutList_la_CPPFLAGS= $(COMPILATION_FLAGS)
 nodist_libCCCUSBReadoutList_la_SOURCES = CCCUSBReadoutList_wrap.cxx
 
