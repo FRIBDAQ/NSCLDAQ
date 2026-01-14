@@ -29,7 +29,7 @@ PKG_PROG_PKG_CONFIG
 # Set parallel build for incorps:
 
 AC_ARG_WITH([incorp-build-cores],
-	AS_HELP_STRING([  --with-incorp-build-cores=N],
+	AS_HELP_STRING([--with-incorp-build-cores=N],
 		[Number of cores used to build incorporated packages (default=1)]),
 	[incorp_cores=$withval],
 	[incorp_cores=1])
@@ -70,7 +70,7 @@ AC_ARG_ENABLE([caen-digitizer-support],
 if test "x$enable_caen" = "xyes"
 then
 	AC_ARG_WITH([caen-digitizer-libroot],
-		AS_HELP_STRING([ --with-caen-digitizer-libroot],
+		AS_HELP_STRING([--with-caen-digitizer-libroot],
 			[Root directory for CAEN Digitizer/VME/Comm library installation]),
 		[caen_root=$withval],
 		[caen_root=""])
@@ -98,7 +98,7 @@ AC_ARG_ENABLE([mvlc-stack-generator],
 	[enable_mvlc=no])
 
 AC_ARG_WITH([mvlcdir],
-	AS_HELP_STRING([  --with-mvlcdir],
+	AS_HELP_STRING([--with-mvlcdir],
 		[Root directory of the MVLC driver installation]),
 	[mvlcdir=$withval],
 	[mvlcdir=""]
@@ -589,7 +589,7 @@ then
 	AC_DEFINE([USING_DDAS], [1], [DDAS support enabled])
 
 	AC_ARG_WITH([xiaapidir],
-		AS_HELP_STRING([  --with-xiaapidir=path], 
+		AS_HELP_STRING([--with-xiaapidir=path], 
 			[Path to the XIA API installation. Required if DDAS support is enabled.]),
 		[xiaapidir=$withval], 
 		[AC_MSG_ERROR([use --with-xiaapidir to point to the actual installation of the XIA API])])
@@ -614,7 +614,7 @@ then
 	# Also need to know where the Pixie firmware is installed:
 
 	AC_ARG_WITH([firmwaredir],
-		AS_HELP_STRING([  --with-firmwaredir=path], 
+		AS_HELP_STRING([--with-firmwaredir=path], 
 			[Specify path to firmware directory tree. Required if DDAS support is enabled.]),
 		[firmwaredir=$withval])
 
@@ -630,7 +630,7 @@ then
 
 	rootdir=$ROOTSYS
 	AC_ARG_WITH([rootsys],
-		AS_HELP_STRING([  --with-rootsys=path], 
+		AS_HELP_STRING([--with-rootsys=path], 
 			[Path to the ROOT installation to use. Required if DDAS support is enabled.]),
 		[rootdir=$withval])
 	
@@ -675,7 +675,7 @@ AC_ARG_ENABLE([sbs],
 if test "x$enable_sbs" = "xyes"
 then
 	AC_ARG_WITH([sbsdir],
-		AS_HELP_STRING([  --with-sbsdir=path], 
+		AS_HELP_STRING([--with-sbsdir=path], 
 			[Specify path to the configured SBS kernel directory. Required if SBS support is enabled.]),
 		[sbsdir=$withval])
 
