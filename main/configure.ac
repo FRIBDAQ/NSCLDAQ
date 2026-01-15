@@ -54,10 +54,7 @@ AC_LANG_POP
 # Pandoc is needed for printed versions of the logbook:
 
 AC_CHECK_PROG(HAVE_PANDOC, [pandoc], [true], [false])
-if test "x$HAVE_PANDOC" = "xfalse"
-then
-	AC_MSG_FAILURE([pandoc is required to produce PDF output from the logbook utilities])
-fi
+AS_IF([test "x$HAVE_PANDOC" = "xfalse"], [AC_MSG_FAILURE([pandoc is required to produce PDF output from the logbook utilities])])
 
 #  CAEN Digitizer support is optional:
 
@@ -67,26 +64,23 @@ AC_ARG_ENABLE([caen-digitizer-support],
 	[enable_caen=$enableval],
 	[enable_caen=no])
 
-if test "x$enable_caen" = "xyes"
-then
-	AC_ARG_WITH([caen-digitizer-libroot],
-		AS_HELP_STRING([--with-caen-digitizer-libroot],
-			[Root directory for CAEN Digitizer/VME/Comm library installation]),
-		[caen_root=$withval],
-		[caen_root=""])
+AC_ARG_WITH([caen-digitizer-libroot],
+	AS_HELP_STRING([--with-caen-digitizer-libroot],
+		[Root directory for CAEN Digitizer/VME/Comm library installation]),
+	[caen_root=$withval],
+	[caen_root=""])
 
-	if test "x$caen_root" != "x"
-	then
+AS_IF([test "x$enable_caen" = "xyes"], [
+	AS_IF([test "x$caen_root" != "x"], [
 		AC_MSG_NOTICE([Enabling CAEN digitizer DPP support])
 		CAENCCFLAGS=-I$caen_root/include
 		CAENLDFLAGS="-L$caen_root/lib -lCAENDigitizer -lCAENVME -lCAENComm -Wl,-rpath=$caen_root/lib"
 		AC_SUBST(CAENCCFLAGS)
 		AC_SUBST(CAENLDFLAGS)
-	else
+	], [
 		AC_MSG_ERROR([using --enable-caen-digitizer-support also requires --with-caen-digitizer-libroot to specify where the CAEN libraries/headers are])
-	fi
-fi
-
+	])
+])
 AM_CONDITIONAL([CAENSUPPORT], [test "x$enable_caen" = "xyes"])
 
 #  Enabled MVLC code generation:
@@ -106,24 +100,17 @@ AC_ARG_WITH([mvlcdir],
 
 mvlc_generator=false # Conditional to check
 
-if test "x$enable_mvlc" == "xyes"
-then
+AS_IF([test "x$enable_mvlc" = "xyes"], [
 	AC_MSG_NOTICE([Including mvlc usb config generation support])
 	mvlc_generator=true # Set the conditional
-
 	# MVLC Generator needs to have the yaml-cpp package and its flags defined:
-
 	PKG_CHECK_MODULES([YAML], [yaml-cpp])
-
 	#  We need to know where the mvlc driver is... so mvlcdir can't be blank.
-
-	if test "x$mvlcdir" != "x"
-	then
+	AS_IF([test "x$mvlcdir" != "x"], [
 		MVLC_ROOT="${mvlcdir}"
 		MVLC_INC="${mvlcdir}/include"
 		MVLC_LIB="${mvlcdir}/lib"
 		MVLC_BIN="${mvlcdir}/bin"
-
 		MVLC_CPPFLAGS="-I${MVLC_INC} -I${MVLC_INC}/mesytec-mvlc"
 		MVLC_LDFLAGS="-L${MVLC_LIB} -lmesytec-mvlc -Wl,-rpath=${MVLC_LIB}"
 		AC_SUBST(MVLC_ROOT)
@@ -132,11 +119,10 @@ then
 		AC_SUBST(MVLC_BIN)
 		AC_SUBST(MVLC_CPPFLAGS)
 		AC_SUBST(MVLC_LDFLAGS)
-	else
+	], [
 		AC_MSG_ERROR([--enable-mvlc-stack-generator also requires --with-mvlcdir])
-	fi
-fi
-
+	])
+])
 AM_CONDITIONAL([MVLC_GENERATOR], [test "x$mvlc_generator" = "xtrue"])
 
 #  CAEN Nextgen digitizer support is also optional  the CAEN support
@@ -149,31 +135,25 @@ AC_ARG_ENABLE([caen-nextgen],
 	[enable_caennextgen=$enableval],
 	[enable_caennextgen="no"]) 
 
-if test "x$enable_caennextgen" = "xyes"
-then
+AS_IF([test "x$enable_caennextgen" = "xyes"], [
 	AC_MSG_NOTICE([Enabled support for CAEN Nextgen digitizers])
-
 	# Check for the files if enabled:
-
- 	AC_MSG_CHECKING([for CAEN FElib header])
+	AC_MSG_CHECKING([for CAEN FElib header])
 	AC_CHECK_FILE([/usr/local/include/CAEN_FELib.h],
 		[AC_MSG_RESULT([yes])],
 		[AC_MSG_ERROR([cannot find /usr/local/include/CAEN_FELib.h - install CAEN Nextgen digitizer support libraries])])
 	AC_MSG_CHECKING([for CAEN FElib libraries])
 	AC_CHECK_FILES([/usr/local/lib/libCAEN_Dig2.so /usr/local/lib/libCAEN_FELib.so],
-	        [AC_MSG_RESULT([yes])],
-	        [AC_MSG_ERROR([cannot find the /usr/local/lib/{libCAEN_Dig2.so, libCAEN_FELib.so} files - install CAEN nextgen digitizer support libraries])])
-
-	#  Set the make file variables:
-
+			[AC_MSG_RESULT([yes])],
+			[AC_MSG_ERROR([cannot find the /usr/local/lib/{libCAEN_Dig2.so, libCAEN_FELib.so} files - install CAEN nextgen digitizer support libraries])])
+	#  Set the makefile variables:
 	CAENNG_CPPFLAGS="-I/usr/local/include"
 	CAENNG_LDFLAGS="-L/usr/local/lib -lCAEN_FELib -lCAEN_Dig2"
 	AC_SUBST([CAENNG_CPPFLAGS])
 	AC_SUBST([CAENNG_LDFLAGS])
-else 
-     AC_MSG_NOTICE([Disabled support for  CAEN Nextgen digitizers])
-fi
-
+], [
+	AC_MSG_NOTICE([Disabled support for  CAEN Nextgen digitizers])
+])
 AM_CONDITIONAL([CAENNEXTGEN], [test "x$enable_caennextgen" = "xyes"])
 
 # CAEN Nextgen digitizers, if used require jsoncpp:
@@ -188,45 +168,39 @@ AC_ARG_ENABLE([docs],
     [enable_docs=$enableval],
 	[enable_docs="no"])
 
-if test "x$enable_docs" == "xyes"
-then
+AS_IF([test "x$enable_docs" = "xyes"], [
 	AC_MSG_NOTICE([Documentation enabled])
-	
-	AC_CHECK_PROG(HAVE_DOCBOOK2PDF, [docbook2pdf], [true], [false])	
-	if test "x$HAVE_DOCBOOK2PDF" = "xfalse"
-	then
+
+	AC_CHECK_PROG(HAVE_DOCBOOK2PDF, [docbook2pdf], [true], [false])
+	AS_IF([test "x$HAVE_DOCBOOK2PDF" = "xfalse"], [
 		AC_MSG_FAILURE([docbook2pdf is required to build documentation but was not found])
-	else
-		AC_SUBST(DOCBOOK2PDF,[docbook2pdf])
-	fi
+	], [
+		AC_SUBST([DOCBOOK2PDF], [docbook2pdf])
+	])
 
 	AC_CHECK_PROG(HAVE_DOCBOOK2HTML, [docbook2html], [true], [false])	
-	if test "x$HAVE_DOCBOOK2HTML" = "xfalse"
-	then
+	AS_IF([test "x$HAVE_DOCBOOK2HTML" = "xfalse"], [
 		AC_MSG_FAILURE([docbook2html is required to build documentation but was not found])
-	else
-		AC_SUBST(DOCBOOK2HTML,[docbook2html])
-	fi
+	], [
+		AC_SUBST([DOCBOOK2HTML], [docbook2html])
+	])
 
 	AC_CHECK_PROG(HAVE_XMLTO, [xmlto], [true], [false])	
-	if test "x$HAVE_XMLTO" = "xfalse"
-	then
+	AS_IF([test "x$HAVE_XMLTO" = "xfalse"], [
 		AC_MSG_FAILURE([xmlto is required to build documentation but was not found])
-	else
-		AC_SUBST(DOCBOOK2MAN,["xmlto man"])
-	fi
+	], [
+		AC_SUBST([DOCBOOK2MAN], ["xmlto man"])
+	])
 
 	AC_CHECK_PROG(HAVE_MANDB, mandb, [true], [false])	
-	if test "x$HAVE_MANDB" = "xfalse"
-	then
+	AS_IF([test "x$HAVE_MANDB" = "xfalse"], [
 		AC_MSG_FAILURE([mandb is required to build documentation but was not found])
-	else
-		AC_SUBST(MANDB,[mandb])
-	fi
-else
+	], [
+		AC_SUBST([MANDB], [mandb])
+	])
+], [
 	AC_MSG_NOTICE([Documentation disabled])
-fi
-
+])
 AM_CONDITIONAL([BUILD_DOCS], [test "x$enable_docs" = "xyes"])
 
 # DDAS documentation
@@ -239,27 +213,20 @@ AC_ARG_ENABLE([ddas-docs],
     [enable_ddas_docs=$enableval], 
 	[enable_ddas_docs=no])
 
-if test "x$enable_ddas_docs" = "xyes"
-then
+AS_IF([test "x$enable_ddas_docs" = "xyes"], [
 	AC_MSG_NOTICE([DDAS documentation enabled])
-
   	AC_CHECK_PROG(HAVE_DOXYGEN, [doxygen], [true], [false])
-  	if test "x$HAVE_DOXYGEN" = "xfalse"
-	then
+	AS_IF([test "x$HAVE_DOXYGEN" = "xfalse"], [
 		AC_MSG_FAILURE([Doxygen is required to build the DDAS documentation but was not found])
-  	else
-    		AC_SUBST(DOXYGEN,[doxygen])
-  	fi
-
-  	AC_CHECK_PROG(HAVE_DOT, [dot], [true], [false])
-  	if test "x$HAVE_DOT" = "xfalse"
-  	then
+	], [
+		AC_SUBST(DOXYGEN,[doxygen])
+	])
+	AS_IF([test "x$HAVE_DOT" = "xfalse"], [
 		AC_MSG_FAILURE([dot is required by Doxygen to build the DDAS documentation but was not found])
-  	fi
-else
-  	AC_MSG_NOTICE([DDAS documentation disabled])
-fi
-
+	])
+], [
+	AC_MSG_NOTICE([DDAS documentation disabled])
+])
 AM_CONDITIONAL([BUILD_DDAS_DOCS], [test "x$enable_ddas_docs" = "xyes"])
 
 AC_CHECK_LIB([X11], [XSetWindowBackground])
@@ -299,7 +266,7 @@ AC_SUBST(NODATEWARN)
 # Check to find the size of address
 
 AC_CHECK_SIZEOF([void*])
-AS_IF([test "$ac_cv_sizeof_voidp" -eq 8], AC_DEFINE([ADDR64], 1, [Specifies that memory addresses are 64-bits ]), [])
+AS_IF([test "$ac_cv_sizeof_voidp" -eq 8], [AC_DEFINE([ADDR64], 1, [Specifies that memory addresses are 64-bits ])], [])
    
 # Checks for library functions.
 
@@ -385,39 +352,27 @@ AC_ARG_ENABLE([vmusb-prompt-busy],
 		[--disable-vmusb-prompt-busy], 
 		[Turn off the workaround for VMUSB not giving a prompt busy])], 
 	[enable_prompt=$enableval], 
-	[enable_prompt=yes] )
-
-if test "x$enable_prompt" = "xyes"
-then
-	PROMPT_BUSY="-DVMUSB_PROMPT_BUSY_WORKAROUND"
-fi
+	[enable_prompt=yes])
+AS_IF([test "x$enable_prompt" = "xyes"], [PROMPT_BUSY="-DVMUSB_PROMPT_BUSY_WORKAROUND"])
 
 AC_ARG_ENABLE([vmusb-end-event],
 	AS_HELP_STRING([--disable-vmusb-end-event], 
 		[Turn off the workaround for the VMUSB not always giving an end of event pulse]),
 	[enable_eoe=$enableval], 
 	[enable_eoe=yes])
-
-if test "x$enable_eoe" = "xyes"
-then
-	END_EVENT="-DVMUSB_END_OF_EVENT_WORKAROUND"
-fi	
+AS_IF([test "x$enable_eoe" = "xyes"], [END_EVENT="-DVMUSB_END_OF_EVENT_WORKAROUND"])
 
 AC_ARG_ENABLE([vmusb-idle-busy],
 	AS_HELP_STRING([--disable-vmusb-idle-busy],
 		[Turn off the workaround for the VMUSB not asserting Busy when the run ends]),
 	[enable_idlebusy=$enableval], 
 	[enable_idlebusy=yes])
-
-if test "x$enable_idlebusy" = "xyes"
-then
-	IDLE_BUSY="-DVMUSB_IDLE_BUSY_WORKAROUND"
-fi
+AS_IF([test "x$enable_idlebusy" = "xyes"], [IDLE_BUSY="-DVMUSB_IDLE_BUSY_WORKAROUND"])
 
 #  The VMUSB_WORKAROUNDS variable will have all of the conditionals selected:
 
 VMUSB_WORKAROUNDS="${PROMPT_BUSY} ${END_EVENT} ${IDLE_BUSY}"
-AC_SUBST(VMUSB_WORKAROUNDS)
+AC_SUBST([VMUSB_WORKAROUNDS])
 
 	
 # Ensure swig is installed: -- this is used to generate wrappers for the
@@ -427,7 +382,7 @@ AC_SUBST(VMUSB_WORKAROUNDS)
 # version I used when first successfully building the wrappers
 # (Ubuntu Lucid Lynx).
 
-AX_PKG_SWIG([1.3], [], [ AC_MSG_ERROR([swig is required to build NSCLDAQ])])
+AX_PKG_SWIG([1.3], [], [AC_MSG_ERROR([swig is required to build NSCLDAQ])])
 
 # We use gengetopt in a few places.  Ideally it's been found by now in the
 # path if not we'll need to do the withval thing... or prompt the user to
@@ -450,10 +405,7 @@ TCL_FLAGS="${TCL_CPPFLAGS} ${TK_CPPFLAGS}"
 TCL_LDFLAGS=${TK_LIBS}
 for tclname in ${TCL_LIBS}
 do
-    if test "x$tclname" != "x-lieee" 
-    then 
-        TCL_LDFLAGS="$TCL_LDFLAGS $tclname"
-    fi
+	AS_IF([test "x$tclname" != "x-lieee"], [TCL_LDFLAGS="$TCL_LDFLAGS $tclname"])
 done
 TCLSH_CMD=${TCLSH}
 
@@ -468,7 +420,7 @@ AC_MSG_NOTICE([Building and installing tcl++])
 
 (cd libtcl; ./configure --prefix=${prefix}; make clean ; make -j ${incorp_cores} all ; make install)
 result=$?
-AS_VAR_IF([result], [0], AC_MSG_NOTICE([tcl++ built and installed]), AC_MSG_ERROR([Failed to build and install tcl++ with result: ${result}]))
+AS_VAR_IF([result], [0], [AC_MSG_NOTICE([tcl++ built and installed]), AC_MSG_ERROR([Failed to build and install tcl++ with result: ${result}])])
 LIBTCLPLUS_CFLAGS="-I${prefix}/include"
 LIBEXCEPTION_LDFLAGS="-L${prefix}/lib -lException -Wl,\"-rpath=${prefix}/lib\""
 LIBTCLPLUS_LDFLAGS="-L${prefix}/lib -ltclPlus ${LIBEXCEPTION_LDFLAGS}"
@@ -483,7 +435,6 @@ AC_SUBST(LIBEXCEPTION_LDFLAGS)
 tcl_basename=tcl${TCL_VERSION}
 tcl_configdir="/usr/lib/$tcl_basename"
 tcl_incdir="/usr/include/$tcl_basename"
-
 
 (cd ${srcdir}/tclhttpd3.5.1; ./configure --prefix=${prefix}/share/tclhttpd --enable-gcc --with-tclinclude=$tcl_incdir --with-tcl=$tcl_configdir)
 result=$?
@@ -504,12 +455,7 @@ AC_ARG_ENABLE([epics-tools],
 		[Build software that requires EPICS (default no)]),
 	[enable_epics_tools=$enableval], 
 	[enable_epics_tools=no])
-
-if test "x$enable_epics_tools" = "xyes"
-then
-	AX_EPICS
-fi
-
+AS_IF([test "x$enable_epics_tools" = "xyes"], [AX_EPICS])
 AM_CONDITIONAL([EPICS], [test "x$enable_epics_tools" = "xyes"])
 AM_CONDITIONAL([BUILD_EPICS_TOOLS], [test "x$enable_epics_tools" = "xyes"])
 
@@ -583,17 +529,20 @@ AC_ARG_ENABLE([ddas],
 	[enable_ddas=$enableval], 
 	[enable_ddas=no])
 
-if test "x$enable_ddas" = "xyes"
-then
+AC_ARG_WITH([xiaapidir],
+	AS_HELP_STRING([--with-xiaapidir=path], 
+		[Path to the XIA API installation. Required if DDAS support is enabled.]),
+	[xiaapidir=$withval])
+
+AC_ARG_WITH([firmwaredir],
+	AS_HELP_STRING([--with-firmwaredir=path], 
+		[Specify path to firmware directory tree. Required if DDAS support is enabled.]),
+	[firmwaredir=$withval])
+
+AS_IF(["x$enable_ddas" = "xyes"], [
 	AC_MSG_NOTICE([The XIA-DDAS support software will be built])
 	AC_DEFINE([USING_DDAS], [1], [DDAS support enabled])
-
-	AC_ARG_WITH([xiaapidir],
-		AS_HELP_STRING([--with-xiaapidir=path], 
-			[Path to the XIA API installation. Required if DDAS support is enabled.]),
-		[xiaapidir=$withval], 
-		[AC_MSG_ERROR([use --with-xiaapidir to point to the actual installation of the XIA API])])
-
+	
 	# Check that the XIA API installation directory is correct by looking
 	# for the pixie16.h header there. If found, define vars; if not,
 	# print an error message and exit. Note that this version supports
@@ -611,19 +560,10 @@ then
 	AC_SUBST(PIXIE_CPPFLAGS)
 	AC_SUBST(PIXIE_LDFLAGS)
 
-	# Also need to know where the Pixie firmware is installed:
-
-	AC_ARG_WITH([firmwaredir],
-		AS_HELP_STRING([--with-firmwaredir=path], 
-			[Specify path to firmware directory tree. Required if DDAS support is enabled.]),
-		[firmwaredir=$withval])
-
-	if test "x$firmwaredir" = "x"
-	then
+	AS_IF([test "x$firmwaredir" = "x"], [
 		AC_MSG_ERROR([specifying a firmware install directory using --with-firmwaredir is a mandatory option if DDAS support is enabled])
-	fi
-
-	AC_SUBST(firmwaredir)
+	])
+	AC_SUBST([firmwaredir])
 
 	# Check for ROOT. Use rootcling to add ROOT flags and linker options
 	# to the Makefile macro set:
@@ -633,16 +573,8 @@ then
 		AS_HELP_STRING([--with-rootsys=path], 
 			[Path to the ROOT installation to use. Required if DDAS support is enabled.]),
 		[rootdir=$withval])
-	
-	if test "x$rootdir" = "x" 
-	then
-		AC_MSG_ERROR([use --with-rootsys to specify where ROOT is installed])
-	fi
-	
-	if test ! -d $rootdir
-	then
-		AC_MSG_ERROR([the specified ROOTSYS directory $rootdir does not exist!])
-	fi
+	AS_IF([test "x$rootdir" = "x"], [AC_MSG_ERROR([use --with-rootsys to specify where ROOT is installed])])
+	AS_IF([test ! -d $rootdir], [AC_MSG_ERROR([the specified ROOTSYS directory $rootdir does not exist!])])	
 
 	ROOTSYS=$rootdir
 	ROOT_CFLAGS=`$rootdir/bin/root-config --cflags`
@@ -655,10 +587,7 @@ then
 	AC_SUBST(ROOTSYS)
 	AC_SUBST(ROOT_CFLAGS)
 	AC_SUBST(ROOT_LDFLAGS)
-
-	#  Now export all the variables to the Makefile:
-fi
-
+])
 AM_CONDITIONAL([BUILD_DDAS], [test "x$enable_ddas" = "xyes"])
 
 # The SBS software will only be built if --enable-sbs was supplied.
@@ -672,31 +601,24 @@ AC_ARG_ENABLE([sbs],
 	[enable_sbs=$enableval],
 	[enable_sbs=no])
 
-if test "x$enable_sbs" = "xyes"
-then
-	AC_ARG_WITH([sbsdir],
-		AS_HELP_STRING([--with-sbsdir=path], 
-			[Specify path to the configured SBS kernel directory. Required if SBS support is enabled.]),
-		[sbsdir=$withval])
+AC_ARG_WITH([sbsdir],
+	AS_HELP_STRING([--with-sbsdir=path], 
+		[Specify path to the configured SBS kernel directory. Required if SBS support is enabled.]),
+	[sbsdir=$withval])
 
-	if test "x$sbsdir" = "x"
-	then
+AS_IF([test "x$enable_sbs" = "xyes"], [
+	AS_IF([test "x$sbsdir" = "x"], [
 		AC_MSG_ERROR([specifiying an SBS kernel directory using --with-sbsdir is a mandatory option if SBS kernel support is enabled])
-	fi
-	
-	if test ! -d $sbsdir
-	then
+	])
+	AS_IF([test ! -d $sbsdir], [
 		AC_MSG_ERROR([the specified SBS directory $sbsdir does not exist!])
-	fi
-
+	])
 	KERNEL_SOURCE_DIR=$sbsdir
 	AC_SUBST(KERNEL_SOURCE_DIR)
 	AC_MSG_NOTICE([Building SBS software with kernel source at: $KERNEL_SOURCE_DIR])
-	
-else
+], [
 	AC_MSG_NOTICE([SBS software is not enabled.])
-fi
-
+])
 AM_CONDITIONAL([BUILD_SBS_DRIVER], test ["x$enable_sbs" = "xyes"])
 
 # If --enable-usb is turned on, we build the VM/CC-usb support directories
@@ -709,13 +631,11 @@ AC_ARG_ENABLE([usb],
 
 #  If building is turned on we need to locate the headers and the includes.
 
-if test "x$enable_usb" = "xyes"
-then
+AS_IF([test "x$enable_usb" = "xyes"], [
 	AX_LIBUSB
 	PKG_CHECK_MODULES([libusb_1_0], [libusb-1.0])
 	PKG_CHECK_MODULES([libusb], [libusb])
-fi
-
+])
 AM_CONDITIONAL([BUILD_USB], [test "x$enable_usb" = "xyes"])
 
 # Check for libsqlite3:
@@ -728,13 +648,7 @@ PKG_CHECK_MODULES([SQLITE3], [sqlite3])
 
 AC_SEARCH_LIBS([zmq_init], [zmq], [result=$ac_cv_search_zmq_init], [AC_MSG_ERROR([the ZeroMQ library was not found and is now required for NSCLDAQ])])
 
-if test "x$result" = "xnone required"
-then
-	ZMQ_LDFLAGS=""
-else
-	ZMQ_LDFLAGS=$result
-fi
-
+if ([test "x$result" = "xnone required"], [ZMQ_LDFLAGS=""], [ZMQ_LDFLAGS=$result])
 AC_SUBST(ZMQ_LDFLAGS)
 
 ##
@@ -781,48 +695,44 @@ AC_ARG_ENABLE([rust-tools],
 	[enable_rust=$enableval], 
 	[enable_rust=no]
 )
-if test "x$enable_rust" = "xyes"
-then
-	# Figure out where the rust toolchains are. For FRIB containers,
-	# it's in /usr/cargo/bin  for user installs it may be in 
-	# ~/.cargo/bin
-	#  Those are the things we support -- if neither exists,
-	#  the usr needs to install RUST; we won't do it for them.
 
+AS_IF([test "x$enable_rust" = "xyes"], [
+	# Figure out where the rust toolchains are. For FRIB containers,
+	# it's in /usr/cargo/bin for user installs it may be in ~/.cargo/bin
+	# Those are the things we support -- if neither exists,
+	# the usr needs to install RUST; we won't do it for them.
 	AC_MSG_CHECKING([Checking for Rust toolchain])
-	if test -x /usr/cargo/bin/cargo
-	then
+	AS_IF([test -x /usr/cargo/bin/cargo], [
 		RUST_TOOL_DIR=/usr/cargo/bin
 		BUILD_RUST_TOOLS=1
-	else 
-		if test -x ~/.cargo/bin/cargo
-		then
-			BUILD_RUST_TOOLS=1
+	], [
+		AS_IF([test -x ~/.cargo/bin/cargo], [
 			RUST_TOOL_DIR=~/.cargo/bin
-		else
+			BUILD_RUST_TOOLS=1
+		], [
 			AC_MSG_ERROR([You need to install the rust toolchain to --enable-rust-tools see https://man7.org/linux/man-pages/man1/test.1.html])
-		fi
-	fi
+		])
+	])
 	RUST_CARGO="${RUST_TOOL_DIR}/cargo"
-	
-	#  Select the default tool chain to be stable:
-	
-	${RUST_TOOL_DIR}/rustup default stable
 
-	AC_MSG_NOTICE([The default rust toolchain has been set to stable])
-	
+	#  Select the default tool chain to be stable:	
+
+	${RUST_TOOL_DIR}/rustup default stable
+	AC_MSG_NOTICE([The default rust toolchain has been set to stable])	
 	AC_SUBST(RUST_TOOL_DIR)
 	AC_SUBST(RUST_CARGO)
 
-	#Incorporate the rust directory tree into builddir:
+	# Incorporate the rust directory tree into builddir:
 	# The next symbol is a list of the 
 	# Git repositories to clone into rust_tools:
+
 	rust_repos="https://github.com/FRIBDAQ/rust-portman"
 	rust_repos="${rust_repos} https://github.com/FRIBDAQ/rust-ringtostdout"
 	rust_repos="${rust_repos} https://github.com/FRIBDAQ/rust-ringmaster"
 	RUST_SUBDIRS=""
 
 	mkdir -p rust_tools
+
 	for repo in ${rust_repos}
 	do 
 		AC_MSG_NOTICE([Cloning rust tool from ${repo}])
@@ -832,12 +742,10 @@ then
 		RUST_SUBDIRS="${RUST_SUBDIRS} ${subdir}"
 	done
 	AC_SUBST(RUST_SUBDIRS)
-
-fi
-
+])
 AM_CONDITIONAL(BUILD_RUST_TOOLS, [test "x$enable_rust" = "xyes"])
-
 AC_MSG_NOTICE([RUST stuff done])
+
 #---------------------------------------------------------------------------
 # Generate the following from their .in's (note that Automake takes
 # *.am -> *.in.
@@ -848,10 +756,10 @@ AC_MSG_NOTICE([RUST stuff done])
 
 AC_CONFIG_FILES([
 	Makefile
-		nscldaq
-		daqsetup.bash
-		base/pugi/Makefile
-		base/iniparser/Makefile
+	nscldaq
+	daqsetup.bash
+	base/pugi/Makefile
+	base/iniparser/Makefile
     base/Makefile
     base/factories/Makefile
     base/os/Makefile
