@@ -114,8 +114,8 @@ CS800TriggerNew::Initialize(CVMUSB& controller) {
 
     // reset(?)  the module... hopefully does not clear the run number register.
     
-    m_pAPI->swClear(controller);                  
-
+    m_pAPI->swClear(controller);   
+    
     // Setting the run number here results in some nasty
     // circular build dependencies.  Therefore,
     // we'll do a slow controls module for it.
@@ -129,6 +129,8 @@ CS800TriggerNew::Initialize(CVMUSB& controller) {
     m_pAPI->resetBusy(controller);
 
     // Now data taking can start.
+
+    m_pAPI->startRun(controller);
 }
 
 /**
@@ -144,10 +146,20 @@ CS800TriggerNew::addReadoutList(CVMUSBReadoutList& list) {
     m_pAPI->addReadTimestamp(list);
     m_pAPI->addReadTriggerMask(list);
     
-    // Do we need to clear the busy? If so, that has to happen after the last read....
+
+
+    m_pAPI->addResetBusy(list);
 }
 
-
+/**
+ * onEndRun
+ *   Do end of run operations.  Mainly, stop the run and reset the busy.
+ * 
+ * @param controller - controller through which to do the operations.   
+ */
+void CS800TriggerNew::onEndRun(CVMUSB& controller) {
+    m_pAPI->stopRun(controller);
+}
 
 // For the MVLC - the device command:
 
