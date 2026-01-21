@@ -203,7 +203,7 @@ AS_IF([test "x$enable_docs" = "xyes"], [
 	])
 
 	AC_CHECK_PROG(HAVE_MANDB, mandb, [yes], [no])	
-	AS_IF([test "x$HAVE_MANDB" = "xni"], [
+	AS_IF([test "x$HAVE_MANDB" = "xno"], [
 		AC_MSG_FAILURE([mandb is required to build documentation but was not found])
 	], [
 		AC_SUBST(MANDB, [mandb])
@@ -524,7 +524,6 @@ AC_MSG_NOTICE([Building DDAS format])
 (cd ddasformat/build; cmake .. -DCMAKE_INSTALL_PREFIX=${prefix}/ddasformat; make clean; make -j ${incorp_cores} all ; make install)
 result=$?
 AS_IF([test $result -eq 0], [AC_MSG_NOTICE([Built and installed ddasformat prerequisite])], [AC_MSG_ERROR([Failed to build and install ddasformat with result: $result])])
-# AS_VAR_IF([result], [0], [AC_MSG_NOTICE([Built and installed ddasformat prerequisite])], [AC_MSG_ERROR([Failed to build and install ddasformat with result: $result])])
 DDASFMT_CPPFLAGS="-I${prefix}/ddasformat/include"
 DDASFMT_LDFLAGS="-L${prefix}/ddasformat/lib -lDDASFormat -Wl,-rpath=${prefix}/ddasformat/lib"
 AC_SUBST(DDASFMT_CPPFLAGS)
