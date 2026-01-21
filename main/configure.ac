@@ -425,13 +425,15 @@ TCLSH_CMD=${TCLSH}
 
 AC_CHECK_FILE([${srcdir}/libtcl/configure.ac],
 	[AC_MSG_NOTICE([Using previously incorprated tcl++ from the source tree at ${srcdir}/libtcl])
-		cp -r ${srcdir}/libtcl .],
+		cp -r ${srcdir}/libtcl . ; chmod -R u+w libtcl],
 	[AC_MSG_NOTICE([Incorporating tcl++ for you])
 		${srcdir}/tcl++incorp])
 
+rm -rf libtcl/build
+AS_MKDIR_P([libtcl/build])
 AC_MSG_NOTICE([Building and installing tcl++])
 
-(cd libtcl; ./configure --prefix=${prefix}; make clean ; make -j ${incorp_cores} all ; make install)
+(cd libtcl/build; ../configure --prefix=${prefix}; make clean ; make -j ${incorp_cores} all ; make install)
 result=$?
 AS_VAR_IF([result], [0], [AC_MSG_NOTICE([tcl++ built and installed])], [AC_MSG_ERROR([Failed to build and install tcl++ with result: ${result}])])
 LIBTCLPLUS_CFLAGS="-I${prefix}/include"
@@ -449,10 +451,18 @@ tcl_basename=tcl${TCL_VERSION}
 tcl_configdir="/usr/lib/$tcl_basename"
 tcl_incdir="/usr/include/$tcl_basename"
 
-(cd ${srcdir}/tclhttpd3.5.1; ./configure --prefix=${prefix}/share/tclhttpd --enable-gcc --with-tclinclude=$tcl_incdir --with-tcl=$tcl_configdir)
+AC_CHECK_FILE([${srcdir}/tclhttpd3.5.1/configure],
+	[AC_MSG_NOTICE([Using previously incorprated tclhttp from the source tree at ${srcdir}/tclhttpd3.5.1])
+		cp -r ${srcdir}/tclhttpd3.5.1 . ; chmod -R u+w tclhttpd3.5.1],
+	[AC_MSG_ERROR([Cannot find tclhttp in source tree!])])
+
+rm -rf tclhttpd3.5.1/build
+AS_MKDIR_P([tclhttpd3.5.1/build])
+
+(cd tclhttpd3.5.1/build; ../configure --prefix=${prefix}/share/tclhttpd --enable-gcc --with-tclinclude=$tcl_incdir --with-tcl=$tcl_configdir)
 result=$?
 AS_VAR_IF([result], [0], [AC_MSG_NOTICE([Configured tclhttpd])], [AC_MSG_ERROR([Failed to configure tclhttp prior to installation])])
-(cd ${srcdir}/tclhttpd3.5.1; make clean ; make -j ${incorp_cores} all ; make install)
+(cd tclhttpd3.5.1/build; make clean ; make -j ${incorp_cores} all ; make install)
 result=$?
 AS_VAR_IF([result], [0], [AC_MSG_NOTICE([Installed tclhttpd])], [AC_MSG_ERROR([Failed to install tclhttpd])])
 
@@ -489,7 +499,7 @@ AS_VAR_IF([have_cmake], [yes], [], AC_MSG_ERROR([cmake must be in the path to bu
 
 AC_CHECK_FILE([${srcdir}/unifiedformat/CMakeLists.txt],
 	[AC_MSG_NOTICE([Using previously incorporated unified format library at ${srcdir}/unifiedformat])
-		cp -r ${srcdir}/unifiedformat .],
+		cp -r ${srcdir}/unifiedformat . ; chmod -R u+w unifiedformat],
 	[AC_MSG_NOTICE([Incorporating unified format for you])
 		${srcdir}/unifiedfmt-incorp.sh])
 
@@ -513,7 +523,7 @@ AC_SUBST(UFMT_LDFLAGS)
 	
 AC_CHECK_FILE([${srcdir}/ddasformat/CMakeLists.txt],
 	[AC_MSG_NOTICE([Using previously incorprated ddasformat from the source tree at ${srcdir}/ddasformat])
-		cp -r ${srcdir}/ddasformat .],
+		cp -r ${srcdir}/ddasformat . ; chmod -R u+w ddasformat],
 	[AC_MSG_NOTICE([Incorporating ddasformat for you])
 		${srcdir}/ddasfmt-incorp.sh])
 
@@ -523,7 +533,7 @@ AC_MSG_NOTICE([Building DDAS format])
 
 (cd ddasformat/build; cmake .. -DCMAKE_INSTALL_PREFIX=${prefix}/ddasformat; make clean; make -j ${incorp_cores} all ; make install)
 result=$?
-AS_IF([test $result -eq 0], [AC_MSG_NOTICE([Built and installed ddasformat prerequisite])], [AC_MSG_ERROR([Failed to build and install ddasformat with result: $result])])
+AS_VAR_IF([result], [0], [AC_MSG_NOTICE([Built and installed DDAS format pre-requisite])], [AC_MSG_ERROR([Failed to build and install DDAS format library with result: ${result}])])
 DDASFMT_CPPFLAGS="-I${prefix}/ddasformat/include"
 DDASFMT_LDFLAGS="-L${prefix}/ddasformat/lib -lDDASFormat -Wl,-rpath=${prefix}/ddasformat/lib"
 AC_SUBST(DDASFMT_CPPFLAGS)
