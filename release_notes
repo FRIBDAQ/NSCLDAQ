@@ -38,5 +38,7 @@ by COutputThread (nummap_chunk() issue fixed)
 * Issue #400 - Only build the test binaries on make check rather than make all as before  
 * Added QT5LICENSE to top level of tree.
 * Issue #418 - add the process command to ringbuffer status
+* Use unified format 2.2-009 which fixes an error in ring item copy constructino that
+  crashed bufdump on unknown item types.
 == 12.2-dev ==
 
