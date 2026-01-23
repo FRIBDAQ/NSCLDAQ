@@ -74,6 +74,9 @@ public:
 
     void resetBusy(CVMUSB& controller);
     void addResetBusy(CVMUSBReadoutList& list);
+
+    void armTrigger(CVMUSB& controller);
+    void addArmTrigger(CVMUSBReadoutList& list);
     
     // Things never done at event readout-time.
     
@@ -98,6 +101,7 @@ public:
     std::uint32_t runNumberHighBits() const;
     std::uint32_t externalClearEnableRegister() const;
     std::uint32_t goRegister() const;
+    std::uint32_t armTriggerRegister() const;
 private:
     std::uint32_t getRegister(const char* name) const;
     std::uint32_t getMMCComponent(const char* name) const;

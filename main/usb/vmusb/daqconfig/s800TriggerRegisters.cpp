@@ -194,6 +194,28 @@ S800TriggerRegisters::addResetBusy(CVMUSBReadoutList& list) {
     list.addWrite32(busyResetRegister(), amod, 1);
     list.addWrite32(busyResetRegister(), amod, 0);
 }
+/**
+ *  Arm the trigger register:
+ * 
+ */
+void
+S800TriggerRegisters::armTrigger(CVMUSB& controller) {
+    if (controller.vmeWrite32(armTriggerRegister(), amod, 1)) {
+        throw std::runtime_error("Failed to write a 1 to the trigger arm register.");
+    }
+    if (controller.vmeWrite32(armTriggerRegister(), amod, 0)) {
+        throw std::runtime_error("Failed to write a 0 to the trigger arm register");
+    }
+}
+/**
+ * Add instructions to the stack to re-arm the trigger
+ */
+void
+S800TriggerRegisters::addArmTrigger(CVMUSBReadoutList& list) {
+    list.addWrite32(armTriggerRegister(), amod, 1);
+    list.addWrite32(armTriggerRegister(), amod, 0);
+}
+
 
 /**
  * enableExternalClear
@@ -364,6 +386,16 @@ S800TriggerRegisters::externalClearEnableRegister() const {
  */
 std::uint32_t S800TriggerRegisters::goRegister() const {
     return getMMCComponent("TS_CFG_GO");
+}
+/**
+ * return the register that arms the trigger:
+ * 
+ * @return uint32_t - address of the re-arm trigger registser
+ *     which must be pulsed to re-arm.
+ */
+std::uint32_t
+S800TriggerRegisters::armTriggerRegister() const {
+    return getRegister("R_CLEAR");
 }
 ///
 /**

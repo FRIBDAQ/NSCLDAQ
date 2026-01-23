@@ -127,6 +127,7 @@ CS800TriggerNew::Initialize(CVMUSB& controller) {
     // Clear the busy:
 
     m_pAPI->resetBusy(controller);
+    m_pAPI->armTrigger(controller);
 
     // Now data taking can start.
 
@@ -148,7 +149,10 @@ CS800TriggerNew::addReadoutList(CVMUSBReadoutList& list) {
     
 
 
-    m_pAPI->addResetBusy(list);
+    if (!m_pConfiguration->getBoolParameter("-enable-extclear")) {
+        m_pAPI->addResetBusy(list);
+    }
+    m_pAPI->addArmTrigger(list);
 }
 
 /**
