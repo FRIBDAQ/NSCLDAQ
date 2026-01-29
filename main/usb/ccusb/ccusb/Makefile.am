@@ -49,13 +49,13 @@ BUILT_SOURCES = CCCUSB_wrap.cxx CCCUSBReadoutList_wrap.cxx
 CCCUSB_wrap.cxx:	CCCUSB.h
 	@SWIG@ -c++ -debug-classes  -tcl  -namespace  -pkgversion 1.0  \
 	-outdir @builddir@ \
-	-outfile @builddir@/$@ \
+	-o @builddir@/$@ \
 	@srcdir@/CCCUSB.i
 
 CCCUSBReadoutList_wrap.cxx:  CCCUSBReadoutList.h
 	@SWIG@ -c++ -debug-classes  -tcl  -namespace -pkgversion 1.0  \
 	-outdir @builddir@ \
-	-outfile @builddir@/$@ \
+	-o @builddir@/$@ \
 	@srcdir@/CCCUSBReadoutList.i
 
 

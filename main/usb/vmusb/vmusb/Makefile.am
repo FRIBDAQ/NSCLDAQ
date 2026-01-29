@@ -137,7 +137,7 @@ libCVMUSB_la_CPPFLAGS=$(COMPILATION_FLAGS)
 BUILT_SOURCES=CVMUSB_wrap.cxx CVMUSBReadoutList_wrap.cxx
 
 CVMUSB_wrap.cxx:	@srcdir@/CVMUSB.h
-	@SWIG@ -c++ -outdir @builddir@ -outfile @builddir@/$@ -debug-classes -tcl -namespace -pkgversion 1.0 @srcdir@/CVMUSB.i
+	@SWIG@ -c++ -outdir @builddir@ -o @builddir@/$@ -debug-classes -tcl -namespace -pkgversion 1.0 @srcdir@/CVMUSB.i
 
 libCVMUSBReadoutList_la_SOURCES = CVMUSBReadoutList_wrap.cxx
 libCVMUSBReadoutList_la_LIBADD = @builddir@/libVMUSB.la @THREADLD_FLAGS@
@@ -146,7 +146,7 @@ libCVMUSBReadoutList_la_CPPFLAGS=$(COMPILATION_FLAGS)
 
 
 CVMUSBReadoutList_wrap.cxx: CVMUSBReadoutList.h
-	@SWIG@ -c++ -outdir @builddir@ -outfile @builddir@/$@ -debug-classes -tcl -namespace -pkgversion 1.0 \
+	@SWIG@ -c++ -outdir @builddir@ -o @builddir@/$@ -debug-classes -tcl -namespace -pkgversion 1.0 \
 	 @srcdir@/CVMUSBReadoutList.i 
 
 #  Stuff that needs to go int the distro:
