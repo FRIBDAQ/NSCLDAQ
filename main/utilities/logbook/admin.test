@@ -21,14 +21,15 @@ exec tclsh "$0" ${1+"$@"}
 
 ##
 # @file   admin.test
-# @brief  Test Tcl logbook administration package.
+# @brief  Test Tcl logbook administration package.s
 # @author Ron Fox <fox@nscl.msu.edu>
 #
 package require tcltest
 package require logbookadmin
 
-set here [file dirname [info script]]
-set logbook [file normalize [file join [file dirname [info script]]  logbook.logbook]]
+# set here [file dirname [info script]] # not used
+# set logbook [file normalize [file join [file dirname [info script]]  logbook.logbook]]
+set logbook [file normalize [file join [pwd] logbook.logbook]] # expands to @builddir@ at runtime
 
 if {[file exists $logbook]} {file delete $logbook}
 
