@@ -38,5 +38,6 @@ by COutputThread (nummap_chunk() issue fixed)
 * Issue #400 - Only build the test binaries on make check rather than make all as before  
 * Added QT5LICENSE to top level of tree.
 * Issue #418 - add the process command to ringbuffer status
+* Issue #345 - address misc. build issues and edge cases, support oot builds when srcdir is read-only
 == 12.2-dev ==
 
