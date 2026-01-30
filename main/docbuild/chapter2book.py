@@ -185,10 +185,12 @@ args = parser.parse_args()
 
 # Set up some useful names
 targetFile     = args.source
-baseTargetFile = path.splitext(targetFile)[0]
+baseTargetFile = targetFile.split('/')[-1] # base filename without path
 upgradedFile   = path.join('.',baseTargetFile+'_upgr.xml')
 outputFile   = path.join(args.outdir,baseTargetFile+'_autobook.xml')
 bookInfoFile   = args.bookinfo
+
+print(f"---------> target {targetFile} base {baseTargetFile} upgr {upgradedFile} output {outputFile} bookinfo {bookInfoFile}")
 
 # upgrade chapter to book and insert bookinfo if provided
 upgradedTree = ChapterUpgrader(targetFile)
@@ -205,6 +207,7 @@ docbook_decl = '<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" ' \
 
 # write the new xml tree to an output file
 newfile = open(outputFile,'w+')
+print(f"------------> newfile {newfile}")
 newfile.write('<?xml version="1.0" encoding="ASCII"?>\n')
 newfile.write(docbook_decl+'\n')
 newfile.write(textTree.decode('utf-8'))
