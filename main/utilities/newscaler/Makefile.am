@@ -42,7 +42,7 @@ install-data-hook:
 	$(mkinstalldirs) $(GRAPHDIR)
 	$(mkinstalldirs) $(FIGUREDIR)
 	mkdir -p figures
-	rsync -avhP @srcdir@/figures/ @builddir@/figures
+	rsync -vhP --chmod 755 @srcdir@/figures/ @builddir@/figures
 	$(CHAPTER2BOOK) -s @srcdir@/scalerdisplay_user.xml -b @srcdir@/scalerdisplay_user_bookinfo.xml -o @builddir@
 	$(INSTALL_DATA)  $(BOOK) @prefix@/share/pdfs
 	install $(FIGURES) $(FIGUREDIR)
