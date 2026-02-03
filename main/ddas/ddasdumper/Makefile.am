@@ -2,6 +2,7 @@ bin_PROGRAMS = ddasdumper.bin
 lib_LTLIBRARIES = libddasrootformat.la
 include_HEADERS = DDASRootEvent.h DDASRootHit.h
 
+BUILT_SOURCES = dumperargs.c dumperargs.h
 # If there was an intree build this prevents those from polluting
 # the tarball.
 nodist_ddasdumper_bin_SOURCES = dumperargs.c dumperargs.h
