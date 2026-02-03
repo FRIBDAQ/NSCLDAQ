@@ -185,7 +185,7 @@ args = parser.parse_args()
 
 # Set up some useful names
 targetFile     = args.source
-baseTargetFile = path.splitext(targetFile)[0]
+baseTargetFile = path.splitext(os.path.basename(targetFile))[0] # filename without path or extension
 upgradedFile   = path.join('.',baseTargetFile+'_upgr.xml')
 outputFile   = path.join(args.outdir,baseTargetFile+'_autobook.xml')
 bookInfoFile   = args.bookinfo
