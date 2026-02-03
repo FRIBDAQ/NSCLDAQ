@@ -126,7 +126,7 @@ S800TriggerRegisters::readTriggerMask(CVMUSB& controller) {
     if (controller.vmeRead32(triggerMask(), amod, &result)) {
         throw std::runtime_error("Read of trigger mask register failed");
     }
-    return result;
+    return result & 0x1ff;  // Only 9 bits.
 #endif
 }
 /**
@@ -137,20 +137,24 @@ S800TriggerRegisters::readTriggerMask(CVMUSB& controller) {
  */
 void
 S800TriggerRegisters::addReadTriggerMask(CVMUSBReadoutList& list) {
-    list.addRead32(triggerMask(), amod);
+    list.addRead32(triggerMask(), amod);   // User gonna have to mask that 
 }
 
 /**
  *  swClear
  *    Write to the software Clear register.  Presumably this does some sort of
- * clear operation in the logic.
+ * clear operation in the logic.  The register must be toggled, 1, 0.
  *   @param controller - the controller object we write through.
  */
 void
 S800TriggerRegisters::swClear(CVMUSB& controller) {
-    if (controller.vmeWrite32(swClearRegister(), amod, 0)) {
-        throw std::runtime_error("Failed to write the software clear register");
+    if (controller.vmeWrite32(swClearRegister(), amod, 1)) {
+        throw std::runtime_error("Failed to write 1 to the software clear register");
     }
+    if (controller.vmeWrite32(swClearRegister(), amod, 0)) {
+        throw std::runtime_error("Failed to write 0 to the software clear register");
+    }
+
 }
 /**
  * addSwClear
@@ -160,19 +164,23 @@ S800TriggerRegisters::swClear(CVMUSB& controller) {
  */
 void
 S800TriggerRegisters::addSwClear(CVMUSBReadoutList& list) {
+    list.addWrite32(swClearRegister(), amod, 1);
     list.addWrite32(swClearRegister(), amod, 0);
 }
 
 /**
  * resetBusy
- *    Presumably any write to the busyReset register does this.
+ *   Have toggle the value 1 then zero.
  * @param controller - controller through which the write is done.
  * 
  */
 void
 S800TriggerRegisters::resetBusy(CVMUSB& controller) {
+    if (controller.vmeWrite32(busyResetRegister(), amod, 1)) {
+        throw std::runtime_error("Failed to write 1 to the busy reset register");
+    }
     if (controller.vmeWrite32(busyResetRegister(), amod, 0)) {
-        throw std::runtime_error("Failed to writ the busy reset register");
+        throw std::runtime_error("Failed to write 0 to the busy reset register");
     }
 }
 /**
@@ -183,8 +191,31 @@ S800TriggerRegisters::resetBusy(CVMUSB& controller) {
  */
 void
 S800TriggerRegisters::addResetBusy(CVMUSBReadoutList& list) {
+    list.addWrite32(busyResetRegister(), amod, 1);
     list.addWrite32(busyResetRegister(), amod, 0);
 }
+/**
+ *  Arm the trigger register:
+ * 
+ */
+void
+S800TriggerRegisters::armTrigger(CVMUSB& controller) {
+    if (controller.vmeWrite32(armTriggerRegister(), amod, 1)) {
+        throw std::runtime_error("Failed to write a 1 to the trigger arm register.");
+    }
+    if (controller.vmeWrite32(armTriggerRegister(), amod, 0)) {
+        throw std::runtime_error("Failed to write a 0 to the trigger arm register");
+    }
+}
+/**
+ * Add instructions to the stack to re-arm the trigger
+ */
+void
+S800TriggerRegisters::addArmTrigger(CVMUSBReadoutList& list) {
+    list.addWrite32(armTriggerRegister(), amod, 1);
+    list.addWrite32(armTriggerRegister(), amod, 0);
+}
+
 
 /**
  * enableExternalClear
@@ -227,6 +258,29 @@ S800TriggerRegisters::setRunNumber(CVMUSB& controller, std::uint32_t runNumber) 
         throw std::runtime_error("Could not write the high order run number bits.");
     }
 }
+/**
+ *  startRun
+ *     Start the run by writing a 1 to the go register.
+ * @param controller - controller through which the write is done. 
+ */
+void
+S800TriggerRegisters::startRun(CVMUSB& controller) {
+    if (controller.vmeWrite32(goRegister(), amod, 1)) {
+        throw std::runtime_error("Failed to write 1 to the go register");
+    }
+}
+/** 
+ * stopRun
+ *    Stop the run by writing a 0 to the go register.
+ * @param controller - controller through which the write is done.
+ */
+void
+S800TriggerRegisters::stopRun(CVMUSB& controller) {
+    if (controller.vmeWrite32(goRegister(), amod, 0)) {
+        throw std::runtime_error("Failed to write 0 to the go register");
+    }
+}
+////
 /**
  * describeJSON
  *    Return a string that describes the module.
@@ -278,7 +332,7 @@ S800TriggerRegisters::timestampHighBits() const {
  */
 std::uint32_t
 S800TriggerRegisters::triggerMask() const {
-    return getRegister("TRGMASK");
+    return getRegister("REG_FLAGS");  // Only 9 bits.
 }
 
 /**
@@ -325,6 +379,24 @@ std::uint32_t
 S800TriggerRegisters::externalClearEnableRegister() const {
     return getRegister( "EXT_CLEAR_EN");
 }
+/**
+ * go Register - the registesr that controls  the run.
+ * If this register is 1 the run is active, if 0, the run is halted.
+ * @return uint32_t - address of the go register.
+ */
+std::uint32_t S800TriggerRegisters::goRegister() const {
+    return getMMCComponent("TS_CFG_GO");
+}
+/**
+ * return the register that arms the trigger:
+ * 
+ * @return uint32_t - address of the re-arm trigger registser
+ *     which must be pulsed to re-arm.
+ */
+std::uint32_t
+S800TriggerRegisters::armTriggerRegister() const {
+    return getRegister("R_CLEAR");
+}
 ///
 /**
  * getRegister
@@ -347,7 +419,7 @@ S800TriggerRegisters::getRegister(const char* name) const {
 
     for (int index = 0; index < registers.size(); index++) {
         if (registers[index]["Name"].asString() == name) {
-            return registers[index]["Address"].asUInt();
+            return registers[index]["Address"].asUInt() + m_base;
         }
     }
 
@@ -358,4 +430,35 @@ S800TriggerRegisters::getRegister(const char* name) const {
     std::string smsg(msg.str());
     throw Json::Exception (smsg);
 }
+/**
+ * getMMCComponent
+ *    Get the address of an MMC component given its name.
+ *    E.g. get the Address field of ["MMCComponents"][componentname] as an integer and
+ *    add it to the base address.
+ *
+ * @param name - component name
+ * @return std::uint32_t - address of the component given the value of m_base.
+ */
+std::uint32_t
+S800TriggerRegisters::getMMCComponent(const char* name) const {
 
+    auto components = m_registerSpec["MMCComponents"];
+    if (components.isNull()) {
+        throw Json::Exception("No MMCComponents subkey");
+    }
+
+    // Iterate over components finding the requested name:
+
+    for (int index = 0; index < components.size(); index++) {
+        if (components[index]["Name"].asString() == name) {
+            return components[index]["Address"].asUInt() + m_base;
+        }
+    }
+
+    // no match:
+
+    std::stringstream msg;
+    msg << "No MMC component named " << name;
+    std::string smsg(msg.str());
+    throw Json::Exception(smsg);
+}

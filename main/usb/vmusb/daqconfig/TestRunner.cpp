@@ -5,6 +5,7 @@
 #include <TCLInterpreter.h>
 #include <TCLObject.h>
 #include <stdexcept>
+#include <CVMUSB.h>
 
 
 using namespace std;
@@ -62,3 +63,11 @@ getConfigVal(CTCLInterpreter& interp, const char* option, std::string configStri
   throw std::runtime_error("No such key");
 }
 
+// Need this to satisfy #issue #422 which references this.
+
+namespace Globals {
+  uint32_t           deviceSelectorValue  =CVMUSB::DeviceSourceRegister::nimO1Busy       |
+			    CVMUSB::DeviceSourceRegister::nimO2VMEAS      |
+			    CVMUSB::DeviceSourceRegister::dggADisabled    |
+			    CVMUSB::DeviceSourceRegister::dggBDisabled;      // Default value.
+}

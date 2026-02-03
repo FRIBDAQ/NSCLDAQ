@@ -57,6 +57,7 @@ namespace Globals {
   char*           pTimestampExtractor;
   int*            mainThreadId = 0;
   CTCLInterpreter*       pMainInterpreter = 0;
+  uint32_t  deviceSelectorValue =0; 
 };
 
 

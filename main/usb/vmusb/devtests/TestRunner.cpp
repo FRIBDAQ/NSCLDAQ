@@ -37,6 +37,7 @@ namespace Globals
   int pConfig(0);
   int scalerPeriod(0);
   CVMUSB* pUSBController(0);
+  uint32_t  deviceSelectorValue; 
 };
 void* gpTCLApplication(0);
 
