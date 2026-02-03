@@ -536,7 +536,30 @@ CAcquisitionThread::startDaq()
   }
   // Start the VMUSB in data taking mode:
 
+  // Issue #422 - We need to load stack 6 with instructions to set the device source register and
+  // reset the scalerse.
+
+#ifdef VMUSB_IDLE_BUSY_WORKAROUND
+  CVMUSBReadoutList workaroundList;  
+  workaroundList.addRegisterWrite(
+    CVMUSB::DEVSrcRegister, 
+    Globals::deviceSelectorValue | 
+    CVMUSB::DeviceSourceRegister::scalerAReset | 
+    CVMUSB::DeviceSourceRegister::scalerBReset
+  );                                                   // Set the register and reset the scalers.
+  workaroundList.addRegisterWrite(CVMUSB::DEVSrcRegister, Globals::deviceSelectorValue); //release the scaler reset.
+  m_pVme->loadList(6, workaroundList, CStack::getOffset());
+  pApp->logProgress("Workaround stack loaded to set device source register and reset scalers");
+#endif
+
   VMusbToAutonomous();
+
+    // Issue #422 - trigger stack 6 to set the output source selection register properly.
+#ifdef VMUSB_IDLE_BUSY_WORKAROUND
+  m_pVme->writeActionRegister(CVMUSB::ActionRegister::triggerL6 
+      | CVMUSB::ActionRegister::startDAQ);   // Need to keep DAQ going.
+  pApp->logProgress("Workaround stack triggered to set device source register and reset scalers");
+#endif
   pApp->logStateChangeStatus("VMUSB is now in autonomous (data taking) mode");
 
 }
