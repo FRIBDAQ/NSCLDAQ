@@ -203,7 +203,7 @@ class DSPManager:
         """        
         try:
             if pname not in xia.MOD_PARS:
-                raise ValueError("{pname} is not a module paramter name")
+                raise ValueError(f"{pname} is not a module paramter name")
         except ValueError as e:
             self._logger.exception(
                 f"Unrecognized module parameter name {pname}: {xia.MOD_PARS}"
@@ -232,7 +232,7 @@ class DSPManager:
             Module parameter name is unknown.
         """
         if type(value) is not int:
-            self._logger.warning("{pname} value {value} is type {type(value)}, converting to int")
+            self._logger.warning(f"{pname} value {value} is type {type(value)}, converting to int")
             value = int(value)
         
         try:

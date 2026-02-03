@@ -24,19 +24,31 @@ class TrigConfigExtra(QWidget):
         self.grid.setWindowTitle("TrigConfig[1-3] settings")
         self.param_grid = MyGridLayout(self.grid)
         
+        for col, label in enumerate(self.param_names, 1):
+            self.param_grid.addWidget(QLabel(label), 0, col)
+        
+        for i in range(self.nmodules):
+            self.param_grid.addWidget(QLabel("Mod. %i" %i), i+1, 0)
+            for col, _ in enumerate(self.param_names, 1):
+                tcx = QLineEdit()
+                self.param_grid.addWidget(tcx, i+1, col)
+
         self.b_show_config.clicked.connect(self._show_config)
         
     def configure(self, mgr):
-        pass
-    
+        self.display_dsp(mgr)
+            
     def update_dsp(self, mgr):
-        pass
+        for i in range(self.nmodules):
+            for col, name in enumerate(self.param_names, 1):
+                val = float(self.param_grid[i+1, col].text())
+                mgr.set_mod_par(i, name, val)
     
     def display_dsp(self, mgr):
-        pass
-    
-    def set_param_grid(self, mgr):
-        pass
+        for i in range(self.nmodules):
+            for col, name in enumerate(self.param_names, 1):
+                val = mgr.get_mod_par(i, name)
+                self.param_grid[i+1, col].setText(val)
 
     ##
     # Private methods

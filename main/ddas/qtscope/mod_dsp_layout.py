@@ -54,7 +54,7 @@ class ModDSPLayout(QWidget):
             box = QGroupBox(box_name)
             box_layout = QVBoxLayout()
             # Create the widget and add it to the list and group layout:        
-            for name  in widget_names:
+            for name in widget_names:
                 w = factory.create(name, nmodules=nmodules, channel_map=channel_map)            
                 if w:
                     self.param_widgets.append(w)
