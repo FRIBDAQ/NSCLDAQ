@@ -103,11 +103,9 @@ class TrigConfig0(QWidget):
         self.b_show_config.setStyleSheet(colors.YELLOW)
 
         # Add subwidgets to the TrigConfig0 box:
-        
-        label = QLabel("TrigConfig0")
-        
+              
         layout = QVBoxLayout()
-        layout.addWidget(label)
+        layout.addWidget(QLabel("TrigConfig0"))
         layout.addWidget(widget)
         layout.addWidget(self.b_show_config)
         self.setLayout(layout)
