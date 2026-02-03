@@ -96,6 +96,8 @@ public:
 #endif
   virtual void Initialize(CVMUSB& controller);
   virtual void addReadoutList(CVMUSBReadoutList& list);
+  virtual void onEndRun(CVMUSB& controller);
+
 #ifndef MVLC_GENERATOR
   virtual CReadoutHardware* clone() const;
 #endif
