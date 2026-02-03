@@ -253,6 +253,7 @@ class ConfigWizard(QWizard):
         
         self._programs = ReadoutPage(self._services)
         self.addPage(self._programs)
+        self.setWindowTitle("Configuration wizard -- Powered by Qt5")
 
     def getProgramsId(self):
         return self._programsId    

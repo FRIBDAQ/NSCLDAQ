@@ -144,9 +144,9 @@ install-exec-local:
 	$(INSTALL_DATA)   @srcdir@/*.h   @prefix@/skeletons/scriptedReadout/include
 	$(INSTALL_DATA)    @srcdir@/Skeleton.cpp @srcdir@/Skeleton.h  \
 				@prefix@/skeletons/scriptedReadout/skel
-	echo INSTDIR=@prefix@                                 > @srcdir@/Makefile.user
-	cat  @srcdir@/Makefile.skel                                    >> @srcdir@/Makefile.user
-	$(INSTALL_DATA) @srcdir@/Makefile.user \
+	echo INSTDIR=@prefix@ > @builddir@/Makefile.user
+	cat  @srcdir@/Makefile.skel >> @builddir@/Makefile.user
+	$(INSTALL_DATA) @builddir@/Makefile.user \
 		@prefix@/skeletons/scriptedReadout/skel/Makefile
 	$(INSTALL_DATA) @srcdir@/scriptedreadout_Makefile.include \
 	        @prefix@/etc

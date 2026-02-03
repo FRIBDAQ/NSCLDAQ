@@ -212,7 +212,19 @@ int CTheApplication::operator()(int argc, char** argv)
     std::cerr << "Attached VMUSB controller with firmware: " << std::hex << 
       Globals::pUSBController->readFirmwareID() << std::dec << std::endl;
 
-    
+    // If the idle busy workaround is enabled, then set the O1 to true as it used to be 
+    // at power up.
+
+#ifdef VMUSB_IDLE_BUSY_WORKAROUND
+    uint32_t defaultDevSelect = Globals::deviceSelectorValue;
+
+    // We need to mask out the busy, and set the O1 source to end of event, inverted.
+
+    defaultDevSelect &= ~CVMUSB::DeviceSourceRegister::nimO1Busy;
+    defaultDevSelect |= CVMUSB::DeviceSourceRegister::nimO1EndOfEvent | 
+      CVMUSB::DeviceSourceRegister::nimO1Invert;
+    Globals::pUSBController->writeDeviceSource(defaultDevSelect); // O1 is now asserted.
+#endif
 
     // Set default configuration file names and then override with the ones supplied on
     // the command line (if any).

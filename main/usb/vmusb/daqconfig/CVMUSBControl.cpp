@@ -28,6 +28,7 @@
 #include <iomanip>
 #include <sstream>
 #include <CErrnoException.h>
+#include <Globals.h>
 
 
 /*------------------------------------------------------------------------------
@@ -308,14 +309,19 @@ CVMUSBControl::Initialize(CVMUSB& controller)
 
 
   // Setup and clear:
+#ifdef VMUSB_IDLE_BUSY_WORKAROUND  
+
+  Globals::deviceSelectorValue = devSource;  // Issue #422 save the value for later.
   
-  controller.writeDeviceSource(devSource 
-    | CVMUSB::DeviceSourceRegister::scalerAReset
+  #else 
+    controller.writeDeviceSource(devSource 
+    | CVMUSB::DeviceSourceRegister::scalerAReset   // Write the dev soure register.
     | CVMUSB::DeviceSourceRegister::scalerBReset);
 
   // Reassert setup without the clear:
 
-  controller.writeDeviceSource(devSource);
+  controller.writeDeviceSource(devSource);  
+  #endif
 
   // Compute and set the DGGA width/fine delay register.
   

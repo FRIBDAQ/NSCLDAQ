@@ -104,13 +104,12 @@ install-data-local:
 
 DAQCONFIGDIR=@srcdir@/../daqconfig
 BUILT_SOURCES = s800TriggerRegisters.cpp
-nodist_SOURCES=s800TriggerRegisters.cpp
+nodist_sets800triggerrun_SOURCES=s800TriggerRegisters.cpp
 
 s800TriggerRegisters.cpp:
 	cp $(DAQCONFIGDIR)/s800TriggerRegisters.cpp @builddir@
 
-sets800triggerrun_SOURCES=sets800triggerrun.cpp \
-	s800TriggerRegisters.cpp
+sets800triggerrun_SOURCES=sets800triggerrun.cpp
 
 sets800triggerrun_CPPFLAGS = @JSON_CFLAGS@ -I@srcdir@/../daqconfig \
 	-I@srcdir@/../vmusb \
@@ -118,6 +117,8 @@ sets800triggerrun_CPPFLAGS = @JSON_CFLAGS@ -I@srcdir@/../daqconfig \
 
 sets800triggerrun_LDFLAGS=@JSON_LIBS@ @builddir@/../vmusb/libVMUSBRemote.la \
 	@builddir@/../vmusb/libCVMUSBReadoutList.la
+
+CLEANFILES = s800TriggerRegisters.cpp
 
 EXTRA_DIST = WienerMDGG16Registers.h
 

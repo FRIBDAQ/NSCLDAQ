@@ -21,6 +21,7 @@
 #include <CVMUSB.h>
 #include <CVMUSBReadoutList.h>
 #include <CConfiguration.h>
+#include <Globals.h>
 #include <assert.h>
 #include <tcl.h>
 #include <Globals.h>
@@ -327,7 +328,7 @@ CStack::onEndRun(CVMUSB& controller)
   // end of event should always be false when  idle so 
   // its inverse is asserted.
 
-  uint32_t currentSelection = controller.readDeviceSource();
+  uint32_t currentSelection = Globals::deviceSelectorValue;     // What the user asked for
   if ((currentSelection & 0x7) == CVMUSB::DeviceSourceRegister::nimO1Busy) {
     bool inverted = (currentSelection & CVMUSB::DeviceSourceRegister::nimO1Invert) != 0;
 

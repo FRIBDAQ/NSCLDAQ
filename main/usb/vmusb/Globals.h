@@ -63,6 +63,7 @@ namespace Globals {
   extern Tcl_ThreadId           mainThreadId;
   extern CTCLInterpreter*       pMainInterpreter;
   extern CTheApplication* pApplication;
+  extern uint32_t         deviceSelectorValue; // for issue #422
 };
 
 #endif
