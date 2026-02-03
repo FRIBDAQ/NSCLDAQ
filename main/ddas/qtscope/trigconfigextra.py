@@ -1,9 +1,33 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 import colors
-from extensions import MyGridLayout
+from extensions import MyGridLayout, UInt32Validator
 
 class TrigConfigExtra(QWidget):
+    """Configure extra TrigConfig registers.
+    
+    Attributes
+    ----------
+    param_names : list
+        List of DSP parameter names.
+    nmodules : int
+        Number of modules.
+    channel_map : list 
+        List of channels per module (unused).
+    b_show_config : QPushButton
+        Button to display the TrigConfig extra settings grid.
+    grid : QWidget
+        Grid window for extra TrigConfig settings.
+    param_grid : MyGridLayout
+        Grid layout of extra TrigConfig settings.
+    
+    Methods
+    -------
+    configure(mgr)
+        Initialize GUI.
+    
+    """
+    
     def __init__(self, *args, nmodules=None, channel_map=None, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -32,20 +56,46 @@ class TrigConfigExtra(QWidget):
             self.param_grid.addWidget(QLabel("Mod. %i" %i), i+1, 0)
             for col, _ in enumerate(self.param_names, 1):
                 tcx = QLineEdit()
+                tcx.setValidator(UInt32Validator())
                 self.param_grid.addWidget(tcx, i+1, col)
 
         self.b_show_config.clicked.connect(self._show_config)
         
     def configure(self, mgr):
+        """Initialize and display widget settings from the DSP dataframe.
+        
+        Parameters
+        ----------
+        mgr : DSPManager
+            DSP manager for calls to XIA API.
+        
+        """
         self.display_dsp(mgr)
             
     def update_dsp(self, mgr):
+        """Update the DSP dataframe from the GUI settings.
+        
+        Parameters
+        ----------
+        mgr : DSPManager
+            DSP manager for calls to XIA API.
+                    
+        """
         for i in range(self.nmodules):
             for col, name in enumerate(self.param_names, 1):
                 val = float(self.param_grid[i+1, col].text())
                 mgr.set_mod_par(i, name, val)
     
-    def display_dsp(self, mgr):
+    def display_dsp(self, mgr, set_state=False):
+        """Update GUI with dataframe values.
+        
+        Parameters
+        ----------
+        mgr : DSPManager
+            DSP manager for calls to XIA API.
+        set_state : bool, optional
+            Set display state (unused). 
+        """
         for i in range(self.nmodules):
             for col, name in enumerate(self.param_names, 1):
                 val = mgr.get_mod_par(i, name)
@@ -56,7 +106,7 @@ class TrigConfigExtra(QWidget):
     #
     
     def _show_config(self):
-        """Display the TrigConfig[1-3] GUI."""        
+        """Display the TrigConfig[1-2] GUI."""        
         self.grid.show()
         
 class TrigConfigExtraBuilder:

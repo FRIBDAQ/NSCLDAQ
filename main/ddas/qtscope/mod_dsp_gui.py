@@ -185,7 +185,7 @@ class ModDSPGUI(QMainWindow):
 
         for w in self.mod_params.param_widgets:
             name = type(w).__name__
-            if (name == "CSRB") or (name == "TrigConfig0"):
+            if (name == "CSRB") or (name == "TrigConfig0") or (name == "TrigConfigExtra"):
                 w.grid.close()
                 
         self.close()

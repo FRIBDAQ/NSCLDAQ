@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QTabWidget, QGridLayout
+from PyQt5.QtGui import QValidator
 
 class MyTabWidget(QTabWidget):
     """Extended QTabWidget with convenient index access."""
@@ -39,6 +40,38 @@ class MyGridLayout(QGridLayout):
         else:
             # Handle layout[row][col] by returning a row proxy
             return _GridRow(self, key)
+        
+class UInt32Validator(QValidator):
+    """Validator for unsigned 32-bit integer input.
+    
+    Accepts integers in the range 0 to 4294967295 (0xFFFFFFFF).
+    
+    Methods
+    -------
+    validate(input_str, pos)
+        Validate input string as uint32.   
+    """
+    
+    def validate(self, input_str, pos):
+        """Validate input string as uint32.
+        
+        Parameters
+        ----------
+        input_str : str
+            Input string to validate.
+        pos : int
+            Current cursor position.        
+        """
+        if input_str == "":
+            return (QValidator.Intermediate, input_str, pos)
+        try:
+            value = int(input_str)
+            if 0 <= value <= 0xFFFFFFFF:
+                return (QValidator.Acceptable, input_str, pos)
+            else:
+                return (QValidator.Invalid, input_str, pos)
+        except ValueError:
+            return (QValidator.Invalid, input_str, pos)
 
 def callMe(self):
     """A dummy function which can be hooked up to signals for testing."""
