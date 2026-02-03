@@ -44,7 +44,7 @@ class ModDSPLayout(QWidget):
         self.box_dict = {
             "Crate settings": ["CrateID"],
             "Crate configuration (CSRB) options": ["CSRB"],
-            "Trigger configuration options": ["TrigConfig0"]
+            "Trigger configuration options": ["TrigConfig0", "TrigConfigExtra"],
         }
         
         # Define layout:

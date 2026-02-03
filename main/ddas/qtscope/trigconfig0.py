@@ -140,6 +140,18 @@ class TrigConfig0(QWidget):
         self.grid = QWidget()
         self.grid.setWindowTitle("TrigConfig0 settings")
         self.param_grid = MyGridLayout(self.grid)
+
+        for i in range(self.nmodules): 
+            self.param_grid.addWidget(QLabel("Mod. %i" %i), i+1, 0)
+            for j, pdict in self.param_labels.items():
+                cb = QComboBox()
+                if "options" in pdict:
+                    for option in pdict["options"]:
+                        cb.insertItem(pdict["options"].index(option), option)
+                else:
+                    for ch in range(self.channel_map[i]):
+                        cb.insertItem(ch, str(ch))
+                self.param_grid.addWidget(cb, i+1, j+1)
         
         for idx, param in self.param_labels.items():
             w = QLabel(param["label"])
@@ -162,17 +174,6 @@ class TrigConfig0(QWidget):
              Manager for internal DSP and interface for XIA API read/write 
              operations.
         """
-        for i in range(self.nmodules): 
-            self.param_grid.addWidget(QLabel("Mod. %i" %i), i+1, 0)
-            for j, pdict in self.param_labels.items():
-                cb = QComboBox()
-                if "options" in pdict:
-                    for option in pdict["options"]:
-                        cb.insertItem(pdict["options"].index(option), option)
-                else:
-                    for ch in range(self.channel_map[i]):
-                        cb.insertItem(ch, str(ch))
-                self.param_grid.addWidget(cb, i+1, j+1)
         self.display_dsp(mgr, set_state=True)
 
     def update_dsp(self, mgr):
