@@ -40,5 +40,6 @@ by COutputThread (nummap_chunk() issue fixed)
 * Issue #418 - add the process command to ringbuffer status
 * Use unified format 2.2-009 which fixes an error in ring item copy constructino that
   crashed bufdump on unknown item types.
+* Issue #422 - Improve the BUSY workaround for VMUSB so it's not released until the VMUSB can accept triggers
 == 12.2-dev ==
 
