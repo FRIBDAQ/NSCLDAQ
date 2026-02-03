@@ -113,10 +113,11 @@ class CSRA(QWidget):
 
         for i in range(self.nchannels):
             self.param_grid.addWidget(QLabel("%i" %i), i+1, 0)
+            # Widget to display CSRA value as read-only integer:
             csra_value = QLineEdit()
-            csra_value.setMinimumWidth(80)
+            csra_value.setMinimumWidth(60)
             csra_value.setReadOnly(True)
-            self.param_grid.addWidget(csra_value, i+1, 1)  # Placeholder for channel value.
+            self.param_grid.addWidget(csra_value, i+1, 1)
             for bit, pdict in self.param_labels.items():
                 cb = QCheckBox()
                 if pdict["label"] in disabled:
@@ -209,12 +210,14 @@ class CSRA(QWidget):
             Channel (row) index to copy parameters from.
         """        
         copy_params = []       
-        for col, _ in enumerate(self.param_labels, 1):
+        # Note that the start value is 2 here since cols 0, 1 are the channel
+        # number and the CSRA register as a 32-bit integer:
+        for col, _ in enumerate(self.param_labels, 2):
             copy_params.append(
                 self.param_grid.itemAtPosition(idx+1, col).widget().isChecked()
             )
         for i in range(self.nchannels):
-            for col, p in enumerate(copy_params, 1):
+            for col, p in enumerate(copy_params, 2):
                 self.param_grid.itemAtPosition(i+1, col).widget().setChecked(p)
 
     ##
