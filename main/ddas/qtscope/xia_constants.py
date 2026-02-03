@@ -91,5 +91,8 @@ MOD_PARS = [
     "MODULE_CSRB",
     "SLOW_FILTER_RANGE",
     "CrateID",
-    "TrigConfig0"
+    "TrigConfig0",
+    "TrigConfig1",
+    "TrigConfig2",
+    "TrigConfig3"
 ]
