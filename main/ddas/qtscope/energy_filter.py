@@ -1,6 +1,3 @@
-import numpy as np
-import pandas as pd
-
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QSpinBox
 
 from chan_dsp_widget import ChanDSPWidget

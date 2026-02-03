@@ -1,5 +1,3 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
-
 from chan_dsp_widget import ChanDSPWidget
 
 class QDCLen(ChanDSPWidget):

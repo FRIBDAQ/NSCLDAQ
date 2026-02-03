@@ -3,11 +3,8 @@ import logging
 import numpy as np
 
 from PyQt5.QtGui import QDoubleValidator
-from PyQt5.QtWidgets import (
-    QWidget, QLabel, QLineEdit, QVBoxLayout, QSizePolicy
-)
+from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QVBoxLayout
 
-import colors
 from extensions import MyGridLayout
 
 # @todo Some visual indication settings are changed but not applied.
@@ -48,10 +45,7 @@ class ChanDSPWidget(QWidget):
         Copy DSP from channel idx in GUI.
     """
     
-    def __init__(
-            self, param_names=None, param_labels=None, nchannels=16,
-            *args, **kwargs
-    ):
+    def __init__(self, param_names=None, param_labels=None, nchannels=16, *args, **kwargs):
         """ChanDSPWidget class constructor.
 
         Initialize generic channel DSP widget, set parameter validators and 
@@ -91,12 +85,7 @@ class ChanDSPWidget(QWidget):
             for col, _ in enumerate(self.param_labels, 1): 
                 w = QLineEdit()                
                 # Default channel parameter validator is double:            
-                w.setValidator(
-                    QDoubleValidator(
-                        0, 999999, 3,
-                        notation=QDoubleValidator.StandardNotation
-                    )
-                )                
+                w.setValidator(QDoubleValidator(0, 999999, 3, notation=QDoubleValidator.StandardNotation))                
                 self.param_grid.addWidget(w, i+1, col)
         
         # Define layout and add widgets:
@@ -134,9 +123,7 @@ class ChanDSPWidget(QWidget):
         """        
         for i in range(self.nchannels):
             for col, name in enumerate(self.param_names, 1):
-                val = float(
-                    self.param_grid[i+1, col].text()
-                )
+                val = float(self.param_grid[i+1, col].text())
                 mgr.set_chan_par(mod, i, name, val)
                 
                 

@@ -10,11 +10,7 @@ else:
 import numpy as np
     
 from PyQt5.QtGui import QDoubleValidator
-from PyQt5.QtWidgets import (
-    QWidget, QHBoxLayout, QVBoxLayout, QRadioButton, QButtonGroup,
-    QSpinBox, QGroupBox, QLineEdit, QCheckBox, QLabel, QSizePolicy,
-    QPushButton
-)
+from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QRadioButton, QButtonGroup, QSpinBox, QGroupBox, QLineEdit, QLabel, QPushButton)
 
 import colors
 import xia_constants as xia

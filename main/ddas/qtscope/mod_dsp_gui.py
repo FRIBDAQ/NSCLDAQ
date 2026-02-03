@@ -6,7 +6,6 @@ from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import QMainWindow
 
 from mod_dsp_layout import ModDSPLayout
-from thread_pool_manager import ThreadPoolManager
 
 class ModDSPGUI(QMainWindow):
     """Module DSP GUI class.
@@ -118,9 +117,7 @@ class ModDSPGUI(QMainWindow):
         # Crate the module DSP layout and insert it on top of the
         # manager layout above the toolbar:
         
-        self.mod_params = ModDSPLayout(
-            self.mod_dsp_factory, self.nmodules, channel_map
-        )
+        self.mod_params = ModDSPLayout(self.mod_dsp_factory, self.nmodules, channel_map)
         self.setCentralWidget(self.mod_params)
   
         # Configure the module parameter widgets. Connect signals for the CSRB
@@ -132,14 +129,10 @@ class ModDSPGUI(QMainWindow):
             name = type(w).__name__
             if name == "CSRB":
                 csrb = w
-                csrb.rbgroup.buttonClicked.connect(
-                    lambda: csrb.set_param_grid(self.dsp_mgr)
-                )
+                csrb.rbgroup.buttonClicked.connect(lambda: csrb.set_param_grid(self.dsp_mgr))
             if name == "TrigConfig0":
                 tc0 = w
-                tc0.rbgroup.buttonClicked.connect(
-                    lambda: tc0.set_param_grid(self.dsp_mgr)
-                )
+                tc0.rbgroup.buttonClicked.connect(lambda: tc0.set_param_grid(self.dsp_mgr))
   
     def apply_dsp(self):
         """Apply the module DSP settings.

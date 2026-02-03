@@ -1,7 +1,5 @@
 from ctypes import *
-import inspect
 import logging
-import sys
 
 import numpy as np
 

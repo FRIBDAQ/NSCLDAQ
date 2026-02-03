@@ -4,10 +4,9 @@ import os
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCloseEvent, QPixmap
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QMainWindow, QLabel
 
 from chan_dsp_layout import ChanDSPLayout
-from thread_pool_manager import ThreadPoolManager
 from extensions import MyTabWidget
 
 class ChanDSPGUI(QMainWindow):
@@ -67,11 +66,7 @@ class ChanDSPGUI(QMainWindow):
         Overridden QWidget closeEvent.
     """
     
-    def __init__(
-            self,
-            chan_dsp_factory, toolbar_factory, pool_mgr,
-            *args, **kwargs
-    ):
+    def __init__(self, chan_dsp_factory, toolbar_factory, pool_mgr, *args, **kwargs):
         """ChanDSPGUI class constructor.
 
         Parameters
@@ -182,9 +177,10 @@ class ChanDSPGUI(QMainWindow):
             # DSP tab layout for each module in the system:
            
             self.chan_params.insertTab(
-                i, ChanDSPLayout(self.chan_dsp_factory, self.channel_map[i]),
+                i, 
+                ChanDSPLayout(self.chan_dsp_factory, self.channel_map[i]), 
                 "Mod. %i" %i
-            )
+                )
             
             # DSP tabs load from dataframe when switching. Just added the
             # module tabbed widget so add the signal here as well:
@@ -233,16 +229,10 @@ class ChanDSPGUI(QMainWindow):
         ]
         
         if self.tab_name == "AnalogSignal":
-            _running.append(
-                lambda: self.tab.b_adjust_offsets.setEnabled(False)
-            )
-            _finished.append(
-                lambda: self.tab.b_adjust_offsets.setEnabled(True)
-            )
+            _running.append(lambda: self.tab.b_adjust_offsets.setEnabled(False))
+            _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
 
-        self.pool_mgr.start_thread(
-            fcn=_fcn, running=_running, finished=_finished
-        )
+        self.pool_mgr.start_thread(fcn=_fcn, running=_running, finished=_finished)
         
     def load_dsp(self):
         """Load the channel DSP settings for the selected tab.
@@ -260,23 +250,17 @@ class ChanDSPGUI(QMainWindow):
         ]
         
         if self.tab_name == "AnalogSignal":
-            _running.append(
-                lambda: self.tab.b_adjust_offsets.setEnabled(False)
-            )
-            _finished.append(
-                lambda: self.tab.b_adjust_offsets.setEnabled(True)
-            )
+            _running.append(lambda: self.tab.b_adjust_offsets.setEnabled(False))
+            _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
             
-        self.pool_mgr.start_thread(
-            fcn=_fcn, running=_running, finished=_finished
-        )
+        self.pool_mgr.start_thread(fcn=_fcn, running=_running, finished=_finished)
     
     def copy_mod_dsp(self):
         """Copy DSP from one module to another."""
         self._set_current_tab_info()
         copy_mod = self.toolbar.copy_mod.value()
         if self.channel_map[self.mod_idx] != self.channel_map[copy_mod]:
-            print(f": Cannot copy parameter values from module with "
+            print(f"WARNING: Cannot copy parameter values from module with "
                   f"{self.channel_map[copy_mod]} channels to module with "
                   f"{self.channel_map[self.mod_idx]} channels!")
         else:

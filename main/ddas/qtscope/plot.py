@@ -1,5 +1,3 @@
-import copy
-import inspect
 import logging
 from math import ceil, floor
 import sys
@@ -11,8 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 import numpy as np
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QMessageBox
-from PyQt5.QtGui import QPaintEvent
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QMessageBox
 
 from fit_panel import FitPanel
 from run_type import RunType

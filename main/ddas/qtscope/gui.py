@@ -1,19 +1,12 @@
 import copy
 import inspect
-import json
 import logging
 import os
-import sys
-from time import sleep
 
 import numpy as np
-import pandas as pd
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtWidgets import (
-    QMainWindow, QVBoxLayout, QWidget, QApplication, QFileDialog
-)
+from PyQt5.QtWidgets import (QMainWindow, QApplication, QFileDialog)
 
 from chan_dsp_gui import ChanDSPGUI 
 import colors
@@ -155,12 +148,8 @@ class MainWindow(QMainWindow):
 
         # Create managers for manipulating DSP settings:
 
-        self.mod_gui = ModDSPGUI(
-            mod_dsp_factory, toolbar_factory, self.pool_mgr
-        )
-        self.chan_gui = ChanDSPGUI(
-            chan_dsp_factory, toolbar_factory, self.pool_mgr
-        )
+        self.mod_gui = ModDSPGUI(mod_dsp_factory, toolbar_factory, self.pool_mgr)
+        self.chan_gui = ChanDSPGUI(chan_dsp_factory, toolbar_factory, self.pool_mgr)
 
         ##
         # Main layout GUI
@@ -274,9 +263,7 @@ class MainWindow(QMainWindow):
             self.channel_map = channel_map
             
             self.dsp_mgr.initialize_dsp(num_modules, self.channel_map)
-            self.chan_gui.configure(
-                self.dsp_mgr, num_modules, msps_list, self.channel_map
-            )
+            self.chan_gui.configure(self.dsp_mgr, num_modules, msps_list, self.channel_map)
             self.mod_gui.configure(self.dsp_mgr, num_modules, self.channel_map)
             
             # Configure toolbars, enable widgets:
@@ -354,12 +341,11 @@ class MainWindow(QMainWindow):
         fext = os.path.splitext(fname)[-1].lower()
         if fname and opt:
             try:
-                if (opt == "XIA settings file (*.set)"
-                    or "XIA settings file (*.set, *.json)"):
+                if (opt == "XIA settings file (*.set)" or "XIA settings file (*.set, *.json)"):
                     self.sys_utils.load_set_file(fname)
                 else:
                     raise RuntimeError(f"Unrecognized option '{opt}'")
-            except RuntimeError:
+            except RuntimeError as e:
                 self.logger.exception("Error loading settings file")
                 print(e)
 
@@ -605,9 +591,7 @@ class MainWindow(QMainWindow):
                 self.run_utils.read_data(module, i, self.active_type)
                 data = self.run_utils.get_data(self.active_type)
                 # Expect either 16 or 32 channels, so 4x4 or 8x4:
-                self.mplplot.draw_run_data(
-                    data, self.active_type, int(nchannels/4), 4, i+1
-                )
+                self.mplplot.draw_run_data(data, self.active_type, int(nchannels/4), 4, i+1)
             self.mplplot.update_canvas()
         else:           
             self.run_utils.read_data(module, channel, self.active_type)
@@ -640,9 +624,7 @@ class MainWindow(QMainWindow):
 
                 data = self.trace_utils.get_trace_data()
                 # Expect either 16 or 32 channels, so 4x4 or 8x4:
-                self.mplplot.draw_trace_data(
-                    data, module, i, int(nchannels/4), 4, i+1
-                )
+                self.mplplot.draw_trace_data(data, module, i, int(nchannels/4), 4, i+1)
                     
                 # Keep the single channel trace information:
                 
@@ -732,10 +714,7 @@ class MainWindow(QMainWindow):
                     f"Ch. {self.trace_info['channel']} does not match the "
                     f"current selection box Mod. {module} Ch. {channel}"
                 )
-            elif (
-                    self.acq_toolbar.read_all.isChecked()
-                    and channel != self.trace_info["channel"]
-            ):
+            elif (self.acq_toolbar.read_all.isChecked() and channel != self.trace_info["channel"]):
                 # Channel number changed between acquisition and
                 # analysis. We've read all channel trace data so
                 # we just need to grab the appropriate data:
@@ -744,10 +723,7 @@ class MainWindow(QMainWindow):
                     "module": module,
                     "channel": channel
                 })
-            elif (
-                    not self.acq_toolbar.read_all.isChecked()
-                    and channel != self.trace_info["channel"]
-            ):
+            elif (not self.acq_toolbar.read_all.isChecked() and channel != self.trace_info["channel"]):
                 # Channel number changed between acquisition and
                 # analysis. We have _not_ read all channel trace
                 # data so user needs to re-acquire:
@@ -757,13 +733,8 @@ class MainWindow(QMainWindow):
                     f"current selection box Mod. {module} Ch. {channel}"
                 )
         except ValueError as e:
-            self.logger.exception(
-                "Channel selection changed between acquisition and analysis"
-            )
-            print(
-                f"{e}:\n\tNew trace data must be acquired by clicking "
-                f"the 'Read trace' button prior to analysis."
-            )
+            self.logger.exception("Channel selection changed between acquisition and analysis")
+            print(f"{e}:\n\tNew trace data must be acquired by clicking the 'Read trace' button prior to analysis.")
         else:            
             # No exceptions, analyze and draw:
             try:

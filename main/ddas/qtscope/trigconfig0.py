@@ -5,16 +5,13 @@ if bool(ver[0] >= 1 or (ver[0] == 1 and ver[1] >= 6)):
 else:
     from converters import ba2int, int2ba, zeros
 
-from PyQt5.QtCore import Qt, QBitArray
-from PyQt5.QtWidgets import (
-    QWidget, QPushButton, QVBoxLayout, QComboBox, QLabel, QButtonGroup,
-    QRadioButton
-    )
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QComboBox, QLabel, QButtonGroup, QRadioButton
 
 import colors
 from extensions import MyGridLayout
-import xia_constants as xia
-
+import xia_constants as xia        
+        
 class TrigConfig0(QWidget):
     """Module TrigConfig0 widget.
 
@@ -102,12 +99,15 @@ class TrigConfig0(QWidget):
             self.rbgroup.addButton(rb, idx) # i.e. button, id.
             rbgroup_layout.addWidget(rb)
         
-        self.b_show_config = QPushButton("Display TrigConfig")
+        self.b_show_config = QPushButton("Display TrigConfig0")
         self.b_show_config.setStyleSheet(colors.YELLOW)
 
         # Add subwidgets to the TrigConfig0 box:
         
+        label = QLabel("TrigConfig0")
+        
         layout = QVBoxLayout()
+        layout.addWidget(label)
         layout.addWidget(widget)
         layout.addWidget(self.b_show_config)
         self.setLayout(layout)

@@ -1,9 +1,6 @@
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 
-from PyQt5.QtWidgets import (
-    QPushButton, QCheckBox, QSlider, QHBoxLayout, QLabel, QGroupBox
-)
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QPushButton, QCheckBox
 
 import colors
 
