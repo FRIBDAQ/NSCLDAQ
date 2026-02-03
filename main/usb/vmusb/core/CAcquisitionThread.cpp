@@ -556,7 +556,8 @@ CAcquisitionThread::startDaq()
 
     // Issue #422 - trigger stack 6 to set the output source selection register properly.
 #ifdef VMUSB_IDLE_BUSY_WORKAROUND
-  m_pVme->writeActionRegister(CVMUSB::ActionRegister::triggerL6);
+  m_pVme->writeActionRegister(CVMUSB::ActionRegister::triggerL6 
+      | CVMUSB::ActionRegister::startDAQ);   // Need to keep DAQ going.
   pApp->logProgress("Workaround stack triggered to set device source register and reset scalers");
 #endif
   pApp->logStateChangeStatus("VMUSB is now in autonomous (data taking) mode");
