@@ -137,7 +137,7 @@ class TraceAnalyzer:
         i0 = 2*FL + FG - 1
         s0 = np.sum(self.trace[i0-2*FL-FG+1:i0-FL-FG+1])
         s1 = np.sum(self.trace[i0-FL+1:i0+1])        
-        self.fast_filter[i0] = s1 - s0
+        self.fast_filter[i0] = float(s1) - float(s0)
         
         # Then run over the rest of the trace. Note that we can drop the +1s
         # on both indices since we start at i0+1 and do not take slices:
@@ -146,7 +146,7 @@ class TraceAnalyzer:
             s0 += self.trace[i-FL-FG]
             s1 -= self.trace[i-FL]
             s1 += self.trace[i]
-            self.fast_filter[i] = s1 - s0
+            self.fast_filter[i] = float(s1) - float(s0)
         
     def _compute_cfd(self, fp):
         """Compute the CFD.
@@ -163,8 +163,7 @@ class TraceAnalyzer:
         w = 1.0 - 0.125*fp.cfd_scale
         D = fp.cfd_delay
 
-        self.cfd[D:] = self.fast_filter[D:] - self.fast_filter[:n-D]
-        
+        self.cfd[D:] = self.fast_filter[D:] - w*self.fast_filter[:n-D]
 
     def _compute_slow_filter(self, fp):
         """Compute the slow filter output.
@@ -228,10 +227,9 @@ class TraceAnalyzer:
         """Read the filter parameters from the module, convert them to the nearest integer value in samples, pack them into a FilterParameters class object and return it.
         """
         # Load DSP needed to calculate filters:
+        
         xdt = self.dsp_mgr.get_chan_par(mod, chan, "XDT")
-        fast_risetime = self.dsp_mgr.get_chan_par(
-            mod, chan, "TRIGGER_RISETIME"
-        )
+        fast_risetime = self.dsp_mgr.get_chan_par(mod, chan, "TRIGGER_RISETIME")
         fast_gap = self.dsp_mgr.get_chan_par(mod, chan, "TRIGGER_FLATTOP")
         cfd_scale = self.dsp_mgr.get_chan_par(mod, chan, "CFDScale")
         cfd_delay = self.dsp_mgr.get_chan_par(mod, chan, "CFDDelay")

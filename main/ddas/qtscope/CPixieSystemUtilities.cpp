@@ -240,9 +240,8 @@ CPixieSystemUtilities::GetChannelCount(int module)
     // so I'm _pretty_ sure this is a good check for that too:
     
     if (!m_booted) {
-	std::string msg(
-	    "CPixieSystemUtilities::GetChannelCount() system not booted."
-	    );
+	std::string msg("CPixieSystemUtilities::GetChannelCount() system not booted.");
+	std::cerr << msg << std::endl;
 	return -1;
     } else if ((module < 0) || (module >= m_numModules)) {
 	std::stringstream msg;

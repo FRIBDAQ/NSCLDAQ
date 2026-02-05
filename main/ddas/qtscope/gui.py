@@ -6,7 +6,7 @@ import os
 import numpy as np
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QMainWindow, QApplication, QFileDialog)
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog
 
 from chan_dsp_gui import ChanDSPGUI 
 import colors
@@ -246,21 +246,29 @@ class MainWindow(QMainWindow):
             num_modules = self.sys_utils.get_num_modules()
             
             # Populate list of module MSPS and channel map. In principle
-            # could try and grab the whole array at once but would have
-            # to pass variable-sized array via ctype and... well, this works
-            # without too much effort:
+            # could try and grab the whole array at once... but this works
+            # well enough for now.
             
             msps_list = []
             channel_map = []
+            histogram_lengths = []
+            trace_lengths = []
+            
             for i in range(num_modules):
                 msps_list.append(self.sys_utils.get_module_msps(i))
                 channel_map.append(self.sys_utils.get_channel_count(i))
-                
+                histogram_lengths.append(self.run_utils.get_histogram_length(i))
+                trace_lengths.append(self.trace_utils.get_trace_length(i))
+            
             # Configure DSP and managers. Performs first time load of DSP
             # settings from the Pixie modules. DSP toolbar spinbox ranges
-            # are set in ChanDSPGUI::configure().
+            # are set in ChanDSPGUI::configure(). Also set the max histogram
+            # and trace lengths in the plot widget for proper axis scaling.
 
             self.channel_map = channel_map
+                        
+            self.mplplot.set_histogram_length(histogram_lengths)
+            self.mplplot.set_trace_length(trace_lengths)
             
             self.dsp_mgr.initialize_dsp(num_modules, self.channel_map)
             self.chan_gui.configure(self.dsp_mgr, num_modules, msps_list, self.channel_map)
@@ -338,7 +346,6 @@ class MainWindow(QMainWindow):
             If file format is unrecognized.
         """        
         fname, opt = self._load_dialog()
-        fext = os.path.splitext(fname)[-1].lower()
         if fname and opt:
             try:
                 if (opt == "XIA settings file (*.set)" or "XIA settings file (*.set, *.json)"):
@@ -495,9 +502,8 @@ class MainWindow(QMainWindow):
         
         # XIA API call to begin run in the current module:
 
-        self.run_utils.begin_run(
-            module, self.sys_utils.get_channel_count(module), self.active_type
-        )
+        nchannels = self.sys_utils.get_channel_count(module)
+        self.run_utils.begin_run(module, nchannels, self.active_type)
         self.run_active = self.run_utils.get_run_active()
         self.logger.debug(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Started, run active {self.run_active}")        
             
@@ -505,7 +511,7 @@ class MainWindow(QMainWindow):
         
         if self.run_active:
             self.acq_toolbar.b_run_control.setText("End run")
-            self.mplplot.on_begin_run(self.active_type)
+            self.mplplot.on_begin_run(module, self.active_type)
             self.mod_gui.setEnabled(False)
             self.chan_gui.setEnabled(False)
             
@@ -589,13 +595,13 @@ class MainWindow(QMainWindow):
         if self.acq_toolbar.read_all.isChecked():
             for i in range(nchannels):
                 self.run_utils.read_data(module, i, self.active_type)
-                data = self.run_utils.get_data(self.active_type)
+                data = self.run_utils.get_data(module, self.active_type)
                 # Expect either 16 or 32 channels, so 4x4 or 8x4:
                 self.mplplot.draw_run_data(data, self.active_type, int(nchannels/4), 4, i+1)
             self.mplplot.update_canvas()
         else:           
             self.run_utils.read_data(module, channel, self.active_type)
-            data = self.run_utils.get_data(self.active_type)
+            data = self.run_utils.get_data(module, self.active_type)
             self.mplplot.draw_run_data(data, self.active_type)
             
     def _read_trace_data(self):
@@ -622,7 +628,7 @@ class MainWindow(QMainWindow):
                 else:
                     self.trace_utils.read_trace(module, i)
 
-                data = self.trace_utils.get_trace_data()
+                data = self.trace_utils.get_trace_data(module)
                 # Expect either 16 or 32 channels, so 4x4 or 8x4:
                 self.mplplot.draw_trace_data(data, module, i, int(nchannels/4), 4, i+1)
                     
@@ -642,7 +648,7 @@ class MainWindow(QMainWindow):
             else:
                 self.trace_utils.read_trace(module, channel)
 
-            data = self.trace_utils.get_trace_data()
+            data = self.trace_utils.get_trace_data(module)
             self.mplplot.draw_trace_data(data, module, channel)
             
             # Keep the single channel trace information:
@@ -701,7 +707,7 @@ class MainWindow(QMainWindow):
                     self.trace_utils.read_trace(module, channel)
                     
                 self.trace_info.update({
-                    "trace": copy.copy(self.trace_utils.get_trace_data()),
+                    "trace": copy.copy(self.trace_utils.get_trace_data(module)),
                     "module": module,
                     "channel": channel
                 })

@@ -73,6 +73,12 @@ public:
      * @param mode The generator flag is set to this input value.
      */
     void SetUseGenerator(bool mode) { m_useGenerator = mode; }
+    /**
+     * @brief Get the trace length for a module.
+     * @param module Module number.
+     * @return Trace length in samples or XIA error code if failed.
+     */
+    int GetTraceLength(int module);
   
 private:
     /**
@@ -108,34 +114,30 @@ extern "C" {
 	return new CPixieTraceUtilities();
     }
     /** @brief Wrapper for reading a validated trace. */
-    int CPixieTraceUtilities_ReadTrace(
-	CPixieTraceUtilities* utils, int mod, int chan
-	)
+    int CPixieTraceUtilities_ReadTrace(CPixieTraceUtilities* utils, int mod, int chan)
     {
 	return utils->ReadTrace(mod, chan);
     }
     /** @brief Wrapper for reading an unvalidated trace. */
-    int CPixieTraceUtilities_ReadFastTrace(
-	CPixieTraceUtilities* utils, int mod, int chan
-	)
+    int CPixieTraceUtilities_ReadFastTrace(CPixieTraceUtilities* utils, int mod, int chan)
     {
 	return utils->ReadFastTrace(mod, chan);
     }
+    /** @brief Wrapper to get trace length. */
+    int CPixieTraceUtilities_GetTraceLength(CPixieTraceUtilities* utils, int mod)
+    {
+    return utils->GetTraceLength(mod);
+    }
     /** @brief Wrapper to get trace data. */
-    unsigned short* CPixieTraceUtilities_GetTraceData(
-	CPixieTraceUtilities* utils
-	)
+    unsigned short* CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities* utils)
     {
 	return utils->GetTraceData();
     }
     /** @brief Wrapper to set generator use. */
-    void CPixieTraceUtilities_SetUseGenerator(
-	CPixieTraceUtilities* utils, bool mode
-	)
+    void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities* utils, bool mode)
     {
 	return utils->SetUseGenerator(mode);
     }
-
     /** @brief Wrapper for the class destructor. */
     void CPixieTraceUtilities_delete(CPixieTraceUtilities* utils)
     {

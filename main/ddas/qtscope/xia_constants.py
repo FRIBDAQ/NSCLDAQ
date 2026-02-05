@@ -6,8 +6,6 @@
 
 # Data sizes:
 
-MAX_HISTOGRAM_LENGTH = 32768
-MAX_ADC_TRACE_LEN = 8192
 MAX_NUM_BASELINES = 3640
 
 # Control register bits:

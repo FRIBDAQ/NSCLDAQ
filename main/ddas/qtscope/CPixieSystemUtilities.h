@@ -134,16 +134,12 @@ extern "C" {
 	return utils->Boot();
     }
     /** @brief Wrapper to save a settings file. */
-    int CPixieSystemUtilities_SaveSetFile(
-	CPixieSystemUtilities* utils, char* fName
-	)
+    int CPixieSystemUtilities_SaveSetFile(CPixieSystemUtilities* utils, char* fName)
     {
 	return utils->SaveSetFile(fName);
     }
     /** @brief Wrapper to load a settings file. */
-    int CPixieSystemUtilities_LoadSetFile(
-	CPixieSystemUtilities* utils, char* fName
-	)
+    int CPixieSystemUtilities_LoadSetFile(CPixieSystemUtilities* utils, char* fName)
     {
 	return utils->LoadSetFile(fName);
     }
@@ -154,9 +150,7 @@ extern "C" {
     }
 
     /** @brief Wrapper to set the boot mode. */
-    void CPixieSystemUtilities_SetBootMode(
-	CPixieSystemUtilities* utils, int mode
-	)
+    void CPixieSystemUtilities_SetBootMode(CPixieSystemUtilities* utils, int mode)
     {
 	return utils->SetBootMode(mode);
     }
@@ -171,23 +165,17 @@ extern "C" {
 	return utils->GetBootStatus();
     }
     /** @brief Wrapper to get the number of modules. */
-    unsigned short CPixieSystemUtilities_GetNumModules(
-	CPixieSystemUtilities* utils
-	)
+    unsigned short CPixieSystemUtilities_GetNumModules(	CPixieSystemUtilities* utils)
     {
 	return utils->GetNumModules();
     }
     /** @brief Wrapper to get a single module ADC MSPS from the HW map. */
-    int CPixieSystemUtilities_GetModuleMSPS(
-	CPixieSystemUtilities* utils, int mod
-	)
+    int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities* utils, int mod)
     {
 	return utils->GetModuleMSPS(mod);
     }
     /** @brief Wrapper to get the channel count for a single module. */
-    int CPixieSystemUtilities_GetChannelCount(
-	CPixieSystemUtilities* utils, int mod
-	)
+    int CPixieSystemUtilities_GetChannelCount(CPixieSystemUtilities* utils, int mod)
     {
 	return utils->GetChannelCount(mod);
     }

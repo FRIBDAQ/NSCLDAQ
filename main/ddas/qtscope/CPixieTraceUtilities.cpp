@@ -140,14 +140,12 @@ CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
 	throw CXIAException(msg.str(), "Pixie16AcquireADCTrace()", retval);
     }
 
-    unsigned int len;
-    PixieGetTraceLength(module, channel, &len);
-    ResetTrace(len);
+    unsigned int traceLength;
+    PixieGetTraceLength(module, channel, &traceLength);
+    ResetTrace(traceLength);
     
     if (!m_useGenerator) {
-	retval = Pixie16ReadSglChanADCTrace(
-	    m_trace.data(), len, module, channel
-	    );
+	retval = Pixie16ReadSglChanADCTrace(m_trace.data(), traceLength, module, channel);
 	    
 	if (retval < 0) {
 	    std::stringstream msg;
@@ -172,9 +170,7 @@ CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
 	    throw std::runtime_error(errmsg.str());
 	}
 
-	retval = m_pGenerator->GetTraceData(
-	    m_trace.data(), MAX_ADC_TRACE_LEN, xdt
-	    );
+	retval = m_pGenerator->GetTraceData(m_trace.data(), traceLength, xdt);
 
 	if (retval < 0) {
 	    std::stringstream errmsg;
@@ -189,9 +185,9 @@ CPixieTraceUtilities::AcquireADCTrace(int module, int channel)
 
 /**
  * @details
- * By default the trace length is 8192 samples. This function will calculate 
- * the median value for any trace length, whether or not the number of samples
- * is even or odd. All exceptions are raised to the caller.
+ * This function will calculate the median value for any trace length, whether 
+ * or not the number of samples is even or odd. All exceptions are raised to 
+ * the caller.
  */
 template<typename T> double
 CPixieTraceUtilities::GetMedianValue(std::vector<T> v)
@@ -227,4 +223,31 @@ CPixieTraceUtilities::ResetTrace(unsigned int len)
 	m_trace.resize(len);
     }
     std::fill(m_trace.begin(), m_trace.end(), 0);
+}
+
+/**
+ * @details
+ * It is assumed that all channels on a module have the same trace length.
+ * Since this function cannot be called until after the system is booted, there
+ * is no need to check for that condition here. The caller assumes responsibilty
+ * for making sure the module number is valid.
+ */
+int
+CPixieTraceUtilities::GetTraceLength(int module)
+{
+	unsigned int traceLength = 0;
+	try {		
+		int retval = PixieGetTraceLength(module, 0, &traceLength);
+		if (retval < 0) {
+			std::stringstream msg;
+			msg << "CPixieTraceUtilities::GetTraceLength() failed to get trace length for module " << module;
+			throw CXIAException(msg.str(), "PixieGetTraceLength()", retval);
+		}
+	}
+	catch (const CXIAException& e) {
+		std::cerr << e.ReasonText() << std::endl;
+		return e.ReasonCode();
+	}
+
+	return static_cast<int>(traceLength);
 }

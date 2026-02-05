@@ -34,6 +34,7 @@ private:
     std::vector<std::vector<unsigned int>> m_baselineHistograms;
     /** Generated run data histograms for all channels. */
     std::vector<std::vector<unsigned int>> m_genHistograms;
+    unsigned int m_histogramLength; //!< Length of histogram for current module
     bool m_runActive;    //!< True when running.
     bool m_useGenerator; //!< True to use generator test data.
     CDataGenerator* m_pGenerator; //!< Generator for synthetic data.
@@ -125,6 +126,12 @@ public:
      * @param mode Set the generator use flag to this value.
      */
     void SetUseGenerator(bool mode) { m_useGenerator = mode; };
+        /**
+     * @brief Get the histogram length for a module.
+     * @param module Module number (zero-indexed).
+     * @returns The histogram length for the module or XIA error code if failed.
+     */
+    int GetHistogramLength(int module);
 
 private:    
     /**
@@ -145,31 +152,23 @@ extern "C" {
     }
 
     /** @brief Wrapper to begin a list-mode histogram data run. */
-    int CPixieRunUtilities_BeginHistogramRun(
-	CPixieRunUtilities* utils, int mod, unsigned nchan
-	)
+    int CPixieRunUtilities_BeginHistogramRun(CPixieRunUtilities* utils, int mod, unsigned nchan)
     {
 	return utils->BeginHistogramRun(mod, nchan);
     }
     /** @brief Wrapper to end a list-mode histogram data run. */
-    int CPixieRunUtilities_EndHistogramRun(
-	CPixieRunUtilities* utils, int mod
-	)
+        int CPixieRunUtilities_EndHistogramRun(CPixieRunUtilities* utils, int mod)
     {
 	return utils->EndHistogramRun(mod);
     }
     /** @brief Wrapper to read histogram data. */
-    int CPixieRunUtilities_ReadHistogram(
-	CPixieRunUtilities* utils, int mod, int chan
-	)
+    int CPixieRunUtilities_ReadHistogram(CPixieRunUtilities* utils, int mod, int chan)
     {
 	return utils->ReadHistogram(mod, chan);
     }
   
     /** @brief Wrapper to begin a baseline data run. */
-    int CPixieRunUtilities_BeginBaselineRun(
-	CPixieRunUtilities* utils, int mod, unsigned nchan
-	)
+    int CPixieRunUtilities_BeginBaselineRun(CPixieRunUtilities* utils, int mod, unsigned nchan)
     {
 	return utils->BeginBaselineRun(mod, nchan);
     }
@@ -179,9 +178,7 @@ extern "C" {
 	return utils->EndBaselineRun(mod);
     }
     /** @brief Wrapper to read the baseline data. */
-    int CPixieRunUtilities_ReadBaseline(
-	CPixieRunUtilities* utils, int mod, int chan
-	)
+    int CPixieRunUtilities_ReadBaseline(CPixieRunUtilities* utils, int mod, int chan)
     {
 	return utils->ReadBaseline(mod, chan);
     }
@@ -192,9 +189,7 @@ extern "C" {
 	return utils->ReadModuleStats(mod);
     }
     /** @brief Wrapper to marshall the histogram data. */  
-    unsigned int* CPixieRunUtilities_GetHistogramData(
-	CPixieRunUtilities* utils
-	)
+    unsigned int* CPixieRunUtilities_GetHistogramData(CPixieRunUtilities* utils)
     {
 	return utils->GetHistogramData();
     }
@@ -209,11 +204,14 @@ extern "C" {
 	return utils->GetRunActive();
     }
     /** @brief Wrapper to setup the offline data generator. */
-    void CPixieRunUtilities_SetUseGenerator(
-	CPixieRunUtilities* utils, bool mode
-	)
+    void CPixieRunUtilities_SetUseGenerator(CPixieRunUtilities* utils, bool mode)
     {
 	return utils->SetUseGenerator(mode);
+    }
+    /** @brief Wrapper to get histogram length for a single module. */
+    int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities* utils, int mod)
+    {
+	return utils->GetHistogramLength(mod);
     }
   
     /** @brief Wrapper for the class constructor. */  
