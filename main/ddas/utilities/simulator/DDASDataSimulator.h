@@ -119,6 +119,7 @@ namespace DAQ {
 	 }
 	 ```
 	 * 
+	 * @note This class does not support Rev. H data format.
 	 */
 
 	class DDASDataSimulator
