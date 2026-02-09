@@ -41,7 +41,10 @@ class SimulatorTests : public CppUnit::TestFixture
 {
 public:
     CPPUNIT_TEST_SUITE(SimulatorTests);
+    CPPUNIT_TEST(idword);
+    CPPUNIT_TEST(idword_revh);
     CPPUNIT_TEST(word0);
+    CPPUNIT_TEST(word0_revh);
     CPPUNIT_TEST(word1and2_100);
     CPPUNIT_TEST(word1and2_250);
     CPPUNIT_TEST(word1and2_500);
@@ -68,7 +71,10 @@ public:
 	};
     
 protected:
+    void idword();
+    void idword_revh();
     void word0();
+    void word0_revh();
     void word1and2_100();
     void word1and2_250();
     void word1and2_500();
@@ -83,11 +89,48 @@ protected:
 CPPUNIT_TEST_SUITE_REGISTRATION(SimulatorTests);
 
 void
+SimulatorTests::idword()
+{
+    DDASHit hit, unpacked;
+    
+    hit.setModMSPS(250);
+    hit.setHardwareRevision(15);
+    hit.setADCResolution(16);
+    
+    m_pSimulator->setBuffer(hit);
+    auto buf = m_pSimulator->getBuffer();
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    
+    EQ(hit.getHardwareRevision(), unpacked.getHardwareRevision());
+    EQ(hit.getADCResolution(), unpacked.getADCResolution());
+    EQ(hit.getModMSPS(), unpacked.getModMSPS());
+}
+
+void
+SimulatorTests::idword_revh()
+{
+    DDASHit hit, unpacked;
+    
+    hit.setModMSPS(250);
+    hit.setHardwareRevision(17);
+    hit.setADCResolution(16);
+    
+    m_pSimulator->setBuffer(hit);
+    auto buf = m_pSimulator->getBuffer();
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    
+    EQ(hit.getHardwareRevision(), unpacked.getHardwareRevision());
+    EQ(hit.getADCResolution(), unpacked.getADCResolution());
+    EQ(hit.getModMSPS(), unpacked.getModMSPS());
+}
+
+void
 SimulatorTests::word0()
 {
     DDASHit hit, unpacked;
     
-    hit.setModMSPS(250); 
+    hit.setModMSPS(250);
+    hit.setHardwareRevision(15);
     hit.setFinishCode(0);
     hit.setCrateID(0);
     hit.setSlotID(2);
@@ -97,7 +140,41 @@ SimulatorTests::word0()
     auto buf = m_pSimulator->getBuffer();
     m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
     
+    // Unpacker should set the channel length and header length based on 
+    // the fixed header size for the hit options, which in this case is 
+    // just the raw event of 4 32-bit words:
+
     EQ(hit.getFinishCode(), unpacked.getFinishCode());
+    EQ(uint32_t(4), unpacked.getChannelLength());
+    EQ(uint32_t(4), unpacked.getChannelHeaderLength());
+    EQ(hit.getCrateID(), unpacked.getCrateID());
+    EQ(hit.getSlotID(), unpacked.getSlotID());
+    EQ(hit.getChannelID(), unpacked.getChannelID());
+}
+
+void
+SimulatorTests::word0_revh()
+{
+    DDASHit hit, unpacked;
+    
+    hit.setModMSPS(250);
+    hit.setHardwareRevision(17);
+    hit.setFinishCode(0);
+    hit.setCrateID(0);
+    hit.setSlotID(2);
+    hit.setChannelID(0);
+    
+    m_pSimulator->setBuffer(hit);
+    auto buf = m_pSimulator->getBuffer();
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+
+    // Unpacker should set the channel length and header length based on 
+    // the fixed header size for the hit options, which in this case is 
+    // just the raw event of 4 32-bit words:
+
+    EQ(hit.getFinishCode(), unpacked.getFinishCode());
+    EQ(uint32_t(4), unpacked.getChannelLength());
+    EQ(uint32_t(4), unpacked.getChannelHeaderLength());
     EQ(hit.getCrateID(), unpacked.getCrateID());
     EQ(hit.getSlotID(), unpacked.getSlotID());
     EQ(hit.getChannelID(), unpacked.getChannelID());
@@ -108,7 +185,8 @@ SimulatorTests::word1and2_100()
 {
     DDASHit hit, unpacked;
 
-    hit.setModMSPS(100);    
+    hit.setModMSPS(100);
+    hit.setHardwareRevision(15);
     hit.setTime(1234.5678 + 10*static_cast<double>(std::pow(2,32)));
     
     m_pSimulator->setBuffer(hit);
@@ -126,6 +204,7 @@ SimulatorTests::word1and2_250()
     DDASHit hit, unpacked;
     
     hit.setModMSPS(250);
+    hit.setHardwareRevision(15);
     hit.setTime(1234.5678 + 10*static_cast<double>(std::pow(2,32)));
     
     m_pSimulator->setBuffer(hit);
@@ -144,6 +223,7 @@ SimulatorTests::word1and2_500()
     DDASHit hit, unpacked;
     
     hit.setModMSPS(500);
+    hit.setHardwareRevision(15);
     hit.setTime(1234.5678 + 10*static_cast<double>(std::pow(2,32)));
     
     m_pSimulator->setBuffer(hit);
@@ -162,6 +242,7 @@ SimulatorTests::word3()
     DDASHit hit, unpacked;
     
     hit.setModMSPS(250);
+    hit.setHardwareRevision(15);
     hit.setEnergy(9876);
     
     m_pSimulator->setBuffer(hit);
@@ -177,6 +258,7 @@ SimulatorTests::extTS()
     DDASHit hit, unpacked;
     
     hit.setModMSPS(250);
+    hit.setHardwareRevision(15);
     hit.setExternalTimestamp(1234);
     
     m_pSimulator->setBuffer(hit);
@@ -198,6 +280,7 @@ SimulatorTests::energySums()
     }
 
     hit.setModMSPS(250);
+    hit.setHardwareRevision(15);
     hit.setEnergySums(sums);
     
     m_pSimulator->setBuffer(hit);
@@ -219,6 +302,7 @@ SimulatorTests::qdcSums()
     }
 
     hit.setModMSPS(250);
+    hit.setHardwareRevision(15);
     hit.setQDCSums(sums);
     
     m_pSimulator->setBuffer(hit);
@@ -240,7 +324,8 @@ SimulatorTests::trace()
 	trace.push_back(i);
     }
     
-    hit.setModMSPS(250);   
+    hit.setModMSPS(250);
+    hit.setHardwareRevision(15);   
     hit.setTrace(trace);
     
     m_pSimulator->setBuffer(hit);
@@ -271,6 +356,7 @@ SimulatorTests::allOptions()
     }
     
     hit.setModMSPS(250);
+    hit.setHardwareRevision(15);
     hit.setExternalTimestamp(1234);
     hit.setEnergySums(esums);
     hit.setQDCSums(qdcsums);

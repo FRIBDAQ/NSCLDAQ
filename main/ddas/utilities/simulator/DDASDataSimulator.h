@@ -120,6 +120,10 @@ namespace DDAS {
      return 0;
  }
  ```
+ * @note Setting the module MSPS is necessary to determine the clock period packed CFD value. 
+ * If using an external timestamp, the user must provide a clock calibration in nanoseconds per 
+ * clock tick. Setting the module hardware revision is necessary to get a correctly formatted 
+ * module ID word and correctly formatted Pixie payload word 0.
  */
 
 class DDASDataSimulator {
