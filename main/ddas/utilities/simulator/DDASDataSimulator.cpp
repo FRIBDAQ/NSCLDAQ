@@ -383,13 +383,15 @@ void DAQ::DDAS::DDASDataSimulator::setWord3(const DDASHit &hit) {
   if (ene > PIXIE_MAX_ENERGY) {
     std::stringstream msg;
     msg << "Warning!!! Hit energy " << ene
-        << " > Pixie list-mode energy max! Saving only the "
-        << "lower 16 bits!";
+        << " > Pixie list-mode energy max! Assuming overflow and setting"
+        << " values accordingly. This hit will be recorded with energy = 0.";
     std::cerr << msg.str() << std::endl;
+    ene = 0;
+    ovfl = 1;
   }
   uint32_t word = 0x0;
   word |= (ene & LOWER_16_BIT_MASK); // Heed the warning!
-  word |= (len & (BIT_16_TO_30_MASK >> 16))
+  word |= (len & (BIT_30_TO_16_MASK >> 16))
           << 16; // 15 bits for the trace length
   word |= (ovfl & (BIT_31_MASK >> 31))
           << 31; // Only the lowest bit is significant.
