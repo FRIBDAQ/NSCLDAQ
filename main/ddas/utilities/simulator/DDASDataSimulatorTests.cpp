@@ -288,7 +288,7 @@ SimulatorTests::energySums()
     
     std::vector<uint32_t> sums;
     for (int i = 0; i < SIZE_OF_ENE_SUMS; i++) {
-	sums.push_back(i);
+    sums.push_back(i);
     }
 
     m_hit.setModMSPS(250);
