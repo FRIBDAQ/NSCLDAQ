@@ -54,7 +54,7 @@ public:
     CPPUNIT_TEST_SUITE_END();
     
 private:
-    DDASHitUnpacker   m_unpacker;
+    DDASHitUnpacker m_unpacker;
     DDASDataSimulator* m_pSimulator;
 
 public:    

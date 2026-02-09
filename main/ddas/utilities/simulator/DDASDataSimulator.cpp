@@ -382,9 +382,9 @@ void DAQ::DDAS::DDASDataSimulator::setWord3(const DDASHit &hit) {
   uint32_t ovfl = hit.getADCOverflowUnderflow();
   if (ene > PIXIE_MAX_ENERGY) {
     std::stringstream msg;
-    msg << "Warning!!! Hit energy " << ene
-        << " > Pixie list-mode energy max! Assuming overflow and setting"
-        << " values accordingly. This hit will be recorded with energy = 0.";
+    msg << "Warning!!! Hit energy " << ene << " > Pixie list-mode energy max!"
+        << " Assuming overflow and setting values accordingly."
+        << " This hit will be recorded with energy = 0 and overflow = 1.";
     std::cerr << msg.str() << std::endl;
     ene = 0;
     ovfl = 1;
