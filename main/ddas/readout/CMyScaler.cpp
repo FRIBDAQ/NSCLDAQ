@@ -16,13 +16,11 @@
 #include <config_pixie16api.h>
 #include <CXIAException.h>
 
-CMyScaler::CMyScaler(unsigned short mod, unsigned short crate) :
-    m_module(mod), m_crate(crate)
+CMyScaler::CMyScaler(unsigned short crate, unsigned short mod,
+		     unsigned short nchan) :
+    m_crate(crate), m_module(mod), m_nChannels(nchan),
+    m_prevIC(nchan, 0), m_prevOC(nchan, 0)
 {
-    for (int i = 0; i < 16; i++) {
-	m_prevIC[i] = 0;
-	m_prevOC[i] = 0;
-    }
     clearCounters(m_statistics.s_cumulative);
     clearCounters(m_statistics.s_perRun);
   
@@ -32,14 +30,17 @@ CMyScaler::CMyScaler(unsigned short mod, unsigned short crate) :
 CMyScaler::~CMyScaler()
 {}
 
+/**
+ * @details
+ * Called by CExperiment::Start() prior to starting a new run.
+ */
 void
 CMyScaler::initialize() 
 {
-    for (int i = 0; i < 16; i++) {
-	m_prevIC[i] = 0;
-	m_prevOC[i] = 0;
-    }
-    clearCounters(m_statistics.s_perRun); // New run.
+    std::fill(m_prevIC.begin(), m_prevIC.end(), 0);
+    std::fill(m_prevOC.begin(), m_prevOC.end(), 0);
+    
+    clearCounters(m_statistics.s_perRun);
 }
 
 /**
@@ -67,12 +68,13 @@ CMyScaler::read()
 	    throw CXIAException(msg, "Pixie16ReadStatisticsFromModule", retval);
 	}    
 
-  	double inputCounts[16] = {0};
-	double outputCounts[16] = {0};
-	unsigned long scalerData[33] = {0};  
+	// 2n+1: n for input, n for output, 1 for crateid
+  	double inputCounts[m_nChannels] = {0};
+	double outputCounts[m_nChannels] = {0};
+	unsigned long scalerData[2*m_nChannels+1] = {0};  
 	scalerData[0] = (unsigned long)m_crate;
 	
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < m_nChannels; i++) {
 	    // Raw input counts (number of fast triggers seen by FPGA):
 	    inputCounts[i] = Pixie16ComputeRawInputCount(
 		statistics.data(), m_module, i
@@ -97,14 +99,15 @@ CMyScaler::read()
 
 	// Copy scaler information into the output vector
 	m_scalers.clear();
-	m_scalers.insert(m_scalers.end(), scalerData, scalerData + 33);
+	m_scalers.insert(m_scalers.end(), scalerData,
+			 scalerData + (2*m_nChannels+1));
   
 	// Figure out the statistics by summing over the scalerData (it's
 	// incremental so we can just add it all in). Channel data come in
 	// pairs starting at 1:
   
 	int idx = 1; 
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < m_nChannels; i++) {
 	    m_statistics.s_cumulative.s_nTriggers += scalerData[idx];
 	    m_statistics.s_perRun.s_nTriggers     += scalerData[idx];
     

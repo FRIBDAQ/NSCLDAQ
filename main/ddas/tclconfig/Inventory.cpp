@@ -158,7 +158,7 @@ std::string
 CInventory::apiError(int index, int code)
 {
     std::stringstream s;
-    s << "Failed callling Pixie16ReadModuleInfor for module index: "
+    s << "Failed calling Pixie16ReadModuleInfor for module index: "
       << index << ": " << apiErrors[code];
     std::string msg = s.str();
     return msg;

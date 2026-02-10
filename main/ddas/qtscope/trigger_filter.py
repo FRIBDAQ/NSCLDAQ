@@ -3,15 +3,18 @@ from chan_dsp_widget import ChanDSPWidget
 class TriggerFilter(ChanDSPWidget):
     """Trigger filter DSP tab (ChanDSPWidget)."""
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, nchannels=16, **kwargs):
         """TriggerFilter class constructor.  
 
-        Keyword arguments
+        Parameters
         -----------------
-        module : int
-            Module number from factory create method.
-        """
-        
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nchannels : int, default=16
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
+        """        
         # XIA API parameter names:
         
         param_names = [
@@ -30,7 +33,7 @@ class TriggerFilter(ChanDSPWidget):
         
         # Create instance of the parent class with these variables:
         
-        super().__init__(param_names, param_labels, *args, **kwargs)
+        super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
         
 class TriggerFilterBuilder:
     """Builder method for factory creation."""
@@ -45,5 +48,5 @@ class TriggerFilterBuilder:
         -------
         TriggerFilter
             Instance of the DSP class widget.
-        """  
+        """
         return TriggerFilter(*args, **kwargs)

@@ -12,26 +12,30 @@ from chan_dsp_widget import ChanDSPWidget
 import xia_constants as xia
 
 class Trace(ChanDSPWidget):
-    """Trace DSP tab (ChanDSPWidget)."""
+    """Trace DSP tab (ChanDSPWidget).
     
-    def __init__(self, *args, **kwargs):
+    Methods
+    -------
+    configure(mgr, mod)
+        Configure the Trace class. Overridden from base class.
+    update(mgr, mod)
+        Update DSP from GUI. Overridden from base class.
+    display_dsp(mgr, mod)
+        Display DSP from the dataframe. Overridden from base class.
+    """
+    
+    def __init__(self, *args, nchannels=16, **kwargs):
         """Trace class constructor.  
 
-        Keyword arguments
+         Parameters
         -----------------
-        module : int
-            Module number from factory create method.
-
-        Methods
-        -------
-        configure(mgr, mod)
-            Configure the Trace class. Overridden from base class.
-        update(mgr, mod)
-            Update DSP from GUI. Overridden from base class.
-        display_dsp(mgr, mod)
-            Display DSP from the dataframe. Overridden from base class.
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nchannels : int, default=16
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
         """
-        
         # XIA API parameter names:
         
         param_names = [
@@ -49,7 +53,7 @@ class Trace(ChanDSPWidget):
         # Create instance of the parent class with these variables. Module
         # number gets passed via kwargs.
         
-        super().__init__(param_names, param_labels, *args, **kwargs)
+        super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
         
         # Add trace capture CSRA checkbox:
 

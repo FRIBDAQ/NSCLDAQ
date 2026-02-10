@@ -12,9 +12,18 @@ class TimingControl(ChanDSPWidget):
         Configure the TimingControl widget. Overridden from the base class.
     """
 
-    def __init__(self, *args, **kwargs):
-        """TimingControl class constructor."""
-        
+    def __init__(self, *args, nchannels=16, **kwargs):
+        """TimingControl class constructor.
+
+       Parameters
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nchannels : int, default=16
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
+        """        
         # XIA API parameter names:
         
         param_names = [
@@ -37,7 +46,7 @@ class TimingControl(ChanDSPWidget):
 
         # Create instance of the parent class with these variables:
         
-        super().__init__(param_names, param_labels, *args, **kwargs)
+        super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
 
         # Add the show diagram button. The signal connection is handled in the
         # channel DSP manager (mostly to "easily" prevent many of these from
@@ -72,7 +81,7 @@ class TimingControl(ChanDSPWidget):
         """
         
         for i in range(self.nchannels):
-            self.param_grid.itemAtPosition(i+1, 4).widget().setEnabled(False)
+            self.param_grid[i+1, 4].setEnabled(False)
         super().configure(mgr, mod)
 
 class TimingControlBuilder:

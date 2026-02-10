@@ -1,5 +1,3 @@
-import inspect
-
 import bitarray as ba
 ver = [int(i) for i in ba.__version__.split(".")]
 if bool(ver[0] >= 1 or (ver[0] == 1 and ver[1] >= 6)):
@@ -8,9 +6,7 @@ else:
     from converters import ba2int, int2ba, zeros
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (
-    QWidget, QGridLayout, QLabel, QLineEdit, QVBoxLayout, QCheckBox, QFrame
-)
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QVBoxLayout, QCheckBox, QFrame, QLineEdit
 
 class CSRA(QWidget):
     """Channel CSRA grid widget.
@@ -101,31 +97,37 @@ class CSRA(QWidget):
         
         # Subwidget configuration. Define the grid and add widgets. Each
         # configurable CSRA bit gets its own checkbox with the column given
-        # by bit+1 where bit is the CSRA bit value (key of the parameter
+        # by bit+2 where bit is the CSRA bit value (key of the parameter
         # label dict):
         
         grid = QWidget()
         self.param_grid = QGridLayout(grid)
 
-        self.param_grid.addWidget(QLabel("Ch."),0,0)        
+        self.param_grid.addWidget(QLabel("Ch."), 0, 0)        
+        self.param_grid.addWidget(QLabel("Value"), 0, 1)        
         for bit, pdict in self.param_labels.items():
             w = QLabel(pdict["label"])
             w.setFixedHeight(20)
             w.setToolTip(pdict["tooltip"])
-            self.param_grid.addWidget(w, 0, bit+1, Qt.AlignCenter)        
+            self.param_grid.addWidget(w, 0, bit+2, Qt.AlignCenter)        
 
         for i in range(self.nchannels):
             self.param_grid.addWidget(QLabel("%i" %i), i+1, 0)
+            # Widget to display CSRA value as read-only integer:
+            csra_value = QLineEdit()
+            csra_value.setMinimumWidth(60)
+            csra_value.setReadOnly(True)
+            self.param_grid.addWidget(csra_value, i+1, 1)
             for bit, pdict in self.param_labels.items():
                 cb = QCheckBox()
                 if pdict["label"] in disabled:
                     cb.setEnabled(False)
-                self.param_grid.addWidget(cb, i+1, bit+1, Qt.AlignCenter)
+                self.param_grid.addWidget(cb, i+1, bit+2, Qt.AlignCenter)
 
         # Horizontal line to separate individual channels from the bit toggle:
         
         row = self.nchannels + 2  # +1 each for title and for this.
-        span = len(self.param_labels) + 1  # +1 for Ch. column.
+        span = len(self.param_labels) + 2  # +1 each for Ch. and value cols.
         hline = QFrame()
         hline.setFrameShape(QFrame.HLine)
         self.param_grid.addWidget(hline, row, 0, 1, span)
@@ -138,10 +140,11 @@ class CSRA(QWidget):
             if pdict["label"] in disabled:
                 cb.setEnabled(False)
             cb.stateChanged.connect(
-                lambda state, bit=bit: self._select_all(bit, state)
+                lambda state, bit=bit: 
+                    self._select_all(bit, state)
             )
-            self.param_grid.addWidget(cb, row+1, bit+1, Qt.AlignCenter)
-                          
+            self.param_grid.addWidget(cb, row+1, bit+2, Qt.AlignCenter)
+                
         # Define layout:
         
         layout = QVBoxLayout()             
@@ -175,7 +178,7 @@ class CSRA(QWidget):
         for i in range(self.nchannels):
             csra = zeros(32, "little")
             for bit in self.param_labels:
-                csra[bit] = self.param_grid.itemAtPosition(i+1, bit+1).widget().isChecked()
+                csra[bit] = self.param_grid.itemAtPosition(i+1, bit+2).widget().isChecked()
             mgr.set_chan_par(mod, i, "CHANNEL_CSRA", float(ba2int(csra)))
             
     def display_dsp(self, mgr, mod):
@@ -190,12 +193,10 @@ class CSRA(QWidget):
             Module number.
         """        
         for i in range(self.nchannels):
-            csra = int2ba(
-                int(mgr.get_chan_par(mod, i, "CHANNEL_CSRA")), 32, "little"
-            )
-            
+            csra = int2ba(int(mgr.get_chan_par(mod, i, "CHANNEL_CSRA")), 32, "little")
+            self.param_grid.itemAtPosition(i+1, 1).widget().setText(str(ba2int(csra)))
             for bit, val in zip(self.param_labels, csra):
-                self.param_grid.itemAtPosition(i+1, bit+1).widget().setChecked(val)
+                self.param_grid.itemAtPosition(i+1, bit+2).widget().setChecked(val)
                 
     def copy_chan_dsp(self, idx):
         """Copy channel DSP parameters.
@@ -209,12 +210,14 @@ class CSRA(QWidget):
             Channel (row) index to copy parameters from.
         """        
         copy_params = []       
-        for col, _ in enumerate(self.param_labels, 1):
+        # Note that the start value is 2 here since cols 0, 1 are the channel
+        # number and the CSRA register as a 32-bit integer:
+        for col, _ in enumerate(self.param_labels, 2):
             copy_params.append(
                 self.param_grid.itemAtPosition(idx+1, col).widget().isChecked()
             )
         for i in range(self.nchannels):
-            for col, p in enumerate(copy_params, 1):
+            for col, p in enumerate(copy_params, 2):
                 self.param_grid.itemAtPosition(i+1, col).widget().setChecked(p)
 
     ##
@@ -232,7 +235,7 @@ class CSRA(QWidget):
             The bit state to set for all channels.
         """
         for i in range(self.nchannels):
-            self.param_grid.itemAtPosition(i+1, bit+1).widget().setChecked(state)
+            self.param_grid.itemAtPosition(i+1, bit+2).widget().setChecked(state)
          
 class CSRABuilder:
     """Builder method for factory creation."""

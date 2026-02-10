@@ -38,6 +38,10 @@ class AcquisitionToolBar(QToolBar):
         Enable toolbar widgets for system idle.
     enable_run_active() 
         Enable toolbar widgets for an active run.
+    set_module_spinbox_range()
+        Set the range of the module spinbox.
+    set_channel_spinbox_range()
+        Set the range of the channel spinbox for the current module.
     """
     
     def __init__(self, *args, **kwargs):        
@@ -97,10 +101,10 @@ class AcquisitionToolBar(QToolBar):
         
         self.current_mod = QSpinBox()
         self.current_mod.setPrefix("Mod. ")
-        self.current_mod.setRange(0, 99) # Set when booting system.
+        #self.current_mod.setRange(0, 99) # Set when booting system.
         self.current_chan = QSpinBox()
         self.current_chan.setPrefix("Chan. ")        
-        self.current_chan.setRange(0, 99) # Set when booting system.
+        #self.current_chan.setRange(0, 99) # Set when booting system.
         self.read_all = QCheckBox("Read all")
 
         selection_layout.addWidget(self.current_mod)
@@ -145,6 +149,27 @@ class AcquisitionToolBar(QToolBar):
         self.fast_acq.setEnabled(False)
         self.run_type.setEnabled(False)
         self.current_mod.setEnabled(False)
+
+    def set_module_spinbox_range(self, nmodules):
+        """Set the range of the module spinbox.
+        
+        Parameters
+        ----------
+        nmodules : int
+        Number of modules in the system.
+        """
+        self.current_mod.setRange(0, nmodules-1)
+        
+    def set_channel_spinbox_range(self, nchannels):
+        """Set the range of the channel spinbox for the currently selected
+        module. The system may be a mix of 16- and 32-channel boards.
+        
+        Parameters
+        ----------
+        nchannels : int
+            Number of channels on the module.
+        """
+        self.current_chan.setRange(0, nchannels-1)
 
 class AcquisitionToolBarBuilder:
     """Builder method for factory creation."""

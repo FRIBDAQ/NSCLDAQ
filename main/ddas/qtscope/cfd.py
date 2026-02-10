@@ -16,9 +16,19 @@ class CFD(ChanDSPWidget):
     display_dsp(mgr, mod) 
         Display DSP settings from the dataframe. Overridden from base class.
     """
-    def __init__(self, *args, **kwargs):
-        """CFD class constructor."""
-        
+    
+    def __init__(self, *args, nchannels=16, **kwargs):
+        """CFD class constructor.
+
+        Parameters
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nchannels : int, default=16
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
+        """        
         # XIA API parameter names:
         
         param_names = [
@@ -37,7 +47,7 @@ class CFD(ChanDSPWidget):
         
         # Create instance of the parent class with these variables:
         
-        super().__init__(param_names, param_labels, *args, **kwargs)
+        super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
 
     def disable_settings(self):
         """Disable CFD delay and scale.
@@ -46,8 +56,8 @@ class CFD(ChanDSPWidget):
         configurable. See Pixie-16 User's Manual Sec. 3.3.8.2 for details.
         """        
         for i in range(self.nchannels):
-            self.param_grid.itemAtPosition(i+1, 1).widget().setEnabled(False)
-            self.param_grid.itemAtPosition(i+1, 2).widget().setEnabled(False)
+            self.param_grid[i+1, 1].setEnabled(False)
+            self.param_grid[i+1, 2].setEnabled(False)
         
     ##
     # Overridden class methods
@@ -68,8 +78,7 @@ class CFD(ChanDSPWidget):
         """        
         col = self.param_names.index("CFDScale") + 1        
         for row in range(1, self.nchannels+1):
-            w = self.param_grid.itemAtPosition(row, col).widget()
-            w.setValidator(QIntValidator(0, 7))            
+            w = self.param_grid[row, col].setValidator(QIntValidator(0, 7))
         super().configure(mgr, mod)
     
     def display_dsp(self, mgr, mod):
@@ -99,7 +108,7 @@ class CFD(ChanDSPWidget):
                         precision=3,
                         unique=False
                     )
-                self.param_grid.itemAtPosition(i+1, col).widget().setText(val)
+                self.param_grid[i+1, col].setText(val)
          
 class CFDBuilder:
     """Builder method for factory creation."""

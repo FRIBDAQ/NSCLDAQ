@@ -3,11 +3,9 @@ import logging
 import numpy as np
 
 from PyQt5.QtGui import QDoubleValidator
-from PyQt5.QtWidgets import (
-    QWidget, QGridLayout, QLabel, QLineEdit, QVBoxLayout, QSizePolicy
-)
+from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QVBoxLayout
 
-import colors
+from extensions import MyGridLayout
 
 # @todo Some visual indication settings are changed but not applied.
 
@@ -30,7 +28,7 @@ class ChanDSPWidget(QWidget):
         Number of channels per module.
     has_extra_params : bool
         Extra parameter flag.
-    param_grid : QGridLayout
+    param_grid : MyGridLayout
         Grid of QWidgets to display DSP parameters.
     logger : Logger
         QtScope Logging instance.
@@ -47,10 +45,7 @@ class ChanDSPWidget(QWidget):
         Copy DSP from channel idx in GUI.
     """
     
-    def __init__(
-            self, param_names=None, param_labels=None, nchannels=16,
-            *args, **kwargs
-    ):
+    def __init__(self, param_names=None, param_labels=None, nchannels=16, *args, **kwargs):
         """ChanDSPWidget class constructor.
 
         Initialize generic channel DSP widget, set parameter validators and 
@@ -60,15 +55,15 @@ class ChanDSPWidget(QWidget):
         
         Parameters
         ----------
-        param_names : list 
+        param_names : list, default=None
             DSP parameter names for API read/write calls.
-        param_labels : list
+        param_labels : list, default=None
             Column labels for the GUI.
         nchannels : int, default=16
-            Number of channels per module. 
-        """        
+            Number of channels per module.
+        """
         super().__init__(*args, **kwargs)
-
+        
         self.logger = logging.getLogger("qtscope_logger")
         
         self.param_names = param_names
@@ -79,7 +74,7 @@ class ChanDSPWidget(QWidget):
         # Subwidget configuration:
         
         dsp_grid = QWidget()
-        self.param_grid = QGridLayout(dsp_grid)
+        self.param_grid = MyGridLayout(dsp_grid)
 
         self.param_grid.addWidget(QLabel("Ch."), 0, 0)
         for col, label in enumerate(self.param_labels, 1):
@@ -90,12 +85,7 @@ class ChanDSPWidget(QWidget):
             for col, _ in enumerate(self.param_labels, 1): 
                 w = QLineEdit()                
                 # Default channel parameter validator is double:            
-                w.setValidator(
-                    QDoubleValidator(
-                        0, 999999, 3,
-                        notation=QDoubleValidator.StandardNotation
-                    )
-                )                
+                w.setValidator(QDoubleValidator(0, 999999, 3, notation=QDoubleValidator.StandardNotation))                
                 self.param_grid.addWidget(w, i+1, col)
         
         # Define layout and add widgets:
@@ -133,9 +123,7 @@ class ChanDSPWidget(QWidget):
         """        
         for i in range(self.nchannels):
             for col, name in enumerate(self.param_names, 1):
-                val = float(
-                    self.param_grid.itemAtPosition(i+1, col).widget().text()
-                )
+                val = float(self.param_grid[i+1, col].text())
                 mgr.set_chan_par(mod, i, name, val)
                 
                 
@@ -148,7 +136,7 @@ class ChanDSPWidget(QWidget):
             DSP manager for calls to XIA API.
         mod : int
             Currently selected module tab index.
-        """        
+        """
         for i in range(self.nchannels):
             for col, name in enumerate(self.param_names, 1):
                 val = np.format_float_positional(
@@ -156,7 +144,7 @@ class ChanDSPWidget(QWidget):
                     precision=3,
                     unique=False
                 )
-                self.param_grid.itemAtPosition(i+1, col).widget().setText(val)
+                self.param_grid[i+1, col].setText(val)
             
     def copy_chan_dsp(self, idx):
         """Copy channel parameters to all other channels on the module. 
@@ -171,5 +159,5 @@ class ChanDSPWidget(QWidget):
         """
         for i in range(self.nchannels):
             for col, p in enumerate(self.param_names, 1):
-                val = self.param_grid.itemAtPosition(idx+1, col).widget().text()
-                self.param_grid.itemAtPosition(i+1, col).widget().setText(val)
+                val = self.param_grid[idx+1, col].text()
+                self.param_grid[i+1, col].setText(val)

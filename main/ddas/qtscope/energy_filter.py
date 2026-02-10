@@ -1,6 +1,3 @@
-import numpy as np
-import pandas as pd
-
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QSpinBox
 
 from chan_dsp_widget import ChanDSPWidget
@@ -23,11 +20,17 @@ class EnergyFilter(ChanDSPWidget):
         Display DSP from the dataframe. Overridden from base class.
     """
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, nchannels=16, **kwargs):
         """EnergyFilter class constructor.  
 
-        Keyword arguments:
-            module (int): Module number from factory create method.
+        Parameters
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nchannels : int, default=16
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
         """        
         # XIA API parameter names:
         
@@ -45,7 +48,7 @@ class EnergyFilter(ChanDSPWidget):
         
         # Create instance of the parent class with these variables:
         
-        super().__init__(param_names, param_labels, *args, **kwargs)
+        super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
         
         # Add filter range selection mechanism. Filter length is limited to
         # 127 decimated clock cycles, filter range averages 2^range samples

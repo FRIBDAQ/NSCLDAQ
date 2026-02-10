@@ -13,6 +13,11 @@
 #include <Configuration.h>
 #include <SystemBooter.h>
 
+/**
+ * @todo (ASC 1/8/25): See Github issue #417: simplify readout and pass system
+ * information around via the Configuation class.
+ */ 
+
 const int MAX_MODULES_PER_CRATE = 13; //!< A full crate is 13 modules.
 
 class CMyTrigger;
@@ -28,62 +33,7 @@ class CExperiment;
  */
 
 class CMyEventSegment : public CEventSegment
-{
-private:
-#pragma pack(push, 1) // Do not pad.
-    /**
-     * @struct HitHeader
-     * @brief Pixie-16 list-mode event header data and methods to extract 
-     * identifying information from the first word.
-     */
-    struct HitHeader {
-	uint32_t s_id;            //!< Pixie list-mode event header word 0.
-	uint32_t s_tstampLow;     //!< Pixie list-mode event header word 1.
-	uint32_t s_tstampHighCFD; //!< Pixie list-mode event header word 2.
-	uint32_t s_traceInfo;     //!< Pixie list-mode event header word 3.
-        
-	// Selectors -- a bit too magic numbery but sufficient for what we
-	// want to do in debugging. See the Pixie-16 manual Sec. 4.2.2 "List
-	// Mode Data Structures" for more information.
-
-	/** 
-	 * @brief Get the channel ID from word 0.
-	 * @return The channel ID.
-	 */
-	unsigned getChan() const {
-	    return s_id & 0xf;
-	}
-	/** 
-	 * @brief Get the slot ID from word 0.
-	 * @return The slot ID.
-	 */
-	unsigned getSlot() const {
-	    return (s_id & 0xf0) >> 4;
-	}
-	/** 
-	 * @brief Get the crate ID from word 0.
-	 * @return The crate ID.
-	 */
-	unsigned getCrate() const {
-	    return (s_id & 0xf00) >> 8;
-	}
-	/** 
-	 * @brief Get the header length from word 0.
-	 * @return The header length (32-bit words, inclusive).
-	 */
-	unsigned headerLength() const {
-	    return (s_id & 0x1f000) >> 12;
-	}
-	/** 
-	 * @brief Get the event length from word 0.
-	 * @return The event length (32-bit words, inclusive).
-	 */
-	unsigned eventLength() const {
-	    return (s_id & 0x7ffe0000) >> 17;
-	}
-    };
-#pragma pack(pop)
-    
+{   
 private:
     size_t m_nModules;             //!< Number of modules in the crate.
     std::vector<int> m_modEvtLens; //!< Expected event lengths (32-bit words).
@@ -138,18 +88,25 @@ public:
     /** @brief Manage run resume operation. */
     virtual void onResume();
     /** @brief Just return. Sorting is offloaded into its own process. */
-    virtual void onEnd(CExperiment* pExperiment);
+    virtual void onEnd(CExperiment* pExperiment) { return; };
 
     /** 
      * @brief Get the number of modules in the crate.
      * @return Number of modules.
      */
-    size_t GetNumberOfModules() { return m_nModules; }
+    size_t getNumberOfModules() { return m_nModules; }
+    /**
+     * @brief Get the channel count in a given module.
+     * @param mod The module index.
+     * @return The channel count of that module.
+     */
+    unsigned short getChannelCount(unsigned int mod)
+	{ return m_config.getChannelCount(mod); }
     /** 
      * @brief Get the crate ID value from the configuration.
      * @return The crate ID.
      */
-    int GetCrateID() const;
+    int getCrateID() const { return m_config.getCrateId(); }
 
     /**
      * @brief Perform clock synchronization.

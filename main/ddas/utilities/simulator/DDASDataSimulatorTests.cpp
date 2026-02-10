@@ -41,7 +41,10 @@ class SimulatorTests : public CppUnit::TestFixture
 {
 public:
     CPPUNIT_TEST_SUITE(SimulatorTests);
+    CPPUNIT_TEST(idword);
+    CPPUNIT_TEST(idword_revh);
     CPPUNIT_TEST(word0);
+    CPPUNIT_TEST(word0_revh);
     CPPUNIT_TEST(word1and2_100);
     CPPUNIT_TEST(word1and2_250);
     CPPUNIT_TEST(word1and2_500);
@@ -54,7 +57,8 @@ public:
     CPPUNIT_TEST_SUITE_END();
     
 private:
-    DDASHitUnpacker   m_unpacker;
+    DDASHit m_hit, m_unpacked;
+    DDASHitUnpacker m_unpacker;
     DDASDataSimulator* m_pSimulator;
 
 public:    
@@ -68,7 +72,10 @@ public:
 	};
     
 protected:
+    void idword();
+    void idword_revh();
     void word0();
+    void word0_revh();
     void word1and2_100();
     void word1and2_250();
     void word1and2_500();
@@ -83,180 +90,275 @@ protected:
 CPPUNIT_TEST_SUITE_REGISTRATION(SimulatorTests);
 
 void
+SimulatorTests::idword()
+{
+    m_hit.Reset();
+    m_unpacked.Reset();
+
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(15);
+    m_hit.setADCResolution(16);
+    
+    m_pSimulator->setBuffer(m_hit);
+    auto buf = m_pSimulator->getBuffer();
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
+    
+    EQ(m_hit.getHardwareRevision(), m_unpacked.getHardwareRevision());
+    EQ(m_hit.getADCResolution(), m_unpacked.getADCResolution());
+    EQ(m_hit.getModMSPS(), m_unpacked.getModMSPS());
+}
+
+void
+SimulatorTests::idword_revh()
+{
+    m_hit.Reset();
+    m_unpacked.Reset();
+    
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(17);
+    m_hit.setADCResolution(16);
+    
+    m_pSimulator->setBuffer(m_hit);
+    auto buf = m_pSimulator->getBuffer();
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
+    
+    EQ(m_hit.getHardwareRevision(), m_unpacked.getHardwareRevision());
+    EQ(m_hit.getADCResolution(), m_unpacked.getADCResolution());
+    EQ(m_hit.getModMSPS(), m_unpacked.getModMSPS());
+}
+
+void
 SimulatorTests::word0()
 {
-    DDASHit hit, unpacked;
+    m_hit.Reset();
+    m_unpacked.Reset();
+
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(15);
+    m_hit.setFinishCode(0);
+    m_hit.setCrateID(0);
+    m_hit.setSlotID(2);
+    m_hit.setChannelID(0);
     
-    hit.setModMSPS(250); 
-    hit.setFinishCode(0);
-    hit.setCrateID(0);
-    hit.setSlotID(2);
-    hit.setChannelID(0);
-    
-    m_pSimulator->setBuffer(hit);
+    m_pSimulator->setBuffer(m_hit);
     auto buf = m_pSimulator->getBuffer();
-    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
     
-    EQ(hit.getFinishCode(), unpacked.getFinishCode());
-    EQ(hit.getCrateID(), unpacked.getCrateID());
-    EQ(hit.getSlotID(), unpacked.getSlotID());
-    EQ(hit.getChannelID(), unpacked.getChannelID());
+    // Unpacker should set the channel length and header length based on 
+    // the fixed header size for the hit options, which in this case is 
+    // just the raw event of 4 32-bit words:
+
+    EQ(m_hit.getFinishCode(), m_unpacked.getFinishCode());
+    EQ(uint32_t(4), m_unpacked.getChannelLength());
+    EQ(uint32_t(4), m_unpacked.getChannelHeaderLength());
+    EQ(m_hit.getCrateID(), m_unpacked.getCrateID());
+    EQ(m_hit.getSlotID(), m_unpacked.getSlotID());
+    EQ(m_hit.getChannelID(), m_unpacked.getChannelID());
+}
+
+void
+SimulatorTests::word0_revh()
+{
+    m_hit.Reset();
+    m_unpacked.Reset();
+
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(17);
+    m_hit.setFinishCode(0);
+    m_hit.setCrateID(0);
+    m_hit.setSlotID(2);
+    m_hit.setChannelID(0);
+    
+    m_pSimulator->setBuffer(m_hit);
+    auto buf = m_pSimulator->getBuffer();
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
+
+    // Unpacker should set the channel length and header length based on 
+    // the fixed header size for the hit options, which in this case is 
+    // just the raw event of 4 32-bit words:
+
+    EQ(m_hit.getFinishCode(), m_unpacked.getFinishCode());
+    EQ(uint32_t(4), m_unpacked.getChannelLength());
+    EQ(uint32_t(4), m_unpacked.getChannelHeaderLength());
+    EQ(m_hit.getCrateID(), m_unpacked.getCrateID());
+    EQ(m_hit.getSlotID(), m_unpacked.getSlotID());
+    EQ(m_hit.getChannelID(), m_unpacked.getChannelID());
 }
 
 void
 SimulatorTests::word1and2_100()
 {
-    DDASHit hit, unpacked;
+    m_hit.Reset();
+    m_unpacked.Reset();
 
-    hit.setModMSPS(100);    
-    hit.setTime(1234.5678 + 10*static_cast<double>(std::pow(2,32)));
+    m_hit.setModMSPS(100);
+    m_hit.setHardwareRevision(15);
+    m_hit.setTime(1234.5678 + 10*static_cast<double>(std::pow(2,32)));
     
-    m_pSimulator->setBuffer(hit);
+    m_pSimulator->setBuffer(m_hit);
     auto buf = m_pSimulator->getBuffer();
-    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
     
-    auto diff = hit.getTime() - 42949674194.5676;
-    EQ(uint64_t(42949674190), unpacked.getCoarseTime());
+    auto diff = m_hit.getTime() - 42949674194.5676;
+    EQ(uint64_t(42949674190), m_unpacked.getCoarseTime());
     ASSERTMSG("100 MSPS reconstructed time", std::abs(diff) < 0.001);
 }
 
 void
 SimulatorTests::word1and2_250()
 {
-    DDASHit hit, unpacked;
+    m_hit.Reset();
+    m_unpacked.Reset();
+
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(15);
+    m_hit.setTime(1234.5678 + 10*static_cast<double>(std::pow(2,32)));
     
-    hit.setModMSPS(250);
-    hit.setTime(1234.5678 + 10*static_cast<double>(std::pow(2,32)));
-    
-    m_pSimulator->setBuffer(hit);
+    m_pSimulator->setBuffer(m_hit);
     auto buf = m_pSimulator->getBuffer();
-    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
     
-    double diff = unpacked.getTime() - 42949674194.5676;    
-    EQ(uint64_t(42949674192), unpacked.getCoarseTime());
-    EQ(uint32_t(0), unpacked.getCFDTrigSource());
+    double diff = m_unpacked.getTime() - 42949674194.5676;    
+    EQ(uint64_t(42949674192), m_unpacked.getCoarseTime());
+    EQ(uint32_t(0), m_unpacked.getCFDTrigSource());
     ASSERTMSG("250 MSPS reconstructed time", std::abs(diff) < 0.001);
 }
 
 void
 SimulatorTests::word1and2_500()
 {
-    DDASHit hit, unpacked;
+    m_hit.Reset();
+    m_unpacked.Reset();
+
+    m_hit.setModMSPS(500);
+    m_hit.setHardwareRevision(15);
+    m_hit.setTime(1234.5678 + 10*static_cast<double>(std::pow(2,32)));
     
-    hit.setModMSPS(500);
-    hit.setTime(1234.5678 + 10*static_cast<double>(std::pow(2,32)));
-    
-    m_pSimulator->setBuffer(hit);
+    m_pSimulator->setBuffer(m_hit);
     auto buf = m_pSimulator->getBuffer();
-    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
     
-    double diff = unpacked.getTime() - 42949674194.5676;    
-    EQ(uint64_t(42949674190), unpacked.getCoarseTime());
-    EQ(uint32_t(3), unpacked.getCFDTrigSource());
+    double diff = m_unpacked.getTime() - 42949674194.5676;    
+    EQ(uint64_t(42949674190), m_unpacked.getCoarseTime());
+    EQ(uint32_t(3), m_unpacked.getCFDTrigSource());
     ASSERTMSG("500 MSPS reconstructed time", std::abs(diff) < 0.001);
 }
 
 void
 SimulatorTests::word3()
 {
-    DDASHit hit, unpacked;
-    
-    hit.setModMSPS(250);
-    hit.setEnergy(9876);
-    
-    m_pSimulator->setBuffer(hit);
-    auto buf = m_pSimulator->getBuffer();
-    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    m_hit.Reset();
+    m_unpacked.Reset();
 
-    EQ(hit.getEnergy(), unpacked.getEnergy());
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(15);
+    m_hit.setEnergy(9876);
+    
+    m_pSimulator->setBuffer(m_hit);
+    auto buf = m_pSimulator->getBuffer();
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
+
+    EQ(m_hit.getEnergy(), m_unpacked.getEnergy());
 }
 
 void
 SimulatorTests::extTS()
 {
-    DDASHit hit, unpacked;
+    m_hit.Reset();
+    m_unpacked.Reset();
+
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(15);
+    m_hit.setExternalTimestamp(1234);
     
-    hit.setModMSPS(250);
-    hit.setExternalTimestamp(1234);
-    
-    m_pSimulator->setBuffer(hit);
+    m_pSimulator->setBuffer(m_hit);
     auto buf = m_pSimulator->getBuffer();
-    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
 
     // Not specifiying a calibration for external TS is an error: 
-    EXCEPTION(m_pSimulator->putHit(hit, 0, true), std::runtime_error);
-    EQ(hit.getExternalTimestamp(), unpacked.getExternalTimestamp());
+    EXCEPTION(m_pSimulator->putHit(m_hit, 0, true), std::runtime_error);
+    EQ(m_hit.getExternalTimestamp(), m_unpacked.getExternalTimestamp());
 }
 
 void
 SimulatorTests::energySums()
 {
-    DDASHit hit, unpacked;
+    m_hit.Reset();
+    m_unpacked.Reset();
+    
     std::vector<uint32_t> sums;
     for (int i = 0; i < SIZE_OF_ENE_SUMS; i++) {
-	sums.push_back(i);
+    sums.push_back(i);
     }
 
-    hit.setModMSPS(250);
-    hit.setEnergySums(sums);
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(15);
+    m_hit.setEnergySums(sums);
     
-    m_pSimulator->setBuffer(hit);
+    m_pSimulator->setBuffer(m_hit);
     auto buf = m_pSimulator->getBuffer();
-    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
     
     for (int i = 0; i < SIZE_OF_ENE_SUMS; i++) {
-	EQ(hit.getEnergySums()[i], unpacked.getEnergySums()[i]);
+	EQ(m_hit.getEnergySums()[i], m_unpacked.getEnergySums()[i]);
     }
 }
 
 void
 SimulatorTests::qdcSums()
 {
-    DDASHit hit, unpacked;
+    m_hit.Reset();
+    m_unpacked.Reset();
+    
     std::vector<uint32_t> sums;
     for (int i = 0; i < SIZE_OF_QDC_SUMS; i++) {
 	sums.push_back(i);
     }
 
-    hit.setModMSPS(250);
-    hit.setQDCSums(sums);
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(15);
+    m_hit.setQDCSums(sums);
     
-    m_pSimulator->setBuffer(hit);
+    m_pSimulator->setBuffer(m_hit);
     auto buf = m_pSimulator->getBuffer();
-    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
     
     for (int i = 0; i < SIZE_OF_QDC_SUMS; i++) {
-	EQ(hit.getQDCSums()[i], unpacked.getQDCSums()[i]);
+	EQ(m_hit.getQDCSums()[i], m_unpacked.getQDCSums()[i]);
     }
 }
 
 void
 SimulatorTests::trace()
 {
-    DDASHit hit, unpacked;
-    std::vector<uint16_t> trace;
-    
+    m_hit.Reset();
+    m_unpacked.Reset();
+
+    std::vector<uint16_t> trace;    
     for (int i = 0; i < 10; i++) {
 	trace.push_back(i);
     }
     
-    hit.setModMSPS(250);   
-    hit.setTrace(trace);
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(15);   
+    m_hit.setTrace(trace);
     
-    m_pSimulator->setBuffer(hit);
+    m_pSimulator->setBuffer(m_hit);
     auto buf = m_pSimulator->getBuffer();
-    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
 
-    EQ(hit.getTraceLength(), unpacked.getTraceLength());
+    EQ(m_hit.getTraceLength(), m_unpacked.getTraceLength());
     for (int i = 0; i < 10; i++) {
-	EQ(hit.getTrace()[i], unpacked.getTrace()[i]);
+	EQ(m_hit.getTrace()[i], m_unpacked.getTrace()[i]);
     }
 }
 
 void
 SimulatorTests::allOptions()
 {
-    DDASHit hit, unpacked;
+    m_hit.Reset();
+    m_unpacked.Reset();
+    
     std::vector<uint32_t> esums, qdcsums;
     std::vector<uint16_t> trace;
     
@@ -270,15 +372,16 @@ SimulatorTests::allOptions()
 	trace.push_back(i);
     }
     
-    hit.setModMSPS(250);
-    hit.setExternalTimestamp(1234);
-    hit.setEnergySums(esums);
-    hit.setQDCSums(qdcsums);
-    hit.setTrace(trace);
+    m_hit.setModMSPS(250);
+    m_hit.setHardwareRevision(15);
+    m_hit.setExternalTimestamp(1234);
+    m_hit.setEnergySums(esums);
+    m_hit.setQDCSums(qdcsums);
+    m_hit.setTrace(trace);
     
-    m_pSimulator->setBuffer(hit);
+    m_pSimulator->setBuffer(m_hit);
     auto buf = m_pSimulator->getBuffer();
-    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), unpacked);
+    m_unpacker.unpack(buf.data(), buf.data() + buf.size(), m_unpacked);
 
     // Ensure the event lengths are correct and the optional data are
     // set properly:
@@ -286,16 +389,16 @@ SimulatorTests::allOptions()
     uint32_t hdrLen = SIZE_OF_RAW_EVENT + SIZE_OF_EXT_TS
 	+ SIZE_OF_ENE_SUMS + SIZE_OF_QDC_SUMS;
     uint32_t chanLen = hdrLen + std::ceil(trace.size()/2);
-    EQ(hdrLen, unpacked.getChannelHeaderLength());
-    EQ(chanLen, unpacked.getChannelLength());
-    EQ(hit.getExternalTimestamp(), unpacked.getExternalTimestamp());
+    EQ(hdrLen, m_unpacked.getChannelHeaderLength());
+    EQ(chanLen, m_unpacked.getChannelLength());
+    EQ(m_hit.getExternalTimestamp(), m_unpacked.getExternalTimestamp());
     for (int i = 0; i < SIZE_OF_ENE_SUMS; i++) {
-	EQ(hit.getEnergySums()[i], unpacked.getEnergySums()[i]);
+	EQ(m_hit.getEnergySums()[i], m_unpacked.getEnergySums()[i]);
     }
     for (int i = 0; i < SIZE_OF_QDC_SUMS; i++) {
-	EQ(hit.getQDCSums()[i], unpacked.getQDCSums()[i]);
+	EQ(m_hit.getQDCSums()[i], m_unpacked.getQDCSums()[i]);
     }
     for (int i = 0; i < 10; i++) {
-	EQ(hit.getTrace()[i], unpacked.getTrace()[i]);
+	EQ(m_hit.getTrace()[i], m_unpacked.getTrace()[i]);
     }
 }

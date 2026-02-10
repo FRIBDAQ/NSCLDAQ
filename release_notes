@@ -1,3 +1,6 @@
+== 12.2-002 ==
+* Update DDASFormat library to version 1.1-003
+
 == 12.2-dev ==
 * Bug fix on MDPPTriggerControl GUI
 * Provide mvlcgenerate - transform daqconfig.tcl files to MVLC readout yaml.
@@ -35,7 +38,7 @@ by COutputThread (nummap_chunk() issue fixed)
 * Issue #411 - use a local version of the MVLC Slow controls client library.
 * Issue #410 - better messages in config for incorporated builds.
 * Issue #409 - Improve perfromance of stats plot by doing refresh on demand.
-* Issue #400 - Only build the test binaries on make check rather than make all as before  
+* Issue #400 - Only build the test binaries on make check rather than make all as before
 * Added QT5LICENSE to top level of tree.
 * Issue #418 - add the process command to ringbuffer status
 * Issue #345 - address misc. build issues and edge cases, support oot builds when srcdir is read-only

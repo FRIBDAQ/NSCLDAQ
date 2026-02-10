@@ -3,7 +3,7 @@ from chan_dsp_widget import ChanDSPWidget
 class Baseline(ChanDSPWidget):
     """Baseline DSP tab (ChanDSPWidget)."""
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, nchannels=16, **kwargs):
         """Baseline class constructor. """        
         # XIA API parameter names:
         
@@ -21,7 +21,7 @@ class Baseline(ChanDSPWidget):
         
         # Create instance of the parent class with these variables:
         
-        super().__init__(param_names, param_labels, *args, **kwargs)
+        super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
 
 class BaselineBuilder:
     """Builder method for factory creation."""

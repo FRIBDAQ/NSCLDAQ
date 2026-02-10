@@ -60,19 +60,21 @@ public:
     
 private:
     unsigned short m_crate;  //!< Crate ID value.
-    unsigned short m_module; //!< Module number.
-    double m_prevIC[16];     //!< Previous input counts (# raw fast triggers.).
-    double m_prevOC[16];     //!< Previous output counts (# accepted triggers).
+    unsigned short m_module; //!< Module number.    
+    unsigned short m_nChannels; //!< Channels for this scaler object
+    std::vector<unsigned int> m_prevIC; //!< Previous raw trigger count
+    std::vector<unsigned int> m_prevOC; //!< Previous accepted trigger count
     std::vector<uint32_t> m_scalers; //!< Vector of scaler data for the module.
     Statistics m_statistics;         //!< Storage for calculated scaler data.
 
 public:
     /**
      * @brief Constructor.
-     * @param mod The module number.
      * @param crate The crate ID where the module resides.
+     * @param mod The module number.
+     * @param nchan Number of channels in the module.
      */
-    CMyScaler(unsigned short mod, unsigned short crate);
+    CMyScaler(unsigned short crate, unsigned short mod, unsigned short nchan);
     /** @brief Destructor. */
     ~CMyScaler();
 
@@ -91,9 +93,10 @@ public:
     virtual void disable() {};
     /** 
      * @brief Return the size of the scaler data.
-     * @return Always 32 (only for 16-channel cards!)
+     * @return Size of scalar data = 2 x number of channels on the module.
+     * Does not include the crate ID word!
      */
-    virtual unsigned int size() { return 32; };
+    virtual unsigned int size() { return 2*m_nChannels; };
     /** 
      * @brief Get the run statistics.
      * @return Reference to the statistics storage object.

@@ -9,12 +9,12 @@ import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import (
-    QWidget, QGridLayout, QLabel, QLineEdit, QVBoxLayout,
-    QComboBox, QPushButton, QFrame
+    QWidget, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton, QFrame
 )
 
-import xia_constants as xia
 import colors
+from extensions import MyGridLayout
+import xia_constants as xia
 
 class AnalogSignal(QWidget):
     """Analog signal tab widget.
@@ -35,7 +35,7 @@ class AnalogSignal(QWidget):
         Number of channels per module.
     has_extra_params : bool 
         Extra parameter flag.
-    param_grid : QGridLayout 
+    param_grid : MyGridLayout 
         Grid of QWidgets to display DSP parameters
     b_adjust_offsets : QPushButton 
         Button for signal connection to adjust DC offsets in this module.
@@ -52,7 +52,7 @@ class AnalogSignal(QWidget):
         Copy DSP from channel idx in GUI.
     """
     
-    def __init__(self, nchannels=16, *args, **kwargs):
+    def __init__(self, *args, nchannels=16, **kwargs):
         """AnalogSignal constructor.
         
         Initialize analog signal DSP widget, set parameter validators and 
@@ -61,9 +61,13 @@ class AnalogSignal(QWidget):
         while the DSP grid is 0-indexed. 
 
         Parameters
-        ----------
-        nchannels : int, optional, default=16
-            Number of channels per module. 
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent QWidget.
+        nchannels : int, default=16
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent QWidget.
         """        
         super().__init__(*args, **kwargs)
 
@@ -84,7 +88,7 @@ class AnalogSignal(QWidget):
         # Subwidget configuration:
         
         dsp_grid = QWidget()
-        self.param_grid = QGridLayout(dsp_grid)
+        self.param_grid = MyGridLayout(dsp_grid)
         
         self.param_grid.addWidget(QLabel("Ch."), 0, 0)         
         for col, label in enumerate(self.param_labels, 1):
@@ -150,7 +154,7 @@ class AnalogSignal(QWidget):
 
         Parameters
         ----------
-        mgr : DSPManager
+        mgr : DSP-Manager
             Manager for internal DSP and interface for XIA API 
             read/write operations.
         mod : int 
@@ -161,12 +165,12 @@ class AnalogSignal(QWidget):
                 int(mgr.get_chan_par(mod, i, "CHANNEL_CSRA")),
                 32, "little"
             ) # 32 bits, little-endian.
-            csra[xia.CSRA_GAIN] = self.param_grid.itemAtPosition(i+1, 2).widget().currentIndex()
-            csra[xia.CSRA_POLARITY] = self.param_grid.itemAtPosition(i+1, 3).widget().currentIndex()
+            csra[xia.CSRA_GAIN] = self.param_grid[i+1, 2].currentIndex()
+            csra[xia.CSRA_POLARITY] = self.param_grid[i+1, 3].currentIndex()
 
             mgr.set_chan_par(
                 mod, i, "VOFFSET",
-                float(self.param_grid.itemAtPosition(i+1, 1).widget().text())
+                float(self.param_grid[i+1, 1].text())
             )
             mgr.set_chan_par(mod, i, "CHANNEL_CSRA", float(ba2int(csra)))
             
@@ -187,18 +191,14 @@ class AnalogSignal(QWidget):
                 precision=3,
                 unique=False
             )
-            self.param_grid.itemAtPosition(i+1, 1).widget().setText(offset)
+            self.param_grid[i+1, 1].setText(offset)
                                  
             csra = int2ba(
                 int(mgr.get_chan_par(mod, i, "CHANNEL_CSRA")),
                 32, "little"
             ) # 32-bit little endian
-            self.param_grid.itemAtPosition(i+1, 2).widget().setCurrentIndex(
-                csra[xia.CSRA_GAIN]
-            )
-            self.param_grid.itemAtPosition(i+1, 3).widget().setCurrentIndex(
-                csra[xia.CSRA_POLARITY]
-            )
+            self.param_grid[i+1, 2].setCurrentIndex(csra[xia.CSRA_GAIN])
+            self.param_grid[i+1, 3].setCurrentIndex(csra[xia.CSRA_POLARITY])
                   
     def copy_chan_dsp(self, idx):
         """Copy channel DSP parameters.
@@ -211,14 +211,14 @@ class AnalogSignal(QWidget):
         idx : int
             Channel index to copy parameters from.
         """        
-        offset = self.param_grid.itemAtPosition(idx+1, 1).widget().text()
-        gain = self.param_grid.itemAtPosition(idx+1, 2).widget().currentIndex()
-        pol = self.param_grid.itemAtPosition(idx+1, 3).widget().currentIndex()
+        offset = self.param_grid[idx+1, 1].text()
+        gain = self.param_grid[idx+1, 2].currentIndex()
+        pol = self.param_grid[idx+1, 3].currentIndex()
         
         for i in range(self.nchannels):
-            self.param_grid.itemAtPosition(i+1, 1).widget().setText(offset)
-            self.param_grid.itemAtPosition(i+1, 2).widget().setCurrentIndex(gain)
-            self.param_grid.itemAtPosition(i+1, 3).widget().setCurrentIndex(pol)
+            self.param_grid[i+1, 1].setText(offset)
+            self.param_grid[i+1, 2].setCurrentIndex(gain)
+            self.param_grid[i+1, 3].setCurrentIndex(pol)
             
 class AnalogSignalBuilder:
     """Builder method for factory creation."""

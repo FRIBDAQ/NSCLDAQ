@@ -6,7 +6,6 @@ from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import QMainWindow
 
 from mod_dsp_layout import ModDSPLayout
-from thread_pool_manager import ThreadPoolManager
 
 class ModDSPGUI(QMainWindow):
     """Module DSP GUI class.
@@ -93,7 +92,7 @@ class ModDSPGUI(QMainWindow):
         self.toolbar.b_load.clicked.connect(self.load_dsp)
         self.toolbar.b_cancel.clicked.connect(self.cancel)
 
-    def configure(self, mgr, nmodules):
+    def configure(self, mgr, nmodules, channel_map):
         """Configure module DSP manager.
 
         Setup the toolbar, get the DSP, and create the top-level widget. This 
@@ -107,6 +106,8 @@ class ModDSPGUI(QMainWindow):
             operations.
         nmodules : int
             Number of installed modules.
+        channel_map : list
+            Map of channels on each module.
         """        
         self.nmodules = nmodules
         self.dsp_mgr = mgr
@@ -116,7 +117,7 @@ class ModDSPGUI(QMainWindow):
         # Crate the module DSP layout and insert it on top of the
         # manager layout above the toolbar:
         
-        self.mod_params = ModDSPLayout(self.mod_dsp_factory, self.nmodules)
+        self.mod_params = ModDSPLayout(self.mod_dsp_factory, self.nmodules, channel_map)
         self.setCentralWidget(self.mod_params)
   
         # Configure the module parameter widgets. Connect signals for the CSRB
@@ -128,14 +129,10 @@ class ModDSPGUI(QMainWindow):
             name = type(w).__name__
             if name == "CSRB":
                 csrb = w
-                csrb.rbgroup.buttonClicked.connect(
-                    lambda: csrb.set_param_grid(self.dsp_mgr)
-                )
+                csrb.rbgroup.buttonClicked.connect(lambda: csrb.set_param_grid(self.dsp_mgr))
             if name == "TrigConfig0":
                 tc0 = w
-                tc0.rbgroup.buttonClicked.connect(
-                    lambda: tc0.set_param_grid(self.dsp_mgr)
-                )
+                tc0.rbgroup.buttonClicked.connect(lambda: tc0.set_param_grid(self.dsp_mgr))
   
     def apply_dsp(self):
         """Apply the module DSP settings.
@@ -188,7 +185,7 @@ class ModDSPGUI(QMainWindow):
 
         for w in self.mod_params.param_widgets:
             name = type(w).__name__
-            if (name == "CSRB") or (name == "TrigConfig0"):
+            if (name == "CSRB") or (name == "TrigConfig0") or (name == "TrigConfigExtra"):
                 w.grid.close()
                 
         self.close()

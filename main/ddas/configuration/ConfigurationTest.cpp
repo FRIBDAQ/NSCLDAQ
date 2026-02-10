@@ -41,6 +41,11 @@ public:
     CPPUNIT_TEST(setHardwareMap_0);
     CPPUNIT_TEST(setHardwareMap_1);
     CPPUNIT_TEST(setHardwareMap_2);
+    CPPUNIT_TEST(setChannelMap_0);
+    CPPUNIT_TEST(setChannelMap_1);
+    CPPUNIT_TEST(setChannelMap_2);
+    CPPUNIT_TEST(getChannelCount_0);
+    CPPUNIT_TEST(getChannelCount_1);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -52,16 +57,17 @@ public:
 	{
 	    Configuration config;
 	    config.setNumberOfModules(2);
+	    config.setChannelMap({16, 32});
 	    config.setCrateId(123);
-	    config.setModuleEventLengths({123,345});
-	    config.setSlotMap({2,3});
+	    config.setModuleEventLengths({123, 345});
+	    config.setSlotMap({2, 3});
 	    config.setSettingsFilePath("/path/to/settings.file");
 	    
 	    std::stringstream stream;
 	    config.print(stream);
 	    std::string msg(
-		"Crate number 123: 2 modules, in slots:2 3 DSPParFile: "
-		"/path/to/settings.file"
+		"Crate number 123: 2 modules, in slots: 2 3 "
+		"Channel map: 16 32 DSPParFile: /path/to/settings.file"
 		);
 	    EQMSG("Print output", msg, stream.str());
 	}
@@ -155,6 +161,76 @@ public:
 		);
 
 	}
+
+    /** @brief Check that setting the channel map modifies the map values. */
+    void setChannelMap_0()
+	{
+	    Configuration config;
+	    config.setNumberOfModules(2);
+	    CPPUNIT_ASSERT_NO_THROW_MESSAGE(
+		"Setting the channel map correctly succeeds",
+		config.setChannelMap({16, 16})
+		);
+	}
+    
+    /** 
+     * @brief Setting a channel map before setting the number of modules 
+     * is an error. 
+     */
+    void setChannelMap_1()
+	{
+	    Configuration config;
+	    CPPUNIT_ASSERT_THROW_MESSAGE(
+		"Setting channel map before setNumberOfModules is an error",
+		config.setChannelMap({16}),
+		std::runtime_error
+		);
+	}
+
+    /** @brief Check that setting the channel map modifies the map values. */
+    void setChannelMap_2()
+	{
+	    Configuration config;
+	    config.setNumberOfModules(1);
+	    std::vector<unsigned short> mapping = {16};
+	    config.setChannelMap(mapping);
+	    ASSERTMSG(
+		"setting channel map actually creates change in map",
+		mapping == config.getChannelMap()
+		);
+
+	}
+
+    /** @brief Requesting a out of range module index is an error." */
+    void getChannelCount_0()
+	{
+	    Configuration config;
+	    config.setNumberOfModules(1);
+	    std::vector<unsigned short> mapping = {16};
+	    config.setChannelMap(mapping);
+	    CPPUNIT_ASSERT_THROW_MESSAGE(
+		"Out of range module index is an error",
+		config.getChannelCount(1),
+		std::runtime_error
+		);
+	}
+    
+    /** @brief We can get the channel count" */
+    void getChannelCount_1()
+	{
+	    Configuration config;
+	    config.setNumberOfModules(2);
+	    std::vector<unsigned short> mapping = {16, 32};
+	    config.setChannelMap(mapping);
+	    ASSERTMSG(
+		"Gets the correct channel count first module",
+		config.getChannelCount(0) == 16
+		);
+	    ASSERTMSG(
+		"Gets the correct channel count second module",
+		config.getChannelCount(1) == 32
+		);    
+	}    
 };
 
 // Register it with the test factory

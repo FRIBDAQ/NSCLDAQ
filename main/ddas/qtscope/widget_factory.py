@@ -47,6 +47,13 @@ class WidgetFactory:
         key : str 
             Get the builder method from the dictionary corresponding to this 
             key string.
+        *args : tuple
+            Other positional arguments passed to widget builder (generally
+            not used).
+        **kwargs : tuple
+            Keyword arguments passed to widget builder (e.g. number of
+            channels for this module via `nchannels` for channel params or
+            number of modules in the system via `nmodules` for module params).
 
         Returns
         -------
@@ -56,9 +63,9 @@ class WidgetFactory:
         ------
         ValueError
             If the key doesn't correspond to a registered builder.
-        """        
+        """
         builder = self.builders.get(key)        
         if not builder:
-            raise ValueError(key)        
+            raise ValueError(key)
         return builder(*args, **kwargs)
 

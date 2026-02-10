@@ -1,5 +1,3 @@
-
-
 /*
     This software is Copyright by the Board of Trustees of Michigan
     State University (c) Copyright 2016.
