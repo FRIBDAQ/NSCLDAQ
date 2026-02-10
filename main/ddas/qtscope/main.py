@@ -32,6 +32,7 @@ from trigger_filter import TriggerFilterBuilder
 from crate_id import CrateIDBuilder
 from csrb import CSRBBuilder
 from trigconfig0 import TrigConfig0Builder
+from trigconfigextra import TrigConfigExtraBuilder
 
 from acquisition_toolbar import AcquisitionToolBarBuilder
 from dsp_toolbar import DSPToolBarBuilder
@@ -140,6 +141,7 @@ def create_mod_dsp_factory():
     factory.register_builder("CrateID", CrateIDBuilder())
     factory.register_builder("CSRB", CSRBBuilder())
     factory.register_builder("TrigConfig0", TrigConfig0Builder())
+    factory.register_builder("TrigConfigExtra", TrigConfigExtraBuilder())
     
     return factory
 

@@ -10,11 +10,7 @@ else:
 import numpy as np
     
 from PyQt5.QtGui import QDoubleValidator
-from PyQt5.QtWidgets import (
-    QWidget, QHBoxLayout, QVBoxLayout, QRadioButton, QButtonGroup,
-    QSpinBox, QGroupBox, QLineEdit, QCheckBox, QLabel, QSizePolicy,
-    QPushButton
-)
+from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QRadioButton, QButtonGroup, QSpinBox, QGroupBox, QLineEdit, QLabel, QPushButton)
 
 import colors
 import xia_constants as xia
@@ -66,7 +62,7 @@ class MultCoincidence(QWidget):
         Print the multiplicity mask and channel coincidence information.
     """
     
-    def __init__(self, module=None, nchannels=16, *args, **kwargs):
+    def __init__(self, *args, nchannels=16, **kwargs):
         """Multiplicity and coincidence class constructor.
 
         Initialize the widget, set parameter validators and group configuration
@@ -74,11 +70,13 @@ class MultCoincidence(QWidget):
         channels on the selected module.
 
         Parameters
-        ----------
-        module : int
-            Module number from factory create method.
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent QWidget.
         nchannels : int, default=16
-            Number of channels per module.
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent QWidget.
         """        
         super().__init__(*args, **kwargs)
 
@@ -286,14 +284,14 @@ class MultCoincidence(QWidget):
             if not all (win == win_list[0] for win in win_list):
                 raise ValueError(
                     f"Inconsistent channel coincidence width values read " \
-                    "on Mod. {mod}"
+                    f"on Mod. {mod}"
                 )
         except ValueError as e:
             self.logger.exception(
                 f"Channel coincidence widths on Mod. {mod}: {win_list}"
             )
             print(
-                f"{e}:n\tVerify MultCoincidence settings and re-apply." \
+                f"{e}:\n\tVerify MultCoincidence settings and re-apply." \
                 "\n\tCheck your settings file, it may be corrupt."
             )
 

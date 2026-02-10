@@ -1,6 +1,4 @@
-from PyQt5.QtWidgets import (
-    QToolBar, QPushButton, QMessageBox, QWidget, QSizePolicy
-)
+from PyQt5.QtWidgets import QToolBar, QPushButton, QMessageBox, QWidget, QSizePolicy
 
 import colors
 

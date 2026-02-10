@@ -6,139 +6,28 @@ use portman_client;
 use ringmaster_client;
 use rust_ringitem_format;
 use std::collections::HashMap;
-use serde::Serialize;
+
 use serde_json;
 use std::net::{TcpListener, TcpStream};
-
+use ring_monitor::*;
 
 const SERVICE_NAME : &str = "RING_MONITOR";
 const BUFFER_SIZE : usize = 1024*1024;
 const UPDATE_TIME : u64  = 5;       // How often to update statistics -> main thread.
 const RING_POLL_INTERVAL : u64  = 1; // Secs between polls for new rings.
 
-///
-/// The information we want to maintain for each ringbuffer is:
+/// Usage:
+///     portman ?stats-db-file?
+///  Where:
+///       stats-db-file is the path to an sqlite3 database (will be created
+///       if needed) into which statistics data will be shoved.
+///  Or:
+///     portman --server port ?stats-deb-file?
+///  
+///  This form is spawned by the parent and respawned on exit.
 /// 
-#[derive(Clone, Debug, Serialize, PartialEq)]
-struct RingBufferStatistics {
-    name:  String,         // name of the ringbuffer.
-    bytes: usize,          // Total bytes observed through the ring.
-    events: usize,         // Total PHYSICS_EVENT items observed through the ring.
-    bytes_this_run: usize, // Total bytes through the ring since last BEGIN_RUN.
-    events_this_run: usize, // Total PHYSICS_EVENT items since last BEGIN_RUN.
-}
-impl RingBufferStatistics {
-    /// Create a ring buffer statistics item
-    /// that has all counters zeroed:
-    fn new(name :&str) -> RingBufferStatistics {
-        RingBufferStatistics {
-            name: String::from(name),
-            bytes: 0, events: 0,
-            bytes_this_run: 0, events_this_run: 0
-        }
-    }
-    /// Zero the per run statistics:
-    /// 
-    fn new_run(&mut self) -> &mut RingBufferStatistics {
-        self.bytes_this_run = 0;
-        self.events_this_run = 0;
-        self              // So chaining can be done.
-    }
-    /// Count some bytes:
-    /// 
-    fn count_bytes(&mut self, bytes : usize) -> &mut RingBufferStatistics {
-        self.bytes = self.bytes.wrapping_add(bytes);
-        self.bytes_this_run =self.bytes_this_run.wrapping_add(bytes);
-        self
-    }
-    /// Count some events:
-    ///
-    fn count_events(&mut self, events: usize) -> &mut RingBufferStatistics {
-        self.events = self.events.wrapping_add(events);
-        self.events_this_run = self.events_this_run.wrapping_add(events);
-        self
-    }
-}
-
-///  This is the structure of statistics update messages sent
-///  to the main thread by the monitor threads:
+/// See below:
 /// 
-#[derive(Debug, PartialEq)]
-struct UpdateMessage {
-    interval : time::Duration,
-    statistics : RingBufferStatistics,
-}
-
-impl UpdateMessage {
-    fn new(i : time::Duration, stats : &RingBufferStatistics) -> UpdateMessage {
-        UpdateMessage { interval: i, 
-            statistics : stats.clone()
-        }
-    }
-}
-
-/// The statistics the user is interested in also include rates:
-/// 
-#[derive(Clone, Serialize, Debug, PartialEq)]
-struct StatisticsAndRates {
-    name             : String,               // yes duplicate info but for easier JSON processing.
-    cum_statistics   : RingBufferStatistics, // Note this has the ring name.
-    byte_rate         : f64,
-    event_rate        : f64,
-    byte_per_run_rate : f64,
-    evts_per_run_rate : f64
-}
-
-impl StatisticsAndRates {
-    // Create a newly initialized struc.
-    // This requires a ring name.
-
-    fn new(ring: &str) -> StatisticsAndRates {
-        StatisticsAndRates {name: String::from(ring), cum_statistics: RingBufferStatistics::new(ring), 
-             byte_rate: 0.0, event_rate: 0.0, byte_per_run_rate: 0.0, evts_per_run_rate: 0.0 }
-    }
-    fn update(&mut self, info : &UpdateMessage) -> &mut Self {
-        // Let's be sure the message really was for us.
-        // panic if not:
-
-        if info.statistics.name != self.cum_statistics.name {
-            let msg = 
-                format!("BUGCHECK - StatiticsAndRates::update called with mismatched rings was {} should be {}", 
-                info.statistics.name, self.cum_statistics.name
-            );
-            panic!("{}", msg);
-        }
-
-
-        // Need differences from last and now to get rates:
-
-        let dt : f64 = info.interval.as_secs_f64();
-        self.byte_rate = (info.statistics.bytes - self.cum_statistics.bytes) as f64 / dt;
-        self.event_rate = (info.statistics.events - self.cum_statistics.events) as f64/dt;
-        
-        // If we started a new run and the events are < than last time, then we start from 0.
-        // To compute the rate.
-
-        if self.cum_statistics.bytes_this_run > info.statistics.bytes_this_run {
-            // New run so:
-
-            self.cum_statistics.bytes_this_run = 0;
-            self.cum_statistics.events_this_run = 0;
-        }
-        self.byte_per_run_rate = 
-            (info.statistics.bytes_this_run - self.cum_statistics.bytes_this_run) as f64 / dt;
-        self.evts_per_run_rate =
-            (info.statistics.events_this_run - self.cum_statistics.events_this_run) as f64 /dt;
-
-        // Updtae the last statistics field:
-
-        self.cum_statistics = info.statistics.clone();
-        
-
-        self                                // If we add more methods we can chain.
-    }
-}
-
 ///  This program provides an FRIB/NSCLDAQ ringbuffer statistics
 ///  monitor.  Note that when run, it will run itself with an
 ///  added --server (portnum) option.  The spawned subprocess
@@ -160,7 +49,7 @@ impl StatisticsAndRates {
 /// 
 ///
 ///   To get the current idea of the statistics over all rings,
-/// Forma connection to this program and you will receive a JSON string
+/// Form a connection to this program and you will receive a JSON string
 /// containing the statistics.  This will be a serialization of an array of
 /// StatistcsAdRates structs.
 ///
@@ -170,12 +59,18 @@ fn main() {
 
     // Run ourself with the --server 12345 parameter. e.g...unless we
     // have been run with the --server parameter.
-
+    // note that there could also be a data base file
+    //
     let args : Vec<String> = env::args().collect();
-    if args.len() == 3 {
+    if args.len() == 3 || args.len() == 4 {
+        let dbfile : Option<String> = if args.len() == 3 {
+            None
+        } else {
+            Some(args[3].clone())
+        };
         if args[1] == "--server" {
             let port = args[2].parse::<u16>().unwrap();
-            monitor(port);
+            monitor(port, dbfile);
             return;
         }
     }
@@ -197,9 +92,16 @@ fn main() {
     eprintln!("Server will use port {}", port);
     let port_string = port.to_string();
     loop {
-        let mut  child = process::Command::new(&executable)
+        let mut  child = if args.len() == 1 {  // no db file.
+            process::Command::new(&executable)
             .arg("--server").arg(&port_string).spawn()
-            .expect("Failed to spawn server");
+            .expect("Failed to spawn server")
+        } else {                                // db file.
+            process::Command::new(&executable)
+            .arg("--server").arg(&port_string)
+            .arg(args[1].clone()).spawn()
+            .expect("Failed to spawn server")
+        };
         child.wait().expect("Could not wait on server completion");
         println!("Subprocess exited ");
         // Restarting too soon is not a good idea so sleep a second.
@@ -231,13 +133,13 @@ fn allocate_port(client: &mut portman_client::Client, service_name: &str) -> u16
 ///       This will also be updated.
 /// 
 /// The returned tuple is in order:
-///     bool - new_run - true if a BEGIN_RUN item was encountered int the data.
+///     bool - new_run - true if a BEGIN_RUN or END_RUN tem was encountered int the data.
 ///     Option<usize> - Number of events in the data since the last BEGIN_RUN in the data.
 ///     usize - Total number of events in the data.
 ///     Option<usize> - Number of bytes since in the data since he last BEGIN_RUN in the data.
 /// 
 /// A note on the "Since the last BEGIN_RUN..." items. Those are only meaningful
-/// if the 
+/// if the program starts prior to a begin run.
 ///     
 fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, residual: &mut usize) ->
     (bool, Option<usize>, usize, Option<usize>) {
@@ -278,9 +180,10 @@ fn analyze_ring_data(nbytes : usize, data : &[u8], next_offset : &mut usize, res
         } else {
             result.3 = Some(result.3.unwrap() + size as usize);
         }
-        // Reset the per run counters if this is  a BEGIN_RUN item:
+        // Reset the per run counters if this is  a BEGIN_RUN or END_RUN item:
 
-        if item_type == rust_ringitem_format::BEGIN_RUN {
+        if item_type == rust_ringitem_format::BEGIN_RUN || 
+           item_type == rust_ringitem_format::END_RUN {
             result.0 = true;                             // There was a begin run.
             result.1 = None;                             // no new events.
             result.3 = Some(size as usize);                             // For data we've had this item.
@@ -456,7 +359,8 @@ fn serve_statistics(sock: &mut TcpStream, stats: &HashMap<String, StatisticsAndR
 /// 
 /// Ring deletion is a rare occurence.
 /// 
-fn monitor(port : u16) {
+fn monitor(port : u16, dbfile : Option<String>) {
+    
     let mut thread_map : HashMap<String, thread::JoinHandle<()>> = HashMap::new(); // Map of threads we have.
     let (sender, receiver) = mpsc::channel::<UpdateMessage>();
     let mut aggregated_stats = HashMap::<String, StatisticsAndRates>::new();
@@ -464,6 +368,16 @@ fn monitor(port : u16) {
     let ip_spec = format!("0.0.0.0:{}", port);     // Listener specification.
     let server = TcpListener::bind(&ip_spec).expect("Cant start server");
     let _ = server.set_nonblocking(true);                           // don't stop the loop for connections.
+
+    // If there's a statistics database, open it:
+
+    let mut stat_connection = if let Some(statsdb) = dbfile {
+        println!("Logging stats to database: {}", statsdb);
+        Some(database::Connection::new(&statsdb).expect("Failed to open stats db"))
+    } else {
+        println!("Will not log database statistics.");
+        None
+    };
     loop {
         let mut c = ringmaster_client::Client::new("localhost");
         
@@ -486,7 +400,7 @@ fn monitor(port : u16) {
                     // Insert a new entry for this ring:
 
                     aggregated_stats.insert(
-                        name, 
+                        name.clone(), 
                         StatisticsAndRates::new(&msg.statistics.name)
                     );
                 }
@@ -495,6 +409,12 @@ fn monitor(port : u16) {
                     .get_mut(&msg.statistics.name.clone())
                     .unwrap()
                     .update(&msg);
+                // Log the statistics to file if specified:
+
+                if let Some(db) = stat_connection.as_mut() {
+                    let n = name.clone();
+                    db.log(aggregated_stats.get(&n).unwrap());
+                }
             } else {
                 break;                  // No more messages this time.
             }
@@ -515,213 +435,6 @@ fn monitor(port : u16) {
     }
 }
 
-#[cfg(test)]
-mod rbstat_tests {
-    // Tests for the RingBufferStatistics implementation.
-    use crate::*;
-
-    #[test]
-    fn new_1() {
-        let stats = RingBufferStatistics::new("testing");
-        assert_eq!(
-            RingBufferStatistics {
-                name: String::from("testing"), 
-                bytes : 0, events: 0, bytes_this_run : 0, events_this_run: 0
-            },
-            stats
-        );
-    }
-    #[test]
-    fn count_bytes_1() {
-        let mut stats = RingBufferStatistics::new("testing");
-        stats.count_bytes(10);
-        assert_eq!(
-            RingBufferStatistics {
-                name: String::from("testing"), 
-                bytes : 10, events: 0, bytes_this_run : 10, events_this_run: 0
-            },
-            stats
-        );
-    }
-    #[test]
-    fn count_events_1() {
-        let mut stats = RingBufferStatistics::new("testing");
-        stats.count_events(5);
-        assert_eq!(
-             RingBufferStatistics {
-                name: String::from("testing"), 
-                bytes : 0, events: 5, bytes_this_run : 0, events_this_run: 5
-            },
-            stats
-        );
-    }
-    #[test]
-    fn new_run_1() {
-        let mut stats = RingBufferStatistics::new("testing");
-        stats.count_events(5)
-            .count_bytes(10)
-            .new_run();   // Should only clear the *this_run values:
-
-        assert_eq!(
-            RingBufferStatistics {
-                name: String::from("testing"), 
-                bytes : 10, events: 5, bytes_this_run : 0, events_this_run: 0
-            },
-            stats
-        );
-
-    }
-}
-#[cfg(test)]
-mod updmsg_tests {
-    use crate::*;
-    use std::time::Duration;
-    // Test the implementation of update messages:
-
-    use crate::RingBufferStatistics;
-
-    #[test]
-    fn new_1() {
-        let mut stats = RingBufferStatistics::new("test");
-        stats.count_bytes(100)
-            .count_events(10)
-            .new_run()                 // Zero the run countes.
-            .count_bytes(100)
-            .count_events(10);              // More data.
-
-        let update_time = Duration::from_secs(2);   // Yeah slow rate but meh.
-
-        let msg = UpdateMessage::new(update_time, &stats);
-
-        assert_eq!(
-            UpdateMessage {
-                interval: update_time,
-                statistics: RingBufferStatistics {
-                    name: String::from("test"),
-                    bytes: 200, events: 20, bytes_this_run: 100, events_this_run: 10
-                }
-            },
-            msg
-        );
-    }
-}
-#[cfg(test)]
-mod sandr_tests {
-    // Tests for impl StatisticsAndRates
-
-    use crate::*;
-    use std::time::Duration;
-
-    #[test]
-    fn new_1() {
-        // Test proper initialization:
-
-        let stats = StatisticsAndRates::new("test");
-        assert_eq!(
-            StatisticsAndRates {
-                name: String::from("test"),
-                cum_statistics : RingBufferStatistics {
-                     name: String::from("test"), 
-                     bytes: 0, events: 0, bytes_this_run: 0, events_this_run: 0 },
-                byte_rate: 0.0, event_rate: 0.0,
-                byte_per_run_rate: 0.0, evts_per_run_rate: 0.0
-            }, stats
-        );
-    }
-    #[test]
-    fn update_1() {
-        // Test update and rate computation with no new run:
-
-        let mut stats = StatisticsAndRates::new("test");
-        let interval = Duration::from_secs(1);
-        let mut incr_stat = RingBufferStatistics::new("test");
-        incr_stat.count_bytes(100)
-            .count_events(5);
-        let msg = UpdateMessage::new(interval, &incr_stat);
-
-        stats.update(&msg);
-
-        // Check the rates should be pretty easy with intervals like 1.0:
-
-        assert_eq!(
-            StatisticsAndRates {
-                name: String::from("test"),
-                cum_statistics: incr_stat.clone(),
-                byte_rate: 100.0,
-                event_rate: 5.0,
-                byte_per_run_rate : 100.0,
-                evts_per_run_rate: 5.0
-            }
-            ,stats
-        );
-
-    }
-    #[test]
-    fn update_2() {
-        // Simulate a message update that indicates an new run started.
-
-        let mut stats = StatisticsAndRates::new("test");
-        let interval = Duration::from_secs(1);
-        let mut incr_stat = RingBufferStatistics::new("test");
-        incr_stat.count_bytes(100)
-            .count_events(5);
-        let msg = UpdateMessage::new(interval, &incr_stat);
-
-        stats.update(&msg);        // Establishes baseline counts:
-
-        incr_stat.new_run()
-            .count_bytes(50)
-            .count_events(2);             // Should make stats thing this is a new run.
-        let msg = UpdateMessage::new(interval, &incr_stat);
-        stats.update(&msg);
-        
-        assert_eq!(
-            StatisticsAndRates {
-                name: String::from("test"),
-                cum_statistics : RingBufferStatistics {
-                    name : String::from("test"), 
-                    bytes: 150, events: 7, bytes_this_run: 50, events_this_run: 2
-
-                },
-                byte_rate: 50.0, event_rate: 2.0, byte_per_run_rate : 50.0, evts_per_run_rate: 2.0
-            },
-            stats
-        )
-
-    }
-    #[test]
-    fn update_3() {
-        // Two updates that change rate but no runs:
-
-        let mut stats = StatisticsAndRates::new("test");
-        let interval = Duration::from_secs(1);
-        let mut incr_stat = RingBufferStatistics::new("test");
-        incr_stat.count_bytes(100)
-            .count_events(5);
-        let msg = UpdateMessage::new(interval, &incr_stat);
-
-        stats.update(&msg);        // Establishes baseline counts:
-
-        incr_stat.count_bytes(50)
-            .count_events(2);             // Should make stats thing this is a new run.
-        let msg = UpdateMessage::new(interval, &incr_stat);
-        stats.update(&msg);
-        
-        assert_eq!(
-            StatisticsAndRates {
-                name: String::from("test"),
-                cum_statistics : RingBufferStatistics {
-                    name : String::from("test"), 
-                    bytes: 150, events: 7, bytes_this_run: 150, events_this_run: 7
-
-                },
-                byte_rate: 50.0, event_rate: 2.0, byte_per_run_rate : 50.0, evts_per_run_rate: 2.0
-            },
-            stats
-        )
-
-    }
-}
 // The next test module requires the FRIB/NSCLDAQ port manager be running in the system.
 
 #[cfg(test)]

@@ -245,3 +245,5 @@ void registerTests::bulksetup()
   EQMSG("0's", (uint32_t)0, (value & usedBits));
   EQMSG("read shadow zeroes", (uint32_t)0, (usedBits & m_pShadow->bulkTransferSetup));
 }
+
+

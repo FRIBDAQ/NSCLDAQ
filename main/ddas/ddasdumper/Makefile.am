@@ -2,9 +2,12 @@ bin_PROGRAMS = ddasdumper.bin
 lib_LTLIBRARIES = libddasrootformat.la
 include_HEADERS = DDASRootEvent.h DDASRootHit.h
 
-BUILT_SOURCES = dumperargs.c 
+BUILT_SOURCES = dumperargs.c dumperargs.h
+# If there was an intree build this prevents those from polluting
+# the tarball.
+nodist_ddasdumper_bin_SOURCES = dumperargs.c dumperargs.h
 
-ddasdumper_bin_SOURCES = ddasdumper.cpp dumperargs.c 	\
+ddasdumper_bin_SOURCES = ddasdumper.cpp \
 	DataSource.cpp DataSource.h					\
 	FdDataSource.cpp FdDataSource.h					\
 	StreamDataSource.cpp StreamDataSource.h				\
@@ -12,6 +15,7 @@ ddasdumper_bin_SOURCES = ddasdumper.cpp dumperargs.c 	\
 ddasdumper_bin_CPPFLAGS = -I@top_srcdir@/base/uri 			\
 	-I@top_srcdir@/daq/IO						\
 	-I@top_srcdir@/daq/eventbuilder					\
+	-I@builddir@                                                    \
 	@UFMT_CPPFLAGS@ @DDASFMT_CPPFLAGS@                              \
 	@LIBTCLPLUS_CFLAGS@ @ROOT_CFLAGS@
 ddasdumper_bin_LDADD = @builddir@/libddasrootformat.la 			\
@@ -28,10 +32,11 @@ libddasrootformat_la_LDFLAGS = @ROOT_LDFLAGS@
 nodist_libddasrootformat_la_SOURCES = ddasrootformatDictionary.cpp ddasrootformatDictionary.h
 
 
-
+dumperargs.h: dumperargs.c
 
 dumperargs.c: dumperargs.ggo
-	$(GENGETOPT) < @srcdir@/dumperargs.ggo --file=dumperargs --output-dir=@builddir@
+	$(GENGETOPT) < @srcdir@/dumperargs.ggo --file=dumperargs \
+	--output-dir=@builddir@
 
 ddasrootformatDictionary.cpp: ddasrootformatDictionary.h
 ddasrootformatDictionary_rdict.pcm: ddasrootformatDictionary.h

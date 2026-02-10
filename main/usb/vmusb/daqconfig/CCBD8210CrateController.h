@@ -2,7 +2,7 @@
 #ifndef CCBD8210CRATECONTROLLER_H
 #define CCBD8210CRATECONTROLLER_H
 
-#include "CCrateController.h"
+#include "CCrateController.h"    // It's all inlines.
 #include "CCBD8210ReadoutList.h"
 
 //class CNAF;

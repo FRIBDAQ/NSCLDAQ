@@ -49,4 +49,4 @@ EXTRA_DIST = acquisition_toolbar.py adc_trace.py analog_signal.py baseline.py \
 	plot_toolbar.py qdclen.py run_type.py system_toolbar.py tau.py        \
 	thread_pool_manager.py timing_control.py trace_analyzer.py 	      \
 	trigconfig0.py trigger_filter.py widget_factory.py xia_constants.py   \
-	figures qtscope.dox
+	figures qtscope.dox extensions.py

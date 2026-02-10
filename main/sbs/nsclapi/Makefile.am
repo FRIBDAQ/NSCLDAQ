@@ -23,7 +23,7 @@ libSBSVmeAPI_la_CPPFLAGS = -I@top_srcdir@/base/headers \
 AM_LDFLAGS = -lpthread
 
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES = TestRunner.cpp LockingTest.cpp
 

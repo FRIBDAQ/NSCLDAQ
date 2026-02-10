@@ -86,6 +86,9 @@ jobs:
                        --with-xiaapidir=`cat /usr/opt/XIAAPI_PATH` \
                        --with-firmwaredir=`cat /usr/opt/DDASFIRMWARE_PATH_12.2` \
                        --with-rootsys=`cat /usr/opt/ROOT_PATH` \
+                       --enable-mvlc-stack-generator \
+                       --with-mvlcdir=`cat /usr/opt/MESYTECMVLC_PATH` \
+                       --enable-rust-tools \
                        CXX=`cat /usr/opt/MPI_PATH`
       - name: Make
         working-directory: ./main/oot
@@ -102,6 +105,11 @@ jobs:
           sleep 2
           nohup nscldaq_ringmaster -l /dev/null >/dev/null 2>&1 &
           VERBOSE=1 xvfb-run -a make check
+      - name: Checking disk space
+        working-directory: ./main/oot
+        run: |
+          df
+          df -h
       - name: Packaging for complete source distribution
         if: ${{ inputs.packaging == true && inputs.dist-packaging == true}}
         working-directory: ./main/oot

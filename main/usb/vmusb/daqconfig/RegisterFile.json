@@ -1,0 +1,2186 @@
+{
+  "MMCComponents": [
+    {
+      "Name": "GD_ADC_GATE_B3",
+      "Type": "RegisterFile",
+      "Address": 18448,
+      "Version": "1.0.0.0",
+      "Registers": [
+        {
+          "Name": "GATE",
+          "Type": "Register",
+          "Address": 18452,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "DELAY",
+          "Type": "Register",
+          "Address": 18456,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        }
+      ],
+      "Path": "/GD_ADC_GATE_B3"
+    },
+    {
+      "Name": "GD_ADC_GATE_B5",
+      "Type": "RegisterFile",
+      "Address": 18464,
+      "Version": "1.0.0.0",
+      "Registers": [
+        {
+          "Name": "GATE",
+          "Type": "Register",
+          "Address": 18468,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "DELAY",
+          "Type": "Register",
+          "Address": 18472,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        }
+      ],
+      "Path": "/GD_ADC_GATE_B5"
+    },
+    {
+      "Name": "GD_TRIGGER_REG_GATE",
+      "Type": "RegisterFile",
+      "Address": 18480,
+      "Version": "1.0.0.0",
+      "Registers": [
+        {
+          "Name": "GATE",
+          "Type": "Register",
+          "Address": 18484,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "DELAY",
+          "Type": "Register",
+          "Address": 18488,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        }
+      ],
+      "Path": "/GD_TRIGGER_REG_GATE"
+    },
+    {
+      "Name": "GD_QDC_GATE",
+      "Type": "RegisterFile",
+      "Address": 18496,
+      "Version": "1.0.0.0",
+      "Registers": [
+        {
+          "Name": "GATE",
+          "Type": "Register",
+          "Address": 18500,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "DELAY",
+          "Type": "Register",
+          "Address": 18504,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        }
+      ],
+      "Path": "/GD_QDC_GATE"
+    },
+    {
+      "Name": "PULSE_GEN_0",
+      "Type": "RegisterFile",
+      "Address": 18512,
+      "Version": "1.0.0.0",
+      "Registers": [
+        {
+          "Name": "PERIOD",
+          "Type": "Register",
+          "Address": 18516,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "WIDTH",
+          "Type": "Register",
+          "Address": 18520,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "ENABLE",
+          "Type": "Register",
+          "Address": 18524,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        }
+      ],
+      "Path": "/PULSE_GEN_0"
+    },
+    {
+      "Name": "GD_FAST_CLEAR",
+      "Type": "RegisterFile",
+      "Address": 18532,
+      "Version": "1.0.0.0",
+      "Registers": [
+        {
+          "Name": "GATE",
+          "Type": "Register",
+          "Address": 18536,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "DELAY",
+          "Type": "Register",
+          "Address": 18540,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        }
+      ],
+      "Path": "/GD_FAST_CLEAR"
+    },
+    {
+      "Name": "TS_CFG",
+      "Type": "RegisterFile",
+      "Address": 18548,
+      "Version": "1.0.0.0",
+      "Registers": [
+        {
+          "Name": "TS_SYNC_SEL",
+          "Type": "Register",
+          "Address": 18552,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "GO",
+          "Type": "Register",
+          "Address": 18556,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "TS_CLK_SEL",
+          "Type": "Register",
+          "Address": 18560,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "TS_LATCH_SEL",
+          "Type": "Register",
+          "Address": 18564,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "INT_TS_CLK_SCALE",
+          "Type": "Register",
+          "Address": 18568,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        }
+      ],
+      "Path": "/TS_CFG"
+    },
+    {
+      "Name": "LogicAnalyser_0",
+      "Type": "LogicAnalyzer",
+      "Address": 18576,
+      "Version": "1.1.0.0",
+      "nsamples": 4096,
+      "Registers": [
+        {
+          "Name": "STATUS",
+          "Type": null,
+          "Address": 18580,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG",
+          "Type": null,
+          "Address": 18584,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG0",
+          "Type": null,
+          "Address": 18588,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG1",
+          "Type": null,
+          "Address": 18592,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG2",
+          "Type": null,
+          "Address": 18596,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG3",
+          "Type": null,
+          "Address": 18600,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG4",
+          "Type": null,
+          "Address": 18604,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG5",
+          "Type": null,
+          "Address": 18608,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG6",
+          "Type": null,
+          "Address": 18612,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG7",
+          "Type": null,
+          "Address": 18616,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG8",
+          "Type": null,
+          "Address": 18620,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIG9",
+          "Type": null,
+          "Address": 18624,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIGA",
+          "Type": null,
+          "Address": 18628,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIGB",
+          "Type": null,
+          "Address": 18632,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIGC",
+          "Type": null,
+          "Address": 18636,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIGD",
+          "Type": null,
+          "Address": 18640,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIGE",
+          "Type": null,
+          "Address": 18644,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        },
+        {
+          "Name": "CONFIGF",
+          "Type": null,
+          "Address": 18648,
+          "Version": null,
+          "RegionSize": 1,
+          "Description": "",
+          "Category": "Undefined",
+          "Path": null
+        }
+      ],
+      "ChannelsList": [
+        {
+          "Name": "BUS_0",
+          "bitstart": 0,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_1",
+          "bitstart": 1,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_2",
+          "bitstart": 2,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_3",
+          "bitstart": 3,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_4",
+          "bitstart": 4,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_5",
+          "bitstart": 5,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_6",
+          "bitstart": 6,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_7",
+          "bitstart": 7,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_8",
+          "bitstart": 8,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_9",
+          "bitstart": 9,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_10",
+          "bitstart": 10,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_11",
+          "bitstart": 11,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_12",
+          "bitstart": 12,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_13",
+          "bitstart": 13,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_14",
+          "bitstart": 14,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_15",
+          "bitstart": 15,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_16",
+          "bitstart": 16,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_17",
+          "bitstart": 17,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_18",
+          "bitstart": 18,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_19",
+          "bitstart": 19,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_20",
+          "bitstart": 20,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_21",
+          "bitstart": 21,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_22",
+          "bitstart": 22,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_23",
+          "bitstart": 23,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_24",
+          "bitstart": 24,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_25",
+          "bitstart": 25,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_26",
+          "bitstart": 26,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_27",
+          "bitstart": 27,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_28",
+          "bitstart": 28,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_29",
+          "bitstart": 29,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_30",
+          "bitstart": 30,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_31",
+          "bitstart": 31,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_32",
+          "bitstart": 32,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_33",
+          "bitstart": 33,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_34",
+          "bitstart": 34,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_35",
+          "bitstart": 35,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_36",
+          "bitstart": 36,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_37",
+          "bitstart": 37,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_38",
+          "bitstart": 38,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_39",
+          "bitstart": 39,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_40",
+          "bitstart": 40,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_41",
+          "bitstart": 41,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_42",
+          "bitstart": 42,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_43",
+          "bitstart": 43,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_44",
+          "bitstart": 44,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_45",
+          "bitstart": 45,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_46",
+          "bitstart": 46,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_47",
+          "bitstart": 47,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_48",
+          "bitstart": 48,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_49",
+          "bitstart": 49,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_50",
+          "bitstart": 50,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_51",
+          "bitstart": 51,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_52",
+          "bitstart": 52,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_53",
+          "bitstart": 53,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_54",
+          "bitstart": 54,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_55",
+          "bitstart": 55,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_56",
+          "bitstart": 56,
+          "bitwidth": 1
+        },
+        {
+          "Name": "BUS_57",
+          "bitstart": 57,
+          "bitwidth": 1
+        }
+      ],
+      "Path": "/LogicAnalyser_0"
+    },
+    {
+      "Name": "GD_OUT5",
+      "Type": "RegisterFile",
+      "Address": 18656,
+      "Version": "1.0.0.0",
+      "Registers": [
+        {
+          "Name": "GATE",
+          "Type": "Register",
+          "Address": 18660,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        },
+        {
+          "Name": "DELAY",
+          "Type": "Register",
+          "Address": 18664,
+          "Version": "",
+          "RegionSize": 0,
+          "Description": null,
+          "Category": null,
+          "Path": null
+        }
+      ],
+      "Path": "/GD_OUT5"
+    }
+  ],
+  "Registers": [
+    {
+      "Name": "TRGMASK",
+      "Type": "Register",
+      "Address": 4096,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/TRGMASK"
+    },
+    {
+      "Name": "BUSYMASK",
+      "Type": "Register",
+      "Address": 4100,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/BUSYMASK"
+    },
+    {
+      "Name": "BUSY_FORCE_RESET",
+      "Type": "Register",
+      "Address": 4104,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/BUSY_FORCE_RESET"
+    },
+    {
+      "Name": "EXT_CLEAR_EN",
+      "Type": "Register",
+      "Address": 4108,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/EXT_CLEAR_EN"
+    },
+    {
+      "Name": "R_WIDTH",
+      "Type": "Register",
+      "Address": 4112,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/R_WIDTH"
+    },
+    {
+      "Name": "R_DELAY",
+      "Type": "Register",
+      "Address": 4116,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/R_DELAY"
+    },
+    {
+      "Name": "R_CLEAR",
+      "Type": "Register",
+      "Address": 4120,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/R_CLEAR"
+    },
+    {
+      "Name": "REG_FLAGS",
+      "Type": "Register",
+      "Address": 4124,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/REG_FLAGS"
+    },
+    {
+      "Name": "R_TS_0",
+      "Type": "Register",
+      "Address": 4132,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/R_TS_0"
+    },
+    {
+      "Name": "R_TS_1",
+      "Type": "Register",
+      "Address": 4136,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/R_TS_1"
+    },
+    {
+      "Name": "ISPECT0",
+      "Type": "Register",
+      "Address": 4140,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/ISPECT0"
+    },
+    {
+      "Name": "ESPECT1",
+      "Type": "Register",
+      "Address": 4144,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/ESPECT1"
+    },
+    {
+      "Name": "ISPECT2",
+      "Type": "Register",
+      "Address": 4148,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/ISPECT2"
+    },
+    {
+      "Name": "ISPECT3",
+      "Type": "Register",
+      "Address": 4152,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/ISPECT3"
+    },
+    {
+      "Name": "STAT_RESET",
+      "Type": "Register",
+      "Address": 18432,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/STAT_RESET"
+    },
+    {
+      "Name": "STAT_LATCH",
+      "Type": "Register",
+      "Address": 18436,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/STAT_LATCH"
+    },
+    {
+      "Name": "S800_DELAY_QDCGATE",
+      "Type": "Register",
+      "Address": 18440,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/S800_DELAY_QDCGATE"
+    },
+    {
+      "Name": "REG_RUNNUMBER",
+      "Type": "Register",
+      "Address": 18668,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/REG_RUNNUMBER"
+    },
+    {
+      "Name": "REG_RUNNUMBER2",
+      "Type": "Register",
+      "Address": 18672,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/REG_RUNNUMBER2"
+    },
+    {
+      "Name": "EVENT_READY",
+      "Type": "Register",
+      "Address": 18676,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/EVENT_READY"
+    },
+    {
+      "Name": "SW_CLEAR",
+      "Type": "Register",
+      "Address": 18680,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/SW_CLEAR"
+    },
+    {
+      "Name": "R_RAW",
+      "Type": "Register",
+      "Address": 18684,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/R_RAW"
+    },
+    {
+      "Name": "R_LIVE",
+      "Type": "Register",
+      "Address": 18688,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "/R_LIVE"
+    },
+    {
+      "Name": "page_input_trigger_S800_GATE",
+      "Type": "Register",
+      "Address": 4608,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/S800_GATE"
+    },
+    {
+      "Name": "page_input_trigger_S800_DELAY",
+      "Type": "Register",
+      "Address": 4612,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/S800_DELAY"
+    },
+    {
+      "Name": "page_input_trigger_SECONDARY1_GATE",
+      "Type": "Register",
+      "Address": 4616,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/SECONDARY1_GATE"
+    },
+    {
+      "Name": "page_input_trigger_SECONDARY1_DELAY",
+      "Type": "Register",
+      "Address": 4620,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/SECONDARY1_DELAY"
+    },
+    {
+      "Name": "page_input_trigger_SECONDARY2_GATE",
+      "Type": "Register",
+      "Address": 4624,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/SECONDARY2_GATE"
+    },
+    {
+      "Name": "page_input_trigger_SECONDARY2_DELAY",
+      "Type": "Register",
+      "Address": 4628,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/SECONDARY2_DELAY"
+    },
+    {
+      "Name": "page_input_trigger_EXT1_GATE",
+      "Type": "Register",
+      "Address": 4632,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/EXT1_GATE"
+    },
+    {
+      "Name": "page_input_trigger_EXT1_DELAY",
+      "Type": "Register",
+      "Address": 4636,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/EXT1_DELAY"
+    },
+    {
+      "Name": "page_input_trigger_EXT2_GATE",
+      "Type": "Register",
+      "Address": 4640,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/EXT2_GATE"
+    },
+    {
+      "Name": "page_input_trigger_EXT2_DELAY",
+      "Type": "Register",
+      "Address": 4644,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/EXT2_DELAY"
+    },
+    {
+      "Name": "page_input_trigger_DELAY1",
+      "Type": "Register",
+      "Address": 4648,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/DELAY1"
+    },
+    {
+      "Name": "page_input_trigger_DELAY2",
+      "Type": "Register",
+      "Address": 4652,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/DELAY2"
+    },
+    {
+      "Name": "page_input_trigger_DELAY3",
+      "Type": "Register",
+      "Address": 4656,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/DELAY3"
+    },
+    {
+      "Name": "page_input_trigger_DELAY4",
+      "Type": "Register",
+      "Address": 4660,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/DELAY4"
+    },
+    {
+      "Name": "page_input_trigger_DELAY5",
+      "Type": "Register",
+      "Address": 4664,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/DELAY5"
+    },
+    {
+      "Name": "page_input_trigger_GATE1",
+      "Type": "Register",
+      "Address": 4668,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/GATE1"
+    },
+    {
+      "Name": "page_input_trigger_GATE2",
+      "Type": "Register",
+      "Address": 4672,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/GATE2"
+    },
+    {
+      "Name": "page_input_trigger_GATE3",
+      "Type": "Register",
+      "Address": 4676,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/GATE3"
+    },
+    {
+      "Name": "page_input_trigger_GATE4",
+      "Type": "Register",
+      "Address": 4680,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/GATE4"
+    },
+    {
+      "Name": "page_input_trigger_S800_DOWNSCALER",
+      "Type": "Register",
+      "Address": 4684,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/S800_DOWNSCALER"
+    },
+    {
+      "Name": "page_input_trigger_SECONDARY1_DOWNSCALER",
+      "Type": "Register",
+      "Address": 4688,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/SECONDARY1_DOWNSCALER"
+    },
+    {
+      "Name": "page_input_trigger_SECONDARY2_DOWNSCALER",
+      "Type": "Register",
+      "Address": 4692,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/SECONDARY2_DOWNSCALER"
+    },
+    {
+      "Name": "page_input_trigger_CONC3_SEL",
+      "Type": "Register",
+      "Address": 4696,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_input_trigger/CONC3_SEL"
+    },
+    {
+      "Name": "page_freq_meter_counter_0_FRQ",
+      "Type": "Register",
+      "Address": 16384,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_0/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_0_CNT",
+      "Type": "Register",
+      "Address": 16388,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_0/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_1_FRQ",
+      "Type": "Register",
+      "Address": 16416,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_1/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_1_CNT",
+      "Type": "Register",
+      "Address": 16420,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_1/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_2_FRQ",
+      "Type": "Register",
+      "Address": 16448,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_2/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_2_CNT",
+      "Type": "Register",
+      "Address": 16452,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_2/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_3_FRQ",
+      "Type": "Register",
+      "Address": 16480,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_3/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_3_CNT",
+      "Type": "Register",
+      "Address": 16484,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_3/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_4_FRQ",
+      "Type": "Register",
+      "Address": 16512,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_4/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_4_CNT",
+      "Type": "Register",
+      "Address": 16516,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_4/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_5_FRQ",
+      "Type": "Register",
+      "Address": 16544,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_5/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_5_CNT",
+      "Type": "Register",
+      "Address": 16548,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_5/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_6_FRQ",
+      "Type": "Register",
+      "Address": 16576,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_6/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_6_CNT",
+      "Type": "Register",
+      "Address": 16580,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_6/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_7_FRQ",
+      "Type": "Register",
+      "Address": 16608,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_7/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_7_CNT",
+      "Type": "Register",
+      "Address": 16612,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_7/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_8_FRQ",
+      "Type": "Register",
+      "Address": 16640,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_8/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_8_CNT",
+      "Type": "Register",
+      "Address": 16644,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_8/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_9_FRQ",
+      "Type": "Register",
+      "Address": 16672,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_9/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_9_CNT",
+      "Type": "Register",
+      "Address": 16676,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_9/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_10_FRQ",
+      "Type": "Register",
+      "Address": 16704,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_10/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_10_CNT",
+      "Type": "Register",
+      "Address": 16708,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_10/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_11_FRQ",
+      "Type": "Register",
+      "Address": 16736,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_11/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_11_CNT",
+      "Type": "Register",
+      "Address": 16740,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_11/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_12_FRQ",
+      "Type": "Register",
+      "Address": 16768,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_12/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_12_CNT",
+      "Type": "Register",
+      "Address": 16772,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_12/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_13_FRQ",
+      "Type": "Register",
+      "Address": 16800,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_13/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_13_CNT",
+      "Type": "Register",
+      "Address": 16804,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_13/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_14_FRQ",
+      "Type": "Register",
+      "Address": 16832,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_14/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_14_CNT",
+      "Type": "Register",
+      "Address": 16836,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_14/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_15_FRQ",
+      "Type": "Register",
+      "Address": 16864,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_15/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_15_CNT",
+      "Type": "Register",
+      "Address": 16868,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_15/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_16_FRQ",
+      "Type": "Register",
+      "Address": 16896,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_16/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_16_CNT",
+      "Type": "Register",
+      "Address": 16900,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_16/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_17_FRQ",
+      "Type": "Register",
+      "Address": 16928,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_17/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_17_CNT",
+      "Type": "Register",
+      "Address": 16932,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_17/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_18_FRQ",
+      "Type": "Register",
+      "Address": 16960,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_18/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_18_CNT",
+      "Type": "Register",
+      "Address": 16964,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_18/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_19_FRQ",
+      "Type": "Register",
+      "Address": 16992,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_19/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_19_CNT",
+      "Type": "Register",
+      "Address": 16996,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_19/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_20_FRQ",
+      "Type": "Register",
+      "Address": 17024,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_20/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_20_CNT",
+      "Type": "Register",
+      "Address": 17028,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_20/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_21_FRQ",
+      "Type": "Register",
+      "Address": 17056,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_21/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_21_CNT",
+      "Type": "Register",
+      "Address": 17060,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_21/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_22_FRQ",
+      "Type": "Register",
+      "Address": 17088,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_22/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_22_CNT",
+      "Type": "Register",
+      "Address": 17092,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_22/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_23_FRQ",
+      "Type": "Register",
+      "Address": 17120,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_23/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_23_CNT",
+      "Type": "Register",
+      "Address": 17124,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_23/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_24_FRQ",
+      "Type": "Register",
+      "Address": 17152,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_24/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_24_CNT",
+      "Type": "Register",
+      "Address": 17156,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_24/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_25_FRQ",
+      "Type": "Register",
+      "Address": 17184,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_25/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_25_CNT",
+      "Type": "Register",
+      "Address": 17188,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_25/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_26_FRQ",
+      "Type": "Register",
+      "Address": 17216,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_26/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_26_CNT",
+      "Type": "Register",
+      "Address": 17220,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_26/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_27_FRQ",
+      "Type": "Register",
+      "Address": 17248,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_27/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_27_CNT",
+      "Type": "Register",
+      "Address": 17252,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_27/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_28_FRQ",
+      "Type": "Register",
+      "Address": 17280,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_28/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_28_CNT",
+      "Type": "Register",
+      "Address": 17284,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_28/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_29_FRQ",
+      "Type": "Register",
+      "Address": 17312,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_29/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_29_CNT",
+      "Type": "Register",
+      "Address": 17316,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_29/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_30_FRQ",
+      "Type": "Register",
+      "Address": 17344,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_30/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_30_CNT",
+      "Type": "Register",
+      "Address": 17348,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_30/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_31_FRQ",
+      "Type": "Register",
+      "Address": 17376,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_31/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_31_CNT",
+      "Type": "Register",
+      "Address": 17380,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_31/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_32_FRQ",
+      "Type": "Register",
+      "Address": 17408,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_32/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_32_CNT",
+      "Type": "Register",
+      "Address": 17412,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_32/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_33_FRQ",
+      "Type": "Register",
+      "Address": 17440,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_33/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_33_CNT",
+      "Type": "Register",
+      "Address": 17444,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_33/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_34_FRQ",
+      "Type": "Register",
+      "Address": 17472,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_34/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_34_CNT",
+      "Type": "Register",
+      "Address": 17476,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_34/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_35_FRQ",
+      "Type": "Register",
+      "Address": 17504,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_35/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_35_CNT",
+      "Type": "Register",
+      "Address": 17508,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_35/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_36_FRQ",
+      "Type": "Register",
+      "Address": 17536,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_36/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_36_CNT",
+      "Type": "Register",
+      "Address": 17540,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_36/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_37_FRQ",
+      "Type": "Register",
+      "Address": 17568,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_37/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_37_CNT",
+      "Type": "Register",
+      "Address": 17572,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_37/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_38_FRQ",
+      "Type": "Register",
+      "Address": 17600,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_38/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_38_CNT",
+      "Type": "Register",
+      "Address": 17604,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_38/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_39_FRQ",
+      "Type": "Register",
+      "Address": 17632,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_39/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_39_CNT",
+      "Type": "Register",
+      "Address": 17636,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_39/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_40_FRQ",
+      "Type": "Register",
+      "Address": 17664,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_40/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_40_CNT",
+      "Type": "Register",
+      "Address": 17668,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_40/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_41_FRQ",
+      "Type": "Register",
+      "Address": 17696,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_41/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_41_CNT",
+      "Type": "Register",
+      "Address": 17700,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_41/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_42_FRQ",
+      "Type": "Register",
+      "Address": 17728,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_42/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_42_CNT",
+      "Type": "Register",
+      "Address": 17732,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_42/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_43_FRQ",
+      "Type": "Register",
+      "Address": 17760,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_43/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_43_CNT",
+      "Type": "Register",
+      "Address": 17764,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_43/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_44_FRQ",
+      "Type": "Register",
+      "Address": 17792,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_44/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_44_CNT",
+      "Type": "Register",
+      "Address": 17796,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_44/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_45_FRQ",
+      "Type": "Register",
+      "Address": 17824,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_45/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_45_CNT",
+      "Type": "Register",
+      "Address": 17828,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_45/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_46_FRQ",
+      "Type": "Register",
+      "Address": 17856,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_46/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_46_CNT",
+      "Type": "Register",
+      "Address": 17860,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_46/CNT"
+    },
+    {
+      "Name": "page_freq_meter_counter_47_FRQ",
+      "Type": "Register",
+      "Address": 17888,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_47/FRQ"
+    },
+    {
+      "Name": "page_freq_meter_counter_47_CNT",
+      "Type": "Register",
+      "Address": 17892,
+      "Version": "1.0.0.0",
+      "RegionSize": 1,
+      "Description": "",
+      "Category": "Undefined",
+      "Path": "page_freq_meter_counter_47/CNT"
+    }
+  ],
+  "Device": "V2495",
+  "Project": "s800fw",
+  "Magic": "1DE5ECB4",
+  "Version": null,
+  "FPGA": "5CGXBC4C6F27C7",
+  "BuildDate": "2025-11-20T23:12:49.8320087+01:00"
+}

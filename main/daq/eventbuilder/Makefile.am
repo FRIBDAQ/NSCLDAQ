@@ -166,7 +166,7 @@ install-exec-hook:
 # Tests:
 
 
-noinst_PROGRAMS = transmittests ordertests fragcmdtests outputtests
+check_PROGRAMS = transmittests ordertests fragcmdtests outputtests
 
 outputtests_SOURCES = TestRunner.cpp outputTests.cpp \
 	COrdererOutput.cpp
@@ -219,8 +219,10 @@ fragcmdtests_CXXFLAGS=$(COMPILATION_FLAGS) @TCL_CPPFLAGS@ @LIBTCLPLUS_CFLAGS@
 fragcmdtests_LDADD=@CPPUNIT_LDFLAGS@ @LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
 
 
+#  Depends on building the check_PROGRAMS so the compiled tests
+# run as well.
 
-check-TESTS:
+check-TESTS: $(check_PROGRAMS)
 	@builddir@/transmittests  
 	@builddir@/outputtests
 	@builddir@/fragcmdtests

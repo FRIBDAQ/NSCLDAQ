@@ -1,5 +1,3 @@
-import copy
-import inspect
 import logging
 from math import ceil, floor
 import sys
@@ -11,15 +9,17 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 import numpy as np
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QMessageBox
-from PyQt5.QtGui import QPaintEvent
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QMessageBox
 
 from fit_panel import FitPanel
 from run_type import RunType
-import xia_constants as xia
 
 class Plot(QWidget):
     """Plotting widget for the GUI utilizing the matplotlib Qt5 backend.
+    
+    The caller must set the histogram and trace lengths for each module via '
+    the set_histogram_length() and set_trace_length() methods respectively 
+    prior to drawing any data.
 
     Attributes
     ----------
@@ -40,6 +40,12 @@ class Plot(QWidget):
         on which it is displayed.
     mgr : DSPManager
         DSP manager for calls to XIA API.
+    histogram_length : list
+        List of histogram lengths for each module.
+    trace_length : list
+        List of trace lengths for each module.
+    current_module : int 
+        Module number from which the currently displayed data was acquired.
 
     Methods
     -------
@@ -55,6 +61,8 @@ class Plot(QWidget):
         Redraw the entire canvas and all its subplots.
     draw_test_data(idx)
         Draw a test figure with a random number of subplots.
+    set_histogram_length(lengths)
+        Set the histogram lengths for each module.
 
     """
     
@@ -85,11 +93,14 @@ class Plot(QWidget):
         # Data storage and presentation:
         
         self.raw_data = {}
-        
+        self.histogram_length = []
+        self.trace_length = []
+                
         ##
         # Main layout
         #
         
+        self.current_module = 0
         self.figure = plt.figure(tight_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.fit_panel = FitPanel()
@@ -124,9 +135,7 @@ class Plot(QWidget):
         # Signal connections
         #
         
-        self.toolbar.logscale.clicked.connect(
-            lambda a=None: self._set_yscale(ax=a)
-        )
+        self.toolbar.logscale.clicked.connect(lambda: self._set_yscale(ax=None))
         self.toolbar.b_zoom_in.clicked.connect(lambda: self._zoom("in"))
         self.toolbar.b_zoom_out.clicked.connect(lambda: self._zoom("out"))
         self.toolbar.b_fit_panel.clicked.connect(self._show_fit_panel)
@@ -134,9 +143,7 @@ class Plot(QWidget):
         self.fit_panel.b_fit.clicked.connect(self._fit)
         self.fit_panel.b_clear.clicked.connect(self._clear_fits)
         self.fit_panel.b_cancel.clicked.connect(self._close_fit_panel)
-        self.fit_panel.function_list.currentTextChanged.connect(
-            self._update_formula
-        )
+        self.fit_panel.function_list.currentTextChanged.connect(self._update_formula)
         
     def draw_trace_data(self, data, mod, chan, nrows=1, ncols=1, idx=1):
         """Draws an ADC trace on the plot canvas.
@@ -158,12 +165,13 @@ class Plot(QWidget):
 
         """
         self.raw_data[idx-1] = data
+        self.current_module = mod
         ax = self.figure.add_subplot(nrows, ncols, idx)
         ax.plot(self.raw_data[idx-1], drawstyle="steps-post")
         xdt = self.mgr.get_chan_par(mod, chan, "XDT")*1000 # in ns.
         ax.set_xlabel(f"Sample number ({xdt} ns/sample)")
         ax.set_ylabel("Voltage (ADC units)")
-        ax.set_xlim(0, xia.MAX_ADC_TRACE_LEN)
+        ax.set_xlim(0, self.trace_length[self.current_module]-1)
         self._set_yscale(ax)
 
         if (nrows*ncols) > 1:
@@ -209,13 +217,11 @@ class Plot(QWidget):
         self._set_yscale(ax3, pad=0.1)
 
         for ax in self.figure.get_axes():
-            ax.set_xlim(0, xia.MAX_ADC_TRACE_LEN)
+            ax.set_xlim(0, self.trace_length[self.current_module]-1)
             
         self.canvas.draw_idle()
         
-    def draw_run_data(
-            self, data, run_type, nrows=1, ncols=1, idx=1
-    ):
+    def draw_run_data(self, data, run_type, nrows=1, ncols=1, idx=1):
         """Draws a data histogram on the plot canvas.
 
         Parameters
@@ -242,7 +248,7 @@ class Plot(QWidget):
             ax.set_xlabel("Baseline value (ADC units)")
             
         ax.set_ylabel("Counts/bin")
-        ax.set_xlim(0, xia.MAX_HISTOGRAM_LENGTH)
+        ax.set_xlim(0, self.histogram_length[self.current_module]-1)
         self._set_yscale(ax)
         
         if (nrows*ncols) > 1:
@@ -254,16 +260,19 @@ class Plot(QWidget):
 
         self.canvas.draw_idle()
                         
-    def on_begin_run(self, run_type):
+    def on_begin_run(self, module, run_type):
         """Draws a blank histogram canvas when beginning a new run.
         
         Parameters
         ----------
+        module : int
+            Module number from which the data will be acquired.
         run_type : Enum member
             Type of run data to draw.
 
         """
         self.figure.clear()
+        self.current_module = module
         try:
             if run_type != RunType.HISTOGRAM and run_type != RunType.BASELINE:
                 raise ValueError(f"Encountered unexpected run type {run_type}, select a valid run type and begin a new run")  
@@ -328,6 +337,27 @@ class Plot(QWidget):
                 ax.plot(data, "-")                
         self.canvas.draw_idle()
 
+    def set_histogram_length(self, lengths):
+        """Set the histogram lengths for each module.
+
+        Parameters
+        ----------
+        lengths : list
+            List of histogram lengths for each module.
+
+        """
+        self.histogram_length = lengths
+        
+    def set_trace_length(self, lengths):
+        """Set the trace length for all modules.
+
+        Parameters
+        ----------
+        lengthd : list
+            List of trace lengths for each module.
+
+        """
+        self.trace_length = lengths
     ##
     # Private methods
     #
@@ -370,6 +400,13 @@ class Plot(QWidget):
             limits when drawing the canvas.
 
         """
+        # Determine number of points from the first line on this axis:
+        lines = ax.get_lines()
+        if lines:
+            npts = len(lines[0].get_xdata())
+        else:
+            npts = 0
+                    
         ymin, ymax = self._get_ylimits(ax, pad)        
                 
         ax.autoscale(axis="y")
@@ -383,13 +420,9 @@ class Plot(QWidget):
                 ax.set_yscale("symlog")
         else:
             ax.set_yscale("linear")
-            # Take advantage of a couple of things:
-            #   - If there is data, idx 0 will always contain *something*
-            #   - All the data is the same type as contained in idx 0
-            npts = len(self.raw_data[0]) if self.raw_data else 0
-            if npts == xia.MAX_HISTOGRAM_LENGTH:
+            if npts == self.histogram_length[self.current_module]:
                 ax.set_ylim(0, ymax)
-            elif npts == xia.MAX_ADC_TRACE_LEN:
+            elif npts == self.trace_length[self.current_module]:
                 ax.set_ylim(ymin, ymax)
             else:
                 ax.set_ylim(0, 1)
@@ -413,12 +446,9 @@ class Plot(QWidget):
             If the data type argument is an invalid value.
 
         """
-        data, bins = np.histogram(
-            [i for i in range(xia.MAX_HISTOGRAM_LENGTH)],
-            bins=xia.MAX_HISTOGRAM_LENGTH,
-            range=(0, xia.MAX_HISTOGRAM_LENGTH),
-            weights=self.raw_data[idx]
-        )
+        data = self.raw_data[idx]
+        bins = np.arange(self.histogram_length[self.current_module] + 1)
+                
         # Drop the rightmost bin edge for the x-axis data. y-value is the left
         # edge of the bin, as in, e.g. ROOT.
         ax.plot(bins[:-1], data, drawstyle="steps-post", color="tab:blue")
@@ -441,7 +471,6 @@ class Plot(QWidget):
             data, returns (0.0, 1.0).
 
         """
-        lines = ax.get_lines()
         if ax.get_lines():
             ymin = sys.float_info.max
             ymax = sys.float_info.min
@@ -502,9 +531,7 @@ class Plot(QWidget):
 
                 # Print the fitted parameters and uncertainties:
                 for i in range(len(result.x)):
-                    s = "p[{}]: {:.6e} +/- {:.6e}".format(
-                        i, result.x[i], np.sqrt(result.hess_inv[i][i])
-                    )
+                    s = "p[{}]: {:.6e} +/- {:.6e}".format(i, result.x[i], np.sqrt(result.hess_inv[i][i]))
                     self.fit_panel.results.append(s)
                     if i == (len(result.x) - 1):
                         self.fit_panel.results.append("\n")
@@ -603,8 +630,7 @@ class Plot(QWidget):
             ymax *= 2
         else:
             # Params set in ctor so this should be impossible, but:
-            raise ValueError(f"Zoom direction must be 'in' our 'out' "
-                             f"but was '{zdir}'")
+            raise ValueError(f"Zoom direction must be 'in' our 'out' but was '{zdir}'")
         
         # We don't want to flip the axes on traces so we only zoom in as
         # far as ymin + 1 since the smallest increment is one unit:

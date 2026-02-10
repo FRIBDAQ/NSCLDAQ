@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <CVMUSB.h>
+#include <stdint.h>
 using namespace std;
 
 int main(int argc, char** argv)
@@ -36,6 +37,7 @@ namespace Globals
   int pConfig(0);
   int scalerPeriod(0);
   CVMUSB* pUSBController(0);
+  uint32_t  deviceSelectorValue; 
 };
 
 

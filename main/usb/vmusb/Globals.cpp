@@ -15,6 +15,7 @@
 */
 #include <string>
 #include <tcl.h>
+#include <CVMUSB.h>
 
 
 
@@ -41,4 +42,9 @@ namespace Globals {
   Tcl_ThreadId           mainThreadId = 0;
   CTCLInterpreter*       pMainInterpreter = 0;
   CTheApplication*   pApplication;
-};
+  // Issue #422 device source register to restore.
+  uint32_t           deviceSelectorValue  =CVMUSB::DeviceSourceRegister::nimO1Busy       |
+			    CVMUSB::DeviceSourceRegister::nimO2VMEAS      |
+			    CVMUSB::DeviceSourceRegister::dggADisabled    |
+			    CVMUSB::DeviceSourceRegister::dggBDisabled;      // Default value.
+}

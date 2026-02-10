@@ -2,7 +2,6 @@
 #include "CCBD8210CamacBranchDriver.h"
 #include "CCBD8210CrateController.h"
 #include "CCBD8210ReadoutList.h"
-#include "CCNAF.h"
 #include "CCamacBranchException.h"
 #include "CTypeA1Commands.h"
 #include <unistd.h>

@@ -1,8 +1,9 @@
 install-exec-local:
 	$(mkinstalldirs) @prefix@/share/recipes
 	@DOCBOOK2HTML@ -o @builddir@/html @srcdir@/cookbook.xml
-	(cd @srcdir@; tar czf - images process readrings writerings epicspush) \
-		| (cd @prefix@/share/recipes; tar xzf -)
-	(cd @builddir@; tar czf - html) | (cd @prefix@/share/recipes; tar xzf -)
-
-EXTRA_DIST=cookbook.xml eventbuilt images process readrings writerings
+	for dir in images process readrings writerings epicspush offlinereglom; do \
+		(cd @srcdir@ && find $$dir -type d -exec $(INSTALL) -d -m 755 @prefix@/share/recipes/{} \;) ; \
+		(cd @srcdir@ && find $$dir -type f -exec $(INSTALL) -m 644 {} @prefix@/share/recipes/{} \;) \
+	done
+	(cd @builddir@ && find html -type d -exec $(INSTALL) -d -m 755 @prefix@/share/recipes/{} \;)
+	(cd @builddir@ && find html -type f -exec $(INSTALL) -m 644 {} @prefix@/share/recipes/{} \;)

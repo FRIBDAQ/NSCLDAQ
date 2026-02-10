@@ -24,12 +24,12 @@
 
 /**
  * constructor
- *   @param interp - interpreter on which the command is registered.
- *   @param cmdName - Command name string.
+ *   @param pInterp Interpreter on which the command is registered.
+ *   @param cmdName Command name string.
  *   @note The client data will be a pointer to this object so that
  *        the static commandRelay method actually registered as the
  *        command handler can invoke operator().
- *   @note - we assume the registration works.
+ *   @note We assume the registration works.
  */
 CTclCommand::CTclCommand(Tcl_Interp* pInterp, const char* cmdName) :
     m_pInterp(pInterp), m_cmdName(cmdName)
@@ -125,9 +125,9 @@ CTclCommand::setResult(int value)
 /**
  * getInteger
  *   Get an integer value from an object.
- * @param intObj - the object.
- * @return int   - the value.
- * @throw std::string - if the object does not have a valid integer.
+ * @param obj the object.
+ * @return int the value.
+ * @throw std::string if the object does not have a valid integer.
  */
 int
 CTclCommand::getInteger(Tcl_Obj* obj)

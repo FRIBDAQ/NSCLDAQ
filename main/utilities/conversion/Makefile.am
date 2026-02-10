@@ -49,7 +49,7 @@ libConversion_la_LIBADD = @top_builddir@/utilities/format/V8/libdataformatv8.la 
 			  @LIBTCLPLUS_LDFLAGS@
 
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES = TestRunner.cpp \
                     ctransform8p0to10p0tests.cpp \
@@ -97,8 +97,7 @@ BUILT_SOURCES = format_converter_options.c format_converter_options.h
 format_converter_options.c : format_converter_options.h
 
 format_converter_options.h: format_converter_options.ggo
-	gengetopt -i $< -F @srcdir@/format_converter_options -a cmdLineOpts \
-		--output-dir=@builddir@
+	gengetopt -i $< -F format_converter_options -a cmdLineOpts --output-dir=@builddir@
 
 format_converter_SOURCES = Main.h Main.cpp 
 nodist_format_converter_SOURCES = format_converter_options.c format_converter_options.h

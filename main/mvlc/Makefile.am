@@ -15,11 +15,11 @@
 # this is normally @top_srcdir@/usb/vmusb/daqconfig
 #
 
-bin_PROGRAMS=mvlcgenerate mvlc_xlmload
+bin_PROGRAMS=mvlcgenerate mvlc_xlmload mvlc_sets800run
 
 # I had an out of tree build fail in a weird way that
 # makes me believe this is not fully parallel safe.
-# Specifically a link of the tests claimed
+# Specifically a link of the tests claimed#
 # that the libmvlcGenerator.la was not present
 # but after the dust settled it was...and  clean
 # build serial and parallel worked....
@@ -31,7 +31,11 @@ NOTPARALLEL:
 # Library for generator...needed for extended drivers
 # to link to.
 
-lib_LTLIBRARIES=libmvlcGenerator.la
+lib_LTLIBRARIES=libmvlcGenerator.la libmvlcSlowControlsClient.la
+
+libmvlcSlowControlsClient_la_SOURCES=CVMEClient.cpp TclVMEClient.cpp
+libmvlcSlowControlsClient_la_CPPFLAGS=@LIBTCLPLUS_CFLAGS@ @TCL_CPPFLAGS@
+libmvlcSlowControlsClient_la_LDFLAGS=@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
 
 libmvlcGenerator_la_SOURCES = CReadoutHardware.cpp CReadoutHardware.h \
 	CReadoutModule.cpp CReadoutModule.h \
@@ -43,7 +47,7 @@ libmvlcGenerator_la_SOURCES = CReadoutHardware.cpp CReadoutHardware.h \
 
 libmvlcGenerator_la_CPPFLAGS=@TCL_CPPFLAGS@ -I@top_srcdir@ \
 	-I@top_srcdir@/usb/common/configurableobject \
-	@LIBTCLPLUS_CFLAGS@
+	@LIBTCLPLUS_CFLAGS@ 
 
 # Put public incldes in $DAQINC/mvlcgenerate
 
@@ -52,33 +56,48 @@ includedir=@prefix@/include/mvlc
 # Done this way so we don't need a lib and we don't need to repeat ourselves for
 # test sources
 
+
+
+
+
 IMPORT_DIR=@top_srcdir@/usb/vmusb/daqconfig
 IMPORTED_MODULES= \
-	$(IMPORT_DIR)/CMQDC32RdoHdwr.cpp \
-	$(IMPORT_DIR)/CMQDC32StackBuilder.cpp \
-	$(IMPORT_DIR)/C785.cpp \
-	$(IMPORT_DIR)/C830.cpp \
-	$(IMPORT_DIR)/C3804.cpp \
-	$(IMPORT_DIR)/C3820.cpp \
-	$(IMPORT_DIR)/CCAENChain.cpp \
-	$(IMPORT_DIR)/CDelay.cpp \
-	$(IMPORT_DIR)/CMesytecBase.cpp \
-	$(IMPORT_DIR)/CMADC32.cpp \
-	$(IMPORT_DIR)/CMADCChain.cpp  \
-	$(IMPORT_DIR)/CMADCScaler.cpp \
-	$(IMPORT_DIR)/CMarker.cpp \
-	$(IMPORT_DIR)/CMDPP16QDC.cpp \
-	$(IMPORT_DIR)/CMDPP32QDC.cpp  \
-	$(IMPORT_DIR)/CMDPP32SCP.cpp  \
-	$(IMPORT_DIR)/CMTDC32.cpp \
-	$(IMPORT_DIR)/CNADC2530.cpp \
-	$(IMPORT_DIR)/CV1x90.cpp  \
-	$(IMPORT_DIR)/CV977.cpp \
-	$(IMPORT_DIR)/CV1495sc.cpp \
-	$(IMPORT_DIR)/CV1729.cpp \
-	$(IMPORT_DIR)/CXLM.cpp \
-	$(IMPORT_DIR)/CXLMTimestamp.cpp \
-	$(IMPORT_DIR)/CXLMFERA.cpp 
+	CMQDC32RdoHdwr.cpp \
+	CMQDC32StackBuilder.cpp \
+	C785.cpp \
+	C830.cpp \
+	C3804.cpp \
+	C3820.cpp \
+	CCAENChain.cpp \
+	CDelay.cpp \
+	CMesytecBase.cpp \
+	CMADC32.cpp \
+	CMADCChain.cpp  \
+	CMADCScaler.cpp \
+	CMarker.cpp \
+	CMDPP16QDC.cpp \
+	CMDPP32QDC.cpp  \
+	CMDPP32SCP.cpp  \
+	CMTDC32.cpp \
+	CNADC2530.cpp \
+	CV1x90.cpp  \
+	CV977.cpp \
+	CV1495sc.cpp \
+	CV1729.cpp \
+	CXLM.cpp \
+	CXLMTimestamp.cpp \
+	CXLMFERA.cpp \
+	s800TriggerRegisters.cpp \
+	CS800TriggerNew.cpp \
+	CS800TriggerScalers.cpp 
+
+BUILT_SOURCES = options.h options.c xlm_options.h xlm_options.c \
+	$(IMPORTED_MODULES) 
+
+$(IMPORTED_MODULES):
+	for f in $(IMPORTED_MODULES) ; do cp $(IMPORT_DIR)/$$f @builddir@; done
+
+nodist_mvlcgenerate_SOURCES=$(IMPORTED_MODULES) options.h options.c
 
 
 LOCAL_MODULES= \
@@ -89,7 +108,6 @@ LOCAL_MODULES= \
 main_modules=utilities.h utilities.cpp \
 	 MVLCConfigParser.cpp \
 	$(LOCAL_MODULES) \
-	$(IMPORTED_MODULES) \
 	MVLCGenerator.h MVLCGenerator.cpp \
 	vme_interface_class.h sis_vmusb_interface.h sis_vmusb_interface.cpp
 
@@ -101,10 +119,16 @@ mvlcgenerate_CPPFLAGS= -I@srcdir@ -I@top_srcdir@/usb/common/configurableobject \
 	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@ @YAML_CFLAGS@ \
 	-DMVLC_TEMPLATE=\"@datarootdir@/mvlc/triggeronly.yaml\" \
 	-DMVLC_TCLLIBDIR=\"@datarootdir@/mvlc/TclLibs\" \
-	-DMVLC_GENERATOR -I@top_srcdir@/usb/vmusb/daqconfig
+	-DMVLC_GENERATOR -I@top_srcdir@/usb/vmusb/daqconfig \
+	@JSON_CFLAGS@ \
+	-DDEFAULT_S800REGFILE=\"@datarootdir@/s800triggers/RegisterFile.json\"
 
 mvlcgenerate_LDFLAGS=@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
-	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@ @YAML_LIBS@ @builddir@/libmvlcGenerator.la
+	@LIBTCLPLUS_LDFLAGS@ \
+	@TCL_LDFLAGS@ \
+	@YAML_LIBS@\
+	@builddir@/libmvlcGenerator.la \
+	@JSON_LIBS@
 
 include_HEADERS=TCLConfigParser.h  \
 	CVMUSBReadoutList.h  \
@@ -112,7 +136,8 @@ include_HEADERS=TCLConfigParser.h  \
 	MVLCConfigParser.h \
 	DeviceCommand.h \
 	CReadoutModule.h \
-	CReadoutHardware.h
+	CReadoutHardware.h \
+	CVMEClient.h
 
 
 # Build SampleDriver example library -> TclLibs/mvlc
@@ -133,9 +158,6 @@ libSampleDriver_la_LDFLAGS=@builddir@/libmvlcGenerator.la
 libSampleDriver_la_DEPENDENCIES=libmvlcGenerator.la
 
 
-BUILT_SOURCES = generate.cpp options.h options.c xlm_options.h xlm_options.c
-nodist_mvlcgenerate_SOURCES=options.h options.c
-
 options.c: options.h
 
 options.h: options.ggo
@@ -144,22 +166,26 @@ options.h: options.ggo
 
 #----------------------------------- build mvlc_xlmload
 
+nodist_mvlc_xlmload_SOURCES=xlm_option.h xlm_options.c
+
 mvlc_xlmload_SOURCES = xlmload.cpp \
-	CVMUSB.h CVMUSB.cpp CVMUSBReadoutList.h CVMUSBReadoutList.cpp \
 	CMVLCDirect.h CMVLCDirect.cpp \
-	$(IMPORT_DIR)/CXLM.h $(IMPORT_DIR)/CXLM.cpp \
-	xlm_options.h xlm_options.c
+	CXLM.cpp $(libmvlcGenerator_la_SOURCES)
+
 
 
 mvlc_xlmload_CPPFLAGS=@MVLC_CPPFLAGS@ \
 	-I@top_srcdir@/usb/common/configurableobject \
 	-I@top_srcdir@/base/headers -I@top_srcdir@/base/os \
-	-I$(IMPORT_DIR) -DMVLC_GENERATOR
+	-I$(IMPORT_DIR) -DMVLC_GENERATOR \
+	-I@top_srcdir@/usb/vmusb/daqconfig \
+	@LIBTCLPLUS_CFLAGS@ @TCL_FLAGS@
 
-mvlc_xlmload_LDFLAGS=@builddir@/libmvlcGenerator.la \
+mvlc_xlmload_LDFLAGS= \
 	@MVLC_LDFLAGS@ \
 	@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
 	@LIBTCLPLUS_LDFLAGS@ @TCL_LDFLAGS@
+
 
 
 
@@ -170,9 +196,26 @@ xlm_options.h: xlmload_options.ggo
 
 mvlc_xlmload_DEPENDENCIES=@builddir@/libmvlcGenerator.la xlm_options.c
 
+#  Slow controls client to set the run number in the trigger module:
+
+
+mvlc_sets800run_SOURCES=sets800run.cpp $(IMPORT_DIR)/s800TriggerRegisters.h \
+	CVMUSBReadoutList.cpp CVMUSBReadoutList.h
+
+mvlc_sets800run_DEPENDENCIES=libmvlcSlowControlsClient.la
+
+nodist_mvlc_sets800run_SOURCES=s800TriggerRegisters.cpp
+
+mvlc_sets800run_CPPFLAGS=-I@top_srcdir@/usb/vmusb/daqconfig \
+	@MVLC_CPPFLAGS@ @JSON_CFLAGS@ -DMVLC_GENERATOR \
+	-DDEFAULT_S800REGFILE=\"@datarootdir@/s800triggers/RegisterFile.json\"
+
+mvlc_sets800run_LDFLAGS=@JSON_LIBS@ \
+	libmvlcSlowControlsClient.la -Wl,-rpath=@libdir@
+
 #------------------------------ build/runtests
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 UNIT_TESTS=utiltests.cpp parsertests.cpp \
     stacktests.cpp devcommandtests.cpp rdomoduletests.cpp \
@@ -180,14 +223,23 @@ UNIT_TESTS=utiltests.cpp parsertests.cpp \
 	delaytests.cpp madc32tests.cpp caenchaintests.cpp madcchaintests.cpp \
 	madcscalertests.cpp mtdctests.cpp mqdctests.cpp mdpptests.cpp sis3804tests.cpp \
 	v830tests.cpp hytectests.cpp v977tests.cpp v1495sctests.cpp v1729tests.cpp  \
-	v1x90tests.cpp sisvmusbTests.cpp
+	v1x90tests.cpp sisvmusbTests.cpp 
 
 unittests_SOURCES = TestRunner.cpp \
 	$(UNIT_TESTS) \
 	options.h options.c \
-	$(main_modules)
+	$(IMPORTED_MODULES) $(LOCAL_MODULES) \
+	$(libmvlcGenerator_la_SOURCES) sis_vmusb_interface.cpp \
+	MVLCConfigParser.cpp utilities.cpp
+
+
+
 unittests_CPPFLAGS = @CPPUNIT_CFLAGS@ $(mvlcgenerate_CPPFLAGS)
-unittests_LDFLAGS = @CPPUNIT_LIBS@ $(mvlcgenerate_LDFLAGS)
+unittests_LDFLAGS = \
+	@top_builddir@/usb/common/configurableobject/libConfigurableObject.la \
+	@LIBTCLPLUS_LDFLAGS@ \
+	@TCL_LDFLAGS@ \
+	@YAML_LIBS@\@CPPUNIT_LIBS@ @JSON_LIBS@
 
 TESTS=unittests
 

@@ -1,16 +1,16 @@
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
-unittests_SOURCES = @srcdir@/TestRunner.cpp \
-		@srcdir@/mxdcrcbustest.cpp   \
-		@srcdir@/modulecommandtest.cpp \
-		@srcdir@/cgdgtest.cpp  \
-		@srcdir@/cv6533test.cpp  \
-		@srcdir@/cchicotriggertest.cpp \
-		@srcdir@/ctclcontrolmoduletest.cpp \
-		@srcdir@/cxlmcontrolstest.cpp \
-		@srcdir@/cvmusbmoduletest.cpp \
-		@srcdir@/cwienermdgg16test.cpp \
-		@srcdir@/cmdgg16controltest.cpp 
+unittests_SOURCES = TestRunner.cpp \
+		mxdcrcbustest.cpp   \
+		modulecommandtest.cpp \
+		cgdgtest.cpp  \
+		cv6533test.cpp  \
+		cchicotriggertest.cpp \
+		ctclcontrolmoduletest.cpp \
+		cxlmcontrolstest.cpp \
+		cvmusbmoduletest.cpp \
+		cwienermdgg16test.cpp \
+		cmdgg16controltest.cpp 
 
 
 unittests_LDADD = @top_builddir@/usb/vmusb/core/libVMUSBCore.la \

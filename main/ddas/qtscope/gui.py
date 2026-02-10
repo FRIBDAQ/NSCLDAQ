@@ -1,19 +1,12 @@
 import copy
 import inspect
-import json
 import logging
 import os
-import sys
-from time import sleep
 
 import numpy as np
-import pandas as pd
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtWidgets import (
-    QMainWindow, QVBoxLayout, QWidget, QApplication, QFileDialog
-)
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog
 
 from chan_dsp_gui import ChanDSPGUI 
 import colors
@@ -25,6 +18,7 @@ from run_type import RunType
 from trace_analyzer import TraceAnalyzer
 from thread_pool_manager import ThreadPoolManager
 
+##
 # @todo Would like to run the system as per custom DSP parameter formatted
 # text file output -- as currently implemented the save DSP settings do not
 # contain a full set of DSP parameters and are written using some standard
@@ -108,7 +102,7 @@ class MainWindow(QMainWindow):
         """        
         super().__init__(*args, **kwargs)
             
-        self.setWindowTitle("QtScope -- ''Just the goods, bare and plain.''")
+        self.setWindowTitle("QtScope -- ''Just the goods, bare and plain.'' Powered by Qt5")
         self.setWindowFlag(Qt.WindowMinimizeButtonHint, True)
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
         self.setMouseTracking(True)
@@ -130,7 +124,7 @@ class MainWindow(QMainWindow):
         self.pool_mgr = ThreadPoolManager()
             
         # XIA API managers:
-        
+
         self.dsp_mgr = DSPManager()
         self.sys_utils = SystemUtilities()
         self.trace_utils = TraceUtilities()
@@ -153,13 +147,9 @@ class MainWindow(QMainWindow):
         }
 
         # Create managers for manipulating DSP settings:
-        
-        self.mod_gui = ModDSPGUI(
-            mod_dsp_factory, toolbar_factory, self.pool_mgr
-        )
-        self.chan_gui = ChanDSPGUI(
-            chan_dsp_factory, toolbar_factory, self.pool_mgr
-        )
+
+        self.mod_gui = ModDSPGUI(mod_dsp_factory, toolbar_factory, self.pool_mgr)
+        self.chan_gui = ChanDSPGUI(chan_dsp_factory, toolbar_factory, self.pool_mgr)
 
         ##
         # Main layout GUI
@@ -169,10 +159,11 @@ class MainWindow(QMainWindow):
         self.acq_toolbar = toolbar_factory.create("acq")
         self.mplplot = Plot(self.dsp_mgr, toolbar_factory, fit_factory)
 
-        # Set initial run state information from the manager and toolbar:
+        # Set initial state information from the manager and toolbar:
         
         self.run_active = False
         self.active_type = RunType.INACTIVE
+        self.channel_map = []
 
         # Define the main layout and add widgets:
         
@@ -202,6 +193,11 @@ class MainWindow(QMainWindow):
         self.acq_toolbar.b_analyze_trace.clicked.connect(self._analyze_trace)
         self.acq_toolbar.b_read_data.clicked.connect(self._read_data)
         self.acq_toolbar.b_run_control.clicked.connect(self._run_control)
+        self.acq_toolbar.current_mod.valueChanged.connect(
+            lambda m: self.acq_toolbar.set_channel_spinbox_range(
+                self.channel_map[m]
+            )
+        )
         
     ##
     # Public methods
@@ -244,35 +240,50 @@ class MainWindow(QMainWindow):
             
         self.adjustSize()
 
-    # @todo (ASC 10/31/23): Module MSPS information should be easily accessible
-    # to other parts of the program, most notably the trace analyzer to set the
-    # CFD values.
     def _on_boot(self):
         """Configure the system following a successful boot."""
-        if self.sys_utils.get_boot_status() == True:            
-            # Populate list of module MSPS. Length of list == number of
-            # installed modules in the crate:
+        if self.sys_utils.get_boot_status() == True:
+            num_modules = self.sys_utils.get_num_modules()
+            
+            # Populate list of module MSPS and channel map. In principle
+            # could try and grab the whole array at once... but this works
+            # well enough for now.
             
             msps_list = []
-            for i in range(self.sys_utils.get_num_modules()):
+            channel_map = []
+            histogram_lengths = []
+            trace_lengths = []
+            
+            for i in range(num_modules):
                 msps_list.append(self.sys_utils.get_module_msps(i))
-                
+                channel_map.append(self.sys_utils.get_channel_count(i))
+                histogram_lengths.append(self.run_utils.get_histogram_length(i))
+                trace_lengths.append(self.trace_utils.get_trace_length(i))
+            
             # Configure DSP and managers. Performs first time load of DSP
-            # settings from the Pixie modules.
+            # settings from the Pixie modules. DSP toolbar spinbox ranges
+            # are set in ChanDSPGUI::configure(). Also set the max histogram
+            # and trace lengths in the plot widget for proper axis scaling.
+
+            self.channel_map = channel_map
+                        
+            self.mplplot.set_histogram_length(histogram_lengths)
+            self.mplplot.set_trace_length(trace_lengths)
             
-            self.dsp_mgr.initialize_dsp(len(msps_list))
-            self.chan_gui.configure(self.dsp_mgr, msps_list)
-            self.mod_gui.configure(self.dsp_mgr, len(msps_list))
+            self.dsp_mgr.initialize_dsp(num_modules, self.channel_map)
+            self.chan_gui.configure(self.dsp_mgr, num_modules, msps_list, self.channel_map)
+            self.mod_gui.configure(self.dsp_mgr, num_modules, self.channel_map)
             
-            # Repaint boot button, configure spinboxes, enable widgets:
+            # Configure toolbars, enable widgets:
             
             self.sys_toolbar.b_boot.setText("Booted")
             self.sys_toolbar.b_boot.setStyleSheet(colors.GREEN)
-            self.acq_toolbar.current_mod.setRange(0, len(msps_list)-1)
-            self.acq_toolbar.current_chan.setRange(0, 15)
-            
             self.sys_toolbar.enable()
+
+            self.acq_toolbar.set_module_spinbox_range(num_modules)
+            self.acq_toolbar.set_channel_spinbox_range(self.channel_map[0])
             self.acq_toolbar.enable()            
+
             self.mplplot.toolbar.enable()
 
             print("QtScope system configuration complete!")
@@ -306,18 +317,18 @@ class MainWindow(QMainWindow):
                         raise RuntimeError(f"Unrecognized option '{opt}'")
                     elif fext != ".set" and fext != ".json":
                         raise RuntimeError(
-                            "Unsupported extension for settings file: " \
+                            f"Unsupported extension for settings file: " \
                             f"'{fext}.'\n\tSupported extenstions are: .set" \
-                            "or .json. Your settings file has not been saved"
+                            f"or .json. Your settings file has not been saved"
                         )
                 else:
                     if opt != "XIA settings file (*.set)":
                         raise RuntimeError(f"Unrecognized option '{opt}'")
                     elif fext != ".set":
                         raise RuntimeError(
-                            "Unsupported extension for settings file:" \
+                            f"Unsupported extension for settings file:" \
                             f"'{fext}.'\n\tSupported extension are: .set." \
-                            "Your settings file has not been saved"
+                            f"Your settings file has not been saved"
                         )                
             except RuntimeError as e:
                 self.logger.exception("Error saving settings file")
@@ -335,15 +346,13 @@ class MainWindow(QMainWindow):
             If file format is unrecognized.
         """        
         fname, opt = self._load_dialog()
-        fext = os.path.splitext(fname)[-1].lower()
         if fname and opt:
             try:
-                if (opt == "XIA settings file (*.set)"
-                    or "XIA settings file (*.set, *.json)"):
+                if (opt == "XIA settings file (*.set)" or "XIA settings file (*.set, *.json)"):
                     self.sys_utils.load_set_file(fname)
                 else:
                     raise RuntimeError(f"Unrecognized option '{opt}'")
-            except RuntimeError:
+            except RuntimeError as e:
                 self.logger.exception("Error loading settings file")
                 print(e)
 
@@ -455,7 +464,10 @@ class MainWindow(QMainWindow):
 
         nthreads = self.pool_mgr.get_active_thread_count()
         if nthreads > 0:
-            print(f"{nthreads} threads are currently communicating with the module(s). Waiting...")
+            print(
+                f"{nthreads} threads are currently communicating with "
+                f"the module(s). Waiting..."
+            )
             self.pool_mgr.wait()
             
         # Access thread from global thread pool for the begin/end operation
@@ -489,8 +501,9 @@ class MainWindow(QMainWindow):
         self.logger.debug(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Beginning {self.active_type} run in Mod. {module}")
         
         # XIA API call to begin run in the current module:
-        
-        self.run_utils.begin_run(module, self.active_type)
+
+        nchannels = self.sys_utils.get_channel_count(module)
+        self.run_utils.begin_run(module, nchannels, self.active_type)
         self.run_active = self.run_utils.get_run_active()
         self.logger.debug(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Started, run active {self.run_active}")        
             
@@ -498,7 +511,7 @@ class MainWindow(QMainWindow):
         
         if self.run_active:
             self.acq_toolbar.b_run_control.setText("End run")
-            self.mplplot.on_begin_run(self.active_type)
+            self.mplplot.on_begin_run(module, self.active_type)
             self.mod_gui.setEnabled(False)
             self.chan_gui.setEnabled(False)
             
@@ -572,20 +585,23 @@ class MainWindow(QMainWindow):
         update the main display.
         """        
         self.mplplot.figure.clear()
+        
         module = self.acq_toolbar.current_mod.value()
+        nchannels = self.sys_utils.get_channel_count(module)
         channel = self.acq_toolbar.current_chan.value()
 
         # Read from module and get data, then draw:
         
         if self.acq_toolbar.read_all.isChecked():
-            for i in range(16):
+            for i in range(nchannels):
                 self.run_utils.read_data(module, i, self.active_type)
-                data = self.run_utils.get_data(self.active_type)
-                self.mplplot.draw_run_data(data, self.active_type, 4, 4, i+1)
+                data = self.run_utils.get_data(module, self.active_type)
+                # Expect either 16 or 32 channels, so 4x4 or 8x4:
+                self.mplplot.draw_run_data(data, self.active_type, int(nchannels/4), 4, i+1)
             self.mplplot.update_canvas()
         else:           
             self.run_utils.read_data(module, channel, self.active_type)
-            data = self.run_utils.get_data(self.active_type)
+            data = self.run_utils.get_data(module, self.active_type)
             self.mplplot.draw_run_data(data, self.active_type)
             
     def _read_trace_data(self):
@@ -595,7 +611,9 @@ class MainWindow(QMainWindow):
         update the main display. 
         """        
         self.mplplot.figure.clear()
+        
         module = self.acq_toolbar.current_mod.value()
+        nchannels = self.sys_utils.get_channel_count(module)
         channel = self.acq_toolbar.current_chan.value()
 
         # Retrieve trace from this module and channel and get its data. If
@@ -604,14 +622,15 @@ class MainWindow(QMainWindow):
         # signals until it either finds a good trace or hits a retry limit.
         
         if self.acq_toolbar.read_all.isChecked(): # Read all.
-            for i in range(16):             
+            for i in range(nchannels):             
                 if self.acq_toolbar.fast_acq.isChecked():
                     self.trace_utils.read_fast_trace(module, i)
                 else:
                     self.trace_utils.read_trace(module, i)
 
-                data = self.trace_utils.get_trace_data()
-                self.mplplot.draw_trace_data(data, module, i, 4, 4, i+1)
+                data = self.trace_utils.get_trace_data(module)
+                # Expect either 16 or 32 channels, so 4x4 or 8x4:
+                self.mplplot.draw_trace_data(data, module, i, int(nchannels/4), 4, i+1)
                     
                 # Keep the single channel trace information:
                 
@@ -629,7 +648,7 @@ class MainWindow(QMainWindow):
             else:
                 self.trace_utils.read_trace(module, channel)
 
-            data = self.trace_utils.get_trace_data()
+            data = self.trace_utils.get_trace_data(module)
             self.mplplot.draw_trace_data(data, module, channel)
             
             # Keep the single channel trace information:
@@ -688,7 +707,7 @@ class MainWindow(QMainWindow):
                     self.trace_utils.read_trace(module, channel)
                     
                 self.trace_info.update({
-                    "trace": copy.copy(self.trace_utils.get_trace_data()),
+                    "trace": copy.copy(self.trace_utils.get_trace_data(module)),
                     "module": module,
                     "channel": channel
                 })
@@ -696,11 +715,12 @@ class MainWindow(QMainWindow):
                 # Module number changed between acquisition and
                 # analysis, user needs to acquire new trace for
                 # the currently selected channel:                
-                raise ValueError(f"Stored trace data for Mod. {self.trace_info['module']} Ch. {self.trace_info['channel']} does not match the current selection box Mod. {module} Ch. {channel}")
-            elif (
-                    self.acq_toolbar.read_all.isChecked()
-                    and channel != self.trace_info["channel"]
-            ):
+                raise ValueError(
+                    f"Stored trace data for Mod. {self.trace_info['module']} "
+                    f"Ch. {self.trace_info['channel']} does not match the "
+                    f"current selection box Mod. {module} Ch. {channel}"
+                )
+            elif (self.acq_toolbar.read_all.isChecked() and channel != self.trace_info["channel"]):
                 # Channel number changed between acquisition and
                 # analysis. We've read all channel trace data so
                 # we just need to grab the appropriate data:
@@ -709,14 +729,15 @@ class MainWindow(QMainWindow):
                     "module": module,
                     "channel": channel
                 })
-            elif (
-                    not self.acq_toolbar.read_all.isChecked()
-                    and channel != self.trace_info["channel"]
-            ):
+            elif (not self.acq_toolbar.read_all.isChecked() and channel != self.trace_info["channel"]):
                 # Channel number changed between acquisition and
                 # analysis. We have _not_ read all channel trace
                 # data so user needs to re-acquire:
-                raise ValueError(f"Stored trace data for Mod. {self.trace_info['module']} Ch. {self.trace_info['channel']} does not match the current selection box Mod. {module} Ch. {channel}")
+                raise ValueError(
+                    f"Stored trace data for Mod. {self.trace_info['module']} "
+                    f"Ch. {self.trace_info['channel']} does not match the "
+                    f"current selection box Mod. {module} Ch. {channel}"
+                )
         except ValueError as e:
             self.logger.exception("Channel selection changed between acquisition and analysis")
             print(f"{e}:\n\tNew trace data must be acquired by clicking the 'Read trace' button prior to analysis.")
@@ -745,8 +766,4 @@ class MainWindow(QMainWindow):
                     "trace": np.empty(0),
                     "module": None,
                     "channel": None 
-                })            
-            
-    def _test(self):
-        """A dummy function which can be hooked up to signals for testing."""
-        print(f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Hey I just wrote you, and this is crazy\nBut here's my purpose, you should call me, maybe")
+                })

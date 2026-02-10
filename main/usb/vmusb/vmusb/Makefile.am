@@ -1,6 +1,10 @@
 lib_LTLIBRARIES		= libVMUSB.la libVMUSBRemote.la libCVMUSB.la \
 	libCVMUSBReadoutList.la
 
+# Install headers in the vmusb subdir.
+
+includedir=@prefix@/include/vmusb
+
 COMPILATION_FLAGS	= $(USBSWITCHES) -I@top_srcdir@/base/headers @LIBTCLPLUS_CFLAGS@  \
 			-I@top_srcdir@/base/tcpip \
 			-I@top_srcdir@/base/os	\
@@ -22,14 +26,14 @@ libVMUSBRemote_la_SOURCES = CVMUSBReadoutList.cpp \
 
 libVMUSBRemote_la_CPPFLAGS=$(COMPILATION_FLAGS)
 
-
-noinst_HEADERS		= CVMUSB.h   \
+include_HEADERS = CVMUSB.h   \
 	CVMUSBReadoutList.h  \
 	CVMUSBusb.h	\
 	CVMUSBEthernet.h \
 	CVMUSBRemote.h       \
-	CVMUSBFactory.h \
-	CMockVMUSB.h \
+	CVMUSBFactory.h
+
+noinst_HEADERS		=  CMockVMUSB.h \
 	CLoggingReadoutList.h \
 	vme_interface_class.h sis_vmusb_interface.h
 
@@ -58,11 +62,10 @@ libVMUSBRemote_la_LIBADD = @builddir@/libVMUSB.la \
 
 bin_PROGRAMS = tests
 
-tests_SOURCES = @srcdir@/TestRunner.cpp \
-		@srcdir@/regTests.cpp \
-		@srcdir@/vmeTests.cpp \
-		@srcdir@/../Globals.cpp \
-		@srcdir@/Asserts.h
+tests_SOURCES = TestRunner.cpp \
+		regTests.cpp \
+		vmeTests.cpp \
+		Asserts.h
 
 
 tests_CPPFLAGS = -std=c++11 -g -I@prefix@/include -I@top_srcdir@/base/thread \
@@ -79,9 +82,9 @@ tests_LDADD = @top_builddir@/base/thread/libdaqthreads.la \
 #	-Wl,"-rpath=@prefix@/lib" @TCL_LDFLAGS@ @LIBTCLPLUS_LDFLAGS@
 
 
-REMOTE_TEST_MODULES = @srcdir@/TestRunner.cpp \
-             @srcdir@/remoteRegTests.cpp \
-             @srcdir@/remoteVMETests.cpp 
+REMOTE_TEST_MODULES = TestRunner.cpp \
+             remoteRegTests.cpp \
+             remoteVMETests.cpp 
 
 remotetests: $(REMOTE_TEST_MODULES)
 	$(CXX) -g -o remotetests -I@srcdir@ -I@prefix@/include \
@@ -90,13 +93,12 @@ remotetests: $(REMOTE_TEST_MODULES)
 	-lVMUSBRemote \
 	-Wl,"-rpath=@prefix@/lib" @TCL_LDFLAGS@ @LIBTCLPLUS_LDFLAGS@
 
-UNITTEST_MODULES = @srcdir@/TestRunner.cpp \
-		@srcdir@/vmusbrdolisttests.cpp \
-		@srcdir@/loggingrdolisttests.cpp \
-		@srcdir@/../Globals.cpp \
-		@srcdir@/mockvmusbtests.cpp
+UNITTEST_MODULES = TestRunner.cpp \
+		vmusbrdolisttests.cpp \
+		loggingrdolisttests.cpp \
+		mockvmusbtests.cpp
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 unittests_SOURCES = $(UNITTEST_MODULES)
 
 unittests_CPPFLAGS = -I@srcdir@ -I@prefix@/include \
@@ -106,8 +108,6 @@ unittests_LDADD = $(CPPUNIT_LDFLAGS) \
 		@TCL_LDFLAGS@ @LIBTCLPLUS_LDFLAGS@
 unittests_LDFLAGS = -Wl,"-rpath=@prefix@/lib"
 
-installcheck-local: unittests
-	./unittests
 
 
 
@@ -124,30 +124,30 @@ clean-local:
 	rm -f $(BUILT_SOURCES)
 
 
-check-TESTS :  unittests
-	./unittests
+TESTS = unittests
+	
 
 # Swig interface generation:
 
-libCVMUSB_la_SOURCES = @srcdir@/CVMUSB_wrap.cxx
+libCVMUSB_la_SOURCES = CVMUSB_wrap.cxx
 libCVMUSB_la_LIBADD  = @builddir@/libVMUSB.la @THREADLD_FLAGS@
 
 libCVMUSB_la_CPPFLAGS=$(COMPILATION_FLAGS)
 
-BUILT_SOURCES=@srcdir@/CVMUSB_wrap.cxx @srcdir@/CVMUSBReadoutList_wrap.cxx
+BUILT_SOURCES=CVMUSB_wrap.cxx CVMUSBReadoutList_wrap.cxx
 
-@srcdir@/CVMUSB_wrap.cxx:	@srcdir@/CVMUSB.h
-	@SWIG@ -c++ -outdir @srcdir@ -debug-classes -tcl -namespace -pkgversion 1.0 @srcdir@/CVMUSB.i
+CVMUSB_wrap.cxx:	@srcdir@/CVMUSB.h
+	@SWIG@ -c++ -outdir @builddir@ -o @builddir@/$@ -debug-classes -tcl -namespace -pkgversion 1.0 @srcdir@/CVMUSB.i
 
-libCVMUSBReadoutList_la_SOURCES = @srcdir@/CVMUSBReadoutList_wrap.cxx
+libCVMUSBReadoutList_la_SOURCES = CVMUSBReadoutList_wrap.cxx
 libCVMUSBReadoutList_la_LIBADD = @builddir@/libVMUSB.la @THREADLD_FLAGS@
 
 libCVMUSBReadoutList_la_CPPFLAGS=$(COMPILATION_FLAGS)
 
 
-@srcdir@/CVMUSBReadoutList_wrap.cxx: @srcdir@/CVMUSBReadoutList.h
-	@SWIG@ -c++ -outdir @srcdir@ -debug-classes -tcl -namespace -pkgversion 1.0 \
+CVMUSBReadoutList_wrap.cxx: CVMUSBReadoutList.h
+	@SWIG@ -c++ -outdir @builddir@ -o @builddir@/$@ -debug-classes -tcl -namespace -pkgversion 1.0 \
 	 @srcdir@/CVMUSBReadoutList.i 
 
 #  Stuff that needs to go int the distro:
-EXTRA_DIST = $(TEST_MODULES) $(UNITTEST_MODULES) @srcdir@/CVMUSB.i @srcdir@/CVMUSBReadoutList.i
+EXTRA_DIST = $(TEST_MODULES) $(UNITTEST_MODULES) CVMUSB.i CVMUSBReadoutList.i

@@ -553,7 +553,7 @@ main(int argc, char**  argv)
     }
     catch (const std::ios_base::failure& e) {
 	// Actually EOF on poll:
-	std::cerr << e.what() << std::endl;
+	std::cerr << "glom: encountered EOF on poll" << std::endl;
 	flushEvent();
 	if(stateChangeNesting) {
 	    emitAbnormalEnd();

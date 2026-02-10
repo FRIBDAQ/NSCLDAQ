@@ -35,7 +35,7 @@ boot_extcl_LDADD = @builddir@/libSystemBooter.la \
 
 # unit tests are disabled until they can be updated for the API transition
 
-#noinst_PROGRAMS = unittests
+#check_PROGRAMS = unittests
 #unittests_SOURCES = TestRunner.cpp SystemBooterTest.cpp
 #unittests_CPPFLAGS = -I@top_builddir@/ddas \
 	-I@top_srcdir@/ddas/configuration \

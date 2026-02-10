@@ -82,7 +82,7 @@ filterargs.h: filterargs.ggo
 
 #------------------- Tests:
 
-noinst_PROGRAMS = unittests testapp
+check_PROGRAMS = unittests testapp
 
 unittests_SOURCES	= TestRunner.cpp  \
 						infinitemediatortests.cpp \

@@ -31,14 +31,20 @@ class CrateID(QWidget):
         Display current DSP in GUI.
     """
     
-    def __init__(self, nmodules=None, *args, **kwargs):
+    def __init__(self, *args, nmodules=None, channel_map=None, **kwargs):
         """CrateID class constructor.
 
         Parameters
-        ----------
-        nmodules : int 
-            Number of installed modules in the system.
-        """        
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nmodules : int, default=None
+            Module count from factory create method.
+        channel_map : list, default=None
+            List of channels per module (unused by this class).
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
+        """
         super().__init__(*args, **kwargs)
 
         self.logger = logging.getLogger("qtscope_logger")
@@ -69,8 +75,8 @@ class CrateID(QWidget):
         ValueError
             If the crate ID values are not consistent for all modules.
         """        
-        # Restrict to some reasonable system size (5 crates):        
-        self.crate_id.setRange(0, 4)
+        # Valid crate ID values [0, 15] for now:
+        self.crate_id.setRange(0, 15)
 
        # Check crate ID consistency for all channels:
         id_list = []

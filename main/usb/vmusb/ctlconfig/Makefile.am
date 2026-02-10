@@ -1,5 +1,5 @@
 lib_LTLIBRARIES			= libVMUSBCtlConfig.la libUserDriver.la
-
+bin_PROGRAMS = sets800triggerrun
 
 COMPILATION_FLAGS=@THREADCXX_FLAGS@ -I@top_srcdir@/usb/vmusb/vmusb	\
 					-I@top_srcdir@/usb/common/configurableobject \
@@ -100,10 +100,30 @@ install-data-local:
 	$(INSTALL_DATA)  @srcdir@/*.h @prefix@/vmusbdriver/includes
 	$(INSTALL_DATA)  @srcdir@/CUserDriverSample.cpp @prefix@/vmusbdriver/example
 
+# S800 trigger run number setter.
+
+DAQCONFIGDIR=@srcdir@/../daqconfig
+BUILT_SOURCES = s800TriggerRegisters.cpp
+nodist_sets800triggerrun_SOURCES=s800TriggerRegisters.cpp
+
+s800TriggerRegisters.cpp:
+	cp $(DAQCONFIGDIR)/s800TriggerRegisters.cpp @builddir@
+
+sets800triggerrun_SOURCES=sets800triggerrun.cpp
+
+sets800triggerrun_CPPFLAGS = @JSON_CFLAGS@ -I@srcdir@/../daqconfig \
+	-I@srcdir@/../vmusb \
+	-DDEFAULT_S800REGFILE=\"@datarootdir@/s800triggers/RegisterFile.json\"
+
+sets800triggerrun_LDFLAGS=@JSON_LIBS@ @builddir@/../vmusb/libVMUSBRemote.la \
+	@builddir@/../vmusb/libCVMUSBReadoutList.la
+
+CLEANFILES = s800TriggerRegisters.cpp
+
 EXTRA_DIST = WienerMDGG16Registers.h
 
 ## UNIT TESTS
-bin_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES = \
 			TestRunner.cpp \

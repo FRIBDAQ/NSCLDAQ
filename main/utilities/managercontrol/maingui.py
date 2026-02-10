@@ -872,7 +872,7 @@ if __name__ == "__main__":
     main_widget = MainGui()
     
     main_window.setCentralWidget(main_widget)
-    
+    main_window.setWindowTitle("Managed experiment control panel -- Powered by Qt5")
 
     main_window.show()
     app.exec()

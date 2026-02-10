@@ -38,7 +38,7 @@ install-exec-local:
 	$(INSTALL_SCRIPT) @srcdir@/popup.tcl $(bindir)/PopUp
 
 
-noinst_PROGRAMS = unittests
+check_PROGRAMS = unittests
 
 unittests_SOURCES = $(TESTABLEUNITS) CFileSinkTests.cpp SinkCreatorTests.cpp \
 	FactoryTests.cpp LocalMonitoredProgram.cpp  grep.cpp TestRunner.cpp

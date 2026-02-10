@@ -27,23 +27,24 @@ using namespace std;
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <vector>
 
 #include <config.h>
 #include <CExperiment.h>
-#include <TCLInterpreter.h>
-#include <CTimedTrigger.h>
 #include <CRunControlPackage.h>
-#include "CDDASStatisticsCommand.h"
-#include "CSyncCommand.h"
+#include <CTimedTrigger.h>
+#include <TCLInterpreter.h>
+
 #include "CBootCommand.h"
-#include "CMyEventSegment.h"
-#include "CMyTrigger.h"
+#include "CDDASStatisticsCommand.h"
 #include "CMyBusy.h"
 #include "CMyEndCommand.h"
+#include "CMyEventSegment.h"
 #include "CMyScaler.h"
+#include "CMyTrigger.h"
+#include "CSyncCommand.h"
 
 // These are nullptr, nullptr... nothing really happens until we setup.
 CMyTrigger *mytrigger(0); //!< Newing them here makes order of construction.
@@ -171,8 +172,8 @@ DDASReadoutMain::SetupScalers(CExperiment* pExperiment)
     
     int modules;
     int crateid;
-    modules = myeventsegment->GetNumberOfModules();
-    crateid = myeventsegment->GetCrateID();
+    modules = myeventsegment->getNumberOfModules();
+    crateid = myeventsegment->getCrateID();
 
     cout << "Setup scalers for " << modules << " modules " << endl;
 
@@ -183,7 +184,8 @@ DDASReadoutMain::SetupScalers(CExperiment* pExperiment)
     }
 
     for (int i = 0; i < modules; i++) {
-	CMyScaler* pModule = new CMyScaler(i, crateid);
+	auto nchan = myeventsegment->getChannelCount(i);
+	CMyScaler* pModule = new CMyScaler(crateid, i, nchan);
 	scalerModules.push_back(pModule);
 	pExperiment->AddScalerModule(pModule);	
     }

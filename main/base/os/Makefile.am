@@ -31,7 +31,7 @@ EXTRA_DIST=shm.xml
 #
 # Tests:
 
-noinst_PROGRAMS    = unittests
+check_PROGRAMS    = unittests
 unittests_SOURCES = TestRunner.cpp createTests.cpp removeTests.cpp \
 	attachTests.cpp \
         detachTests.cpp timeoutTests.cpp semaphoretests.cpp \

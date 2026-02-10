@@ -52,7 +52,7 @@ class CTimeout;
  *  \verbatim
  *     ring attach ringname
  *     ring detach ringname
- *     ring get ringname ?acceptable-types?
+ *     ring get ?-timeout usec? ringname  ?acceptable-types?
  * \endverbatim
  */
 class CTclRingCommand : public CTCLObjectProcessor

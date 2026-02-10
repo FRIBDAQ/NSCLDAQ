@@ -83,6 +83,7 @@ namespace DAQ {
 	private:
 	    int m_crateId; //!< Crate ID from cfgPixie16.
 	    std::vector<unsigned short> m_slotMap; //!< Map of physical slots.
+	    std::vector<unsigned short> m_channelMap; //!< Channels per module.
 	    std::string m_settingsFilePath; //!< Path to default .set file.
 	    std::vector<int> m_modEvtLengths; //!< Event lengths for modules.
 	    FirmwareMap m_fwMap; //!< Map of firmware for hardware types.
@@ -144,6 +145,24 @@ namespace DAQ {
 	     */
 	    std::vector<unsigned short> getSlotMap()
 		const { return m_slotMap; };
+	    /**
+	     * @brief Assign a new channel map (number of channels per module).
+	     * @param map Map of channels in each module.
+	     */
+	    void setChannelMap(const std::vector<unsigned short>& map);
+	    /**
+	     * @brief Return the channel map.
+	     * @return Vector containing the number of channels per module.
+	     */
+	    std::vector<unsigned short> getChannelMap()
+		{ return m_channelMap; };
+	    /**
+	     * @brief Get the number of channels in a module.
+	     * @param mod The module number (index, not slot).
+	     * @return Number of channels in module.
+	     * @throw Runtime error if the module is out of range.
+	     */
+	    unsigned short getChannelCount(size_t mod);
 	    /**
 	     * @brief Set the path to the DSP settings file.
 	     * @param path The path to the settings file.

@@ -27,3 +27,12 @@ int main(int argc, char** argv)
   }
   return !wasSucessful;
 }
+
+
+// Needed to make the libs we link to happy.
+
+#include <CVMUSB.h>
+namespace Globals {
+  CVMUSB* pUSBController;
+  uint32_t  deviceSelectorValue; 
+}

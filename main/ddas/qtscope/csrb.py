@@ -6,12 +6,10 @@ else:
     from converters import ba2int, int2ba, zeros
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QRadioButton, QPushButton, QButtonGroup,
-    QGridLayout, QLabel, QCheckBox
-)
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QRadioButton, QPushButton, QButtonGroup, QLabel, QCheckBox)
 
 import colors
+from extensions import MyGridLayout
 
 class CSRB(QWidget):
     """Module CSRB grid widget.
@@ -32,7 +30,7 @@ class CSRB(QWidget):
         Disabled settings on the CSRB GUI .
     grid : QWidget
         Parent widget for the CSRB GUI display.
-    param_grid : QGridLayout
+    param_grid : MyGridLayout
         Gridded layout for the CSRB GUI.
     nmodules : int
         Number of installed modules in the crate.
@@ -55,7 +53,7 @@ class CSRB(QWidget):
         Set CSRB values for known crate configurations.
     """
     
-    def __init__(self, nmodules=None, *args, **kwargs):
+    def __init__(self, *args, nmodules=None, channel_map=None, **kwargs):
         """CSRB class constructor.
         
         Initialize CSRB widget and set labels. Module DSP is displayed on an 
@@ -64,9 +62,15 @@ class CSRB(QWidget):
         parameters are 1-indexed while the grid is 0-indexed. 
         
         Parameters
-        ----------
-        nmodules : int
-            Number of installed modules in the system.
+        -----------------
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nmodules : int, default=None
+            Module count from factory create method.
+        channel_map : list, default=None
+            List of channels per module (unused by this class).
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
         """
         super().__init__(*args, **kwargs)
         
@@ -146,7 +150,7 @@ class CSRB(QWidget):
         
         self.grid = QWidget()
         self.grid.setWindowTitle("CSRB settings")
-        self.param_grid = QGridLayout(self.grid)
+        self.param_grid = MyGridLayout(self.grid)
 
         for bit, pdict in self.param_labels.items():
             w = QLabel(pdict["label"])
@@ -189,7 +193,7 @@ class CSRB(QWidget):
         for i in range(self.nmodules):
             csrb = zeros(32, "little")
             for bit in self.param_labels:
-                csrb[bit] = self.param_grid.itemAtPosition(i+1, bit+1).widget().isChecked()
+                csrb[bit] = self.param_grid[i+1, bit+1].isChecked()
             mgr.set_mod_par(i, self.param_names[0], ba2int(csrb))
     
     def display_dsp(self, mgr, set_state=False):
@@ -211,7 +215,7 @@ class CSRB(QWidget):
             val = mgr.get_mod_par(i, self.param_names[0])
             csrb = int2ba(int(val), 32, "little")
             for bit, _ in zip(self.param_labels, csrb):
-                self.param_grid.itemAtPosition(i+1, bit+1).widget().setChecked(csrb[bit])
+                self.param_grid[i+1, bit+1].setChecked(csrb[bit])
 
         self._disable_settings()
 
@@ -234,11 +238,11 @@ class CSRB(QWidget):
             mod0 = self.rb_dict[config]["mod0"]
             csrb = int2ba(self.rb_dict[config]["mod0"], 32, "little")
             for bit, _ in zip(self.param_labels, csrb):
-                self.param_grid.itemAtPosition(1, bit+1).widget().setChecked(csrb[bit])
+                self.param_grid[1, bit+1].setChecked(csrb[bit])
             for i in range(1, self.nmodules):
                 csrb = int2ba(self.rb_dict[config]["modx"], 32, "little")
                 for bit, _ in zip(self.param_labels, csrb):
-                    self.param_grid.itemAtPosition(i+1, bit+1).widget().setChecked(csrb[bit])
+                    self.param_grid[i+1, bit+1].setChecked(csrb[bit])
             self._disable_settings()    
         else:
             self.display_dsp(mgr)
@@ -297,13 +301,13 @@ class CSRB(QWidget):
             for i in range(self.nmodules):
                 for bit, pdict in self.param_labels.items():
                     if pdict["label"] in self.disabled:
-                        self.param_grid.itemAtPosition(i+1, bit+1).widget().setEnabled(False)
+                        self.param_grid[i+1, bit+1].setEnabled(False)
                     else:
-                        self.param_grid.itemAtPosition(i+1, bit+1).widget().setEnabled(True)
+                        self.param_grid[i+1, bit+1].setEnabled(True)
         else:
             for i in range(self.nmodules):
                 for bit in self.param_labels:
-                    self.param_grid.itemAtPosition(i+1, bit+1).widget().setEnabled(False)         
+                    self.param_grid[i+1, bit+1].setEnabled(False)         
 
 class CSRBBuilder:
     """Builder method for factory creation."""

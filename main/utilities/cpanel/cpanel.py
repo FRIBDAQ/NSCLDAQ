@@ -177,7 +177,7 @@ def connectStateManager(args):
 def createUi():
     app = QtGui.QApplication(sys.argv)
     w   =  cpanelWidget.ControlPanel()
-    w.setWindowTitle('Run Control')
+    w.setWindowTitle('Run Control Powered by Qt5')
     w.show()
     w.buttonPush.connect(onButtonPress)
     w.runChanged.connect(onNewRunNum)

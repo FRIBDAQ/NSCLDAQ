@@ -15,7 +15,7 @@
 	     East Lansing, MI 48824-1321
 */
 
-/** @file:  RestoreParams
+/** @file:  RestoreParams.h
  *  @brief: provides a pixie16::restore
  */
 

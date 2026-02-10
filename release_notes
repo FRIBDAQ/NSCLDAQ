@@ -1,3 +1,6 @@
+== 12.2-002 ==
+* Update DDASFormat library to version 1.1-003
+
 == 12.2-dev ==
 * Bug fix on MDPPTriggerControl GUI
 * Provide mvlcgenerate - transform daqconfig.tcl files to MVLC readout yaml.
@@ -17,11 +20,30 @@ by COutputThread (nummap_chunk() issue fixed)
     *  Builds those external programs and installs them in @bindir@/rust
     *  Builds rust programs in main/rust_tools and installs them in @bindir@/rust
 * Add statistics server for ringbuffer throughput and aggregate transfer. (rust_tools/ring_monitor)
-    * statsview python script can view the statistics it accumulates utilities/statsview)
+    * statsview python script can view the statistics it accumulates utilities/statsview), and logs it into a statistics database file.
+    * statsplot python script can view the time evoluton of ring statistics
+      logged by ring_monitor into an sqlite3 database file.
+    
 * Issue # 251 - add statistics to the python managed environment control panel
 * Build docs for parallel processing framework
 * Fix issue #380- compile fails if not MPI due to missing #include <iostream>
 * Fix issue #385 - glom uses buffered fragment reader
 * Make CFragmentHandler predicate classes operator() const and take const ref as parameter for compliance with some handy STL algos for future fragment handler development
 * Build docs for swtrigger
+* Add support for new FPGA Based S800 trigger module for VMUSB and MVLC readouts.
+* Move sbs device module headers from $DAQINC to $DAQINC/sbsmodules
+* Fix some issues with the out of tree build from the source tarball
+* Clear warning message when QtScope detects inconsistent channel coincidence widths on a single module
+* Clear the VMUSB Interrupt mask on exit from VMUSBReadout.
+* Issue #411 - use a local version of the MVLC Slow controls client library.
+* Issue #410 - better messages in config for incorporated builds.
+* Issue #409 - Improve perfromance of stats plot by doing refresh on demand.
+* Issue #400 - Only build the test binaries on make check rather than make all as before
+* Added QT5LICENSE to top level of tree.
+* Issue #418 - add the process command to ringbuffer status
+* Issue #345 - address misc. build issues and edge cases, support oot builds when srcdir is read-only
+* Use unified format 2.2-009 which fixes an error in ring item copy constructino that
+  crashed bufdump on unknown item types.
+* Issue #422 - Improve the BUSY workaround for VMUSB so it's not released until the VMUSB can accept triggers
 == 12.2-dev ==
+
