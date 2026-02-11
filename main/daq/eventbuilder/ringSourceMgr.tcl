@@ -71,9 +71,10 @@ namespace eval ::RingSourceMgr {
 #                   in --oneshot mode.
 # @param offset     Time offset added to the timestamp from this source.
 # @param defaultid  Source id to use for the bodyheader less items (e.g. ring format.)
+# @param divisor    timestamp divisor for this sourcde.
 #
 proc ::RingSourceMgr::addSource [list source tstamplib {id ""} \
-  {info ""} {expectHeaders 0} {oneshot ""} {timeout ""} {offset 0} {defaultid {}}] {
+  {info ""} {expectHeaders 0} {oneshot ""} {timeout ""} {offset 0} {defaultid {}} {divisor 1}] {
   
     variable ::RingSourceMgr::sourceDict
 
@@ -92,6 +93,7 @@ proc ::RingSourceMgr::addSource [list source tstamplib {id ""} \
       timeout    $timeout       \
       offset     $offset        \
       defaultid  $defaultid    \
+      divisor    $divisor      \
       fd ""]
     
     
@@ -163,12 +165,13 @@ proc ::RingSourceMgr::resetSources {} {
 #                   in --oneshot mode.
 # @param offset     time offset to be added to each timestamp
 # @param defaultid  default source id.
+# @param divisor    timestamp divisor.
 # @note Event sources are subprocesses of us but not subprocesses of the
 #       the event building pipeline.
 #
 # @returns file handle
 proc ::RingSourceMgr::startSource {sourceRingUrl timestampExtractorLib id info
-  {expectHeaders 0} {oneshot ""} {timeout ""} {offset 0} {defaultid 0}} {
+  {expectHeaders 0} {oneshot ""} {timeout ""} {offset 0} {defaultid 0} {divisor 1}} {
 
     
   set port [::RingSourceMgr::getOrdererPort]
@@ -180,7 +183,7 @@ proc ::RingSourceMgr::startSource {sourceRingUrl timestampExtractorLib id info
     $timestampExtractorLib \
     $id \
     $info \
-    $expectHeaders $oneshot $timeout $offset $defaultid]
+    $expectHeaders $oneshot $timeout $offset $defaultid $divisor]
 
   append ringSource $switches
 
@@ -201,7 +204,7 @@ proc ::RingSourceMgr::startSource {sourceRingUrl timestampExtractorLib id info
   
   ::RingSourceMgr::addSource  \
     $sourceRingUrl $timestampExtractorLib $id $info  $expectHeaders \
-    $oneshot $timeout
+    $oneshot $timeout $divisor
   dict set ::RingSourceMgr::sourceDict $sourceRingUrl fd $fd
   
   return $fd
@@ -236,7 +239,7 @@ proc ::RingSourceMgr::onBegin {} {
       set defaultid [dict get $paramDict defaultid]
       
       set fd [::RingSourceMgr::startSource $source $lib $id $info \
-                                           $expectHeaders $oneshot $timeout $offset $defaultid]
+                                           $expectHeaders $oneshot $timeout $offset $defaultid $divisor]
       dict set sourceDict $source fd $fd
     }
   }
@@ -333,10 +336,11 @@ namespace eval ::RingSourceMgr {
 # @param timeout          --timeout seconds or "" if default.
 # @param offset           --offset dt in timestamp ticks.
 # @param defaultid        --default-id value.
+# @param divisor          --ts-divisor value
 # @returns string containing command line arguments to use
 #
 proc ::RingSourceMgr::_computeRingSourceSwitches {port url tstampExtractor ids
-  info expectHeaders oneshot timeout offset defaultid} {
+  info expectHeaders oneshot timeout offset defaultid divisor} {
 
   set switches ""
   append switches " --evbhost=localhost --evbport=$port"
@@ -365,7 +369,7 @@ proc ::RingSourceMgr::_computeRingSourceSwitches {port url tstampExtractor ids
   if {$offset != 0} {
     append switches " --offset=$offset"
   }
-  
+  append switches " --ts-divisor=$divisor"
   
 
   return $switches

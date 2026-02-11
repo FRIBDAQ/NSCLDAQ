@@ -462,13 +462,14 @@ proc EVBC::getOrdererPort {} {
 # @param defaultsrcid           - Source id used for body headerless items (e.g
 #                                 ring format).  This defaults to the first of the
 #                                 dis in the id list.
+# @param divisor                - optional timestamp divisor.
 # @note Event sources are subprocesses of us but not subprocesses of the
 #       the event building pipeline.
 #
 #
 proc ::EVBC::registerRingSource {                                           \
     source lib id info {expectHdrs 0} {oneshot {}} {timeout {}} {timeoffset 0} \
-    {defaultsrcid {}}
+    {defaultsrcid {} {divisor 1}}
 } {
     
     if {$defaultsrcid eq ""} {
@@ -476,7 +477,7 @@ proc ::EVBC::registerRingSource {                                           \
     }
    ::RingSourceMgr::addSource           \
         $source $lib $id $info $expectHdrs $oneshot $timeout $timeoffset    \
-        $defaultsrcid
+        $defaultsrcid $divisor
 }
 
 #------------------------------------------------------------------------------
