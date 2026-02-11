@@ -330,11 +330,13 @@ CRingFragmentSource::makeFragments(CRingBufferChunkAccess::Chunk& c)
                 
             );
         } else {
+            // Note the divisor and offset are only applied to items when the timestamp is not nul..
             pBodyHeader pB =
                 reinterpret_cast<pBodyHeader>(bodyHeader(&item));
             setFragment(
                 n,
-                pB->s_timestamp/m_timestampDivisor + m_timestampOffset,
+                pB->s_timestamp != NULL_TIMESTAMP ? pB->s_timestamp/m_timestampDivisor + m_timestampOffset :
+                    pB->s_timestamp,
                 pB->s_sourceId,
                 itemSize(&item),
                 pB->s_barrier,
