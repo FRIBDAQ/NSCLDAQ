@@ -60,6 +60,7 @@ class fragsrctest : public CppUnit::TestFixture {
   CPPUNIT_TEST(tstamp_1);
   CPPUNIT_TEST(tstamp_2);
   CPPUNIT_TEST(tstamp_3);
+  CPPUNIT_TEST(tstamp_4);  // Issue #430 - test divisor.
   
   CPPUNIT_TEST(sendchunk_1);
   CPPUNIT_TEST(sendchunk_2);
@@ -77,7 +78,7 @@ public:
     
     std::list<int> validIds = {1,2};
     m_pTestObj = new CRingFragmentSource(
-      *m_pClient, *m_pSrc, validIds, nullptr, true, 1, 0, 0, 1
+      *m_pClient, *m_pSrc, validIds, nullptr, true, 1, 0, 0, 1, 1
     );
   }
   void tearDown() {
@@ -103,6 +104,7 @@ protected:
   void tstamp_1();
   void tstamp_2();
   void tstamp_3();
+  void tstamp_4();
   
   void sendchunk_1();
   void sendchunk_2();
@@ -333,6 +335,21 @@ void fragsrctest::tstamp_3()
   item.s_header.s_type = BEGIN_RUN;
   m_pTestObj->m_tsExtractor = fakeExtractor; // only called on physics items.
   EQ(NULL_TIMESTAMP, m_pTestObj->getTimestampFromUserCode(item));
+}
+void fragsrctest::tstamp_4() {
+  // need to replace the test object with one that has a divisor - we'll pick 2 :
+  
+  delete m_pTestObj;
+  std::list<int> validIds = {1,2};
+  m_pTestObj = new CRingFragmentSource(
+      *m_pClient, *m_pSrc, validIds, nullptr, true, 1, 0, 0, 2, 1
+    );
+  ::RingItem item;
+  item.s_header.s_type = PHYSICS_EVENT;                // extractor for phys items.
+  m_pTestObj->m_tsExtractor = fakeExtractor;
+  EQ(uint64_t(0x123456789abcdef)/2, m_pTestObj->getTimestampFromUserCode(item));
+
+
 }
 //
 

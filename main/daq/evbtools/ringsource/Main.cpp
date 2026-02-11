@@ -100,12 +100,19 @@ main(int argc, char** argv)
         std::cerr << "Unable to connect to the ring buffer " << ringUri << "\n";
         std::cerr << e.ReasonText() << std::endl;
     }
+    // Validate the divisor value:
+
+    if (args.ts_divisor_arg <= 0) {
+        std::cerr << "Inavlid --ts-divisor value,  must be an integer > 0\n";
+        exit(EXIT_FAILURE);
+    }
     // Create our data source object and start it:
     
     CRingFragmentSource source(
         client, *pRing,
         ids, args.timestampextractor_arg, args.expectbodyheaders_flag,
-        args.oneshot_arg, args.timeout_arg, args.offset_arg, args.default_id_arg
+        args.oneshot_arg, args.timeout_arg, 
+        args.offset_arg, args.ts_divisor_arg, args.default_id_arg
     );
     source();
     

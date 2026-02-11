@@ -454,7 +454,8 @@ EBC::flush
         <refsynopsisdiv>
           <cmdsynopsis>
               <command>
-EVBC::registerRingSource <replaceable>source-uri extractor-lib source-ids info expectBodyHeaders oneshot timeout timeoffset</replaceable>
+EVBC::registerRingSource <replaceable>source-uri extractor-lib source-ids info expectBodyHeaders oneshot timeout 
+  timeoffset default-sid divisor</replaceable>
           </command>
           </cmdsynopsis>
 
@@ -616,6 +617,34 @@ EVBC::registerRingSource <replaceable>source-uri extractor-lib source-ids info e
                         The <literal>timeoffset</literal> specifies a signed
                         integer to add to any timestamp observed by the
                         ringFragmentSource.
+                      </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><replaceable>default-sid </replaceable></term>
+                    <listitem>
+                      <para>
+                        Provides the source id to be used if items don't have a body header.
+                        This defaults to empty if not defined.  For FRIB/NSCLDAQ 11 and higher, all items
+                        have body headers 
+                      </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><replaceable>timestamp-divisor</replaceable></term>
+                    <listitem>
+                      <para>
+                        In experiments that have a common clock but, for hardware reasons, must for some sources,
+                        divide that clock to create a timestamp, this parameter allows you to divide the higher
+                        frequency timestamps to allow the actual timestamps passsed to the event builder to be
+                        at a common frequency. Note that actual timestamps are not modified, only the 
+                        contents event builder fragment
+                        headers used to build events.  The default value of this parameter is 1, no division.
+                      </para>
+                      <para>
+                        The division is done before the offset is applied, that is if both the divisor and offset
+                        are specified, the event builder will see timestamps that are
+                        original-timestamp/divisor + offset.
                       </para>
                     </listitem>
                 </varlistentry>

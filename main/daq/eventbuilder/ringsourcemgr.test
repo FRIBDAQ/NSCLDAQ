@@ -53,7 +53,7 @@ tcltest::test addSource-0 {Ability to add a ring fragment source
   set ::RingSourceMgr::sourceDict [dict create]
 
   set resList
-} {{} {tcp://thesrc/ring {tstamplib lib id 43 info asdf expecthdrs 1 oneshot {} timeout {} offset 0 defaultid 43 fd {}}}}
+} {{} {tcp://thesrc/ring {tstamplib lib id 43 info asdf expecthdrs 1 oneshot {} timeout {} offset 0 defaultid 43 divisor 1 fd {}}}}
 
 #
 #
@@ -73,7 +73,7 @@ tcltest::test transition-0 {Transition from halted to active starts sources
 -setup {
   set body0 [info body ::RingSourceMgr::startSource]
   set ::opList [list]
-  proc ::RingSourceMgr::startSource {src lib id info hdr one time offset defaultid} {
+  proc ::RingSourceMgr::startSource {src lib id info hdr one time offset {defaultid 1} {divisor 1}} {
     lappend ::opList [list $src $lib $id $info $hdr $one $time]
   }
 
@@ -96,7 +96,7 @@ tcltest::test transition-0 {Transition from halted to active starts sources
   sm transition Active
 
   
-  proc ::RingSourceMgr::startSource {src lib id {info ""} {hdr ""} {one ""} {time ""} {offset 0} {defaultid 1}  } $body0
+  proc ::RingSourceMgr::startSource {src lib id {info ""} {hdr ""} {one ""} {time ""} {offset 0} {defaultid 1} {divisor 1} } $body0
 
   ::RingSourceMgr::clearSources
 
@@ -111,7 +111,7 @@ tcltest::test multipleTransitions-0 {Only first transition should start a source
 -setup {
   set body0 [info body ::RingSourceMgr::startSource]
   set ::opList [list]
-  proc ::RingSourceMgr::startSource {src lib id info hdr one time offset defaultid} {
+  proc ::RingSourceMgr::startSource {src lib id info hdr one time offset defaultid divisor} {
     lappend ::opList [list $src $lib $id $info $hdr $one $time]
     return "chan1"
   }
@@ -141,7 +141,7 @@ tcltest::test multipleTransitions-0 {Only first transition should start a source
   sm transition Active
 
  
-  proc ::RingSourceMgr::startSource {src lib id {info ""} {hdr ""} {one ""} {time ""}} $body0
+  proc ::RingSourceMgr::startSource {src lib id {info ""} {hdr ""} {one ""} {time ""} {divisor 1}} $body0
 
   ::RingSourceMgr::clearSources
 
@@ -156,7 +156,7 @@ tcltest::test multipleTransitions-1 {Transition to NotReady resets for next tran
 -setup {
   set body0 [info body ::RingSourceMgr::startSource]
   set ::opList [list]
-  proc ::RingSourceMgr::startSource {src lib id info hdr one time offset defaultid} {
+  proc ::RingSourceMgr::startSource {src lib id info hdr one time offset defaultid divisor} {
     lappend ::opList [list $src $lib $id $info $hdr $one $time]
     return "chan1"
   }
@@ -191,7 +191,7 @@ tcltest::test multipleTransitions-1 {Transition to NotReady resets for next tran
   # transition back to active... nothing should happen here.
   sm transition Active
 
-  proc ::RingSourceMgr::startSource {src lib id {info ""} {hdr ""} {one ""} {time ""}} $body0
+  proc ::RingSourceMgr::startSource {src lib id {info ""} {hdr ""} {one ""} {time ""} {offset 0} {defaultid 0} {divisor 1}} $body0
 
   ::RingSourceMgr::clearSources
 
@@ -203,7 +203,7 @@ tcltest::test multipleTransitions-1 {Transition to NotReady resets for next tran
 tcltest::test ringsource-0 {Test that expect body headers 0 does not add anything to switches
 } -body {
    # this calls the switches
-   set switches [::RingSourceMgr::_computeRingSourceSwitches a b c d e 0  0  0 0 0]
+   set switches [::RingSourceMgr::_computeRingSourceSwitches a b c d e 0  0  0 0 0 1]
 
    string match "*--expectbodyheaders*" $switches 
 } -result 0 
@@ -213,7 +213,7 @@ tcltest::test ringsource-0 {Test that expect body headers 0 does not add anythin
 tcltest::test ringsource-1 {Test that expect body headers 1 does not add anything to switches
 } -body {
    # this calls the switches
-   set switches [::RingSourceMgr::_computeRingSourceSwitches a b c d e 1 0 0 0 0]
+   set switches [::RingSourceMgr::_computeRingSourceSwitches a b c d e 1 0 0 0 0 1]
 
    string match "*--expectbodyheaders*" $switches 
 } -result 1 
