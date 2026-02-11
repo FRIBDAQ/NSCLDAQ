@@ -56,18 +56,21 @@ static const size_t FRAG_RESIZE_AMOUNT(1024);   // Number of frags to add on res
  * @param timestampOffset - Offset to add to timestamps when creating the event builder
  *                      headers.  This allows for startup skew compensation while
  *                      keeping the glom --dt small.
+ * @param divisor - Divisor for timestamp. The final timstamp is 
+ *       extracted-timestamp/divisor + timestampOffset
  * @param defaultId - default source id.
  */
 CRingFragmentSource::CRingFragmentSource(
     CEventOrderClient& client, CRingBuffer& dataSource, std::list<int> validIds,
     const char* tsExtractorLib, int haveHeaders, int endRunsExpected,
-    int endTimeoutSeconds, int timestampOffset, int defaultId
+    int endTimeoutSeconds, int timestampOffset, unsigned divisor, int defaultId
 ) :
     m_client(client), m_dataSource(dataSource), m_tsExtractor(nullptr),
     m_expectBodyHeaders(haveHeaders != 0), m_isOneShot(endRunsExpected != 0),
     m_endsExpected(endRunsExpected), m_endsSeen(0),
     m_endRunTimeout(endTimeoutSeconds),
-    m_timestampOffset(timestampOffset), m_nDefaultSid(defaultId),
+    m_timestampOffset(timestampOffset), m_timestampDivisor(divisor),
+    m_nDefaultSid(defaultId),
     m_nFragments(0), m_pFragments(nullptr), m_endRunTime(0)
 {
     setValidIds(validIds);
@@ -268,7 +271,7 @@ CRingFragmentSource::getTimestampFromUserCode(RingItem& item)
 {
     if ((itemType(&item) == PHYSICS_EVENT) && m_tsExtractor) {
         pPhysicsEventItem pEvent = reinterpret_cast<pPhysicsEventItem>(&item);
-        return (*m_tsExtractor)(pEvent) + m_timestampOffset;
+        return (*m_tsExtractor)(pEvent)/m_timestampDivisor + m_timestampOffset;
     } else {
         return NULL_TIMESTAMP;
     }
@@ -331,7 +334,7 @@ CRingFragmentSource::makeFragments(CRingBufferChunkAccess::Chunk& c)
                 reinterpret_cast<pBodyHeader>(bodyHeader(&item));
             setFragment(
                 n,
-                pB->s_timestamp + m_timestampOffset,
+                pB->s_timestamp/m_timestampDivisor + m_timestampOffset,
                 pB->s_sourceId,
                 itemSize(&item),
                 pB->s_barrier,
