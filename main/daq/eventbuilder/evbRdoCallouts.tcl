@@ -469,8 +469,7 @@ proc EVBC::getOrdererPort {} {
 #
 proc ::EVBC::registerRingSource {                                           \
     source lib id info {expectHdrs 0} {oneshot {}} {timeout {}} {timeoffset 0} \
-    {defaultsrcid {} {divisor 1}}
-} {
+    {defaultsrcid {}} {divisor 1}} {
     
     if {$defaultsrcid eq ""} {
         set defaultsrcid [lindex $id 0]
