@@ -237,6 +237,7 @@ proc ::RingSourceMgr::onBegin {} {
       set timeout [dict get $paramDict timeout]
       set offset [dict get $paramDict offset]
       set defaultid [dict get $paramDict defaultid]
+      set divisor [dict get $paramDict divisor]
       
       set fd [::RingSourceMgr::startSource $source $lib $id $info \
                                            $expectHeaders $oneshot $timeout $offset $defaultid $divisor]
