@@ -186,13 +186,13 @@ proc ::RingSourceMgr::startSource {sourceRingUrl timestampExtractorLib id info
     $expectHeaders $oneshot $timeout $offset $defaultid $divisor]
 
   append ringSource $switches
-
+  puts $ringSource
   # Run the command in a pipeline that gets stderr/stdout and
   # set a fileevent on it so that we get output and errors and eof.
   # The trick with cat below ensures that we get both stderr and stdout.
   #
 
-  puts "Starting '$ringSource'"
+
   
   set fd [open "| $ringSource |& cat" r]
   chan configure $fd -buffering line -blocking 0
@@ -202,10 +202,10 @@ proc ::RingSourceMgr::startSource {sourceRingUrl timestampExtractorLib id info
     
   EndrunMon::incEndRunCount
   
-  ::RingSourceMgr::addSource  \
-    $sourceRingUrl $timestampExtractorLib $id $info  $expectHeaders \
-    $oneshot $timeout $divisor
-  dict set ::RingSourceMgr::sourceDict $sourceRingUrl fd $fd
+  #::RingSourceMgr::addSource  \
+  #  $sourceRingUrl $timestampExtractorLib $id $info  $expectHeaders \
+  #  $oneshot $timeout $offset #defaultid $divisor
+  #dict set ::RingSourceMgr::sourceDict $sourceRingUrl fd $fd
   
   return $fd
 }
@@ -229,6 +229,7 @@ proc ::RingSourceMgr::onBegin {} {
     set fd [dict get $paramDict fd]
     # only start it if it is not already started.
     if {$fd eq ""} {
+  
       set lib [dict get $paramDict tstamplib]
       set id [dict get $paramDict id]
       set info [dict get $paramDict info]
@@ -242,8 +243,10 @@ proc ::RingSourceMgr::onBegin {} {
       set fd [::RingSourceMgr::startSource $source $lib $id $info \
                                            $expectHeaders $oneshot $timeout $offset $defaultid $divisor]
       dict set sourceDict $source fd $fd
+    
     }
   }
+
   after 1500;                     # Wait for startup/registration.
 }
 ###########-------------------------------------------------------------#######
@@ -426,7 +429,6 @@ proc ::RingSourceMgr::_SourceDied {fd} {
   dict for {uri info} $::RingSourceMgr::sourceDict {
     set sourceFd [dict get $info fd]
     if {$sourceFd == $fd} {
-      
       dict set ::RingSourceMgr::sourceDict $uri fd  ""
       break;          # No need to go further.
     }
