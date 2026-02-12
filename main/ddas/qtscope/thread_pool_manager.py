@@ -4,9 +4,10 @@ import traceback
 
 from PyQt5.QtCore import QObject, QThreadPool, QRunnable, pyqtSignal, pyqtSlot
 
+
 class WorkerSignals(QObject):
     """Defines the signals available from a running worker thread. Encapsulates
-    custom signals in a class derived from QObject which can be incorporated 
+    custom signals in a class derived from QObject which can be incorporated
     into classes derived from QRunnable for signals/slots in threads.
 
     Supported signals are:
@@ -15,14 +16,15 @@ class WorkerSignals(QObject):
         result: Object data returned from processing, anything.
         progress: int indicating % progress.
     """
-    
+
     running = pyqtSignal()
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
     result = pyqtSignal(object)
 
+
 class Worker(QRunnable):
-    """Worker thread. 
+    """Worker thread.
 
     Inherits from QRunnable to handle setup, signals and wrap-up.
 
@@ -43,7 +45,7 @@ class Worker(QRunnable):
     -------
     run()
         Executes the code we wish to run from the passed function fn.
-    set_function(function) 
+    set_function(function)
         Set function attribute.
     """
 
@@ -51,7 +53,7 @@ class Worker(QRunnable):
         """
         Worker thread class constructor.
 
-        Constructs a worker thread and callback function from a function 
+        Constructs a worker thread and callback function from a function
         object and callback args/kwargs.
 
         Parameters
@@ -62,13 +64,13 @@ class Worker(QRunnable):
             Arguments to pass to the callback function.
         kwargs : dict
             Keyword arguments to pass to the callback function.
-        """        
+        """
         super().__init__()
 
         self.logger = logging.getLogger("qtscope_logger")
-        
+
         # Store constructor arguments (re-used for processing):
-        
+
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
@@ -76,16 +78,14 @@ class Worker(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        """Initialise the runner function with passed args, kwargs."""        
+        """Initialise the runner function with passed args, kwargs."""
         try:
             self.signals.running.emit()
             result = self.fn(*self.args, **self.kwargs)
         except:
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
-            self.logger.exception(
-                f"Error running worker thread: {exctype} {value}"
-            )
+            self.logger.exception(f"Error running worker thread: {exctype} {value}")
             self.signals.error.emit((exctype, value, traceback.format_exc()))
         else:
             self.signals.result.emit(result)
@@ -99,28 +99,29 @@ class Worker(QRunnable):
         ----------
         new_fn : function
             Function to set.
-        """        
+        """
         self.fn = new_fn
 
+
 class ThreadPoolManager:
-    """Thread management for QtScope. 
+    """Thread management for QtScope.
 
     QThreadPool is used to recycle thread objects and reduce creation overhead.
-    The blocking feature of Python multithreading is useful here to 
-    simultaneously block inputs from sections of the GUI which we want to 
-    disable as well as disable the GUI elements which would respond to those 
-    inputs. The concept of the "main event loop" in Qt and Python's blocking 
-    thread behavior imply both of these steps are necessary: events can still 
-    be queued in the main event loop if the GUI elements connected to those 
+    The blocking feature of Python multithreading is useful here to
+    simultaneously block inputs from sections of the GUI which we want to
+    disable as well as disable the GUI elements which would respond to those
+    inputs. The concept of the "main event loop" in Qt and Python's blocking
+    thread behavior imply both of these steps are necessary: events can still
+    be queued in the main event loop if the GUI elements connected to those
     signaling events are not disabled.
 
-    The main way to interact with this class is through the `start_thread()` 
-    method, specifying the function to be executed within the thread and the 
-    functions connected to the thread's `running` and `finished` signals. 
-    The `start_thread()` method will create and configure and run an object 
-    encapsulating a worker thread in a QRunnable. Note that QThreadPool takes 
-    ownership of the runnable and will delete it if it returns true; otherwise 
-    ownership remains with the caller. Error handling and message logging is 
+    The main way to interact with this class is through the `start_thread()`
+    method, specifying the function to be executed within the thread and the
+    functions connected to the thread's `running` and `finished` signals.
+    The `start_thread()` method will create and configure and run an object
+    encapsulating a worker thread in a QRunnable. Note that QThreadPool takes
+    ownership of the runnable and will delete it if it returns true; otherwise
+    ownership remains with the caller. Error handling and message logging is
     the caller/runnable's responsibility.
 
     Attributes
@@ -157,12 +158,12 @@ class ThreadPoolManager:
     def start_thread(self, fcn=None, running=[], finished=[], *args, **kwargs):
         """Configure and run a thread given the passed parameters.
 
-        Though you can in principle pass parameters to `fcn` using args and 
-        kwargs, this feature is not used within QtScope and is untested. 
-        In any event, all `running` and `finished` functions are expected to 
+        Though you can in principle pass parameters to `fcn` using args and
+        kwargs, this feature is not used within QtScope and is untested.
+        In any event, all `running` and `finished` functions are expected to
         take no arguments. If they require arguments this can be circumvented
-        via some via a locally-defined lambda function. The same can be done 
-        with `fcn`, for the time being. 
+        via some via a locally-defined lambda function. The same can be done
+        with `fcn`, for the time being.
 
         Parameters
         ----------
@@ -177,7 +178,7 @@ class ThreadPoolManager:
         kwargs : dict
             Keyword arguments to pass to the callback function.
         """
-        worker = Worker(fcn, *args, **kwargs);
+        worker = Worker(fcn, *args, **kwargs)
         for f in running:
             worker.signals.running.connect(f)
         for f in finished:
@@ -185,7 +186,7 @@ class ThreadPoolManager:
         self.pool.start(worker)
 
     def get_active_thread_count(self):
-        """Return the number of threads from 
+        """Return the number of threads from
         QThreadPool.getActiveThreadCount().
 
         Returns
@@ -194,11 +195,11 @@ class ThreadPoolManager:
             Number of active threads from QThreadPool.activeThreadCount().
         """
         return self.pool.activeThreadCount()
-        
+
     def wait(self, time=10000):
-        """Wrapper for QThreadPool `waitForDone()`. Waits for all threads to 
+        """Wrapper for QThreadPool `waitForDone()`. Waits for all threads to
         exit and removes them from the pool.
-        
+
         Parameters
         ----------
         time : int
@@ -207,7 +208,7 @@ class ThreadPoolManager:
         self.pool.waitForDone(time)
 
     def exit(self):
-        """Clears all runnables from the queue and waits for all threads 
+        """Clears all runnables from the queue and waits for all threads
         to exit.
         """
         self.pool.clear()

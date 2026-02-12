@@ -10,22 +10,29 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
-/** @file:  Boot.h
- *  @brief: Provides pixie16::boot to boot a single module.
+/** @file  Boot.h
+ *  @brief Provides pixie16::boot to boot a single module.
  */
+
 #ifndef BOOT_H
 #define BOOT_H
-#include "CTclCommand.h"
+
 #include <string>
+
+#include "CTclCommand.h"
 
 // Forward definitions:
 
-namespace DAQ { namespace DDAS {class Configuration; }}
+namespace DAQ {
+namespace DDAS {
+class Configuration;
+}
+} // namespace DAQ
 
 /**
  * @class CBoot
@@ -36,18 +43,19 @@ namespace DAQ { namespace DDAS {class Configuration; }}
  *    index corresponds to the desired slot. Note that the boot pattern
  *    will only be 0x7f which boots everything.
  */
-class CBoot : public CTclCommand
-{
+class CBoot : public CTclCommand {
 private:
-    DAQ::DDAS::Configuration& m_config;
+  DAQ::DDAS::Configuration &m_config;
+
 public:
-    CBoot(Tcl_Interp* pInterp, DAQ::DDAS::Configuration& config);
-    virtual ~CBoot();
-    
-    virtual int operator()(std::vector<Tcl_Obj*>& objv);
+  CBoot(Tcl_Interp *pInterp, DAQ::DDAS::Configuration &config);
+  virtual ~CBoot();
+
+  virtual int operator()(std::vector<Tcl_Obj *> &objv);
+
 private:
-    std::string apiMsg(int index, int slot, int status, const char* doing);
-    int getHardwareType(int index);
-    void bootModule(int index, int type);
+  std::string apiMsg(int index, int slot, int status, const char *doing);
+  int getHardwareType(int index);
+  void bootModule(int index, int type);
 };
 #endif

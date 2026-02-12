@@ -3,12 +3,11 @@ import logging
 import os
 import sys
 
-sys.path.append(str(os.environ.get("DAQROOT"))+"/ddas/qtscope")
-os.environ['NO_PROXY'] = ""
-os.environ['XDG_RUNTIME_DIR'] = os.environ.get("PWD")
+sys.path.append(str(os.environ.get("DAQROOT")) + "/ddas/qtscope")
+os.environ["NO_PROXY"] = ""
+os.environ["XDG_RUNTIME_DIR"] = os.environ.get("PWD")
 logging.basicConfig(
-    filename="qtscope.log",
-    format="%(levelname)s - %(asctime)s: %(message)s"
+    filename="qtscope.log", format="%(levelname)s - %(asctime)s: %(message)s"
 )
 
 from PyQt5 import QtWidgets, QtCore
@@ -46,21 +45,20 @@ from fit_gauss_p2_creator import GaussP2FitBuilder
 
 from gui import MainWindow
 
+
 def main():
     """QtScope main. Create factories and start the GUI."""
-    
+
     # Read environment variables and configure global settings for this
     # instance of QtScope. Environment variables QTSCOPE_OFFLINE and
     # QTSCOPE_LOG_LEVEL set whether or not to run QtScope in offline mode
-    # without any hardware and control the program logging output.    
+    # without any hardware and control the program logging output.
 
     try:
         log_level = os.getenv("QTSCOPE_LOG_LEVEL", "INFO").upper()
         if log_level not in logging._levelToName.values():
             allowed = logging._levelToName.values()
-            raise ValueError(
-                f"QTSCOPE_LOG_LEVEL={log_level} not in {allowed}"
-            )
+            raise ValueError(f"QTSCOPE_LOG_LEVEL={log_level} not in {allowed}")
     except Exception as e:
         logging.exception("Error occured while configuring logger")
         print(f"Failed to configure logger. See qtscope.log for details.")
@@ -70,7 +68,7 @@ def main():
         logger.setLevel(log_level)
         logger.info(f"PATH: {sys.path}")
         logger.debug(f"Environ: {os.environ}")
-        
+
     try:
         offline = int(os.getenv("QTSCOPE_OFFLINE", 0))
     except Exception as e:
@@ -81,8 +79,8 @@ def main():
         if offline:
             print("\n-----------------------------------")
             print("QtScope running in offline mode!!!")
-            print("-----------------------------------\n")  
-    
+            print("-----------------------------------\n")
+
     # Create the factories:
 
     logger.info("Creating factory methods and registering builders")
@@ -90,29 +88,28 @@ def main():
     mdf = create_mod_dsp_factory()
     tbf = create_toolbar_factory()
     ftf = create_fit_factory()
-    
+
     # Start application and open the main GUI window:
 
     logger.info("Factory creation complete, starting GUI")
-    QtWidgets.QApplication.setAttribute(
-        QtCore.Qt.AA_EnableHighDpiScaling, True
-    )
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
     app = QtWidgets.QApplication(sys.argv)
     gui = MainWindow(cdf, mdf, tbf, ftf, 4, offline)
     gui.show()
     sys.exit(app.exec_())
 
+
 def create_chan_dsp_factory():
-    """Create a widget factory and register channel DSP builders with it. 
- 
+    """Create a widget factory and register channel DSP builders with it.
+
     Returns
     -------
     WidgetFactory
         Factory with registered channel DSP widgets.
     """
     factory = WidgetFactory()
-    logging.getLogger("qtscope_logger").debug("Registering channel DSP")    
+    logging.getLogger("qtscope_logger").debug("Registering channel DSP")
     factory.register_builder("AnalogSignal", AnalogSignalBuilder())
     factory.register_builder("TriggerFilter", TriggerFilterBuilder())
     factory.register_builder("EnergyFilter", EnergyFilterBuilder())
@@ -128,46 +125,49 @@ def create_chan_dsp_factory():
 
     return factory
 
+
 def create_mod_dsp_factory():
-    """Create a widget factory and register module DSP builders with it. 
+    """Create a widget factory and register module DSP builders with it.
 
     Returns
     -------
     WidgetFactory
         Factory with registered module DSP widgets.
-    """                       
+    """
     factory = WidgetFactory()
-    logging.getLogger("qtscope_logger").debug("Registering module DSP")    
+    logging.getLogger("qtscope_logger").debug("Registering module DSP")
     factory.register_builder("CrateID", CrateIDBuilder())
     factory.register_builder("CSRB", CSRBBuilder())
     factory.register_builder("TrigConfig0", TrigConfig0Builder())
     factory.register_builder("TrigConfigExtra", TrigConfigExtraBuilder())
-    
+
     return factory
 
+
 def create_toolbar_factory():
-    """Create a widget factory and register module DSP builders with it. 
-        
+    """Create a widget factory and register module DSP builders with it.
+
     Returns
     -------
     WidgetFactory
         Factory with registered toolbar widgets.
-    """               
+    """
     factory = WidgetFactory()
-    logging.getLogger("qtscope_logger").debug("Registering toolbars")    
+    logging.getLogger("qtscope_logger").debug("Registering toolbars")
     factory.register_builder("sys", SystemToolBarBuilder())
     factory.register_builder("acq", AcquisitionToolBarBuilder())
     factory.register_builder("dsp", DSPToolBarBuilder())
     factory.register_builder("plot", PlotToolBarBuilder())
 
-    return factory    
+    return factory
+
 
 def create_fit_factory():
-    """Create a fit factory and register builders with it. 
+    """Create a fit factory and register builders with it.
 
     Returns
     -------
-    FitFactory 
+    FitFactory
         Instance of the fit factory.
     """
     # Fitting functions will do their best to guess parameters from the data
@@ -176,31 +176,31 @@ def create_fit_factory():
     # however that we _always_ initialize the fitting functions with valid
     # parameter values.
     config_fit_exp = {
-        "params": [1, -0.003, 1], # k = -0.003 approx. 20 us in 60 ns samples.
+        "params": [1, -0.003, 1],  # k = -0.003 approx. 20 us in 60 ns samples.
         "form": "f(x) = p[0]*exp(p[1]*x) + p[2]",
-        "count_data": False
+        "count_data": False,
     }
-    
+
     config_fit_gauss = {
         "params": [1, 0, 1],
         "form": "f(x) = p[0]*exp(-(x-p[1])^2 / (2*p[2]^2))",
-        "count_data": True
+        "count_data": True,
     }
-    
+
     config_fit_gauss_p1 = {
-        "params": [1, 0, 1, 0, 0],   
+        "params": [1, 0, 1, 0, 0],
         "form": "f(x) = p[0]*exp(-(x-p[1])^2 / (2*p[2]^2))\n\t+ p[3] + p[4]*x",
-        "count_data": True
+        "count_data": True,
     }
 
     config_fit_gauss_p2 = {
         "params": [1, 0, 1, 0, 0, 0],
         "form": "f(x) = p[0]*exp(-(x-p[1])^2 / (2*p[2]^2))\n\t+ p[3] + p[4]*x + p[5]*x^2",
-        "count_data": True
+        "count_data": True,
     }
-    
+
     # Register fit factory classes:
-    
+
     factory = FitFactory()
     logging.getLogger("qtscope_logger").debug("Registering fit functions")
     factory.register_builder("Exponential", ExpFitBuilder(), config_fit_exp)
@@ -214,7 +214,8 @@ def create_fit_factory():
 
     return factory
 
+
 # Run main when executed as a script, the way we intend to do this:
-    
-if __name__ == "__main__":    
+
+if __name__ == "__main__":
     main()

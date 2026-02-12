@@ -10,18 +10,20 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
-/** @file:  RestoreParams.h
- *  @brief: provides a pixie16::restore
+/** @file  RestoreParams.h
+ *  @brief provides a pixie16::restore command
  */
 
 #ifndef RESTOREPARAMS_H
 #define RESTOREPARAMS_H
+
 #include "CTclCommand.h"
+
 #include <string>
 
 /**
@@ -29,16 +31,15 @@
  *    Implements the pixie16::restore command which loads a .set file
  *    into the modules.
  */
-class CRestoreParams : public CTclCommand
-{
- public:
-    CRestoreParams(Tcl_Interp* pInterp);
-    virtual ~CRestoreParams();
-    
-    int operator()(std::vector<Tcl_Obj*>& objv);
-    
+class CRestoreParams : public CTclCommand {
+public:
+  CRestoreParams(Tcl_Interp *pInterp);
+  virtual ~CRestoreParams();
+
+  int operator()(std::vector<Tcl_Obj *> &objv);
+
 private:
-    std::string apiMessage(const char* pFilename, int status);
+  std::string apiMessage(const char *pFilename, int status);
 };
 
 #endif

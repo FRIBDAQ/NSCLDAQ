@@ -10,18 +10,20 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
-/** @file:  ReadModPar.h
- *  @brief: Read a module parameter
+/** @file ReadModPar.h
+ *  @brief Read a module parameter
  */
+
 #ifndef READMODPAR_H
 #define READMODPAR_H
 
 #include "CTclCommand.h"
+
 #include <string>
 
 /**
@@ -33,16 +35,15 @@
  *    The result of a successful command is the value read (integer).
  *    On failure the result is a textual error message.
  */
-class CReadModPar : public CTclCommand
-{
+class CReadModPar : public CTclCommand {
 public:
-    CReadModPar(Tcl_Interp* pInterp);
-    virtual ~CReadModPar();
-    
-    virtual int operator()(std::vector<Tcl_Obj*>& objv);
-private:
-    std::string apiMessage(int module, int status);
-};
+  CReadModPar(Tcl_Interp *pInterp);
+  virtual ~CReadModPar();
 
+  virtual int operator()(std::vector<Tcl_Obj *> &objv);
+
+private:
+  std::string apiMessage(int module, int status);
+};
 
 #endif

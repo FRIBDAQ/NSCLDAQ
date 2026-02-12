@@ -10,41 +10,46 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
-/** @file:  Release.h
- *  @brief: Releases access to the address space mapped to the modules.
+/** @file  Release.h
+ *  @brief Releases access to the address space mapped to the modules.
  */
+
 #ifndef RELEASE_H
 #define RELEASE_H
+
 #include "CTclCommand.h"
 
 #include <string>
 
 // Forward definitions
 
-namespace DAQ { namespace DDAS {class Configuration; }}
+namespace DAQ {
+namespace DDAS {
+class Configuration;
+}
+} // namespace DAQ
 /**
  * @class CRelease
  *    Provides the pixie16::release command that releases
  *    access to the modules in the configuration.
  */
-class CRelease : public CTclCommand
-{
+class CRelease : public CTclCommand {
 private:
-    DAQ::DDAS::Configuration& m_config;
-public:
-    CRelease(Tcl_Interp* pInterp, DAQ::DDAS::Configuration& config);
-    virtual ~CRelease();
-    
-    virtual int operator()(std::vector<Tcl_Obj*>& objv);
-private:
-    std::string apiError(int index, int slot, int status);
-    
-};
+  DAQ::DDAS::Configuration &m_config;
 
+public:
+  CRelease(Tcl_Interp *pInterp, DAQ::DDAS::Configuration &config);
+  virtual ~CRelease();
+
+  virtual int operator()(std::vector<Tcl_Obj *> &objv);
+
+private:
+  std::string apiError(int index, int slot, int status);
+};
 
 #endif

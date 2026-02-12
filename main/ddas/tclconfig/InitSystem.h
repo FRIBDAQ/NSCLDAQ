@@ -10,14 +10,15 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
 /** @file:  InitSystem.h
  *  @brief: Implement pixie16::init
  */
+
 #ifndef INITSYSTEM_H
 #define INITSYSTEM_H
 
@@ -25,25 +26,23 @@
 
 // Forward definitions.
 namespace DAQ {
-    namespace DDAS {
-        class Configuration;
-    }
+namespace DDAS {
+class Configuration;
 }
-
+} // namespace DAQ
 
 /**
  * The init system command takes the configuration passed to it at construction
  * time and initializes access to the Pixie16 system.
  */
-class CInitSystem : public CTclCommand
-{
+class CInitSystem : public CTclCommand {
 private:
-    DAQ::DDAS::Configuration& m_config;                // References the config.
+  DAQ::DDAS::Configuration &m_config; // References the config.
 public:
-    CInitSystem(Tcl_Interp* pInterp, DAQ::DDAS::Configuration& config);
-    virtual ~CInitSystem();
-    
-    virtual int operator()(std::vector<Tcl_Obj*>& argv);
+  CInitSystem(Tcl_Interp *pInterp, DAQ::DDAS::Configuration &config);
+  virtual ~CInitSystem();
+
+  virtual int operator()(std::vector<Tcl_Obj *> &argv);
 };
 
 #endif

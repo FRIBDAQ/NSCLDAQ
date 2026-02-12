@@ -19,11 +19,10 @@ using namespace DAQ::DDAS;
  *
  * @return 0 Successful boot, no exceptions, etc.
  */
-int main()
-{
-    SystemBooter booter;
-    auto pConfig = Configuration::generate("cfgPixie16.txt");
-    booter.boot(*pConfig, SystemBooter::FullBoot);
+int main() {
+  SystemBooter booter;
+  auto pConfig = Configuration::generate("cfgPixie16.txt");
+  booter.boot(*pConfig, SystemBooter::FullBoot);
 
-    return 0;
+  return 0;
 }

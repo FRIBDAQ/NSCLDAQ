@@ -10,17 +10,20 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
-/** @file:  ReadChanPar.h
- *  @brief: Provides the pixie16::readchanpar command
+/** @file  ReadChanPar.h
+ *  @brief Provides the pixie16::readchanpar command
  */
+
 #ifndef READCHANPAR_H
 #define READCHANPAR_H
+
 #include "CTclCommand.h"
+
 #include <string>
 
 /**
@@ -33,16 +36,15 @@
  *    -  The Name of the parameter to read e.g. "TRIGGER_RISETIME"
  */
 
-
-class CReadChanPar : public CTclCommand
-{
+class CReadChanPar : public CTclCommand {
 public:
-    CReadChanPar(Tcl_Interp* pInterp);
-    virtual ~CReadChanPar();
-    
-    virtual int operator()(std::vector<Tcl_Obj*>& objv);
+  CReadChanPar(Tcl_Interp *pInterp);
+  virtual ~CReadChanPar();
+
+  virtual int operator()(std::vector<Tcl_Obj *> &objv);
+
 private:
-    std::string apiMsg(int index, int chan, int status);
+  std::string apiMsg(int index, int chan, int status);
 };
 
 #endif

@@ -16,25 +16,24 @@
 
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
-#include <string>
+
 #include <iostream>
+#include <string>
+
 using namespace std;
 
-
 // Boilerplate code for CPPUNIT tests
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
   CppUnit::TextUi::TestRunner runner; // Control tests.
-  CppUnit::TestFactoryRegistry&
-      registry(CppUnit::TestFactoryRegistry::getRegistry());
+  CppUnit::TestFactoryRegistry &registry(
+      CppUnit::TestFactoryRegistry::getRegistry());
 
   runner.addTest(registry.makeTest());
 
   bool wasSucessful;
   try {
-    wasSucessful = runner.run("",false);
-  }
-  catch(string& rFailure) {
+    wasSucessful = runner.run("", false);
+  } catch (string &rFailure) {
     cerr << "Caught a string exception from test suites.: \n";
     cerr << rFailure << endl;
     wasSucessful = false;
@@ -43,10 +42,9 @@ int main(int argc, char** argv)
 }
 
 namespace DAQ {
-  namespace V8 {
-    std::size_t gBufferSize = 8192;
-  }
+namespace V8 {
+std::size_t gBufferSize = 8192;
 }
+} // namespace DAQ
 
 int gpTCLApplication = 0;
-

@@ -5,23 +5,10 @@
 
 #include "CMyBusy.h"
 
-#include <iostream>
-
 #include <config.h>
 
-#ifdef HAVE_STD_NAMESPACE
-using namespace std;
-#endif
+CMyBusy::CMyBusy() {}
 
-CMyBusy::CMyBusy() 
-{ }
+void CMyBusy::GoBusy() {}
 
-void CMyBusy::GoBusy() 
-{
-  //   cout << "Going busy "<< endl << flush;
-}
-
-void CMyBusy::GoClear() 
-{  
-  // cout << "going clear "<< endl << flush;
-}
+void CMyBusy::GoClear() {}

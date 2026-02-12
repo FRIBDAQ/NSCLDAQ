@@ -4,12 +4,13 @@ from PyQt5.QtWidgets import QPushButton, QCheckBox
 
 import colors
 
-class PlotToolBar(NavigationToolbar2QT):
-    """ToolBar for matplotlib plotting widget. 
 
-    Defualt feautres support basic plot manipulation (zoom region, pan, etc.). 
-    Extra plotting featrues are enabled using additional widgets. Unwanted 
-    default plot configuration options can be removed via their associated 
+class PlotToolBar(NavigationToolbar2QT):
+    """ToolBar for matplotlib plotting widget.
+
+    Defualt feautres support basic plot manipulation (zoom region, pan, etc.).
+    Extra plotting featrues are enabled using additional widgets. Unwanted
+    default plot configuration options can be removed via their associated
     action.
 
     Attributes
@@ -25,24 +26,24 @@ class PlotToolBar(NavigationToolbar2QT):
 
     Methods
     -------
-    disable() 
+    disable()
         Disable all toolbar widgets.
     enable()
         Enable toolbar widgets for system idle.
     """
-    
+
     def __init__(self, *args, **kwargs):
-        """PlotToolBar class constructor."""        
+        """PlotToolBar class constructor."""
         super().__init__(*args, **kwargs)
 
         self.logscale = QCheckBox("Log y-axis", self)
-        
-        self.b_fit_panel = QPushButton("Fit panel", self)        
+
+        self.b_fit_panel = QPushButton("Fit panel", self)
         self.b_fit_panel.setStyleSheet(colors.YELLOW)
 
         self.b_zoom_in = QPushButton("+", self)
         self.b_zoom_out = QPushButton("-", self)
-        
+
         self.addWidget(self.logscale)
         self.addWidget(self.b_zoom_in)
         self.addWidget(self.b_zoom_out)
@@ -61,7 +62,7 @@ class PlotToolBar(NavigationToolbar2QT):
         self.b_zoom_in.setEnabled(False)
         self.b_zoom_out.setEnabled(False)
         self.b_fit_panel.setEnabled(False)
-        
+
     def enable(self):
         """Enable child widgets in the plot toolbar."""
         self.logscale.setEnabled(True)
@@ -69,12 +70,13 @@ class PlotToolBar(NavigationToolbar2QT):
         self.b_zoom_out.setEnabled(True)
         self.b_fit_panel.setEnabled(True)
 
+
 class PlotToolBarBuilder:
     """Builder method for factory creation."""
-    
+
     def __init__(self, *args, **kwargs):
         """PlotToolbarBuilder class constructor."""
-        
+
     def __call__(self, *args, **kwargs):
         """Create an instance of the toolbar and return it to the caller.
 
@@ -82,5 +84,5 @@ class PlotToolBarBuilder:
         -------
         PlotToolBar
             Instance of the toolbar class.
-        """        
+        """
         return PlotToolBar(*args, **kwargs)

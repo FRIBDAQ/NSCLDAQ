@@ -10,17 +10,22 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
-/** @file:  WriteModPar.h
- *  @brief: Wraps the Pixie16WriteSglModPar function in the pixie16::writemodpar cmd.
+/**
+ * @file  WriteModPar.h
+ * @brief Wraps the Pixie16WriteSglModPar function in the pixie16::writemodpar
+ * cmd.
  */
+
 #ifndef WRITEMODPAR_H
 #define WRITEMODPAR_H
+
 #include <CTclCommand.h>
+
 #include <string>
 /**
  * @class CWriteModPar
@@ -30,16 +35,15 @@
  *    - Parameter name (e.g. MOD_CSRA).
  *    - Parameter value - an integer.
  */
-class CWriteModPar : public CTclCommand
-{
+class CWriteModPar : public CTclCommand {
 public:
-    CWriteModPar(Tcl_Interp* pInterp);
-    virtual ~CWriteModPar();
-    
-    virtual int operator()(std::vector<Tcl_Obj*>& objv);
-    
+  CWriteModPar(Tcl_Interp *pInterp);
+  virtual ~CWriteModPar();
+
+  virtual int operator()(std::vector<Tcl_Obj *> &objv);
+
 private:
-    std::string apiMessage(int module, int status);
+  std::string apiMessage(int module, int status);
 };
 
 #endif

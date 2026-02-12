@@ -3,7 +3,8 @@ import logging
 import numpy as np
 from scipy.optimize import minimize
 
-np.seterr(all='ignore')
+np.seterr(all="ignore")
+
 
 class FitFunction:
     """Base class for fitting functions used by QtScope.
@@ -24,7 +25,7 @@ class FitFunction:
     model(x, *p)
         Returns an array of function values evaluated over the range x.
     set_initial_parameters(x, y, params)
-        Sets initial parameter values. Derived classes can override this 
+        Sets initial parameter values. Derived classes can override this
         function to e.g., make educated guesses at parameters based on data.
     neg_log_likelihood_p(params, x, y)
         Poisson negative log likelihood. Used if count_data == True.
@@ -34,6 +35,7 @@ class FitFunction:
         Implementation of the fitting algorithm.
 
     """
+
     def __init__(self, params, form, count_data=True):
         """Class constructor.
 
@@ -48,7 +50,7 @@ class FitFunction:
         count_data : bool
             True if the data represents counts.
         """
-        self.p_init = params # Initial guesses
+        self.p_init = params  # Initial guesses
         self.form = form
         self.count_data = count_data
         self.logger = logging.getLogger("qtscope_logger")
@@ -56,7 +58,7 @@ class FitFunction:
     def model(self, x, params):
         """The fit function over a range of x values.
 
-        This function is not implemented in the base class and must be 
+        This function is not implemented in the base class and must be
         implemented by each fitting function.
 
         Parameters
@@ -69,32 +71,32 @@ class FitFunction:
         Raises
         ------
         NotImplementedError
-            If model from the base class is called. This method must be 
+            If model from the base class is called. This method must be
             implemented in derived classes.
         """
         raise NotImplementedError()
 
     def set_initial_parameters(self, x, y, params):
-        """Set initial parameter values. 
+        """Set initial parameter values.
 
-        Default behavior is to set initial parameter guesses using the values 
+        Default behavior is to set initial parameter guesses using the values
         provided on the fit panel.
 
         Parameters
         ----------
         x : ndarray
             x data values.
-        y : ndarray 
+        y : ndarray
             y data values.
         params : array-like
             Array of fit parameters.
         """
-        self.p_init = params[0:len(self.p_init)]
+        self.p_init = params[0 : len(self.p_init)]
 
     def neg_log_likelihood_p(self, params, x, y):
-        """Poisson negative log-likelihood. 
+        """Poisson negative log-likelihood.
 
-        Fit parameters must be first argument and are initially set by x0 in 
+        Fit parameters must be first argument and are initially set by x0 in
         the `minimize` call. x, y are passed as additional args.
 
         Parameters
@@ -103,7 +105,7 @@ class FitFunction:
             Array of fit parameters.
         x : ndarray
             x data values.
-        y : ndarray 
+        y : ndarray
             y data values.
         """
         # Make sure the model is implemented:
@@ -120,12 +122,12 @@ class FitFunction:
             # close to values which give pred <= 0. Also the return value is
             # always defined.
             pred = np.maximum(pred, 1e-10)
-            return -np.sum(y*np.log(pred) - pred)
+            return -np.sum(y * np.log(pred) - pred)
 
     def neg_log_likelihood_g(self, params, x, y):
-        """Gaussian negative log-likelihood. 
+        """Gaussian negative log-likelihood.
 
-        Fit parameters must be first argument and are initially set by x0 in 
+        Fit parameters must be first argument and are initially set by x0 in
         the `minimize` call. x, y are passed as additional args.
 
         Parameters
@@ -134,7 +136,7 @@ class FitFunction:
             Array of fit parameters.
         x : ndarray
             x data values.
-        y : ndarray 
+        y : ndarray
             y data values.
         """
         # Make sure the model is implemented:
@@ -161,29 +163,33 @@ class FitFunction:
             Array of fit parameters.
         axis : matplotlib axes
             Axes for the plot.
-        
+
         Returns
         -------
         result : OptimizeResult
             Contains fit results and other info. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html.
         """
-        y = np.float64(y) # Make sure y data is floating point
+        y = np.float64(y)  # Make sure y data is floating point
         self.set_initial_parameters(x, y, params)
         # If the data represents counts, use Poisson MLE, otherwise Gaussian:
         if self.count_data:
-            result = minimize(self.neg_log_likelihood_p,
-                          x0=self.p_init,
-                              args=(x,y),
-                              method='bfgs',
-                              jac='3-point')
+            result = minimize(
+                self.neg_log_likelihood_p,
+                x0=self.p_init,
+                args=(x, y),
+                method="bfgs",
+                jac="3-point",
+            )
         else:
-            result = minimize(self.neg_log_likelihood_g,
-                              x0=self.p_init,
-                              args=(x,y),
-                              method='bfgs',
-                              jac='3-point')
+            result = minimize(
+                self.neg_log_likelihood_g,
+                x0=self.p_init,
+                args=(x, y),
+                method="bfgs",
+                jac="3-point",
+            )
         ## Most often an issue with final precision on error estimates:
-        #if not result.success:
+        # if not result.success:
         #    print(f"WARNING: fit did not terminate successfully:\n{result}")
-            
+
         return result

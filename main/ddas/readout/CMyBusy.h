@@ -11,13 +11,12 @@
  * of "busy" for DDAS systems, so all of these class' functions are no-ops.
  */
 
-class CMyBusy : public CBusy
-{
+class CMyBusy : public CBusy {
 public:
-  CMyBusy(); //!< Default constructor
-  ~CMyBusy() { } //!< Destructor.
+  CMyBusy();    //!< Default constructor
+  ~CMyBusy() {} //!< Destructor.
 
-public:  
-    virtual   void GoBusy(); //!< Do nothing.
-    virtual   void GoClear(); //!< Do nothing.
+public:
+  virtual void GoBusy();  //!< Do nothing.
+  virtual void GoClear(); //!< Do nothing.
 };
