@@ -157,11 +157,11 @@ tcltest::test multipleTransitions-1 {Transition to NotReady resets for next tran
   set body0 [info body ::RingSourceMgr::startSource]
   set ::opList [list]
   proc ::RingSourceMgr::startSource {src lib id info hdr one time offset defaultid divisor} {
-    lappend ::opList [list $src $lib $id $info $hdr $one $time]
+    lappend ::opList [list $src $lib $id $info $hdr $one $time $offset $defaultid $divisor]
     return "chan1"
   }
 
-  ::RingSourceMgr::addSource a b c d e
+  ::RingSourceMgr::addSource a b c d e f g h i j
 
   RunstateMachine sm
   sm addCalloutBundle ::RingSourceMgr
@@ -196,7 +196,7 @@ tcltest::test multipleTransitions-1 {Transition to NotReady resets for next tran
   ::RingSourceMgr::clearSources
 
   set ::opList
-} -result {{a b c d e {} {}} {a b c d e {} {}}}
+} -result {{a b c d e f g h i j} {a b c d e f g h i j}}
 
 #
 #
