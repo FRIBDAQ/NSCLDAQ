@@ -31,3 +31,4 @@ option "expectbodyheaders" e "Body headers are expected on every ring item." fla
 option "oneshot" o "One shot after n end run items 0 means not a oneshot but continuous" optional int default="1"
 option "timeout" T "Timeout waiting for end runs in oneshot mode" int default="10" optional
 option "offset" O "Signed time offset to add to the extracted timestamp" int default="0" optional
+option "ts-divisor" D "Extracted timestamp is divided by this before offset is added" int default="1" optional

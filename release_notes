@@ -45,5 +45,6 @@ by COutputThread (nummap_chunk() issue fixed)
 * Use unified format 2.2-009 which fixes an error in ring item copy constructino that
   crashed bufdump on unknown item types.
 * Issue #422 - Improve the BUSY workaround for VMUSB so it's not released until the VMUSB can accept triggers
+* Issue #430 - Provide a --ts-divisor option on the ringFragmentSource
 == 12.2-dev ==
 

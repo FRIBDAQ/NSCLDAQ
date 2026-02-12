@@ -51,6 +51,7 @@ private:
     int                m_endsSeen;
     int                m_endRunTimeout;
     uint64_t           m_timestampOffset;
+    unsigned           m_timestampDivisor;
     int                m_nDefaultSid;
     size_t             m_nFragments;  // size of the array below.
     ufmt::EVB::pFragment     m_pFragments;
@@ -61,7 +62,7 @@ public:
     CRingFragmentSource(
         CEventOrderClient& client, CRingBuffer& dataSource, std::list<int> validIds,
         const char* tsExtractorLib, int haveHeaders, int endRunsExpected,
-        int endTimeoutSeconds, int timestampOffset, int defaultId
+        int endTimeoutSeconds, int timestampOffset,  unsigned divisor, int defaultId
     );
     virtual ~CRingFragmentSource();
     

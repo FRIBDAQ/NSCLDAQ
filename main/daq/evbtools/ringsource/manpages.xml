@@ -146,6 +146,17 @@ $DAQBIN/ringFragmentSource <option>options...</option>
                    </para>
                 </listitem>
             </varlistentry>
+            <varlistentry>
+                  <term><option>--ts-divisor</option>=<replaceable>divisor</replaceable></term>
+                  <listitem>
+                     <para>
+                        Provides the ability to divide the timestamp extracted from the event (either by
+                        the user supplied timestamp extractor or from the body header) and to divide it by
+                        a constant integer value.  If an offset is specified, this is applied after the 
+                        division is done.
+                     </para>
+                  </listitem>
+            </varlistentry>
            </variablelist>
     </refsect1>
 </refentry>
