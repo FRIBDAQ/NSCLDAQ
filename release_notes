@@ -1,3 +1,7 @@
+== 12.1-019 ==
+* Multi runs corrupt ring source paramters
+== 12.1-019 ==
+
 == 12.1-018 ==
 * Use buffered fragment reader to improve glom (event building) performance
 * Clear warning message when QtScope detects inconsistent channel coincidence widths on a single module
