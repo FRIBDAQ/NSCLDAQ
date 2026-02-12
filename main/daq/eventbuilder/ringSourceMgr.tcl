@@ -202,10 +202,6 @@ proc ::RingSourceMgr::startSource {sourceRingUrl timestampExtractorLib id info
     
   EndrunMon::incEndRunCount
   
-  #::RingSourceMgr::addSource  \
-  #  $sourceRingUrl $timestampExtractorLib $id $info  $expectHeaders \
-  #  $oneshot $timeout $offset #defaultid $divisor
-  #dict set ::RingSourceMgr::sourceDict $sourceRingUrl fd $fd
   
   return $fd
 }
