@@ -260,7 +260,7 @@ class MainWindow(QMainWindow):
 
             for i in range(num_modules):
                 msps_list.append(self.sys_utils.get_module_msps(i))
-                channel_map.append(self.sys_utils.get_channel_count(i))
+                channel_map.append(self.sys_utils.get_module_channel_count(i))
                 histogram_lengths.append(self.run_utils.get_histogram_length(i))
                 trace_lengths.append(self.trace_utils.get_trace_length(i))
 

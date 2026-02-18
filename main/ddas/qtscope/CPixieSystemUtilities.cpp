@@ -214,24 +214,24 @@ int CPixieSystemUtilities::GetModuleMSPS(int module) {
   }
 }
 
-int CPixieSystemUtilities::GetChannelCount(int module) {
+int CPixieSystemUtilities::GetModuleChannelCount(int module) {
   // A correctly booted system must by efinition contain >= 1 module
   // so I'm _pretty_ sure this is a good check for that too:
 
   if (!m_booted) {
     std::string msg(
-        "CPixieSystemUtilities::GetChannelCount() system not booted.");
+        "CPixieSystemUtilities::GetModuleChannelCount() system not booted.");
     std::cerr << msg << std::endl;
     return -1;
   } else if ((module < 0) || (module >= m_numModules)) {
     std::stringstream msg;
-    msg << "CPixieSystemUtilities::GetChannelCount() ";
+    msg << "CPixieSystemUtilities::GetModuleChannelCount() ";
     msg << "invalid module number ";
     msg << module << " for " << m_numModules << " module system.";
     std::cerr << msg.str() << std::endl;
     return -2;
   } else {
     // Implicit conversion probably OK but:
-    return static_cast<int>(m_config.getChannelCount(module));
+    return static_cast<int>(m_config.getModuleChannelCount(module));
   }
 }

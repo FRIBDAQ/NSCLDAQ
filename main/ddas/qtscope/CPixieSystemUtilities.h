@@ -115,7 +115,7 @@ public:
    * @retval -1 if the system is not booted.
    * @retval -2 if the module number is invalid.
    */
-  int GetChannelCount(int module);
+  int GetModuleChannelCount(int module);
 };
 
 /** @} */
@@ -167,9 +167,9 @@ int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities *utils, int mod) {
   return utils->GetModuleMSPS(mod);
 }
 /** @brief Wrapper to get the channel count for a single module. */
-int CPixieSystemUtilities_GetChannelCount(CPixieSystemUtilities *utils,
-                                          int mod) {
-  return utils->GetChannelCount(mod);
+int CPixieSystemUtilities_GetModuleChannelCount(CPixieSystemUtilities *utils,
+                                                int mod) {
+  return utils->GetModuleChannelCount(mod);
 }
 
 /** @brief Wrapper for the class destructor. */

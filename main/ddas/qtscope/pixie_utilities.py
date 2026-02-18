@@ -67,7 +67,7 @@ class SystemUtilities:
         Get the number of installed modules.
     get_module_msps(mod)
         Get the sampling rate in MSPS for module.
-    get_channel_count(mod)
+    get_module_channel_count(mod)
         Get the module channel count.
     """
 
@@ -113,8 +113,8 @@ class SystemUtilities:
         lib.CPixieSystemUtilities_GetModuleMSPS.restype = c_int
 
         # Get number of channels:
-        lib.CPixieSystemUtilities_GetChannelCount.argtypes = [c_void_p, c_int]
-        lib.CPixieSystemUtilities_GetChannelCount.restype = c_int
+        lib.CPixieSystemUtilities_GetModuleChannelCount.argtypes = [c_void_p, c_int]
+        lib.CPixieSystemUtilities_GetModuleChannelCount.restype = c_int
 
         # Dtor:
         lib.CPixieSystemUtilities_delete.argtypes = [POINTER(c_char)]
@@ -275,7 +275,7 @@ class SystemUtilities:
             self.logger.exception(f"Failed to read module {module} MSPS")
             print(e)
 
-    def get_channel_count(self, module):
+    def get_module_channel_count(self, module):
         """Wrapper to read the module channel count.
 
         Returns
@@ -284,7 +284,7 @@ class SystemUtilities:
             Channels on the module.
         """
         try:
-            retval = lib.CPixieSystemUtilities_GetChannelCount(self.obj, module)
+            retval = lib.CPixieSystemUtilities_GetModuleChannelCount(self.obj, module)
             if retval < 0:
                 raise RuntimeError(
                     f"Failed to read Mod. {module} channel count with retval {retval}"
