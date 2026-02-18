@@ -69,12 +69,13 @@ public:
   bool isVerbose() const { return m_verbose; };
   /**
    * @brief Enable or disable online boot
-   * @param mode Boot mode: 0 for online, 1 for offline.
+   * @param mode Boot mode: 0 for online, anything else (typically 1) for
+   * offline.
    */
   void setOfflineMode(unsigned short mode) { m_offlineMode = mode; };
   /**
    * @brief Return the boot mode of the system.
-   * @return Boot mode: 0 for online, 1 for offline.
+   * @return Boot mode: 0 for online, anything else for offline.
    */
   unsigned short getOfflineMode() const { return m_offlineMode; };
 
@@ -109,8 +110,8 @@ private:
    * @brief Set firmware for a single module.
    * @param config References the system configuration.
    * @param mod Module index.
-   * @throw std::runtime_error If the hardware type is not present
-   *   in the hardware registry.
+   * @throw std::runtime_error If the hardware type is not present in the
+   * hardware registry.
    */
   void setModuleFirmware(Configuration &config, unsigned int mod);
   /**

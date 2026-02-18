@@ -51,9 +51,9 @@ void DAQ::DDAS::Configuration::setSlotMap(
     const std::vector<unsigned short> &map) {
   if (map.size() != getNumberOfModules()) {
     std::string errmsg =
-        "Configuration::setSlotMap(): Inconsistent data "
-        "for module evt lengths and slot mapping. Set number of modules "
-        "first using Configuration::setNumberOfModules().";
+        "Configuration::setSlotMap(): Inconsistent data for module evt lengths "
+        "and slot mapping. Set number of modules first using "
+        "Configuration::setNumberOfModules().";
     throw std::runtime_error(errmsg);
   }
 

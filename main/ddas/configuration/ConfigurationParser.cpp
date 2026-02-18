@@ -17,8 +17,8 @@
 #include "Configuration.h"
 #include "FirmwareVersionFileParser.h"
 
-/** Number of characters to skip when parsing a line. Maximum allowed length
- * of any comment added by a user. */
+// Number of characters to skip when parsing a line. Maximum allowed length of
+// any comment added by a user.
 #define FILENAME_STR_MAXLEN 256
 
 ///

@@ -10,7 +10,6 @@
 #include <map>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 
 namespace HR = DAQ::DDAS::HardwareRegistry;
 
@@ -21,7 +20,7 @@ namespace HR = DAQ::DDAS::HardwareRegistry;
  */
 using Registry = std::map<int, HR::HardwareSpecification>;
 
-// static registry
+// Static registry
 static Registry *gpRegistry = nullptr;
 static int sDefaultFirstAvailableUserType = 100;
 static int sNextAvailableUserType = sDefaultFirstAvailableUserType;

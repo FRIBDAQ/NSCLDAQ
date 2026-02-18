@@ -103,8 +103,10 @@ void DAQ::DDAS::SystemBooter::boot(Configuration &config, BootType type) {
 /**
  * @details
  * Two possibilities: 1) if m_offlieMode == 0, initialze system with hardware
- * and slot map defined in the cfgPixie16.txt file. 2) If m_offlineMode == 1,
- * initialize the crate simulation (no hardware required).
+ * and slot map defined in the cfgPixie16.txt file. 2) If m_offlineMode == any
+ * nonzero value (typically == 1 if the user is being reasonable), ignore
+ * hardware and slot map and initialize the system in offline mode with 4
+ * modules. The 4th module in the system is a 32-channel Rev. H. Pixie-32.
  */
 void DAQ::DDAS::SystemBooter::initSystem(Configuration &config) {
   std::cout << "---------------------------\n";

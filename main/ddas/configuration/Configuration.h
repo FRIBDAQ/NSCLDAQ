@@ -98,13 +98,7 @@ public:
   /** @brief Constructor. */
   Configuration() = default;
   /** @brief Copy constructor. */
-  Configuration(const Configuration &rhs)
-      : m_crateId(rhs.m_crateId), m_slotMap(rhs.m_slotMap),
-        m_settingsFilePath(rhs.m_settingsFilePath),
-        m_modEvtLengths(rhs.m_modEvtLengths), m_fwMap(rhs.m_fwMap),
-        m_hardwareMap(rhs.m_hardwareMap),
-        m_moduleFirmwareMaps(rhs.m_moduleFirmwareMaps),
-        m_moduleSetFileMap(rhs.m_moduleSetFileMap) {}
+  Configuration(const Configuration &rhs) = default;
   /** @brief Destructor. */
   ~Configuration() = default;
 
@@ -130,9 +124,9 @@ public:
   size_t getNumberOfModules() const { return m_slotMap.size(); };
   /**
    * @brief Assign a new slot map.
-   * @param map  The slots that are occupied.
-   * @throws std::runtime_error When length of argument is
-   *   different than the length of stored modevtlen vector.
+   * @param map The slots that are occupied.
+   * @throws std::runtime_error When length of argument is different than the
+   * length of stored modevtlen vector.
    */
   void setSlotMap(const std::vector<unsigned short> &map);
   /**
@@ -186,7 +180,7 @@ public:
   /**
    * @brief Set the firmware configuration for a hardware type
    * @param specifier The hardware type.
-   * @param config    The new configuration.
+   * @param config The new configuration.
    * @details
    * Any previous FirmwareConfiguration stored will be replaced by
    * the new configuration. If there is no previous configuration
@@ -199,10 +193,10 @@ public:
   /**
    * @brief Retrieve the current firmware specifier for a particular
    * hardware type.
-   * @param hdwrType The hardware specifier associated with the
-   *   firmware configuration.
-   * @throws std::runtime_error If no firmware configuration exists
-   *   for the provided hdwrType.
+   * @param hdwrType The hardware specifier associated with the firmware
+   * configuration.
+   * @throws std::runtime_error If no firmware configuration exists for the
+   * provided hdwrType.
    * @return The firmware configuration associated with the hdwrType.
    */
   FirmwareConfiguration &getFirmwareConfiguration(int hdwrType);
@@ -216,8 +210,8 @@ public:
    * @brief Get the module firmware configuration information.
    * @param hwType The hardware type detected in the module.
    * @param modnum Module number.
-   * @throw std::runtime_error If the module firmware configuraton
-   *   is not in the firmware map.
+   * @throw std::runtime_error If the module firmware configuraton is not in the
+   * firmware map.
    * @return The firmware configuration associated with the module.
    */
   FirmwareConfiguration &getModuleFirmwareConfiguration(int hdwrType,
@@ -230,8 +224,8 @@ public:
   /**
    * @brief Set the lengths of events for each module
    * @param lengths  The module event lengths.
-   * @throw std::runtime_error if size of lengths does not match
-   *   size of stored slot map.
+   * @throw std::runtime_error if size of lengths does not match size of stored
+   * slot map.
    */
   void setModuleEventLengths(const std::vector<int> &lengths);
   /**
@@ -242,8 +236,8 @@ public:
   /**
    * @brief Set the hardware map for each module.
    * @param map The hardware map.
-   * @throw std::runtime_error if size of lengths does not match
-   *   size of stored slot map.
+   * @throw std::runtime_error if size of lengths does not match size of stored
+   * slot map.
    */
   void setHardwareMap(const std::vector<int> &map);
   /**
@@ -265,18 +259,16 @@ public:
   std::map<int, std::string> getModuleSetFileMap() const {
     return m_moduleSetFileMap;
   };
-
   /**
    * @brief Print brief line of information for cfgPixie16.txt
    * @param stream The ostream to write to.
    */
   void print(std::ostream &stream);
-
   /**
    * @brief Generate a Configuration class object from cfgPixie16.txt.
    * @param cfgPixiePath Path to cfgPixie16.txt.
-   * @throw std::runtime_error Any errors opening or parsing the
-   *   firmware and configuration files.
+   * @throw std::runtime_error Any errors opening or parsing the firmware and
+   * configuration files.
    * @return Pointer to the generated Configuration object.
    */
   static std::unique_ptr<Configuration>
@@ -284,10 +276,10 @@ public:
   /**
    * @brief Generate a Configuration class object from a firmware
    * version file and cfgPixie16.txt.
-   * @param fwVsnPath    Path to the firmware version file.
+   * @param fwVsnPath Path to the firmware version file.
    * @param cfgPixiePath Path to cfgPixie16.txt.
-   * @throw std::runtime_error Any errors opening or parsing the
-   *   firmware and configuration files.
+   * @throw std::runtime_error Any errors opening or parsing the firmware and
+   * configuration files.
    * @return Pointer to the generated Configuration object.
    */
   static std::unique_ptr<Configuration>
@@ -295,11 +287,10 @@ public:
   /**
    * @brief Generate a Configuration class object from a firmware
    * version file, cfgPixie16.txt and modevtlen.txt file.
-   * @param fwVsnPath     Path to the firmware version file.
-   * @param cfgPixiePath  Path to cfgPixie16.txt.
+   * @param fwVsnPath Path to the firmware version file.
+   * @param cfgPixiePath Path to cfgPixie16.txt.
    * @param modEvtLenPath Path to the modevtlen.txt file.
-   * @throw std::runtime_error Error opening or parsing the
-   *   modevtlen file.
+   * @throw std::runtime_error Error opening or parsing the modevtlen file.
    * @return Pointer to the generated Configuration object.
    */
   static std::unique_ptr<Configuration>
@@ -310,8 +301,7 @@ public:
    * cfgPixie16.txt and modevtlen.txt files (managed FW).
    * @param cfgPixiePath  Path to cfgPixie16.txt.
    * @param modEvtLenPath Path to the modevtlen.txt file.
-   * @throw std::runtime_error Error opening or parsing the
-   *   modevtlen file.
+   * @throw std::runtime_error Error opening or parsing the modevtlen file.
    * @return Pointer to the generated Configuration object.
    */
   static std::unique_ptr<Configuration>
