@@ -42,8 +42,8 @@ public:
   CPPUNIT_TEST(setChannelMap_0);
   CPPUNIT_TEST(setChannelMap_1);
   CPPUNIT_TEST(setChannelMap_2);
-  CPPUNIT_TEST(getChannelCount_0);
-  CPPUNIT_TEST(getChannelCount_1);
+  CPPUNIT_TEST(getModuleChannelCount_0);
+  CPPUNIT_TEST(getModuleChannelCount_1);
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -170,25 +170,26 @@ public:
   }
 
   /** @brief Requesting a out of range module index is an error." */
-  void getChannelCount_0() {
+  void getModuleChannelCount_0() {
     Configuration config;
     config.setNumberOfModules(1);
     std::vector<unsigned short> mapping = {16};
     config.setChannelMap(mapping);
     CPPUNIT_ASSERT_THROW_MESSAGE("Out of range module index is an error",
-                                 config.getChannelCount(1), std::runtime_error);
+                                 config.getModuleChannelCount(1),
+                                 std::runtime_error);
   }
 
   /** @brief We can get the channel count" */
-  void getChannelCount_1() {
+  void getModuleChannelCount_1() {
     Configuration config;
     config.setNumberOfModules(2);
     std::vector<unsigned short> mapping = {16, 32};
     config.setChannelMap(mapping);
     ASSERTMSG("Gets the correct channel count first module",
-              config.getChannelCount(0) == 16);
+              config.getModuleChannelCount(0) == 16);
     ASSERTMSG("Gets the correct channel count second module",
-              config.getChannelCount(1) == 32);
+              config.getModuleChannelCount(1) == 32);
   }
 };
 
