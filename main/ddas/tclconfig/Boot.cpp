@@ -171,7 +171,7 @@ void CBoot::bootModule(int index, int type) {
   strcpy(fippiFile, cfg.fw_device_file[1]);
   strcpy(dspFile, cfg.fw_device_file[2]);
   strcpy(varFile, cfg.fw_device_file[3]);
-  settingsFile = m_config.getSettingsFilePath(index);
+  settingsFile = m_config.getModuleSettingsFilePath(index);
 
   rv = Pixie16BootModule(sysFile, fippiFile, nullptr, dspFile,
                          settingsFile.c_str(), varFile, index, 0x7f);
