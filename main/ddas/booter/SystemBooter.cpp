@@ -375,7 +375,8 @@ void DAQ::DDAS::SystemBooter::logModuleInfo(Configuration &config) {
       std::cout << cfg.fw_device[j] << ":\t" << cfg.fw_device_file[j]
                 << std::endl;
     }
-    std::cout << "DSP settings: " << config.getSettingsFilePath(i) << std::endl;
+    std::cout << "DSP settings: " << config.getModuleSettingsFilePath(i)
+              << std::endl;
     std::cout << std::endl;
   }
 }
