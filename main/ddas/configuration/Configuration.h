@@ -79,7 +79,8 @@ typedef std::map<int, FirmwareConfiguration> FirmwareMap;
 
 class Configuration {
 private:
-  int m_crateId;                            //!< Crate ID from cfgPixie16.
+  int m_crateId{0};                         //!< Crate ID from cfgPixie16.
+  size_t m_numModules{0};                   //!< Number of modules in the crate.
   std::vector<unsigned short> m_slotMap;    //!< Map of physical slots.
   std::vector<unsigned short> m_channelMap; //!< Channels per module.
   std::string m_settingsFilePath;           //!< Path to default .set file.
@@ -119,7 +120,7 @@ public:
    * @brief Return the number of modules in the crate.
    * @return The number of modules.
    */
-  size_t getNumberOfModules() const { return m_slotMap.size(); };
+  size_t getNumberOfModules() const { return m_numModules; };
   /**
    * @brief Assign a new slot map.
    * @param map The slots that are occupied.
@@ -149,7 +150,7 @@ public:
    * @return Number of channels in module.
    * @throw Runtime error if the module is out of range.
    */
-  unsigned short getChannelCount(size_t mod);
+  unsigned short getModuleChannelCount(size_t mod);
   /**
    * @brief Set the path to the DSP settings file.
    * @param path The path to the settings file.
@@ -158,23 +159,23 @@ public:
     m_settingsFilePath = path;
   };
   /**
+   * @brief Return the path to the .set file.
+   * @return The settings file path.
+   */
+  std::string getSettingsFilePath() const { return m_settingsFilePath; };
+  /**
    * @brief Set a per-module DSP settings file.
    * @param modNum Module number.
    * @param path The path to the settings file.
    */
   void setModuleSettingsFilePath(int modnum, const std::string &path);
   /**
-   * @brief Return the path to the .set file.
-   * @return The settings file path.
-   */
-  std::string getSettingsFilePath() const { return m_settingsFilePath; };
-  /**
    * @brief Returns the DSP settings file path specific to a single
    * module.
    * @param modnum Module number.
    * @return std::string  The full path to the settings file.
    */
-  std::string getSettingsFilePath(int modNum);
+  std::string getModuleSettingsFilePath(int modNum);
   /**
    * @brief Set the firmware configuration for a hardware type
    * @param specifier The hardware type.

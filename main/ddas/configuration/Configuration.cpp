@@ -26,6 +26,7 @@
  * prior to calling `setSlotMap()` or `setModuleEventLengths()`.
  */
 void DAQ::DDAS::Configuration::setNumberOfModules(size_t size) {
+  m_numModules = size;
   m_slotMap.resize(size);
   m_channelMap.resize(size);
   m_modEvtLengths.resize(size);
@@ -49,11 +50,11 @@ void DAQ::DDAS::Configuration::setNumberOfModules(size_t size) {
  */
 void DAQ::DDAS::Configuration::setSlotMap(
     const std::vector<unsigned short> &map) {
-  if (map.size() != getNumberOfModules()) {
+  if (map.size() != m_numModules) {
     std::string errmsg =
-        "Configuration::setSlotMap(): Inconsistent data for module evt lengths "
-        "and slot mapping. Set number of modules first using "
-        "Configuration::setNumberOfModules().";
+        "Configuration::setSlotMap(): Inconsistent data "
+        "for module evt lengths and slot mapping. Set number of modules "
+        "first using Configuration::setNumberOfModules().";
     throw std::runtime_error(errmsg);
   }
 
@@ -77,7 +78,7 @@ void DAQ::DDAS::Configuration::setSlotMap(
  */
 void DAQ::DDAS::Configuration::setChannelMap(
     const std::vector<unsigned short> &map) {
-  if (map.size() != getNumberOfModules()) {
+  if (map.size() != m_numModules) {
     std::string errmsg =
         "Configuration::setChannelMap(): Inconsistent "
         "data for module evt lengths and slot mapping. Set number of "
@@ -88,10 +89,10 @@ void DAQ::DDAS::Configuration::setChannelMap(
   m_channelMap = map;
 }
 
-unsigned short DAQ::DDAS::Configuration::getChannelCount(size_t mod) {
+unsigned short DAQ::DDAS::Configuration::getModuleChannelCount(size_t mod) {
   if (mod >= m_channelMap.size()) {
     std::stringstream errmsg;
-    errmsg << "Configuration::getChannelCount(): Module index " << mod
+    errmsg << "Configuration::getModuleChannelCount(): Module index " << mod
            << " is out of range for system with " << getNumberOfModules()
            << " modules!";
     throw std::runtime_error(errmsg.str());
@@ -114,7 +115,7 @@ void DAQ::DDAS::Configuration::setModuleSettingsFilePath(
  * If there's a per-module set file it's returned otherwise return the
  * default settings file.
  */
-std::string DAQ::DDAS::Configuration::getSettingsFilePath(int modnum) {
+std::string DAQ::DDAS::Configuration::getModuleSettingsFilePath(int modnum) {
   if (m_moduleSetFileMap.count(modnum) > 0) {
     return m_moduleSetFileMap[modnum];
   } else {
@@ -185,7 +186,7 @@ DAQ::DDAS::Configuration::getModuleFirmwareConfiguration(int hwType,
  */
 void DAQ::DDAS::Configuration::setModuleEventLengths(
     const std::vector<int> &lengths) {
-  if (lengths.size() != getNumberOfModules()) {
+  if (lengths.size() != m_numModules) {
     std::string errmsg =
         "Configuration::setModuleEventLengths() "
         "Inconsistent data for module evt lengths and slot mapping. "
@@ -212,9 +213,9 @@ void DAQ::DDAS::Configuration::setModuleEventLengths(
  * @endcode
  */
 void DAQ::DDAS::Configuration::setHardwareMap(const std::vector<int> &map) {
-  if (map.size() != getNumberOfModules()) {
+  if (map.size() != m_numModules) {
     std::string errmsg =
-        "Configuration::setModuleEventLengths() "
+        "Configuration::setHardwareMap() "
         "Inconsistent data for hardware mapping and slot mapping. "
         "Set number of modules first using "
         "Configuration::setNumberOfModules().";
@@ -231,7 +232,7 @@ void DAQ::DDAS::Configuration::setHardwareMap(const std::vector<int> &map) {
  */
 void DAQ::DDAS::Configuration::print(std::ostream &stream) {
   stream << "Crate number " << m_crateId;
-  stream << ": " << m_slotMap.size() << " modules, in slots: ";
+  stream << ": " << m_numModules << " modules, in slots: ";
   for (auto &slot : m_slotMap) {
     stream << slot << " ";
   }
