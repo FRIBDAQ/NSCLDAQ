@@ -180,6 +180,13 @@ int CPixieSystemUtilities::ExitSystem() {
   return retval; // All good.
 }
 
+/**
+ * @details
+ * Perfoms bounds checking on the module number. The various
+ * DAQ::DDAS::Configuration accessor methods throw but ctypes does not handle
+ * C++ exceptions so we catch them here and print the error message to stderr.
+ * The return value is an error code that can be checked by the caller.
+ */
 int CPixieSystemUtilities::GetModuleMSPS(int module) {
   if (!m_booted) {
     std::cerr << "CPixieSystemUtilities::GetModuleMSPS() system not booted."
@@ -197,14 +204,19 @@ int CPixieSystemUtilities::GetModuleMSPS(int module) {
     return -2;
   }
 
-  // Should be a value for us to fish out:
-
   const auto &hdwrMap = m_config.getHardwareMap();
   const auto &spec = HR::getSpecification(hdwrMap[module]);
 
   return spec.s_adcFrequency;
 }
 
+/**
+ * @details
+ * Perfoms bounds checking on the module number. The various
+ * DAQ::DDAS::Configuration accessor methods throw but ctypes does not handle
+ * C++ exceptions so we catch them here and print the error message to stderr.
+ * The return value is an error code that can be checked by the caller.
+ */
 int CPixieSystemUtilities::GetModuleChannelCount(int module) {
   if (!m_booted) {
     std::string msg(
