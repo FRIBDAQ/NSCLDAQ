@@ -57,10 +57,9 @@ const uint32_t MODREVBITMSPS_EXTCLK_BIT(1 << 21); //!< Shift in the clock word.
  * channels if the readout code doesn't support it.
  */
 CMyEventSegment::CMyEventSegment(CMyTrigger *trig, CExperiment &exp)
-    : m_nModules(0), m_modRevBitMSPSWord{}, m_modClockCal{}, m_config(),
-      m_systemInitialized(false), m_firmwareLoadedRecently(false),
-      m_pTrigger(trig), m_pExperiment(&exp), m_nCumulativeBytes(0),
-      m_nBytesPerRun(0) {
+    : m_modClockCal{}, m_config(), m_systemInitialized(false),
+      m_firmwareLoadedRecently(false), m_pTrigger(trig), m_pExperiment(&exp),
+      m_nCumulativeBytes(0), m_nBytesPerRun(0) {
   std::ios_base::sync_with_stdio(true);
 
   std::cout << "Trying to initialize Pixie" << std::endl << std::flush;
@@ -76,11 +75,8 @@ CMyEventSegment::CMyEventSegment(CMyTrigger *trig, CExperiment &exp)
   m_config.print(std::cout);
   std::cout << std::endl;
 
-  m_nModules = m_config.getNumberOfModules();
-  m_modEvtLens = m_config.getModuleEventLengths();
-  std::cout << "Module event lengths: ";
-  for (auto len : m_modEvtLens) {
-    std::cout << len << " ";
+  for (const auto &len : m_config.getModuleEventLengths()) {
+    std::cout << "Module event length: " << len << std::endl;
   }
   std::cout << std::endl;
   std::cout.flush();
@@ -99,7 +95,7 @@ CMyEventSegment::CMyEventSegment(CMyTrigger *trig, CExperiment &exp)
   std::vector<int> hdwrMap = m_config.getHardwareMap();
   int numInternalClock(0);
   int numExternalClock(0);
-  for (unsigned int i = 0; i < m_nModules; i++) {
+  for (unsigned int i = 0; i < m_config.getNumberOfModules(); i++) {
     auto type = hdwrMap.at(i);
     HR::HardwareSpecification specs = HR::getSpecification(type);
     // Bits 0-15: sampling frequency, Bits 16-23: bit depth,
@@ -178,7 +174,7 @@ CMyEventSegment::CMyEventSegment(CMyTrigger *trig, CExperiment &exp)
     }
   }
 
-  m_pTrigger->Initialize(m_nModules);
+  m_pTrigger->Initialize(m_config.getNumberOfModules());
 }
 
 /**
@@ -217,8 +213,8 @@ size_t CMyEventSegment::read(void *rBuffer, size_t maxBytes) {
   maxLongs = maxLongs - 128; // To be really sure we don't fill it.
 
   unsigned int *words = m_pTrigger->getWordsInModules();
-  for (int i = 0; i < m_nModules; i++) {
-    if (words[i] >= m_modEvtLens[i]) {
+  for (int i = 0; i < m_config.getNumberOfModules(); i++) {
+    if (words[i] >= m_config.getModuleEventLengths().at(i)) {
       // Figure out if we fill the buffer or just take the complete
       // events from the module:
       uint32_t *p = static_cast<uint32_t *>(rBuffer);
@@ -237,7 +233,7 @@ size_t CMyEventSegment::read(void *rBuffer, size_t maxBytes) {
       // Read only complete events. Truncate readSize to the nearest
       // integer multiple of the module event length:
 
-      readSize -= (readSize % m_modEvtLens[i]);
+      readSize -= (readSize % m_config.getModuleEventLengths().at(i));
 
       // Read the data right into the ring item:
 
@@ -306,7 +302,8 @@ void CMyEventSegment::clear() {
  * code text.
  */
 void CMyEventSegment::onBegin() {
-  int rv = Pixie16StartListModeRun(m_nModules, LIST_MODE_RUN, NEW_RUN);
+  int rv = Pixie16StartListModeRun(m_config.getNumberOfModules(), LIST_MODE_RUN,
+                                   NEW_RUN);
   try {
     if (rv < 0) {
       std::string msg("*ERROR* Failed to begin list mode run");
@@ -331,7 +328,8 @@ void CMyEventSegment::onBegin() {
  * code text.
  */
 void CMyEventSegment::onResume() {
-  int rv = Pixie16StartListModeRun(m_nModules, LIST_MODE_RUN, RESUME_RUN);
+  int rv = Pixie16StartListModeRun(m_config.getNumberOfModules(), LIST_MODE_RUN,
+                                   RESUME_RUN);
   try {
     if (rv < 0) {
       std::string msg("*ERROR* Failed to resume list mode run");

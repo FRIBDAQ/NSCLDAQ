@@ -34,8 +34,6 @@ class CExperiment;
 
 class CMyEventSegment : public CEventSegment {
 private:
-  size_t m_nModules;             //!< Number of modules in the crate.
-  std::vector<int> m_modEvtLens; //!< Expected event lengths (32-bit words).
   /** Word to store rev, bit depth, and MSPS of module for insertion into
    * the data stream.*/
   unsigned int m_modRevBitMSPSWord[MAX_MODULES_PER_CRATE];
@@ -93,7 +91,7 @@ public:
    * @brief Get the number of modules in the crate.
    * @return Number of modules.
    */
-  size_t getNumberOfModules() { return m_nModules; }
+  size_t getNumberOfModules() { return m_config.getNumberOfModules(); }
   /**
    * @brief Get the channel count in a given module.
    * @param mod The module index.
