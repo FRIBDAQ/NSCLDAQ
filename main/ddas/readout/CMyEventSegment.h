@@ -98,9 +98,10 @@ public:
    * @brief Get the channel count in a given module.
    * @param mod The module index.
    * @return The channel count of that module.
+   * @note Throws if module index is out of range.
    */
-  unsigned short getChannelCount(unsigned int mod) {
-    return m_config.getChannelCount(mod);
+  unsigned short getModuleChannelCount(unsigned int mod) {
+    return m_config.getModuleChannelCount(mod);
   }
   /**
    * @brief Get the crate ID value from the configuration.

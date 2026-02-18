@@ -160,10 +160,8 @@ void DDASReadoutMain::SetupScalers(CExperiment *pExperiment) {
 
   // Create and add your scaler modules here:
 
-  int modules;
-  int crateid;
-  modules = myeventsegment->getNumberOfModules();
-  crateid = myeventsegment->getCrateID();
+  int modules = myeventsegment->getNumberOfModules();
+  int crateid = myeventsegment->getCrateID();
 
   cout << "Setup scalers for " << modules << " modules " << endl;
 
@@ -174,7 +172,7 @@ void DDASReadoutMain::SetupScalers(CExperiment *pExperiment) {
   }
 
   for (int i = 0; i < modules; i++) {
-    auto nchan = myeventsegment->getChannelCount(i);
+    auto nchan = myeventsegment->getModuleChannelCount(i);
     CMyScaler *pModule = new CMyScaler(crateid, i, nchan);
     scalerModules.push_back(pModule);
     pExperiment->AddScalerModule(pModule);

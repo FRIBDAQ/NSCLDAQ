@@ -195,10 +195,10 @@ int CMyEndCommand::readOutRemainingData() {
 
     // Write the stats to the output file:
     outputfile << "Module " << i << std::endl;
-    for (int j = 0; j < m_pSeg->getChannelCount(i); j++) {
+    for (int j = 0; j < m_pSeg->getModuleChannelCount(i); j++) {
       double ocr = Pixie16ComputeOutputCountRate(statistics.data(), i, j);
       double icr = Pixie16ComputeInputCountRate(statistics.data(), i, j);
-      outputfile << "   Channel " << i << ": " << ocr << " " << icr
+      outputfile << "   Channel " << j << ": " << ocr << " " << icr
                  << std::endl;
     }
   }
