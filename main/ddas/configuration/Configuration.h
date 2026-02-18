@@ -97,8 +97,6 @@ private:
 public:
   /** @brief Constructor. */
   Configuration() = default;
-  /** @brief Copy constructor. */
-  Configuration(const Configuration &rhs) = default;
   /** @brief Destructor. */
   ~Configuration() = default;
 
