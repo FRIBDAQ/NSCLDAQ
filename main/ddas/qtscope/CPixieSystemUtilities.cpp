@@ -13,6 +13,7 @@
 
 #include <CXIAException.h>
 #include <SystemBooter.h>
+#include <string>
 
 using namespace DAQ::DDAS;
 namespace HR = DAQ::DDAS::HardwareRegistry;
@@ -23,7 +24,7 @@ namespace HR = DAQ::DDAS::HardwareRegistry;
  * cfgPixie16.txt.
  */
 CPixieSystemUtilities::CPixieSystemUtilities()
-    : m_bootMode(0), m_booted(false), m_ovrSetFile(false), m_numModules(0) {}
+    : m_bootMode(0), m_booted(false), m_ovrSetFile(false) {}
 
 /**
  * @details
@@ -80,20 +81,6 @@ int CPixieSystemUtilities::Boot() {
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
     return -1;
-  }
-
-  m_numModules = m_config.getNumberOfModules();
-  m_modEvtLength = m_config.getModuleEventLengths();
-
-  // The hardware map is set up during boot time:
-
-  std::vector<int> hdwrMap = m_config.getHardwareMap();
-  for (size_t i = 0; i < hdwrMap.size(); i++) {
-    HR::HardwareSpecification spec = HR::getSpecification(hdwrMap.at(i));
-    m_modADCMSPS.push_back(spec.s_adcFrequency);
-    m_modADCBits.push_back(spec.s_adcResolution);
-    m_modRev.push_back(spec.s_hdwrRevision);
-    m_modClockCal.push_back(spec.s_clockCalibration);
   }
 
   m_booted = true;
@@ -173,7 +160,7 @@ int CPixieSystemUtilities::ExitSystem() {
   int retval;
   try {
     if (m_booted) {
-      for (int i = 0; i < m_numModules; i++) {
+      for (int i = 0; i < m_config.getNumberOfModules(); i++) {
         retval = Pixie16ExitSystem(i);
         if (retval < 0) {
           std::stringstream msg;
@@ -194,44 +181,47 @@ int CPixieSystemUtilities::ExitSystem() {
 }
 
 int CPixieSystemUtilities::GetModuleMSPS(int module) {
-  // A correctly booted system must by definition contain >= 1 module
-  // so I'm _pretty_ sure this is a good check for that too:
-
   if (!m_booted) {
-    std::string msg(
-        "CPixieSystemUtilities::GetModuleMSPS() system not booted.");
+    std::cerr << "CPixieSystemUtilities::GetModuleMSPS() system not booted."
+              << std::endl;
     return -1;
-  } else if ((module < 0) || (module >= m_numModules)) {
+  }
+
+  auto numModules = m_config.getNumberOfModules();
+  if (module < 0 || module >= numModules) {
     std::stringstream msg;
-    msg << "CPixieSystemUtilities::GetModuleMSPS() ";
-    msg << "invalid module number ";
-    msg << module << " for " << m_numModules << " module system.";
+    msg << "CPixieSystemUtilities::GetModuleMSPS()";
+    msg << " invalid module number " << module << " for " << numModules
+        << " module system.";
     std::cerr << msg.str() << std::endl;
     return -2;
-  } else {
-    // Implicit conversion probably OK but:
-    return static_cast<int>(m_modADCMSPS[module]);
   }
+
+  // Should be a value for us to fish out:
+
+  const auto &hdwrMap = m_config.getHardwareMap();
+  const auto &spec = HR::getSpecification(hdwrMap[module]);
+
+  return spec.s_adcFrequency;
 }
 
 int CPixieSystemUtilities::GetModuleChannelCount(int module) {
-  // A correctly booted system must by efinition contain >= 1 module
-  // so I'm _pretty_ sure this is a good check for that too:
-
   if (!m_booted) {
     std::string msg(
         "CPixieSystemUtilities::GetModuleChannelCount() system not booted.");
     std::cerr << msg << std::endl;
     return -1;
-  } else if ((module < 0) || (module >= m_numModules)) {
+  }
+
+  auto numModules = m_config.getNumberOfModules();
+  if (module < 0 || module >= numModules) {
     std::stringstream msg;
-    msg << "CPixieSystemUtilities::GetModuleChannelCount() ";
-    msg << "invalid module number ";
-    msg << module << " for " << m_numModules << " module system.";
+    msg << "CPixieSystemUtilities::GetModuleChannelCount()";
+    msg << " invalid module number " << module << " for " << numModules
+        << " module system.";
     std::cerr << msg.str() << std::endl;
     return -2;
-  } else {
-    // Implicit conversion probably OK but:
-    return static_cast<int>(m_config.getModuleChannelCount(module));
   }
+
+  return static_cast<int>(m_config.getModuleChannelCount(module));
 }

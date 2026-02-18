@@ -7,7 +7,7 @@
 
 #include <fstream>
 #include <iostream>
-#include <sstream>
+#include <stdexcept>
 
 #include "ConfigurationParser.h"
 #include "FirmwareVersionFileParser.h"
@@ -22,8 +22,10 @@
 /*!
  * @details
  * This resizes the vectors storing the slot map, module event lengths, and
- * hardware map to be consistent. The caller should call setNumberOfModules
- * prior to calling `setSlotMap()` or `setModuleEventLengths()`.
+ * hardware map to be consistent. The caller *must* call `setNumberOfModules()`
+ * prior to setting the slot map, channel map, event lengths, or hardware map.
+ * Failure to do so will at best result in an exception and/or the caller
+ * application fatally terminating.
  */
 void DAQ::DDAS::Configuration::setNumberOfModules(size_t size) {
   m_numModules = size;
@@ -36,11 +38,11 @@ void DAQ::DDAS::Configuration::setNumberOfModules(size_t size) {
 /**
  * @details
  * It is important for the caller to first call `setNumberOfModules()`
- * before calling this to avoid an exception being thrown. To avoid
- * weird configurations, this ensures that the length of the slot map
- * is the same as the number of modules in the system at all times. If
- * the user has not set the number of modules previously, this cannot
- * be gauranteed and the method will almost always throw.
+ * before calling this to avoid an exception being thrown as this method ensures
+ * that the length of the slot map is the same as the expected number of modules
+ * in the system. If the user has not set the number of modules prior to calling
+ * this function, this cannot be guaranteed and the method will almost always
+ * throw.
  *
  * @code
  *  Configuration config;
@@ -51,11 +53,10 @@ void DAQ::DDAS::Configuration::setNumberOfModules(size_t size) {
 void DAQ::DDAS::Configuration::setSlotMap(
     const std::vector<unsigned short> &map) {
   if (map.size() != m_numModules) {
-    std::string errmsg =
+    throw std::runtime_error(
         "Configuration::setSlotMap(): Inconsistent data "
         "for module evt lengths and slot mapping. Set number of modules "
-        "first using Configuration::setNumberOfModules().";
-    throw std::runtime_error(errmsg);
+        "first using Configuration::setNumberOfModules().");
   }
 
   m_slotMap = map;
@@ -64,11 +65,11 @@ void DAQ::DDAS::Configuration::setSlotMap(
 /**
  * @details
  * It is important for the caller to first call `setNumberOfModules()`
- * before calling this to avoid an exception being thrown. To avoid
- * weird configurations, this ensures that the length of the channel map
- * is the same as the number of modules in the system at all times. If
- * the user has not set the number of modules previously, this cannot
- * be guaranteed and the method will almost always throw.
+ * before calling this to avoid an exception being thrown as this method ensures
+ * that the length of the channel map is the same as the expected number of
+ * modules in the system. If the user has not set the number of modules prior to
+ * calling this function, this cannot be guaranteed and the method will almost
+ * always throw.
  *
  * @code
  *  Configuration config;
@@ -79,23 +80,21 @@ void DAQ::DDAS::Configuration::setSlotMap(
 void DAQ::DDAS::Configuration::setChannelMap(
     const std::vector<unsigned short> &map) {
   if (map.size() != m_numModules) {
-    std::string errmsg =
+    throw std::runtime_error(
         "Configuration::setChannelMap(): Inconsistent "
         "data for module evt lengths and slot mapping. Set number of "
-        "modules first using Configuration::setNumberOfModules().";
-    throw std::runtime_error(errmsg);
+        "modules first using Configuration::setNumberOfModules().");
   }
 
   m_channelMap = map;
 }
 
 unsigned short DAQ::DDAS::Configuration::getModuleChannelCount(size_t mod) {
-  if (mod >= m_channelMap.size()) {
-    std::stringstream errmsg;
-    errmsg << "Configuration::getModuleChannelCount(): Module index " << mod
-           << " is out of range for system with " << getNumberOfModules()
-           << " modules!";
-    throw std::runtime_error(errmsg.str());
+  if (mod >= m_numModules) {
+    throw std::out_of_range(
+        "Configuration::getModuleChannelCount(): Module index " +
+        std::to_string(mod) + " is out of range for system with " +
+        std::to_string(m_numModules) + " modules!");
   }
 
   return m_channelMap[mod];
@@ -130,9 +129,8 @@ DAQ::DDAS::FirmwareConfiguration &
 DAQ::DDAS::Configuration::getFirmwareConfiguration(int hdwrType) {
   auto pSpec = m_fwMap.find(hdwrType);
   if (pSpec == m_fwMap.end()) {
-    std::string errmsg = "Unable to locate firmware configuration for "
-                         "firmware specifier";
-    throw std::runtime_error(errmsg);
+    throw std::runtime_error(
+        "Unable to locate firmware configuration for firmware specifier");
   }
 
   return pSpec->second;
@@ -161,22 +159,22 @@ DAQ::DDAS::Configuration::getModuleFirmwareConfiguration(int hwType,
     if (mapping.count(hwType) > 0) {
       return mapping[hwType];
     } else {
-      std::string errmsg = "Unable to locate firmware configuration "
-                           "for firmware specifier in per module map";
-      throw std::runtime_error(errmsg);
+      throw std::runtime_error("Unable to locate firmware configuration "
+                               "for firmware specifier in per-module map");
     }
-  } else {
-    return getFirmwareConfiguration(hwType);
   }
+
+  return getFirmwareConfiguration(hwType);
 }
 
 /**
  * @details
- * It is necessary that the caller has previously invoked
- * `setNumberOfModules()` before calling this. The logic of this method aims
- * to keep the slot map and number of modules in the system the same length.
- * Without invoking `setNumberOfModules()` this is most likely not going to be
- * the case.
+ * It is important for the caller to first call `setNumberOfModules()`
+ * before calling this to avoid an exception being thrown as this method ensures
+ * that the length of the module event length map is the same as the expected
+ * number of modules in the system. If the user has not set the number of
+ * modules prior to calling this function, this cannot be guaranteed and the
+ * method will almost always throw.
  *
  * @code
  *  Configuration config;
@@ -187,12 +185,11 @@ DAQ::DDAS::Configuration::getModuleFirmwareConfiguration(int hwType,
 void DAQ::DDAS::Configuration::setModuleEventLengths(
     const std::vector<int> &lengths) {
   if (lengths.size() != m_numModules) {
-    std::string errmsg =
+    throw std::runtime_error(
         "Configuration::setModuleEventLengths() "
         "Inconsistent data for module evt lengths and slot mapping. "
         "Set number of modules first using "
-        "Configuration::setNumberOfModules().";
-    throw std::runtime_error(errmsg);
+        "Configuration::setNumberOfModules().");
   }
 
   m_modEvtLengths = lengths;
@@ -214,12 +211,11 @@ void DAQ::DDAS::Configuration::setModuleEventLengths(
  */
 void DAQ::DDAS::Configuration::setHardwareMap(const std::vector<int> &map) {
   if (map.size() != m_numModules) {
-    std::string errmsg =
+    throw std::runtime_error(
         "Configuration::setHardwareMap() "
         "Inconsistent data for hardware mapping and slot mapping. "
         "Set number of modules first using "
-        "Configuration::setNumberOfModules().";
-    throw std::runtime_error(errmsg);
+        "Configuration::setNumberOfModules().");
   }
 
   m_hardwareMap = map;
@@ -250,10 +246,9 @@ DAQ::DDAS::Configuration::generate(const std::string &cfgPixiePath) {
   std::ifstream cfg(cfgPixiePath.c_str(), std::ios::in);
 
   if (cfg.fail()) {
-    std::string errmsg("Configuration::generate() ");
-    errmsg += "Failed to open the system configuration file : ";
-    errmsg += cfgPixiePath;
-    throw std::runtime_error(errmsg);
+    throw std::runtime_error("Configuration::generate() Failed to open the "
+                             "system configuration file : " +
+                             cfgPixiePath);
   }
 
   configParser.parse(cfg, *pConfig);
@@ -274,10 +269,9 @@ DAQ::DDAS::Configuration::generate(const std::string &fwVsnPath,
   std::ifstream fwvsn(fwVsnPath.c_str(), std::ios::in);
 
   if (fwvsn.fail()) {
-    std::string errmsg("Configuration::generate() ");
-    errmsg += "Failed to open the firmware version file: ";
-    errmsg += fwVsnPath;
-    throw std::runtime_error(errmsg);
+    throw std::runtime_error("Configuration::generate() Failed to open the "
+                             "firmware version file : " +
+                             fwVsnPath);
   }
 
   fwFileParser.parse(fwvsn, pConfig->m_fwMap);
@@ -305,11 +299,9 @@ DAQ::DDAS::Configuration::generate(const std::string &fwVsnPath,
   std::ifstream modevt(modEvtLenPath.c_str(), std::ios::in);
 
   if (!modevt.is_open()) {
-    std::string errmsg("Configuration::generate() ");
-    errmsg += "Failed to open the module event length ";
-    errmsg += "configuration file: ";
-    errmsg += modEvtLenPath;
-    throw std::runtime_error(errmsg);
+    throw std::runtime_error("Configuration::generate() Failed to open the "
+                             "module event length configuration file: " +
+                             modEvtLenPath);
   }
 
   modEvtParser.parse(modevt, *pConfig);
@@ -336,11 +328,9 @@ DAQ::DDAS::Configuration::generateManagedFW(const std::string &cfgPixiePath,
   std::ifstream modevt(modEvtLenPath.c_str(), std::ios::in);
 
   if (!modevt.is_open()) {
-    std::string errmsg("Configuration::generate() ");
-    errmsg += "Failed to open the module event length ";
-    errmsg += "configuration file: ";
-    errmsg += modEvtLenPath;
-    throw std::runtime_error(errmsg);
+    throw std::runtime_error("Configuration::generate() Failed to open the "
+                             "module event length configuration file: " +
+                             modEvtLenPath);
   }
 
   modEvtParser.parse(modevt, *pConfig);

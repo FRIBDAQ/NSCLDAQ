@@ -148,7 +148,7 @@ public:
    * @brief Get the number of channels in a module.
    * @param mod The module number (index, not slot).
    * @return Number of channels in module.
-   * @throw Runtime error if the module is out of range.
+   * @throw std::out_of_range if the module is out of range.
    */
   unsigned short getModuleChannelCount(size_t mod);
   /**
@@ -173,7 +173,7 @@ public:
    * @brief Returns the DSP settings file path specific to a single
    * module.
    * @param modnum Module number.
-   * @return std::string  The full path to the settings file.
+   * @return std::string The full path to the settings file.
    */
   std::string getModuleSettingsFilePath(int modNum);
   /**
@@ -222,14 +222,14 @@ public:
   FirmwareMap &getDefaultFirmwareMap() { return m_fwMap; }
   /**
    * @brief Set the lengths of events for each module
-   * @param lengths  The module event lengths.
-   * @throw std::runtime_error if size of lengths does not match size of stored
-   * slot map.
+   * @param lengths The module event lengths.
+   * @throw std::runtime_error if size of lengths vector does not match the
+   * number of modules in the system.
    */
   void setModuleEventLengths(const std::vector<int> &lengths);
   /**
    * @brief Return a copy of the module event length vector.
-   * @return std::vector<int>  Copy of module event lengths vector.
+   * @return Vector of module event lengths.
    */
   std::vector<int> getModuleEventLengths() const { return m_modEvtLengths; };
   /**
