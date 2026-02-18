@@ -177,7 +177,7 @@ public:
     config.setChannelMap(mapping);
     CPPUNIT_ASSERT_THROW_MESSAGE("Out of range module index is an error",
                                  config.getModuleChannelCount(1),
-                                 std::runtime_error);
+                                 std::out_of_range);
   }
 
   /** @brief We can get the channel count" */
