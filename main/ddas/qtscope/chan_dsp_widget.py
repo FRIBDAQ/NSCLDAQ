@@ -3,20 +3,24 @@ import logging
 
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import (
-    QWidget, QGridLayout, QLabel, QLineEdit, QVBoxLayout, QSizePolicy
+    QWidget,
+    QLabel,
+    QLineEdit,
+    QVBoxLayout,
 )
 
-import colors
+from extensions import MyGridLayout
 
 # @todo Some visual indication settings are changed but not applied.
 
+
 class ChanDSPWidget(QWidget):
     """Channel DSP tab widget.
-    
-    Generic channel DSP tab widget intended to be subclassed for particular 
-    families of DSP parameters. This class interacts only with the internal 
-    DSP settings and its own display. Note that the actual DSP parameters are 
-    1-indexed while the DSP grid is 0-indexed. Provides template methods for 
+
+    Generic channel DSP tab widget intended to be subclassed for particular
+    families of DSP parameters. This class interacts only with the internal
+    DSP settings and its own display. Note that the actual DSP parameters are
+    1-indexed while the DSP grid is 0-indexed. Provides template methods for
     subclasses which are called in the appropriate class methods.
 
     Attributes
@@ -36,92 +40,90 @@ class ChanDSPWidget(QWidget):
 
     Methods
     -------
-    configure(mgr, mod) 
+    configure(mgr, mod)
         Initialize GUI.
-    update_dsp(mgr, mod) 
+    update_dsp(mgr, mod)
         Update DSP from GUI.
-    display_dsp(mgr, mod) 
+    display_dsp(mgr, mod)
         Display current DSP in GUI.
-    copy_chan_dsp(mgr, mod) 
+    copy_chan_dsp(mgr, mod)
         Copy DSP from channel idx in GUI.
     """
-    
+
     def __init__(
-            self, param_names=None, param_labels=None, nchannels=16,
-            *args, **kwargs
+        self, param_names=None, param_labels=None, nchannels=16, *args, **kwargs
     ):
         """ChanDSPWidget class constructor.
 
-        Initialize generic channel DSP widget, set parameter validators and 
-        labels. Channel DSP is displayed on an nchannel x nDSP grid of 
+        Initialize generic channel DSP widget, set parameter validators and
+        labels. Channel DSP is displayed on an nchannel x nDSP grid of
         QLineEdit widgets. Note that the actual DSP parameters are 0-indexed
-        while the grid is 1-indexed. 
-        
+        while the grid is 1-indexed.
+
         Parameters
         ----------
-        param_names : list 
+        param_names : list
             DSP parameter names for API read/write calls.
         param_labels : list
             Column labels for the GUI.
         nchannels : int, default=16
-            Number of channels per module. 
-        """        
+            Number of channels per module.
+        """
         super().__init__(*args, **kwargs)
 
         self.logger = logging.getLogger("qtscope_logger")
-        
+
         self.param_names = param_names
         self.param_labels = param_labels
         self.nchannels = nchannels
         self.has_extra_params = False
-        
+
         # Subwidget configuration:
-        
+
         dsp_grid = QWidget()
-        self.param_grid = QGridLayout(dsp_grid)
+        self.param_grid = MyGridLayout(dsp_grid)
 
         self.param_grid.addWidget(QLabel("Ch."), 0, 0)
         for col, label in enumerate(self.param_labels, 1):
             self.param_grid.addWidget(QLabel(label), 0, col)
-        
+
         for i in range(self.nchannels):
-            self.param_grid.addWidget(QLabel("%i" %i), i+1, 0)
-            for col, _ in enumerate(self.param_labels, 1): 
-                w = QLineEdit()                
-                # Default channel parameter validator is double:            
+            self.param_grid.addWidget(QLabel("%i" % i), i + 1, 0)
+            for col, _ in enumerate(self.param_labels, 1):
+                w = QLineEdit()
+                # Default channel parameter validator is double:
                 w.setValidator(
                     QDoubleValidator(
-                        0, 999999, 3,
-                        notation=QDoubleValidator.StandardNotation
+                        0, 999999, 3, notation=QDoubleValidator.StandardNotation
                     )
-                )                
-                self.param_grid.addWidget(w, i+1, col)
-        
+                )
+                self.param_grid.addWidget(w, i + 1, col)
+
         # Define layout and add widgets:
-        
+
         layout = QVBoxLayout()
         layout.addWidget(dsp_grid)
         layout.addStretch()
         self.setLayout(layout)
-        
+
     def configure(self, mgr, mod):
-        """Initialize and display widget settings from the DSP dataframe. 
-        
-        We just display the contents of the internal DSP, though some 
-        widgets inheriting from this class may perform additional actions 
+        """Initialize and display widget settings from the DSP dataframe.
+
+        We just display the contents of the internal DSP, though some
+        widgets inheriting from this class may perform additional actions
         by overriding this function if necessary.
-        
+
         Parameters
         ----------
         mgr : DSPManager
             DSP manager for calls to XIA API.
         mod : int
             Currently selected module tab index.
-        """        
+        """
         self.display_dsp(mgr, mod)
 
     def update_dsp(self, mgr, mod):
-        """ Update dataframe from GUI values.
+        """Update dataframe from GUI values.
 
         Parameters
         ----------
@@ -129,15 +131,12 @@ class ChanDSPWidget(QWidget):
             DSP manager for calls to XIA API.
         mod : int
             Currently selected module tab index.
-        """        
+        """
         for i in range(self.nchannels):
             for col, name in enumerate(self.param_names, 1):
-                val = float(
-                    self.param_grid.itemAtPosition(i+1, col).widget().text()
-                )
+                val = float(self.param_grid.itemAtPosition(i + 1, col).widget().text())
                 mgr.set_chan_par(mod, i, name, val)
-                
-                
+
     def display_dsp(self, mgr, mod):
         """Update GUI with dataframe values.
 
@@ -147,20 +146,18 @@ class ChanDSPWidget(QWidget):
             DSP manager for calls to XIA API.
         mod : int
             Currently selected module tab index.
-        """        
+        """
         for i in range(self.nchannels):
             for col, name in enumerate(self.param_names, 1):
                 val = np.format_float_positional(
-                    mgr.get_chan_par(mod, i, name),
-                    precision=3,
-                    unique=False
+                    mgr.get_chan_par(mod, i, name), precision=3, unique=False
                 )
-                self.param_grid.itemAtPosition(i+1, col).widget().setText(val)
-            
-    def copy_chan_dsp(self, idx):
-        """Copy channel parameters to all other channels on the module. 
+                self.param_grid.itemAtPosition(i + 1, col).widget().setText(val)
 
-        Does not modify the underlying dataframe, new parameters must be 
+    def copy_chan_dsp(self, idx):
+        """Copy channel parameters to all other channels on the module.
+
+        Does not modify the underlying dataframe, new parameters must be
         applied to overwrite the underlying dataframe storage.
 
         Parameters
@@ -170,5 +167,5 @@ class ChanDSPWidget(QWidget):
         """
         for i in range(self.nchannels):
             for col, p in enumerate(self.param_names, 1):
-                val = self.param_grid.itemAtPosition(idx+1, col).widget().text()
-                self.param_grid.itemAtPosition(i+1, col).widget().setText(val)
+                val = self.param_grid.itemAtPosition(idx + 1, col).widget().text()
+                self.param_grid.itemAtPosition(i + 1, col).widget().setText(val)

@@ -1,3 +1,7 @@
+== 12.0-029 ==
+* #424 Add TrigConfig[1-3] configuration options and textual disply of CSRA values for FDSi collaboration
+== 12.0-028 ==
+
 == 12.0-028 ==
 * Build docs for parallel processing framework
 * Resolve issue #380 missing #include <iostream> in a pair of files.
