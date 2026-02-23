@@ -513,7 +513,6 @@ main(int argc, char**  argv)
 		flushEvent();
 		outputBarrier(p);
         
-        
 		// Barrier type of 1 is a begin run.
 		// First begin run barrier will result in
 		// emitting a glom parameter record.
@@ -547,7 +546,6 @@ main(int argc, char**  argv)
 		} else {		// non ring item..treat like event.
 		    std::cerr << "GLOM: Unknown ring item type encountered: \n";
 		    dump(std::cerr, pH, pH->s_size < 100 ? pH->s_size : 100); 
-          
 		    outputBarrier(p);
 		}
 	    }
@@ -579,7 +577,6 @@ main(int argc, char**  argv)
     }
     catch(...) {
 	std::cerr << "Unanticipated exception caught\n";
-
     }
     // Out of main loop because we need to exit.
 

@@ -1,8 +1,9 @@
 from chan_dsp_widget import ChanDSPWidget
 
+
 class QDCLen(ChanDSPWidget):
     """QDC lengths DSP tab (ChanDSPWidget)."""
-    
+
     def __init__(self, *args, nchannels=16, **kwargs):
         """QDCLen class constructor.
 
@@ -14,9 +15,9 @@ class QDCLen(ChanDSPWidget):
             Channel count from factory create method.
         **kwargs : dict
             Keyword arguments passed to parent ChanDSPWidget.
-        """        
+        """
         # XIA API parameter names:
-        
+
         param_names = [
             "QDCLen0",
             "QDCLen1",
@@ -25,11 +26,11 @@ class QDCLen(ChanDSPWidget):
             "QDCLen4",
             "QDCLen5",
             "QDCLen6",
-            "QDCLen7"
+            "QDCLen7",
         ]
-        
+
         # Parameter labels on the GUI:
-        
+
         param_labels = [
             "QDCLen0 [us]",
             "QDCLen1 [us]",
@@ -38,19 +39,20 @@ class QDCLen(ChanDSPWidget):
             "QDCLen4 [us]",
             "QDCLen5 [us]",
             "QDCLen6 [us]",
-            "QDCLen7 [us]"
+            "QDCLen7 [us]",
         ]
-        
+
         # Create instance of the parent class with these variables:
-        
+
         super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
+
 
 class QDCLenBuilder:
     """Builder method for factory creation."""
-    
+
     def __init__(self, *args, **kwargs):
         """QDCLenBuilder class constructor."""
-        
+
     def __call__(self, *args, **kwargs):
         """Create an instance of the widget and return it to the caller.
 

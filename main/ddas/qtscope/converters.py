@@ -26,6 +26,7 @@ int2ba(i, length=None, endian="big", signed=False)
 
 _is_py2 = bool(sys.version_info[0] == 2)
 
+
 def str2char(pystr):
     """Convert Python string to char*.
 
@@ -33,14 +34,15 @@ def str2char(pystr):
     ----------
     pystr : str
         Python string.
-    
+
     Returns
     -------
     char*
         Mutable memory string buffer generated from input Python string.
-    """    
+    """
     bstr = pystr.encode("utf-8")
     return create_string_buffer(bstr)
+
 
 ##
 # bitarray utils
@@ -50,19 +52,20 @@ def str2char(pystr):
 # repo version) in order for this to run on e.g. Buster which has a bitarray
 # version prior to the development of bitarray.utils.
 
+
 def zeros(length, endian="big"):
     """Create a bitarray of zeroes.
 
     Create a bitarray of length, with all values 0, and optional
     endianness, which may be 'big', 'little'.
 
-    Older bitarray module versions which require us to define this function 
-    do not necessarily support a gettable/settable  default endianness, so 
-    here we assume a defualt value of "big" (as is done in 1.6.3) and instead 
+    Older bitarray module versions which require us to define this function
+    do not necessarily support a gettable/settable  default endianness, so
+    here we assume a defualt value of "big" (as is done in 1.6.3) and instead
     pass it as a defualt parameter value to the function.
 
     See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
-    Copied from tag 1.6.3, which is the version of the bitarray module 
+    Copied from tag 1.6.3, which is the version of the bitarray module
     available in the Debian 11 repo.
 
     Parameters
@@ -83,19 +86,20 @@ def zeros(length, endian="big"):
         If the length is not an integer.
     """
     if not isinstance(length, (int, long) if _is_py2 else int):
-        raise TypeError("Integer expected")    
+        raise TypeError("Integer expected")
 
     a = bitarray(length, endian)
     a.setall(0)
     return a
 
-def strip(a, mode='right'):
+
+def strip(a, mode="right"):
     """Strip zeros from left, right or both ends.
 
     Allowed values for mode are the strings: `left`, `right`, `both`.
 
     See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
-    Copied from tag 1.6.3, which is the version of the bitarray module 
+    Copied from tag 1.6.3, which is the version of the bitarray module
     available in the Debian 11 repo.
 
     Parameters
@@ -107,7 +111,7 @@ def strip(a, mode='right'):
 
     Returns
     -------
-    bitarray 
+    bitarray
         bitarray with zeroes stripped of the end(s).
 
     Raises
@@ -122,37 +126,36 @@ def strip(a, mode='right'):
         raise TypeError("bitarray expected")
     if not isinstance(mode, str):
         raise TypeError("String expected for mode")
-    if mode not in ('left', 'right', 'both'):
-        raise ValueError(
-            "Allowed values 'left', 'right', 'both', got: %r" % mode
-        )
-    
+    if mode not in ("left", "right", "both"):
+        raise ValueError("Allowed values 'left', 'right', 'both', got: %r" % mode)
+
     first = 0
-    if mode in ('left', 'both'):
+    if mode in ("left", "both"):
         try:
             first = a.index(1)
         except ValueError:
             return bitarray(0, a.endian())
 
     last = len(a) - 1
-    if mode in ('right', 'both'):
+    if mode in ("right", "both"):
         try:
             last = rindex(a)
         except ValueError:
             return bitarray(0, a.endian())
 
-    return a[first:last + 1]
+    return a[first : last + 1]
+
 
 def ba2int(a, signed=False):
-    """Convert the given bitarray to an integer. 
+    """Convert the given bitarray to an integer.
 
-    The bit-endianness of the bitarray is respected. `signed` indicates 
-    whether two's complement is used to represent the integer. Added for 
-    compatibility with older versions of bitarray found in the Debian repos 
-    that do not install with the utilities module. 
+    The bit-endianness of the bitarray is respected. `signed` indicates
+    whether two's complement is used to represent the integer. Added for
+    compatibility with older versions of bitarray found in the Debian repos
+    that do not install with the utilities module.
 
     See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
-    Copied from tag 1.6.3, which is the version of the bitarray module 
+    Copied from tag 1.6.3, which is the version of the bitarray module
     available in the Debian 11 repo.
 
     Parameters
@@ -164,14 +167,14 @@ def ba2int(a, signed=False):
 
     Returns
     -------
-    int 
+    int
         Integer representation of the bitarray.
 
     Raises
     ------
-    TypeError 
+    TypeError
         If the argument to convert is not a bitarray.
-    ValueError 
+    ValueError
         If the bitarray is empty (length 0).
     """
     if not isinstance(a, bitarray):
@@ -180,11 +183,11 @@ def ba2int(a, signed=False):
     if length == 0:
         raise ValueError("non-empty bitarray expected")
 
-    big_endian = bool(a.endian() == 'big')
+    big_endian = bool(a.endian() == "big")
     # for big endian pad leading zeros - for little endian we don't need to
     # pad trailing zeros, as .tobytes() will treat them as zero
     if big_endian and length % 8:
-        a = zeros(8 - length % 8, 'big') + a
+        a = zeros(8 - length % 8, "big") + a
     b = a.tobytes()
 
     if _is_py2:
@@ -194,33 +197,34 @@ def ba2int(a, signed=False):
         for x in c:
             res |= x << 8 * j
             j += -1 if big_endian else 1
-    else: # py3
+    else:  # py3
         res = int.from_bytes(b, byteorder=a.endian())
 
     if signed and res >= 1 << (length - 1):
         res -= 1 << length
     return res
 
+
 def int2ba(i, length=None, endian="big", signed=False):
     """Convert the given integer to a bitarray.
 
-    Convert integer to bitarray with given endianness, and no leading 
-    (big-endian) / trailing (little-endian) zeros, unless the `length` 
-    of the bitarray is provided.  An `OverflowError` is raised if the 
-    integer is not representable with the given number of bits. `signed` 
-    determines  whether two's complement is used to represent the integer, 
+    Convert integer to bitarray with given endianness, and no leading
+    (big-endian) / trailing (little-endian) zeros, unless the `length`
+    of the bitarray is provided.  An `OverflowError` is raised if the
+    integer is not representable with the given number of bits. `signed`
+    determines  whether two's complement is used to represent the integer,
     and requires `length` to be provided. If signed is False and a negative
     integer is given, an OverflowError is raised.
 
     Older bitarray module versions which require us to define this function
-    do not necessarily support a gettable/settable  default endianness, so 
-    here we assume a defualt value of "big" (as is done in 1.6.3) and instead 
+    do not necessarily support a gettable/settable  default endianness, so
+    here we assume a defualt value of "big" (as is done in 1.6.3) and instead
     pass it as a defualt parameter value to the function.
 
     See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
-    Copied largely from tag 1.6.3, which is the version of the bitarray module 
-    available in the Debian 11 repo. 
-    
+    Copied largely from tag 1.6.3, which is the version of the bitarray module
+    available in the Debian 11 repo.
+
     Parameters
     ----------
     i : int
@@ -273,7 +277,7 @@ def int2ba(i, length=None, endian="big", signed=False):
         raise OverflowError("unsigned integer out of range")
 
     a = bitarray(0, endian)
-    big_endian = bool(a.endian() == 'big')
+    big_endian = bool(a.endian() == "big")
     if _is_py2:
         c = bytearray()
         while i:
@@ -282,12 +286,12 @@ def int2ba(i, length=None, endian="big", signed=False):
         if big_endian:
             c.reverse()
         b = bytes(c)
-    else: # py3
+    else:  # py3
         b = i.to_bytes(bits2bytes(i.bit_length()), byteorder=a.endian())
 
     a.frombytes(b)
     if length is None:
-        return strip(a, 'left' if big_endian else 'right')
+        return strip(a, "left" if big_endian else "right")
 
     la = len(a)
     if la > length:

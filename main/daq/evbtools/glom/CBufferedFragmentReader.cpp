@@ -70,7 +70,7 @@ CBufferedFragmentReader::CBufferedFragmentReader(int fd) :
 
     // We know its stdin so lets allocate the block but make it look like
     // it's been exactly fully read:
-   
+
     m_pBuffer = malloc(m_nReadSize);
     if (!m_pBuffer) {
         throw std::bad_alloc();

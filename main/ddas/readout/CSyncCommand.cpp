@@ -21,57 +21,49 @@
 
 #include "CSyncCommand.h"
 
-#include <stdexcept>
-
 #include <TCLInterpreter.h>
 #include <TCLObject.h>
 
-#include "CMyEventSegment.h"
 #include <CXIAException.h>
+
+#include "CMyEventSegment.h"
 
 /**
  * @details
- * Base class registers the command. We need to save the event processor 
+ * Base class registers the command. We need to save the event processor
  * pointer.
  */
-CSyncCommand::CSyncCommand(CTCLInterpreter& interp, CMyEventSegment* pSeg) :
-    CTCLObjectProcessor(interp, "ddas_sync", true), m_pSegment(pSeg)
-{}
+CSyncCommand::CSyncCommand(CTCLInterpreter &interp, CMyEventSegment *pSeg)
+    : CTCLObjectProcessor(interp, "ddas_sync", true), m_pSegment(pSeg) {}
 
 /**
  * @details
  * Chain to superclass for now.
  */
-CSyncCommand::~CSyncCommand()
-{}
+CSyncCommand::~CSyncCommand() {}
 
 /**
  * @details
  * * Ensure there are no more parameters.
  * * Invoke the event segment's synchronize method.
  */
-int
-CSyncCommand::operator()(
-    CTCLInterpreter& interp, std::vector<CTCLObject>& objv
-    )
-{
-    // Exceptions map to TCL_ERROR returns with a string that describes the
-    // exception:    
-    try {
-        requireExactly(
-            objv, 1, "ddas_sync command takes no parameters"
-        ); // can throw std::string
-        
-        m_pSegment->synchronize(); // can throw CXIAException
-    }
-    catch (std::string msg) {
-        interp.setResult(msg);
-        return TCL_ERROR;
-    }
-    catch (CXIAException& e) {
-        interp.setResult(e.ReasonText());
-        return TCL_ERROR;
-    }
-    
-    return TCL_OK;
+int CSyncCommand::operator()(CTCLInterpreter &interp,
+                             std::vector<CTCLObject> &objv) {
+  // Exceptions map to TCL_ERROR returns with a string that describes the
+  // exception:
+  try {
+    requireExactly(
+        objv, 1,
+        "ddas_sync command takes no parameters"); // can throw std::string
+
+    m_pSegment->synchronize(); // can throw CXIAException
+  } catch (std::string msg) {
+    interp.setResult(msg);
+    return TCL_ERROR;
+  } catch (CXIAException &e) {
+    interp.setResult(e.ReasonText());
+    return TCL_ERROR;
+  }
+
+  return TCL_OK;
 }

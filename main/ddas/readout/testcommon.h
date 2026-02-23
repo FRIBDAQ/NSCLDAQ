@@ -10,15 +10,15 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
 #ifndef TESTCOMMON_H
 #define TESTCOMMON_H
 
-#include <stdint.h>
+#include <cstdint>
 
 /**
  * @brief Given parameters for a hit, creates the data for a 4 longword hit.
@@ -30,9 +30,7 @@
  * @param[in]  energy  Energy value.
  * @param[in]  cfdTime CFD fractional time (default=0).
  */
-void makeHit(
-    uint32_t* hit, int crate, int slot, int chan,
-    uint64_t rawTime, uint16_t energy, uint16_t cfdTime = 0
-    );
+void makeHit(uint32_t *hit, int crate, int slot, int chan, uint64_t rawTime,
+             uint16_t energy, uint16_t cfdTime = 0);
 
 #endif

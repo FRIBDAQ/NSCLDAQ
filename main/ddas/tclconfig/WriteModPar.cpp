@@ -10,40 +10,37 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
-/** @file:  WriteModPar.cpp
- *  @brief: Implementation of the CWriteModPar class.
+/** @file  WriteModPar.cpp
+ *  @brief Implementation of the CWriteModPar class.
  */
+
 #include "WriteModPar.h"
+
 #include <sstream>
+
 #include <config.h>
 #include <config_pixie16api.h>
 
-static const char* errorMessages[5] = {
-    "Success",
-    "Invalid module number",
-    "Invalid parameter name",
-    "Failed to program FIppi",
-    "Failed to find Baseline cut"
-};
+static const char *errorMessages[5] = {
+    "Success", "Invalid module number", "Invalid parameter name",
+    "Failed to program FIppi", "Failed to find Baseline cut"};
 
 /**
  * constructor
  *    @param pInterp - pointer to the interpreter on which we register.
  */
-CWriteModPar::CWriteModPar(Tcl_Interp* pInterp) :
-    CTclCommand(pInterp, "pixie16::writemodpar")
-{}
+CWriteModPar::CWriteModPar(Tcl_Interp *pInterp)
+    : CTclCommand(pInterp, "pixie16::writemodpar") {}
 
 /**
  * destructor
  */
-CWriteModPar::~CWriteModPar()
-{}
+CWriteModPar::~CWriteModPar() {}
 
 /**
  * operator()
@@ -54,30 +51,26 @@ CWriteModPar::~CWriteModPar()
  *         in that case, a human readable string describing the
  *         error is set as the result.
  */
-int
-CWriteModPar::operator()(std::vector<Tcl_Obj*>& objv)
-{
-    int module;
-    try {
-        requireExactly(objv, 4);
-        module = getInteger(objv[1]);
-        const char* parName = Tcl_GetString(objv[2]);
-        unsigned int value = getInteger(objv[3]);
-        
-        int status = Pixie16WriteSglModPar(parName, value, module);
-        if (status) throw -status;
-    }
-    catch (std::string& msg) {
-        setResult(msg.c_str());
-        return TCL_ERROR;
-    }
-    catch (int status)
-    {
-        std::string result = apiMessage(module, status);
-        setResult(result.c_str());        
-        return TCL_ERROR;
-    }
-    return TCL_OK;
+int CWriteModPar::operator()(std::vector<Tcl_Obj *> &objv) {
+  int module;
+  try {
+    requireExactly(objv, 4);
+    module = getInteger(objv[1]);
+    const char *parName = Tcl_GetString(objv[2]);
+    unsigned int value = getInteger(objv[3]);
+
+    int status = Pixie16WriteSglModPar(parName, value, module);
+    if (status)
+      throw -status;
+  } catch (std::string &msg) {
+    setResult(msg.c_str());
+    return TCL_ERROR;
+  } catch (int status) {
+    std::string result = apiMessage(module, status);
+    setResult(result.c_str());
+    return TCL_ERROR;
+  }
+  return TCL_OK;
 }
 ///////////////////////////////////////////////////////////////////
 
@@ -87,12 +80,10 @@ CWriteModPar::operator()(std::vector<Tcl_Obj*>& objv)
  *    @param status - Status from Pixie16WriteSglModPar.
  *    @return std::string - meaningful error message.
  */
-std::string
-CWriteModPar::apiMessage(int module, int status)
-{
-    std::stringstream s;
-    s << "Pixie16WriteSglPar failed for module: " << module
-        << ": " << errorMessages[status];
-    std::string result = s.str();
-    return result;
+std::string CWriteModPar::apiMessage(int module, int status) {
+  std::stringstream s;
+  s << "Pixie16WriteSglPar failed for module: " << module << ": "
+    << errorMessages[status];
+  std::string result = s.str();
+  return result;
 }

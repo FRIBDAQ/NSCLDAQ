@@ -10,20 +10,25 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
-/** @file:   Inventory.h
- *  @brief:  Defines the processor for the pixie16::inventory command.
+/** @file Inventory.h
+ *  @brief Defines the processor for the pixie16::inventory command.
  */
+
 #ifndef INVENTORY_H
 #define INVENTORY_H
 
 #include "CTclCommand.h"
 
-namespace DAQ { namespace DDAS {class Configuration;}}
+namespace DAQ {
+namespace DDAS {
+class Configuration;
+}
+} // namespace DAQ
 
 /**
  * @class CInventory
@@ -36,18 +41,18 @@ namespace DAQ { namespace DDAS {class Configuration;}}
 
 class CInventory : public CTclCommand {
 private:
-    DAQ::DDAS::Configuration& m_config;
+  DAQ::DDAS::Configuration &m_config;
+
 public:
-    CInventory(Tcl_Interp* pInterp, DAQ::DDAS::Configuration& config);
-    virtual ~CInventory();
-    
-    virtual int operator()(std::vector<Tcl_Obj*>& argv);
+  CInventory(Tcl_Interp *pInterp, DAQ::DDAS::Configuration &config);
+  virtual ~CInventory();
+
+  virtual int operator()(std::vector<Tcl_Obj *> &argv);
+
 private:
-    Tcl_Obj* describeModule(
-        int slot, int rev, int ser, int bits, int mhz
-    );
-    std::string apiError(int index, int code);
-    void freeObjects(Tcl_Obj* list, std::vector<Tcl_Obj*>& elements);
+  Tcl_Obj *describeModule(int slot, int rev, int ser, int bits, int mhz);
+  std::string apiError(int index, int code);
+  void freeObjects(Tcl_Obj *list, std::vector<Tcl_Obj *> &elements);
 };
 
 #endif

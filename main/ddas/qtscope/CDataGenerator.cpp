@@ -6,7 +6,6 @@
 #include "CDataGenerator.h"
 
 #include <cmath>
-#include <iostream>
 
 /**
  * @details

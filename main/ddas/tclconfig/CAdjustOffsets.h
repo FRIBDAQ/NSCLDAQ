@@ -10,17 +10,20 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     FRIB
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             FRIB
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
 /** @file CAdjustOffsets.h
  *  @brief Provides the pixie16::adjustOffsts command.
  */
+
 #ifndef ADJUSTOFFSETS_H
 #define ADJUSTOFFSETS_H
+
 #include "CTclCommand.h"
+
 #include <string>
 
 /**
@@ -31,13 +34,13 @@
  */
 class CAdjustOffsets : public CTclCommand {
 public:
-    CAdjustOffsets(Tcl_Interp* pInterp);
-    virtual ~CAdjustOffsets();
-    
-    virtual int operator()(std::vector<Tcl_Obj*>& objv);
-private:
-    std::string apiMsg(int index,  int status);
-};
+  CAdjustOffsets(Tcl_Interp *pInterp);
+  virtual ~CAdjustOffsets();
 
+  virtual int operator()(std::vector<Tcl_Obj *> &objv);
+
+private:
+  std::string apiMsg(int index, int status);
+};
 
 #endif

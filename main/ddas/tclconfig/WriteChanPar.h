@@ -10,17 +10,20 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             NSCL
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
-/** @file:  WriteChanPar.h
- *  @brief: Tcl wrapper for Pixie16WriteSglChanPar
+/** @file  WriteChanPar.h
+ *  @brief Tcl wrapper for Pixie16WriteSglChanPar
  */
+
 #ifndef WRITECHANPAR_H
 #define WRITECHANPAR_H
+
 #include "CTclCommand.h"
+
 #include <string>
 /**
  * @class CWriteChanPar
@@ -32,15 +35,15 @@
  *    - parameter name
  *    - parameter value (double).
  */
-class CWriteChanPar : public CTclCommand
-{
+class CWriteChanPar : public CTclCommand {
 public:
-    CWriteChanPar(Tcl_Interp* pInterp);
-    virtual ~CWriteChanPar();
-    
-    virtual int operator()(std::vector<Tcl_Obj*>& objv);
+  CWriteChanPar(Tcl_Interp *pInterp);
+  virtual ~CWriteChanPar();
+
+  virtual int operator()(std::vector<Tcl_Obj *> &objv);
+
 private:
-    std::string apiMessage(int mod, int chan, int status);
+  std::string apiMessage(int mod, int chan, int status);
 };
 
 #endif

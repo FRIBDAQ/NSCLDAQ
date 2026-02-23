@@ -15,23 +15,23 @@
 */
 
 #include "Asserts.h"
+
 #include <cppunit/extensions/HelperMacros.h>
 
 #include "CXIAException.h"
 
-class ExceptionTests : public CppUnit::TestFixture
-{
-
-  public:
-    CPPUNIT_TEST_SUITE(ExceptionTests);
-    CPPUNIT_TEST(xiaException);
-    CPPUNIT_TEST_SUITE_END();
+class ExceptionTests : public CppUnit::TestFixture {
 
 public:
-    void setUp() {};
-    void tearDown() {};
-    
-    void xiaException();
+  CPPUNIT_TEST_SUITE(ExceptionTests);
+  CPPUNIT_TEST(xiaException);
+  CPPUNIT_TEST_SUITE_END();
+
+public:
+  void setUp() {};
+  void tearDown() {};
+
+  void xiaException();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(ExceptionTests);
@@ -42,12 +42,10 @@ CPPUNIT_TEST_SUITE_REGISTRATION(ExceptionTests);
  * will result in a context message 'success.'
  */
 void ExceptionTests::xiaException() {
-    CXIAException e("This is a test", "myFunction", 0);
-    EQ(0, e.ReasonCode());
-    std::string msg(
-	"This is a test XIA API Error: myFunction returned 0 with "
-	"reason text 'success'"
-	);
-    // Checking with C-style strings is much more annoying...
-    EQ(msg, std::string(e.ReasonText()));
+  CXIAException e("This is a test", "myFunction", 0);
+  EQ(0, e.ReasonCode());
+  std::string msg("This is a test XIA API Error: myFunction returned 0 with "
+                  "reason text 'success'");
+  // Checking with C-style strings is much more annoying...
+  EQ(msg, std::string(e.ReasonText()));
 }

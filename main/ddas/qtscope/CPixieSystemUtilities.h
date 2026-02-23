@@ -32,12 +32,6 @@ private:
   int m_bootMode;                    //!< Offline (1) or online (0) boot mode.
   bool m_booted;     //!< True when the system is booted, false otherwise.
   bool m_ovrSetFile; //!< True if loading a settings file after booting.
-  unsigned short m_numModules;              //!< Number of modules in the crate.
-  std::vector<int> m_modEvtLength;          //!< Event length in 32 bit words.
-  std::vector<unsigned short> m_modADCMSPS; //!< Sampling rate of a module.
-  std::vector<unsigned short> m_modADCBits; //!< ADC bits of a module.
-  std::vector<unsigned short> m_modRev;     //!< Module revision in hex format.
-  std::vector<unsigned short> m_modClockCal; //!< ns per clock tick.
 
 public:
   /** @brief Constructor. */
@@ -98,11 +92,10 @@ public:
    * @brief Get the number of installed modules.
    * @return The number of modules in the crate.
    */
-  unsigned short GetNumModules() { return m_numModules; };
+  unsigned short GetNumModules() { return m_config.getNumberOfModules(); };
   /**
    * @brief Get the module ADC sampling rate in MSPS.
    * @param module Module number (zero-indexed).
-   * @throws std::runtime_error If the module number is invalid.
    * @returns The module ADC sampling rate in MSPS.
    * @retval -1 if the system is not booted.
    * @retval -2 if the module number is invalid.
@@ -111,11 +104,10 @@ public:
   /**
    * @brief Get the number of channels on the module.
    * @param module Module number (zero-indexed).
-   * @throws std::runtime_error If the module number is invalid.
    * @retval -1 if the system is not booted.
    * @retval -2 if the module number is invalid.
    */
-  int GetChannelCount(int module);
+  int GetModuleChannelCount(int module);
 };
 
 /** @} */
@@ -167,9 +159,9 @@ int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities *utils, int mod) {
   return utils->GetModuleMSPS(mod);
 }
 /** @brief Wrapper to get the channel count for a single module. */
-int CPixieSystemUtilities_GetChannelCount(CPixieSystemUtilities *utils,
-                                          int mod) {
-  return utils->GetChannelCount(mod);
+int CPixieSystemUtilities_GetModuleChannelCount(CPixieSystemUtilities *utils,
+                                                int mod) {
+  return utils->GetModuleChannelCount(mod);
 }
 
 /** @brief Wrapper for the class destructor. */

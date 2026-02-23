@@ -79,7 +79,8 @@ typedef std::map<int, FirmwareConfiguration> FirmwareMap;
 
 class Configuration {
 private:
-  int m_crateId;                            //!< Crate ID from cfgPixie16.
+  int m_crateId{0};                         //!< Crate ID from cfgPixie16.
+  size_t m_numModules{0};                   //!< Number of modules in the crate.
   std::vector<unsigned short> m_slotMap;    //!< Map of physical slots.
   std::vector<unsigned short> m_channelMap; //!< Channels per module.
   std::string m_settingsFilePath;           //!< Path to default .set file.
@@ -119,12 +120,12 @@ public:
    * @brief Return the number of modules in the crate.
    * @return The number of modules.
    */
-  size_t getNumberOfModules() const { return m_slotMap.size(); };
+  size_t getNumberOfModules() const { return m_numModules; };
   /**
    * @brief Assign a new slot map.
-   * @param map  The slots that are occupied.
-   * @throws std::runtime_error When length of argument is
-   *   different than the length of stored modevtlen vector.
+   * @param map The slots that are occupied.
+   * @throws std::runtime_error When length of argument is different than the
+   * length of stored modevtlen vector.
    */
   void setSlotMap(const std::vector<unsigned short> &map);
   /**
@@ -147,9 +148,9 @@ public:
    * @brief Get the number of channels in a module.
    * @param mod The module number (index, not slot).
    * @return Number of channels in module.
-   * @throw Runtime error if the module is out of range.
+   * @throw std::out_of_range if the module is out of range.
    */
-  unsigned short getChannelCount(size_t mod);
+  unsigned short getModuleChannelCount(size_t mod);
   /**
    * @brief Set the path to the DSP settings file.
    * @param path The path to the settings file.
@@ -158,27 +159,27 @@ public:
     m_settingsFilePath = path;
   };
   /**
+   * @brief Return the path to the .set file.
+   * @return The settings file path.
+   */
+  std::string getSettingsFilePath() const { return m_settingsFilePath; };
+  /**
    * @brief Set a per-module DSP settings file.
    * @param modNum Module number.
    * @param path The path to the settings file.
    */
   void setModuleSettingsFilePath(int modnum, const std::string &path);
   /**
-   * @brief Return the path to the .set file.
-   * @return The settings file path.
-   */
-  std::string getSettingsFilePath() const { return m_settingsFilePath; };
-  /**
    * @brief Returns the DSP settings file path specific to a single
    * module.
    * @param modnum Module number.
-   * @return std::string  The full path to the settings file.
+   * @return std::string The full path to the settings file.
    */
-  std::string getSettingsFilePath(int modNum);
+  std::string getModuleSettingsFilePath(int modNum);
   /**
    * @brief Set the firmware configuration for a hardware type
    * @param specifier The hardware type.
-   * @param config    The new configuration.
+   * @param config The new configuration.
    * @details
    * Any previous FirmwareConfiguration stored will be replaced by
    * the new configuration. If there is no previous configuration
@@ -191,10 +192,10 @@ public:
   /**
    * @brief Retrieve the current firmware specifier for a particular
    * hardware type.
-   * @param hdwrType The hardware specifier associated with the
-   *   firmware configuration.
-   * @throws std::runtime_error If no firmware configuration exists
-   *   for the provided hdwrType.
+   * @param hdwrType The hardware specifier associated with the firmware
+   * configuration.
+   * @throws std::runtime_error If no firmware configuration exists for the
+   * provided hdwrType.
    * @return The firmware configuration associated with the hdwrType.
    */
   FirmwareConfiguration &getFirmwareConfiguration(int hdwrType);
@@ -208,8 +209,8 @@ public:
    * @brief Get the module firmware configuration information.
    * @param hwType The hardware type detected in the module.
    * @param modnum Module number.
-   * @throw std::runtime_error If the module firmware configuraton
-   *   is not in the firmware map.
+   * @throw std::runtime_error If the module firmware configuraton is not in the
+   * firmware map.
    * @return The firmware configuration associated with the module.
    */
   FirmwareConfiguration &getModuleFirmwareConfiguration(int hdwrType,
@@ -221,21 +222,21 @@ public:
   FirmwareMap &getDefaultFirmwareMap() { return m_fwMap; }
   /**
    * @brief Set the lengths of events for each module
-   * @param lengths  The module event lengths.
-   * @throw std::runtime_error if size of lengths does not match
-   *   size of stored slot map.
+   * @param lengths The module event lengths.
+   * @throw std::runtime_error if size of lengths vector does not match the
+   * number of modules in the system.
    */
   void setModuleEventLengths(const std::vector<int> &lengths);
   /**
    * @brief Return a copy of the module event length vector.
-   * @return std::vector<int>  Copy of module event lengths vector.
+   * @return Vector of module event lengths.
    */
   std::vector<int> getModuleEventLengths() const { return m_modEvtLengths; };
   /**
    * @brief Set the hardware map for each module.
    * @param map The hardware map.
-   * @throw std::runtime_error if size of lengths does not match
-   *   size of stored slot map.
+   * @throw std::runtime_error if size of lengths does not match size of stored
+   * slot map.
    */
   void setHardwareMap(const std::vector<int> &map);
   /**
@@ -257,18 +258,16 @@ public:
   std::map<int, std::string> getModuleSetFileMap() const {
     return m_moduleSetFileMap;
   };
-
   /**
    * @brief Print brief line of information for cfgPixie16.txt
    * @param stream The ostream to write to.
    */
   void print(std::ostream &stream);
-
   /**
    * @brief Generate a Configuration class object from cfgPixie16.txt.
    * @param cfgPixiePath Path to cfgPixie16.txt.
-   * @throw std::runtime_error Any errors opening or parsing the
-   *   firmware and configuration files.
+   * @throw std::runtime_error Any errors opening or parsing the firmware and
+   * configuration files.
    * @return Pointer to the generated Configuration object.
    */
   static std::unique_ptr<Configuration>
@@ -276,10 +275,10 @@ public:
   /**
    * @brief Generate a Configuration class object from a firmware
    * version file and cfgPixie16.txt.
-   * @param fwVsnPath    Path to the firmware version file.
+   * @param fwVsnPath Path to the firmware version file.
    * @param cfgPixiePath Path to cfgPixie16.txt.
-   * @throw std::runtime_error Any errors opening or parsing the
-   *   firmware and configuration files.
+   * @throw std::runtime_error Any errors opening or parsing the firmware and
+   * configuration files.
    * @return Pointer to the generated Configuration object.
    */
   static std::unique_ptr<Configuration>
@@ -287,11 +286,10 @@ public:
   /**
    * @brief Generate a Configuration class object from a firmware
    * version file, cfgPixie16.txt and modevtlen.txt file.
-   * @param fwVsnPath     Path to the firmware version file.
-   * @param cfgPixiePath  Path to cfgPixie16.txt.
+   * @param fwVsnPath Path to the firmware version file.
+   * @param cfgPixiePath Path to cfgPixie16.txt.
    * @param modEvtLenPath Path to the modevtlen.txt file.
-   * @throw std::runtime_error Error opening or parsing the
-   *   modevtlen file.
+   * @throw std::runtime_error Error opening or parsing the modevtlen file.
    * @return Pointer to the generated Configuration object.
    */
   static std::unique_ptr<Configuration>
@@ -302,8 +300,7 @@ public:
    * cfgPixie16.txt and modevtlen.txt files (managed FW).
    * @param cfgPixiePath  Path to cfgPixie16.txt.
    * @param modEvtLenPath Path to the modevtlen.txt file.
-   * @throw std::runtime_error Error opening or parsing the
-   *   modevtlen file.
+   * @throw std::runtime_error Error opening or parsing the modevtlen file.
    * @return Pointer to the generated Configuration object.
    */
   static std::unique_ptr<Configuration>

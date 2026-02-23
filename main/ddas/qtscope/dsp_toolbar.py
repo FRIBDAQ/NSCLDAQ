@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import (QToolBar, QPushButton, QSpinBox, QWidget, QSizePolicy)
+from PyQt5.QtWidgets import QToolBar, QPushButton, QSpinBox, QWidget, QSizePolicy
 
 import colors
+
 
 class DSPToolBar(QToolBar):
     """Toolbar for configuring module DSP.
@@ -45,15 +46,15 @@ class DSPToolBar(QToolBar):
     set_channel_spinbox_range()
         Set the range of the channel spinbox for the currently selected module.
     """
-    
+
     def __init__(self, *args, **kwargs):
-        """DSPToolBar class constructor."""        
+        """DSPToolBar class constructor."""
         super().__init__(*args, **kwargs)
 
         self.setMovable(False)
-        
+
         # Widget definitions:
-        
+
         self.b_apply = QPushButton("Apply")
         self.b_load = QPushButton("Load")
         self.b_copy_mod = QPushButton("Copy mod.")
@@ -62,21 +63,21 @@ class DSPToolBar(QToolBar):
         self.copy_chan = QSpinBox()  # Range set on boot.
         self.b_cancel = QPushButton("Cancel")
 
-        self.b_apply .setStyleSheet(colors.CYAN)
+        self.b_apply.setStyleSheet(colors.CYAN)
         self.b_load.setStyleSheet(colors.CYAN)
         self.b_copy_mod.setStyleSheet(colors.BLUE)
         self.b_copy_chan.setStyleSheet(colors.BLUE)
         self.b_cancel.setStyleSheet(colors.RED)
 
         # Expanding blank space:
-        
+
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         # Add widgets to the toolbar. Actions for the copy module and copy
         # channel widgets are used to change their visibility in the toolbar.
         # See https://doc.qt.io/qt-5/qtoolbar.html#addWidget:
-        
+
         self.addWidget(self.b_apply)
         self.addWidget(self.b_load)
         self.copy_mod_action = self.addWidget(self.b_copy_mod)
@@ -87,22 +88,22 @@ class DSPToolBar(QToolBar):
         self.addWidget(self.b_cancel)
 
     def disable(self):
-        """Disable every child widget in the toolbar."""       
+        """Disable every child widget in the toolbar."""
         for c in self.children():
-            if(c.isWidgetType()):
+            if c.isWidgetType():
                 c.setEnabled(False)
-                c.repaint()            
-                
+                c.repaint()
+
     def enable(self):
-        """Enable every child widget in the toolbar."""        
+        """Enable every child widget in the toolbar."""
         for c in self.children():
-            if(c.isWidgetType()):
+            if c.isWidgetType():
                 c.setEnabled(True)
                 c.repaint()
 
     def enable_mod_dsp(self):
-        """Enable module-DSP-specific actions."""        
-        self.disable()        
+        """Enable module-DSP-specific actions."""
+        self.disable()
         self.copy_mod_action.setVisible(False)
         self.copy_mod_sb_action.setVisible(False)
         self.copy_chan_action.setVisible(False)
@@ -125,34 +126,35 @@ class DSPToolBar(QToolBar):
         else:
             self.copy_chan_action.setVisible(True)
             self.copy_chan_sb_action.setVisible(True)
-            
+
     def set_module_spinbox_range(self, nmodules):
         """Set the range of the module spinbox.
-        
+
         Parameters
         ----------
         nmodules : int
         Number of modules in the system.
         """
-        self.copy_mod.setRange(0, nmodules-1)
-            
+        self.copy_mod.setRange(0, nmodules - 1)
+
     def set_channel_spinbox_range(self, nchannels):
         """Set the range of the channel spinbox for the currently selected
         module. The system may be a mix of 16- and 32-channel boards.
-        
+
         Parameters
         ----------
         nchannels : int
             Number of channels on the module.
         """
-        self.copy_chan.setRange(0, nchannels-1)
+        self.copy_chan.setRange(0, nchannels - 1)
+
 
 class DSPToolBarBuilder:
     """Builder method for factory creation."""
-    
+
     def __init__(self, *args, **kwargs):
         """DSPToolbarBuilder class constructor."""
-        
+
     def __call__(self, *args, **kwargs):
         """Create an instance of the toolbar and return it to the caller.
 

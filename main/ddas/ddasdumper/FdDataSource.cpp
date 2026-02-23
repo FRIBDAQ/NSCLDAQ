@@ -10,12 +10,12 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     FRIB
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             FRIB
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
-/** 
+/**
  * @file FdDataSource.cpp
  * @brief Implementation of the file descriptor data source.
  */
@@ -26,14 +26,9 @@
 
 using namespace ufmt;
 
-FdDataSource::FdDataSource(RingItemFactoryBase* pFactory, int fd) :
-    DataSource(pFactory), m_fd(fd)
-{}
+FdDataSource::FdDataSource(RingItemFactoryBase *pFactory, int fd)
+    : DataSource(pFactory), m_fd(fd) {}
 
 FdDataSource::~FdDataSource() {}
 
-CRingItem*
-FdDataSource::getItem()
-{
-    return m_pFactory->getRingItem(m_fd);
-}
+CRingItem *FdDataSource::getItem() { return m_pFactory->getRingItem(m_fd); }

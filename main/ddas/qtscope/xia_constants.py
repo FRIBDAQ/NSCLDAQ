@@ -18,31 +18,31 @@ CSRA_GAIN = 14
 
 # Multiplicity and coincidence settings:
 
-MULT_OFFSET = 22 # Starting bit for high mask.
-MULT_NBITS = 3   # Number of bits to store multiplicity.
+MULT_OFFSET = 22  # Starting bit for high mask.
+MULT_NBITS = 3  # Number of bits to store multiplicity.
 MULT_END = MULT_OFFSET + MULT_NBITS
 
 # TrigConfig0 bits:
 
-TC0_INT_FAST_TRIG_OFFSET = 0                     # Internal fast trigger
+TC0_INT_FAST_TRIG_OFFSET = 0  # Internal fast trigger
 TC0_INT_FAST_TRIG_END = 4
-TC0_EXT_FAST_TRIG_OFFSET = TC0_INT_FAST_TRIG_END # External trigger.
+TC0_EXT_FAST_TRIG_OFFSET = TC0_INT_FAST_TRIG_END  # External trigger.
 TC0_EXT_FAST_TRIG_END = 8
 TC0_INT_VAL_TRIG_OFFSET = TC0_EXT_FAST_TRIG_END  # Internal validation.
 TC0_INT_VAL_TRIG_END = 12
-TC0_TEST_GROUP_OFFSET = TC0_INT_VAL_TRIG_END     # Test group option.
+TC0_TEST_GROUP_OFFSET = TC0_INT_VAL_TRIG_END  # Test group option.
 TC0_TEST_GROUP_END = 15
-TC0_ENB_TEST_OFFSET = TC0_TEST_GROUP_END         # Digital output enable.
+TC0_ENB_TEST_OFFSET = TC0_TEST_GROUP_END  # Digital output enable.
 TC0_ENB_TEST_END = 16
-TC0_CH_TEST_OFFSET = TC0_ENB_TEST_END            # Channel test output signal.
+TC0_CH_TEST_OFFSET = TC0_ENB_TEST_END  # Channel test output signal.
 TC0_CH_TEST_END = 20
-TC0_6TH_TEST_OFFSET = TC0_CH_TEST_END            # 6th digital output.
+TC0_6TH_TEST_OFFSET = TC0_CH_TEST_END  # 6th digital output.
 TC0_6TH_TEST_END = 24
-TC0_MOD_FAST_TRIG_OFFSET = TC0_6TH_TEST_END      # Module fast trigger.
+TC0_MOD_FAST_TRIG_OFFSET = TC0_6TH_TEST_END  # Module fast trigger.
 TC0_MOD_FAST_TRIG_END = 26
 TC0_MOD_VAL_TRIG_OFFSET = TC0_MOD_FAST_TRIG_END  # Module validation trigger.
 TC0_MOD_VAL_TRIG_END = 28
-TC0_EXT_VAL_TRIG_OFFSET = TC0_MOD_VAL_TRIG_END   # External validation trigger.
+TC0_EXT_VAL_TRIG_OFFSET = TC0_MOD_VAL_TRIG_END  # External validation trigger.
 TC0_EXT_VAL_TRIG_END = 32
 
 # XIA channel parameter names:
@@ -58,7 +58,7 @@ CHAN_PARS = [
     "TRACE_DELAY",
     "VOFFSET",
     "XDT",
-    "BASELINE_PERCENT",    
+    "BASELINE_PERCENT",
     "CHANNEL_CSRA",
     "BLCUT",
     "FASTTRIGBACKLEN",
@@ -80,7 +80,7 @@ CHAN_PARS = [
     "FtrigoutDelay",
     "ChanTrigStretch",
     "BINFACTOR",
-    "EMIN"
+    "EMIN",
 ]
 
 # XIA module parameter names:
@@ -92,5 +92,5 @@ MOD_PARS = [
     "TrigConfig0",
     "TrigConfig1",
     "TrigConfig2",
-    "TrigConfig3"
+    "TrigConfig3",
 ]
