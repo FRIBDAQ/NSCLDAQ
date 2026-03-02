@@ -522,7 +522,7 @@ class MainWindow(QMainWindow):
 
         # XIA API call to begin run in the current module:
 
-        nchannels = self.sys_utils.get_channel_count(module)
+        nchannels = self.sys_utils.get_module_channel_count(module)
         self.run_utils.begin_run(module, nchannels, self.active_type)
         self.run_active = self.run_utils.get_run_active()
         self.logger.debug(
