@@ -173,7 +173,7 @@ class TraceAnalyzer:
         w = 1.0 - 0.125 * fp.cfd_scale
         D = fp.cfd_delay
 
-        self.cfd[D:] = self.fast_filter[D:] - w * self.fast_filter[: n - D]
+        self.cfd[D:] = w * self.fast_filter[D:] - self.fast_filter[: n - D]
 
     def _compute_slow_filter(self, fp):
         """Compute the slow filter output.
