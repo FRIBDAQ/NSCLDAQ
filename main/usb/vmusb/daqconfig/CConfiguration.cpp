@@ -91,6 +91,16 @@ CConfiguration::CConfiguration() :
   Tcl_Init(pInterp);		// Initialize the pkg search paths.
   m_pInterp = new CTCLInterpreter(pInterp);
 
+  if (Tcl_Eval(pInterp, "namespace eval Globals {}") != TCL_OK) {
+    cerr << "TclServer::init - failed to create Globals namespace: "
+         << Tcl_GetStringResult(pInterp) << endl;
+  }
+
+  if (Tcl_LinkVar(pInterp, "Globals::deviceSelectorValue",
+      reinterpret_cast<char*>(&Globals::deviceSelectorValue), TCL_LINK_UINT) != TCL_OK) {
+    cerr << "TclServer::init - failed to link Globals::deviceSelectorValue: "
+         << Tcl_GetStringResult(pInterp)<< endl;
+  }
 
   // Register and keep the commands.
 
@@ -185,6 +195,11 @@ CConfiguration::~CConfiguration()
   for (int i = 0; i < m_Commands.size(); i++) {
     delete m_Commands[i];
   }
+
+	if (m_pInterp) {
+		Tcl_UnlinkVar(m_pInterp->getInterpreter(), "Globals::deviceSelectorValue");
+	}
+
   delete m_pInterp;
 }
 
