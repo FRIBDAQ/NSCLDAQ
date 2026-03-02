@@ -147,7 +147,7 @@ class TraceAnalyzer:
         i0 = 2 * FL + FG - 1
         s0 = np.sum(self.trace[i0 - 2 * FL - FG + 1 : i0 - FL - FG + 1])
         s1 = np.sum(self.trace[i0 - FL + 1 : i0 + 1])
-        self.fast_filter[i0] = s1 - s0
+        self.fast_filter[i0] = float(s1) - float(s0)
 
         # Then run over the rest of the trace. Note that we can drop the +1s
         # on both indices since we start at i0+1 and do not take slices:
@@ -156,7 +156,7 @@ class TraceAnalyzer:
             s0 += self.trace[i - FL - FG]
             s1 -= self.trace[i - FL]
             s1 += self.trace[i]
-            self.fast_filter[i] = s1 - s0
+            self.fast_filter[i] = float(s1) - float(s0)
 
     def _compute_cfd(self, fp):
         """Compute the CFD.
