@@ -620,7 +620,7 @@ class MainWindow(QMainWindow):
         self.mplplot.figure.clear()
 
         module = self.acq_toolbar.current_mod.value()
-        nchannels = self.sys_utils.get_channel_count(module)
+        nchannels = self.sys_utils.get_module_channel_count(module)
         channel = self.acq_toolbar.current_chan.value()
 
         # Read from module and get data, then draw:
@@ -648,7 +648,7 @@ class MainWindow(QMainWindow):
         self.mplplot.figure.clear()
 
         module = self.acq_toolbar.current_mod.value()
-        nchannels = self.sys_utils.get_channel_count(module)
+        nchannels = self.sys_utils.get_module_channel_count(module)
         channel = self.acq_toolbar.current_chan.value()
 
         # Retrieve trace from this module and channel and get its data. If
