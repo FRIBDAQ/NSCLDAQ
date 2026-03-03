@@ -92,7 +92,7 @@ class ModDSPGUI(QMainWindow):
         self.toolbar.b_load.clicked.connect(self.load_dsp)
         self.toolbar.b_cancel.clicked.connect(self.cancel)
 
-    def configure(self, mgr, nmodules, channel_map):
+    def configure(self, mgr, nmodules):
         """Configure module DSP manager.
 
         Setup the toolbar, get the DSP, and create the top-level widget. This
@@ -106,8 +106,6 @@ class ModDSPGUI(QMainWindow):
             operations.
         nmodules : int
             Number of installed modules.
-        channel_map : list
-            Map of channels on each module.
         """
         self.nmodules = nmodules
         self.dsp_mgr = mgr
@@ -119,7 +117,7 @@ class ModDSPGUI(QMainWindow):
         # Crate the module DSP layout and insert it on top of the
         # manager layout above the toolbar:
 
-        self.mod_params = ModDSPLayout(self.mod_dsp_factory, self.nmodules, channel_map)
+        self.mod_params = ModDSPLayout(self.mod_dsp_factory, self.nmodules)
         self.setCentralWidget(self.mod_params)
 
         # Configure the module parameter widgets. Connect signals for the CSRB

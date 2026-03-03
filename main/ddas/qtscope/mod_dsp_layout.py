@@ -16,7 +16,7 @@ class ModDSPLayout(QWidget):
         to be included in each group box.
     """
 
-    def __init__(self, factory, nmodules, channel_map, *args, **kwargs):
+    def __init__(self, factory, nmodules, *args, **kwargs):
         """
         ModDSPLayout class constructor.
 
@@ -26,8 +26,6 @@ class ModDSPLayout(QWidget):
             Factory for implemented module DSP parameters.
         nmodules : int
             Number of modules from ModDSPManager.
-        channel_map : list
-            List of channels per module.
         """
         super().__init__(*args, **kwargs)
 
@@ -56,7 +54,7 @@ class ModDSPLayout(QWidget):
             box_layout = QVBoxLayout()
             # Create the widget and add it to the list and group layout:
             for name in widget_names:
-                w = factory.create(name, nmodules=nmodules, channel_map=channel_map)
+                w = factory.create(name, nmodules=nmodules)
                 if w:
                     self.param_widgets.append(w)
                     box_layout.addWidget(w)
