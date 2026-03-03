@@ -38,9 +38,6 @@ public:
   virtual ~CSaveParams();
 
   virtual int operator()(std::vector<Tcl_Obj *> &objv);
-
-private:
-  std::string apiMessage(const char *filename, int status);
 };
 
 #endif
