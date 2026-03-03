@@ -1,3 +1,7 @@
+== 12.1-020 ==
+* Backport issue #424 updates for QtScope into 12.1 branch
+== 12.1-020 ==
+
 == 12.1-019 ==
 * Multi runs corrupt ring source paramters
 == 12.1-019 ==
