@@ -38,9 +38,6 @@ public:
   virtual ~CAdjustOffsets();
 
   virtual int operator()(std::vector<Tcl_Obj *> &objv);
-
-private:
-  std::string apiMsg(int index, int status);
 };
 
 #endif

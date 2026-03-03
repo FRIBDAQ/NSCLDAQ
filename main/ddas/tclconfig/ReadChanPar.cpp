@@ -23,12 +23,9 @@
 
 #include <sstream>
 
+#include <CXIAException.h>
 #include <config.h>
 #include <config_pixie16api.h>
-
-static const char *apiMessages[4] = {"Success", "Invalid Pixie16 module number",
-                                     "Invalid Pixie16 channel number",
-                                     "Invalid Pixie16 parameter name"};
 
 /**
  * constructor
@@ -61,37 +58,21 @@ int CReadChanPar::operator()(std::vector<Tcl_Obj *> &objv) {
 
     double result;
     int status = Pixie16ReadSglChanPar(name, &result, index, chan);
-    if (status)
-      throw -status;
-
+    if (status) {
+      std::stringstream msg;
+      msg << "Pixie16ReadSglChanPar failed for module number " << index
+          << " channel " << chan;
+      throw CXIAException(msg.str(), "Pixie16ReadSglChanPar()", status);
+    }
     setResult(result);
 
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int status) {
-    std::string msg = apiMsg(index, chan, status);
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
 
   return TCL_OK;
-}
-/////////////////////////////////////////////////////////////
-
-/**
- * apiMsg
- *    Return string describing the error from ReadSglChanPar.
- * @param index - module number.
- * @param chan  - channel number.
- * @param status - status code.
- * @return std::string
- */
-std::string CReadChanPar::apiMsg(int index, int chan, int status) {
-  std::stringstream s;
-  s << "Pixie16ReadSglChanPar failed for module number " << index << " channel "
-    << chan << ": " << apiMessages[status];
-
-  std::string result = s.str();
-  return result;
 }

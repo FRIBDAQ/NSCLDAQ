@@ -54,7 +54,6 @@ public:
   virtual int operator()(std::vector<Tcl_Obj *> &objv);
 
 private:
-  std::string apiMsg(int index, int slot, int status, const char *doing);
   int getHardwareType(int index);
   void bootModule(int index, int type);
 };

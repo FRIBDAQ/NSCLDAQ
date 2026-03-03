@@ -138,7 +138,6 @@ int Pixie_Init(Tcl_Interp *pInterp) {
     crateConfiguration = *(
         DAQ::DDAS::Configuration::generateManagedFW(configFile, modEvtLenFile));
   }
-  // crateConfiguration = *pCfg;
 
 #ifdef DEBUG
   std::cout << "Configuration: \n";

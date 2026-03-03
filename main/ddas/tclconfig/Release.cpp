@@ -22,12 +22,10 @@
 
 #include <sstream>
 
+#include <CXIAException.h>
 #include <Configuration.h>
 #include <config.h>
 #include <config_pixie16api.h>
-
-static const char *apiMessages[3] = {"Success", "Invalid Pixie16 module number",
-                                     "Failed to close Pixie16 module"};
 
 /**
  * constructor
@@ -59,34 +57,18 @@ int CRelease::operator()(std::vector<Tcl_Obj *> &objv) {
     for (index = 0; index < slots.size(); index++) {
       slot = slots[index];
       int status = Pixie16ExitSystem(index);
-      if (status)
-        throw -status;
+      if (status) {
+        std::stringstream msg;
+        msg << "Error exiting system for module number " << index;
+        throw CXIAException(msg.str(), "Pixie16ExitSystem()", status);
+      }
     }
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int code) {
-    std::string msg = apiError(index, slot, code);
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
   return TCL_OK;
-}
-//////////////////////////////////////////////////////////////
-// Private utilities.
-
-/**
- * apiError
- *   Format an API error message for ExitSystem.
- *   @param index - module index number
- *   @param slot  - module slot number.
- *   @param status - error code.
- *   @return std::string - the message
- */
-std::string CRelease::apiError(int index, int slot, int status) {
-  std::stringstream s;
-  s << "Error calling Pixie16ExitSystem for module number " << index
-    << " (slot " << slot << "): " << apiMessages[status];
-  std::string result = s.str();
-  return result;
 }

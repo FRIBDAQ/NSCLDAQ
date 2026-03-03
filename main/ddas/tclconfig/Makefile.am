@@ -20,11 +20,15 @@ libpixie16_la_CXXFLAGS = @TCL_CPPFLAGS@    \
 	-I@top_srcdir@/ddas/configuration  \
 	-I@top_builddir@/ddas              \
 	@PIXIE_CPPFLAGS@                   \
+	-I@top_srcdir@/ddas/exception \
+	@LIBTCLPLUS_CFLAGS@ \
 	-g                                 \
 	-DFIRMWARE_FILE=\"${SHAREDIR}/DDASFirmwareVersions.txt\"
 
 libpixie16_la_LDFLAGS = @top_builddir@/ddas/configuration/libConfiguration.la 	\
 	@PIXIE_LDFLAGS@ @TCL_LIBS@                              		\
+	@top_builddir@/ddas/exception/libDDASException.la 	\
+	@LIBEXCEPTION_LDFLAGS@ \
 	-Wl,-rpath=@libdir@ -g
 
 install-exec-hook:

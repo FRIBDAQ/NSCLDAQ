@@ -20,9 +20,11 @@
  */
 
 #include "Inventory.h"
+#include "CTclCommand.h"
 
 #include <sstream>
 
+#include <CXIAException.h>
 #include <Configuration.h>
 #include <config.h>
 #include <config_pixie16api.h>
@@ -68,8 +70,11 @@ int CInventory::operator()(std::vector<Tcl_Obj *> &argv) {
       unsigned short rev, bits, mhz;
       unsigned int ser;
       int status = Pixie16ReadModuleInfo(index, &rev, &ser, &bits, &mhz);
-      if (status < 0)
-        throw -status;
+      if (status < 0) {
+        std::stringstream msg;
+        msg << "Failed to read module info for module index: " << index;
+        throw CXIAException(msg.str(), "Pixie16ReadModuleInfo()", status);
+      }
       listElements.push_back(describeModule(slots[index], rev, ser, bits, mhz));
     }
 
@@ -77,9 +82,8 @@ int CInventory::operator()(std::vector<Tcl_Obj *> &argv) {
     setResult(msg.c_str());
     freeObjects(result, listElements);
     return TCL_ERROR;
-  } catch (int code) {
-    std::string msg = apiError(index, code);
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     freeObjects(result, listElements);
     return TCL_ERROR;
   }
@@ -134,20 +138,7 @@ Tcl_Obj *CInventory::describeModule(int slot, int rev, int ser, int bits,
 
   return result;
 }
-/**
- * apiError
- *   Format an API error for the ReadModuleInfo failure:
- * @param index - module index that failed.
- * @param code  - negative of the error code.
- * @return std::string - message
- */
-std::string CInventory::apiError(int index, int code) {
-  std::stringstream s;
-  s << "Failed calling Pixie16ReadModuleInfor for module index: " << index
-    << ": " << apiErrors[code];
-  std::string msg = s.str();
-  return msg;
-}
+
 /**
  * freeObjects
  *    Just a convenience method to decrement the reference count

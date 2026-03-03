@@ -20,9 +20,11 @@
  */
 
 #include "IsActive.h"
+#include "CTclCommand.h"
 
 #include <sstream>
 
+#include <CXIAException.h>
 #include <Configuration.h>
 #include <config.h>
 #include <config_pixie16api.h>
@@ -78,9 +80,8 @@ int CIsActive::operator()(std::vector<Tcl_Obj *> &objv) {
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int status) {
-    std::string msg = apiMsg(module, slot, status);
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
   return TCL_OK;
@@ -131,11 +132,9 @@ Tcl_Obj *CIsActive::getAllModuleStates() {
 bool CIsActive::moduleState(int index) {
   int status = Pixie16CheckRunStatus((unsigned short)(index));
   if (status < 0) {
-    // note that the only error now is an invalid slot index:
-    // so give a fake slot for now.
-
-    std::string msg = apiMsg(index, -1, -status);
-    throw msg;
+    std::stringstream msg;
+    msg << "Error checking run status for module index " << index;
+    throw CXIAException(msg.str(), "Pixie16CheckRunStatus()", status);
   }
   return status > 0;
 }
@@ -165,30 +164,4 @@ Tcl_Obj *CIsActive::slotInfo(int index, int slot, bool state) {
     Tcl_DecrRefCount(elements[i]);
   }
   return result;
-}
-/**
- * apiMsg
- *    Return the API appropriate error message for the status slot
- *    and index.
- *  @param index - module number.
- *  @param slot  - module slot number.
- *  @param status - Status
- *  @return std::string - string error message.
- *  @note for the Pixie16CheckRunStatus function there's really only
- *        invalid module index error status (-1) so the slot is ignored
- *        as it's likely invalid.
- */
-std::string CIsActive::apiMsg(int index, int slot, int status) {
-  std::string msg;
-  if (status == 1) {
-    std::stringstream s;
-    s << "Module index " << index << " is invalid";
-    msg = s.str();
-  } else {
-    std::stringstream s;
-    s << "Unrecognized status code " << status << " slot: " << slot
-      << " index: " << index;
-    std::string msg = s.str();
-  }
-  return msg;
 }

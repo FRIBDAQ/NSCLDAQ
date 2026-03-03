@@ -23,12 +23,9 @@
 
 #include <sstream>
 
+#include <CXIAException.h>
 #include <config.h>
 #include <config_pixie16api.h>
-
-static const char *errorMessages[5] = {
-    "Success", "Invalid module number", "Invalid parameter name",
-    "Failed to program FIppi", "Failed to find Baseline cut"};
 
 /**
  * constructor
@@ -60,30 +57,18 @@ int CWriteModPar::operator()(std::vector<Tcl_Obj *> &objv) {
     unsigned int value = getInteger(objv[3]);
 
     int status = Pixie16WriteSglModPar(parName, value, module);
-    if (status)
-      throw -status;
+    if (status) {
+      std::stringstream msg;
+      msg << "Error writing module parameter " << parName << " with value "
+          << value << " to module " << module;
+      throw CXIAException(msg.str(), "Pixie16WriteSglModPar()", status);
+    }
   } catch (std::string &msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int status) {
-    std::string result = apiMessage(module, status);
-    setResult(result.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
   return TCL_OK;
-}
-///////////////////////////////////////////////////////////////////
-
-/**
- * apiMessage
- *    @param module - module from which he error happened.
- *    @param status - Status from Pixie16WriteSglModPar.
- *    @return std::string - meaningful error message.
- */
-std::string CWriteModPar::apiMessage(int module, int status) {
-  std::stringstream s;
-  s << "Pixie16WriteSglPar failed for module: " << module << ": "
-    << errorMessages[status];
-  std::string result = s.str();
-  return result;
 }

@@ -23,16 +23,9 @@
 
 #include <sstream>
 
+#include <CXIAException.h>
 #include <config.h>
 #include <config_pixie16api.h>
-
-static const char *errorMessages[7] = {"Success",
-                                       "Invalid module number",
-                                       "Invalid channel number",
-                                       "Invalid channel parameter name",
-                                       "Fippi programming failed",
-                                       "Failed to find Baseline cut",
-                                       "SetDACS failed"};
 
 /**
  * constructor
@@ -63,34 +56,19 @@ int CWriteChanPar::operator()(std::vector<Tcl_Obj *> &objv) {
     double value = getDouble(objv[4]);
 
     int status = Pixie16WriteSglChanPar(name, value, module, chan);
-    if (status)
-      throw -status;
+    if (status) {
+      std::stringstream msg;
+      msg << "Error writing channel parameter " << name << " with value "
+          << value << " to module " << module << " channel " << chan;
+      throw CXIAException(msg.str(), "Pixie16WriteSglChanPar()", status);
+    }
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int status) {
-    std::string msg = apiMessage(module, chan, status);
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
 
   return TCL_OK;
-}
-/////////////////////////////////////////////////////////////
-
-/**
- * apiMessage
- *    Return a message appropriate to a failed. WriteSglChanPar.
- *
- *  @param mod - module number
- *  @param chan - channel number.
- *  @param status - status code negated.
- *  @return std::string - human readable status message.
- */
-std::string CWriteChanPar::apiMessage(int mod, int chan, int status) {
-  std::stringstream s;
-  s << "Pixie16WriteSglChanPar failed in module: " << mod << " channel " << chan
-    << ": " << errorMessages[status];
-  std::string result(s.str());
-  return result;
 }

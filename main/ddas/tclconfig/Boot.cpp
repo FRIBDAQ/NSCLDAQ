@@ -24,6 +24,7 @@
 #include <cstring>
 #include <sstream>
 
+#include <CXIAException.h>
 #include <Configuration.h>
 #include <HardwareRegistry.h>
 #include <config.h>
@@ -76,9 +77,8 @@ int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int status) {
-    std::string msg = apiMsg(index, slot, status, pDoing);
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
   return TCL_OK;
@@ -86,27 +86,6 @@ int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
 //////////////////////////////////////////////////////////
 // Private utilities.
 
-/**
- * apiMsg
- *    Returns a string appropriate to an API error status.
- * @param index -module index.
- * @param slot  - corresponding module slot.
- * @param status - API status value.
- * @param doing  -  String describing what failed.
- * @return std::string - the error message.
- */
-std::string CBoot::apiMsg(int index, int slot, int status, const char *doing) {
-  char xiaErrMsg[1024];
-  PixieGetReturnCodeText(status, xiaErrMsg, 1024);
-
-  std::stringstream s;
-  s << "Error " << doing << " module number " << index << " (slot: " << slot
-    << "): " << xiaErrMsg;
-
-  std::string result = s.str();
-
-  return result;
-}
 /**
  * getHardwareType
  *   Get the computed hardware type.  This is an NSCL specific
@@ -126,8 +105,11 @@ std::string CBoot::apiMsg(int index, int slot, int status, const char *doing) {
 int CBoot::getHardwareType(int index) {
   module_config cfg;
   int rv = PixieGetModuleInfo(index, &cfg);
-  if (rv < 0)
-    throw rv;
+  if (rv < 0) {
+    std::stringstream msg;
+    msg << "Failed to get module info for module " << index;
+    throw CXIAException(msg.str(), "PixieGetModuleInfo()", rv);
+  }
 
   unsigned short rev = cfg.revision;
   unsigned short msps = cfg.adc_sampling_frequency;
@@ -162,19 +144,27 @@ void CBoot::bootModule(int index, int type) {
   char varFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
   std::string settingsFile;
 
-  module_config cfg;
-  int rv = PixieGetModuleInfo(index, &cfg);
-  if (rv < 0)
-    throw rv;
+  // Support getting the per-module firmware configuration if it exists,
+  // otherwise fall back to the default firmware configuration:
 
-  strcpy(sysFile, cfg.fw_device_file[0]);
-  strcpy(fippiFile, cfg.fw_device_file[1]);
-  strcpy(dspFile, cfg.fw_device_file[2]);
-  strcpy(varFile, cfg.fw_device_file[3]);
+  DAQ::DDAS::FirmwareConfiguration cfg =
+      m_config.getModuleFirmwareConfiguration(type, index);
+
+  strcpy(sysFile, cfg.s_ComFPGAConfigFile.c_str());
+  strcpy(fippiFile, cfg.s_SPFPGAConfigFile.c_str());
+  strcpy(dspFile, cfg.s_DSPCodeFile.c_str());
+  strcpy(varFile, cfg.s_DSPVarFile.c_str());
+
+  // Get the per-module settings file if it exists, otherwise get the default
+  // settings file:
+
   settingsFile = m_config.getModuleSettingsFilePath(index);
 
-  rv = Pixie16BootModule(sysFile, fippiFile, nullptr, dspFile,
-                         settingsFile.c_str(), varFile, index, 0x7f);
-  if (rv < 0)
-    throw rv;
+  int rv = Pixie16BootModule(sysFile, fippiFile, nullptr, dspFile,
+                             settingsFile.c_str(), varFile, index, 0x7f);
+  if (rv < 0) {
+    std::stringstream msg;
+    msg << "Failed to boot module " << index;
+    throw CXIAException(msg.str(), "Pixie16BootModule()", rv);
+  }
 }

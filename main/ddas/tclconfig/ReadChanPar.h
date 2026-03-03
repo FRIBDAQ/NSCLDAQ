@@ -42,9 +42,6 @@ public:
   virtual ~CReadChanPar();
 
   virtual int operator()(std::vector<Tcl_Obj *> &objv);
-
-private:
-  std::string apiMsg(int index, int chan, int status);
 };
 
 #endif

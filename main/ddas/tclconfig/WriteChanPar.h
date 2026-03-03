@@ -41,9 +41,6 @@ public:
   virtual ~CWriteChanPar();
 
   virtual int operator()(std::vector<Tcl_Obj *> &objv);
-
-private:
-  std::string apiMessage(int mod, int chan, int status);
 };
 
 #endif

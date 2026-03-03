@@ -37,9 +37,6 @@ public:
   virtual ~CRestoreParams();
 
   int operator()(std::vector<Tcl_Obj *> &objv);
-
-private:
-  std::string apiMessage(const char *pFilename, int status);
 };
 
 #endif

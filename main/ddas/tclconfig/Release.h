@@ -47,9 +47,6 @@ public:
   virtual ~CRelease();
 
   virtual int operator()(std::vector<Tcl_Obj *> &objv);
-
-private:
-  std::string apiError(int index, int slot, int status);
 };
 
 #endif
