@@ -34,9 +34,8 @@ libpixie16_la_LDFLAGS = @top_builddir@/ddas/configuration/libConfiguration.la 	\
 install-exec-hook:
 	$(mkinstalldirs) @prefix@/TclLibs @prefix@/TclLibs/pixie16
 	$(INSTALL_PROGRAM) @libdir@/libpixie16.so @prefix@/TclLibs/pixie16
-	$(INSTALL_PROGRAM) @srcdir@/tkNscope.tcl @bindir@/tkNscope
 	$(INSTALL_DATA)    @srcdir@/Pixie16Server.tcl @prefix@/TclLibs/pixie16
 	echo package ifneeded pixie16 1.1 [list load [file join \$$dir libpixie16.so]] > @prefix@/TclLibs/pixie16/pkgIndex.tcl
 	echo package ifneeded pixieserver 1.0 [list source [file join \$$dir Pixie16Server.tcl]] >> @prefix@/TclLibs/pixie16/pkgIndex.tcl
 
-EXTRA_DIST=Pixie16Server.tcl tkNscope.tcl
+EXTRA_DIST=Pixie16Server.tcl
