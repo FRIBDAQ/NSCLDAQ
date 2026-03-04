@@ -94,7 +94,6 @@ TESTS=./unittests
 install-exec-hook:
 	$(mkinstalldirs) $(SHAREDIR)
 	$(mkinstalldirs) $(SHAREDIR)/crate_1
-	$(INSTALL_DATA) DDASFirmwareVersions.txt $(SHAREDIR)
 	$(INSTALL_DATA) pixieserver.tcl $(SHAREDIR)
 	$(INSTALL_DATA) @srcdir@/crate_1/* $(SHAREDIR)/crate_1
 	$(mkinstalldirs) $(bindir)
