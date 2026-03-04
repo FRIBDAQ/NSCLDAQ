@@ -102,4 +102,4 @@ install-exec-hook:
 clean-local:
 	rm -f @builddir@/ddasSortOptions.{h,c}
 
-EXTRA_DIST=DDASFirmwareVersions.txt.in crate_1 ddasSortOptions.ggo ddasReadout.tcl readout.xml sorter.xml readoutdriver.xml readout.dox pixieserver.tcl.in
+EXTRA_DIST=crate_1 ddasSortOptions.ggo ddasReadout.tcl readout.xml sorter.xml readoutdriver.xml readout.dox pixieserver.tcl.in
