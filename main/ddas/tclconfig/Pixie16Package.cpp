@@ -39,6 +39,7 @@
 
 #include <unistd.h>
 
+#include <iostream> // Needed for debugging output
 #include <string>
 
 #include <tcl.h>
@@ -129,7 +130,6 @@ int Pixie_Init(Tcl_Interp *pInterp) {
     return TCL_ERROR;
   }
 
-  DAQ::DDAS::Configuration *pCfg;
   const char *fwFile = getenv("FIRMWARE_FILE");
   if (fwFile) {
     crateConfiguration = *(
@@ -145,7 +145,7 @@ int Pixie_Init(Tcl_Interp *pInterp) {
   std::cout << std::endl;
   std::cout.flush();
 #endif
-  // All the commands register in the pixie16 namespace:
+  //  All the commands register in the pixie16 namespace:
 
   Tcl_CreateNamespace(pInterp, "pixie16", nullptr, nullptr);
 

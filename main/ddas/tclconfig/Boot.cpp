@@ -22,6 +22,7 @@
 #include "Boot.h"
 
 #include <cstring>
+#include <iostream>
 #include <sstream>
 
 #include <CXIAException.h>
@@ -29,6 +30,7 @@
 #include <HardwareRegistry.h>
 #include <config.h>
 #include <config_pixie16api.h>
+#include <stdexcept>
 
 /**
  * constructor
@@ -56,7 +58,7 @@ CBoot::~CBoot() {}
  *        a textual error message.
  */
 int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
-  int index, slot;
+  int index;
   const char *pDoing;
   Tcl_Interp *pInterp = getInterpreter();
   try {
@@ -67,7 +69,6 @@ int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
     if ((index < 0) || (index >= slots.size())) {
       throw std::string("Module index is invalid");
     }
-    slot = slots[index];
 
     pDoing = "getting module hardware type";
     int hwtype = getHardwareType(index); // throws on error.
@@ -79,6 +80,9 @@ int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
     return TCL_ERROR;
   } catch (CXIAException &e) {
     setResult(e.ReasonText());
+    return TCL_ERROR;
+  } catch (...) {
+    setResult("An unknown error occurred");
     return TCL_ERROR;
   }
   return TCL_OK;
@@ -144,24 +148,29 @@ void CBoot::bootModule(int index, int type) {
   char varFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
   std::string settingsFile;
 
-  // Support getting the per-module firmware configuration if it exists,
-  // otherwise fall back to the default firmware configuration:
+  module_config cfg;
+  int rv = PixieGetModuleInfo(index, &cfg);
+  if (rv < 0) {
+    std::stringstream msg;
+    msg << "Failed to get module info for module " << index;
+    throw CXIAException(msg.str(), "PixieGetModuleInfo()", rv);
+  }
 
-  DAQ::DDAS::FirmwareConfiguration cfg =
-      m_config.getModuleFirmwareConfiguration(type, index);
-
-  strcpy(sysFile, cfg.s_ComFPGAConfigFile.c_str());
-  strcpy(fippiFile, cfg.s_SPFPGAConfigFile.c_str());
-  strcpy(dspFile, cfg.s_DSPCodeFile.c_str());
-  strcpy(varFile, cfg.s_DSPVarFile.c_str());
-
-  // Get the per-module settings file if it exists, otherwise get the default
-  // settings file:
-
+  strcpy(sysFile, cfg.fw_device_file[0]);
+  strcpy(fippiFile, cfg.fw_device_file[1]);
+  strcpy(dspFile, cfg.fw_device_file[2]);
+  strcpy(varFile, cfg.fw_device_file[3]);
   settingsFile = m_config.getModuleSettingsFilePath(index);
 
-  int rv = Pixie16BootModule(sysFile, fippiFile, nullptr, dspFile,
-                             settingsFile.c_str(), varFile, index, 0x7f);
+  std::cout << "Booting module " << index << std::endl;
+  std::cout << "System file: " << sysFile << std::endl;
+  std::cout << "Fippi file: " << fippiFile << std::endl;
+  std::cout << "DSP file: " << dspFile << std::endl;
+  std::cout << "Variable file: " << varFile << std::endl;
+  std::cout << "Settings file: " << settingsFile << std::endl;
+
+  rv = Pixie16BootModule(sysFile, fippiFile, nullptr, dspFile,
+                         settingsFile.c_str(), varFile, index, 0x7f);
   if (rv < 0) {
     std::stringstream msg;
     msg << "Failed to boot module " << index;

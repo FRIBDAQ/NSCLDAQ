@@ -21,6 +21,7 @@
 #include "InitSystem.h"
 
 #include <cstdlib>
+#include <iostream>
 
 #include <CXIAException.h>
 #include <Configuration.h>

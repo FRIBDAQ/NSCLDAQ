@@ -22,15 +22,13 @@
 #include "Inventory.h"
 #include "CTclCommand.h"
 
+#include <iostream>
 #include <sstream>
 
 #include <CXIAException.h>
 #include <Configuration.h>
 #include <config.h>
 #include <config_pixie16api.h>
-
-static const char *apiErrors[3] = {"Success", "Invalid module number",
-                                   "Failed to read I2C Serial EEPROM"};
 
 /**
  * constructor

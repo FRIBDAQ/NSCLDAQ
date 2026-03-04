@@ -20,6 +20,7 @@
  */
 #include "Release.h"
 
+#include <iostream>
 #include <sstream>
 
 #include <CXIAException.h>
@@ -35,6 +36,7 @@
  */
 CRelease::CRelease(Tcl_Interp *pInterp, DAQ::DDAS::Configuration &config)
     : CTclCommand(pInterp, "pixie16::release"), m_config(config) {}
+
 /**
  * destructor
  *  null for now.
