@@ -126,7 +126,7 @@ int CBoot::getHardwareType(int index) {
  *   Given we know the hardware type of a module, fetch the firmware
  *   files needed and try to boot the module. Since the system must be running
  *   (booted) prior to running the pixieserver, we just ask the moudule what FW
- *   its running.
+ *   its currently running.
  *
  * @param index - Index of module to boot.
  * @param type  - hardware type of module.

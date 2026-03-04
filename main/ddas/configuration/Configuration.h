@@ -75,6 +75,14 @@ typedef std::map<int, FirmwareConfiguration> FirmwareMap;
  * At the moment, modules are expected to output events of equal
  * length for all channels. There is no attempt to read out channels
  * with different lengths in a module.
+ *
+ * @note XIA's managed firmware will automatically grab the latest firmware file
+ * for a particular module type from the installation directory. This means the
+ * concept of a general firmware map doesn't really exist: no firmware version
+ * file is parsed and no firmware is pre-defined, unless the user specifies a
+ * firmware file. Use the FirmwareMap objects at your own peril! The
+ * Configuration class has no way to know what the system firmware is on its
+ * own.
  */
 
 class Configuration {
