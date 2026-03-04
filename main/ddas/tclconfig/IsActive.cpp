@@ -128,7 +128,7 @@ Tcl_Obj *CIsActive::getAllModuleStates() {
  *    Returns the status of a single module
  * @param index - module index.
  * @return bool - true if running false if not.
- * @throw std::string - if there's an error.
+ * @throw CXIAException - if the API call to check the status fails.
  */
 bool CIsActive::moduleState(int index) {
   int status = Pixie16CheckRunStatus((unsigned short)(index));

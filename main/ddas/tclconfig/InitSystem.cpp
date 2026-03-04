@@ -50,6 +50,7 @@ CInitSystem::~CInitSystem() {}
  *   - Analyxe results.
  * @param argv the command line words.
  * @return int - TCL_OK if successful TCL_ERROR if not.
+ * @throw CXIAException if the API call fails.
  * @note a result is left only if an error is returned.
  */
 int CInitSystem::operator()(std::vector<Tcl_Obj *> &argv) {

@@ -44,6 +44,7 @@ CRestoreParams::~CRestoreParams() {}
  *    Perform the command.
  * @param objv - the command line words.
  * @return int
+ * @throw CXIAException if the API call fails.
  */
 int CRestoreParams::operator()(std::vector<Tcl_Obj *> &objv) {
   const char *pFilename;

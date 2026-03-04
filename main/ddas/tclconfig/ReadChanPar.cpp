@@ -46,6 +46,7 @@ CReadChanPar::~CReadChanPar() {}
  *   - Request the value and set it as the result.
  * @param objv - the command words.
  * @return int - TCL_OK on success, TCL_ERROR on failure.
+ * @throw CXIAException if the API call fails.
  */
 int CReadChanPar::operator()(std::vector<Tcl_Obj *> &objv) {
   int index;

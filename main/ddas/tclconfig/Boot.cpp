@@ -84,6 +84,7 @@ int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
   }
   return TCL_OK;
 }
+
 //////////////////////////////////////////////////////////
 // Private utilities.
 
@@ -93,15 +94,12 @@ int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
  *   value that combines the properties of the module into a single
  *   integer that can be used to lookup stuff like the firmware files
  *   appropriate to the module.
- *   -  Use ReadModuleInfo to get the module information.
+ *   -  Use PixieGetModuleInfo  to get the module information.
  *   -  Ask the hardware registry to compute the hardware type.
  * @param index - module number.
  * @return int  - Hardware type of the module.
- * @throw int   - status code of failing calls to ReadModuleInfo.
+ * @throw CXIAException - if the API call to get the module info fails.
  * @throw std::string - if we can't figure out a valid hardware type.
- * @todo (ASC 3/27/25): If the module is in a bad state, does
- *   `PixieGetModuleInfo()` still retrieve the info properly? Do we need to
- *   maintain FW and HW maps of the modules independent of XIA's management?
  */
 int CBoot::getHardwareType(int index) {
   module_config cfg;
@@ -130,11 +128,7 @@ int CBoot::getHardwareType(int index) {
  *
  * @param index - Index of module to boot.
  * @param type  - hardware type of module.
- * @throw int   - The status from BootModule.
- *
- * @todo (ASC 3/27/25): If the module is in a bad state, does
- *   `PixieGetModuleInfo()` still retrieve the info properly? Do we need to
- *   maintain FW and HW maps of the modules independent of XIA's management?
+ * @throw CXIAException - if any of the API calls fail.
  */
 void CBoot::bootModule(int index, int type) {
   char sysFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];

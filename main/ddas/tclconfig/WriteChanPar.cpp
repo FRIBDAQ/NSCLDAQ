@@ -43,6 +43,7 @@ CWriteChanPar::~CWriteChanPar() {}
  *  @return int - TCL_OK On success, TCL_ERROR if failed.
  *  @note the interpreter result is only non-null if the command
  *        failed, in which case it's the human readable failure reason
+ * @throw CXIAException if the API call fails.
  */
 int CWriteChanPar::operator()(std::vector<Tcl_Obj *> &objv) {
   int module;

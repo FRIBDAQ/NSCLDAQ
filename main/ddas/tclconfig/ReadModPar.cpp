@@ -44,6 +44,7 @@ CReadModPar::~CReadModPar() {}
  *  @return int - TCL_OK On success, TCL_ERROR on failure.
  *  @note On success, the result is an integer value read from the
  *        module.  On failure, the result is a textual error message
+ * @throw CXIAException if the API call fails.
  */
 int CReadModPar::operator()(std::vector<Tcl_Obj *> &objv) {
   int modnum;

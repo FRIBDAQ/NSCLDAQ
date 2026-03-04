@@ -45,6 +45,7 @@ CSaveParams::~CSaveParams() {}
  *  @return int- TCL_OK on ok or TCL_ERROR on failure.
  *  @note the result is only set on error and then contains a string
  *         describing the error.
+ * @throw CXIAException if the API call fails.
  */
 int CSaveParams::operator()(std::vector<Tcl_Obj *> &objv) {
   const char *pFilename;

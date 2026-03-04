@@ -47,6 +47,7 @@ CWriteModPar::~CWriteModPar() {}
  * @note - The return value is only set if TCL_ERROR is returned and
  *         in that case, a human readable string describing the
  *         error is set as the result.
+ * @throw CXIAException if the API call fails.
  */
 int CWriteModPar::operator()(std::vector<Tcl_Obj *> &objv) {
   int module;

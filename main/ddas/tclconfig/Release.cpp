@@ -49,6 +49,7 @@ CRelease::~CRelease() {}
  *  @param objv - the command words
  *  @return int - TCL_OK on success TCL_ERROR on failure with an
  *                error message in the result.
+ * @throw CXIAException if any of the API calls fail.
  */
 int CRelease::operator()(std::vector<Tcl_Obj *> &objv) {
   int index;
