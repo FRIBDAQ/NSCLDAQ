@@ -59,7 +59,6 @@ CBoot::~CBoot() {}
  */
 int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
   int index;
-  const char *pDoing;
   Tcl_Interp *pInterp = getInterpreter();
   try {
     requireExactly(objv, 2);
@@ -70,11 +69,9 @@ int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
       throw std::string("Module index is invalid");
     }
 
-    pDoing = "getting module hardware type";
     int hwtype = getHardwareType(index); // throws on error.
-
-    pDoing = "booting module";
     bootModule(index, hwtype);
+
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
@@ -114,13 +111,9 @@ int CBoot::getHardwareType(int index) {
     msg << "Failed to get module info for module " << index;
     throw CXIAException(msg.str(), "PixieGetModuleInfo()", rv);
   }
-
-  unsigned short rev = cfg.revision;
-  unsigned short msps = cfg.adc_sampling_frequency;
-  unsigned short bits = cfg.adc_bit_resolution;
-
   // Module type must be known:
-  auto type = DAQ::DDAS::HardwareRegistry::computeHardwareType(rev, msps, bits);
+  auto type = DAQ::DDAS::HardwareRegistry::computeHardwareType(
+      cfg.revision, cfg.adc_sampling_frequency, cfg.adc_bit_resolution);
   if (type == DAQ::DDAS::HardwareRegistry::Unknown) {
     throw "Module hardware type is unknown";
   }
@@ -131,7 +124,9 @@ int CBoot::getHardwareType(int index) {
 /**
  * bootModule
  *   Given we know the hardware type of a module, fetch the firmware
- *   files needed and try to boot the module.
+ *   files needed and try to boot the module. Since the system must be running
+ *   (booted) prior to running the pixieserver, we just ask the moudule what FW
+ *   its running.
  *
  * @param index - Index of module to boot.
  * @param type  - hardware type of module.

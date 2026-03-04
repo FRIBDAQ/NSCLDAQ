@@ -58,7 +58,8 @@ int CReadModPar::operator()(std::vector<Tcl_Obj *> &objv) {
     int status = Pixie16ReadSglModPar(parname.c_str(), &data, modnum);
     if (status) {
       std::stringstream msg;
-      msg << "Pixie16ReadSglModPar failed for module number " << modnum;
+      msg << "Failed to read module parameter " << parname << " for module "
+          << modnum;
       throw CXIAException(msg.str(), "Pixie16ReadSglModPar()", status);
     }
     setResult(static_cast<int>(data));

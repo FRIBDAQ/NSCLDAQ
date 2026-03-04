@@ -60,8 +60,8 @@ int CReadChanPar::operator()(std::vector<Tcl_Obj *> &objv) {
     int status = Pixie16ReadSglChanPar(name, &result, index, chan);
     if (status) {
       std::stringstream msg;
-      msg << "Pixie16ReadSglChanPar failed for module number " << index
-          << " channel " << chan;
+      msg << "Failed to read channel parameter " << name << " for module "
+          << index << " channel " << chan;
       throw CXIAException(msg.str(), "Pixie16ReadSglChanPar()", status);
     }
     setResult(result);
