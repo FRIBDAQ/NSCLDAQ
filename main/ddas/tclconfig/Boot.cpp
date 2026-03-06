@@ -22,7 +22,6 @@
 #include "Boot.h"
 
 #include <cstring>
-#include <iostream>
 #include <sstream>
 
 #include <CXIAException.h>
@@ -30,7 +29,6 @@
 #include <HardwareRegistry.h>
 #include <config.h>
 #include <config_pixie16api.h>
-#include <stdexcept>
 
 /**
  * constructor
@@ -78,9 +76,6 @@ int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
   } catch (CXIAException &e) {
     setResult(e.ReasonText());
     return TCL_ERROR;
-  } catch (...) {
-    setResult("An unknown error occurred");
-    return TCL_ERROR;
   }
   return TCL_OK;
 }
@@ -113,7 +108,7 @@ int CBoot::getHardwareType(int index) {
   auto type = DAQ::DDAS::HardwareRegistry::computeHardwareType(
       cfg.revision, cfg.adc_sampling_frequency, cfg.adc_bit_resolution);
   if (type == DAQ::DDAS::HardwareRegistry::Unknown) {
-    throw "Module hardware type is unknown";
+    throw std::string("Module hardware type is unknown");
   }
 
   return type;
@@ -150,13 +145,6 @@ void CBoot::bootModule(int index, int type) {
   strcpy(dspFile, cfg.fw_device_file[2]);
   strcpy(varFile, cfg.fw_device_file[3]);
   settingsFile = m_config.getModuleSettingsFilePath(index);
-
-  std::cout << "Booting module " << index << std::endl;
-  std::cout << "System file: " << sysFile << std::endl;
-  std::cout << "Fippi file: " << fippiFile << std::endl;
-  std::cout << "DSP file: " << dspFile << std::endl;
-  std::cout << "Variable file: " << varFile << std::endl;
-  std::cout << "Settings file: " << settingsFile << std::endl;
 
   rv = Pixie16BootModule(sysFile, fippiFile, nullptr, dspFile,
                          settingsFile.c_str(), varFile, index, 0x7f);

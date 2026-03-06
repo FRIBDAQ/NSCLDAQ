@@ -20,7 +20,6 @@
  */
 #include "Release.h"
 
-#include <iostream>
 #include <sstream>
 
 #include <CXIAException.h>

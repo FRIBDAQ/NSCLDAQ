@@ -21,11 +21,11 @@
 #include "ReadModPar.h"
 
 #include <sstream>
+#include <string>
 
 #include <CXIAException.h>
 #include <config.h>
 #include <config_pixie16api.h>
-#include <string>
 
 /**
  * constructor

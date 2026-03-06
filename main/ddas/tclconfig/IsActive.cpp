@@ -22,7 +22,6 @@
 #include "IsActive.h"
 #include "CTclCommand.h"
 
-#include <iostream>
 #include <sstream>
 
 #include <CXIAException.h>
