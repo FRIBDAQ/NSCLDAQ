@@ -61,6 +61,6 @@ public:
 
 private:
   int getHardwareType(int index);
-  void bootModule(int index, int type);
+  void bootModule(int index, int slot, int type);
 };
 #endif

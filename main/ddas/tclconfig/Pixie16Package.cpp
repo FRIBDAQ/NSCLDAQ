@@ -46,6 +46,7 @@
 
 #include <Configuration.h>
 #include <ConfigurationParser.h>
+#include <config_pixie16api.h>
 
 #include "Boot.h"
 #include "CAdjustOffsets.h"
@@ -114,7 +115,8 @@ int Pixie_Init(Tcl_Interp *pInterp) {
   if (status != TCL_OK)
     return status;
 
-  // Check for the CfgPixie16.txt file in the current directory.
+  // Check for the CfgPixie16.txt and modevtlen.txt files in the current
+  // directory:
 
   status = access(configFile, R_OK);
   if (status < 0) {
@@ -138,6 +140,25 @@ int Pixie_Init(Tcl_Interp *pInterp) {
     crateConfiguration = *(
         DAQ::DDAS::Configuration::generateManagedFW(configFile, modEvtLenFile));
   }
+
+  // Might as well set the channel map. If we print out debugging info it will
+  // be complete. Since the system is already booted at this point, this
+  // operation should be relatively risk-free.
+
+  module_config cfg;
+  std::vector<unsigned short> channelMap;
+  for (auto i = 0; i < crateConfiguration.getNumberOfModules(); i++) {
+    int rv = PixieGetModuleInfo(i, &cfg);
+    if (rv < 0) {
+      std::string msg("PixieGetModuleInfo() failed to read module "
+                      "configuration for module " +
+                      std::to_string(i));
+      setErrnoResult(pInterp, msg.c_str());
+      return TCL_ERROR;
+    }
+    channelMap.push_back(cfg.number_of_channels);
+  }
+  crateConfiguration.setChannelMap(channelMap);
 
 #ifdef DEBUG
   std::cout << "Configuration: \n";
@@ -163,6 +184,7 @@ int Pixie_Init(Tcl_Interp *pInterp) {
   new CRestoreParams(pInterp);
   new CIsActive(pInterp, crateConfiguration);
   new CAdjustOffsets(pInterp);
+
   return TCL_OK;
 }
 }

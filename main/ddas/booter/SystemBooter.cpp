@@ -282,7 +282,7 @@ void DAQ::DDAS::SystemBooter::setDeviceFirmware(std::string fwFile,
   int rv = Pixie16SetModuleFirmware(fwFile.c_str(), slot, device.c_str());
   if (rv < 0) {
     std::stringstream msg;
-    msg << "SystemBooter::setPerModuleFirmware() failed to set module " << mod
+    msg << "SystemBooter::setDeviceFirmware() failed to set module " << mod
         << " (slot " << slot << ") '" << device << "' FW from " << fwFile;
     throw CXIAException(msg.str(), "Pixie16SetModuleFirmware()", rv);
   }

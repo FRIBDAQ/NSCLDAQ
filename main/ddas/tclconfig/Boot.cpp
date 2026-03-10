@@ -22,6 +22,7 @@
 #include "Boot.h"
 
 #include <cstring>
+#include <iostream> // Needed for debugging output
 #include <sstream>
 
 #include <CXIAException.h>
@@ -66,9 +67,10 @@ int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
     if ((index < 0) || (index >= slots.size())) {
       throw std::string("Module index is invalid");
     }
+    auto slot = slots[index];
 
     int hwtype = getHardwareType(index); // throws on error.
-    bootModule(index, hwtype);
+    bootModule(index, slot, hwtype);
 
   } catch (std::string msg) {
     setResult(msg.c_str());
@@ -125,7 +127,7 @@ int CBoot::getHardwareType(int index) {
  * @param type  - hardware type of module.
  * @throw CXIAException - if any of the API calls fail.
  */
-void CBoot::bootModule(int index, int type) {
+void CBoot::bootModule(int index, int slot, int type) {
   char sysFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
   char fippiFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
   char dspFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
@@ -146,8 +148,34 @@ void CBoot::bootModule(int index, int type) {
   strcpy(varFile, cfg.fw_device_file[3]);
   settingsFile = m_config.getModuleSettingsFilePath(index);
 
+#ifdef DEBUG
+  std::cout << "Booting module " << index << " (slot " << slot << ")"
+            << " with hardware type " << type << std::endl;
+  std::cout << "  System file: " << sysFile << std::endl;
+  std::cout << "  FIPPI file: " << fippiFile << std::endl;
+  std::cout << "  DSP file: " << dspFile << std::endl;
+  std::cout << "  Variable file: " << varFile << std::endl;
+  std::cout << "  Settings file: " << settingsFile << std::endl;
+#endif
+
+  // @note (ASC 3/10/26): Per Stan at XIA: Pixie16BootModule takes the firmware
+  // files to boot with. The function uses these files to register a firmware
+  // set, but due to your previous calls the set has already been registered.
+  // That’s what’s giving your error. They think you might be able to resolve
+  // the issue by passing NULL or nullptr to the Pixie16BootModule function
+  // after you’ve registered the firmware. I haven’t tested this yet, but a
+  // quick glance at the code suggests this might work. So, lets try... and
+  // perhaps we don't even need the module_config info, we can just call with
+  // nullptr...
+
+  // Original method:
   rv = Pixie16BootModule(sysFile, fippiFile, nullptr, dspFile,
                          settingsFile.c_str(), varFile, index, 0x7f);
+
+  // @note (ASC 3/10/26): Does not work. Return code -802 "invalid value"
+  // rv = Pixie16BootModule(nullptr, nullptr, nullptr, nullptr,
+  //                       settingsFile.c_str(), nullptr, index, 0x7f);
+
   if (rv < 0) {
     std::stringstream msg;
     msg << "Failed to boot module " << index;
