@@ -158,23 +158,26 @@ void CBoot::bootModule(int index, int slot, int type) {
   std::cout << "  Settings file: " << settingsFile << std::endl;
 #endif
 
-  // @note (ASC 3/10/26): Per Stan at XIA: Pixie16BootModule takes the firmware
+  // @note (ASC 3/10/26): Per Stan at XIA: "Pixie16BootModule takes the firmware
   // files to boot with. The function uses these files to register a firmware
   // set, but due to your previous calls the set has already been registered.
   // That’s what’s giving your error. They think you might be able to resolve
   // the issue by passing NULL or nullptr to the Pixie16BootModule function
   // after you’ve registered the firmware. I haven’t tested this yet, but a
-  // quick glance at the code suggests this might work. So, lets try... and
-  // perhaps we don't even need the module_config info, we can just call with
-  // nullptr...
+  // quick glance at the code suggests this might work."
+  //
+  // So, lets try... and perhaps we don't even need the module_config info, we
+  // can just call with nullptr...
 
   // Original method:
   rv = Pixie16BootModule(sysFile, fippiFile, nullptr, dspFile,
                          settingsFile.c_str(), varFile, index, 0x7f);
 
-  // @note (ASC 3/10/26): Does not work. Return code -802 "invalid value"
+  // @note (ASC 3/10/26): Both fail. Return code -802 "invalid value"
   // rv = Pixie16BootModule(nullptr, nullptr, nullptr, nullptr,
-  //                       settingsFile.c_str(), nullptr, index, 0x7f);
+  // settingsFile.c_str(), nullptr, index, 0x7f); rv =
+  // Pixie16BootModule(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+  // index, 0x7f);
 
   if (rv < 0) {
     std::stringstream msg;
