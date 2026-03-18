@@ -146,7 +146,7 @@ libVMUSBDaqConfig_la_CPPFLAGS = -I@top_srcdir@/usb/common/devices	\
 				-I@top_srcdir@/base/os		\
 				$(TCL_FLAGS)  @PIXIE_CPPFLAGS@ \
 				@JSON_CFLAGS@ \
-	-DDEFAULT_S800REGFILE=\"@datarootdir@/s800triggers/RegisterFile.json\"
+	-DDEFAULT_S800REGFILE=\"@datarootdir@/s800trigger/RegisterFile.json\"
 
 
 libVMUSBDaqConfig_la_LIBADD	= \
