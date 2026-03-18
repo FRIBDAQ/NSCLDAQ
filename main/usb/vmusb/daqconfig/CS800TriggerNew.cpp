@@ -141,9 +141,22 @@ CS800TriggerNew::Initialize(CVMUSB& controller) {
  * readoutlist.  In order, we read the timestamp and the trigger mask.
  * 
  * @param list - readout list to modify.
+ *
+ * @note this is called before OnInitialized, therefore the
+ *     Trigger register API must be created here.  Doesn't hurt
+ *     to do that in Initialize too.
  */
 void
 CS800TriggerNew::addReadoutList(CVMUSBReadoutList& list) {
+    auto configFile = m_pConfiguration->cget("-register-file");
+
+    delete m_pAPI;
+    m_pAPI = nullptr;
+    m_pAPI = new S800TriggerRegisters(base, configFile.c_str());   // This could throw...
+
+    std::cout << "S800 trigger module: \n"
+        << m_pAPI->describeJSON() << std::endl;
+
     m_pAPI->addReadTimestamp(list);
     m_pAPI->addReadTriggerMask(list);
     
