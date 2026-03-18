@@ -90,7 +90,7 @@ CS800TriggerNew::onAttach(CReadoutModule& configuration)
         "-register-file", nullptr, nullptr, std::string(DEFAULT_S800REGFILE)
     );                                     // Register def .json.
     m_pConfiguration->addIntegerParameter("-base", 0x0, 0xffffffff, 0); // Base address.
-    m_pConfiguration->addBooleanParameter("-enable-extclear, true");
+    m_pConfiguration->addBooleanParameter("-enable-extclear", true);
 }
 /**
  * Initialize:
@@ -148,6 +148,7 @@ CS800TriggerNew::Initialize(CVMUSB& controller) {
  */
 void
 CS800TriggerNew::addReadoutList(CVMUSBReadoutList& list) {
+    uint32_t base = m_pConfiguration->getUnsignedParameter("-base");
     auto configFile = m_pConfiguration->cget("-register-file");
 
     delete m_pAPI;
