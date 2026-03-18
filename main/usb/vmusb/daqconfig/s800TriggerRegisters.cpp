@@ -385,7 +385,7 @@ S800TriggerRegisters::externalClearEnableRegister() const {
  * @return uint32_t - address of the go register.
  */
 std::uint32_t S800TriggerRegisters::goRegister() const {
-    return getMMCComponent("TS_CFG_GO");
+    return getMMCComponent("TS_CFG", "GO");
 }
 /**
  * return the register that arms the trigger:
@@ -436,11 +436,12 @@ S800TriggerRegisters::getRegister(const char* name) const {
  *    E.g. get the Address field of ["MMCComponents"][componentname] as an integer and
  *    add it to the base address.
  *
- * @param name - component name
+ * @param parent the owing set of registers.
+ * @param endpoint the end point of the item.
  * @return std::uint32_t - address of the component given the value of m_base.
  */
 std::uint32_t
-S800TriggerRegisters::getMMCComponent(const char* name) const {
+S800TriggerRegisters::getMMCComponent(const char* parent, const char* endpoint) const {
 
     auto components = m_registerSpec["MMCComponents"];
     if (components.isNull()) {
@@ -450,15 +451,24 @@ S800TriggerRegisters::getMMCComponent(const char* name) const {
     // Iterate over components finding the requested name:
 
     for (int index = 0; index < components.size(); index++) {
-        if (components[index]["Name"].asString() == name) {
-            return components[index]["Address"].asUInt() + m_base;
+        if (components[index]["Name"].asString() == parent) {
+	    auto register_defs = components[index]["Registers"];
+	    for (int component = 0; component < register_defs.size(); component++) {
+		if (register_defs[component]["Name"].asString() == endpoint) {
+		    return register_defs[component]["Address"].asUInt() + m_base;
+		}
+	    }
+	    std::stringstream msg;
+	    msg << "MMC Parent component " << parent << " has no child named " << endpoint;
+	    std::string smsg(msg.str());
+	    throw Json::Exception(smsg);
         }
     }
 
     // no match:
 
     std::stringstream msg;
-    msg << "No MMC component named " << name;
+    msg << "No MMC  parent component named " << parent;
     std::string smsg(msg.str());
     throw Json::Exception(smsg);
 }

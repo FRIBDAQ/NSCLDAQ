@@ -104,6 +104,6 @@ public:
     std::uint32_t armTriggerRegister() const;
 private:
     std::uint32_t getRegister(const char* name) const;
-    std::uint32_t getMMCComponent(const char* name) const;
+    std::uint32_t getMMCComponent(const char* parent, const char* endpoint) const;
 };
 #endif
