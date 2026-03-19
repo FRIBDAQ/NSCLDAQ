@@ -105,7 +105,7 @@ createReadoutList(CVMUSBReadoutList& list, int argc, char** argv) {
     
     // Run Number seems to be 32 bits(?).
     list.addWrite32(regs.runNumberLowBits(), CVMUSBReadoutList::a32UserData, run);
-    //?  list.addWrite32(regs.runNumberHighBits(), CVMUSBReadoutList::a32UserData, 0);
+    list.addWrite32(regs.runNumberHighBits(), CVMUSBReadoutList::a32UserData, 0);
 
 }
 
