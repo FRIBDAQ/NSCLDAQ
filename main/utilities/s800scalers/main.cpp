@@ -15,6 +15,8 @@
 static const char* COUNTER_MATCH="*_CNT";
 static const char* FREQUENCY_MATCH="*_FRQ";
 
+static const char* RAW_TRIGGERS="R_RAW";   // Raw triggers.
+static const char* LIVE_TRIGGERS="R_LIVE"; // Live triggers.
 
 // Read the JSON configuration file.
 // throws std::exception derived exception on failures
@@ -149,6 +151,22 @@ int main(int argc, char** argv) {
     }
 
     // Process the counters and write them.
+
+    // The live and raw triggers:
+
+    try {
+        std::set<uint32_t> counters;   // Note that make_register_set accumulates but does not preserve order:
+        make_register_set(counters, root, RAW_TRIGGERS);  // Raw trigger counter.
+        dump_register_set(out, counters); 
+        counters.clear();             // Reset for the live triggers.
+        make_register_set(counters, root, LIVE_TRIGGERS); // live trigger counter.
+        dump_register_set(out, counters);
+
+    }
+    catch (std::exception& e) {
+        std::cerr << "Failed to process the trigger counters: " << e.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     try {    
         std::set<uint32_t> counters;
