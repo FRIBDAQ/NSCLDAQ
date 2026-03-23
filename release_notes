@@ -46,5 +46,6 @@ by COutputThread (nummap_chunk() issue fixed)
   crashed bufdump on unknown item types.
 * Issue #422 - Improve the BUSY workaround for VMUSB so it's not released until the VMUSB can accept triggers
 * Issue #430 - Provide a --ts-divisor option on the ringFragmentSource
+* Issue #456 - Support an environment variable override for ~/.singularity_bindpoints.
 == 12.2-dev ==
 
