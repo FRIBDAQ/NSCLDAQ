@@ -33,13 +33,14 @@
 #       target.  Additional bindpoints can be defined in the file
 #       ~/.singularity_bindpoints which must consist sources which get mapped
 #        to the same mount point.
-#
+# Issue #456 - if DAQ_BINDPOINTS_FILE env variable is defined it points
+# to a bindpoints file that overrides ~/.singularity_bindpoints.
 #
 
 package provide ssh 2.0
 package require Wait
 namespace eval  ssh {
-
+	
 	##
 	# _uniquifyList 
 	#   Given a list that may have dups, remove the dups.
@@ -58,7 +59,17 @@ namespace eval  ssh {
 			return [list]
 		}
 	}
-
+	##
+	#  return the singularity bind points file:
+	#
+	proc bindpointsFile {} {
+		set bindpointFile ~/.singularity_bindpoints
+		set envname DAQ_BINDPOINTS_FILE
+		if {[array names ::env $envname] ne ""} {
+			set bindpointFile $::env($envname)
+		}
+		return $bindpointFile
+	}
 	#
 	# getSingularityBindings
 	#
@@ -72,7 +83,7 @@ namespace eval  ssh {
 	#
 	proc getSingularityBindings {} {
 
-	        set bindings [list]
+		set bindings [list]
 
 		# Add in the stagearea link as a favor to the users.
 
@@ -81,12 +92,12 @@ namespace eval  ssh {
 			lappend bindings $value;                  # stagearea link auto-binds.
 		}
 		
-		#  Add in the bindings in the user's ~/.singularity_bindpoints file:
-
-		if {[file readable ~/.singularity_bindpoints]} {
+		#  Add in the bindings in the user's bindpoints  file:
+		set bindingsFile [bindpointsFile]
+		if {[file readable $bindingsFile]} {
 			# User has additional bind points:
 			
-			set fd [open ~/.singularity_bindpoints r]
+			set fd [open $bindingsFile r]
 			while {![eof $fd]} {
 				set line [string trim [gets $fd]]
 				if {$line ne ""} {
