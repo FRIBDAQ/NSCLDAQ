@@ -6936,9 +6936,41 @@ set info [::ssh::sshpid <replaceable>host command</replaceable> ]
             remote systems that are participating in an experiment.
         </para>
         <para>
-         All commands are in the <literal>::namespace::</literal> namespace.
+         All commands are in the <literal>::ssh::</literal> namespace.
          The publicly visible ones are also on the namespace export list and
          can be imported into whichever namespace is appropriate.
+        </para>
+        <para>
+            If the procs above detect they are run inside a singularity/apptainer container,
+            they attempt to run the command in the remote system in the same container envronment.
+            This can require some assistance on the user's part to get all of the bind points they 
+            use correctly restored in the remote system.
+        </para>
+        <para>
+            The restoration of bindpoints allows for the user to supply a file containing bind points,
+            one per line, in the same format required by the singularity/apptainer <option>-bind</option>
+            option: Either a single path, which binds that path from the host system into the same
+            path in the container or <literal>source:target</literal> which binds the source path
+            from the host into the target path in the container.
+        </para>
+        <para>
+            By default, the bind points file is <filename>~/.singularity_bindpoints</filename>.  However,
+            if the environment variable <literal>DAQ_BINDPOINTS_FILE</literal> is defined, its target is
+            used as the bindpoints file instead.
+        </para>
+        <para>
+            The exact container image is gotten by translating the following environment variable names
+            in this order:
+            <orderedlist>
+                <listitem><para>APPTAINER_CONTAINER</para></listitem>
+                <listitem><para>SING_IMAGE</para></listitem>
+                <listitem><para>SINGULARITY_CONTAINER</para></listitem>
+            </orderedlist>
+        </para>
+        <para>
+            Sufficiently recent versions of Apptainer/singularity will define the first and last of these.
+            You can define <literal>SING_IMAGE</literal> if you have an old version of 
+            Apptainer/Singularity which is not defining any of these.
         </para>
     </refsect1>
     <refsect1>
