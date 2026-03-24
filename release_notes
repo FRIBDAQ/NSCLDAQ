@@ -1,6 +1,9 @@
+== 12.2-004 ==
+* Tested S800 new trigger VMUSB readout.
+* Resolve issue #436 - support for rust projects that make more than one executable.
+* Resolve issue #456 - Support alternative .singularity_bindpoints file.
 == 12.2-002 ==
 * Update DDASFormat library to version 1.1-003
-
 == 12.2-dev ==
 * Bug fix on MDPPTriggerControl GUI
 * Provide mvlcgenerate - transform daqconfig.tcl files to MVLC readout yaml.
