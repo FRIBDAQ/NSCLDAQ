@@ -27,7 +27,7 @@
 # subdirs containing rust packages in this tree of the repo.
 
 RUST_BUILTIN=ring_monitor
-INSTALL_DIR=@bindir@/rust     # Segragate the rust bins..
+INSTALL_DIR=@bindir@/rust     # Segregate the rust bins..
 
 all-local:
 	for tool in @RUST_SUBDIRS@ ; do (cd $${tool}; PATH=${PATH}:@RUST_TOOL_DIR@  @RUST_CARGO@ build --release); done
@@ -41,21 +41,19 @@ all-local:
 # list of files to install and then installing them.  See comments above about
 # how to parse Cargo.toml.
 #
-
+#  A Cargo.tom can build more than one executable..
 install-exec-local:
 	$(mkinstalldirs) $(INSTALL_DIR)
 	files=""; \
 	for tool in @RUST_SUBDIRS@; do \
 		executable=`cat @builddir@/$$tool/Cargo.toml | grep "name =" | cut -d= -f2|tr -d " \""`; \
-		executable="@builddir@/$$tool/target/release/$${executable}"; \
-		files="$${files} $${executable}";   \
+		for e in $$executable;  do files="$${files} @builddir@/$$tool/target/release/$${e}"; done; \
 	done; \
 	$(INSTALL_PROGRAM) $${files} $(INSTALL_DIR)
-	file=""; \
+	files=""; \
 	for tool in $(RUST_BUILTIN) ; do \
 		executable=`cat @srcdir@/$$tool/Cargo.toml | grep "name =" | cut -d= -f2|tr -d " \""`; \
-		executable="@builddir@/$$tool/target/release/$${executable}"; \
-		files="$${files} $${executable}";   \
+		for e in $$executable;  do files="$${files} @builddir@/$$tool/target/release/$${e}"; done; \
 	done; \
 	if test "x$${files}" != "x"; then \
 		$(INSTALL_PROGRAM) $${files} $(INSTALL_DIR); \
