@@ -38,8 +38,9 @@
  */
 
 #include <unistd.h>
-
+#ifdef DEBUG
 #include <iostream> // Needed for debugging output
+#endif
 #include <string>
 
 #include <tcl.h>
