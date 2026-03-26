@@ -163,8 +163,10 @@ void DAQ::DDAS::SystemBooter::parallelBoot(Configuration &config,
   if (config.getDefaultFirmwareMap().empty()) {
     rv = Pixie16LoadModuleFirmware(fwPath);
     if (rv < 0) {
-      throw CXIAException("SystemBooter::parallelBoot() failed",
-                          "Pixie16LoadModuleFirmware()", rv);
+      throw CXIAException(
+          "SystemBooter::parallelBoot() failed to load module firmware from '" +
+              std::string(fwPath) + "'",
+          "Pixie16LoadModuleFirmware()", rv);
     } else {
       std::cout << "Found module firmware in " << fwPath << std::endl;
     }
