@@ -22,7 +22,7 @@ libpixie16_la_CXXFLAGS = @TCL_CPPFLAGS@    \
 	@PIXIE_CPPFLAGS@                   \
 	-I@top_srcdir@/ddas/exception \
 	@LIBTCLPLUS_CFLAGS@ \
-	-g                                 \
+	-g
 	
 libpixie16_la_LDFLAGS = @top_builddir@/ddas/configuration/libConfiguration.la 	\
 	@PIXIE_LDFLAGS@ @TCL_LIBS@                              		\
