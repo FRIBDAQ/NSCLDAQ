@@ -20,14 +20,12 @@
  */
 #include "InitSystem.h"
 
+#include <cstdlib>
+
+#include <CXIAException.h>
 #include <Configuration.h>
 #include <config.h>
 #include <config_pixie16api.h>
-#include <cstdlib>
-
-static const char *statusMessage[4] = {"Success", "Invalid number of modules",
-                                       "Null pointer passed for slot map",
-                                       "Failed to initialize the system"};
 
 /**
  * constructor
@@ -51,6 +49,7 @@ CInitSystem::~CInitSystem() {}
  *   - Analyxe results.
  * @param argv the command line words.
  * @return int - TCL_OK if successful TCL_ERROR if not.
+ * @throw CXIAException if the API call fails.
  * @note a result is left only if an error is returned.
  */
 int CInitSystem::operator()(std::vector<Tcl_Obj *> &argv) {
@@ -62,15 +61,15 @@ int CInitSystem::operator()(std::vector<Tcl_Obj *> &argv) {
     requireExactly(argv, 1);
     auto slots = m_config.getSlotMap();
     int status = Pixie16InitSystem(slots.size(), slots.data(), offlineMode);
-    if (status)
-      throw -status;
+    if (status) {
+      throw CXIAException("Failed to initialize system", "Pixie16InitSystem()",
+                          status);
+    }
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int error) {
-    std::string msg("Pixie16InitSystem failed: ");
-    msg += statusMessage[error];
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
 

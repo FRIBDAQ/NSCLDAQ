@@ -21,12 +21,11 @@
 #include "ReadModPar.h"
 
 #include <sstream>
+#include <string>
 
+#include <CXIAException.h>
 #include <config.h>
 #include <config_pixie16api.h>
-
-static const char *errorMessages[3] = {"Success", "Invalid module number",
-                                       "Invalid module parameter name"};
 
 /**
  * constructor
@@ -45,6 +44,7 @@ CReadModPar::~CReadModPar() {}
  *  @return int - TCL_OK On success, TCL_ERROR on failure.
  *  @note On success, the result is an integer value read from the
  *        module.  On failure, the result is a textual error message
+ * @throw CXIAException if the API call fails.
  */
 int CReadModPar::operator()(std::vector<Tcl_Obj *> &objv) {
   int modnum;
@@ -57,34 +57,20 @@ int CReadModPar::operator()(std::vector<Tcl_Obj *> &objv) {
     std::string parname(Tcl_GetString(objv[2]));
 
     int status = Pixie16ReadSglModPar(parname.c_str(), &data, modnum);
-    if (status)
-      throw -status;
-
+    if (status) {
+      std::stringstream msg;
+      msg << "Failed to read module parameter " << parname << " for module "
+          << modnum;
+      throw CXIAException(msg.str(), "Pixie16ReadSglModPar()", status);
+    }
     setResult(static_cast<int>(data));
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int status) {
-    std::string msg = apiMessage(modnum, status);
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
 
   return TCL_OK;
-}
-//////////////////////////////////////////////////////////////////
-
-/**
- * apiMessage
- *   @param module -number of the module.
- *   @param status - status value.
- *   @return human readable error message.
- */
-std::string CReadModPar::apiMessage(int module, int status) {
-  std::stringstream s;
-  s << "Error reading module parameter from module number " << module << ": "
-    << errorMessages[status];
-
-  std::string result(s.str());
-  return result;
 }

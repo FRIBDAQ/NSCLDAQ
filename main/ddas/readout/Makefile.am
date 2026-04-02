@@ -94,7 +94,6 @@ TESTS=./unittests
 install-exec-hook:
 	$(mkinstalldirs) $(SHAREDIR)
 	$(mkinstalldirs) $(SHAREDIR)/crate_1
-	$(INSTALL_DATA) DDASFirmwareVersions.txt $(SHAREDIR)
 	$(INSTALL_DATA) pixieserver.tcl $(SHAREDIR)
 	$(INSTALL_DATA) @srcdir@/crate_1/* $(SHAREDIR)/crate_1
 	$(mkinstalldirs) $(bindir)
@@ -103,4 +102,4 @@ install-exec-hook:
 clean-local:
 	rm -f @builddir@/ddasSortOptions.{h,c}
 
-EXTRA_DIST=DDASFirmwareVersions.txt.in crate_1 ddasSortOptions.ggo ddasReadout.tcl readout.xml sorter.xml readoutdriver.xml readout.dox pixieserver.tcl.in
+EXTRA_DIST=crate_1 ddasSortOptions.ggo ddasReadout.tcl readout.xml sorter.xml readoutdriver.xml readout.dox pixieserver.tcl.in

@@ -163,8 +163,10 @@ void DAQ::DDAS::SystemBooter::parallelBoot(Configuration &config,
   if (config.getDefaultFirmwareMap().empty()) {
     rv = Pixie16LoadModuleFirmware(fwPath);
     if (rv < 0) {
-      throw CXIAException("SystemBooter::parallelBoot() failed",
-                          "Pixie16LoadModuleFirmware()", rv);
+      throw CXIAException(
+          "SystemBooter::parallelBoot() failed to load module firmware from '" +
+              std::string(fwPath) + "'",
+          "Pixie16LoadModuleFirmware()", rv);
     } else {
       std::cout << "Found module firmware in " << fwPath << std::endl;
     }
@@ -282,7 +284,7 @@ void DAQ::DDAS::SystemBooter::setDeviceFirmware(std::string fwFile,
   int rv = Pixie16SetModuleFirmware(fwFile.c_str(), slot, device.c_str());
   if (rv < 0) {
     std::stringstream msg;
-    msg << "SystemBooter::setPerModuleFirmware() failed to set module " << mod
+    msg << "SystemBooter::setDeviceFirmware() failed to set module " << mod
         << " (slot " << slot << ") '" << device << "' FW from " << fwFile;
     throw CXIAException(msg.str(), "Pixie16SetModuleFirmware()", rv);
   }

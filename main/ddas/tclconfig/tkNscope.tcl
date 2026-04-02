@@ -23,6 +23,8 @@ exec tclsh "$0" ${1+"$@"}
 # @file tkNscope.tcl
 # @brief  Quick and fast growing replacement for nscope
 # @author Ron Fox <fox@nscl.msu.edu>
+# @note Standard nscope replacement is QtScope, available since 12.0. This program has not been updated 
+# to work with Rev. H modules or XIA API 3+. Therefore it is not installed as part of the normal NSCLDAQ installation.
 #
 
 # Assume we're installedin bin figure out where the libs are so we can

@@ -22,8 +22,12 @@
 #include "Boot.h"
 
 #include <cstring>
+#ifdef DEBUG
+#include <iostream> // Needed for debugging output
+#endif
 #include <sstream>
 
+#include <CXIAException.h>
 #include <Configuration.h>
 #include <HardwareRegistry.h>
 #include <config.h>
@@ -55,8 +59,7 @@ CBoot::~CBoot() {}
  *        a textual error message.
  */
 int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
-  int index, slot;
-  const char *pDoing;
+  int index;
   Tcl_Interp *pInterp = getInterpreter();
   try {
     requireExactly(objv, 2);
@@ -66,77 +69,49 @@ int CBoot::operator()(std::vector<Tcl_Obj *> &objv) {
     if ((index < 0) || (index >= slots.size())) {
       throw std::string("Module index is invalid");
     }
-    slot = slots[index];
+    auto slot = slots[index];
 
-    pDoing = "getting module hardware type";
     int hwtype = getHardwareType(index); // throws on error.
-
-    pDoing = "booting module";
-    bootModule(index, hwtype);
+    bootModule(index, slot, hwtype);
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int status) {
-    std::string msg = apiMsg(index, slot, status, pDoing);
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
   return TCL_OK;
 }
+
 //////////////////////////////////////////////////////////
 // Private utilities.
 
-/**
- * apiMsg
- *    Returns a string appropriate to an API error status.
- * @param index -module index.
- * @param slot  - corresponding module slot.
- * @param status - API status value.
- * @param doing  -  String describing what failed.
- * @return std::string - the error message.
- */
-std::string CBoot::apiMsg(int index, int slot, int status, const char *doing) {
-  char xiaErrMsg[1024];
-  PixieGetReturnCodeText(status, xiaErrMsg, 1024);
-
-  std::stringstream s;
-  s << "Error " << doing << " module number " << index << " (slot: " << slot
-    << "): " << xiaErrMsg;
-
-  std::string result = s.str();
-
-  return result;
-}
 /**
  * getHardwareType
  *   Get the computed hardware type.  This is an NSCL specific
  *   value that combines the properties of the module into a single
  *   integer that can be used to lookup stuff like the firmware files
  *   appropriate to the module.
- *   -  Use ReadModuleInfo to get the module information.
+ *   -  Use PixieGetModuleInfo  to get the module information.
  *   -  Ask the hardware registry to compute the hardware type.
  * @param index - module number.
  * @return int  - Hardware type of the module.
- * @throw int   - status code of failing calls to ReadModuleInfo.
+ * @throw CXIAException - if the API call to get the module info fails.
  * @throw std::string - if we can't figure out a valid hardware type.
- * @todo (ASC 3/27/25): If the module is in a bad state, does
- *   `PixieGetModuleInfo()` still retrieve the info properly? Do we need to
- *   maintain FW and HW maps of the modules independent of XIA's management?
  */
 int CBoot::getHardwareType(int index) {
   module_config cfg;
   int rv = PixieGetModuleInfo(index, &cfg);
-  if (rv < 0)
-    throw rv;
-
-  unsigned short rev = cfg.revision;
-  unsigned short msps = cfg.adc_sampling_frequency;
-  unsigned short bits = cfg.adc_bit_resolution;
-
+  if (rv < 0) {
+    std::stringstream msg;
+    msg << "Failed to get module info for module " << index;
+    throw CXIAException(msg.str(), "PixieGetModuleInfo()", rv);
+  }
   // Module type must be known:
-  auto type = DAQ::DDAS::HardwareRegistry::computeHardwareType(rev, msps, bits);
+  auto type = DAQ::DDAS::HardwareRegistry::computeHardwareType(
+      cfg.revision, cfg.adc_sampling_frequency, cfg.adc_bit_resolution);
   if (type == DAQ::DDAS::HardwareRegistry::Unknown) {
-    throw "Module hardware type is unknown";
+    throw std::string("Module hardware type is unknown");
   }
 
   return type;
@@ -145,36 +120,41 @@ int CBoot::getHardwareType(int index) {
 /**
  * bootModule
  *   Given we know the hardware type of a module, fetch the firmware
- *   files needed and try to boot the module.
+ *   files needed and try to boot the module. Since the system must be running
+ *   (booted) prior to running the pixieserver, we just ask the moudule what FW
+ *   its currently running.
  *
  * @param index - Index of module to boot.
  * @param type  - hardware type of module.
- * @throw int   - The status from BootModule.
- *
- * @todo (ASC 3/27/25): If the module is in a bad state, does
- *   `PixieGetModuleInfo()` still retrieve the info properly? Do we need to
- *   maintain FW and HW maps of the modules independent of XIA's management?
+ * @throw CXIAException - if any of the API calls fail.
  */
-void CBoot::bootModule(int index, int type) {
-  char sysFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
-  char fippiFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
-  char dspFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
-  char varFile[PIXIE16_API_MOD_CONFIG_MAX_STRING];
-  std::string settingsFile;
+void CBoot::bootModule(int index, int slot, int type) {
+  std::string settingsFile = m_config.getModuleSettingsFilePath(index);
+  int rv;
 
+// Debugging output can throw on its own!
+#ifdef DEBUG
   module_config cfg;
-  int rv = PixieGetModuleInfo(index, &cfg);
-  if (rv < 0)
-    throw rv;
+  rv = PixieGetModuleInfo(index, &cfg);
+  if (rv < 0) {
+    std::stringstream msg;
+    msg << "Failed to get module info for module " << index;
+    throw CXIAException(msg.str(), "PixieGetModuleInfo()", rv);
+  }
 
-  strcpy(sysFile, cfg.fw_device_file[0]);
-  strcpy(fippiFile, cfg.fw_device_file[1]);
-  strcpy(dspFile, cfg.fw_device_file[2]);
-  strcpy(varFile, cfg.fw_device_file[3]);
-  settingsFile = m_config.getModuleSettingsFilePath(index);
+  std::cout << "Booting module " << index << " (slot " << slot << ")"
+            << " with hardware type " << type << std::endl;
+  std::cout << "  System file: " << cfg.fw_device_file[0] << std::endl;
+  std::cout << "  FIPPI file: " << cfg.fw_device_file[1] << std::endl;
+  std::cout << "  DSP file: " << cfg.fw_device_file[2] << std::endl;
+  std::cout << "  Variable file: " << cfg.fw_device_file[3] << std::endl;
+  std::cout << "  Settings file: " << settingsFile << std::endl;
+#endif
 
-  rv = Pixie16BootModule(sysFile, fippiFile, nullptr, dspFile,
-                         settingsFile.c_str(), varFile, index, 0x7f);
-  if (rv < 0)
-    throw rv;
+  rv = Pixie16RebootModule(settingsFile.c_str(), index, 0x7f);
+  if (rv < 0) {
+    std::stringstream msg;
+    msg << "Failed to boot module " << index;
+    throw CXIAException(msg.str(), "Pixie16RebootModule()", rv);
+  }
 }

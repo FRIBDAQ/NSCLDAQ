@@ -21,13 +21,11 @@
 
 #include "SaveParams.h"
 
-#include <config.h>
-#include <config_pixie16api.h>
 #include <sstream>
 
-const char *errorMessages[3] = {"Success",
-                                "Failed to read DSP Parameters from Modules",
-                                "Failed to open DSP parameter file"};
+#include <CXIAException.h>
+#include <config.h>
+#include <config_pixie16api.h>
 
 /**
  * constructor
@@ -47,6 +45,7 @@ CSaveParams::~CSaveParams() {}
  *  @return int- TCL_OK on ok or TCL_ERROR on failure.
  *  @note the result is only set on error and then contains a string
  *         describing the error.
+ * @throw CXIAException if the API call fails.
  */
 int CSaveParams::operator()(std::vector<Tcl_Obj *> &objv) {
   const char *pFilename;
@@ -54,30 +53,18 @@ int CSaveParams::operator()(std::vector<Tcl_Obj *> &objv) {
     requireExactly(objv, 2);
     pFilename = Tcl_GetString(objv[1]);
     int status = Pixie16SaveDSPParametersToFile(pFilename);
-    if (status)
-      throw -status;
+    if (status) {
+      std::stringstream msg;
+      msg << "Unable to write DSP parameters to file " << pFilename;
+      throw CXIAException(msg.str(), "Pixie16SaveDSPParametersToFile()",
+                          status);
+    }
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int status) {
-    std::string result = apiMessage(pFilename, status);
-    setResult(result.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
   return TCL_OK;
-}
-////////////////////////////////////////////////////////////////
-/**
- * apiMessage
- *
- * @param filename - filename we're trying to save to.
- * @param status   - absolute value of status.
- * @return std::string - Appropriate error message.
- */
-std::string CSaveParams::apiMessage(const char *filename, int status) {
-  std::stringstream s;
-  s << "Unable to write to .set file: " << filename << ": "
-    << errorMessages[status];
-  std::string result = s.str();
-  return result;
 }

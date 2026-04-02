@@ -11,7 +11,8 @@
     </refnamediv>
     <refsynopsisdiv>
         <synopsis>
-$DAQBIN/DDASReadout --init-script=pixieserver.tcl
+NSCLDAQ 11.3  : $DAQBIN/DDASReadout --init-script=pixieserver.tcl
+NSCLDAQ 12.0+ : $DAQBIN/ddasReadout --init-script=pixieserver.tcl
             
 #---- pixieserver.tcl:
 
@@ -212,7 +213,7 @@ package require pixieplugin
                        </itemizedlist>
                        <para>
                             As the modules boot, the XIA API outputs text to its
-                            stdout to display progress.
+                            stdout to display progress. 
                         </para>
                     </listitem>
                 </varlistentry>
@@ -411,7 +412,7 @@ Successful reply:
                     </listitem>
                 </varlistentry>
                 <varlistentry>
-                   <term>><literal>Loadparams</literal> <replaceable>set-filename</replaceable></term>
+                   <term><literal>Loadparams</literal> <replaceable>set-filename</replaceable></term>
                    <listitem>
                        <para>
                         This request can only be

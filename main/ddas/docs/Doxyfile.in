@@ -869,11 +869,11 @@ INPUT                  = @srcdir@ \
                          @top_srcdir@/ddas/configuration \
                          @top_srcdir@/ddas/ddasdumper \
                          @top_srcdir@/ddas/exception \
-			 @top_srcdir@/ddas/pixieplugin \
-			 @top_srcdir@/ddas/qtscope \			 
+			             @top_srcdir@/ddas/pixieplugin \
+			             @top_srcdir@/ddas/qtscope \			 
                          @top_srcdir@/ddas/readout \			 
                          @top_srcdir@/ddas/tclconfig \			 
-			 @top_srcdir@/ddas/utilities/simulator
+			             @top_srcdir@/ddas/utilities/simulator
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

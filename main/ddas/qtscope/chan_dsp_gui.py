@@ -171,6 +171,10 @@ class ChanDSPGUI(QMainWindow):
         self.tab = None
         self.tab_name = ""
 
+        # Set range on module spin box in DSP GUI:
+
+        self.toolbar.set_module_spinbox_range(num_modules)
+
         for i in range(num_modules):
 
             # DSP tab layout for each module in the system:

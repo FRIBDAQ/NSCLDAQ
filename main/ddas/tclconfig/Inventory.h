@@ -51,7 +51,6 @@ public:
 
 private:
   Tcl_Obj *describeModule(int slot, int rev, int ser, int bits, int mhz);
-  std::string apiError(int index, int code);
   void freeObjects(Tcl_Obj *list, std::vector<Tcl_Obj *> &elements);
 };
 

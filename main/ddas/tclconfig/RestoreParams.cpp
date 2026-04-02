@@ -23,12 +23,9 @@
 
 #include <sstream>
 
+#include <CXIAException.h>
 #include <config.h>
 #include <config_pixie16api.h>
-
-static const char *errorMessages[5] = {
-    "Success", ".Set file length is invalid", "Failed to program FPPI On load",
-    "Failed to se DACS in a moulde", "Failed to open the .set file."};
 
 /**
  * constructor
@@ -47,6 +44,7 @@ CRestoreParams::~CRestoreParams() {}
  *    Perform the command.
  * @param objv - the command line words.
  * @return int
+ * @throw CXIAException if the API call fails.
  */
 int CRestoreParams::operator()(std::vector<Tcl_Obj *> &objv) {
   const char *pFilename;
@@ -54,31 +52,18 @@ int CRestoreParams::operator()(std::vector<Tcl_Obj *> &objv) {
     requireExactly(objv, 2);
     pFilename = Tcl_GetString(objv[1]);
     int status = Pixie16LoadDSPParametersFromFile(pFilename);
-    if (status)
-      throw -status;
+    if (status) {
+      std::stringstream msg;
+      msg << "Error loading DSP parameters from " << pFilename;
+      throw CXIAException(msg.str(), "Pixie16LoadDSPParametersFromFile()",
+                          status);
+    }
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int status) {
-    std::string msg = apiMessage(pFilename, status);
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
   return TCL_OK;
-}
-
-//////////////////////////////////////////////////////////
-/**
- * apiMessage
- *    @param pFilename - name of the4 file being restored.
- *    @param status    - status of the attempt.
- *    @return std::string
- */
-std::string CRestoreParams::apiMessage(const char *pFilename, int status) {
-  std::stringstream s;
-  s << "Unable to load DSP parametes from : " << status << " : "
-    << errorMessages[status];
-
-  std::string msg = s.str();
-  return msg;
 }

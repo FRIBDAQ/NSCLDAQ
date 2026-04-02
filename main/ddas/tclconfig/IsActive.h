@@ -64,6 +64,5 @@ private:
   Tcl_Obj *getAllModuleStates();
   bool moduleState(int index);
   Tcl_Obj *slotInfo(int index, int slot, bool state);
-  std::string apiMsg(int index, int slot, int status);
 };
 #endif

@@ -23,16 +23,9 @@
 
 #include <sstream>
 
+#include <CXIAException.h>
 #include <config.h>
 #include <config_pixie16api.h>
-
-/** table of possible error codes indexed by the negative status: */
-
-static const char *const ErrorMessages[]{
-    "Success", "Invalid Pixie-16 module number",
-    "Failed to start the ADJUST_OFFSETS run",
-    "ADJUST_OFFSETS run timed out - check Pixie16msg.txt for more information"};
-static unsigned MAX_MSGS = sizeof(ErrorMessages) / sizeof(char *);
 
 /**
  * constructor
@@ -63,33 +56,18 @@ int CAdjustOffsets::operator()(std::vector<Tcl_Obj *> &objv) {
     requireExactly(objv, 2);
     module = getInteger(objv[1]);
     int status = Pixie16AdjustOffsets(module);
-    if (status < 0)
-      throw status;
+    if (status < 0) {
+      std::stringstream msg;
+      msg << "Pixie16AdjustOffsets failed on module: " << module;
+      throw CXIAException(msg.str(), "Pixie16AdjustOffsets()", status);
+    }
   } catch (std::string msg) {
     setResult(msg.c_str());
     return TCL_ERROR;
-  } catch (int status) {
-    std::string msg = apiMsg(module, status);
-    setResult(msg.c_str());
+  } catch (CXIAException &e) {
+    setResult(e.ReasonText());
     return TCL_ERROR;
   }
 
   return TCL_OK;
-}
-///////////////////////////////////////////////////////////////////
-// private methods:
-std::string CAdjustOffsets::apiMsg(int index, int status) {
-  status = -status; // Turn into lookup.
-  std::string msg;
-  if (status < MAX_MSGS) {
-    msg = ErrorMessages[status];
-  } else {
-    msg = "Unknown error";
-  }
-  std::stringstream strFullMessage;
-  strFullMessage << "Error from Pixie16AdjustOffsets on module: " << index
-                 << " : (" << -status << ") : " << msg;
-  std::string result = strFullMessage.str();
-
-  return result;
 }

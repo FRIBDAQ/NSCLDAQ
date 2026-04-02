@@ -41,9 +41,6 @@ public:
   virtual ~CWriteModPar();
 
   virtual int operator()(std::vector<Tcl_Obj *> &objv);
-
-private:
-  std::string apiMessage(int module, int status);
 };
 
 #endif

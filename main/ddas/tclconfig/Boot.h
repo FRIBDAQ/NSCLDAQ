@@ -42,6 +42,12 @@ class Configuration;
  *    the modules and look through the inventory to figure out which
  *    index corresponds to the desired slot. Note that the boot pattern
  *    will only be 0x7f which boots everything.
+ * @note As of 6 March 2026, the boot feature is not fully functional. If the
+ *    module is running a managed firmware set (XIA standard firmware directory
+ *    structure), then the boot process will work. If the user overrides the
+ *    system firmware set, the reboot process will fail with an "invalid
+ *    firmware" error despite initially booting properly. This issue has been
+ *    reported to XIA and is currently under investigation.
  */
 class CBoot : public CTclCommand {
 private:
@@ -54,8 +60,7 @@ public:
   virtual int operator()(std::vector<Tcl_Obj *> &objv);
 
 private:
-  std::string apiMsg(int index, int slot, int status, const char *doing);
   int getHardwareType(int index);
-  void bootModule(int index, int type);
+  void bootModule(int index, int slot, int type);
 };
 #endif
