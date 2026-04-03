@@ -21,7 +21,7 @@ const int TRIGGER_TIMEOUT_SECS = 5; //!< Auto-trigger timeout in seconds.
  * 32-bit words that must be in the FIFO for the trigger to fire.
  */
 CMyTrigger::CMyTrigger()
-    : m_retrigger(false), m_fifoThreshold(EXTFIFO_READ_THRESH * 10),
+    : m_retrigger(false), m_fifoThreshold(EXTFIFO_READ_THRESH),
       m_wordsInEachModule(nullptr) {
   const char *pThreshold = getenv("FIFO_THRESHOLD");
   if (pThreshold) {
