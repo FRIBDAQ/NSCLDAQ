@@ -596,6 +596,8 @@ class RunUtilities:
         Set ParameterManager offline mode.
     get_histogram_length(module)
         Get the histogram length for a single module.
+    get_max_baselines(module)
+        Get the maximum number of baselines for a single module.
     """
 
     def __init__(self):
@@ -650,6 +652,10 @@ class RunUtilities:
         # Get histogram length
         lib.CPixieRunUtilities_GetHistogramLength.argtypes = [c_void_p, c_int]
         lib.CPixieRunUtilities_GetHistogramLength.restype = c_int
+
+        # Get max baselines
+        lib.CPixieRunUtilities_GetMaxBaselines.argtypes = [c_void_p, c_int]
+        lib.CPixieRunUtilities_GetMaxBaselines.restype = c_int
 
         # Dtor:
         lib.CPixieRunUtilities_delete.argtypes = [POINTER(c_char)]
@@ -863,6 +869,31 @@ class RunUtilities:
             return nbins
         except RuntimeError as e:
             self.logger.exception(f"Failed to read module {module} histogram length")
+            print(e)
+            return -1
+
+    def get_max_baselines(self, module):
+        """Wrapper to get the maximum number of baselines for a single module.
+
+        Parameters
+        ----------
+        module : int
+            Module number.
+
+        Returns
+        -------
+        int
+            Maximum number of baselines or -1 if error.
+        """
+        try:
+            max_baselines = lib.CPixieRunUtilities_GetMaxBaselines(self.obj, module)
+            if max_baselines < 0:
+                raise RuntimeError(
+                    f"Failed to read Mod. {module} maximum baselines with retval {max_baselines}"
+                )
+            return max_baselines
+        except RuntimeError as e:
+            self.logger.exception(f"Failed to read module {module} maximum baselines")
             print(e)
             return -1
 

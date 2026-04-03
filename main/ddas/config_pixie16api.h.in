@@ -18,25 +18,9 @@
 #endif
 
 /*
-   More deprecated constants used by QtScope (for the time being):
-*/
-
-#ifndef MAX_HISTOGRAM_LENGTH
-#define MAX_HISTOGRAM_LENGTH 32768
-#endif
-
-#ifndef MAX_ADC_TRACE_LEN
-#define MAX_ADC_TRACE_LEN 8192
-#endif
-
-#ifndef MAX_NUM_BASELINES
-#define MAX_NUM_BASELINES 3640
-#endif
-
-/*
    Readout programs need this to decide when to start reading
 */
 
 #ifndef EXTFIFO_READ_THRESH
-#define EXTFIFO_READ_THRESH 1024
+#define EXTFIFO_READ_THRESH 10240
 #endif

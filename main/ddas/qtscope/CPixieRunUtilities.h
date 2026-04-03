@@ -34,9 +34,11 @@ private:
   /** Generated run data histograms for all channels. */
   std::vector<std::vector<unsigned int>> m_genHistograms;
   unsigned int m_histogramLength; //!< Length of histogram for current module
-  bool m_runActive;               //!< True when running.
-  bool m_useGenerator;            //!< True to use generator test data.
-  CDataGenerator *m_pGenerator;   //!< Generator for synthetic data.
+  unsigned int
+      m_maxBaselines;  //!< Max number of baselines which can be read out
+  bool m_runActive;    //!< True when running.
+  bool m_useGenerator; //!< True to use generator test data.
+  CDataGenerator *m_pGenerator; //!< Generator for synthetic data.
 
 public:
   /** @brief Constructor. */
@@ -131,6 +133,13 @@ public:
    * @returns The histogram length for the module or XIA error code if failed.
    */
   int GetHistogramLength(int module);
+  /**
+   * @brief Get the maximum number of baselines for a module.
+   * @param module Module number (zero-indexed).
+   * @returns The maximum number of baseline values which can be read out at
+   * once for this module or XIA error code if failed.
+   */
+  int GetMaxBaselines(int module);
 
 private:
   /**
@@ -139,6 +148,27 @@ private:
    * @throw CXIAExeption If the baseline read fails.
    */
   void UpdateBaselineHistograms(int module);
+  /**
+   * @brief Set the histogram length for a module. This is only used for
+   * testing with the generator and should not be used in normal operation.
+   * @param module Module number (zero-indexed).
+   * @note Histogram length is assume to be the same for all channels on a
+   * module. This is a private functon since the histogram length is determined
+   * by the module and should not be set from the outside.
+   */
+  void SetHistogramLength(int module) {
+    m_histogramLength = static_cast<unsigned int>(GetHistogramLength(module));
+  };
+  /**
+   * @brief Set the maximum number of baselines for a module
+   * @param module Module number (zero-indexed)
+   * @note Max number of baselines is assumed to be the same for all channels on
+   * a module. This is a private method since the max number of baselines is
+   * determined by the module and should not be set from the outside.
+   */
+  void SetMaxBaselines(int module) {
+    m_maxBaselines = static_cast<unsigned int>(GetMaxBaselines(module));
+  };
 };
 
 /** @} */
@@ -202,6 +232,12 @@ void CPixieRunUtilities_SetUseGenerator(CPixieRunUtilities *utils, bool mode) {
 /** @brief Wrapper to get histogram length for a single module. */
 int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities *utils, int mod) {
   return utils->GetHistogramLength(mod);
+}
+/**
+ * @brief Wrapper to get the maximum number of baselines for a single module.
+ */
+int CPixieRunUtilities_GetMaxBaselines(CPixieRunUtilities *utils, int mod) {
+  return utils->GetMaxBaselines(mod);
 }
 
 /** @brief Wrapper for the class constructor. */
