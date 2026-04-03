@@ -108,9 +108,9 @@ jobs:
       - name: Show portman and ringmaster logs on failure
         if: failure()
         run: |
-          echo "=== Portman log: ===="
+          echo "=== Portman log: ==="
           cat /tmp/portman.log
-          echo "=== Ringmaster log: ===="
+          echo "=== Ringmaster log: ==="
           cat /tmp/ringmaster.log
       - name: Checking disk space
         working-directory: ./main/oot
