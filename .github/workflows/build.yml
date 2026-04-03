@@ -101,7 +101,7 @@ jobs:
           cargo install nscldaq_ringmaster
           cargo install nscldaq_ringtostdout
           export PATH=$PATH:~/.cargo/bin
-          nohup portman > /tmp/portman.log 2>&1 &
+          nohup portman -l 30000 -p 31000 -n 1000 > /tmp/portman.log 2>&1 &
           sleep 2
           nohup nscldaq_ringmaster -l /tmp/ringmaster.log >> /tmp/ringmaster.log 2>&1 &
           VERBOSE=1 xvfb-run -a make check
