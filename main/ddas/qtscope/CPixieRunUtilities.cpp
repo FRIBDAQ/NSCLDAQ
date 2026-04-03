@@ -254,8 +254,7 @@ int CPixieRunUtilities::ReadBaseline(int module, int channel) {
     // To treat this like a run, make cumulative histogram of read values:
 
     UpdateBaselineHistograms(module);
-    // Copy the single channel baseline data to a local variable for access via
-    // a getter:
+    // Copy the single channel baseline data to m_baseline for getter access:
     std::copy(m_baselineHistograms[channel].begin(),
               m_baselineHistograms[channel].end(), m_baseline.begin());
   } catch (const CXIAException &e) {
@@ -263,11 +262,6 @@ int CPixieRunUtilities::ReadBaseline(int module, int channel) {
               0); // Reset baseline data on failure.
     std::cerr << e.ReasonText() << std::endl;
     return -1;
-  } catch (const std::runtime_error &e) {
-    std::fill(m_baseline.begin(), m_baseline.end(),
-              0); // Reset baseline data on failure... in this branch
-    std::cerr << e.what() << std::endl;
-    return -2;
   }
 
   return 0;
@@ -392,7 +386,14 @@ void CPixieRunUtilities::UpdateBaselineHistograms(int module) {
   int retval;
 
   module_config cfg;
-  PixieGetModuleInfo(module, &cfg);
+  retval = PixieGetModuleInfo(module, &cfg);
+  if (retval < 0) {
+    std::stringstream msg;
+    msg << "CPixieRunUtilities::UpdateBaselineHistograms() failed to get "
+           "module info for module "
+        << module;
+    throw CXIAException(msg.str(), "PixieGetModuleInfo()", retval);
+  }
 
   for (int i = 0; i < cfg.number_of_channels; i++) {
     std::vector<double> baselines(m_maxBaselines, 0);
@@ -405,7 +406,7 @@ void CPixieRunUtilities::UpdateBaselineHistograms(int module) {
       retval = Pixie16ReadSglChanBaselines(baselines.data(), timestamps.data(),
                                            m_maxBaselines, module, i);
     }
-
+    // Only the API call can fail, generator always returns 0:
     if (retval < 0) {
       std::stringstream msg;
       msg << "CPixieRunUtilities::UpdateBaselineHistograms() failed"
