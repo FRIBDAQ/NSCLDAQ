@@ -101,10 +101,17 @@ jobs:
           cargo install nscldaq_ringmaster
           cargo install nscldaq_ringtostdout
           export PATH=$PATH:~/.cargo/bin
-          nohup portman > /dev/null 2>&1 &
+          nohup portman > /tmp/portman.log 2>&1 &
           sleep 2
-          nohup nscldaq_ringmaster -l /dev/null >/dev/null 2>&1 &
+          nohup nscldaq_ringmaster -l /tmp/ringmaster.log >> /tmp/ringmaster.log 2>&1 &
           VERBOSE=1 xvfb-run -a make check
+      - name: Show portman and ringmaster logs on failure
+        if: failure()
+        run: |
+          echo "=== Portman log: ===="
+          cat /tmp/portman.log
+          echo "=== Ringmaster log: ===="
+          cat /tmp/ringmaster.log
       - name: Checking disk space
         working-directory: ./main/oot
         run: |
