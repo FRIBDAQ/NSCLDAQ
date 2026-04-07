@@ -11,6 +11,7 @@
 #include <CXIAException.h>
 #include <config.h>
 #include <config_pixie16api.h>
+#include <string>
 
 const int TRIGGER_TIMEOUT_SECS = 5; //!< Auto-trigger timeout in seconds.
 
@@ -98,7 +99,7 @@ bool CMyTrigger::operator()() {
           retval = Pixie16CheckExternalFIFOStatus(&nFIFOWords, ModNum);
           if (retval < 0) {
             std::string msg("Failed to read external FIFO status for module ");
-            msg += ModNum;
+            msg += std::to_string(ModNum);
             throw CXIAException(msg, "Pixie16CheckExternalFIFOStatus", retval);
             nFIFOWords = 0; // For safety.
           }

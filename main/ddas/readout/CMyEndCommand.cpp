@@ -23,6 +23,7 @@
 #include <config_pixie16api.h>
 
 #include "CMyEventSegment.h"
+#include "DDASReadoutMain.h"
 #include <CExperiment.h>
 
 CMyEndCommand::CMyEndCommand(CTCLInterpreter &rInterp, CMyEventSegment *pSeg,
@@ -47,6 +48,8 @@ CMyEndCommand::~CMyEndCommand() {}
  * very high input rate to one or more channels on that module.
  */
 int CMyEndCommand::transitionToInactive() {
+  auto pReadout = DDASReadoutMain::getInstance();
+  pReadout->logProgress("DDAS: Transitioning Pixies to Inactive");
   std::cout << "Transitioning Pixies to Inactive" << std::endl;
 
   if (::getenv("INFINITY_CLOCK") == nullptr) {
@@ -106,15 +109,20 @@ int CMyEndCommand::transitionToInactive() {
     }
   }
 
+  pReadout->logProgress("DDAS: Transition to Inactive complete");
+
   return 0;
 }
 
 /**
  * @details
  * After reading out the last of the data, write the run statistics to an
- * end-of-run scalers file.
+ * end-of-run scalers file. This all must happen prior to the emission of
+ * the end run item.
  */
 int CMyEndCommand::readOutRemainingData() {
+  auto pReadout = DDASReadoutMain::getInstance();
+
   // We will poll trying to lock the mutex so that we have a better chance
   // of acquiring it.
   const int nAllowedAttempts = 10;
@@ -127,6 +135,8 @@ int CMyEndCommand::readOutRemainingData() {
     // Failed to lock the interface, add an end event back onto the tail of
     // the event stack. We will try again. This is to prevent deadlocks
     // between the CVariableBuffers thread sync and the end run sync.
+    pReadout->logProgress(
+        "DDAS: Failed to acquire lock for end read, rescheduling");
     rescheduleEndRead();
     return TCL_ERROR;
   }
@@ -147,7 +157,8 @@ int CMyEndCommand::readOutRemainingData() {
         // retval == 1: A run is in progress.
         // retval == 0: Run is ended.
         if (retval < 0) {
-          std::string msg = "Failed check run status in module " + i;
+          std::string msg =
+              "Failed check run status in module " + std::to_string(i);
           throw CXIAException(msg, "Pixie16CheckRunStatus", retval);
         } else if (retval == 1) {
           // Keep trying...
@@ -173,6 +184,7 @@ int CMyEndCommand::readOutRemainingData() {
   // API's point of view. In any event, we will read out the possible last
   // words from the external FIFO and get statistics.
 
+  pReadout->logProgress("DDAS: Performing final FIFO read");
   m_pExp->ReadEvent(); // Final read.
 
   std::ofstream outputfile;
@@ -186,7 +198,7 @@ int CMyEndCommand::readOutRemainingData() {
       if (retval < 0) {
         std::string msg = "Error accessing scaler statistics"
                           " from module " +
-                          i;
+                          std::to_string(i);
         throw CXIAException(msg, "Pixie16ReadStatisticsFromModule", retval);
       }
     } catch (const CXIAException &e) {
@@ -204,6 +216,8 @@ int CMyEndCommand::readOutRemainingData() {
   }
 
   outputfile.close();
+  pReadout->logProgress("DDAS: Wrote end of run scalers");
+
   CVMEInterface::Unlock();
 
   return 0;
@@ -211,6 +225,7 @@ int CMyEndCommand::readOutRemainingData() {
 
 int CMyEndCommand::endRun() {
   RunState *pState = RunState::getInstance();
+  auto pReadout = DDASReadoutMain::getInstance();
 
   // To end a run we must have no more command parameters
   // and the state must be either active or paused:
@@ -235,7 +250,7 @@ int CMyEndCommand::endRun() {
       // between the CVariableBuffers thread sync and the end run sync.
       rescheduleEndTransition();
     } else {
-      // We've acquired the lock, proceed:
+      // We've acquired the lock, proceed:=
       int deviceEndStatus = transitionToInactive();
 
       CVMEInterface::Unlock();
@@ -275,13 +290,21 @@ void CMyEndCommand::rescheduleEndRead() {
  */
 int CMyEndCommand::operator()(CTCLInterpreter &interp,
                               std::vector<CTCLObject> &objv) {
+  // Add in some logging capability:
+  auto pReadout = DDASReadoutMain::getInstance();
+  pReadout->logProgress("DDAS: End run requested");
+
   if (objv.size() != 1) {
     return TCL_ERROR;
   }
   int status = endRun();
   if (status == TCL_OK) {
+    pReadout->logProgress("DDAS: Run ended, reading out remaining data");
     readOutRemainingData();
   }
+
+  pReadout->logProgress("DDAS: End run complete");
+
   return TCL_OK;
 }
 
@@ -290,6 +313,8 @@ int CMyEndCommand::operator()(CTCLInterpreter &interp,
  * Calls the command's endRun function.
  */
 int CMyEndCommand::handleEndRun(Tcl_Event *pEvt, int flags) {
+  auto pReadout = DDASReadoutMain::getInstance();
+  pReadout->logProgress("DDAS: Handling end run event");
   EndEvent *pEnd = reinterpret_cast<EndEvent *>(pEvt);
   pEnd->s_thisPtr->endRun();
 
@@ -301,6 +326,8 @@ int CMyEndCommand::handleEndRun(Tcl_Event *pEvt, int flags) {
  * Calls the command's readOutRemainingData function.
  */
 int CMyEndCommand::handleReadOutRemainingData(Tcl_Event *pEvt, int flags) {
+  auto pReadout = DDASReadoutMain::getInstance();
+  pReadout->logProgress("DDAS: Handling read out remaining data event");
   EndEvent *pEnd = reinterpret_cast<EndEvent *>(pEvt);
   pEnd->s_thisPtr->readOutRemainingData();
 
