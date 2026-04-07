@@ -313,6 +313,8 @@ int CMyEndCommand::operator()(CTCLInterpreter &interp,
  * Calls the command's endRun function.
  */
 int CMyEndCommand::handleEndRun(Tcl_Event *pEvt, int flags) {
+  auto pReadout = DDASReadoutMain::getInstance();
+  pReadout->logProgress("DDAS: Handling end run event");
   EndEvent *pEnd = reinterpret_cast<EndEvent *>(pEvt);
   pEnd->s_thisPtr->endRun();
 
@@ -324,6 +326,8 @@ int CMyEndCommand::handleEndRun(Tcl_Event *pEvt, int flags) {
  * Calls the command's readOutRemainingData function.
  */
 int CMyEndCommand::handleReadOutRemainingData(Tcl_Event *pEvt, int flags) {
+  auto pReadout = DDASReadoutMain::getInstance();
+  pReadout->logProgress("DDAS: Handling read out remaining data event");
   EndEvent *pEnd = reinterpret_cast<EndEvent *>(pEvt);
   pEnd->s_thisPtr->readOutRemainingData();
 
