@@ -180,7 +180,13 @@ if {$fastboot} {
     set fbstring ""
 }
 
-set readoutCmd "$infstring $fbstring SCALER_SECONDS=$scalerSecs FIFO_THRESHOLD=$fifoThreshold EVENT_BUFFER_SIZE=$bufferSize $readoutCmd"
+##
+# @note (ASC 4/10/26): DDAS_TSTAMP_SCALE_FACTOR is ignored by DDASReadout
+# unless the external clock bit is set in the CSRA, so its fine to pass
+# the default value (1) to the readout code:
+#
+
+set readoutCmd "$infstring $fbstring DDAS_TSTAMP_SCALE_FACTOR=$clkmult SCALER_SECONDS=$scalerSecs FIFO_THRESHOLD=$fifoThreshold EVENT_BUFFER_SIZE=$bufferSize $readoutCmd"
 
 foreach optMapEntry $ddasOptionMap {
     set opt [lindex $optMapEntry 0]
