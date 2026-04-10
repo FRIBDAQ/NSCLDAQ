@@ -106,8 +106,8 @@ jobs:
                        --enable-ddas-docs=yes \
                        --with-incorp-build-cores=2 \
                        --with-xiaapidir=`cat /usr/opt/XIAAPI_PATH` \
-                       --with-firmwaredir=`cat /usr/opt/DDASFIRMWARE_PATH_12.1` \
-                       --with-dspdir=`cat /usr/opt/DDASDSP_PATH` \
+                       --with-firmwaredir=`cat /usr/opt/DDASFIRMWARE_PATH-12.1` \
+                       --with-dspdir=`cat /usr/opt/DDASDSP_PATH-12.1` \
                        --with-rootsys=`cat /usr/opt/ROOT_PATH` \
                        --enable-caen-nextgen \
                        CXX=`cat /usr/opt/MPI_PATH`
