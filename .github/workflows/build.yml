@@ -84,7 +84,7 @@ jobs:
                        --enable-ddas-docs=yes \
                        --with-incorp-build-cores=2 \
                        --with-xiaapidir=`cat /usr/opt/XIAAPI_PATH` \
-                       --with-firmwaredir=`cat /usr/opt/DDASFIRMWARE_PATH` \
+                       --with-firmwaredir=`cat /usr/opt/DDASFIRMWARE_PATH-12.2` \
                        --with-rootsys=`cat /usr/opt/ROOT_PATH` \
                        --enable-mvlc-stack-generator \
                        --with-mvlcdir=`cat /usr/opt/MESYTECMVLC_PATH` \
