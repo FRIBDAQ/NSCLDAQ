@@ -546,16 +546,16 @@ for $run either does not exist or is not a directory"
         ::EventLog::deleteExitFile
         
         # If required, protect the files:
-        #   - The destDir is set to 0550
-        #   - The parent dir is set to 0550.
-        #   - A chmod -R is done to set the contents to 0x550 as well.
+        #   - The destDir is set to 0555
+        #   - The parent dir is set to 0555.
+        #   - A chmod -R is done to set the contents to 0x555 as well.
         
         if {$::EventLog::protectFiles} {
             set files [glob -nocomplain -directory $destDir -types {f d} *]
             if {[llength $files]>0} {
-              exec sh << "chmod -R 0550 $files"
-              file attributes $destDir -permissions 0550 
-              file attributes [file join $destDir ..] -permissions 0550 
+              exec sh << "chmod -R 0555 $files"
+              file attributes $destDir -permissions 0555 
+              file attributes [file join $destDir ..] -permissions 0555 
             }
         }
         set ::EventLog::needFinalization 0
