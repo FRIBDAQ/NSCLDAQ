@@ -1,3 +1,7 @@
+== 12.1-021 ==
+* Stagearea becomes accessible by Others
+== 12.1-021 ==
+
 == 12.1-020 ==
 * Backport issue #424 updates for QtScope into 12.1 branch
 * Issue #469 - Support external clock scaling factor for DDAS
