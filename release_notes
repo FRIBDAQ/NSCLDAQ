@@ -1,3 +1,8 @@
+== 12.2-007 ==
+* Globals:deviceSelectorValue variable is accessible from tcldriver.
+* Stagearea becomes accessible by Others
+== 12.2-007 ==
+
 == 12.2-006 ==
 * Issue #424 - FDSi requested updates for QtScope
 * Issue #469 - support external clock for DDAS
