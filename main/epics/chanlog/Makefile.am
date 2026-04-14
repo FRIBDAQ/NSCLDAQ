@@ -19,6 +19,6 @@ chanlog_CXXFLAGS= $(THREADCXX_FLAGS) $(AM_CXXFLAGS) $(EPICS_BIN) $(EPICS_INCLUDE
 
 
 
-EXTRA_DIST = chanlog.xml
 
 endif
+EXTRA_DIST = chanlog.xml
