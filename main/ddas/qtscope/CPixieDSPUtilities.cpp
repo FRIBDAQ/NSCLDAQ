@@ -13,9 +13,8 @@
 #include <config_pixie16api.h>
 
 int CPixieDSPUtilities::AdjustOffsets(int module) {
-  int retval;
   try {
-    retval = Pixie16AdjustOffsets(module);
+    int retval = Pixie16AdjustOffsets(module);
     if (retval < 0) {
       std::stringstream msg;
       msg << "Failed to adjust offsets in module " << module;
@@ -23,9 +22,10 @@ int CPixieDSPUtilities::AdjustOffsets(int module) {
     }
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
+    return e.ReasonCode();
   }
 
-  return retval;
+  return 0;
 }
 
 /**
@@ -35,9 +35,8 @@ int CPixieDSPUtilities::AdjustOffsets(int module) {
  */
 int CPixieDSPUtilities::WriteChanPar(int module, int channel, char *paramName,
                                      double value) {
-  int retval;
   try {
-    retval = Pixie16WriteSglChanPar(paramName, value, module, channel);
+    int retval = Pixie16WriteSglChanPar(paramName, value, module, channel);
     if (retval < 0) {
       std::stringstream msg;
       msg << "Failed to write channel parameter " << paramName << " to module "
@@ -46,9 +45,10 @@ int CPixieDSPUtilities::WriteChanPar(int module, int channel, char *paramName,
     }
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
+    return e.ReasonCode();
   }
 
-  return retval;
+  return 0;
 }
 
 /**
@@ -58,9 +58,8 @@ int CPixieDSPUtilities::WriteChanPar(int module, int channel, char *paramName,
  */
 int CPixieDSPUtilities::ReadChanPar(int module, int channel, char *paramName,
                                     double &value) {
-  int retval;
   try {
-    retval = Pixie16ReadSglChanPar(paramName, &value, module, channel);
+    int retval = Pixie16ReadSglChanPar(paramName, &value, module, channel);
     if (retval < 0) {
       std::stringstream msg;
       msg << "Failed to read channel parameter " << paramName << " from module "
@@ -69,9 +68,10 @@ int CPixieDSPUtilities::ReadChanPar(int module, int channel, char *paramName,
     }
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
+    return e.ReasonCode();
   }
 
-  return retval;
+  return 0;
 }
 
 /**
@@ -81,9 +81,8 @@ int CPixieDSPUtilities::ReadChanPar(int module, int channel, char *paramName,
  */
 int CPixieDSPUtilities::WriteModPar(int module, char *paramName,
                                     unsigned int value) {
-  int retval;
   try {
-    retval = Pixie16WriteSglModPar(paramName, value, module);
+    int retval = Pixie16WriteSglModPar(paramName, value, module);
     if (retval < 0) {
       std::stringstream msg;
       msg << "Failed to write module parameter " << paramName << " to module "
@@ -92,9 +91,10 @@ int CPixieDSPUtilities::WriteModPar(int module, char *paramName,
     }
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
+    return e.ReasonCode();
   }
 
-  return retval;
+  return 0;
 }
 
 /**
@@ -104,9 +104,8 @@ int CPixieDSPUtilities::WriteModPar(int module, char *paramName,
  */
 int CPixieDSPUtilities::ReadModPar(int module, char *paramName,
                                    unsigned int &value) {
-  int retval;
   try {
-    retval = Pixie16ReadSglModPar(paramName, &value, module);
+    int retval = Pixie16ReadSglModPar(paramName, &value, module);
     if (retval < 0) {
       std::stringstream msg;
       msg << "Failed to read module parameter " << paramName << " from module "
@@ -115,7 +114,8 @@ int CPixieDSPUtilities::ReadModPar(int module, char *paramName,
     }
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
+    return e.ReasonCode();
   }
 
-  return retval;
+  return 0;
 }

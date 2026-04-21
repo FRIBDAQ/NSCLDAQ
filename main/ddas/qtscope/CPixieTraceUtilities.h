@@ -50,7 +50,6 @@ public:
    * @retval  0 Success.
    * @retval -1 XIA API call fails.
    * @retval -2 Acquired trace is empty (median undefined).
-   * @retval -3 Unhanded exception when reading trace and calculating median.
    */
   int ReadTrace(int module, int channel);
   /**

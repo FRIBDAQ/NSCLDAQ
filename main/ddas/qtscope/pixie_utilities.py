@@ -635,11 +635,11 @@ class RunUtilities:
 
         # Returns a pointer to the underlying histogram data from the vector:
         lib.CPixieRunUtilities_GetHistogramData.argtypes = [c_void_p]
-        lib.CPixieRunUtilities_GetHistogramData.restype = POINTER(c_uint)
+        lib.CPixieRunUtilities_GetHistogramData.restype = POINTER(c_ushort)
 
         # Returns a pointer to the underlying baseline data from the vector:
         lib.CPixieRunUtilities_GetBaselineData.argtypes = [c_void_p]
-        lib.CPixieRunUtilities_GetBaselineData.restype = POINTER(c_uint)
+        lib.CPixieRunUtilities_GetBaselineData.restype = POINTER(c_ushort)
 
         # Run active status:
         lib.CPixieRunUtilities_GetRunActive.argtypes = [c_void_p]

@@ -37,8 +37,6 @@ CPixieRunUtilities::~CPixieRunUtilities() { delete m_pGenerator; }
  * @todo Disable multiple modules from running in non-sync mode.
  */
 int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
-  int retval;
-
   SetHistogramLength(module);
 
   m_genHistograms.assign(nChannels,
@@ -55,8 +53,8 @@ int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
   try {
     // Set the "infinite" run time of 99999 seconds:
     std::string paramName = "HOST_RT_PRESET";
-    retval = Pixie16WriteSglModPar(paramName.c_str(),
-                                   Decimal2IEEEFloating(99999), module);
+    int retval = Pixie16WriteSglModPar(paramName.c_str(),
+                                       Decimal2IEEEFloating(99999), module);
     if (retval < 0) {
       std::stringstream msg;
       msg << "Run time not properly set."
@@ -77,7 +75,7 @@ int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
     }
 
     // Begin the run:
-    int retval = Pixie16StartHistogramRun(module, NEW_RUN);
+    retval = Pixie16StartHistogramRun(module, NEW_RUN);
 
     if (retval < 0) {
       std::stringstream msg;
@@ -93,7 +91,7 @@ int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
     return e.ReasonCode();
   }
 
-  return retval;
+  return 0;
 }
 
 /**
@@ -103,9 +101,8 @@ int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
  * is caused when one or more channels has a very high trigger rate.
  */
 int CPixieRunUtilities::EndHistogramRun(int module) {
-  int retval;
   try {
-    retval = Pixie16EndRun(module);
+    int retval = Pixie16EndRun(module);
     if (retval < 0) {
       std::stringstream msg;
       msg << "CPixieRunUtilities::EndHistogramRun() failed to "
@@ -114,12 +111,14 @@ int CPixieRunUtilities::EndHistogramRun(int module) {
     }
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
+    return e.ReasonCode();
   }
 
   bool runEnded = false;
   int nRetries = 0;
   const int maxRetries = 10;
   while ((runEnded == false) && (nRetries < maxRetries)) {
+    int retval; // Run ended iff Pixie16CheckRunStatus() returns 0.
     try {
       retval = Pixie16CheckRunStatus(module);
       if (retval < 0) {
@@ -130,6 +129,7 @@ int CPixieRunUtilities::EndHistogramRun(int module) {
       }
     } catch (const CXIAException &e) {
       std::cerr << e.ReasonText() << std::endl;
+      return e.ReasonCode();
     }
     runEnded = (retval == 0); // True if run ended.
     nRetries++;
@@ -137,7 +137,7 @@ int CPixieRunUtilities::EndHistogramRun(int module) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
-  if (nRetries == maxRetries) {
+  if (nRetries >= maxRetries) {
     std::cout << "CPixieRunUtilities::EndHistogramRun() failed to"
               << " end run in module " << module << std::endl;
   } else if (runEnded) {
@@ -158,8 +158,8 @@ int CPixieRunUtilities::EndHistogramRun(int module) {
  */
 int CPixieRunUtilities::ReadHistogram(int module, int channel) {
   // Allocate data structure for histogram and grab it or use the generator:
-  int retval;
   try {
+    int retval;
     if (m_useGenerator) {
       retval = m_pGenerator->GetHistogramData(m_genHistograms[channel].data(),
                                               m_histogramLength);
@@ -179,9 +179,10 @@ int CPixieRunUtilities::ReadHistogram(int module, int channel) {
     }
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
+    return e.ReasonCode();
   }
 
-  return retval;
+  return 0;
 }
 
 /**
@@ -258,10 +259,10 @@ int CPixieRunUtilities::ReadBaseline(int module, int channel) {
     std::copy(m_baselineHistograms[channel].begin(),
               m_baselineHistograms[channel].end(), m_baseline.begin());
   } catch (const CXIAException &e) {
-    std::fill(m_baseline.begin(), m_baseline.end(),
-              0); // Reset baseline data on failure.
+    // Reset baseline data on failure:
+    std::fill(m_baseline.begin(), m_baseline.end(), 0);
     std::cerr << e.ReasonText() << std::endl;
-    return -1;
+    return e.ReasonCode();
   }
 
   return 0;
@@ -277,14 +278,12 @@ int CPixieRunUtilities::ReadBaseline(int module, int channel) {
  * @todo (ASC 9/27/23): Confirm end of run and handle if not ended properly.
  */
 int CPixieRunUtilities::ReadModuleStats(int module) {
-  int retval;
   try {
     // Where to read the statistics into, size may depend on revision.
     // Fetch the proper stats block size:
     std::vector<unsigned int> statistics(Pixie16GetStatisticsSize(), 0);
 
-    retval = Pixie16ReadStatisticsFromModule(statistics.data(), module);
-
+    int retval = Pixie16ReadStatisticsFromModule(statistics.data(), module);
     if (retval < 0) {
       std::stringstream msg;
       msg << "CPixieRunUtilities::ReadModuleStats() error accessing scaler "
@@ -312,7 +311,7 @@ int CPixieRunUtilities::ReadModuleStats(int module) {
     return e.ReasonCode();
   }
 
-  return retval;
+  return 0;
 }
 
 /**
@@ -383,10 +382,8 @@ int CPixieRunUtilities::GetMaxBaselines(int module) {
  * the user that something has been dropped.
  */
 void CPixieRunUtilities::UpdateBaselineHistograms(int module) {
-  int retval;
-
   module_config cfg;
-  retval = PixieGetModuleInfo(module, &cfg);
+  int retval = PixieGetModuleInfo(module, &cfg);
   if (retval < 0) {
     std::stringstream msg;
     msg << "CPixieRunUtilities::UpdateBaselineHistograms() failed to get "
