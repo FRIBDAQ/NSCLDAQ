@@ -80,7 +80,7 @@ int CPixieSystemUtilities::Boot() {
     booter.boot(m_config, type);
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
-    return -1;
+    return e.ReasonCode();
   }
 
   m_booted = true;
@@ -95,10 +95,8 @@ int CPixieSystemUtilities::Boot() {
  * version 2 it is binary.
  */
 int CPixieSystemUtilities::SaveSetFile(char *fileName) {
-  int retval;
   try {
     int retval = Pixie16SaveDSPParametersToFile(fileName);
-
     if (retval < 0) {
       std::stringstream msg;
       msg << "CPixieSystemUtilities::SaveSetFile() failed to save"
@@ -108,9 +106,10 @@ int CPixieSystemUtilities::SaveSetFile(char *fileName) {
     }
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
+    return e.ReasonCode();
   }
 
-  return retval;
+  return 0;
 }
 
 /**
@@ -121,33 +120,33 @@ int CPixieSystemUtilities::SaveSetFile(char *fileName) {
  * checked at boot to load the new settings file.
  */
 int CPixieSystemUtilities::LoadSetFile(char *fileName) {
-  int retval;
-  try {
-    if (m_booted) { // If system is booted just apply the params.
-      retval = Pixie16LoadDSPParametersFromFile(fileName);
+  // If we aren't booted, simply hold onto the name:
+  if (!m_booted) {
+    m_ovrSetFile = true;
+    m_config.setSettingsFilePath(fileName);
+    std::cout << "New DSP parameter file " << fileName
+              << " will be loaded on system boot" << std::endl;
+    return 0;
+  }
 
-      if (retval < 0) {
-        std::stringstream msg;
-        msg << "CPixieSystemUtilities::LoadSetFile() failed to"
-            << " load DSP parameter file from: " << fileName;
-        throw CXIAException(msg.str(), "Pixie16LoadDSPParametersFromFile()",
-                            retval);
-      } else {
-        std::cout << "Loading new DSP parameter file from: " << fileName
-                  << std::endl;
-      }
-    } else { // Not booted so hold on to the name.
-      m_ovrSetFile = true;
-      m_config.setSettingsFilePath(fileName);
-      std::cout << "New DSP parameter file " << fileName
-                << " will be loaded on system boot" << std::endl;
+  try {
+    int retval = Pixie16LoadDSPParametersFromFile(fileName);
+    if (retval < 0) {
+      std::stringstream msg;
+      msg << "CPixieSystemUtilities::LoadSetFile() failed to"
+          << " load DSP parameter file from: " << fileName;
+      throw CXIAException(msg.str(), "Pixie16LoadDSPParametersFromFile()",
+                          retval);
+    } else {
+      std::cout << "Loading new DSP parameter file from: " << fileName
+                << std::endl;
     }
   } catch (const CXIAException &e) {
     std::cerr << e.ReasonText() << std::endl;
     return e.ReasonCode();
   }
 
-  return retval;
+  return 0;
 }
 
 /**
@@ -157,27 +156,30 @@ int CPixieSystemUtilities::LoadSetFile(char *fileName) {
  * state.
  */
 int CPixieSystemUtilities::ExitSystem() {
-  int retval;
+  // If we aren't booted, we don't need to do anything, just return success:
+  if (!m_booted) {
+    return 0;
+  }
+
+  // Assuming the system is booted then:
   try {
-    if (m_booted) {
-      for (int i = 0; i < m_config.getNumberOfModules(); i++) {
-        retval = Pixie16ExitSystem(i);
-        if (retval < 0) {
-          std::stringstream msg;
-          msg << "CPixieSystemUtilities::ExitSystem() failed"
-              << " to exit " << "module " << i;
-          throw CXIAException(msg.str(), "Pixie16ExitSystem()", retval);
-        }
+    for (int i = 0; i < m_config.getNumberOfModules(); i++) {
+      int retval = Pixie16ExitSystem(i);
+      if (retval < 0) {
+        std::stringstream msg;
+        msg << "CPixieSystemUtilities::ExitSystem() failed to exit module "
+            << i;
+        throw CXIAException(msg.str(), "Pixie16ExitSystem()", retval);
       }
     }
     m_booted = false;
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText();
+    std::cerr << e.ReasonText() << std::endl;
     m_booted = false;
     return e.ReasonCode();
   }
 
-  return retval; // All good.
+  return 0;
 }
 
 /**

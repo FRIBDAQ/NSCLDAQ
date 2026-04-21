@@ -106,7 +106,7 @@ class SystemUtilities:
 
         # Get number of modules:
         lib.CPixieSystemUtilities_GetNumModules.argtypes = [c_void_p]
-        lib.CPixieSystemUtilities_GetNumModules.restype = c_ushort
+        lib.CPixieSystemUtilities_GetNumModules.restype = c_int
 
         # Get module MSPS:
         lib.CPixieSystemUtilities_GetModuleMSPS.argtypes = [c_void_p, c_int]
