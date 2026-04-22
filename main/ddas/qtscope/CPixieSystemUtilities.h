@@ -41,7 +41,7 @@ public:
    * @brief Boot the entire system.
    * @return int
    * @retval  0 On successful boot.
-   * @retval -1 If the boot fails.
+   * @retval !=0 XIA API error code on failure.
    */
   int Boot();
   /**
@@ -49,7 +49,7 @@ public:
    * @param fileName Name of file to save.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval !=0 XIA API error code on failure.
    */
   int SaveSetFile(char *fileName);
   /**
@@ -57,14 +57,14 @@ public:
    * @param fileName  Settings file name we are attempting to open.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval !=0 XIA API error code on failure.
    */
   int LoadSetFile(char *fileName);
   /**
    * @brief Exit the system and release resources from the modules.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval !=0 XIA API error code on failure.
    */
   int ExitSystem();
   /**
@@ -92,7 +92,7 @@ public:
    * @brief Get the number of installed modules.
    * @return The number of modules in the crate.
    */
-  unsigned short GetNumModules() { return m_config.getNumberOfModules(); };
+  int GetNumModules() { return m_config.getNumberOfModules(); };
   /**
    * @brief Get the module ADC sampling rate in MSPS.
    * @param module Module number (zero-indexed).

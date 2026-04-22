@@ -106,7 +106,7 @@ class SystemUtilities:
 
         # Get number of modules:
         lib.CPixieSystemUtilities_GetNumModules.argtypes = [c_void_p]
-        lib.CPixieSystemUtilities_GetNumModules.restype = c_ushort
+        lib.CPixieSystemUtilities_GetNumModules.restype = c_int
 
         # Get module MSPS:
         lib.CPixieSystemUtilities_GetModuleMSPS.argtypes = [c_void_p, c_int]
@@ -703,7 +703,6 @@ class RunUtilities:
                 raise ValueError(
                     f"Unable to begin run in Mod. {module}, run type {run_type} is not a valid type of data run"
                 )
-
         except ValueError as e:
             self.logger.exception("Attempted to begin unrecognized run type")
             print(e)

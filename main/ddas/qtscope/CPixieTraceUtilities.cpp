@@ -116,7 +116,6 @@ int CPixieTraceUtilities::ReadFastTrace(int module, int channel) {
 void CPixieTraceUtilities::AcquireADCTrace(int module, int channel) {
   // Fill internal DSP memory prior to trace read:
   int retval = Pixie16AcquireADCTrace(module);
-
   if (retval < 0) {
     std::stringstream msg;
     msg << "Failed to allocate memory for trace in module " << module;
@@ -130,7 +129,6 @@ void CPixieTraceUtilities::AcquireADCTrace(int module, int channel) {
   if (!m_useGenerator) {
     retval = Pixie16ReadSglChanADCTrace(m_trace.data(), traceLength, module,
                                         channel);
-
     if (retval < 0) {
       std::stringstream msg;
       msg << "Failed to read trace from module " << module;
@@ -139,9 +137,8 @@ void CPixieTraceUtilities::AcquireADCTrace(int module, int channel) {
   } else {
     // Get the trace binning and if successful generate a pulse:
     const char *pXDT = "XDT";
-    double xdt = 0;
+    double xdt;
     retval = Pixie16ReadSglChanPar(pXDT, &xdt, module, channel);
-
     if (retval < 0) {
       std::stringstream errmsg;
       errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed";
@@ -151,7 +148,6 @@ void CPixieTraceUtilities::AcquireADCTrace(int module, int channel) {
     }
 
     retval = m_pGenerator->GetTraceData(m_trace.data(), traceLength, xdt);
-
     if (retval < 0) {
       std::stringstream errmsg;
       errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed";
