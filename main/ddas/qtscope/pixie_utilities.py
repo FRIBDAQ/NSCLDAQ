@@ -703,7 +703,6 @@ class RunUtilities:
                 raise ValueError(
                     f"Unable to begin run in Mod. {module}, run type {run_type} is not a valid type of data run"
                 )
-
         except ValueError as e:
             self.logger.exception("Attempted to begin unrecognized run type")
             print(e)
