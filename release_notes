@@ -1,8 +1,11 @@
+== 12.2-008 ==
+* Issue #356 Fix issues handling fail flags for CAEN VX2470
+== 12.2-008 ==
+
 == 12.2-007 ==
 * Globals:deviceSelectorValue variable is accessible from tcldriver.
 * Stagearea becomes accessible by Others
 * Clearer communication of XIA error codes to QtScope, consistent data types between C and python
-* Issue #356 Fix issues handling fail flags for CAEN VX2470
 == 12.2-007 ==
 
 == 12.2-006 ==

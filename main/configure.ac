@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.71])
 
-AC_INIT([nscldaq],[12.2-007],[daqhelp@nscl.msu.edu],[],[https://github.com/FRIBDAQ/NSCLDAQ])
+AC_INIT([nscldaq],[12.2-008],[daqhelp@nscl.msu.edu],[],[https://github.com/FRIBDAQ/NSCLDAQ])
 
 AC_CONFIG_SRCDIR([/base/dataflow/CRingBuffer.h])
 AC_CONFIG_HEADERS([config.h])
