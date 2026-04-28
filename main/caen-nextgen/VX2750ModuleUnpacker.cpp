@@ -155,11 +155,11 @@ const void *VX2750ModuleUnpacker::unpackHit(const void *pData) {
   p.w++;
   (*m_energy)[ch] = static_cast<double>(*(p.w));
   p.w++;
-  m_lowPriorityFlags[ch] = static_cast<double>(*(p.w));
+  m_lowPriorityFlags[ch] = *(p.w);
   p.w++;
-  m_highPriorityFlags[ch] = static_cast<double>(*(p.w));
+  m_highPriorityFlags[ch] = *(p.w);
   p.w++;
-  m_downSampleSelection[ch] = static_cast<double>(*(p.w));
+  m_downSampleSelection[ch] = *(p.w);
   p.w++;
   m_failFlags[ch] =
       *(p.w); // Issue #356: fail flags are the last thing in the event.
