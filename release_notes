@@ -1,3 +1,6 @@
+== 12.1-022 ==
+* Issue #356 read fail flags after all fixed size data (caen nextgen)
+
 == 12.1-021 ==
 * Stagearea becomes accessible by Others
 == 12.1-021 ==
