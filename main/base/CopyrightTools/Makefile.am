@@ -22,4 +22,4 @@ test_LDADD = @builddir@/libLicense.la
 test_CXXFLAGS=$(COMPILATION_FLAGS)
 
 
-EXTRA_DIST = copyrightnotice.xml
+EXTRA_DIST = copyrightnotice.xml addlicense.py
