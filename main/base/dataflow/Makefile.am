@@ -47,7 +47,7 @@ libRingBuffer_la_CPPFLAGS	=	$(THREADCXX_FLAGS) \
 libPyRingBuffer_la_DEPENDENCIES=libDataFlow.la
 libPyRingBuffer_la_CPPFLAGS=@PYTHON_CFLAGS@ @LIBTCLPLUS_CFLAGS@
 libPyRingBuffer_la_LDFLAGS=libDataFlow.la @PYTHON_LIBS@ @LIBEXCEPTION_LDFLAGS@
-libPyRingBuffer_la_SOURCES=pyCRingBuffer.cpp
+libPyRingBuffer_la_SOURCES=pyCRingBuffer.cpp pyCRingBuffer.h
 
 
 #---------------- Compiled programs. 
@@ -136,7 +136,8 @@ TESTS=./unittests
 
 EXTRA_DIST=ringprimitives.xml ringbuffer_user.xml ringbuffer_man.xml ringlib.xml ringmaster.xml ringpipes.xml tclring.xml \
 	RingMaster.tcl ringbuffer.tcl \
-	ringtostdoutsw.ggo stdintoringsw.ggo ringutils.tcl config.h
+	ringtostdoutsw.ggo stdintoringsw.ggo ringutils.tcl config.h \
+	pyRingMaster.py
 
 #-------------- My installation... includes tcl scripts/packages.
 
@@ -149,6 +150,7 @@ install-exec-local:
 	$(INSTALL_SCRIPT) @srcdir@/ringutils.tcl @prefix@/TclLibs/ring
 	echo "pkg_mkIndex -verbose @prefix@/TclLibs/ring *.tcl" | $(TCLSH_CMD)
 	$(INSTALL_SCRIPT) @srcdir@/ringbuffer.tcl @bindir@/ringbuffer
+	$(INSTALL_SCRIPT) @srcdir@/pyRingMaster.py @prefix@/pythonLibs/nscldaq/RingMaster.py
 
 install-exec-hook:
 	$(INSTALL_PROGRAM) @libdir@/libPyRingBuffer.so @prefix@/pythonLibs/nscldaq/RingBuffer.so
