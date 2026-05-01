@@ -96,8 +96,6 @@ remove(PyObject* self, PyObject* argv) {
  * @param argv  - Pointer to the list of positional args.  We expect only the name of the ringbuffer.
  * @param kwargs - keyword argument dict.
  * @return None;
- * @note - the max consumers is reset to the default.
- * @todo - Support keyword args for 'maxconsumers', an optional parameter to set that.
  */
 static PyObject*
 format(PyObject* self, PyObject* argv, PyObject* kwargs) {
