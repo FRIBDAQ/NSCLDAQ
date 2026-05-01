@@ -94,18 +94,25 @@ remove(PyObject* self, PyObject* argv) {
  * 
  * @param self - pointer to the module object.
  * @param argv  - Pointer to the list of positional args.  We expect only the name of the ringbuffer.
+ * @param kwargs - keyword argument dict.
  * @return None;
  * @note - the max consumers is reset to the default.
  * @todo - Support keyword args for 'maxconsumers', an optional parameter to set that.
  */
 static PyObject*
-format(PyObject* self, PyObject* argv) {
+format(PyObject* self, PyObject* argv, PyObject* kwargs) {
     const char* name;
-    if (!PyArg_ParseTuple(argv, "s", &name)) {
+    int maxconsumers =  CRingBuffer::getDefaultMaxConsumers();
+    const char* keywords[] = {"name", "maxconsumers", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(
+        argv, kwargs, 
+        "s|$i", const_cast<char**>(keywords), 
+        &name, &maxconsumers
+    )) {
         return nullptr;
     }
     try {
-        CRingBuffer::format(name);
+        CRingBuffer::format(name, maxconsumers);
     }
     catch (CException& e) {
         PyErr_SetString(PyExc_RuntimeError, e.ReasonText());
@@ -179,7 +186,7 @@ default_name(PyObject* self, PyObject* argv) {
 static PyMethodDef ringbuffer_methods[] = {
     {"create", (PyCFunction)(create), METH_VARARGS |  METH_KEYWORDS, "Create a new ringbuffer."},
     {"remove", remove, METH_VARARGS, "Delete an existing ringbuffer"},
-    {"format", format, METH_VARARGS, "Reformat an existing ringbuffer"},
+    {"format", (PyCFunction)format, METH_VARARGS | METH_KEYWORDS, "Reformat an existing ringbuffer"},
     {"exists", exists, METH_VARARGS, "Check the existence of a ringbuffer"},
     {"default_name", default_name, METH_NOARGS, "Provide the user's default ringbuffer name"}, 
     {nullptr, nullptr, 0, nullptr}
