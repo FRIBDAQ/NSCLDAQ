@@ -5,8 +5,54 @@ current usage statistics.
 '''
 from nscldaq.portmanager import  PortManager
 import socket
-import tkinter      # Easiest way to get the Tcl list Ringmaster sends parsed.
+from tkinter import Tcl
 
+
+
+#----------------  private methods ----------------------------------------------
+def _make_ring_dict(interp, info):
+    # Given a tcl interpreter, and a ring information tcl list,
+    # return a dict for the ring:
+    
+    info = f'"{info}"'
+    print(info)
+    ring_name = interp.eval(f'lindex {info} 0')
+    ring_stats = interp.eval(f'lindex {info} 1')
+    ring_stats = f'"{ring_stats}"'
+    ring_size = (int)(interp.eval(f'lindex {ring_stats} 0'))
+    free = int(interp.eval(f'lindex {ring_stats} 1'))    
+    max_consumers = int(interp.eval(f'lindex {ring_stats} 2'))
+    producer    = int(interp.eval(f'lindex {ring_stats} 3'))
+    maxget      = int(interp.eval(f'lindex {ring_stats} 4'))
+    minget      = int(interp.eval(f'lindex {ring_stats} 5'))
+    consumer_list = interp.eval(f'lindex {ring_stats} 6')
+    
+    return {
+        'name': ring_name, 'size' : ring_size, 'free': free,
+        'maxconsumers': max_consumers, 'producer': producer,
+        'maxget': maxget, 'minget': minget, 
+        'consumers': consumer_list    
+    }
+def _create_list(response):
+    # Given a response string, returns the array of dicts
+    # described in the usage Return value.
+    # We use tkinter's tcl interpreter mechanism to to do the decode.
+    
+    tcl = Tcl()                      # Instantiate an interpreter.
+    tcl.eval(f'set response "{response}"')   # The Tcl variable response has the full respones
+    nrings = (int)(tcl.eval("llength $response"))
+      
+    result = []
+    #  Process each list item:
+    
+    for i in range(0, nrings):
+        ring_info = tcl.eval(f'lindex $response {i}')
+        print(ring_info)
+        result.append(_make_ring_dict(tcl, ring_info))
+    return result  
+
+
+#--------------------------- public methods -------------------------------------
 def getPort(host, port=30000):
     '''
         Given a host and the port of the port manager, returns
@@ -83,9 +129,9 @@ def usage(host='localhost', portman=30000):
         raise RuntimeError(f'RingMaster gave an error response: {ok}')
     
     response = fd.readline()
+    result = _create_list(response)
     
-    return response
-    
+    return result
     
     
     
