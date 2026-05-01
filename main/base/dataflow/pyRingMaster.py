@@ -10,12 +10,28 @@ from tkinter import Tcl
 
 
 #----------------  private methods ----------------------------------------------
+def _make_consumer_dicts(interp, consumer_list):
+    # Makes an array of consumer informatino dicts with 'pid' and 'backlog' keys.
+    # interp is a tcl interpreter.
+    # consumer_list is a string that contains the list.
+    
+    consumer_list = f'"{consumer_list}"'  # so it's one tcl word.
+    nconsumers = int(interp.eval(f'llength {consumer_list}'))
+    result  = []
+    for c in range(0, nconsumers):
+        consumer = interp.eval(f'lindex {consumer_list} {c}')
+        consumer = f'"{consumer}"'   # Again for tcl...
+        pid      = int(interp.eval(f'lindex {consumer} 0'))
+        backlog  = int(interp.eval(f'lindex {consumer} 1'))
+        
+        result.append({'pid': pid, 'backlog': backlog})
+        
+    return result
 def _make_ring_dict(interp, info):
     # Given a tcl interpreter, and a ring information tcl list,
     # return a dict for the ring:
     
     info = f'"{info}"'
-    print(info)
     ring_name = interp.eval(f'lindex {info} 0')
     ring_stats = interp.eval(f'lindex {info} 1')
     ring_stats = f'"{ring_stats}"'
@@ -31,7 +47,7 @@ def _make_ring_dict(interp, info):
         'name': ring_name, 'size' : ring_size, 'free': free,
         'maxconsumers': max_consumers, 'producer': producer,
         'maxget': maxget, 'minget': minget, 
-        'consumers': consumer_list    
+        'consumers': _make_consumer_dicts(interp, consumer_list)
     }
 def _create_list(response):
     # Given a response string, returns the array of dicts
@@ -47,7 +63,6 @@ def _create_list(response):
     
     for i in range(0, nrings):
         ring_info = tcl.eval(f'lindex $response {i}')
-        print(ring_info)
         result.append(_make_ring_dict(tcl, ring_info))
     return result  
 
