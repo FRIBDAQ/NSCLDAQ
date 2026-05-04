@@ -32,18 +32,23 @@ from nscldaq import RingMaster
 
 # Create a new ringbuffer.
 def create(cmd) :
-    print('create subcommand')
-    print(cmd)
+    ringname = cmd.ring
+    datasize = cmd.datasize
+    max_consumers = cmd.maxconsumers
+    RingBuffer.create(ringname, databytes=datasize*1024, maxconsumers=max_consumers)
+    
 
 # Format a ring.
 def format(cmd):
-    print('format command')
-    print(cmd)
+    ringname = cmd.ring
+    max_consumers = cmd.maxconsumers   
+    RingBuffer.format(ringname, maxconsumers=max_consumers)
+ 
     
 # Delete a ring
 def delete(cmd):
-    print('delete command')
-    print(cmd)
+    ring = cmd.ring
+    RingBuffer.remove(ring)
     
 # Print the status:
 def status(cmd):
@@ -51,8 +56,14 @@ def status(cmd):
     print(cmd)  
 
 def list(cmd):
-    print('list command')
-    print(cmd)
+    host = cmd.host
+    status = RingMaster.usage(host=host)
+    
+    result = [x['name'] for x in status]
+    result.sort()
+    for name in result:
+        print(name)
+
 
 #  Set up the command line parser:
 parser = argparse.ArgumentParser(
