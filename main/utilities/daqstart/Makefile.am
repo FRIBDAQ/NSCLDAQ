@@ -31,11 +31,11 @@ cmdline.c: cmdline.h
 cmdline.h: daqstart.ggo
 	$(GENGETOPT) --unamed-opts <@top_srcdir@/utilities/daqstart/daqstart.ggo
 
-EXTRA_DIST=daqstart.ggo popup.tcl daqstart.xml Makefile.am config.h
+EXTRA_DIST=daqstart.ggo popup.tcl popup.py  daqstart.xml Makefile.am config.h
 
 
 install-exec-local:
-	$(INSTALL_SCRIPT) @srcdir@/popup.tcl $(bindir)/PopUp
+	$(INSTALL_SCRIPT) @srcdir@/popup.py $(bindir)/PopUp
 
 
 check_PROGRAMS = unittests
