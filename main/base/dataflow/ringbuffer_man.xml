@@ -235,3 +235,279 @@ ringbuffer status --user=`whoami`,root
 </refentry>
 
 <!-- /manpage -->
+<!-- manpage 3python -->
+<refentry>
+    <refmeta>
+        <refentrytitle>RingBuffer</refentrytitle>
+        <manvolnum>3python</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>RingBuffer</refname>
+        <refpurpose>Python access to low level ringbuffer operations</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+import nscldaq.RingBuffer
+
+RingBuffer.create(ring_name[, databytes=numbytes][, maxconsumers=maxnum])
+RingBuffer.remove(ring_name)
+RingBuffer.format(ring_name[, maxconsumers=maxnum])
+if RingBuffer.exists(ring_name):
+    # do something because ring_name is a ringbuffer.
+
+ring_name = RingBuffer.default_name()
+
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            To use this module, you must have set up an NSCLDAQ version 12.2-009 or higher.
+            The <filename>daqsetup.bash</filename> script for that version will set up a 
+            <literal>PYTHONPATH</literal> environment variable which supports the import of
+            the <literal>nscldaq.RingBuffer</literal> module.
+        </para>
+        <para>
+            The module supports unbound ringbuffer primitives.  See <literal>METHODS</literal> below
+            for information about the operations that are supported.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term>
+                        <methodsynopsis language='python'>
+                            <type>None</type>
+                            <methodname>create</methodname>
+                            <methodparam><type></type> <parameter>ring_name</parameter></methodparam>
+                            <methodparam><type></type> <parameter>databytes</parameter><initializer>8*1024*1024</initializer></methodparam>
+                            <methodparam><type></type> <parameter>maxconsumers</parameter><initializer>100</initializer></methodparam>
+                        </methodsynopsis>
+                    </term>
+                    <listitem>
+                        <para>
+                            Attempts to create a new ringbuffer.  The name of the new ring buffer will be <parameter>ring_name</parameter>.
+                            The optional keyword parameter <parameter>databytes</parameter> sets the maximum size of the ringbuffer.
+                            This defaults to 8Mbytes if not provided.
+                            The optional keyword parameter <parameter>maxconsumers</parameter> places a limit on the number
+                            of consumers that will be allowed to get data from the ringbuffer.  This defaults to 100 if not
+                            provided.
+                        </para>
+                        <para>
+                            If the ringbuffer cannot be created a <classname>RunTimeError</classname> is
+                            exception is raised.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><methodsynopsis language='python'>
+                        <type>None</type>
+                        <methodname>remove</methodname>
+                        <methodparam><type></type><parameter>ring_name</parameter></methodparam>
+                    </methodsynopsis></term>
+                    <listitem>
+                        <para>
+                            Attempts to delete the ringbuffer named <parameter>ring_name</parameter> note that the
+                            ring master will attempt to kill processes connected to the ring (both the producer and any
+                            consumers).  If the removal of the ringbuffer fails, a <classname>RunTimeError</classname>
+                            exception will be raised.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><methodsynopsis language='python'>
+                        <type>None</type> <methodname>format</methodname>
+                        <methodparam><type></type><parameter>ring_name</parameter></methodparam>
+                        <methodparam><type></type><parameter>maxconsumers</parameter><initializer>100</initializer></methodparam>
+                    </methodsynopsis></term>
+                    <listitem>
+                        <para>
+                            Reformats the header of a ring buffer.  This should be reserved for cases when you
+                            believe the ringbuffer is corrupt.  In that case, all clients should be shutdown, rendering the
+                            ringbuffer idle.   <parameter>ring_name</parameter> is the name of the ringbuffer to reformat.
+                            The optional <parameter>maxconsumers</parameter> sets the maximum number of consumers
+                            that can take data from the ring.  It is normally safer to remove and then create
+                            the ring again.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><methodsynopsis language='python'>
+                        <type>bool</type> <methodname>exists</methodname>
+                        <methodparam><type></type><parameter>ring_name</parameter></methodparam>
+                    </methodsynopsis></term>
+                    <listitem>
+                        <para>
+                            Returns <literal>True</literal> if the ringbuffer <parameter>ring_name</parameter>
+                            exists or <literal>False</literal> if not.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><methodsynopsis language='python'>
+                        <type>str</type> <methodname>default_name</methodname><void />
+                    </methodsynopsis></term>
+                    <listitem>
+                        <para>
+                            Returns the default ringbuffer name for the consumer.  This is the
+                            name of the ringbuffer that e.g. readout frameworks will create if 
+                            no ringbuffer name is specified on their command line.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>RingMaster</refentrytitle>
+        <manvolnum>3python</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>RingMaster</refname>
+        <refpurpose>Interact with the ring master server</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <programlisting>
+import nscldaq.RingMaster
+
+port_num =  RingMaster.getPort(host[, port=30000])
+info     =  RingMaster.usage([host='localhost'] [, portman=30000])
+
+        </programlisting>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The <literal>RingMaster</literal> module provies methods to access
+            the NSCLDAQ ringmaster process.  The ringmaster process is responsible for
+            managing access to ringbuffers and publishing data about them.
+            To use this module, you must set up a version of NSCLDAQ 12.2-009 or greater.
+            The <filename>daqsetup.bash</filename> script will define a 
+            <literal>PYTHONPATH</literal> environment vairiable that allows
+            the module to be imported.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>METHODS</title>
+        <variablelist>
+            <varlistentry>
+                    <term><methodsynopsis language='python'>
+                        <type>int</type> <methodname>getPort</methodname>
+                        <methodparam><type /> <parameter>host</parameter></methodparam>
+                        <methodparam><type /> <parameter>port</parameter><initializer>30000</initializer></methodparam>
+                    </methodsynopsis></term>
+                    <listitem>
+                        <para>
+                            Returns the port number on which the ring muster running in the system 
+                            <parameter>host</parameter> is listening on for connections.  The optional
+                            <parameter>port</parameter> is the port on which the FRIB/NSCLDAQ port manager is
+                            listening for connections.  Normally the default value of <literal>30000</literal>
+                            is correct.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><methodsynopsis language='python'>
+                        <methodname>usage</methodname>
+                        <methodparam><type/> <parameter>host</parameter><initializer>'localhost'</initializer></methodparam>
+                        <methodparam><type/> <parameter>portman</parameter><initializer>30000</initializer></methodparam>
+                    </methodsynopsis></term>
+                    <listitem>
+                        <para>
+                            Returns information about the ringbuffers and their instantaneous statistics.  The
+                            <parameter>host</parameter> is the host in which this information will be returned.
+                            Note that this defaults to <literal>localhost</literal> returning information about
+                            the ringbuffers in the system running the script.  The optional parameter
+                            <parameter>portman</parameter> is the port on which the portmanager in 
+                            <parameter>host</parameter> is listening for connections.  It defaults to 
+                            <literal>30000</literal> which is normally correct.
+                        </para>
+                        <para>
+                            The information is returned as a, possibly empty, iterable container.  Each element
+                            of the container is a dict that has the following keys:
+                            <variablelist>
+                                <varlistentry>
+                                        <term><literal>name</literal></term>
+                                        <listitem>
+                                            <para>
+                                                Name of the ring buffer being described by this
+                                                dict.
+                                            </para>
+                                        </listitem>
+                                </varlistentry>
+                                <varlistentry>
+                                        <term><literal>size</literal></term>
+                                        <listitem>
+                                            <para>
+                                                Size of the ringbuffer in bytes.
+                                            </para>
+                                        </listitem>
+                                </varlistentry>
+                                <varlistentry>
+                                        <term><literal>free</literal></term>
+                                        <listitem>
+                                            <para>
+                                                Number of free bytes in the ring buffer.
+                                            </para>
+                                        </listitem>
+                                </varlistentry>
+                                <varlistentry>
+                                        <term><literal>maxconsumers</literal></term>
+                                        <listitem> 
+                                            <para>
+                                                Maximum number of consumer processes that can
+                                                get data from this ringbuffer.
+                                            </para>
+                                        </listitem>
+                                </varlistentry>
+                                <varlistentry>
+                                        <term><literal>producer</literal></term>
+                                        <listitem>
+                                            <para>
+                                                The process id of the producer of data into the ring.
+                                                If there is no producer the value of this key will be
+                                                <literal>-1</literal>
+                                            </para>
+                                        </listitem>
+                                </varlistentry>
+                                <varlistentry>
+                                        <term><literal>maxget</literal></term>
+                                        <listitem>
+                                            <para>
+                                                The largest number of bytes a single consumer might be able to get.
+                                                You can think of this as the data backlog for the consumer that is 
+                                                most behind.
+                                            </para>
+                                        </listitem>
+                                </varlistentry>
+                                <varlistentry>
+                                        <term><literal>minget</literal></term>
+                                        <listitem>
+                                            <para>  
+                                                Think of this as the data backlog for the consumer that is 
+                                                most caught up.
+                                            </para>
+                                        </listitem>
+                                </varlistentry>
+                                <varlistentry>
+                                        <term><literal>consumers</literal></term>
+                                        <listitem>
+                                            <para>
+                                                The value of this key is a, possibly empty, array of dicts, one 
+                                                dict per consumer attached to the ring.  The dict has two keys:
+                                                <literal>pid</literal>; the process id of the consumer, and
+                                                <literal>backlog</literal>; the number of bytes of backlog by
+                                                that consumer.
+                                            </para>
+                                        </listitem>
+                                </varlistentry>
+                            </variablelist>
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+</refentry>
+<!-- /manpage -->
