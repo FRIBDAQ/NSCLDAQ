@@ -53,6 +53,7 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/daq/format \
 	@top_srcdir@/utilities/manager \
 	@top_srcdir@/utilities/readoutREST \
+	@top_srcdir@/utilities/daqstart \
 	@top_srcdir@/usb \
 	@top_srcdir@/usb/usb1 \
 	@top_srcdir@/usb/vmusb \
