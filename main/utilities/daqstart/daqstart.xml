@@ -210,5 +210,88 @@ daqstart <option>options...</option> <replaceable>command </replaceable>
   </refsect1>
 
 </refentry>
+<refentry>
+    <refmeta>
+        <refentrytitle>PopUp</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>PopUp</refname>
+        <refpurpose>Script to make a popup dialog</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis>
+<command>$DAQBIN/PopUp</command>
+<arg>-T | --title=<replaceable>title-string</replaceable></arg>
+<arg>-t | --type=<replaceable>dialog-type</replaceable></arg>
+
+<arg choice='plain'>dialog-text</arg>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            This program allows scripts and programs that are not built around GUIs to 
+            pop up a dialog box to get the user's attention.  In GUi heavy situations,
+            messages written to stderr are easily overlooked and may go unintentionally 
+            ignored.
+        </para>
+        <para>
+            The <parameter>dialog-text</parameter> is displayed in the middle of the popup
+            window.  <option>-t</option> (long option <option>--type</option>) controls the dialog type,
+            which determines the image icon, if any, displayed to the left of the text.
+            Valid values for <option>--type</option>
+            <variablelist>
+                <varlistentry>
+                        <term><literal>about</literal></term>
+                        <listitem>
+                            <para>
+                                No image icon will be displayed in the dialog.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>critical</literal></term>
+                        <listitem>
+                            <para>
+                                A red circle with a white X icon will be displayed
+                                 in the dialog.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>information</literal></term>
+                        <listitem>
+                            <para>
+                                A blue <literal>i</literal> in a white cartoon dialog bubble will
+                                be displayed in the dialog
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>question</literal></term>
+                        <listitem>
+                            <para>
+                                A blue question mark in a white cartoon bubble will be displayed in the
+                                dialog.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>warning</literal></term>
+                        <listitem>
+                            <para>
+                                A black exclamation point in a yellow triangle will be displayed in the dialog.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </para>
+        <para>
+            The <option>-T</option> (long option <option>--title</option>) is the title string displayed at the
+            top of the dialog box.
+        </para>
+    </refsect1>
+</refentry>
 
 <!-- /manpage -->
