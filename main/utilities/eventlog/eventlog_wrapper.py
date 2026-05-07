@@ -255,7 +255,20 @@ def _clean_orphans(destination):
         target   = pathlib.Path(destination, 'experiment', f'run{number}', filename)
         link     = pathlib.Path(destination, 'complete', filename)
         os.symlink(target, link)
-                                
+        
+        # Note thta we ignore failures to create the run_improperly_ended though
+        # our finalize order should make it always possible.
+        marker  = pathlib.Path(destination, 'experiment', f'run{number}', 'run_improperly_ended')
+        try:
+            marker.touch(exists_ok=True)
+        except:
+            print(f'Unable to create improper end marker {str(marker)}', file=os.stderr)
+        # Try to write protect the directory... if we can't we ignore the error too:
+        
+        try:
+            os.system(f'chmod -R u-w {str(marker.parent)}')
+        except:
+            pass
 ##
 # _onExit
 #    The eventlog exited....
