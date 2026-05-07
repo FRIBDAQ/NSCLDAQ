@@ -348,7 +348,7 @@ except KeyError as e:
     
 # Some global definitions:
 
-SEGMENT_SIZE=1000000g    # Effectively unlimited segment size.
+SEGMENT_SIZE="1000000g"    # Effectively unlimited segment size.
 FILE_POLL_INTERVAL=1     # Seconds between polls for event file existence.
 done        = False      # Set True when managed logging is finished.
 app         = QApplication(sys.argv)
