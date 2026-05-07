@@ -64,6 +64,11 @@ def _eventlog_path():
 #
 def _event_filename(run) :
     return f'run-{run:04d}-0000.evt'
+
+# Get the run number from an event filename:
+
+def _event_file_run(evt):
+    return int(evt.split('-')[1])
 ## 
 # _multilog
 #   Start a multilogger.
@@ -219,7 +224,38 @@ def _make_directory_tree(destination):
     os.makedirs(f'{destination}/current', ok=True, mode=0o750)
     os.makedirs(f'{destination}/experiment', ok=True, mode=0o750)
     os.makedirs(f'{destination}/experiment/current', ok=True, mode=0o750)
+
+##
+#  If a previous run exited badly, there could be orphaned
+#  links in the various current directories.
+#  These links are removed and, if there is are event files
+#  in the corresponding run diretories:
+#   -  They are linked to the complete directory
+#   -  a file named 'run_improperly_ended' is put in that directory.
+#   -  The directory is protected.
+#
+# Note that since we don't know the related files in experiment/current 
+# are actually relevant to this run we don't do the tar.
+def _clean_orphans(destination):
+    runs = []     # Will be orpaned run numbers
+    current_paths = list(pathlib.Path(destination, 'current').glob('*.evt'))
+    exp_paths     = list(pathlib.Path(destination, 'experiment', 'current').glob('*.evt'))
     
+    #  Remove those links and construct a list of the unique run numbers:
+    
+    for path in current_paths | exp_paths:
+        path.unlink()    # remove the symlink.
+        run = _event_file_run(path.name)
+        runs.append(run)
+        
+    runs = list(set(runs))    #  Now unique in run numbers.
+    
+    for number in runs:
+        filename = _event_filename(number)
+        target   = pathlib.Path(destination, 'experiment', f'run{number}', filename)
+        link     = pathlib.Path(destination, 'complete', filename)
+        os.symlink(target, link)
+                                
 ##
 # _onExit
 #    The eventlog exited....
@@ -261,7 +297,7 @@ def _onExit(exitcode, status):
 #
 def _fullylog(source, destiniation, run):
     global SEGMENT_SIZE
-    _make_directory_tree(destination)
+    
     destdir = pathlib.Path(destination, 'experiment', f'run{run}')  #event log dir.
     os.makedirs(str(destdir), ok=False, mode=0o750)    # The run directory must not exist yet.
     command = _eventlog_path()
@@ -285,9 +321,7 @@ def _fullylog(source, destiniation, run):
 # Note, the global definitions will be important for some utility methods defined 
 # above.
            
-
-
-#   Figure out what the environment says we should do:
+# Doing things this way _might_? provide support for unit testing:
 
 try:
     partial     = os.environ['RECORD_PARTIAL']
@@ -308,24 +342,30 @@ app         = QApplication(sys.argv)
 eventlog_process = None  # QProcess running the event logger
 link_timer  = None       # Will be QTimer to poll for event file to exist.
 
-if not partial:
-    _makeTree(destination)
-    _cleanExistingFiles(destination)
+
+if __name__ == '__main__':
+
+    #   Figure out what the environment says we should do:
 
 
-if partial:
-    eventlog_process = _mulitlog(source, destination)
-else:
-    eventlog_process = _fullylog(source, destination)
+    if not partial:
+        _make_directory_tree(destination)
+        _clean_orphans(destination)
 
-# Connect slots to the eventlog process signals we care about
-#  
 
-eventlog_process.setProcessChannelMode(QProcess.ForwardedChannels)   # stderr/stdout forward to our output.
-eventlog_process.finished.connect(_onExit)                           # handle exit.
+    if partial:
+        eventlog_process = _mulitlog(source, destination)
+    else:
+        eventlog_process = _fullylog(source, destination)
 
-eventlog_process.run()   # Start the logger....
+    # Connect slots to the eventlog process signals we care about
+    #  
 
-# Run the event loop.
+    eventlog_process.setProcessChannelMode(QProcess.ForwardedChannels)   # stderr/stdout forward to our output.
+    eventlog_process.finished.connect(_onExit)                           # handle exit.
 
-sys.exit(app.exec())
+    eventlog_process.run()   # Start the logger....
+
+    # Run the event loop.
+
+    sys.exit(app.exec())
