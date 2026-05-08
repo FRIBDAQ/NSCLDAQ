@@ -243,10 +243,12 @@ def _clean_orphans(destination):
     
     #  Remove those links and construct a list of the unique run numbers:
     
-    for path in current_paths | exp_paths:
-        path.unlink()    # remove the symlink.
+    for path in set(current_paths) | set(exp_paths):
         run = _event_file_run(path.name)
         runs.append(run)
+        path.unlink()    # remove the symlink.
+        
+    
         
     runs = list(set(runs))    #  Now unique in run numbers.
     
@@ -262,7 +264,7 @@ def _clean_orphans(destination):
         try:
             marker.touch(exist_ok=True)
         except:
-            print(f'Unable to create improper end marker {str(marker)}', file=os.stderr)
+            print(f'Unable to create improper end marker {str(marker)}', file=sys.stderr)
         # Try to write protect the directory... if we can't we ignore the error too:
         
         try:
@@ -280,10 +282,10 @@ def _onExit(exitcode, status):
     global app
     global runNumber
     global destination
-    print(f'Eventlog exited with code {exitcode}')
+    print(f'Eventlog exited with code {exitcode}', file=sys.stderr)
     ourstatus = 0
     if status == QProcess.CrashExit:
-        print(f'Abormal exit according to Qt', file=os.stderr)
+        print(f'Abormal exit according to Qt', file=sys.stderr)
         ourstatus = -1
     _finalize_run(destination, runNumber)
     app.exit(ourstatus)          # Kill the app with this return code.
