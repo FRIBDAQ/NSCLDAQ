@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 Unit tests for the bits we can test in evtlog_wrapper.py.
 

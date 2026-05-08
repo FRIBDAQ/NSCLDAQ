@@ -38,7 +38,7 @@ eventlogargs.h: eventlogargs.ggo
 # Extra files to distribute.
 
 EXTRA_DIST		=	eventlogargs.ggo eventlog.xml Asserts.h \
-	$(TCLSCRIPTS) $(PYTHONSCRIPTS)
+	$(TCLSCRIPTS) $(PYTHONSCRIPTS) evtlog_wrapper_tests.py
 
 #  Need to clean the products of processing eventlogargs.ggo:
 
@@ -85,4 +85,5 @@ eventlogTests_LDADD   = @CPPUNIT_LDFLAGS@ \
 				@top_builddir@/base/os/libdaqshm.la		\
 				$(THREADLD_FLAGS)
 
-TESTS=eventlogTests
+
+TESTS=eventlogTests evtlog_wrapper_tests.py
