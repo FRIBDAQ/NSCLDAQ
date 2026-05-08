@@ -63,7 +63,7 @@ def _eventlog_path():
 #  Return a string:
 #
 def _event_filename(run) :
-    return f'run-{run:04d}-0000.evt'
+    return f'run-{run:04d}-00.evt'
 
 # Get the run number from an event filename:
 
@@ -83,7 +83,7 @@ def _multilog(src, dest):
     
     # Make sure the directory exists,  if it does not:
     
-    os.makedirs(dest, ok=True, mode=0o750)
+    os.makedirs(dest, exist_ok=True, mode=0o750)
     
     #  Figure out the prefix of the event filename.
     #  Used to uniquify it across identical run numbers:
@@ -219,11 +219,11 @@ def _schedule_link_in_current(destination, run):
 #  These modes get modified at the end of the run by finalize.
 #
 def _make_directory_tree(destination):
-    os.makedirs(destination, ok=True, mode=0o750)
-    os.makedirs(f'{destination}/complete', ok=True, mode=0o750)
-    os.makedirs(f'{destination}/current', ok=True, mode=0o750)
-    os.makedirs(f'{destination}/experiment', ok=True, mode=0o750)
-    os.makedirs(f'{destination}/experiment/current', ok=True, mode=0o750)
+    os.makedirs(destination, exist_ok=True, mode=0o750)
+    os.makedirs(f'{destination}/complete', exist_ok=True, mode=0o750)
+    os.makedirs(f'{destination}/current', exist_ok=True, mode=0o750)
+    os.makedirs(f'{destination}/experiment', exist_ok=True, mode=0o750)
+    os.makedirs(f'{destination}/experiment/current', exist_ok=True, mode=0o750)
 
 ##
 #  If a previous run exited badly, there could be orphaned
@@ -260,7 +260,7 @@ def _clean_orphans(destination):
         # our finalize order should make it always possible.
         marker  = pathlib.Path(destination, 'experiment', f'run{number}', 'run_improperly_ended')
         try:
-            marker.touch(exists_ok=True)
+            marker.touch(exist_ok=True)
         except:
             print(f'Unable to create improper end marker {str(marker)}', file=os.stderr)
         # Try to write protect the directory... if we can't we ignore the error too:
@@ -312,7 +312,7 @@ def _fullylog(source, destiniation, run):
     global SEGMENT_SIZE
     
     destdir = pathlib.Path(destination, 'experiment', f'run{run}')  #event log dir.
-    os.makedirs(str(destdir), ok=False, mode=0o750)    # The run directory must not exist yet.
+    os.makedirs(str(destdir), exist_ok=False, mode=0o750)    # The run directory must not exist yet.
     command = _eventlog_path()
     command_args = [
         f'--source={source}', f'--path={destdir}', f'--segmentsize={SEGMENT_SIZE}',
