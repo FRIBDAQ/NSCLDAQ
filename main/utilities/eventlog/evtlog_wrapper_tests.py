@@ -106,6 +106,7 @@ class evtlog_wrapper_tests(unittest.TestCase):
         run_file.touch(exist_ok=True)  # actual run file.
         os.symlink(str(run_file), '/tmp/eventlog/experiment/current/run-0001-00.evt')
         
+        
         wr._clean_orphans('/tmp/eventlog')
         
          #  We should _not_ have the link we made in current
@@ -123,6 +124,35 @@ class evtlog_wrapper_tests(unittest.TestCase):
         
         # Clean up my mess:
         #  Need to be sure that we can do that (perms).
+        
+        os.system(f'chmod -R u+w {str(top_dir)}')
+        shutil.rmtree(str(top_dir))
+        
+    def test_finalize(self):
+        wr._make_directory_tree('/tmp/eventlog')
+        
+        # Make a run that needs to be finalized
+        # With an auxiliary file to copy:
+        top_dir = Path('/tmp/eventlog')
+        run_dir = Path(top_dir, 'experiment', 'run1') # event file is here.
+        os.makedirs(str(run_dir), exist_ok=True)
+        run_file = Path(run_dir, 'run-0001-00.evt')
+        run_file.touch(exist_ok=True)  # actual run file.
+        current = Path(top_dir, 'experiment', 'current')
+        os.symlink(str(run_file), '/tmp/eventlog/experiment/current/run-0001-00.evt')
+        Path(current, 'some_file').touch(exist_ok=True)
+        
+        wr._finalize_run('/tmp/eventlog', 1)
+        
+        # Shoud have some_file in the run_dir:
+        # symlink in complete and no link in experiment/current:
+        
+        self.assertTrue(Path(run_dir, 'some_file').exists())
+        self.assertTrue(Path(top_dir, 'complete', 'run-0001-00.evt').is_symlink())
+        self.assertFalse(Path(top_dir, 'experiment', 'current', 'run-0001-00.evt').is_symlink())
+        
+        
+        # CLean up my mess:
         
         os.system(f'chmod -R u+w {str(top_dir)}')
         shutil.rmtree(str(top_dir))
