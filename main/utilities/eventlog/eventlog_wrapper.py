@@ -145,7 +145,8 @@ def _finalize_run(destination, run):
     
     # Construct the tar command we ignore errors fromt he commands.
     
-    tar_command = f'(cd {destination}/experiment/current; tar dzf --dereference .) | cd {destination}/event/run{run}; tar xzpf - --warning=no-timestamp'
+    tar_command = f'(cd {destination}/experiment/current; tar czf - --dereference .) | (cd {destination}/experiment/run{run}; tar xzpf - --warning=no-timestamp)'
+    
     try:
         os.system(tar_command)
     except:
@@ -339,10 +340,10 @@ def _fullylog(source, destiniation, run):
 # Doing things this way _might_? provide support for unit testing:
 
 try:
-    partial     = os.environ['RECORD_PARTIAL']
+    partial     = int(os.environ['RECORD_PARTIAL'])
     destination = os.environ['RECORD_DEST']
     source      = os.environ['RECORD_SRC']
-    runNumber   = os.environ['RUN_NUMBER']
+    runNumber   = int(os.environ['RUN_NUMBER'])
     daqbin      = os.environ['DAQBIN']
 except KeyError as e:
     print(f'The environment has not been properly set for eventlog_wrapper: {e}', file=sys.stderr)
