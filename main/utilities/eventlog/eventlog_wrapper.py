@@ -36,7 +36,7 @@
            holds the managed event files.
    -   RECORD_SRC  - the URL from which the ring items are logged.
    -   RUN_NUMBER  - expected run number.
-
+   -   DAQBIN - must have been defined (e.g. by a daqsetup.bash).
 
  @note This script only records a single run.
 '''
@@ -44,7 +44,7 @@ import os
 import sys
 import pathlib
 import datetime
-from PyQt5.QtCore import QProcess, QTimer
+from PyQt5.QtCore import QProcess, QTimer, QIODevice
 from PyQt5.QtWidgets import QApplication
 
 ##
@@ -89,12 +89,12 @@ def _multilog(src, dest):
     #  Used to uniquify it across identical run numbers:
     
     now = datetime.datetime.today()
-    prefix = now.strftime('%d-%b-%y-%H:%M:%S-') + str(runNUmber)
+    prefix = now.strftime('%d-%b-%y-%H:%M:%S-') + str(runNumber)
     
     command = _eventlog_path()
     command_args = [
         f'--source={src}', f'--path={dest}',
-        f'--segmentsize={Segment}',
+        f'--segmentsize={SEGMENT_SIZE}',
         f'--prefix={prefix}', '--oneshot'
     ]
     
@@ -198,7 +198,7 @@ def _schedule_link_in_current(destination, run):
         link_timer = QTimer()
         link_timer.setInterval(FILE_POLL_INTERVAL * 1000)
         link_timer.setSingleShot(True)
-        link_timer.timeout.connect(_schedule_link_in_current)
+        link_timer.timeout.connect(lambda :_schedule_link_in_current(destination, run))
         link_timer.start()
         pass
         
@@ -311,7 +311,7 @@ def _onExit(exitcode, status):
 #      linking back to the file.
 # @return QProcess that's running the event logger.
 #
-def _fullylog(source, destiniation, run):
+def _fullylog(source, destination, run):
     global SEGMENT_SIZE
     
     destdir = pathlib.Path(destination, 'experiment', f'run{run}')  #event log dir.
@@ -370,9 +370,9 @@ if __name__ == '__main__':
 
 
     if partial:
-        eventlog_process = _mulitlog(source, destination)
+        eventlog_process = _multilog(source, destination)
     else:
-        eventlog_process = _fullylog(source, destination)
+        eventlog_process = _fullylog(source, destination, runNumber)
 
     # Connect slots to the eventlog process signals we care about
     #  
@@ -380,7 +380,7 @@ if __name__ == '__main__':
     eventlog_process.setProcessChannelMode(QProcess.ForwardedChannels)   # stderr/stdout forward to our output.
     eventlog_process.finished.connect(_onExit)                           # handle exit.
 
-    eventlog_process.run()   # Start the logger....
+    eventlog_process.start(QIODevice.ReadOnly)   # Start the logger....
 
     # Run the event loop.
 
