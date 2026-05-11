@@ -155,9 +155,11 @@ def _finalize_run(destination, run):
     # now the chmod we need to remove write access from the run directory contents and it.
     
     chmod_command = f'chmod -R u-w {destination}/experiment/run{run}'
+    print("CHMOD: ", chmod_command)
     try:
-        os.systsem(chmod_command)
+        os.system(chmod_command)
     except:
+        print("Exception")
         pass
 ##
 # Wait for the actual event file to appear then
@@ -286,7 +288,7 @@ def _onExit(exitcode, status):
     print(f'Eventlog exited with code {exitcode}', file=sys.stderr)
     ourstatus = 0
     if status == QProcess.CrashExit:
-        print(f'Abormal exit according to Qt', file=sys.stderr)
+        print('Abormal exit according to Qt', file=sys.stderr)
         ourstatus = -1
     _finalize_run(destination, runNumber)
     app.exit(ourstatus)          # Kill the app with this return code.
