@@ -44,8 +44,7 @@ import os
 import sys
 import pathlib
 import datetime
-from PyQt5.QtCore import QProcess, QTimer, QIODevice
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QProcess, QTimer, QIODevice, QCoreApplication
 
 ##
 # _eventlog_path
@@ -155,11 +154,10 @@ def _finalize_run(destination, run):
     # now the chmod we need to remove write access from the run directory contents and it.
     
     chmod_command = f'chmod -R u-w {destination}/experiment/run{run}'
-    print("CHMOD: ", chmod_command)
     try:
         os.system(chmod_command)
     except:
-        print("Exception")
+        print("Exception setting permissions.")
         pass
 ##
 # Wait for the actual event file to appear then
@@ -356,7 +354,7 @@ except KeyError as e:
 SEGMENT_SIZE="1000000g"    # Effectively unlimited segment size.
 FILE_POLL_INTERVAL=1     # Seconds between polls for event file existence.
 done        = False      # Set True when managed logging is finished.
-app         = QApplication(sys.argv)
+app         = QCoreApplication(sys.argv)
 eventlog_process = None  # QProcess running the event logger
 link_timer  = None       # Will be QTimer to poll for event file to exist.
 
