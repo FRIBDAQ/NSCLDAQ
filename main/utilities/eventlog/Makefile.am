@@ -1,5 +1,6 @@
 bin_PROGRAMS		=	eventlog
 TCLSCRIPTS            = eventlog_wrapper.tcl
+PYTHONSCRIPTS         = eventlog_wrapper.py
 BUILT_SOURCES		= 	eventlogargs.c eventlogargs.h
 
 eventlog_SOURCES	=	eventlog.cpp eventlogMain.cpp \
@@ -37,7 +38,7 @@ eventlogargs.h: eventlogargs.ggo
 # Extra files to distribute.
 
 EXTRA_DIST		=	eventlogargs.ggo eventlog.xml Asserts.h \
-	$(TCLSCRIPTS)
+	$(TCLSCRIPTS) $(PYTHONSCRIPTS) evtlog_wrapper_tests.py
 
 #  Need to clean the products of processing eventlogargs.ggo:
 
@@ -46,8 +47,8 @@ clean-local:
 
 
 install-exec-local:
-	for f in $(TCLSCRIPTS) ; do  \
-          $(INSTALL_PROGRAM) @srcdir@/$$f  @bindir@/`basename $$f .tcl`; \
+	for f in $(PYTHONSCRIPTS) ; do  \
+          $(INSTALL_PROGRAM) @srcdir@/$$f  @bindir@/`basename $$f .py`; \
 	done
 
 #-------------------------------------------------------------
@@ -84,4 +85,5 @@ eventlogTests_LDADD   = @CPPUNIT_LDFLAGS@ \
 				@top_builddir@/base/os/libdaqshm.la		\
 				$(THREADLD_FLAGS)
 
-TESTS=eventlogTests
+
+TESTS=eventlogTests evtlog_wrapper_tests.py
