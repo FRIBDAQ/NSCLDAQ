@@ -179,7 +179,126 @@ class Configuration:
             if 'noalarm' in colors.keys() :
                 result['noalarm'] = colors['noalarm']
         return result
+    def check(self):
+        '''
+            Performs some checking on the semantics of the
+            configuration that was read in.
+            0.  There must bge at least one data source.
+            1.  data sources must have a url and a
+                scaler key
+            2.  Pages must have a title and at least one line*
+                element.
+            3.  The lines must have a type and a scalers key.
+                the type must have a valid value.
+            4.  all of the scalers in the lines must have been
+                defined by the data sources.
+            5.  If a graph is present, the scalers in the
+                optional individual and ratio keys must be defined.
+        
+        @return an array of error messages (hopefully empty):
+        @note we don't assume that any of the getter functions will
+        properly work.
+        
+        '''
+        # sorry, this is a rather long, but reltatively straightforward
+        #      method
     
+        lines = []
+        scaler_names = []
+        
+        # Validate the data sources and accumulate the  list of full scaler names.
+        
+        if 'datasources' in self._rawconfig.keys():
+            ds = self._rawconfig['datasources']
+            if len(ds) > 0:
+                # accumulate the scaler definitions and ensure each data source definition
+                # has a URL and scalers key:
+                
+                for key, definition in ds.items():
+                    if 'url' not in definition.keys():
+                        lines.append(f'The definition of data source {key} is missing a "url" key.')
+                    else:
+                        if 'scalers' not in definition.keys():
+                            lines.append(f'The definition of data source {key} has no "scalers" list')
+                        else:
+                            # Collect the scalers with their fullnames:
+                            for name in definition['scalers']:
+                                full_name = f'{key}.{name}'
+                                if full_name in scaler_names:
+                                    lines.append(f'The definition of data sourcde {key} has a  duplicat scaler {full_name}')
+                                scaler_names.append(full_name)
+            else:
+                lines.append("you must have at least one data source specificaton [datasource.spdaq11] e.g.")
+        else:
+            lines.append("you must have at least one data source specificaton [datasource.spdaq11] e.g.")
+            
+        # validate the pages and their lines:
+        
+        if 'pages' in self._rawconfig.keys():
+            pages = self._rawconfig['pages']
+            if len(pages) > 0:
+                for name, definition in pages.items():
+                    if 'title' not in definition.keys():
+                        lines.append(f'Page {name} is missing a title')
+                    line_count = 0
+                    for key, line in definition.items():
+                        if fnmatch.fnmatch(key, 'line*'):
+                            digits = "".join(filter(str.isdigit, key))
+                            if digits:
+                                line_count += 1
+                                if 'type' in line:
+                                    if line['type'] not in ['single', 'pair', 'ratio']:
+                                        lines.append(f'line {key} in {name} invalid type {definition["type"]}')
+                                else:
+                                    lines.append(f'line {key} in {name} is missing a "type" specification.')
+                                if 'scalers' in line:
+                                    scalers = line['scalers']
+                                    for s in scalers:
+                                        if s not in scaler_names:
+                                            lines.append(f'{s} is not a known scaler in page {name} line {key}')
+                            else:
+                                lines.append(f'Line {key} in {name} is not a valid line.number string.')
+                    if line_count == 0:
+                        lines.append(f'page {name} does not have any line definitions.')    
+            else:
+                lines.append('There are no page definitions in the configuration file.')
+        else:
+            lines.append('There are no page definitions in the configuration file.')
+            
+        # graph is totally optional but if it is used, the scalers must be defined:
+        
+        if 'graph' in self._rawconfig.keys():
+            graph = self._rawconfig['graph']
+            
+            # Check any individual ones:
+            if 'individual' in graph.keys():
+                scalers = graph['individual']
+                for s in scalers:
+                    if s not in scaler_names:
+                        lines.append(f'[graph] individual scaler {s} is not defined.')
+        
+            if 'ratios' in graph.keys():
+                ratios = graph['ratios']     # Note array elements must be pairs:
+                for ratio in ratios:
+                    if len(ratio) == 2:
+                        if ratio[0] not in scaler_names:
+                            lines.append(f'[ratio] {ratio} scaler {ratio[0]} is not defined')
+                        if ratio[1] not in scaler_names:
+                            lines.append(f'[ratio] {ratio} scaler {ratio[1]} is not defined')
+                    else:
+                        lines.append(f'[ratio] {ratio}  must be a 2 element array and is not')
+                        
+            # Check the alamrs, keys must be valid scalers
+            
+            if 'alarms' in self._rawconfig.keys():
+                alarms = self._rawconfig['alarms']
+                for src, item in alarms.items():
+                    for scaler in item:
+                        full_name = f'{src}.{scaler}'
+                    if full_name not in scaler_names:
+                        lines.append(f'Alarm definition for {key} is not a defined scaler')
+        return lines
+        
     
 ## If we are the main we can run tests:
 
@@ -300,5 +419,11 @@ noalarm='black'
             
             self.assertTrue('noalarm' in colors.keys())
             self.assertEqual('black', colors['noalarm'])
+            
+        def test_check(self):
+            config = self.setUp()
+            lines = config.check()
+            self.assertEqual(0, len(lines))
+            
     unittest.main()
         
