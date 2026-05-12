@@ -84,7 +84,7 @@ class Configuration:
         '''
         result =[]
         if 'pages' in self._rawconfig.keys():
-            for key, contents in self._rawconfig.items():
+            for key, contents in self._rawconfig['pages'].items():
                 page_dict = {
                     'name': key, 'title' : contents['title'],
                     'lines' : []
@@ -93,7 +93,7 @@ class Configuration:
                 
                 for key, value in contents.items():
                     if fnmatch.fnmatch(key, 'line*'):
-                        digits = "".join(filter(str.sdigit, key))
+                        digits = "".join(filter(str.isdigit, key))
                         if digits:
                             number = int(digits)
                             line_dict = {
@@ -107,7 +107,7 @@ class Configuration:
     
     def plots(self):
         '''
-            Returns informationa bout what the user wants in the optional strip chart.
+            Returns information about what the user wants in the optional strip chart.
             This will be a dict with the keys:
             * single - an array of scaler names whose rates will be strip charted.
             * ratio - an array of scaler pairs whos ratio will be strip charted [numerator, denominator]
@@ -116,10 +116,10 @@ class Configuration:
         '''
         result = {'single' : [], 'ratio' :[]}
         if 'graph' in self._rawconfig.keys():
-            if 'individual' in self._raw_config['graph'].keys():
-                result['single'] = self._raw_config['graph']['individual']
-            if 'ratios' in self._raw_config['graph'].keys():
-                result['ratio'] = self._raw_config['graph']['ratios']
+            if 'individual' in self._rawconfig['graph'].keys():
+                result['single'] = self._rawconfig['graph']['individual']
+            if 'ratios' in self._rawconfig['graph'].keys():
+                result['ratio'] = self._rawconfig['graph']['ratios']
         return result 
         
     def alarms(self):
@@ -137,17 +137,18 @@ class Configuration:
         result = {}
         if 'alarms' in self._rawconfig.keys() :
             for src_name, scalers in self._rawconfig['alarms'].items():
-                for scaler_name, alarm_spec in scalers[src_name].items():
+                for scaler_name, alarm_spec in scalers.items():
                     fullname='.'.join([src_name, scaler_name])
                     result[fullname] = {'low': None, 'high' : None}
-                    if 'lowalarm' in alarm_spec.keys():
-                        result[fullname]['low'] = alarm_spec['lowalarm']
-                    if 'highalarm' in alarm_spec.keys():
-                        result[fullname]['high'] = alarm_spec['highalarm']
+                    if 'low' in alarm_spec.keys():
+                        result[fullname]['low'] = alarm_spec['low']
+                    if 'high' in alarm_spec.keys():
+                        result[fullname]['high'] = alarm_spec['high']
         
         return result
         
     def alarm_colors(self):
+        
         '''
             Returns a dict with the alarm colors.  These are used:
             - For the scaler names that are in alarmed conditions.
@@ -168,6 +169,7 @@ class Configuration:
         
         if 'alarmcolors' in self._rawconfig.keys() : 
             colors = self._rawconfig['alarmcolors']
+            
             if 'lowalarm' in colors.keys():
                 result['lowalarm'] = colors['lowalarm']
             if 'highalarm' in colors.keys():
@@ -200,7 +202,7 @@ scalers=['name1', 'name2', 'name3']
 
 [pages]
 
-[pages.1]
+[pages.apage]
 title='This is the page title'
 line1= {type='single', scalers=['raw2.name1']}    # Single scaler from raw1 source.
 line2= {type = 'pair', scalers=['raw1.name1', 'raw1.name2']} # Pair of scalers no ratio done.
@@ -215,9 +217,9 @@ ratios = [['raw1.name2', 'raw1.name3'], ['raw2.name1', 'raw2.name2']]  # Graphed
 raw1.name1={high=1234, low=10}  # omitted entries don't have that alarm type.
 
 [alarmcolors]
-lowalarm='red'
+lowalarm='blue'
 highalarm='yellow'
-bothalarams='green'
+bothalarms='green'
 noalarm='black'
             '''
             
@@ -228,6 +230,75 @@ noalarm='black'
             config = self.setUp()
             sources = config.datasources()
             self.assertEqual(2, len(sources))
+            
+            src0 = sources[0]
+            self.assertEqual('tcp://spdaq10.frib.msu.edu/raw_1', src0['url'])
+            self.assertEqual(['name1', 'name2', 'name3'], src0['scalers'])
+            
+            src1 = sources[1]
+            self.assertEqual('tcp://spdaq11.frib.msu.edu', src1['url'])
+            self.assertEqual(['name1', 'name2', 'name3'], src1['scalers'])
     
+        def test_pages(self):
+            config = self.setUp()
+            
+            pages = config.pages()
+            self.assertEqual(1, len(pages))
+            page = pages[0]
+            self.assertEqual('This is the page title', page['title'])
+            self.assertEqual('apage', page['name'])
+            lines = page['lines']
+            self.assertEqual(3, len(lines))
+            
+            self.assertEqual(1, lines[0]['number'])
+            self.assertEqual('single', lines[0]['type'])
+            self.assertEqual(['raw2.name1'], lines[0]['scalers'])
+            
+            self.assertEqual(2, lines[1]['number'])
+            self.assertEqual('pair', lines[1]['type'])
+            self.assertEqual(['raw1.name1', 'raw1.name2'], lines[1]['scalers'])
+            
+            self.assertEqual(3, lines[2]['number'])
+            self.assertEqual('ratio', lines[2]['type'])
+            self.assertEqual(['raw2.name2', 'raw2.name3'], lines[2]['scalers'])
+        
+        def test_plots(self):
+            config = self.setUp()
+            plots = config.plots()
+            self.assertTrue('single' in plots.keys())
+            self.assertEqual(['raw1.name1', 'raw2.name2'], plots['single'])
+            
+            self.assertTrue('ratio' in plots.keys())
+            self.assertEqual(
+                [['raw1.name2', 'raw1.name3'], ['raw2.name1', 'raw2.name2']],
+                plots['ratio']
+            )
+            
+        def test_alarms(self):
+            config = self.setUp()
+            alarms = config.alarms()
+            self.assertTrue('raw1.name1' in alarms.keys())
+            
+            self.assertTrue('low' in alarms['raw1.name1'].keys())
+            self.assertEqual(10, alarms['raw1.name1']['low'])
+            
+            self.assertTrue('high' in alarms['raw1.name1'].keys())
+            self.assertEqual(1234, alarms['raw1.name1']['high'])
+            
+        def test_alarm_colors(self):
+            config = self.setUp()
+            colors = config.alarm_colors()
+        
+            self.assertTrue('lowalarm' in colors.keys())
+            self.assertEqual('blue', colors['lowalarm'])
+            
+            self.assertTrue('highalarm' in colors.keys())
+            self.assertEqual('yellow', colors['highalarm'])
+            
+            self.assertTrue('bothalarms' in colors.keys())
+            self.assertEqual('green', colors['bothalarms'])
+            
+            self.assertTrue('noalarm' in colors.keys())
+            self.assertEqual('black', colors['noalarm'])
     unittest.main()
         
