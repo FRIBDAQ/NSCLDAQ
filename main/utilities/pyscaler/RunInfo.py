@@ -109,8 +109,11 @@ if __name__ == '__main__':
     main = QMainWindow()
     widget = RunInfo(main)
     widget.setRunState('Active')
+    print('State: ', widget.runState())
     widget.setRunNumber(1234)
+    print('NUmber: ', widget.runNumber())
     widget.setRunTitle('this is an arbitrary title')
+    print('title: ', widget.runTitle())
     main.setCentralWidget(widget)
     
     timer = QTimer(widget)
