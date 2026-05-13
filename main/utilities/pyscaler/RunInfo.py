@@ -87,9 +87,9 @@ class RunInfo(QWidget):
         secs = seconds % 60
         minutes = int(seconds/60)
         mins = minutes % 60
-        hours = int(mins/60)
+        hours = int(minutes/60)
         hrs   = hours %24
-        days  = int(hours)/24
+        days  = int(hours/24)
         
         time_string = f'{days} {hrs:02d}:{mins:02d}:{secs:02d}'
         self._time.setText(time_string)
@@ -111,6 +111,7 @@ if __name__ == '__main__':
     widget.setRunState('Active')
     print('State: ', widget.runState())
     widget.setRunNumber(1234)
+    widget.setTime(24*3600)   # test days.
     print('NUmber: ', widget.runNumber())
     widget.setRunTitle('this is an arbitrary title')
     print('title: ', widget.runTitle())
