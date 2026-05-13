@@ -84,7 +84,7 @@ class ScalerPageModel(QStandardItemModel):
             The line_info is a dict that is just like what comes out of the 
             line dicts from the processed config file keys are:
             
-            type -  must be one of 'single', 'pair' or 'ratio' see the class comments
+            type -  must be one of 'empty', 'single', 'pair' or 'ratio' see the class comments
             scalers - an array of one or two scaler names, depending on the type.
             
             For all of the appropriate counts/rate/ratio columns we create
@@ -96,14 +96,21 @@ class ScalerPageModel(QStandardItemModel):
             @exception ScalerPageException:
                 - If the type is invalid.
         '''
-        
+        items = []
         type = line_info['type']
+        if type == 'empty':
+            items.append(QStandardItem(' '))
+            self.appendRow(items)
+            self._lines.append(line_info)
+            return
+            
+            
         if type not in ['single', 'pair', 'ratio'] : 
             raise ScalerPageException(f'Invalid scaler line type {type} ')
         
         #  Let's build the appropriate standard items:
         
-        items = []
+    
         
         # All items have scaler 1:
         
@@ -156,7 +163,12 @@ class ScalerPageModel(QStandardItemModel):
                 f'{row} is not a valid line number Maximum is {len(self._lines)}'
             )
         type = self._lines[row]['type']
+        # Can't update an empty row:
         
+        if type == 'empty':
+            raise ScalerPageException(
+                f'You are attempting to update line {row} but that is an empty row.'
+            )
         #every row has scaler 1:
         
         self.item(row, 1).setText(str(totals[0]))
@@ -255,13 +267,13 @@ if __name__ == '__main__':
         
         rates = [50.0, 75.0]
         totals= [50*up, 75*up]
-        model.update_line(1, totals, rates)
+        model.update_line(2, totals, rates)
         
         # Update the ratios: rates are 25, 60:
         
         rates = [25.0, 60]
         totals = [25*up, 60*up]
-        model.update_line(2, totals, rates)
+        model.update_line(3, totals, rates)
         
         
          
@@ -280,6 +292,9 @@ if __name__ == '__main__':
     model.addLine({
         'type' : 'single',
         'scalers' : ['raw2.name1']
+    })
+    model.addLine({
+        'type' : 'empty'
     })
     model.addLine({
         'type': 'pair',
