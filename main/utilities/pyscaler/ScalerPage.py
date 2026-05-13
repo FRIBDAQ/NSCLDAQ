@@ -17,7 +17,9 @@
   ScalerPageView - A megawidget containing a title and table view.
   ScalerPageModel - A QStandardItemModel that containst he data the table view displays.
   
-  
+  @file ScalerPage.py
+  @brief Presentation and model for a single scaler display page.
+  @author Ron Fox.
 '''
 
 from PyQt5.QtWidgets import QLabel, QTableView, QVBoxLayout, QHBoxLayout, QWidget
@@ -126,6 +128,11 @@ class ScalerPageModel(QStandardItemModel):
         
         self._lines.append(line_info)                            # Remember the line 
         self.appendRow(items)                                    # and add it to the model.
+        
+        # Make the items uneditable:
+        
+        for item in items:
+            item.setEditable(False)
     
     def lines(self):
         ''' @return the array of line definitions in the model. '''
