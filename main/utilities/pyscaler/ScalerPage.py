@@ -23,6 +23,11 @@
 from PyQt5.QtWidgets import QLabel, QTableView, QVBoxLayout, QHBoxLayout, QWidget
 from PyQt5.QtGui     import QStandardItemModel, QStandardItem
 
+class ScalerPageException(Exception):
+    def __init__(self, reason):
+        super().__init__(reason)
+    
+
 ##------------------------ The model class: ----------------------------
 
 class ScalerPageModel(QStandardItemModel):
@@ -67,6 +72,109 @@ class ScalerPageModel(QStandardItemModel):
             'Scaler', 'counts', 'rate',
             'ratio(counts)', 'ratio(rates)'
         ])
+        self._lines = [];     # The line definitions.
+    
+    # Public methods:
+    
+    def addLine(self, line_info):
+        '''
+            Add a new line to the model.
+            The line_info is a dict that is just like what comes out of the 
+            line dicts from the processed config file keys are:
+            
+            type -  must be one of 'single', 'pair' or 'ratio' see the class comments
+            scalers - an array of one or two scaler names, depending on the type.
+            
+            For all of the appropriate counts/rate/ratio columns we create
+            an item with the contents '0'.
+            
+            The line is appended to the set of existing lines.
+            
+            @param line_info - the dict described above
+            @exception ScalerPageException:
+                - If the type is invalid.
+        '''
+        
+        type = line_info['type']
+        if type not in ['single', 'pair', 'ratio'] : 
+            raise ScalerPageException(f'Invalid scaler line type {type} ')
+        
+        #  Let's build the appropriate standard items:
+        
+        items = []
+        
+        # All items have scaler 1:
+        
+        items.append(QStandardItem(line_info['scalers'][0]))   #name
+        items.append(QStandardItem('0'))                       #total.
+        items.append(QStandardItem('0.0'))                     # rate
+        
+        # If type type is a pair or ratio, it has the second scaler:
+        
+        if type in ['pair', 'ratio'] :
+            items.append(QStandardItem(line_info['scalers'][1])) #Name
+            items.append(QStandardItem('0'))                       #total.
+            items.append(QStandardItem('0.0'))                     # rate
+            
+        # If type is 'ratio' it has the two ratios as well:
+        
+        if type == 'ratio':
+            items.append(QStandardItem('0.0'))                   # ratio of totals.
+            items.append(QStandardItem('0.0'))                   # Ratio of rates
+            
+        # If we got this far, we're going to succeed:
+        
+        self._lines.append(line_info)                            # Remember the line 
+        self.appendRow(items)                                    # and add it to the model.
+    
+    def lines(self):
+        ''' @return the array of line definitions in the model. '''
+        return self._lines
+    
+    def update_line(self, row, totals, rates):
+        '''
+          This method updates a line of the model.
+          @param row - is the row to update.
+          @param totals - is an array of new totals.
+          @param rates -  is an array of new rates 
+          
+          If necessary, we will compute the ratios.
+          
+          @exception ScalerPageException if the row is invalid.
+          
+          
+        '''
+        if row >= len(self._lines):
+            raise ScalerPageException(
+                f'{row} is not a valid line number Maximum is {len(self._lines)}'
+            )
+        type = self._lines[row]['type']
+        
+        #every row has scaler 1:
+        
+        self.item(row, 1).setText(str(totals[0]))
+        self.item(row, 2).setText(f'{rates[0]:.2f}')
+        
+        #  Pairs and ratios have a second scaler:
+        
+        if type in ['pair', 'ratio']:
+            self.item(row, 4).setText(str(totals[1]))
+            self.item(row, 5).setText(f'{rates[1]:.2f}')
+            
+        # Ratios have rates:
+        
+        if type == 'ratio':
+            if totals[1] != 0:
+                total_ratio = f'{totals[0]/totals[1]:.2f}'
+            else:
+                total_ratio = '****'
+            if rates[1] != 0:
+                rates_ratio = f'{rates[0]/rates[1]:.2f}'
+            else:
+                rates_ratio = '****'
+            self.item(row, 6).setText(str(total_ratio))
+            self.item(row, 7).setText(str(rates_ratio))
+    
         
 ##------------------------ The view class:   ----------------------------
 
@@ -120,15 +228,66 @@ class ScalerPageView(QWidget):
         
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QMainWindow, QApplication
+    from PyQt5.QtCore  import QTimer
+    
+    
+    up = 0
+    def update():
+        global up
+        # Simulate some running scalers.
+         
+        up += 1
+         
+        #  Update the singe scaler  rate is 100
+        
+        rates = [100.0,]
+        totals = [up*100,]
+        model.update_line(0, totals, rates)
+        
+        # Update the pair  scaler 1 rate is 50, scaler 2 rate is 75:
+        
+        rates = [50.0, 75.0]
+        totals= [50*up, 75*up]
+        model.update_line(1, totals, rates)
+        
+        # Update the ratios: rates are 25, 60:
+        
+        rates = [25.0, 60]
+        totals = [25*up, 60*up]
+        model.update_line(2, totals, rates)
+        
+        
+         
     
     app = QApplication([])
     win = QMainWindow()
     widget = ScalerPageView(win)
     win.setCentralWidget(widget)
-    widget.setTitle('Some random page title')
+    widget.setTitle('This is the page title')
     
     model = ScalerPageModel()
     widget.setModel(model)
+    
+    # Some items in the model:
+    # One of each type:
+    model.addLine({
+        'type' : 'single',
+        'scalers' : ['raw2.name1']
+    })
+    model.addLine({
+        'type': 'pair',
+        'scalers': ['raw1.name1', 'raw1.name2']   
+    })
+    model.addLine({
+        'type' : 'ratio',
+        'scalers': ['raw2.name2', 'raw2.name3']
+    })
+    
+    timer = QTimer()
+    timer.setInterval(1000)    # Update the view every second
+    timer.timeout.connect(update)
+    timer.setSingleShot(False)
+    timer.start()
     
     win.show()
     app.exec()
