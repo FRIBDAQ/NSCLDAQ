@@ -18,7 +18,9 @@
   Run State:  Inactive or Active. Title:       The run title      
   Run Number: n.                  Time in run: d hh:mm:sec
   
-  
+  @file RunInfo.py
+  @brief Presentation for run information.
+  @author Ron Fox
 '''
 
 from PyQt5.QtWidgets import QLabel, QGridLayout, QWidget
