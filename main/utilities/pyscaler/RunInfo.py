@@ -1,3 +1,16 @@
+#    This software is Copyright by the Board of Trustees of Michigan
+#    State University (c) Copyright 2014, 2026
+#
+#    You may use this software under the terms of the GNU public license
+#    (GPL).  The terms of this license are described at:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+#
+#	     FRIB
+#	     Michigan State University
+#	     East Lansing, MI 48824-1321
+
+
 ''''
   This file contains a RunInfo widget.  It displays above the
   tabbed notebook and shows several bits of information:
@@ -128,4 +141,3 @@ if __name__ == '__main__':
     
     main.show()
     app.exec()
-    
