@@ -28,6 +28,8 @@
 import tomllib
 import fnmatch
 
+DEFAULT_VERSION=12.0    # Default DAQ version.
+
 class Configuration:
     '''
     This class parses and contains
@@ -66,6 +68,11 @@ class Configuration:
                 source_dict = {
                     'name' : key, 'url': contents['url'], 'scalers' : contents['scalers']
                 }
+                if 'version' in contents.keys() :
+                    source_dict['version'] = contents['version']
+                else :
+                    source_dict['version'] = DEFAULT_VERSION
+                    
                 result.append(source_dict)
 
         return result
@@ -317,6 +324,7 @@ scalers=['name1', 'name2', 'name3']
 
 [datasources.raw2]
 url='tcp://spdaq11.frib.msu.edu'
+version=11.0
 scalers=['name1', 'name2', 'name3']
 
 
@@ -354,10 +362,12 @@ noalarm='black'
             src0 = sources[0]
             self.assertEqual('tcp://spdaq10.frib.msu.edu/raw_1', src0['url'])
             self.assertEqual(['name1', 'name2', 'name3'], src0['scalers'])
+            self.assertEqual(DEFAULT_VERSION, src0['version'])
             
             src1 = sources[1]
             self.assertEqual('tcp://spdaq11.frib.msu.edu', src1['url'])
             self.assertEqual(['name1', 'name2', 'name3'], src1['scalers'])
+            self.assertEqual(11.0, src1['version'])
     
         def test_pages(self):
             config = self.setUp()
