@@ -94,7 +94,9 @@ class ScalerDisplay(QWidget):
             model.addLine(line)
             line_num +=1
         self._models[definition['name']] = (model, definition)   # Keep track of the models and defs.
-     
+    
+    def pageNames(self):
+        return self._models.keys()  
     def lineModel(self, name):
         return self._models[name][0]   
     def lineDefinition(self, name):
@@ -133,6 +135,8 @@ if __name__ == "__main__":
 
     CONFIGURATION_FILE = 'test.toml'
     
+    scalers = {}      # These are scaler [total,rate] pairs.
+    
     def configurePages(w):
         with open(CONFIGURATION_FILE, 'r') as f:
             toml = f.read()
@@ -146,9 +150,61 @@ if __name__ == "__main__":
         pages = config.pages()
         for page in pages:
             w.addPage(page)
+        
+        # Set up counters for each of the scalers:
+        
+        sources = config.datasources()
+        rate=10
+        for source in sources:
+            source_name = source['name']
+            for scaler in source['scalers']:
+                full_name = f'{source_name}.{scaler}'
+                scalers[full_name] = [0, rate] 
+                rate = rate + 10        # all scalers have different rates.
+        
     
+    def update_scalers():
+        # first update the actual internal counters we have:
+        
+        for name,scaler in scalers.items():
+            
+            scaler[0] += scaler[1]                # update by the rate.
+        
+        #  Now for each scaler, update pages that display it:
+        
+        pages = widget.pageNames()
+    
+        for name, scaler in scalers.items():
+            for page in pages:
+                page_def = widget.lineDefinition(page)
+                page_model = widget.lineModel(page)
+                
+                # For each line on the page, get the scaler 
+                # totals and rates an update the model:
+                for line in page_def['lines']:
+                    
+                    totals = []
+                    rates  = []
+                    line_num = line['number']
+                    # All have one scaler:
+                    totals.append(scalers[line['scalers'][0]][0])
+                    rates.append(scalers[line['scalers'][0]][1])
+                    
+                    # ratios and pairs have a second one:
+                    
+                    if line['type'] in ['ratio', 'pair']:
+                        totals.append(scalers[line['scalers'][1]][0])    
+                        rates.append(scalers[line['scalers'][1]][1])
+                    
+                    # Update the line in the model:
+                    
+                    page_model.update_line(line_num-1, totals, rates)  # 1 bias on the line numbers.
+            
+        
     def tick():
         widget.setTime(widget.time() + 1)
+        update_scalers()
+        
     
     app = QApplication([])
     main = QMainWindow()
