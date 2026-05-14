@@ -1,0 +1,38 @@
+[datasources]
+
+[datasources.raw1]
+url='tcp://spdaq10.frib.msu.edu/raw_1'
+scalers=['name1', 'name2', 'name3']
+
+[datasources.raw2]
+url='tcp://spdaq11.frib.msu.edu'
+scalers=['name1', 'name2', 'name3']
+
+
+[pages]
+
+[pages.apage]
+title='This is the page title'
+line1= {type='single', scalers=['raw2.name1']}    # Single scaler from raw1 source.
+line2= {type = 'pair', scalers=['raw1.name1', 'raw1.name2']} # Pair of scalers no ratio done.
+line3= {type = 'ratio', scalers=['raw2.name2', 'raw2.name3']} #  Pair with ratios.
+
+[pages.another]
+title='this is a second page'
+line1=  {type = 'ratio', scalers=['raw2.name3', 'raw2.name2']}
+line3=  {type = 'ratio', scalers=['raw1.name1', 'raw1.name3']}
+
+[graph]
+individual=['raw1.name1', 'raw2.name2']  # Graphed as individual scalers
+ratios = [['raw1.name2', 'raw1.name3'], ['raw2.name1', 'raw2.name2']]  # Graphed as ratios.
+
+
+[alarms]
+raw1.name1={high=1234, low=10}  # omitted entries don't have that alarm type.
+
+[alarmcolors]
+lowalarm='red'
+highalarm='yellow'
+bothalarms='green'
+noalarm='black'
+
