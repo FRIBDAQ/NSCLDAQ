@@ -34,7 +34,7 @@ class RunInfo(QWidget):
       runNumber - the current run number.
       runTitle  - the current run title.
       runState  - Active or Inactive.
-      runTime   - Seconds into the run.
+      time   - Seconds into the run.
       
       See the file header for the shape of this widget.
     '''
