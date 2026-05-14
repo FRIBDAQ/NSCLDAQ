@@ -13,7 +13,8 @@ lib_LTLIBRARIES=libformat.la
 
 libformat_la_CPPFLAGS=@UFMT_CPPFLAGS@ @PYTHON_CFLAGS@
 libformat_la_LDFLAGS=@UFMT_LDFLAGS@ @PYTHON_LIBS@
-libformat_la_SOURCES=format_Module.cpp
+libformat_la_SOURCES=format_Module.cpp \
+	format_selector.h format_selector.cpp
 
 
 install-exec-hook:
