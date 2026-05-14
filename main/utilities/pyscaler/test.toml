@@ -1,11 +1,11 @@
-[datasources]
-
 [datasources.raw1]
 url='tcp://spdaq10.frib.msu.edu/raw_1'
+version=12.0                 # NSCLDAQ Version.
 scalers=['name1', 'name2', 'name3']
 
 [datasources.raw2]
 url='tcp://spdaq11.frib.msu.edu'
+version= 11.0               # NSCLDAQ Version
 scalers=['name1', 'name2', 'name3']
 
 
