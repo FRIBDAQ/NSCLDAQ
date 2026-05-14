@@ -99,3 +99,78 @@ class ScalerDisplay(QWidget):
         return self._models[name][0]   
     def lineDefinition(self, name):
         return self._models[name][1]
+    
+    # Delegate the attributes of the self._info (RunInfo) widget:
+    
+    def runNumber(self):
+        return self._info.runNumber()
+    def setRunNumber(self, run_number):
+        self._info.setRunNumber(run_number)
+        
+    def runTitle(self):
+        return self._info.runTitle()
+    def setRunTitle(self, title):
+        self._info.setRunTitle(title)
+        
+    def runState(self):
+        return self._info.runState()
+    def setRunState(self, state):
+        self._info.setRunState(state)
+        
+    def time(self):
+        return self._info.time()
+    def setTime(self, seconds):
+        self._info.setTime(seconds)
+    
+    
+# Test code:
+
+if __name__ == "__main__":
+    from PyQt5.QtWidgets import QApplication, QMainWindow
+    from PyQt5.QtCore    import QTimer
+    import configfile
+    import sys
+
+    CONFIGURATION_FILE = 'test.toml'
+    
+    def configurePages(w):
+        with open(CONFIGURATION_FILE, 'r') as f:
+            toml = f.read()
+        config = configfile.Configuration(toml)
+        warnings = config.check()
+        if len(warnings) > 0:
+            print('The configurtaion file had error(s):')
+            for warning in warnings:
+                print(warning)
+            sys.exit(-1)
+        pages = config.pages()
+        for page in pages:
+            w.addPage(page)
+    
+    def tick():
+        widget.setTime(widget.time() + 1)
+    
+    app = QApplication([])
+    main = QMainWindow()
+    
+    widget = ScalerDisplay()
+    # Set the run information and setup for a clock tick:
+    
+    widget.setRunTitle("Some title I set")
+    widget.setRunNumber(1234)
+    widget.setRunState('Active')
+    widget.setTime(0)
+    configurePages(widget)
+    
+    timer = QTimer(widget)
+    timer.setInterval(1000)     # Once a second.
+    timer.setSingleShot(False)
+    timer.timeout.connect(tick)
+    timer.start()
+    
+    
+    
+    main.setCentralWidget(widget)
+    main.show()
+    
+    sys.exit(app.exec())
