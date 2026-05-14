@@ -83,6 +83,7 @@ class Configuration:
                       scalers - an array of scaler specifications in the form source_name.scaler_name.
         '''
         result =[]
+
         if 'pages' in self._rawconfig.keys():
             for key, contents in self._rawconfig['pages'].items():
                 page_dict = {
@@ -102,7 +103,7 @@ class Configuration:
                             }
                             page_dict['lines'].append(line_dict)
                         
-            result.append(page_dict)
+                result.append(page_dict)
         return result
     
     def plots(self):
