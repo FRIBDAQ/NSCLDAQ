@@ -17,6 +17,7 @@ SUBDIRS = 				common	\
 					tkbufdump \
 					compatibility \
 					newscaler	\
+					pyscaler \
 					fileanalyzer	\
                                         scalerReader \
 					scalersum reglom  \
