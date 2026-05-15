@@ -14,7 +14,7 @@
 
 /**
  * @file format_ringitem.cpp
- * @brief implementation of Python wrapping of the CRingItem base class.
+ * @brief implementation of Python wrapping of the ufmt::CRingItem base class.
  * @author Ron Fox
  */ 
 
@@ -37,11 +37,140 @@ dealloc(PyObject* self) {
      Py_TYPE(self)->tp_free(self);    // Free the rest of the object struct.
 }
 
+// Convenience routine - either get the pointer to the ring item
+// or return nullptr and raise an runtime error:
+
+static ufmt::CRingItem* 
+getItem(PyObject* self) {
+     pyRingItem* pThis = reinterpret_cast<pyRingItem*>(self);
+    if (!pThis->m_pItem) {
+        PyErr_SetString(PyExc_RuntimeError, "Use the ringitemfactory to create ring items!");
+        return nullptr;
+    }
+    return pThis->m_pItem;
+}
+/**
+ * getType
+ *    Implement the type() method - Return the ring item type code.
+ * @param self - pointer to our self.
+ * @param args - Pointer to arguments.  Not used.
+ * @return PyObject* integer type code.
+ * @note If the ring item is not defined, we raise a RunTime exception.
+ * @note The above assumes the struct is intialized to 0.  May need a 
+ *      allocation/construction function if that's not the case.
+ */
+static PyObject*
+getType(PyObject* self, PyObject* args) {
+    ufmt::CRingItem* pItem = getItem(self);
+    if( pItem) {
+        return PyLong_FromLong(pItem->type());
+    } else {
+        return nullptr;
+    }
+
+
+}
+/**
+ * size
+ *    Implement the size() method - return the number of bytes in the
+ * ring item.
+ * @param self - pointer to our self.
+ * @param args - Pointer to arguments.  Not used.
+ * @return PyObject* integer size in bytes.
+ * @note If the ring item is not defined, we raise a RunTime exception.
+ * @note The above assumes the struct is intialized to 0.  May need a 
+ *      allocation/construction function if that's not the case.
+ */
+static PyObject* 
+size(PyObject* self, PyObject* args) {
+    ufmt::CRingItem* pItem = getItem(self);
+    if (pItem) {
+        return PyLong_FromLong(pItem->size());
+    } else {
+        return nullptr;
+    }
+}
+/**
+ * timestamp
+ *   Return the item timestamp or None if there is on body header to get
+ * it from.
+ * 
+ * @param self - pointer to our self.
+ * @param args - Pointer to arguments.  Not used.
+ * @return PyObject* timestamp.
+ * @note If the ring item is not defined, we raise a RunTime exception.
+ * @note The above assumes the struct is intialized to 0.  May need a 
+ *      allocation/construction function if that's not the case.
+ */
+static PyObject*
+timestamp(PyObject* self, PyObject* args) {
+    ufmt::CRingItem* pItem  = getItem(self);
+    if (pItem) {
+        if (pItem->hasBodyHeader()) {
+            return PyLong_FromLong(pItem->getEventTimestamp());
+        } else {
+            Py_RETURN_NONE;
+        }
+    } else {
+        return nullptr;
+    }
+}
+/**
+ * sourceid
+ *    Return the source id if the ring item has one else None
+ * if there's no body header to get it from.
+ * @param self - pointer to our self.
+ * @param args - Pointer to arguments.  Not used.
+ * @return PyObject* integer source id.
+ * @note If the ring item is not defined, we raise a RunTime exception.
+ * @note The above assumes the struct is intialized to 0.  May need a 
+ *      allocation/construction function if that's not the case.
+ */
+static
+PyObject* sourceid(PyObject* self, PyObject* args) {
+    ufmt::CRingItem* pItem = getItem(self);
+    if (pItem) {
+        if (pItem->hasBodyHeader()) {
+            return PyLong_FromLong(pItem->getSourceId());
+        } else {
+            Py_RETURN_NONE;
+        }
+    } else {
+        return nullptr;
+    }
+}
+/**
+ * barriertype
+ *    Return the barrier type if there is one else None if not.
+ * @param self - pointer to our self.
+ * @param args - Pointer to arguments.  Not used.
+ * @return PyObject* barrier type code.
+ * @note If the ring item is not defined, we raise a RunTime exception.
+ * @note The above assumes the struct is intialized to 0.  May need a 
+ *      allocation/construction function if that's not the case.
+ */
+static
+PyObject* barriertype(PyObject* self, PyObject* args) {
+    ufmt::CRingItem* pItem = getItem(self); 
+    if (pItem) {
+        if (pItem->hasBodyHeader()) {
+            return PyLong_FromLong(pItem->getBarrierType());
+        } else {
+            Py_RETURN_NONE;
+        }
+    } else {
+        return nullptr;
+    }
+}
 /*
   Methods ringitems have:
 */
 static PyMethodDef ringitem_methods[] = {
-
+    {"type", getType, METH_VARARGS, "Get ring item type"},
+    {"size", size,     METH_VARARGS, "Get ring item size"},
+    {"timestamp", timestamp,  METH_VARARGS, "Get timestamp"},
+    {"sourceid", sourceid,   METH_VARARGS, "Get the source id"},
+    {"barriertype", barriertype, METH_VARARGS, "Get barrier type"},
     {nullptr, nullptr, 0, nullptr}                             // End sentinel
 };
 
@@ -58,7 +187,7 @@ PyTypeObject pyRingItemType = {
     .tp_itemsize = 0,
     .tp_dealloc   = dealloc,
     .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_doc = PyDoc_STR("Python acessible ring item"),
+    .tp_doc = PyDoc_STR("Python acessible ring item. Should not be directly constructed.  Use ringitemfactory to make one. "),
     .tp_methods = ringitem_methods,
     .tp_new = PyType_GenericNew
     
