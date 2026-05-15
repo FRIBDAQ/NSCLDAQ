@@ -25,6 +25,18 @@
 static const char* Copyright = "Copyright Michigan State University 2026, All rights reserved";
 
 
+/**
+ *  dealloc
+ *    Custom destrutor:
+ *    - Need to kill off my ring item.
+ */
+static void
+dealloc(PyObject* self) {
+    pyRingItem* pThis  = reinterpret_cast<pyRingItem*>(self);
+    delete pThis->m_pItem;            // destroy the encapsulated ring item.
+     Py_TYPE(self)->tp_free(self);    // Free the rest of the object struct.
+}
+
 /*
   Methods ringitems have:
 */
@@ -44,6 +56,7 @@ PyTypeObject pyRingItemType = {
     .tp_name = "ringitem",
     .tp_basicsize = sizeof(pyRingItem),
     .tp_itemsize = 0,
+    .tp_dealloc   = dealloc,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_doc = PyDoc_STR("Python acessible ring item"),
     .tp_methods = ringitem_methods,
