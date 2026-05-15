@@ -4,19 +4,19 @@
 
 pymodule_dir = @prefix@/pythonLibs/nscldaq
 
-lib_LTLIBRARIES=libformat.la
+lib_LTLIBRARIES=libpydaqformat.la
 
 #
 #  format.la is a partial? encapsulation of
 #  the unified format library
 #  for python
 
-libformat_la_CPPFLAGS=@UFMT_CPPFLAGS@ @PYTHON_CFLAGS@
-libformat_la_LDFLAGS=@UFMT_LDFLAGS@ @PYTHON_LIBS@
-libformat_la_SOURCES=format_Module.cpp \
-	format_selector.h format_selector.cpp
+libpydaqformat_la_CPPFLAGS=@UFMT_CPPFLAGS@ @PYTHON_CFLAGS@
+libpydaqformat_la_LDFLAGS=@UFMT_LDFLAGS@ @PYTHON_LIBS@
+libpydaqformat_la_SOURCES=format_Module.cpp \
+	format_factory.h format_factory.cpp
 
 
 install-exec-hook:
 	$(mkinstalldirs) @prefix@/pythonLibs/nscldaq
-	$(INSTALL_SCRIPT) @libdir@/libformat.so $(pymodule_dir)/format.so
+	$(INSTALL_SCRIPT) @libdir@/libpydaqformat.so $(pymodule_dir)/daqformat.so
