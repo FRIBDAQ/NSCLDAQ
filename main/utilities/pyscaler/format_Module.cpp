@@ -23,6 +23,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include <Python.h>
 
 #include "format_factory.h"
+#include "format_ringitem.h"
 
 
 
@@ -49,11 +50,19 @@ PyMODINIT_FUNC
 PyInit_daqformat(void) {
     PyModuleDef_Init(&format_module);
     auto module = PyModule_Create(&format_module);
+
     if (PyType_Ready(&pyRingItemFactoryType) < 0) {
         return NULL;
     }
     if (PyModule_AddObjectRef(module, "ringitemfactory", (PyObject*)(&pyRingItemFactoryType)) < 0) {
         return NULL;
+    }
+
+    if (PyType_Ready(&pyRingItemType) < 0) {
+        return nullptr;
+    }
+    if (PyModule_AddObjectRef(module, "ringitem", (PyObject*)&pyRingItemType) < 0) {
+        return nullptr;
     }
     return module;
 }

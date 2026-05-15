@@ -16,11 +16,13 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 
 #define SELECTOR_IMPLEMENTATION
 #include "format_factory.h"
+#include "format_ringitem.h"
 #include <map>
 #include <NSCLDAQFormatFactorySelector.h>
 #include <RingItemFactoryBase.h>
 #include <DataFormat.h>
 #include <exception>
+
 
 
 // Supported version numbers.
@@ -86,17 +88,31 @@ makeRingItem(PyObject* self, PyObject* args) {
     }
     // I believe our buffer is a contiguous memory block so the following is ok.
 
-    ufmt::CRingItem* ringitem = rawItem->buf;
-    pyRingitemFactory* pThis = reinterpret_cat<pyRingItemFactory*>(self);
+    ufmt::RingItem* ringitem = reinterpret_cast<ufmt::RingItem*>(rawItem.buf);
+    pyRingItemFactory* pThis = reinterpret_cast<pyRingItemFactory*>(self);
     try {
-        ufmt::CRingItem* pItem = pThis->m_pFactory->makeRingItem(ringitem);
+        ufmt::CRingItem* pItem = pThis->m_pfactory->makeRingItem(ringitem);
+        // Make a ringitem object and stuff our item into the 
+        // slot for it in the object
+
+        PyObject* empty = PyTuple_New(0);
+        PyObject* ringitem = PyObject_Call(reinterpret_cast<PyObject*>(&pyRingItemType), empty, nullptr);
+        Py_DECREF(empty);                                     // Release the tuple.
+        if (!ringitem) {
+            PyErr_SetString(PyExc_RuntimeError, "Failed to create a CRing item object");
+            return nullptr;
+        }
+        pyRingItem *item = reinterpret_cast<pyRingItem*>(ringitem);
+        item->m_pItem = pItem;
+        
+        return ringitem;
     }
     catch(std::exception& e) {
         PyErr_SetString(PyExc_RuntimeError, e.what());
         return nullptr;
     }
 
-    return nullptr;
+    
 }
 
 /*
