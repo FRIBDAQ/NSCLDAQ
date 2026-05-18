@@ -22,6 +22,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include <RingItemFactoryBase.h>
 #include <DataFormat.h>
 #include <exception>
+#include <string>
 
 
 
@@ -31,6 +32,22 @@ static std::map<int, ufmt::FormatSelector:: SupportedVersions> versions = {
     {10, ufmt::FormatSelector::v10}, {11, ufmt::FormatSelector::v11}, {12, ufmt::FormatSelector::v12}
 }; 
 
+///// Utility methods;
+
+// isRawRingItem
+//   Takes a PyObject and returns false with a type error exception raised if
+//   it is not a "ringitem" type.
+//
+static bool
+isRawRingItem(PyObject* o) {
+    auto otype = Py_TYPE(o);
+    if (std::string(otype->tp_name) != "ringitem") {
+        PyErr_SetString(PyExc_TypeError, "Object passed in was not of 'ringitem' type");
+        return false;
+    }
+    return true;
+}
+/////
 
 /**
  * init
@@ -111,8 +128,57 @@ makeRingItem(PyObject* self, PyObject* args) {
         PyErr_SetString(PyExc_RuntimeError, e.what());
         return nullptr;
     }
+    
 
     
+}
+/**
+ * makeAbnormalEndItem
+ *    Takes a raw ring item and turn it into an abnormal end ring item.
+ *    The raw ring item, normally comes from makeRingItem.  The calling
+ *    program then analyzes the type and determines its and
+ *    ABNORMAL_END item and calls us to 'up cast' the object to an
+ *    abnormal end.
+ * 
+ * @param self - pointer to the factory object actually.
+ * @param args - Pointer to the arguments.  One parameter is expected a ring item.
+ * @return PyObject* on success an abnormal end ring item, nullptr with an exception raised
+ *        on faiure.
+ * 
+ */
+static PyObject*
+makeAbnormalEndItem(PyObject* self, PyObject* args) {
+    PyObject* rawItemObject;
+    if(!PyArg_ParseTuple(args, "O", &rawItemObject)) {
+        return nullptr;
+    }
+    // Ensure the object we have is a raw ring item and get its pointer:
+    if (! isRawRingItem(rawItemObject)) {
+        return nullptr;
+    }
+    // Get the ring item and fatory pointers.
+
+    pyRingItem* pRingitemObject = reinterpret_cast<pyRingItem*>(rawItemObject);
+    ufmt::CRingItem*  pRingItem       = pRingitemObject->m_pItem;
+    pyRingItemFactory* pFactoryObject = reinterpret_cast<pyRingItemFactory*>(self);
+    ufmt::RingItemFactoryBase*   pFactory = pFactoryObject->m_pfactory;
+
+    // Now we can try to make the abnormal end type:
+    // note an std::exception could be thrown (std::bad_cast)
+
+    try {
+        ufmt::CAbnormalEndItem* item = pFactory->makeAbnormalEndItem(*pRingItem);
+
+        // Wrap it as a python object and return it.
+
+        Py_RETURN_NONE;    // for now.. until we have an wrapped abnormal end type.
+    
+    }
+    catch(std::exception& e) {
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return nullptr;
+    }
+
 }
 
 /*
@@ -120,6 +186,7 @@ makeRingItem(PyObject* self, PyObject* args) {
 */
   static PyMethodDef factory_methods[] = {
     {"makeRingItem", makeRingItem, METH_VARARGS, "Make a ring item base object from a memory buffer"},
+    {"makeAbnormalEndItem", makeAbnormalEndItem, METH_VARARGS, "Convert a ring item to an abnormal end item"},
     {nullptr, nullptr, 0, nullptr}                             // End sentinel
 };
 
