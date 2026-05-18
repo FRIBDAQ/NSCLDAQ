@@ -24,8 +24,21 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 
 #include "format_factory.h"
 #include "format_ringitem.h"
+#include <DataFormat.h>
 
 
+// Some utility code:
+
+// addConstants
+//   Add module level constants to the module:
+static void 
+addConstants(PyObject* module) {
+    PyModule_AddIntConstant(module, "BEGIN_RUN", 1);
+    PyModule_AddIntConstant(module, "END_RUN", 2);
+    PyModule_AddIntConstant(module, "PAUSE_RUN", 3);
+    PyModule_AddIntConstant(module, "RESUME_RUN", 4);
+    PyModule_AddIntConstant(module, "ABNORMAL_ENDRUN", 5);
+}
 
 // The module level methods. 
 // These have to do with making the apropriate factories:
@@ -61,6 +74,7 @@ PyInit_daqformat(void) {
     if (PyType_Ready(&pyRingItemType) < 0) {
         return nullptr;
     }
+    addConstants(module);
     if (PyModule_AddObjectRef(module, "ringitem", (PyObject*)&pyRingItemType) < 0) {
         return nullptr;
     }
