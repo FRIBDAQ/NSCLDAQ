@@ -25,6 +25,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_factory.h"
 #include "format_ringitem.h"
 #include "format_abnormalend.h"
+#include "format_scaler.h"
 #include <DataFormat.h>
 
 
@@ -89,6 +90,13 @@ PyInit_daqformat(void) {
         return nullptr;
     }
     if (PyModule_AddObjectRef(module, "abnormalenditem", (PyObject*)&pyAbnormalEndItemType) < 0) {
+        return nullptr;
+    }
+
+    if (PyType_Ready(&pyRingScalerItemType) < 0) {         // scaler item
+        return nullptr;
+    }
+    if (PyModule_AddObjectRef(module, "scaleritem", (PyObject*)&pyRingScalerItemType) < 0) {
         return nullptr;
     }
 
