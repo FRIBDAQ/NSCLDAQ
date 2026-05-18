@@ -18,6 +18,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_factory.h"
 #include "format_ringitem.h"
 #include "format_abnormalend.h"
+#include "format_scaler.h"
 #include <map>
 #include <NSCLDAQFormatFactorySelector.h>
 #include <RingItemFactoryBase.h>
@@ -196,12 +197,74 @@ makeAbnormalEndItem(PyObject* self, PyObject* args) {
 
 }
 
+/**
+ * makeScalerItem
+ *    Given an ringitem object, attempts to convert it to a scaleritem.
+ * 
+ * @param self - Pointer to the factory object.
+ * @param args - Positional arguments. Should only be one of them,  a "ringitem"
+ * @return PyObject pointer to the newly created scaler item.
+ * @exception the following exceptions can be raised:
+ *     - TypeError, the parameter was not a ringitem.
+ *     - RunTimeError the factory failed to convert it.
+ */
+static PyObject*
+makeScalerItem(PyObject* self, PyObject* args) {
+    PyObject* rawparam;
+    if (!PyArg_ParseTuple(args, "o", &rawparam)) {
+        return nullptr;
+    }
+    // Get the ring item or raise if wwe can't
+
+    // Ensure the object we have is a raw ring item and get its pointer:
+    if (! isRawRingItem(rawparam)) {
+        return nullptr;
+    }
+    pyRingItem* pRingitemObject = reinterpret_cast<pyRingItem*>(rawparam);
+    ufmt::CRingItem*  pRingItem       = pRingitemObject->m_pItem;
+
+    // Get the factory.
+
+    pyRingItemFactory* pFactoryObject = reinterpret_cast<pyRingItemFactory*>(self);
+    ufmt::RingItemFactoryBase*   pFactory = pFactoryObject->m_pfactory;
+
+    // Try the conversion:
+
+    try {
+        ufmt::CRingScalerItem* pRawScaler = pFactory->makeScalerItem(*pRingItem);
+
+        // Wrap the scaler item as a python object:
+
+        PyObject* empty = PyTuple_New(0);
+        PyObject* ringitem = PyObject_Call(reinterpret_cast<PyObject*>(&pyRingScalerItemType), empty, nullptr);
+        Py_DECREF(empty);                                     // Release the tuple.
+        if (!ringitem) {
+            PyErr_SetString(PyExc_RuntimeError, "Failed to create a CRingScalerItem object");
+            return nullptr;
+        }
+        // Init both items, base class and us to the resulting item.
+        // this lets the deletion of the CRingItem take care of us too:
+
+        pyRingScalerItem* itemobj = reinterpret_cast<pyRingScalerItem*>(ringitem);
+        itemobj->m_pItem = pRawScaler;
+        itemobj->m_base.m_pItem = reinterpret_cast<ufmt::CRingItem*>(pRawScaler);
+
+        
+        return ringitem;
+
+    } catch(std::exception& e) {
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return nullptr;
+    }
+}
+
 /*
   Methods factories have:
 */
   static PyMethodDef factory_methods[] = {
     {"makeRingItem", makeRingItem, METH_VARARGS, "Make a ring item base object from a memory buffer"},
     {"makeAbnormalEndItem", makeAbnormalEndItem, METH_VARARGS, "Convert a ring item to an abnormal end item"},
+    {"makeScalerItem", makeScalerItem, METH_VARARGS, "Convert a ring item into a scaler item"},
     {nullptr, nullptr, 0, nullptr}                             // End sentinel
 };
 
