@@ -24,6 +24,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 
 #include "format_factory.h"
 #include "format_ringitem.h"
+#include "format_abnormalend.h"
 #include <DataFormat.h>
 
 
@@ -63,6 +64,9 @@ PyMODINIT_FUNC
 PyInit_daqformat(void) {
     PyModuleDef_Init(&format_module);
     auto module = PyModule_Create(&format_module);
+    addConstants(module);
+
+    // Define the factory:
 
     if (PyType_Ready(&pyRingItemFactoryType) < 0) {
         return NULL;
@@ -70,14 +74,21 @@ PyInit_daqformat(void) {
     if (PyModule_AddObjectRef(module, "ringitemfactory", (PyObject*)(&pyRingItemFactoryType)) < 0) {
         return NULL;
     }
-
-    if (PyType_Ready(&pyRingItemType) < 0) {
+    // Add the concrete ring item types;
+    if (PyType_Ready(&pyRingItemType) < 0) {  // CRingItem
         return nullptr;
     }
-    addConstants(module);
     if (PyModule_AddObjectRef(module, "ringitem", (PyObject*)&pyRingItemType) < 0) {
         return nullptr;
     }
+    
+    if (PyType_Ready(&pyAbnormalEndItemType) < 0) {         // CAbnormalEndItem
+        return nullptr;
+    }
+    if (PyModule_AddObjectRef(module, "abnormalenditem", (PyObject*)&pyAbnormalEndItemType) < 0) {
+        return nullptr;
+    }
+
     return module;
 }
 

@@ -17,6 +17,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #define SELECTOR_IMPLEMENTATION
 #include "format_factory.h"
 #include "format_ringitem.h"
+#include "format_abnormalend.h"
 #include <map>
 #include <NSCLDAQFormatFactorySelector.h>
 #include <RingItemFactoryBase.h>
@@ -171,7 +172,21 @@ makeAbnormalEndItem(PyObject* self, PyObject* args) {
 
         // Wrap it as a python object and return it.
 
-        Py_RETURN_NONE;    // for now.. until we have an wrapped abnormal end type.
+        PyObject* empty = PyTuple_New(0);
+        PyObject* ringitem = PyObject_Call(reinterpret_cast<PyObject*>(&pyAbnormalEndItemType), empty, nullptr);
+        Py_DECREF(empty);                                     // Release the tuple.
+        if (!ringitem) {
+            PyErr_SetString(PyExc_RuntimeError, "Failed to create a CAbnormalEndItem object");
+            return nullptr;
+        }
+        // Init both items, base class and us to the resulting item.
+        // this lets the deletion of the CRingItem take care of us too:
+        pyAbnormalEndItem* itemobj = reinterpret_cast<pyAbnormalEndItem*>(ringitem);
+        itemobj->m_pItem = item;
+        itemobj->m_base.m_pItem = reinterpret_cast<ufmt::CRingItem*>(item);
+
+        
+        return ringitem;
     
     }
     catch(std::exception& e) {

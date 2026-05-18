@@ -15,7 +15,8 @@ libpydaqformat_la_CPPFLAGS=@UFMT_CPPFLAGS@ @PYTHON_CFLAGS@
 libpydaqformat_la_LDFLAGS=@UFMT_LDFLAGS@ @PYTHON_LIBS@
 libpydaqformat_la_SOURCES=format_Module.cpp \
 	format_factory.h format_factory.cpp \
-	format_ringitem.h format_ringitem.cpp
+	format_ringitem.h format_ringitem.cpp \
+	format_abnormalend.h format_abnormalend.cpp
 
 
 install-exec-hook:
