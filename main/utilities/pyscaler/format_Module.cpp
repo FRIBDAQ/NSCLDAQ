@@ -43,6 +43,7 @@ addConstants(PyObject* module) {
     PyModule_AddIntConstant(module, "PERIODIC_SCALERS", 20);
     PyModule_AddIntConstant(module, "INCREMENTAL_SCALERS", 20);          // compatibility
     PyModule_AddIntConstant(module, "TIMESTAMPED_NONINCR_SCALERS", 21);  // no longer used bu..
+    PyModule_AddIntConstant(module, "EVB_GLOM_INFO",42);
 }
 
 // The module level methods. 
