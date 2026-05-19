@@ -40,7 +40,7 @@ addConstants(PyObject* module) {
     PyModule_AddIntConstant(module, "PAUSE_RUN", 3);
     PyModule_AddIntConstant(module, "RESUME_RUN", 4);
     PyModule_AddIntConstant(module, "ABNORMAL_ENDRUN", 5);
-    PyModule_AddIntConstant(module, "PERODIC_SCALERS", 20);
+    PyModule_AddIntConstant(module, "PERIODIC_SCALERS", 20);
     PyModule_AddIntConstant(module, "INCREMENTAL_SCALERS", 20);          // compatibility
     PyModule_AddIntConstant(module, "TIMESTAMPED_NONINCR_SCALERS", 21);  // no longer used bu..
 }

@@ -211,7 +211,7 @@ makeAbnormalEndItem(PyObject* self, PyObject* args) {
 static PyObject*
 makeScalerItem(PyObject* self, PyObject* args) {
     PyObject* rawparam;
-    if (!PyArg_ParseTuple(args, "o", &rawparam)) {
+    if (!PyArg_ParseTuple(args, "O", &rawparam)) {
         return nullptr;
     }
     // Get the ring item or raise if wwe can't
