@@ -23,7 +23,6 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_scaler.h"
 #include <CRingScalerItem.h>
 #include <vector>
-#include <iostream>
 
 // true if an object is a scaler:
 // A type error exception raised and false if not:
@@ -192,7 +191,6 @@ getScalers(PyObject* self, PyObject* args) {
 
     // Counteed loop becuase set item needs an index:
     for (int i =0; i < scalers.size(); i++) {
-        std::cerr << "Scaler # " << i << " Value " << scalers[i] << std::endl;
         PyTuple_SetItem(result, i, PyLong_FromLong(scalers[i]));
     }
     return result;
