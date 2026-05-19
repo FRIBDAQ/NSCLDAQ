@@ -17,7 +17,9 @@ libpydaqformat_la_SOURCES=format_Module.cpp \
 	format_factory.h format_factory.cpp \
 	format_ringitem.h format_ringitem.cpp \
 	format_abnormalend.h format_abnormalend.cpp \
-	format_scaler.h format_scaler.cpp
+	format_scaler.h format_scaler.cpp \
+	format_glomparams.h format_glomparams.cpp
+
 
 
 install-exec-hook:
