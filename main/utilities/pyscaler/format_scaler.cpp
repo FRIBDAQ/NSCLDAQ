@@ -237,7 +237,6 @@ originalSid(PyObject* self, PyObject* args) {
     .tp_name = "scaleritem",
     .tp_basicsize = sizeof(pyRingScalerItem),
     .tp_itemsize = 0,
-//    .tp_dealloc   = dealloc,   I think the base class will deallocate the abnormal end item the way I set it up.
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_doc = PyDoc_STR("Python acessible scaler item Should not be directly constructed.  Use ringitemfactory to make one. "),
     .tp_methods = methods,
