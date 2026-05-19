@@ -26,6 +26,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_ringitem.h"
 #include "format_abnormalend.h"
 #include "format_scaler.h"
+#include "format_glomparams.h"
 #include <DataFormat.h>
 
 
@@ -101,6 +102,12 @@ PyInit_daqformat(void) {
         return nullptr;
     }
 
+    if (PyType_Ready(&pyGlomParametersType) < 0) {     // event builder glom parameters.
+        return nullptr;
+    }
+    if (PyModule_AddObjectRef(module, "glomparameters", (PyObject*)&pyGlomParametersType) < 0) {
+        return nullptr;
+    }
     return module;
 }
 

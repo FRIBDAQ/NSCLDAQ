@@ -14,7 +14,7 @@
 
 /**
  * @file format_glomparams.h
- * @brief Header for the Pythonn encapsulation of CGlomParameters
+ * @brief Header for the Python encapsulation of CGlomParameters
  * @author Ron Fox
  */
 #ifndef FORMAT_GLOMPARAMETERS_H
@@ -34,7 +34,7 @@ typedef struct {
 } pyGlomParametersItem;
 
 #ifndef GLOMPARAMS_IMPLEMENTATION
-extern PyTypeObject* pyGlomParametersType;
+extern PyTypeObject pyGlomParametersType;
 #endif
 
 #endif
