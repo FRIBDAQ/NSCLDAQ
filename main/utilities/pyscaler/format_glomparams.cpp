@@ -21,6 +21,8 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_glomparams.h"
 #include <CGlomParameters.h>
 
+static const char* PolicyTable[] = {"first", "last", "average"};
+
 
 // This initialization sets up the object's inheritance from ringitem:
 
@@ -39,9 +41,66 @@ static int init_basetype(PyObject* self, PyObject* args, PyObject* kwargs) {
     return 0;
 }
 
+// Methods:
+
+/**
+ * coincidenceTicks
+ *    Return the number of ticks that define Glom's coincidence
+ * interval.
+ * 
+ * @param self - pointer to the object calling us. 
+ * @param args - unused positional args.
+ * @return PyObjecst* integer PyLong value.
+ */
+static PyObject*
+coincidenceTicks(PyObject* self, PyObject* args) {
+    pyGlomParametersItem* pThis = 
+        reinterpret_cast<pyGlomParametersItem*>(self);
+    
+    return PyLong_FromUnsignedLongLong(pThis->m_pItem->coincidenceTicks());
+}
+
+/**
+ * isBuilding
+ *   @param self - pointer this object.
+ *   @param args - unused positional args.
+ *   @return PyObject* True if glom was building false if not.
+ */
+static PyObject*
+isBuilding(PyObject* self, PyObject* args) {
+    pyGlomParametersItem* pThis = 
+        reinterpret_cast<pyGlomParametersItem*>(self);
+    if (pThis->m_pItem->isBuilding()) {
+        Py_RETURN_TRUE;
+    } else {
+        Py_RETURN_FALSE;
+    }
+}
+/**
+ * policy
+ * 
+ * @param self -pointer to the object calling us.
+ * @param args - unused positional arguments.
+ * @return PyObject* a string containing one of:
+ *      'first', 'last' or 'average'.
+ * @note the lookup table relies on knowledge of the TimestampPolicy 
+ * enum.
+ */
+
+static PyObject*
+policy(PyObject* self, PyObject* args) {
+    pyGlomParametersItem* pThis = 
+        reinterpret_cast<pyGlomParametersItem*>(self);
+    const char* p = PolicyTable[pThis->m_pItem->timestampPolicy()];
+    return PyUnicode_FromString(p);
+
+}
 // Method dispatch table:
 
 static struct PyMethodDef methods[] =  {
+    {"coincidenceTicks", coincidenceTicks, METH_NOARGS, "Get GLOM coincidence ticks"},
+    {"isBuilding", isBuilding, METH_NOARGS, "True if Glom was building"},
+    {"policy", policy, METH_NOARGS, "The policy Glom used to assign timestamps"},
     {nullptr, nullptr, 0, nullptr}          // End of table sentinel.
 };
 
