@@ -39,7 +39,7 @@ typedef struct {
 // extern for the type table -- can be turned off for implementation
 
 #ifndef EVENTCOUNT_IMPLEMENTATION
-extern PyTypeObject pyEventCountType
+extern PyTypeObject pyEventCountType;
 #endif
 
 

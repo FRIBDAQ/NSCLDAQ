@@ -29,6 +29,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_glomparams.h"
 #include "format_event.h"
 #include "format_ringfragment.h"
+#include "format_eventcount.h"
 #include <DataFormat.h>
 
 
@@ -127,6 +128,13 @@ PyInit_daqformat(void) {
         return nullptr;
     }
     if (PyModule_AddObjectRef(module, "ringfragmentitem", (PyObject*)&pyRingFragmentType) < 0) {
+        return nullptr;
+    }
+
+    if (PyType_Ready(&pyEventCountType) < 0) {
+        return nullptr;
+    }
+    if (PyModule_AddObjectRef(module, "eventcountitem", (PyObject*)&pyEventCountType) < 0) {
         return nullptr;
     }
 
