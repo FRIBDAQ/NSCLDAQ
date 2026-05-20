@@ -28,6 +28,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_scaler.h"
 #include "format_glomparams.h"
 #include "format_event.h"
+#include "format_ringfragment.h"
 #include <DataFormat.h>
 
 
@@ -37,6 +38,8 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 //   Add module level constants to the module:
 static void 
 addConstants(PyObject* module) {
+    // Ring item type definitions.
+
     PyModule_AddIntConstant(module, "BEGIN_RUN", 1);
     PyModule_AddIntConstant(module, "END_RUN", 2);
     PyModule_AddIntConstant(module, "PAUSE_RUN", 3);
@@ -47,6 +50,7 @@ addConstants(PyObject* module) {
     PyModule_AddIntConstant(module, "TIMESTAMPED_NONINCR_SCALERS", 21);  // no longer used bu..
     PyModule_AddIntConstant(module, "EVB_GLOM_INFO",42);
     PyModule_AddIntConstant(module, "PHYSICS_EVENT", 30);
+    PyModule_AddIntConstant(module, "EVB_FRAGMENT", 40);
 }
 
 // The module level methods. 
@@ -111,12 +115,20 @@ PyInit_daqformat(void) {
         return nullptr;
     }
 
-    if (PyType_Ready(&pyEventType) < 0) {
+    if (PyType_Ready(&pyEventType) < 0) {           // Physics event
         return nullptr;
     }
     if (PyModule_AddObjectRef(module, "physicsevent", (PyObject*)&pyEventType) < 0) {
         return nullptr;
     }
+
+    if (PyType_Ready(&pyRingFragmentType) < 0) {     // Ring fragment item.
+        return nullptr;
+    }
+    if (PyModule_AddObjectRef(module, "ringfragmentitem", (PyObject*)&pyRingFragmentType) < 0) {
+        return nullptr;
+    }
+
     return module;
 }
 
