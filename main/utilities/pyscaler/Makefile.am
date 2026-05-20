@@ -20,7 +20,8 @@ libpydaqformat_la_SOURCES=format_Module.cpp \
 	format_scaler.h format_scaler.cpp \
 	format_glomparams.h format_glomparams.cpp \
 	format_event.h format_event.cpp \
-	format_ringfragment.h format_ringfragment.cpp
+	format_ringfragment.h format_ringfragment.cpp \
+	format_eventcount.h format_eventcount.cpp
 
 
 
