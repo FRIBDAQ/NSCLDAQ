@@ -53,6 +53,15 @@ addConstants(PyObject* module) {
     PyModule_AddIntConstant(module, "PHYSICS_EVENT", 30);
     PyModule_AddIntConstant(module, "EVB_FRAGMENT", 40);
     PyModule_AddIntConstant(module, "PHYSICS_EVENT_COUNT", 31);
+
+    // Textual items:
+
+    PyModule_AddIntConstant(module, "PACKET_TYPES", 10);
+    PyModule_AddIntConstant(module, "MONITORED_VARIABLES", 11);
+
+    // Data format:
+
+    PyModule_AddIntConstant(module, "RING_FORMAT", 12);
 }
 
 // The module level methods. 
