@@ -27,6 +27,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_abnormalend.h"
 #include "format_scaler.h"
 #include "format_glomparams.h"
+#include "format_event.h"
 #include <DataFormat.h>
 
 
@@ -45,6 +46,7 @@ addConstants(PyObject* module) {
     PyModule_AddIntConstant(module, "INCREMENTAL_SCALERS", 20);          // compatibility
     PyModule_AddIntConstant(module, "TIMESTAMPED_NONINCR_SCALERS", 21);  // no longer used bu..
     PyModule_AddIntConstant(module, "EVB_GLOM_INFO",42);
+    PyModule_AddIntConstant(module, "PHYSICS_EVENT", 30);
 }
 
 // The module level methods. 
@@ -106,6 +108,13 @@ PyInit_daqformat(void) {
         return nullptr;
     }
     if (PyModule_AddObjectRef(module, "glomparameters", (PyObject*)&pyGlomParametersType) < 0) {
+        return nullptr;
+    }
+
+    if (PyType_Ready(&pyEventType) < 0) {
+        return nullptr;
+    }
+    if (PyModule_AddObjectRef(module, "physicsevent", (PyObject*)&pyEventType) < 0) {
         return nullptr;
     }
     return module;

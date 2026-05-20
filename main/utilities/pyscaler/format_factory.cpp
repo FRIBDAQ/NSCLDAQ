@@ -20,6 +20,14 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_abnormalend.h"
 #include "format_scaler.h"
 #include "format_glomparams.h"
+#include "format_event.h"
+
+#include <CAbnormalEndItem.h>
+#include <CRingItem.h>
+#include <CRingScalerItem.h>
+#include <CGlomParameters.h>
+#include <CPhysicsEventItem.h>
+
 #include <map>
 #include <NSCLDAQFormatFactorySelector.h>
 #include <RingItemFactoryBase.h>
@@ -120,6 +128,7 @@ makeRingItem(PyObject* self, PyObject* args) {
         Py_DECREF(empty);                                     // Release the tuple.
         if (!ringitem) {
             PyErr_SetString(PyExc_RuntimeError, "Failed to create a CRing item object");
+            delete pItem;
             return nullptr;
         }
         pyRingItem *item = reinterpret_cast<pyRingItem*>(ringitem);
@@ -179,6 +188,7 @@ makeAbnormalEndItem(PyObject* self, PyObject* args) {
         Py_DECREF(empty);                                     // Release the tuple.
         if (!ringitem) {
             PyErr_SetString(PyExc_RuntimeError, "Failed to create a CAbnormalEndItem object");
+            delete item;
             return nullptr;
         }
         // Init both items, base class and us to the resulting item.
@@ -241,6 +251,7 @@ makeScalerItem(PyObject* self, PyObject* args) {
         Py_DECREF(empty);                                     // Release the tuple.
         if (!ringitem) {
             PyErr_SetString(PyExc_RuntimeError, "Failed to create a CRingScalerItem object");
+            delete pRawScaler;
             return nullptr;
         }
         // Init both items, base class and us to the resulting item.
@@ -300,6 +311,7 @@ makeGlomParameters(PyObject* self, PyObject* args) {
         Py_DECREF(empty);                                     // Release the tuple.
         if (!ringitem) {
             PyErr_SetString(PyExc_RuntimeError, "Failed to create a CRingScalerItem object");
+            delete pRawGlomItem;
             return nullptr;
         }
         // We're the ones that init the data structur:
@@ -315,6 +327,59 @@ makeGlomParameters(PyObject* self, PyObject* args) {
         return nullptr;
     }
 }
+/**
+ * makephysicsevent
+ *    Take a ring item parameter and return a physics item.
+ * 
+ * @param self- pointer to the factory calling us.
+ * @param args - Positional args, one ring item object.
+ * @return PyObject* - physics event item as python object.
+ * 
+ */
+static PyObject*
+makephysicsevent(PyObject* self, PyObject* args)  {
+    PyObject* rawparam;
+    if (!PyArg_ParseTuple(args, "O", &rawparam)) {
+        return nullptr;
+    }
+    if (!isRawRingItem(rawparam)) {
+        return nullptr;                    // Parameter isn't a ring item.
+    }
+    // Get the raw ring item:
+
+    pyRingItem* pRingItemObject = reinterpret_cast<pyRingItem*>(rawparam);
+    ufmt::CRingItem* pRingItem = pRingItemObject->m_pItem;
+
+    // get the factory.
+    pyRingItemFactory* pFactoryObject = reinterpret_cast<pyRingItemFactory*>(self);
+    ufmt::RingItemFactoryBase* pFactory = pFactoryObject->m_pfactory;
+
+    // Now try the conversion.
+
+    try {
+        ufmt::CPhysicsEventItem* pRawEvent = pFactory->makePhysicsEventItem(*pRingItem);
+        
+        // Ok, now wrap the event in a pyEventType:
+
+        PyObject* empty = PyTuple_New(0);
+        PyObject* eventObj = PyObject_Call(
+            reinterpret_cast<PyObject*>(&pyEventType), empty, nullptr
+        );
+        if (!eventObj) {
+            PyErr_SetString(PyExc_RuntimeError, "Failed to create a physics event item object");
+            delete pRawEvent;
+            return nullptr;
+        }
+        pyEventItem* pEvent = reinterpret_cast<pyEventItem*>(eventObj);
+        pEvent->m_pItem = pRawEvent;
+        pEvent->m_base.m_pItem = reinterpret_cast<ufmt::CRingItem*>(pRawEvent);
+        return eventObj;
+
+    } catch (std::exception& e) {                    // Conversion threw.
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return nullptr;
+    }
+}
 
 /*
   Methods factories have:
@@ -324,6 +389,7 @@ makeGlomParameters(PyObject* self, PyObject* args) {
     {"makeAbnormalEndItem", makeAbnormalEndItem, METH_VARARGS, "Convert a ring item to an abnormal end item"},
     {"makeScalerItem", makeScalerItem, METH_VARARGS, "Convert a ring item into a scaler item"},
     {"makeGlomParameters", makeGlomParameters, METH_VARARGS, "Convert ring item into a glom parameters item"},
+    {"makePhysicsEventItem", makephysicsevent, METH_VARARGS, "Convert ring item into a physics event"},
     {nullptr, nullptr, 0, nullptr}                             // End sentinel
 };
 
