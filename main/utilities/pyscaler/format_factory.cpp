@@ -21,12 +21,14 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_scaler.h"
 #include "format_glomparams.h"
 #include "format_event.h"
+#include "format_ringfragment.h"
 
 #include <CAbnormalEndItem.h>
 #include <CRingItem.h>
 #include <CRingScalerItem.h>
 #include <CGlomParameters.h>
 #include <CPhysicsEventItem.h>
+#include <CRingFragmentItem.h>
 
 #include <map>
 #include <NSCLDAQFormatFactorySelector.h>
@@ -365,6 +367,7 @@ makephysicsevent(PyObject* self, PyObject* args)  {
         PyObject* eventObj = PyObject_Call(
             reinterpret_cast<PyObject*>(&pyEventType), empty, nullptr
         );
+        Py_DECREF(empty);
         if (!eventObj) {
             PyErr_SetString(PyExc_RuntimeError, "Failed to create a physics event item object");
             delete pRawEvent;
@@ -380,7 +383,70 @@ makephysicsevent(PyObject* self, PyObject* args)  {
         return nullptr;
     }
 }
+/**
+ * makefragment
+ *    Take a CRingItem wrapped object and return a CRingFragmentItem wrapped object.
+ * 
+ * @param self - pointer to the factory object.
+ * @param args - Positional arguments should be one ring item object parameter.
+ * @return PyObject* -  pointer to the wrapped wring item fragment.
+ * 
+ */
+static PyObject*
+makefragment(PyObject* self, PyObject* args) {
+    // Get and verify the ring item parameter:
 
+    PyObject* itemobj;
+    if (!PyArg_ParseTuple(args, "O", &itemobj)) {
+        return nullptr;
+    }
+    if (!isRawRingItem(itemobj)) {
+        return nullptr;
+    }
+
+    // Get a pointer to the CRingItem to convert:
+
+    pyRingItem* pRingItemObj = reinterpret_cast<pyRingItem*>(itemobj);
+    ufmt::CRingItem*  pActualItem  = pRingItemObj->m_pItem;
+
+    // Now get a pointer to the actual factory:
+
+    pyRingItemFactory* pThis = reinterpret_cast<pyRingItemFactory*>(self);
+    ufmt::RingItemFactoryBase* pFactory = pThis->m_pfactory;
+
+    // The conversion can result in an exception so it's all in a try block.
+
+    try {
+        ufmt::CRingFragmentItem* rawitem = 
+            pFactory->makeRingFragmentItem(*pActualItem);
+        
+        // Now wrap in the python object.. on fail we do need to delete the rawitem:
+
+        PyObject* empty = PyTuple_New(0);
+        PyObject* rawresult =  PyObject_Call(
+            reinterpret_cast<PyObject*>(&pyRingFragmentType), empty, nullptr
+        );
+        Py_DECREF(empty);
+        if (!rawresult) {
+            delete rawitem;
+            PyErr_SetString(PyExc_RuntimeError, "Failed to wrap CRingFragmentItem in python object");
+            return nullptr;
+        }
+        // Now fill in the object data as only we can do:
+
+        pyRingFragmentItem* pFragment = reinterpret_cast<pyRingFragmentItem*>(rawresult);
+        pFragment->m_pItem = rawitem;
+        pFragment->m_base.m_pItem = reinterpret_cast<ufmt::CRingItem*>(rawitem);
+
+        return rawresult;
+
+    }
+    catch(std::exception& e) {
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return nullptr;
+    }
+    
+}
 /*
   Methods factories have:
 */
@@ -390,6 +456,7 @@ makephysicsevent(PyObject* self, PyObject* args)  {
     {"makeScalerItem", makeScalerItem, METH_VARARGS, "Convert a ring item into a scaler item"},
     {"makeGlomParameters", makeGlomParameters, METH_VARARGS, "Convert ring item into a glom parameters item"},
     {"makePhysicsEventItem", makephysicsevent, METH_VARARGS, "Convert ring item into a physics event"},
+    {"makeRingFragmentItem", makefragment, METH_VARARGS, "Convert ring item to a ring fragment item"},
     {nullptr, nullptr, 0, nullptr}                             // End sentinel
 };
 
