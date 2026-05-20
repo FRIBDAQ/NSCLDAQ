@@ -1,3 +1,7 @@
+== 12.2-009 ==
+* Update DDASFormat to 2.0-001
+== 12.2-009 ==
+
 == 12.2-008 ==
 * Issue #356 Fix issues handling fail flags for CAEN VX2470
 == 12.2-008 ==
