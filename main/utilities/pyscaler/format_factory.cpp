@@ -24,6 +24,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_ringfragment.h"
 #include "format_eventcount.h"
 #include "format_textlist.h"
+#include "format_statechange.h"
 
 #include <CAbnormalEndItem.h>
 #include <CRingItem.h>
@@ -33,6 +34,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include <CRingFragmentItem.h>
 #include <CRingPhysicsEventCountItem.h>
 #include <CRingTextItem.h>
+#include <CRingStateChangeItem.h>
 
 #include <map>
 #include <NSCLDAQFormatFactorySelector.h>
@@ -570,6 +572,70 @@ makeTextItem(PyObject* self, PyObject* args) {
         return nullptr;
     }
 }
+/**
+ * makeStateChangeItem
+ *    Create a state change item from a base ring item.
+ * 
+ * @param self - pointer to the fatory object that called us.
+ * @param args - Positional paramters. should have one ringitem object.
+ * @return PyObject* Pointer to a statechangeitem object.
+ */
+static PyObject*
+makeStateChangeItem(PyObject* self, PyObject* args) {
+    // Pull out the CRingItem that was passed :
+
+    PyObject* obj;
+    if (!PyArg_ParseTuple(args, "O", &obj)) {
+        return nullptr;
+    }
+    if (!isRawRingItem(obj)) {
+        return nullptr;
+    }
+    pyRingItem* pRingItemObj = reinterpret_cast<pyRingItem*>(obj);
+    ufmt::CRingItem*  pRingItem = pRingItemObj->m_pItem;
+
+    // Get the factory:
+
+    pyRingItemFactory* pFactoryObj = reinterpret_cast<pyRingItemFactory*>(self);
+    ufmt::RingItemFactoryBase* pFactory = pFactoryObj->m_pfactory;
+
+    // wrap the creation in a try/catch that converts exceptions thrown by the
+    // factory to runtime errors:
+    
+    try {
+        ufmt::CRingStateChangeItem* pRawItem = pFactory->makeStateChangeItem(*pRingItem);
+
+        // Make a python statechange item and wrap our item in it:
+
+        PyObject* empty = PyTuple_New(0);
+        PyObject* wrapper = PyObject_Call(
+            reinterpret_cast<PyObject*>(&pyStateChangeType), empty, nullptr
+        );
+        Py_DECREF(empty);
+
+        if(!wrapper) {
+            delete pRawItem;
+            PyErr_SetString(PyExc_RuntimeError, "Failed to create a python state change item type");
+            return nullptr;
+        }
+
+        pyStateChange* pStateChange = reinterpret_cast<pyStateChange*>(wrapper);
+        pStateChange->m_pItem = pRawItem;
+        pStateChange->m_base.m_pItem = reinterpret_cast<ufmt::CRingItem*>(pRawItem);
+
+        return wrapper;
+    }
+    catch (std::exception& e) {
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return nullptr;
+    }
+
+
+
+}
+
+
+
 
 /*
   Methods factories have:
@@ -583,6 +649,7 @@ makeTextItem(PyObject* self, PyObject* args) {
     {"makeRingFragmentItem", makefragment, METH_VARARGS, "Convert ring item to a ring fragment item"},
     {"makePhysicsEventCountItem", makePhysicsEventCountItem, METH_VARARGS, "Convert ring item into an event count item"},
     {"makeTextItem", makeTextItem, METH_VARARGS, "Convert ring item into a stringlist item"},
+    {"makeStateChangeItem", makeStateChangeItem, METH_VARARGS, "Convert a ring item into a state chane."},
 
     {nullptr, nullptr, 0, nullptr}                             // End sentinel
 };
