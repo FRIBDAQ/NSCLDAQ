@@ -18,7 +18,7 @@
  * @author Ron Fox.
  */
 static const char* Copyright = "Copyright Michigan State University 2026, All rights reserved";
-
+#define TEXTLIST_IMPLEMENTATION
 #include "format_textlist.h"
 #include <CRingTextItem.h>
 #include <vector>
