@@ -75,7 +75,7 @@ time(PyObject* self, PyObject* args) {
     pyEventCount* pThis = reinterpret_cast<pyEventCount*>(self);
     ufmt::CRingPhysicsEventCountItem* pItem = pThis->m_pItem;
 
-    return PyLong_FromUnsignedLong(pItem ->getTimestamp());
+    return PyLong_FromUnsignedLongLong(pItem ->getTimestamp());
 }
 /**
  *  eventCount

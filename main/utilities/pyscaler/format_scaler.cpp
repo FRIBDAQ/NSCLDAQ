@@ -100,7 +100,7 @@ absoluteTime(PyObject* self, PyObject *args) {
         return nullptr;
     }
     pyRingScalerItem* pThis = reinterpret_cast<pyRingScalerItem*>(self);
-    return PyLong_FromLong(pThis->m_pItem->getTimestamp());
+    return PyLong_FromUnsignedLongLong(pThis->m_pItem->getTimestamp());
 }
 /**
  * isIncremental
