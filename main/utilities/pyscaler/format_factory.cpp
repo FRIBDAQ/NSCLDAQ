@@ -23,6 +23,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_event.h"
 #include "format_ringfragment.h"
 #include "format_eventcount.h"
+#include "format_textlist.h"
 
 #include <CAbnormalEndItem.h>
 #include <CRingItem.h>
@@ -31,6 +32,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include <CPhysicsEventItem.h>
 #include <CRingFragmentItem.h>
 #include <CRingPhysicsEventCountItem.h>
+#include <CRingTextItem.h>
 
 #include <map>
 #include <NSCLDAQFormatFactorySelector.h>
@@ -510,6 +512,64 @@ makePhysicsEventCountItem(PyObject* self, PyObject* args) {
         return nullptr;
     }
 }
+/**
+ * makeTextItem
+ *     Take a raw ring item and entice the factory to create a CRingTextItem which
+ * is then encapsulated into a Python object.
+ * 
+ * @param self - Pointer to the factory object.
+ * @param args - Positional arguments.  There must be one - a ringitem object.
+ * @return PyObject* - a 'stringlist' object created and wrapped by us.
+ */
+static PyObject*
+makeTextItem(PyObject* self, PyObject* args) {
+    // get and validate the argument.. in the end we need the pointer to the
+    // encapsulated raw ring item.
+
+    PyObject* itemobj;
+    if (!PyArg_ParseTuple(args, "O", &itemobj)) {
+        return nullptr;
+    }
+    if (!isRawRingItem(itemobj)) {
+        return nullptr;
+    }
+    pyRingItem* pRingItemObj = reinterpret_cast<pyRingItem*>(itemobj);
+    ufmt::CRingItem*  pRingItem    = pRingItemObj->m_pItem;
+
+    // Get the Ring Item factory object pointer as well
+
+    pyRingItemFactory* pFactoryObj = reinterpret_cast<pyRingItemFactory*>(self);
+    ufmt::RingItemFactoryBase* pFactory = pFactoryObj->m_pfactory;
+
+    // The factory method could throw so wrap this in a try/catch
+    // and map the exception to a python runtime error 
+
+    try {
+        // Try to make the text item
+        ufmt::CRingTextItem* rawTextitem = pFactory->makeTextItem(*pRingItem); // Could throw.
+
+        // COnstruct a 'stringlistitem' and set its object data properly:
+
+        PyObject* empty = PyTuple_New(0);      // Constructor takes no argumetns
+        PyObject* wrappedTextItem = PyObject_Call(
+            reinterpret_cast<PyObject*>(&pyTextListType), empty, nullptr
+        );
+        Py_DECREF(empty);                     // Free the argument list.
+        if (!wrappedTextItem) {
+            delete rawTextitem;              // no memory  leak here.
+            PyErr_SetString(PyExc_RuntimeError, "Failed to wrapp a CRingTextItem in a python object");
+            return nullptr;
+        }
+        pyTextList* pTextItem = reinterpret_cast<pyTextList*>(wrappedTextItem);
+        pTextItem->m_pItem = rawTextitem;
+        pTextItem->m_base.m_pItem = reinterpret_cast<ufmt::CRingItem*>(rawTextitem);
+        return wrappedTextItem;
+    }
+    catch (std::exception& e) {
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return nullptr;
+    }
+}
 
 /*
   Methods factories have:
@@ -522,6 +582,8 @@ makePhysicsEventCountItem(PyObject* self, PyObject* args) {
     {"makePhysicsEventItem", makephysicsevent, METH_VARARGS, "Convert ring item into a physics event"},
     {"makeRingFragmentItem", makefragment, METH_VARARGS, "Convert ring item to a ring fragment item"},
     {"makePhysicsEventCountItem", makePhysicsEventCountItem, METH_VARARGS, "Convert ring item into an event count item"},
+    {"makeTextItem", makeTextItem, METH_VARARGS, "Convert ring item into a stringlist item"},
+
     {nullptr, nullptr, 0, nullptr}                             // End sentinel
 };
 
