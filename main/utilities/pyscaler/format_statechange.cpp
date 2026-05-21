@@ -43,10 +43,79 @@ init_basetype(PyObject* self, PyObject* args, PyObject* kwargs) {
 
 }
 
+/**
+ * getRunNumber
+ *     Get the run number from the state change item.
+ * @param self - pointer to the object that called us.
+ * @param args - unused positional arguments.
+ * @return PyObject* - PyInt.
+ */
+static PyObject*
+getRunNumber(PyObject* self, PyObject* args) {
+    pyStateChange* pThis = reinterpret_cast<pyStateChange*>(self);
+    return PyLong_FromUnsignedLong(pThis->m_pItem->getRunNumber());
+}
+/**
+ * getElapsedTime
+ *    Floatig point seconds since the start of the run.
+ * @param self - pointer to the object that called us.
+ * @param args - Unused positional args.
+ * @return PyObject* PyFloat
+ */
+static PyObject*
+getElapsedTime(PyObject* self, PyObject* args) {
+    pyStateChange* pThis = reinterpret_cast<pyStateChange*>(self);
+    return PyFloat_FromDouble(pThis->m_pItem->computeElapsedTime());
+}
+/**
+ * getTitle
+ * 
+ * @param self - pointer to the object that called us.
+ * @param args - Unused positional args.
+ * @return PyObject* - PyUnicode.
+ * 
+ */
+static PyObject*
+getTitle(PyObject* self, PyObject* args) {
+    pyStateChange* pThis = reinterpret_cast<pyStateChange*>(self);
+    return PyUnicode_FromString(pThis->m_pItem->getTitle().c_str());
+}
+/**
+ * getTime
+ *    Time the item was emitted in seconds from epoch.
+ *
+ * @param self - object that called us. 
+ * @param args - Unused positional args.
+ * @return PyObject* - PyLong time since epoch.
+ * 
+ */
+static PyObject*
+getTime(PyObject* self, PyObject* args) {
+    pyStateChange* pThis = reinterpret_cast<pyStateChange*>(self);
+    return PyLong_FromUnsignedLongLong(pThis->m_pItem->getTimestamp());
+}
+/**
+ * originalSource
+ *    Returns the source id of the reader that emitted us.
+ * @param self - object that called us. 
+ * @param args - Unused positional args.
+ * @return PyObject* - PyLong original source id.
+ * 
+ */
+static PyObject*
+getOriginalSource(PyObject* self, PyObject* args) {
+    pyStateChange* pThis = reinterpret_cast<pyStateChange*>(self);
+    return PyLong_FromUnsignedLong(pThis->m_pItem->getOriginalSourceId());
+}
 
 // Method definition table:
 
 static PyMethodDef methods [] = {
+    {"getRunNumber", getRunNumber, METH_NOARGS, "Get the item's run number"},
+    {"getElapsedTime", getElapsedTime, METH_NOARGS, "Get elapsed run time in seconds"},
+    {"getTitle", getTitle, METH_NOARGS, "Get the run title"},
+    {"getTime", getTime, METH_NOARGS, "Get time in seconds since epoch."},
+    {"originalSource", getOriginalSource, METH_NOARGS, "Get the original source id"},
 
     {nullptr, nullptr, 0, nullptr}                   // End of table marker.
 };
