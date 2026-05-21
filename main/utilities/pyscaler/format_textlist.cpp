@@ -21,6 +21,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 
 #include "format_textlist.h"
 #include <CRingTextItem.h>
+#include <vector>
 // Set up the inheritance from the base type:
 
 static int
@@ -41,13 +42,89 @@ init_basetype(PyObject* self, PyObject* args, PyObject* kwargs) {
     return 0;                        // Success.
 
 }
+/////////////////////////  Public methods available to scripts:
 
+/**
+ * getStrings
+ *     Returns  tuple of strings that are in the item.
+ * @param self - Pointer to the object calling us.
+ * @param args - Unused positional arguments.
+ * @return PyObject* tuple of strings.
+ */
+static PyObject*
+getStrings(PyObject* self, PyObject* args) {
+    pyTextList* pThis = reinterpret_cast<pyTextList*>(self);
+    auto strings = pThis->m_pItem->getStrings();
+
+    // Make and load up the reslting tuple:
+
+    PyObject* result = PyTuple_New(strings.size());
+    for (int i = 0; i < strings.size() ; i++) {    // We need the tuple index...
+        PyTuple_SetItem(result, i, PyUnicode_FromString(strings[i].c_str()));
+    }
+
+    return result;
+
+}
+/**
+ * getElapsedTime
+ *    Return the elapsed run time (in floating point seconds) at which the 
+ * item was emitted fromt he readout.
+ * 
+ * @param self - Pointer to the object calling us.
+ * @param args - unused positional arguments.
+ * @return PyObject - Floating point seconds.
+ * @note - we use computeElapsed time so that the user doesn't have to worry
+ *         about divisors and such.
+ */
+static PyObject*
+getElapsedTime(PyObject* self, PyObject* args) {
+    pyTextList* pThis = reinterpret_cast<pyTextList*>(self);
+   
+    return PyFloat_FromDouble(pThis->m_pItem->computeElapsedTime());
+
+}
+/**
+ * getTime
+ *    Get the time in seconds after the epoch at which this item was
+ * emitted.
+ * 
+ * @param self - pointer to the object that called us.
+ * @param args - unused positional arguments.
+ * @return PyObject* - Long object.
+ */
+static PyObject*
+getTime(PyObject* self, PyObject* args) {
+    pyTextList* pThis = reinterpret_cast<pyTextList*>(self);
+
+    return PyLong_FromUnsignedLongLong(pThis->m_pItem->getTimestamp());
+}
+
+/**
+ * getOriginalSource
+ * 
+ *    Get the id of the readout that emitted this item.  Note that glom e.g.
+ * can rewrite the source id in the body header to support hierarchical event building.
+ * 
+ * @param self - pointer to the object calling us.
+ * @param args - unused positional parameters.
+ * @return PyObject* - PyLong result.
+ */
+static PyObject*
+getOriginalSource(PyObject* self, PyObject* args) {
+    pyTextList* pThis = reinterpret_cast<pyTextList*>(self);
+    return PyLong_FromUnsignedLong(pThis->m_pItem->getOriginalSourceId());
+}
 /**
  * The method table:
  */
 
 
  static struct PyMethodDef methods[] = {
+    {"getStrings", getStrings, METH_NOARGS, "Get strings from the item."},
+    {"getElapsedTime", getElapsedTime, METH_NOARGS, "Get the elapsed run time from the item."}, 
+    {"getTime", getTime, METH_NOARGS, "Get the wall clock time from the item"},
+    {"originalSource", getOriginalSource, METH_NOARGS, "Get the original source id of the item"},
     {nullptr, nullptr, 0, nullptr}                 // End of table marker.
  };
 
