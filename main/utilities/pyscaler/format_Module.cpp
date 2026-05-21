@@ -42,27 +42,33 @@ static void
 addConstants(PyObject* module) {
     // Ring item type definitions.
 
-    PyModule_AddIntConstant(module, "BEGIN_RUN", 1);
-    PyModule_AddIntConstant(module, "END_RUN", 2);
-    PyModule_AddIntConstant(module, "PAUSE_RUN", 3);
-    PyModule_AddIntConstant(module, "RESUME_RUN", 4);
-    PyModule_AddIntConstant(module, "ABNORMAL_ENDRUN", 5);
-    PyModule_AddIntConstant(module, "PERIODIC_SCALERS", 20);
-    PyModule_AddIntConstant(module, "INCREMENTAL_SCALERS", 20);          // compatibility
-    PyModule_AddIntConstant(module, "TIMESTAMPED_NONINCR_SCALERS", 21);  // no longer used bu..
-    PyModule_AddIntConstant(module, "EVB_GLOM_INFO",42);
-    PyModule_AddIntConstant(module, "PHYSICS_EVENT", 30);
-    PyModule_AddIntConstant(module, "EVB_FRAGMENT", 40);
-    PyModule_AddIntConstant(module, "PHYSICS_EVENT_COUNT", 31);
+    PyModule_AddIntConstant(module, "BEGIN_RUN", ufmt::BEGIN_RUN);
+    PyModule_AddIntConstant(module, "END_RUN", ufmt::END_RUN);
+    PyModule_AddIntConstant(module, "PAUSE_RUN", ufmt::PAUSE_RUN);
+    PyModule_AddIntConstant(module, "RESUME_RUN", ufmt::RESUME_RUN);
+    PyModule_AddIntConstant(module, "ABNORMAL_ENDRUN", ufmt::ABNORMAL_ENDRUN);
+    PyModule_AddIntConstant(module, "PERIODIC_SCALERS", ufmt::PERIODIC_SCALERS);
+    PyModule_AddIntConstant(module, "INCREMENTAL_SCALERS", ufmt::INCREMENTAL_SCALERS);          // compatibility
+    PyModule_AddIntConstant(module, "TIMESTAMPED_NONINCR_SCALERS", ufmt::TIMESTAMPED_NONINCR_SCALERS);  // no longer used bu..
+    PyModule_AddIntConstant(module, "EVB_GLOM_INFO", ufmt::EVB_GLOM_INFO);
+    PyModule_AddIntConstant(module, "PHYSICS_EVENT", ufmt::PHYSICS_EVENT);
+    PyModule_AddIntConstant(module, "EVB_FRAGMENT", ufmt::EVB_FRAGMENT);
+    PyModule_AddIntConstant(module, "PHYSICS_EVENT_COUNT", ufmt::PHYSICS_EVENT_COUNT);
 
     // Textual items:
 
-    PyModule_AddIntConstant(module, "PACKET_TYPES", 10);
-    PyModule_AddIntConstant(module, "MONITORED_VARIABLES", 11);
+    PyModule_AddIntConstant(module, "PACKET_TYPES", ufmt::PACKET_TYPES);
+    PyModule_AddIntConstant(module, "MONITORED_VARIABLES", ufmt::MONITORED_VARIABLES);
 
     // Data format:
 
-    PyModule_AddIntConstant(module, "RING_FORMAT", 12);
+    PyModule_AddIntConstant(module, "RING_FORMAT", ufmt::RING_FORMAT);
+
+    // dunno what it is:
+
+    PyModule_AddIntConstant(module, "EVB_UNKNOWN_PAYLOAD", ufmt::EVB_UNKNOWN_PAYLOAD);
+
+    
 }
 
 // The module level methods. 

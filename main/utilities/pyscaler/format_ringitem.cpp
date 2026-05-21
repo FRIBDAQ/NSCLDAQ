@@ -162,15 +162,41 @@ PyObject* barriertype(PyObject* self, PyObject* args) {
         return nullptr;
     }
 }
+/**
+ * getbody
+ *    Returns the body of the ring item as a byte array.
+ *    By body I mean anything after the body header or longword
+ *    says there isn't one.  
+ * @note This also allows the ring item base class
+ *       to act as an encpsulation of CRingFragmentItem, since
+ *       the only useful thing you can do for it is to get the
+ *       contents of the payload
+ * @param self - pointer to the item calling us.
+ * @param args - unused positional paramters.
+ * @return PyObject* byte array containing the body.
+ * 
+ */
+static PyObject*
+getbody(PyObject* self, PyObject* args) {
+    ufmt::CRingItem* pItem = getItem(self);
+    if (pItem) {
+        auto nBytes = pItem->getBodySize();
+        const void* ptr = pItem->getBodyPointer();
+        return PyBytes_FromStringAndSize(reinterpret_cast<const char*>(ptr), nBytes);
+    } else {
+        return nullptr;
+    }
+}
 /*
   Methods ringitems have:
 */
 static PyMethodDef ringitem_methods[] = {
-    {"type", getType, METH_VARARGS, "Get ring item type"},
-    {"size", size,     METH_VARARGS, "Get ring item size"},
-    {"timestamp", timestamp,  METH_VARARGS, "Get timestamp"},
-    {"sourceid", sourceid,   METH_VARARGS, "Get the source id"},
-    {"barriertype", barriertype, METH_VARARGS, "Get barrier type"},
+    {"type", getType, METH_NOARGS, "Get ring item type"},
+    {"size", size,     METH_NOARGS, "Get ring item size"},
+    {"timestamp", timestamp,  METH_NOARGS, "Get timestamp"},
+    {"sourceid", sourceid,   METH_NOARGS, "Get the source id"},
+    {"barriertype", barriertype, METH_NOARGS, "Get barrier type"},
+    {"getbody", getbody, METH_NOARGS, "Get the body as a byte array."},
     {nullptr, nullptr, 0, nullptr}                             // End sentinel
 };
 
