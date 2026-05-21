@@ -130,7 +130,7 @@ PyTypeObject pyStateChangeType = {
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_doc = PyDoc_STR("Python acessible Statechange item.. Should not be directly constructed.  Use ringitemfactory to make one. "),
     .tp_methods = methods,
-    .tp_base    = &pyStateChangeType,
+    .tp_base    = &pyRingItemType,
     .tp_init = init_basetype,
     .tp_new = PyType_GenericNew
 };
