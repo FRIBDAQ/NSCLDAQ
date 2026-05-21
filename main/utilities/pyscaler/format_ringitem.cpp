@@ -196,7 +196,7 @@ static PyMethodDef ringitem_methods[] = {
     {"timestamp", timestamp,  METH_NOARGS, "Get timestamp"},
     {"sourceid", sourceid,   METH_NOARGS, "Get the source id"},
     {"barriertype", barriertype, METH_NOARGS, "Get barrier type"},
-    {"getbody", getbody, METH_NOARGS, "Get the body as a byte array."},
+    {"body", getbody, METH_NOARGS, "Get the body as a byte array."},
     {nullptr, nullptr, 0, nullptr}                             // End sentinel
 };
 
