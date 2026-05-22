@@ -43,10 +43,22 @@ init_basetype(PyObject* self, PyObject* args, PyObject* kwargs) {
 
 }
 
+/** getMajor
+ *    @param self - pointer to the format  item object.
+ *    @param args - unused positional arguments.
+ *    @return PyObject* integer major version number.
+ */
+static PyObject*
+getMajor(PyObject* self, PyObject* args) {
+    pyFormatVersion* pThis = reinterpret_cast<pyFormatVersion*>(self);
+    return PyLong_FromUnsignedLong(pThis->m_pItem->getMajor());
+}
+
 
 // The method table:
 
 struct PyMethodDef methods []  = {
+    {"getMajor", getMajor, METH_NOARGS, "Get the major version from the format item"},
     {nullptr, nullptr, 0, nullptr}                    // end table sentinel.
 };
 
