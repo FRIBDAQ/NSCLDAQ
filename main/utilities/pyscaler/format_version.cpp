@@ -18,7 +18,7 @@
  */
 
 static const char* Copyright = "Copyright Michigan State University 2026, All rights reserved";
-
+#define FORMAT_IMPLEMENTATION
 #include "format_version.h"
 #include <CDataFormatItem.h>
 

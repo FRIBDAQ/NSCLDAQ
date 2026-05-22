@@ -25,6 +25,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_eventcount.h"
 #include "format_textlist.h"
 #include "format_statechange.h"
+#include "format_version.h"
 
 #include <CAbnormalEndItem.h>
 #include <CRingItem.h>
@@ -35,6 +36,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include <CRingPhysicsEventCountItem.h>
 #include <CRingTextItem.h>
 #include <CRingStateChangeItem.h>
+#include <CDataFormatItem.h>
 
 #include <map>
 #include <NSCLDAQFormatFactorySelector.h>
@@ -634,6 +636,64 @@ makeStateChangeItem(PyObject* self, PyObject* args) {
 
 }
 
+/**
+ * makeDataFormatItem
+ *    GIven a base ring item, creates, if possible, a format version item from it.
+ * 
+ * @param self - Pointer to the object that called us (factory).
+ * @param args - Pointer to the positional paramters, in this case, a single ring item object.
+ */
+static PyObject*
+makeDataFormatItem(PyObject* self, PyObject* args) {
+    PyObject *obj;
+    if (!PyArg_ParseTuple(args, "O", &obj)) {
+        return nullptr;
+    }
+    if (!isRawRingItem(obj)) {
+        return nullptr;
+    }
+
+    // Get the CRingItem pointer:
+
+    pyRingItem* pRingItemObject = reinterpret_cast<pyRingItem*>(obj);
+    ufmt::CRingItem* pRingItem  = pRingItemObject->m_pItem;
+
+    // Get the factory:
+
+    pyRingItemFactory* pFactoryObj = reinterpret_cast<pyRingItemFactory*>(self);
+    ufmt::RingItemFactoryBase* factory = pFactoryObj->m_pfactory;
+
+
+    //  The factory conversion can throw - this converts any such throw
+    // to raising a RuntimeError:
+
+    try {
+        ufmt::CDataFormatItem* pRawItem = factory->makeDataFormatItem(*pRingItem);
+
+        PyObject* empty = PyTuple_New(0);
+        PyObject* wrappedItem = PyObject_Call(
+            (PyObject*)(&pyFormatVersionType), empty, nullptr
+        );
+        Py_DECREF(empty);
+        if (!wrappedItem) {
+            delete pRawItem;
+            PyErr_SetString(PyExc_RuntimeError, "Failed to create a ringformatitem");
+            return nullptr;
+        }
+
+        // Set the object data and return the wrapped object.
+
+        pyFormatVersion* pWrapper = reinterpret_cast<pyFormatVersion*>(wrappedItem);
+        pWrapper->m_pItem = pRawItem;
+        pWrapper->m_base.m_pItem = reinterpret_cast<ufmt::CRingItem*>(pRawItem);
+
+        return wrappedItem;
+    }
+    catch (std::exception& e) {
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return nullptr;
+    }
+}
 
 
 
@@ -650,7 +710,7 @@ makeStateChangeItem(PyObject* self, PyObject* args) {
     {"makePhysicsEventCountItem", makePhysicsEventCountItem, METH_VARARGS, "Convert ring item into an event count item"},
     {"makeTextItem", makeTextItem, METH_VARARGS, "Convert ring item into a stringlist item"},
     {"makeStateChangeItem", makeStateChangeItem, METH_VARARGS, "Convert a ring item into a state chane."},
-
+    {"makeDataFormatItem", makeDataFormatItem, METH_VARARGS, "Convert a ring item into a data format item"},
     {nullptr, nullptr, 0, nullptr}                             // End sentinel
 };
 
