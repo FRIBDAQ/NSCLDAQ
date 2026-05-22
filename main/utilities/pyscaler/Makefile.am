@@ -23,7 +23,8 @@ libpydaqformat_la_SOURCES=format_Module.cpp \
 	format_ringfragment.h format_ringfragment.cpp \
 	format_eventcount.h format_eventcount.cpp \
 	format_textlist.h format_textlist.cpp \
-	format_statechange.h format_statechange.cpp
+	format_statechange.h format_statechange.cpp \
+	format_version.h format_version.cpp
 
 
 
