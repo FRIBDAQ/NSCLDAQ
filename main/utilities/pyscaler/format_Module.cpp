@@ -32,6 +32,7 @@ static const char* Copyright = "Copyright Michigan State University 2026, All ri
 #include "format_eventcount.h"
 #include "format_textlist.h"
 #include "format_statechange.h"
+#include "format_version.h"
 #include <DataFormat.h>
 
 
@@ -170,6 +171,12 @@ PyInit_daqformat(void) {
         return nullptr;
     }
 
+    if (PyType_Ready(&pyFormatVersionType) < 0) {
+        return nullptr;
+    }
+    if (PyModule_AddObjectRef(module, "ringformatitem", (PyObject*)&pyFormatVersionType) < 0) {
+        return nullptr;
+    }
     return module;
 }
 
