@@ -12,7 +12,7 @@ TARGET="unifiedformat"
 
 if [[ ! $TAG ]]
 then
-  TAG="2.2-009"
+  TAG="2.4-000"
 fi
 
 rm -rf $TARGET
