@@ -8,6 +8,14 @@
   DataSourceFactory -  Given a URI for a data source creates the
             appropriate data source object.
 
+The data source classes are all iterable in the sense that given a data source
+s
+
+you can do:
+
+for ring_item in iter(s):
+   # do something with the next ring item from the source.
+   
 
 @file datasource.py
 @brief Provide FRIB/NSCLDAQ data sources
@@ -30,7 +38,7 @@ subdirectory as the daqformat module is imported from there.
 
 import subprocess
 import select
-import urllib.parse
+import urllib.parse as urlparse
 from os import environ
 import struct
 import daqformat
@@ -44,6 +52,7 @@ LONGWORD_SIZE=4
 # data sources. 
 class _DataSourceBase:
     _itemfactory : daqformat.ringitemfactory
+    _version     : int
     #
     #  Construct the 'tentative' factory.
     #  Note that as we get ring items in,
@@ -53,7 +62,8 @@ class _DataSourceBase:
     #  will default to 12 if not.
     #  Note that format 10 must be explicitly selected.
     def __init__(self, version=12):
-        self._itemFactory = daqformat.ringitemfactory(version)
+        self._version = version
+        self._itemfactory = daqformat.ringitemfactory(version)
     #
     # Given a byte array that's supposed to hold
     # a ring item, 
@@ -62,11 +72,24 @@ class _DataSourceBase:
     #     type derived from daqformat.ringitem
     #
     def makeItem(self, ba):
-        base_item = self._itemfactory.makeRingiTem(ba)
+        base_item = self._itemfactory.makeRingItem(ba)
         type = base_item.type()
-        if type == daqformat.RING_FORMAT:
+        
+        # Note that the factory throws an exception if
+        # the item type says it's of the wrong format so:
+        
+        try:
+            if type == daqformat.RING_FORMAT:
+                item = self._itemfactory.makeDataFormatItem(base_item)
+                self._itemfactory = daqformat.ringitemfactory(item.getMajor())
+                return item
+        except RuntimeError:
+            if self._version == 11:
+                self._version = 12
+            else:
+                self._version = 11
+            self._itemfactory = daqformat.ringitemfactory(self._version)
             item = self._itemfactory.makeDataFormatItem(base_item)
-            self._itemfactory = daqformat.ringitemfactory(item.getMajor())
             return item
     
         # Now we have the right format, match on the type to 
@@ -128,7 +151,7 @@ class _DataSourceBase:
         
         # Read in the remaining ring item data:
         
-        full_length = struct.unpack('<i', item) 
+        (full_length,) = struct.unpack('<i', item) 
         remaining_length = full_length- LONGWORD_SIZE
         item += source.read(remaining_length)
         if len(item) != full_length:
@@ -156,7 +179,7 @@ class FileDataSource(_DataSourceBase):
             @param sample - For file data sources, no types are sampled.
             @note the special path '-' is assumed to be stdin.
         '''
-        super.__init__(format)
+        super().__init__(format)
         self._skip_set = skip
         if path == '-':
             file = 0
@@ -193,11 +216,13 @@ class FileDataSource(_DataSourceBase):
         # The while loop allows us to implement the skip set.
         while True:
             item = self._read_item(self._source)
+            
             if item is None:
                 self._source.close()
                 return None
-            if item.type() not in self._skip_set:
-                return item
+            ring_item = self.makeItem(item)
+            if ring_item.type() not in self._skip_set:
+                return ring_item
      
     # Implement the iterator protocol:
     
@@ -287,7 +312,11 @@ class OnlineDataSource(_DataSourceBase):
             @return actual final ring item type.
             @retval None - no more items on the source
         '''
-        return self._read_item(self.source.stdout) 
+        item =  self._read_item(self.source.stdout) 
+        if item is None:
+            return None
+        else:
+            return self.makeItem(item)
     
     #  Implement the iterator protocol
     def __iter__(self):
@@ -328,11 +357,11 @@ class DataSourceFactory:
             @returns an object that implmenets the data source protocol.
            
         '''
-        parsed_uri = parse.urlsplit(uri, scheme='file')
-        if parsed_uri['scheme'] == 'tcp':
+        parsed_uri = urlparse.urlsplit(uri, scheme='file')
+        if parsed_uri.scheme == 'tcp':
             return OnlineDataSource(uri, format, skip, sample)
-        elif parsued_uri['scheme'] == 'file':
-            return FileDataSource(uri['path'], format, skip, sample)
+        elif parsed_uri.scheme == 'file':
+            return FileDataSource(parsed_uri.path, format, skip, sample)
         else:
             raise ValueError('Only "file" and "tcp" URIs are supported')
         
