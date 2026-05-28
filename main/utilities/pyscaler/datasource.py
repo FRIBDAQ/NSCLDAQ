@@ -271,7 +271,7 @@ class OnlineDataSource(_DataSourceBase):
             args.append(f'--ample={",".join(str(x) for x in sample)}')
             
         self._source = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            args, stdout=subprocess.PIPE, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT
         )
     
     def __del__(self):
@@ -312,7 +312,7 @@ class OnlineDataSource(_DataSourceBase):
             @return actual final ring item type.
             @retval None - no more items on the source
         '''
-        item =  self._read_item(self.source.stdout) 
+        item =  self._read_item(self._source.stdout) 
         if item is None:
             return None
         else:
