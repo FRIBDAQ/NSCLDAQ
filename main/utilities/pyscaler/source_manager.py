@@ -64,10 +64,7 @@ class DataSourceThread(QThread):
                our  code can handle offline (file) data sources as well. This is,
                obviously intended for testing.
     '''
-    
-   
-    
-    
+      
     
     #  instance data:
     _source  : datasource.OnlineDataSource | datasource.FileDataSource
@@ -79,10 +76,12 @@ class DataSourceThread(QThread):
 
     #  This worker contains the actual data source logic and will
     #  be moved into self    
+    
     class Worker(QObject) :
         newData = pyqtSignal(daqformat.ringitem)
-        def __init__(self, source, parent=None):
-            super().__init__(parent)
+        def __init__(self, source, parent):
+            super().__init__(None)
+            self._parent = parent
             self._source = source
         def process(self):
             # @todo - Play with data sources so 
@@ -91,7 +90,7 @@ class DataSourceThread(QThread):
             #         thread's event loop is not starved.
             for item in iter(self._source):
                 QCoreApplication.processEvents()    # Run the event loop between items.
-                self.newData.emit(item)
+                self._parent.newData.emit(item)
                 
 
     def __init__(self, 
@@ -126,7 +125,7 @@ class DataSourceThread(QThread):
         #  with a slot connected to the thread is how we ensure
         #  the thread has an event loop and that, therefore,
         #  the attempts to exit the thread can be made.
-        self._worker = self.Worker(self._source)
+        self._worker = self.Worker(self._source, self)
         self._worker.moveToThread(self)    # Not sure if I need to do ths?
         self.started.connect(self._worker.process)  # run process in worker when started.
         
