@@ -61,7 +61,7 @@ class _DataSourceBase:
     #  The caller can set a tentative factory or we
     #  will default to 12 if not.
     #  Note that format 10 must be explicitly selected.
-    def __init__(self, version=12):
+    def __init__(self, version:int =12):
         self._version = version
         self._itemfactory = daqformat.ringitemfactory(version)
     #
@@ -71,7 +71,7 @@ class _DataSourceBase:
     #  2. Return the actual ring item type - which is a polymorphic
     #     type derived from daqformat.ringitem
     #
-    def makeItem(self, ba):
+    def makeItem(self, ba: daqformat.ringitem) -> daqformat.ringitem:
         base_item = self._itemfactory.makeRingItem(ba)
         type = base_item.type()
         
@@ -142,7 +142,7 @@ class _DataSourceBase:
     #  be for attempting to read from a closed file object.
     #
     @staticmethod
-    def _read_item(source):
+    def _read_item(source: typing.BinaryIO) -> bytearray:
         item = source.read(LONGWORD_SIZE)
         if len(item) == 0:
             return None                # end of file.
@@ -167,7 +167,7 @@ class FileDataSource(_DataSourceBase):
     '''
         Data source hooked to a path in the filesystem.
     '''
-    def __init__(self, path, format=12, skip={}, sample={}):
+    def __init__(self, path: str, format: int=12, skip: set={}, sample: set={}):
         '''
             Create the data source:
             
@@ -200,7 +200,7 @@ class FileDataSource(_DataSourceBase):
             true for files.
         '''
         return True
-    def next(self):
+    def next(self) -> daqformat.ringitem:
         '''
             Return the next ring item or None.  You might well ask why publicize
             this when we're also going to implement the iterator protocol:
@@ -245,7 +245,7 @@ class OnlineDataSource(_DataSourceBase):
         are all handed by ringfragment source.  
         
     '''
-    def __init__(self, uri, format=12, skip={}, sample={}):
+    def __init__(self, uri: str, format: int=12, skip: set={}, sample: set={}):
         super().__init__(format)
         
         #  For this all to work, we need for DAQBIN to
@@ -270,8 +270,9 @@ class OnlineDataSource(_DataSourceBase):
         if len(sample) > 0 :
             args.append(f'--ample={",".join(str(x) for x in sample)}')
             
+        # I think this will vector stderr to output.
         self._source = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT
+            args, stdout=subprocess.PIPE, stdin=subprocess.DEVNULL, stderr=2
         )
     
     def __del__(self):
@@ -295,7 +296,7 @@ class OnlineDataSource(_DataSourceBase):
         except Exception:
             pass
         
-    def check(self):
+    def check(self) -> bool:
         ''' 
             See if input is available on the process' pipe.  This is done
             by polling select.select.
@@ -303,7 +304,7 @@ class OnlineDataSource(_DataSourceBase):
         (readable, writeble, exceptions) = select.select([self._source.stdout,], [], [], 0)
         return len(readable) > 0
     
-    def next(self):
+    def next(self) -> daqformat.ringitem:
         '''
             Return the next ring item from the data source, or None if the
             ringselector exited.  Note that this blocks until a full ring item
@@ -337,7 +338,7 @@ class DataSourceFactory:
     '''
     
     @staticmethod
-    def makeSource(uri, format=12, skip={}, sample={}):
+    def makeSource(uri: str, format: int=12, skip: set={}, sample: set={}) -> OnlineDataSource | FileDataSource:
         '''
             Create a new data source.
             
