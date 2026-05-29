@@ -38,7 +38,7 @@
 #	     Michigan State University
 #	     East Lansing, MI 48824-1321
 
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, QEventLoop
 import datasource
 import daqformat
 
@@ -88,9 +88,17 @@ class DataSourceThread(QThread):
             #         we can do a timed wait so that
             #         when e.g. a run is not active, the
             #         thread's event loop is not starved.
+            dispatcher = self._parent.eventDispatcher()
+            if  dispatcher is None:
+                print("warning no event dispatcher!")
             for item in iter(self._source):
-                QCoreApplication.processEvents()    # Run the event loop between items.
-                self._parent.newData.emit(item)
+                if self._parent.isInterruptionRequested():
+                    self._parent.exit()
+                    return
+                if dispatcher is not None:
+                    dispatcher.processEvents(QEventLoop.AllEvents)
+                self._parent.newData.emit(self._parent._source_name, item)
+                
                 
 
     def __init__(self, 
@@ -119,7 +127,7 @@ class DataSourceThread(QThread):
         '''
         super().__init__(parent)
         self._source_name = name
-        self._source = datasource.makeSource(uri, format, skip, sample)
+        self._source = datasource.DataSourceFactory.makeSource(uri, format, skip, sample)
         
         #  This rigmarole with a worker object that is moved to the thread
         #  with a slot connected to the thread is how we ensure
@@ -223,18 +231,13 @@ class DataSourceManager(QObject):
            @note IndexError is eraised if the source does not exist.
         '''
         source = self._sources[name]     # Here's where IndexError is raised.
-        source.quit()     #try it the nice way.
-        if not source.wait(1000):
+        source.requestInterruption()     #try it the nice way.
+        if not source.wait(3000):        # 3 seconds because 2 second scaler interval.
             # If the source didn't exit after a second, take harsh measures with
             # fingers crossed... see the warnings in https://doc.qt.io/qt-6/qthread.html#terminate
             # about doing this:
             
             source.terminate()
-            source.wait()               # Wait as long as needed.
-            
-            # Not sure this will emit the signal so we will and remove the source.:
-            
-            self._sourceExited(name)
             
             
 
@@ -249,3 +252,33 @@ class DataSourceManager(QObject):
         
     
     
+    
+if __name__ == '__main__':
+    items = 0
+    def onData(name, item):
+        global items
+        print(f'Got type {item.type()} from source: {name}')
+        items += 1
+        if items == 10:
+            print("killing 'ron'")
+            mgr.killSource('ron')
+    
+    def onExit(name):
+        print(f'Source {name} exited.')
+    
+    # Let's see if we can get some test code .
+    
+    from PyQt5.QtWidgets import QApplication, QMainWindow
+    app = QApplication([])
+    win = QMainWindow()
+    
+    #  Make a data source manager and manage data from
+    # tcp://localhost/ron
+    
+    mgr = DataSourceManager()
+    mgr.newData.connect(onData)
+    mgr.sourceExited.connect(onExit)
+    mgr.addSource('ron', 'tcp://localhost/ron')
+    
+    win.show()
+    app.exec()

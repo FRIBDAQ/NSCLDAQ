@@ -265,7 +265,7 @@ class OnlineDataSource(_DataSourceBase):
         # Only add in the --sample and --exclude items if they are not empty:
         
         if len(skip) > 0 :
-            args.append(f'--exclude={",".joinb(str(x) for x in skip)}')
+            args.append(f'--exclude={",".join(str(x) for x in skip)}')
     
         if len(sample) > 0 :
             args.append(f'--ample={",".join(str(x) for x in sample)}')
@@ -350,7 +350,7 @@ class DataSourceFactory:
             @param sample - (optional) set of ring item data types that can be sampled.
                 this is a set of ring item types from the constants defined in daqaformat.
                 defaults to empy.
-                
+                `
             URI's of the form tcp://host/ringname - make an online data source.
             URI's of the form file:///path  generate file data sources.
             URI's that are just plain filenames are file data sources.
