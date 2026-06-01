@@ -57,6 +57,7 @@ class Configuration:
             is a dict with the keys:
             *  name - name of the data source.
             *  url  - URI of the ring buffer that is the data source.
+            *  version - DAQ version.
             *  scalers - array of scalers that are contributed by that source.
             
          @note and empty array as a result indicates the user does not define and datasources.
