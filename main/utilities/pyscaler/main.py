@@ -115,9 +115,39 @@ def runResumed(item : daqformat.statechangeitem, display: ScalerGui.ScalerDispla
 #  scalers - the current scalers and rate values.
 #  display - The scaler display widget.
 #
-
+#  Note the scaler names in scalers are not qualified by the source name.
+# 
+#    If that ever becomes a performance problem...we can fix that later.
 def updateDisplay(name : str, scalers: dict, display, ScalerGui.ScalerDisplay) -> None:
-    pass
+    for page in display.pageNames():
+        definition = display.linDefinition(name)
+        model      = display.lineModel(name)
+        
+        # Note the scalers here are fully qualified.
+        
+        for line_def in definition['lines']:
+            line_no = line_dev['line']
+            # Every line has a first scaler and its rates:
+            first_name = line_def['scalers'][0]
+            source = first_name.split('.')[0]
+            uqname = '.'.join(first_name.split('.')[1:])
+            counts = [scalers[source][uqname][0], ]
+            rates  = [scalers[source][uquame][1], ]
+            
+            #  pair and ratio have a second scaler name:
+            
+            if line_def['type'] in {'pair', 'ratio'} :
+                second_name = line_def['scalers'][1]
+                source = second_name.split('.')[0]
+                uqname = '.'.join(second_name.split('.')[1:])
+                counts.append(scalers[source][uqname][0])
+                rates.append(scalers[source][uqname][1])
+            
+            # Update the line:
+            
+            model.update_line(line_no, counts, rates)
+            
+            
 
 # new scaler data; upate our internal counters
 # and the part of the display that this source
@@ -143,7 +173,7 @@ def updateCounters(
     
     counters = item.getScalers()       # Ok we have all the counters.
     sourceinfo = configuration.datasources[name]
-    for index, scaler_name in sourceinfo['scalers']:
+    for index, scaler_name in enumerate(sourceinfo['scalers']):
         rate = float(counters[index])/interval       # Rate of that scaler.
         scalers[name][scaler_name][0] = counters[index]
         scalers[name][scaler_name][1] = rate
