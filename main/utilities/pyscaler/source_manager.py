@@ -42,7 +42,7 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal, QEventLoop, Qt
 
 import datasource
 import daqformat
-
+import sys
 #  The default set of items to skip:
 
 default_skip_list = {
@@ -85,21 +85,25 @@ class DataSourceThread(QThread):
             self._parent = parent
             self._source = source
         def process(self):
-            # @todo - Play with data sources so 
-            #         we can do a timed wait so that
-            #         when e.g. a run is not active, the
-            #         thread's event loop is not starved.
-            dispatcher = self._parent.eventDispatcher()
-            if  dispatcher is None:
-                print("warning no event dispatcher!")
-            for item in iter(self._source):
-                if self._parent.isInterruptionRequested():
-                    self._parent.exit()
-                    return
-                if dispatcher is not None:
-                    dispatcher.processEvents(QEventLoop.AllEvents)
-                self._parent.newData.emit(self._parent._source_name, item)
-                
+            try:
+                # @todo - Play with data sources so 
+                #         we can do a timed wait so that
+                #         when e.g. a run is not active, the
+                #         thread's event loop is not starved.
+                dispatcher = self._parent.eventDispatcher()
+                if  dispatcher is None:
+                    print("warning no event dispatcher!", file=sys.stderr)
+                for item in iter(self._source):
+                    if self._parent.isInterruptionRequested():
+                        self._parent.exit()
+                        return
+                    if dispatcher is not None:
+                        dispatcher.processEvents(QEventLoop.AllEvents)
+                    self._parent.newData.emit(self._parent._source_name, item)
+            except Exception as e:
+                print(f"Exception in source thread {self._source_name}", e, file=sys.stderr)    
+            except:
+                print("Catch all exception in thread", file=sys.stderr)
                 
 
     def __init__(self, 

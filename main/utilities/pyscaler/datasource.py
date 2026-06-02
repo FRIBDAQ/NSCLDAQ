@@ -43,7 +43,9 @@ from os import environ
 import struct
 import daqformat
 import typing
+import sys
 
+from PyQt6.QtWidgets import QMessageBox
 LONGWORD_SIZE=4
     
 
@@ -72,23 +74,25 @@ class _DataSourceBase:
     #     type derived from daqformat.ringitem
     #
     def makeItem(self, ba: daqformat.ringitem) -> daqformat.ringitem:
+        
         base_item = self._itemfactory.makeRingItem(ba)
         type = base_item.type()
         
         # Note that the factory throws an exception if
         # the item type says it's of the wrong format so:
         
-        try:
-            if type == daqformat.RING_FORMAT:
+       
+        if type == daqformat.RING_FORMAT:
+            try:
                 item = self._itemfactory.makeDataFormatItem(base_item)
                 self._itemfactory = daqformat.ringitemfactory(item.getMajor())
                 return item
-        except RuntimeError:
-            if self._version == 11:
-                self._version = 12
-            else:
-                self._version = 11
-            self._itemfactory = daqformat.ringitemfactory(self._version)
+            except RuntimeError:
+                if self._version == 11:
+                    self._version = 12
+                else:
+                    self._version = 11
+                self._itemfactory = daqformat.ringitemfactory(self._version)
             item = self._itemfactory.makeDataFormatItem(base_item)
             return item
     
@@ -114,7 +118,7 @@ class _DataSourceBase:
                 return self._itemfactory.makePhysicsEventItem(base_item)
             case daqformat.PHYSICS_EVENT_COUNT:
                 return self._itemfactory.makePhysicsEventCountItem(base_item)
-            
+        
         # If we fell through the match, the item is not a recognized type
         # and our library needs to be exteneded rather than us just
         # Passing back the raw item and hoping the client
@@ -366,4 +370,8 @@ class DataSourceFactory:
         else:
             raise ValueError('Only "file" and "tcp" URIs are supported')
         
-        
+
+
+
+
+
