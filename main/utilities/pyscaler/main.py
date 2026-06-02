@@ -62,7 +62,7 @@ def usage() -> None:
 #    display - the ScalerDisplay widget to configure.
 #    configuration - the processed configuration.
 #
-def configure_display(display : ScalerGui.SclalerDisplay, configuration: configfile.Configuration) -> None :
+def configure_display(display : ScalerGui.ScalerDisplay, configuration: configfile.Configuration) -> None :
     #
     # Add the notebook pages:
     
@@ -118,7 +118,7 @@ def runResumed(item : daqformat.statechangeitem, display: ScalerGui.ScalerDispla
 #  Note the scaler names in scalers are not qualified by the source name.
 # 
 #    If that ever becomes a performance problem...we can fix that later.
-def updateDisplay(name : str, scalers: dict, display, ScalerGui.ScalerDisplay) -> None:
+def updateDisplay(name : str, scalers: dict, display: ScalerGui.ScalerDisplay) -> None:
     for page in display.pageNames():
         definition = display.linDefinition(name)
         model      = display.lineModel(name)
