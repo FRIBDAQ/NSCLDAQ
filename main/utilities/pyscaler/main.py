@@ -120,8 +120,8 @@ def runResumed(item : daqformat.statechangeitem, display: ScalerGui.ScalerDispla
 #    If that ever becomes a performance problem...we can fix that later.
 def updateDisplay(name : str, scalers: dict, display: ScalerGui.ScalerDisplay) -> None:
     for page in display.pageNames():
-        definition = display.linDefinition(name)
-        model      = display.lineModel(name)
+        definition = display.lineDefinition(page)
+        model      = display.lineModel(page)
         
         # Note the scalers here are fully qualified.
         
@@ -172,7 +172,17 @@ def updateCounters(
     interval = item.endTime() - item.startTime() # for rate computations.
     
     counters = item.getScalers()       # Ok we have all the counters.
-    sourceinfo = configuration.datasources[name]
+    sources = configuration.datasources()
+    
+    # fInd the named source:
+    
+    sourceinfo = None
+    for s in sources:
+        if s['name'] == name:
+            sourceinfo = s
+            break
+    if sourceinfo is None:
+        raise AssertionError(f'**BUG** No such data source {name} in {sources} report to DAQ software group, provide your configuration file too please.')
     for index, scaler_name in enumerate(sourceinfo['scalers']):
         rate = float(counters[index])/interval       # Rate of that scaler.
         scalers[name][scaler_name][0] = counters[index]
@@ -288,7 +298,6 @@ def main() -> None:
     #  parameters we need to those slots.
     
     source_mgr = source_manager.DataSourceManager(display)
-    print(sources)
     for source in sources:
         source_mgr.addSource(source['name'], source['url'], format=source['version'])
     
