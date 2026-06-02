@@ -126,7 +126,7 @@ def updateDisplay(name : str, scalers: dict, display: ScalerGui.ScalerDisplay) -
         # Note the scalers here are fully qualified.
         
         for line_def in definition['lines']:
-            line_no = line_def['line']
+            line_no = line_def['number'] - 1 # Zero based in model.
             # Every line has a first scaler and its rates:
             first_name = line_def['scalers'][0]
             source = first_name.split('.')[0]
