@@ -314,8 +314,7 @@ def main() -> None:
     main_window.resize(850, 700)
     
     exit(application.exec())
-    
-    
+
 
 if __name__ == '__main__':
     # Note that doing things this way supports unit testing.
