@@ -246,7 +246,6 @@ def main() -> None:
             "For now ignoring but you might want to fix them for next time", 
             file=stderr
         )
-    
     #  Set up the UI.
     
     application = QApplication(argv)
@@ -289,8 +288,9 @@ def main() -> None:
     #  parameters we need to those slots.
     
     source_mgr = source_manager.DataSourceManager(display)
+    print(sources)
     for source in sources:
-        source_mgr.addSourcde(source['name'], source['url'], format=source['version'])
+        source_mgr.addSource(source['name'], source['url'], format=source['version'])
     
     source_mgr.newData.connect(
         lambda name, item: update(name, item, configuration, display, scalers)
