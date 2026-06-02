@@ -40,6 +40,7 @@ import source_manager
 import daqformat
 
 from   PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
+from   PyQt5.QtCore    import QObject
 
 
 
@@ -226,14 +227,29 @@ def update(
 #   name - the name of the source that exited.
 #
 def sourceExited(name : str) -> None:
+   
     answer = QMessageBox.question(None, f'Data source {name} exited continue?')
     if answer == QMessageBox.No:
         exit(-1)
-        
+
+## kill_sources
+#  Called as the app is exiting, kill off all data sources:
+#      
+# manager - the source manager:
+#
+
+def kill_sources(manager) -> None:
+    global source_exit_signal
+    QObject.disconnect(source_exit_signal)  # Disconnect the signal handler.
+    for name in manager.sourceNames():
+        manager.killSource(name)
+
+      
         
 ##
 #  entry point.
 def main() -> None:
+    global source_exit_signal
     # There must be exactly one parameter, the configuration file
     # and it must exist:
     
@@ -304,7 +320,7 @@ def main() -> None:
     source_mgr.newData.connect(
         lambda name, item: update(name, item, configuration, display, scalers)
     )
-    source_mgr.sourceExited.connect(sourceExited)
+    source_exit_signal = source_mgr.sourceExited.connect(sourceExited)
         
     
     # Run the QtApp.
@@ -312,7 +328,7 @@ def main() -> None:
     # Set the size to 850 x 700 which works on WSL/Windows.
     # Though Y size needs some thought.
     main_window.resize(850, 700)
-    
+    application.aboutToQuit.connect(lambda: kill_sources(source_mgr))    
     exit(application.exec())
 
 

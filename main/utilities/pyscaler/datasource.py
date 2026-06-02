@@ -227,7 +227,14 @@ class FileDataSource(_DataSourceBase):
             ring_item = self.makeItem(item)
             if ring_item.type() not in self._skip_set:
                 return ring_item
-     
+    
+    def close(self):
+        ''' Close the data source.  Harmelss if already closed'''
+        
+        try:
+            self._source.close()
+        except Exception:
+            pass
     # Implement the iterator protocol:
     
     def __iter__(self):
@@ -322,7 +329,13 @@ class OnlineDataSource(_DataSourceBase):
             return None
         else:
             return self.makeItem(item)
-    
+    def close(self):
+        ''' Close the pipe kill the process '''
+        try:
+            self._source.kill()
+        except Exception:
+            pass
+        
     #  Implement the iterator protocol
     def __iter__(self):
         return self

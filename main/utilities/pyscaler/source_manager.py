@@ -85,26 +85,23 @@ class DataSourceThread(QThread):
             self._parent = parent
             self._source = source
         def process(self):
-            try:
-                # @todo - Play with data sources so 
-                #         we can do a timed wait so that
-                #         when e.g. a run is not active, the
-                #         thread's event loop is not starved.
-                dispatcher = self._parent.eventDispatcher()
-                if  dispatcher is None:
-                    print("warning no event dispatcher!", file=sys.stderr)
-                for item in iter(self._source):
-                    if self._parent.isInterruptionRequested():
-                        self._parent.exit()
-                        return
-                    if dispatcher is not None:
-                        dispatcher.processEvents(QEventLoop.AllEvents)
-                    self._parent.newData.emit(self._parent._source_name, item)
-            except Exception as e:
-                print(f"Exception in source thread {self._source_name}", e, file=sys.stderr)    
-            except:
-                print("Catch all exception in thread", file=sys.stderr)
-                
+            
+            # @todo - Play with data sources so 
+            #         we can do a timed wait so that
+            #         when e.g. a run is not active, the
+            #         thread's event loop is not starved.
+            dispatcher = self._parent.eventDispatcher()
+            if  dispatcher is None:
+                print("warning no event dispatcher!", file=sys.stderr)
+            for item in iter(self._source):
+                if self._parent.isInterruptionRequested():
+                    self._parent.exit()
+                    return
+                if dispatcher is not None:
+                    dispatcher.processEvents(QEventLoop.AllEvents)
+                self._parent.newData.emit(self._parent._source_name, item)
+            
+            self._parent.quit() 
 
     def __init__(self, 
                  name: str, uri: str, 
@@ -141,7 +138,8 @@ class DataSourceThread(QThread):
         self._worker = self.Worker(self._source, self)
         self._worker.moveToThread(self)    # Not sure if I need to do ths?
         self.started.connect(self._worker.process)  # run process in worker when started.
-        
+    def stop(self):
+        self._source.close()   
             
 
 class DataSourceManager(QObject):
@@ -236,7 +234,7 @@ class DataSourceManager(QObject):
            @note IndexError is eraised if the source does not exist.
         '''
         source = self._sources[name]     # Here's where IndexError is raised.
-        source.requestInterruption()     #try it the nice way.
+        source.stop()                      #try it the nice way.
         if not source.wait(3000):        # 3 seconds because 2 second scaler interval.
             # If the source didn't exit after a second, take harsh measures with
             # fingers crossed... see the warnings in https://doc.qt.io/qt-6/qthread.html#terminate
@@ -245,7 +243,8 @@ class DataSourceManager(QObject):
             source.terminate()
             
             
-
+    def sourceNames(self) -> list[str] :
+        return self._sources.keys()
     ## Internal slots:
     def _sourceExited(self, name: str) -> None:
         # Called when a source exists.  In that case:
