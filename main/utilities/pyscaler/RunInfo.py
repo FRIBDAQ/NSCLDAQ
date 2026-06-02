@@ -106,7 +106,7 @@ class RunInfo(QWidget):
         hrs   = hours %24
         days  = int(hours/24)
         
-        time_string = f'{days} {hrs:02d}:{mins:02d}:{secs:02d}'
+        time_string = f'{days} {hrs:02d}:{mins:02d}:{secs:02.2f}'
         self._time.setText(time_string)
         
     

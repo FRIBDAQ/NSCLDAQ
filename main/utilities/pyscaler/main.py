@@ -126,13 +126,13 @@ def updateDisplay(name : str, scalers: dict, display: ScalerGui.ScalerDisplay) -
         # Note the scalers here are fully qualified.
         
         for line_def in definition['lines']:
-            line_no = line_dev['line']
+            line_no = line_def['line']
             # Every line has a first scaler and its rates:
             first_name = line_def['scalers'][0]
             source = first_name.split('.')[0]
             uqname = '.'.join(first_name.split('.')[1:])
             counts = [scalers[source][uqname][0], ]
-            rates  = [scalers[source][uquame][1], ]
+            rates  = [scalers[source][uqname][1], ]
             
             #  pair and ratio have a second scaler name:
             
