@@ -38,7 +38,8 @@
 #	     Michigan State University
 #	     East Lansing, MI 48824-1321
 
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, QEventLoop
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, QEventLoop, Qt
+
 import datasource
 import daqformat
 
@@ -212,8 +213,8 @@ class DataSourceManager(QObject):
         #  The trick below allows me to pass the name of the exiting source to the
         #  Actual slot _sourceExited
         #
-        source.finished.connect(lambda : self._sourceExited(name))
-        source.newData.connect(self.newData)    # Just aggregate from all sources.
+        source.finished.connect(lambda : self._sourceExited(name), Qt.QueuedConnection)
+        source.newData.connect(self.newData, Qt.QueuedConnection)    # Just aggregate from all sources.
         
         # Save  the thread in the dict and run it.
         
