@@ -63,8 +63,8 @@ class Configuration:
          @note and empty array as a result indicates the user does not define and datasources.
         '''
         result = []
-        if 'datasources' in self._rawconfig.keys():
-            datasources = self._rawconfig['datasources']
+        if 'datasource' in self._rawconfig.keys():
+            datasources = self._rawconfig['datasource']
             for key, contents in datasources.items():
                 source_dict = {
                     'name' : key, 'url': contents['url'], 'scalers' : contents['scalers']
@@ -217,8 +217,8 @@ class Configuration:
         
         # Validate the data sources and accumulate the  list of full scaler names.
         
-        if 'datasources' in self._rawconfig.keys():
-            ds = self._rawconfig['datasources']
+        if 'datasource' in self._rawconfig.keys():
+            ds = self._rawconfig['datasource']
             if len(ds) > 0:
                 # accumulate the scaler definitions and ensure each data source definition
                 # has a URL and scalers key:
@@ -265,6 +265,8 @@ class Configuration:
                                     for s in scalers:
                                         if s not in scaler_names:
                                             lines.append(f'{s} is not a known scaler in page {name} line {key}')
+                                else:
+                                    lines.append(f'There is no "scaler" key in page {name} line{key}')
                             else:
                                 lines.append(f'Line {key} in {name} is not a valid line.number string.')
                     if line_count == 0:
@@ -317,13 +319,13 @@ if __name__ == '__main__':
     class Tests(unittest.TestCase):
         #  This is the toml we'll test.
         test_toml = '''
-[datasources]
+[datasource]
 
-[datasources.raw1]
+[datasource.raw1]
 url='tcp://spdaq10.frib.msu.edu/raw_1'
 scalers=['name1', 'name2', 'name3']
 
-[datasources.raw2]
+[datasource.raw2]
 url='tcp://spdaq11.frib.msu.edu'
 version=11.0
 scalers=['name1', 'name2', 'name3']
