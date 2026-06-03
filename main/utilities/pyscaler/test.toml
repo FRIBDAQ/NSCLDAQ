@@ -9,7 +9,6 @@ version= 11.0               # NSCLDAQ Version
 scalers=['name1', 'name2', 'name3']
 
 
-[pages]
 
 [pages.apage]
 title='This is the page title'
@@ -31,8 +30,8 @@ ratios = [['raw1.name2', 'raw1.name3'], ['raw2.name1', 'raw2.name2']]  # Graphed
 raw1.name1={high=1234, low=10}  # omitted entries don't have that alarm type.
 
 [alarmcolors]
-lowalarm='red'
-highalarm='yellow'
-bothalarms='green'
+lowalarm='green'
+highalarm='red'
+bothalarms='blue'
 noalarm='black'
 
