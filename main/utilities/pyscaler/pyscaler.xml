@@ -8,7 +8,8 @@
         FRIB initiative to decouple FRIB/NSCLDAQ from Tcl/Tk.  pyScaler was written in 
         Pythion3 using the Qt graphical user interface toolkit.
         The visual display of <command>pyScaler</command> is quite similar to the 
-        <command>ScalerDisplay</command>  program.
+        <command>ScalerDisplay</command>  program.  See also the manpage for
+        <link linkend='man.pyscaler' endterm='man.pyscaler.title' />
     </para>
     <para>
         At the top of the window, run state and run information (title, run number, time into the run) are displayed.
@@ -389,3 +390,226 @@ noalarm='black'
     </section>
 </chapter>
 <!-- /chapter -->
+
+
+<!-- manpage 1daq -->
+<refentry id='man.pyscaler'>
+    <refmeta>
+        <refentrytitle id='man.pyscaler.title'>pyScaler</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>pyScaler</refname>
+        <refpurpose>Display scalers</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis>
+<command>$DAQBIN/pyScaler</command> <arg choice='plain'>config-file</arg>      
+        </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            The pyScaler command provides a display of scaler totals, rates and seleted
+            ratios of totals and rates at run-time.  The <parameter>config-file</parameter>
+            parameter is the path to a TOML configuration file.
+            See <literal>CONFIGURATION FILE</literal> below.  The configuration file 
+            describes to <command>pyScaler</command> where it gets scalers from and
+            what to display.
+        </para>
+        <para>
+            The pyScaler command provies a window with three sections.  The top
+            section provides information about the run and run state.
+            The middle section is a tabbed notebook providing live scaler totals, rates
+            and totals.  The bottom, optional section provides strip charts for selected
+            scaler rates and ratios of scaler rates.
+        </para>
+
+    </refsect1>
+    <refsect1>
+        <title>CONFIGURATION FILE</title>
+        <para>
+            The pyScaler program is driven by a configuraiton file written in 
+            <ulink url='https://toml.io/en/'>Tom's Obvious Minmal Language</ulink> or
+            TOML as it is usually abbreviated.
+        </para>
+        <para>
+            This section will annotate a simple, sample configuration file.
+        </para>
+        <example>
+            <title>Sample pyScaler TOML configuration file</title>
+            <programlisting>
+
+[datasource.raw2]                        <co id='pyscler.source' />
+url='tcp://spdaq11.frib.msu.edu'         <co id='pyscaler.source.uri' />
+version= 11               # NSCLDAQ Version <co id='pyscaler.source.version' />'
+scalers=['name1', 'name2', 'name3']      <co id='pyscaler.source.scalers' />
+
+[datasource.raw1]
+url='tcp://spdaq10.frib.msu.edu/raw_1'
+version=12.0                 # NSCLDAQ Version.
+scalers=['name1', 'name2', 'name3']
+
+[pages.apage]                            <co id='pyscaler.pages' />
+title='This is the page title'           <co id='pyscaler.pages.title' />
+line1= {type='single', scalers=['raw2.name1']}              <co id='pyscaler.pages.line' />
+line2= {type = 'pair', scalers=['raw1.name1', 'raw1.name2']}
+line3= {type = 'ratio', scalers=['raw2.name2', 'raw2.name3']}
+
+[pages.another]
+title='this is a second page'
+line1=  {type = 'ratio', scalers=['raw2.name3', 'raw2.name2']}
+line3=  {type = 'ratio', scalers=['raw1.name1', 'raw1.name3']}
+
+[graph]                                  <co id='pyscaler.graph'/>
+individual=['raw1.name1', 'raw2.name2']  <co id='pyscaler.graph.inidiv' />
+ratios = [['raw1.name2', 'raw1.name3'], ['raw2.name1', 'raw2.name2']]   <co id='pyscaler.graph.ratio' />
+
+
+[alarms]                              <co id='pyscaler.alarms' />         
+raw1.name1={high=1234, low=10}        <co id='pyscaler.alarms.entry' />
+
+[alarmcolors]                          <co id='pyscaler.colors' />
+lowalarm='green'
+highalarm='red'
+bothalarms='blue'
+noalarm='black'
+
+            </programlisting>
+        </example>
+        <calloutlist>
+            <callout arearefs="pyscler.source">
+                <para>
+                    Sections with names that begin with <literal>datasource.</literal> define
+                    ringbuffers that will be read by <command>pyScaler</command> and the 
+                    scalers those ring buffers will provide. The part of the section name
+                    following the <literal>datasource.</literal> is the name of the datasource.
+                    You can specify as many data sources as you need.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.source.uri">
+                <para>
+                    The <literal>url</literal> key in the data source section 
+                    specifies the URL of the ring buffer from which the program will
+                    accept data.  The <command>pyScaler</command> program only takes in 
+                    scaler items and run state change items.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.source.version">
+                <para>
+                    The <command>pyScaler</command> program can accept data
+                    from any ringbuffer version of FRIB/NSCLDAQ.  The
+                    <literal>version</literal> key specifies the major version of data
+                    expected on that data sourcde (in this case version 11.x).  Note that
+                    the version value is an integer as the ring item format is fixed within
+                    a major version of FRIB/NSCLDAQ.  If <command>pyScaler</command> receives
+                    a <literal>RING_FORMAT</literal> item on the data source, it will use that
+                    item to transparently change, if necessary, the data source format decoded.
+                    If this item is missing, 12 is used.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.source.scalers">
+                <para>
+                    The value of the <literal>scalers</literal> key is an array of strings.
+                    The strings are the unqualified names of the scalers, in the order in which
+                    they will apppear in scaler items from the source.  The scaler names
+                    are said to be fully qualified when the data source name is inclded as well,
+                    for example, in this data sourcde, the fully qualified name of
+                    <literal>name1</literal> is <literal>raw2.name1</literal>.  Note that
+                    duplicate unqualified names are allowed if they are in different sources.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.pages">
+                <para>
+                    For each page you want in the tabbed notebook of scaler counts, totals and ratios, 
+                    you must have a <literal>pages.</literal><replaceable>page-name</replaceable> section.
+                    The <replaceable>page-name</replaceable> part of the section name labels the tab of the page
+                    that section describes.  Page names should be unique.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.pages.title">
+                <para>
+                    Page names must have titles.  Titles are a string of text displayed at the top
+                    of the page.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.pages.line">
+                <para>
+                    The scaler lines on a page are described by a series of <literal>line</literal>
+                    <replaceable>line-no</replaceable> keys.   The <replaceable>line_no</replaceable>
+                    part of that key is the number (tarting from 1) of the line of the display being described.
+                    Omitted line numbers are empty, as in the description of <literal>[pages.another]</literal> where
+                    <literal>line2</literal> is omitted.
+                </para>
+                <para>
+                    Two keys must appear in the table of key/value pairs in the line directives:
+                    <literal>type</literal> is the type of line.  It can be one of
+                    <literal>single</literal>, <literal>pair</literal> or <literal>ratio</literal>.
+                    <literal>scalers</literal> is an array of fully qualified scaler names.  
+                    for <literal>single</literal> lines, the array contains the name of the single scaler to
+                    display.  For <literal>pair</literal> and <literal>ratio</literal> lines the array
+                    contains the pair of scalers to display.  For <literal>ratio</literal> the first scaler
+                    is the numerator of the ratios.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.graph">
+                <para>
+                    The <literal>[graph]</literal> section is optional.  It is only needed if you want
+                    <command>pyScaler</command> to display strip charts.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.graph.inidiv">
+                <para>
+                    The <literal>individual</literal> keyword in the <literal>[graph]</literal> section
+                    lists the scalers whose rates you want plotted on the stip chart. Note the value is an
+                    array of fully qualified scaler names.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.graph.ratio">
+                <para>
+                    The <literal>ratios</literal> keyword on the <literal>[graph]</literal> section
+                    lists the pairs of scalers whose ratios of rats you want plotted. Note the value is
+                    an array of two element arrays of fully qualified scaler names.  The first element of each
+                    array is the numerator name.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.alarms">
+                <para>
+                    Scalers can low and high level alarms set on their rates.  A scaler with a rate below
+                    its low alarm level is said to be in low alarm state and it is colorized with the
+                    <literal>lowalarm</literal> color.  Salers with rates above their high alamr level are said
+                    to be in the high alarm state and are colorized with the
+                    <literal>highalarm</literal> color.  
+                </para>
+                <para>
+                    Furthermore, the tabs of pages with scalers in alamr state are colorized.  If all alarms
+                    are the same level, they are colorized with the color of that alarm level.  On the other hand,
+                    if alarms of both types are present, they are colorized with the <literal>bothalarms</literal>
+                    color.
+                </para>
+                <para>
+                    This section is optional. You only need to provide it if you are specifying alarms.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.alarms.entry">
+                <para>
+                    The keywords of the <literal>[alarms]</literal> secion are fully qualified scaler names.
+                    Their values are an inline table with keys <literal>high</literal> and <literal>low</literal>
+                    to specify the high and low alarm thresholds respectively.  It is legal to specify only one
+                    of those keywords, in which case, only that type of alarm is defined for that scaler.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.colors">
+                <para>
+                    The colors used to indicate alarms can be tailored.  Any or all of the color keywords can be 
+                    used to override the defaults.   The color names must come from those in the
+                    <ulink url='https://doc.qt.io/qt-6/qcolor.html#predefined-colors'>predefined Qt color list</ulink>.
+                    The example shows the actual default colors if eithyer <literal>[alarmcolors]</literal> is
+                    not specified or one of the keys is not provided in that section.
+                    
+                </para>
+            </callout>
+        </calloutlist>
+    </refsect1>
+</refentry>
+<!-- /manpage -->
