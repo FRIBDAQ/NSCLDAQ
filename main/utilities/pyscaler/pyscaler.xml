@@ -1,0 +1,391 @@
+<!-- chapter user-guide -->
+<chapter id='chapter.pyscaler'>
+    <title id='chapter.pyscaler.title'>
+        The pyScaler program
+    </title>  
+    <para>
+        <command>pyScaler</command> is a new scaler display program that is part of the 
+        FRIB initiative to decouple FRIB/NSCLDAQ from Tcl/Tk.  pyScaler was written in 
+        Pythion3 using the Qt graphical user interface toolkit.
+        The visual display of <command>pyScaler</command> is quite similar to the 
+        <command>ScalerDisplay</command>  program.
+    </para>
+    <para>
+        At the top of the window, run state and run information (title, run number, time into the run) are displayed.
+        Below that is a tabbed notebook of scaler counter lines.  At the bottom of the window are optional strip charts
+        showing the time evolution of selected scaler rates and ratios.
+    </para>
+    <para>
+        Where the <command>pyScaler</command> application differs from the <command>ScalerDisplay</command>
+        is the struture of the configuration file.  The <command>ScalerDisplay</command> used a Tcl script
+        with extended commands to define scalers and their sources, which were identified by sourcde id.
+        This option is not available in Python.  <command>pyScaler</command> uses 
+        <firstterm>Tom's Obvious Minimal Language</firstterm>, or <firstterm>TOML</firstterm>, as it's usually 
+        abbreviated.  For information about what TOML looks like, see:
+        <ulink url='https://toml.io/en/' />.
+    </para>
+    <para>
+        For this discussion, it's only important to know that TOML files are divided into sections.
+        Each section has a name inside of square brackets.  For example:
+    </para>
+    <informalexample>
+        <programlisting>
+[datasource.raw1]
+        </programlisting>
+    </informalexample>
+    <para>
+        Is a section named <literal>datasource.raw1</literal>.  <command>pyScaler</command> uses the following
+        sections:
+    </para>
+    <variablelist>
+        <varlistentry>
+                <term><literal>datasource.</literal><replaceable>name</replaceable></term>
+                <listitem>
+                    <para>
+                        Defines the characteristic of a source of data for <command>pyScaler</command>.
+                        The program can accept data from more than one data source.  Data sources have names,
+                        the name of the data source is the text following the period.  For example:
+                        <literal>[datasourcde.focal-plane]</literal> is a section that defines a data source
+                        named <literal>focal-plane</literal>
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term><literal>pages.</literal><replaceable>page-name</replaceable></term>
+                <listitem>
+                    <para>
+                        Defines a page of scalers.  The page appears as a tab in the tabbed notebook
+                        of counters.  Pages have names as well, which appear on their tabl of the
+                        tabbed notebook e.g. <literal>[pages.live-times]</literal> is a page named
+                        <literal>live-times</literal> and will generate a tab labeled with the text
+                        <literal>live-times</literal>.
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term><literal>graph</literal></term>
+                <listitem>
+                    <para>
+                        Defines the strip charts to display on the bottom section of the display.
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term><literal>alarmas</literal></term>
+                <listitem>
+                    <para>
+                        Defines any alamr levels to apply to scalers.
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term>alarmcolors</term>
+                <listitem>
+                    <para>
+                        Describes the colors of the various alarm levels.  
+                    </para>
+                </listitem>
+        </varlistentry>
+    </variablelist>
+    <para>
+        Each section has a specific set of key/value pairs.  The remaining sections in this
+        chapter describe each section and the keyword/value pairs that are recognized.
+    </para>
+    <note>
+        <title>NOTE</title>
+        <para>
+            The TOML parser used by <command>pyScaler</command> does not know anything about the 
+            semantics of the file.  It only understands and parses proper syntax.  <command>pyScaler</command>
+            performs some sanity checks and outputs warnings to stderr for any issues it detects, however these
+            are not exhaustive. 
+        </para>
+    </note>
+    <section>
+        <title>[datasource.source-name]</title>
+        <para>
+            These sections define the sources from which the <command>pyScaler</command> takes data
+            and the scalers that each data source provides.   <command>pyScaler</command> can support
+            data from any FRIB/NSCLDAQ data format <literal>10.0</literal> and greater.
+        </para>
+        <para>
+            The key/value pairs supported by the datasource sections are:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><literal>url</literal></term>
+                    <listitem>
+                        <para>
+                            The value of this key is a string that is the URL of the ring buffer
+                            from which data will be taken.  For example;
+                            <literal>url='tcp://spdaq30.frib.msu.edu/raw'</literal>. This key is mandatory
+                            and omitting it will generate a warning.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>version</literal></term>
+                    <listitem>
+                        <para>
+                            The value of this optional key is an integer that is the major version of the data format
+                            expected from the source. If <command>pyScaler</command> sees a 
+                            <literal>RING_FORMAT</literal> item that differs from this it transparently 
+                            changes the frormat to the version in that item.
+                            For example;
+                            <literal>version=12</literal>.  If this key is omitted, the source format defaults to 
+                            12.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>scalers</literal>></term>
+                    <listitem>
+                        <para>
+                            The value of this key is an array of scaler names.  These names are assigned to 
+                            items in the scaler item in the order in which they occur in the array.
+                            For example:
+                            <literal>scalers=['triggers.live', 'triggers']</literal> says the source will provide
+                            two scalers that are, in order <literal>triggers.live</literal> and 
+                            <literal>triggers</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            Here is an example of a complete data source section for a data source named <literal>raw</literal>
+        </para>
+        <example>
+            <title>pyScaler data source section</title>
+            <programlisting>
+[datasource.example]
+url='tcp://spdaq30/raw'
+version=12
+scalers=['triggers.live', 'triggers', 'sin1', 
+    'sin2', 'sin3', 'sin4', 'sin5', 
+    'sin6', 'sin7', 'sin8', 'sin9', 'sin10']
+            </programlisting>
+        </example>
+        <para>
+            The names in the <literal>scalers</literal> array are called 
+            <firstterm>unqualified names</firstterm>.  The <firstterm>fully qualified name</firstterm>
+            of a scaler is preceded by the data source name followed by a period.  For example, the 
+            fully qualified name of <literal>triggers.live</literal> is <literal>example.triggers.live</literal>.
+            Keep this in mind when we describe the contents of the <literal>pages</literal> sections.
+        </para>
+    </section>
+    <section>
+        <title>[pages.pagename]</title>
+        <para>
+            The purpose of a <literal>pages</literal> section is to describe the contents of a
+            tab in the tabbed notebook of counters.  The <replaceable>pagename</replaceable> part of
+            the <literal>pages</literal> section is displayed on the tab of the tabbed notebook.
+            <literal>title</literal> key takes a string value and displays that title string at the top of
+            the page.
+        </para>
+        <para>
+            The remaining keys of a <literal>pages</literal> section are of the form
+            <literal>line</literal><replaceable>n</replaceable> where <replaceable>n</replaceable> is
+            an integer and specifies the line of the page being described.
+        </para>
+        <para>
+            The contents of <literal>line</literal><replaceable>n</replaceable> keys are an
+            <firstterm>inline table</firstterm>. See <ulink url='https://toml.io/en/v1.1.0#inline-table' />
+            for a description of inline tables. For our purposes, an inline table is a set of key/value pairs
+            wrapped in curly brackets.
+        </para>
+        <para>
+            Two keys are accepted in the <literal>line</literal><replaceable>n</replaceable> keys.
+            Both are required:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><literal>type</literal></term>
+                    <listitem>
+                        <para>
+                            Describes the type of line. The valid line types are
+                            <literal>single</literal> which displays a single scaler and its rates.
+                            <literal>pair</literal> which displays a pair of scalers and their rates.
+                            nand <literal>ratio</literal> which displays a pair of scalers, and their rates as well
+                            as their intantaneous ratio and ratio of rates.
+                            For example <literal>line1={type='single', ....}</literal>
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>scalers</literal></term>
+                    <listitem>
+                        <para>
+                            Is an array containing one or two (depending on the type) of fully qualified
+                            scaler names to display on the line.  For exmaple, using the data source
+                            desribed in the previous section:
+                            <literal>line1={type='ratio', scalers=['example.triggers.live', 'example.triggers']}</literal>
+                            Note how the data source name is used to fully qualify the scaler names.
+                            This allows for scalers with identical names from different data sources. 
+                            <command>pyScaler</command> will display the fully qualified scaler names.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+        <example>
+            <title>Example pyScaler pages section</title>
+            <programlisting>
+[pages.triggers]
+title='Show the triggers only'
+line1={type='ratio', scalers=['example.triggers.live', 'example.triggers']}            
+line2={type='single', scalers=['example.sin1']}
+line4={type='pair', scalers=['example.sin2', 'example.sin3']}
+
+            </programlisting>
+        </example>
+        <note>
+            <title>NOTE</title>
+            <para>
+                If a line number is omitted, as shown in the example above where we go from 
+                line2 to line4, skipping  line3, the skipped line will be empty.  This can help you
+                make the display of counters more readable.
+            </para>
+        </note>
+    </section>
+    <section>
+        <title>[graph]</title>
+        <para>
+            If this optional section is present, a stripchart will be displayed at the bottom of the 
+            <command>pyScaler</command> display. This section describes what is charted.  There are
+            two sorts of plots that can be made, <literal>individual</literal> plots provide a strip
+            chart of the rates of individual scalers. <literal>ratios</literal> plots provide a
+            stripchart of ratios of rates.  The value of each of these keys is an array which allows you
+            to have several lines on the plots.
+        </para>
+        <para>
+            As with the <literal>pages</literal> sections, scaler names must be fully qualified.
+        </para>
+        <example>
+            <title>[graph]</title>
+            <programlisting>
+[graph]
+individual=['example.triggers.live', example.sin1]
+ratios    =[['example.triggers.live', 'example.triggers']]
+            </programlisting>
+        </example>
+        <para>
+            The example plots the rate of accepted triggers and the ratio of live triggers to triggers.
+            The rate of the <literal>sin1</literal> scaler from the <literal>example</literal> data
+            source is also plotted.
+            Note how the <literal>ratios</literal> keyword takes an array of arrays.
+        </para>
+    </section>
+    <section>
+        <title>[alarms]</title>
+        <para>
+            You can set upper and lower limit alarms on the rates of scalers.  This section
+            describes the alarm limits.  See, as well <link linkend='pyscaler.alarmcolors' endterm='pyscaler.alarmcolors.title' />
+        </para>
+        <para>
+            A line in the <literal>[alarms]</literal> has as a key the fully qualified name of a scaler.
+            The value of the line is an inline array with one or more of the following keys:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><literal>high</literal></term>
+                    <listitem>
+                        <para>
+                            The value of this an integer.  When the rate of this scaler is above this
+                            value, it is said to be in the <firstterm>high alarm</firstterm> state and that's
+                            indicated on the display by colorizing the value, it's total and rates.  The
+                            tab of the page is also colorized.  See <literal>[alarmcolors]</literal>
+                            below.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>low</literal></term>
+                    <listitem>
+                        <para>
+                            The value of this is a integer. When the rate of this scaler is below this
+                            value, it is said to be in the <firstterm>low alarm</firstterm> state and
+                            is colorized as is the tab of the page containing the alarmed scaler
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+        <example>
+            <title>pyScaler [alarms] section</title>
+            <programlisting>
+[alarms]
+example.triggers= {high=10000 low=100}
+example.beam    = {low=100}
+            </programlisting>
+        </example>
+    </section>
+    <section id='pyscaler.alarmcolors'>
+        <title id='pyscaler.alarmcolors.title'>[alarmcolors]</title>
+        <para>
+           This section describes the colors used to indicate both that scalers are in an alarm state and
+           that tabs have scalers in the alarmed state.  Each of the keys has as a values the name
+           of a color taken from the
+            <ulink url='https://doc.qt.io/qt-6/qcolor.html#predefined-colors'>predefined Qt color list</ulink>.
+            The recognized keys are:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><literal>lowalarm</literal></term>
+                    <listitem>
+                        <para>
+                            The value of this key is the color used to indicate a 
+                            scaler is in the low alarm state.  It also is used to indicate a tab
+                            has scalers in the low alarm state but none in the high alarm state.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>highalarm</literal></term>
+                    <listitem>
+                        <para>
+                            The value of this key is the color used to indicates a 
+                            scaler is in the high alarm state.  It is also used to indicate a tab
+                            has scalers in the high alarm state but not the low alarm state.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>bothalarms</literal></term>
+                    <listitem>
+                        <para>
+                            The value of this key is a color used to indicate a tab has
+                            scalers in both the high and low alarm states.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>noalarm</literal></term>
+                    <listitem>
+                        <para>
+                            The value of this key is a color used to indicate both that
+                            a scaler is not in an alarmed state and that a tab has no scalers
+                            in the alarmed state.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+        <example>
+            <title>
+                Sample pyScaler [alarmcolors] section
+            </title>
+            <programlisting>
+[alarmcolors]
+lowalarm='green'
+highalarm='red'
+bothalarms='blue'
+noalarm='black'
+            </programlisting>
+        </example>
+        <note>
+            <title>NOTE</title>
+            <para>
+                If the [alarmcolors] section is omitted,  or one of the keys is omitted,
+                default colors are used.  The example above, actually
+                shows the default color choices.
+            </para>
+        </note>
+    </section>
+</chapter>
+<!-- /chapter -->
