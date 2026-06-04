@@ -162,3 +162,32 @@ class Channel:
         next_total = self._overflows * OVERFLOW_CORRECTION + counts
         self._rate = (next_total - self._total)/(end - start)
         self._total = next_total
+        self._lastValue = counts
+        
+        
+#Tests:
+
+if __name__ == "__main__":
+    import unittest
+    
+    class Tests(unittest.TestCase) :
+        def setUp(self):
+            self._incr = Channel(incremental = True)
+            self._nonincr = Channel(incremental = False)
+        def tearDown(self):
+            self._incr = None
+            self._nonincr = None
+            
+        def test_init_incr(self, *args):
+            incr = self._incr
+            self.assertEqual(0, incr._total)
+            self.assertEqual(0.0, incr._rate)
+            self.assertEqual(0.0, incr._sumOfSquares)
+            self.assertEqual(0, incr._samples)
+            self.assertEqual(0, incr._lastValue)
+            self.assertEqual(0, incr._overflows)
+            self.assertTrue(incr._isIncremental)
+            self.assertIsNone(incr._lowAlarm)
+            self.assertIsNone(incr._highAlarm)
+    unittest.main()
+            
