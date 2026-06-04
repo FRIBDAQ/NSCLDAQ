@@ -85,12 +85,13 @@ class Channel:
         if self._samples == 0:
             return 0.0
         else:
-            return sqrt(self._sumOfSquares/(self._samples-1) - self._total/self._elapsedSeconds)
+            return math.sqrt(self._sumOfSquares/(self._samples) - 
+                             (self.averageRate()*self.averageRate()))
 
     # Implement read/write attributes:
     
     def lowAlarm(self) -> int | None:
-        return self._lowAlaram
+        return self._lowAlarm
     def setLowAlarm(self, value : int | None) -> None:
         self._lowAlarm = value
     def highAlarm(self) -> int | None:
@@ -225,5 +226,84 @@ if __name__ == "__main__":
             self.assertEqual(1, o._samples)
             self.assertEqual(50*50, o._sumOfSquares)
             self.assertEqual(0, o._overflows)
+            
+        def test_noincr_update_overflow(self):
+            o = self._nonincr
+            o.update(0,2, 1000)
+            o.update(2, 4, 100)                      # Trigger overflow.
+            self.assertEqual(1, o._overflows)
+            self.assertEqual(100, o._lastValue)
+            self.assertEqual(OVERFLOW_CORRECTION + 100, o._total)
+            self.assertEqual((OVERFLOW_CORRECTION + 100 - 1000)/2, o._rate)
+        
+        def test_lowAlarm_1(self) :
+            # note that incrementl/nonincremental don't differ here.:
+            o = self._incr
+            self.assertIsNone(o.lowAlarm())
+            o.setLowAlarm(100)
+            self.assertEqual(100, o.lowAlarm())
+        def test_lowAlarm_2(self):
+            # isLowAlamr is correct:
+            
+            o = self._incr
+            self.assertFalse(o.isLowAlarm())
+            o.setLowAlarm(100)
+            o.update(0, 2, 100)      # Rate is 50.
+            self.assertTrue(o.isLowAlarm())
+            o.update(2, 4, 1000)     # rate is 500 > 100
+            self.assertFalse(o.isLowAlarm())
+            
+        def test_hiAlarm_1(self):
+            # Can set/get high alarm value:
+            
+            o = self._incr
+            self.assertIsNone(o.highAlarm())
+            o.setHighAlarm(1000)
+            self.assertEqual(1000, o.highAlarm())
+        
+        def test_hiAlarm_2(self):
+            # can detect high alarm trip:
+                
+            o = self._incr
+            self.assertFalse(o.isHighAlarm())    # no alarm.
+            o.setHighAlarm(1000)
+            o.update(0, 2, 10000)        # Rate is 5000 > 1000
+            self.assertTrue(o.isHighAlarm())
+            o.update(2, 4, 1000)         # rate is 500 < 1000
+            self.assertFalse(o.isHighAlarm())
+            
+        def test_clear(self):
+            # test the clear method:
+            
+            incr = self._incr
+            # short run:
+            incr.update(0, 2, 100)
+            incr.update(2, 4, 200)
+            incr.update(4, 5, 50)
+            
+            incr.clear()
+            self.assertEqual(0, incr._total)
+            self.assertEqual(0.0, incr._rate)
+            self.assertEqual(0.0, incr._sumOfSquares)
+            self.assertEqual(0, incr._samples)
+            self.assertEqual(0, incr._lastValue)
+            self.assertEqual(0, incr._overflows)
+            self.assertTrue(incr._isIncremental)
+            self.assertIsNone(incr._lowAlarm)
+            self.assertIsNone(incr._highAlarm)
+        
+        def test_statistics_incr(self):
+            incr = self._incr
+            # Short run with easy to understand constant rate:
+            
+            incr.update(0, 2, 100)
+            incr.update(2, 4, 100)
+            incr.update(4,5, 50)
+
+            self.assertEqual(250, incr.total())
+            self.assertEqual(50, incr.rate())
+            self.assertEqual(50, incr.averageRate())
+            self.assertEqual(0.0, incr.rateStdDev())
+            
     unittest.main()
             
