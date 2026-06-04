@@ -188,6 +188,19 @@ class Configuration:
             if 'noalarm' in colors.keys() :
                 result['noalarm'] = colors['noalarm']
         return result
+    def output_path(self) -> str:
+        '''
+            @return str - the path where the end run summary files should
+                          go. 
+            @retval '." if the toml does not specify it.
+            
+        '''
+        if 'output' in self._rawconfig:
+            output = self._rawconfig['output']
+            if 'path' in output:
+                return output['path']
+        return '.'                   # Default value.
+        
     def check(self):
         '''
             Performs some checking on the semantics of the
@@ -352,6 +365,9 @@ lowalarm='blue'
 highalarm='yellow'
 bothalarms='green'
 noalarm='black'
+
+[output]
+path="/user/ron/scaler_info"
             '''
             
         def setUp(self) :
@@ -438,6 +454,8 @@ noalarm='black'
             config = self.setUp()
             lines = config.check()
             self.assertEqual(0, len(lines))
-            
+        def test_output(self):
+            config = self.setUp()    
+            self.assertEqual("/user/ron/scaler_info", config.output_path())
     unittest.main()
         
