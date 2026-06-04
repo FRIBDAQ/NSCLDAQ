@@ -20,6 +20,7 @@
 
 
 from sys import argv, exit, stderr, path
+
 #
 #  Extend our python seach path to include the unified format
 # library and import that too:
@@ -31,13 +32,19 @@ if 'DAQROOT' not in environ.keys():
 unified_fmt_dir = f'{environ["DAQROOT"]}/unifiedformat/python'
 path.append(unified_fmt_dir)
 
+import daqformat
+
+import time
+import csv
+import tabulate
 
 import configfile
 import ScalerGui
 import source_manager
+import channel
 
 
-import daqformat
+
 
 from   PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
 from   PyQt5.QtCore    import QObject
@@ -53,7 +60,157 @@ def usage() -> None:
     print(f'   {argv[0]}  configfile', file=stderr)
     print( 'Where', file=stderr)
     print('    configfile - is a pyScaler configuration file.', file=stderr)
+
+##
+#  Given a scaler name and source generate the qualified name:
+#
+def qualify_name(source: str, name: str) -> str :
+    return f'{source}.{name}'
+
+  
+##
+#  clear_scalers
+#     
+def clear_scalers(scalers : dict) -> None:
+    for srcname in scalers:
+        for scalername in scalers[srcname]:
+            scalers[srcname][scalername].clear()
+
+
+##
+#  write_csv
+#    Write the end run CSV file:
+#
+#  Parameters:
+#   output_basename - The output file (full path) without the .csv extension.
+#   title      - the run title.
+#   run_number - the run number.
+#   start      - date/time string for the run start.
+#   end        - date/time string for the run end.
+#   duration   - Number of active seconds
+#   scalers    - The dict of scaler dicts.
+# 
+def write_csv(
+    output_basename : str,   title : str,  run_number : int,
+    start           : str,   end   : str,  duration    : float,
+    scalers : dict
+) -> None:
+    filename = f'{output_basename}.csv'
+    with open(filename, 'w', newline='') as csv:
+        csvwriter = csv.writer(csv)
+        # Write the header line that identifies the run:
+        
+        csvwriter.writerow(
+            run_number, title, start, end,  duration
+        )
+        # Now write the scaler lines with fully qualified names:
+        
+        for srcname in scalers:
+            for sclname in scalers[srcname]:
+                full_name = qualify_name(srcname, sclname)
+                ch = scalers[srcname][sclname]
+                csvwriter.writerow(
+                    full_name, ch.total(), ch.averageRate(), ch.rateStdDev()
+                )
+            
+        
+
+##
+# write_report
+#    Same as write_csv but writes a human readable report file.
+#
+#
+#  Parameters:
+#   output_basename - The output file (full path) without the .csv extension.
+#   title      - the run title.
+#   run_number - the run number.
+#   start      - date/time string for the run start.
+#   end        - date/time string for the run end.
+#   duration   - Number of active seconds
+#   scalers    - The dict of scaler dicts.
+# 
+def write_report(
+    output_basename : str,   title : str,  run_number : int,
+    start           : str,   end   : str,  duration    : float,
+    scalers : dict
+) -> None:
+    filename = f'{output_basename}.report'
     
+    
+    #  Figure out the duration string:
+    
+    secs = duration % 60
+    minutes = int(duration/60)
+    mins = minutes % 60
+    hours = int(minutes/60)
+    hrs   = hours %24
+    days  = int(hours/24)
+    
+    time_string = f'{days} {hrs:02d}:{mins:02d}:{secs:02.2f}'
+        
+    with open(filename, 'w') as report :
+        print(f'Run        : {run_number}', file=report)
+        print(f'Title      : {title}', file=report)
+        print(f'Started    : {start}', file=report)
+        print(f'Ended      : {end}', file=report)
+        print(f'Elapsed    : {time_string}', file=report)
+        print("", file=report)
+        
+        # Compute the tabulated report and print that as well.
+        
+        report_data = []
+        for srcname in scalers:
+            for sclname in scalers[srcname]:
+                full_name = qualify_name(srcname, sclname)
+                ch = scalers[srcname][sclname]
+                report_data.append(
+                    [full_name, ch.total(), f'{ch.averageRate():.2f}', f'{ch.rateStdDev():.2f}']
+                )
+        
+        formatted_report = tabulate.tabulate(
+            report_data,
+            headers = ['Name', 'Total', 'Average Rate', 'Rate Std Dev'],
+            tablefmt='pipe'
+        )
+        print(formatted_report, file=report)
+    
+    
+##
+# write_endRun
+#    Write scalers at the end of run.
+#
+# Parameters:
+#   output_dir - Directory in which to write the files.
+#   title      - the run title.
+#   run_number - the run number.
+#   start      - time since Epoch when the run started.
+#   end        - time since the Epoch when the run ended.
+#   duration   - Number of active seconds
+#   scalers    - The dict of scaler dicts.
+#
+def write_endRun(
+    output_dir  : str, title : str,
+    run_number  : int, start : int, end : int, duration : float, 
+    scalers     : dict
+) -> None:
+    
+    # We need to have a valid start time to write the reports:
+    
+    if start is not None:
+        # May as well stringify the times here:
+        # And make the base filename with path:
+        # (DRY). 
+        start_str = time.ctime(start)
+        end_str   = time.ctime(end)
+        
+        output_basename = f'{output_dir}/run{run_number:04d}'
+        
+        # We write two files:  A CSV file in case someone wants to
+        # process with a program (e.g. Excel) and a human readable nice
+        # report file.
+        
+        write_csv(output_basename, title, run_number, start_str, end_str, duration, scalers)
+        write_report(output_basename, title, run_number, start_str, end_str, duration, scalers)
     
 ##
 #  configure_display
@@ -71,11 +228,6 @@ def configure_display(display : ScalerGui.ScalerDisplay, configuration: configfi
     for page in pages:
         display.addPage(page)
 
-##
-#  Given a scaler name and source generate the qualified name:
-#
-def qualify_name(source: str, name: str) -> str :
-    return f'{source}.{name}'
 
 ##### Handlers for the various ring item types we care about.
 
@@ -96,11 +248,23 @@ def state_change(item : daqformat.statechangeitem, newstate :str, display : Scal
     display.setRunNumber(item.getRunNumber())
     display.setTime(item.getElapsedTime())      # I think fractional times are ok here too.
 
-def runStarted(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay) -> None:
+StartTime = None
+def runStarted(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay, scalers : dict) -> None:
+    global StartTime
     state_change(item, 'Active', display)
+    clear_scalers(scalers)
+    updateDisplay(scalers, display)
+    StartTime = item.getTime()
     
-def runEnded(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay) -> None:
+def runEnded(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay, 
+             config : configfile.Configuration,  scalers: dict) -> None:
+    global StartTime
     state_change(item, 'Halted', display)
+    write_endRun(
+        config.output_path(), item.getTitle(), item.getRunNumber(), 
+        StartTime, item.getTime(), item.getElapsedTime(),
+                  scalers
+    )
 
 def runPaused(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay) -> None:
     state_change(item, 'Paused', display)
@@ -112,14 +276,13 @@ def runResumed(item : daqformat.statechangeitem, display: ScalerGui.ScalerDispla
 #  Update all the displays associated with the counters in a data source
 #  from the current internal data:
 #
-#  name - name of the data source to update.
 #  scalers - the current scalers and rate values.
 #  display - The scaler display widget.
 #
 #  Note the scaler names in scalers are not qualified by the source name.
 # 
 #    If that ever becomes a performance problem...we can fix that later.
-def updateDisplay(name : str, scalers: dict, display: ScalerGui.ScalerDisplay) -> None:
+def updateDisplay(scalers: dict, display: ScalerGui.ScalerDisplay) -> None:
     for page in display.pageNames():
         definition = display.lineDefinition(page)
         model      = display.lineModel(page)
@@ -191,7 +354,7 @@ def updateCounters(
 
     # Our scalers and their rates are now fully updated.
     
-    updateDisplay(name, scalers, display)
+    updateDisplay(scalers, display)
 
 #   name - name of that source.
 #   item - the ring item we got.
@@ -208,9 +371,9 @@ def update(
     
     match item.type():
         case daqformat.BEGIN_RUN:
-            runStarted(item, display)
+            runStarted(item, display, scalers)
         case daqformat.END_RUN:
-            runEnded(item, display)
+            runEnded(item, display, configuration, scalers)
         case daqformat.PAUSE_RUN:
             runPaused(item, display)
         case daqformat.RESUME_RUN:
@@ -299,7 +462,7 @@ def main() -> None:
         name = source['name']
         source_scalers = dict()
         for scaler in source['scalers']:
-            source_scalers[scaler] = [0, 0.0]  # Totals, rates
+            source_scalers[scaler] =  channel.Channel()
         scalers[name] = source_scalers
         
     
