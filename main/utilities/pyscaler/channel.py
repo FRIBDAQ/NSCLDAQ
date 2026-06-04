@@ -293,17 +293,31 @@ if __name__ == "__main__":
             self.assertIsNone(incr._highAlarm)
         
         def test_statistics_incr(self):
-            incr = self._incr
+            o = self._incr
             # Short run with easy to understand constant rate:
             
-            incr.update(0, 2, 100)
-            incr.update(2, 4, 100)
-            incr.update(4,5, 50)
+            o.update(0, 2, 100)
+            o.update(2, 4, 100)
+            o.update(4,5, 50)
 
-            self.assertEqual(250, incr.total())
-            self.assertEqual(50, incr.rate())
-            self.assertEqual(50, incr.averageRate())
-            self.assertEqual(0.0, incr.rateStdDev())
+            self.assertEqual(250, o.total())
+            self.assertEqual(50, o.rate())
+            self.assertEqual(50, o.averageRate())
+            self.assertEqual(0.0, o.rateStdDev())
+            
+        def test_statistics_nonincr(self) :
+            o = self._nonincr
+            
+            # We already tested that carries work
+            # So we'll do a simple short run.
+            
+            o.update(0, 2, 100)
+            o.update(2, 4, 200)
+            o.update(4, 5, 250)
+            self.assertEqual(250, o.total())
+            self.assertEqual(50, o.rate())
+            self.assertEqual(50, o.averageRate())
+            self.assertEqual(0.0, o.rateStdDev())
             
     unittest.main()
             
