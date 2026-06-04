@@ -126,11 +126,10 @@ class Channel:
         if self._isIncremental :
             self._updateIncremental(start, end, counts)
         else:
-            self._UpdateNonIncremental(start, end, counts)
+            self._updateNonIncremental(start, end, counts)
             
-        # Update for eventual std dev computation.
-        # This is common code once the rates have been computed.
-        
+        self._elapsedSeconds = end
+        self._samples += 1
         self._sumOfSquares += self._rate*self._rate
     
     def clear(self) -> None:
@@ -152,6 +151,7 @@ class Channel:
     def _updateIncremental(self, start : float, end : float, counts : int) -> None:
         self._total += counts
         self._rate  = counts/(end - start)
+        
 
     # Update totals and ratses for a non-incremental scaler.
     def _updateNonIncremental(self, start : float, end : float, counts : int) -> None:
@@ -170,6 +170,7 @@ class Channel:
 if __name__ == "__main__":
     import unittest
     
+    # This test is quite white box.
     class Tests(unittest.TestCase) :
         def setUp(self):
             self._incr = Channel(incremental = True)
@@ -178,7 +179,7 @@ if __name__ == "__main__":
             self._incr = None
             self._nonincr = None
             
-        def test_init_incr(self, *args):
+        def test_init_incr(self):
             incr = self._incr
             self.assertEqual(0, incr._total)
             self.assertEqual(0.0, incr._rate)
@@ -189,5 +190,40 @@ if __name__ == "__main__":
             self.assertTrue(incr._isIncremental)
             self.assertIsNone(incr._lowAlarm)
             self.assertIsNone(incr._highAlarm)
+            
+        def test_init_nonincr(self):
+            nonincr = self._nonincr
+            self.assertEqual(0, nonincr._total)
+            self.assertEqual(0.0, nonincr._rate)
+            self.assertEqual(0.0, nonincr._sumOfSquares)
+            self.assertEqual(0, nonincr._samples)
+            self.assertEqual(0, nonincr._lastValue)
+            self.assertEqual(0, nonincr._overflows)
+            self.assertFalse(nonincr._isIncremental)
+            self.assertIsNone(nonincr._lowAlarm)
+            self.assertIsNone(nonincr._highAlarm)
+            
+        def test_incr_update(self):
+            o = self._incr
+            o.update(10, 12, 100)
+            self.assertEqual(100, o._total)
+            self.assertEqual(100/2, o._rate)
+            self.assertFalse(o.isLowAlarm())
+            self.assertFalse(o.isHighAlarm())
+            self.assertEqual(12, o._elapsedSeconds)
+            self.assertEqual(1, o._samples)
+            self.assertEqual(50*50, o._sumOfSquares)
+            
+        def test_noincr_update_nooverflow(self):    
+            o = self._nonincr
+            o.update(10, 12, 100)
+            self.assertEqual(100, o._total)
+            self.assertEqual(100/2, o._rate)
+            self.assertFalse(o.isLowAlarm())
+            self.assertFalse(o.isHighAlarm())
+            self.assertEqual(12, o._elapsedSeconds)
+            self.assertEqual(1, o._samples)
+            self.assertEqual(50*50, o._sumOfSquares)
+            self.assertEqual(0, o._overflows)
     unittest.main()
             
