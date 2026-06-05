@@ -38,7 +38,7 @@ class Configuration:
     configuration
     '''
     default_alarm_colors = {
-        'lowalarm' : 'green', 'highalarm' : 'red', 'noalarm' :'black', 'bothalarms' : 'yellow'
+        'lowalarm' : 'green', 'highalarm' : 'red', 'noalarm' :'white', 'bothalarms' : 'yellow'
     }
     def __init__(self, toml):
         '''
@@ -144,9 +144,12 @@ class Configuration:
         
         '''
         result = {}
+        print("computing alarms")
         if 'alarms' in self._rawconfig.keys() :
+            print(self._rawconfig['alarms'])
             for src_name, scalers in self._rawconfig['alarms'].items():
                 for scaler_name, alarm_spec in scalers.items():
+                    print(scaler_name, alarm_spec)
                     fullname='.'.join([src_name, scaler_name])
                     result[fullname] = {'low': None, 'high' : None}
                     if 'low' in alarm_spec.keys():
