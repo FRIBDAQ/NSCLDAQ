@@ -141,22 +141,21 @@ class Configuration:
         
         @note that in a properly formed config file at least one of those keys will be present.
         @note if a scaler appears (by mistake most likely), the last of the occurences rules.
-        
+        @note  that each . in a scaler names results in another level of map e.g.
+               testing.triggers.live is { ...'testing' : {'triggers" {'live': ...}}}
         '''
         result = {}
-        print("computing alarms")
-        if 'alarms' in self._rawconfig.keys() :
-            print(self._rawconfig['alarms'])
-            for src_name, scalers in self._rawconfig['alarms'].items():
-                for scaler_name, alarm_spec in scalers.items():
-                    print(scaler_name, alarm_spec)
-                    fullname='.'.join([src_name, scaler_name])
-                    result[fullname] = {'low': None, 'high' : None}
-                    if 'low' in alarm_spec.keys():
-                        result[fullname]['low'] = alarm_spec['low']
-                    if 'high' in alarm_spec.keys():
-                        result[fullname]['high'] = alarm_spec['high']
-        
+        alarms = self._flatten_alarms()
+
+        print('flattened alarms:\n', alarms)
+            
+        for fullname, alarm_spec in alarms.items():
+            result[fullname] = {'low': None, 'high' : None}
+            if 'low' in alarm_spec.keys():
+                result[fullname]['low'] = alarm_spec['low']
+            if 'high' in alarm_spec.keys():
+                result[fullname]['high'] = alarm_spec['high']
+        print('alarms returning\n', result)
         return result
         
     def alarm_colors(self):
@@ -317,16 +316,74 @@ class Configuration:
                         
             # Check the alamrs, keys must be valid scalers
             
+
             if 'alarms' in self._rawconfig.keys():
-                alarms = self._rawconfig['alarms']
-                for src, item in alarms.items():
-                    for scaler in item:
-                        full_name = f'{src}.{scaler}'
-                    if full_name not in scaler_names:
-                        lines.append(f'Alarm definition for {key} is not a defined scaler')
+                alarms = self._flatten_alarms()
+                for name in alarms:
+                    for scaler in item:                      
+                        if name not in scaler_names:
+                            lines.append(f'Alarm definition for {name} is not a defined scaler')
         return lines
+
+        ###  internal utilities.
         
+        ###
+        # _flatten_alarms
+        #    Every period in an alamr name results in another level of dict nesting.
+        #    This method takes the alarm hash of hashes and turns into a flattened hash
+        #    The hash  is keyed on the fully qualified scaler name and containst thealarm
+        #    specification for that scaler.  Note that if someone is perverse enough to have
+        #     a.scaler.name.fully.qualified={}, that name is not included inthe final hash.
+        #
+        #    To give a sense of the problem we're trying to solve,   That would look like:
+        #     {'a': {'scaler': {'name': {'fully': {'qualified':{}}}}}}}
+        #
+        #  Which we're trying to turn into :{'a.scaler.name.fully.qualified' : {}}
+        #  which we then eliminate because there's no key in the hash with 'high' or 'low'.
+        #
+        # 
+    def _flatten_alarms(self):
+        result = dict()
+
+        if 'alarms' in self._rawconfig.keys():
+            raw_alarms = self._rawconfig['alarms']
+            print("Raw Alarms\n", raw_alarms)
+            for source, alarm in raw_alarms.items():
+                for name, specs  in alarm.items():
+                    (full_name, alarm_spec) = self.__class__._flatten_alarm(source, name, specs)
+                    if len(alarm_spec) > 0:
+                        result[full_name] = alarm_spec
+        
+        return result
     
+    ###
+    #  _flatten_alarm
+    #      Parameters:
+    #         source_name - a data source name from the alarms hash.
+    #         next_name   - The next level name in the nexted hash.
+    #         spec        - The value of ['alarms'][source_name][next_name]
+    #   What this function does is continue to recurse into the hash until either:
+    #     'low', 'high' are found in the inner hash or the resulting hash has no keys at all.
+    # Returns:
+    #   A tupl containing the full name of the scaler and the alamrs dics.
+    def _flatten_alarm(source_name : str, next_name: str, spec : dict) -> tuple[str, dict] :
+        full_name = f'{source_name}.{next_name}'
+        result = dict()
+        while True:
+            if 'low' not in spec.keys() and 'high' not in spec.keys() and len(spec.keys()) > 0:
+                # There's one more level at least.  Set up for the next iteration.
+                next_name = list(spec.keys())[0]
+                full_name += '.' + next_name
+                spec = spec[next_name]
+            else:
+                #  As deep as we can go:
+                
+                if 'low' in spec:
+                    result['low'] = spec['low']
+                if 'high' in spec:
+                    result['high'] = spec['high']
+                return (full_name, result)
+        
 ## If we are the main we can run tests:
 
 if __name__ == '__main__':
