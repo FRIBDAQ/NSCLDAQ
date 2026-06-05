@@ -386,10 +386,8 @@ def updateAlarms(colors : dict, scalers : dict, display : ScalerGui.ScalerDispla
                 # is this scaler alarmed:
                 
                 if scalers[source][uqname].isLowAlarm():
-                    print(name, 'low alarm')
                     color = colors['lowalarm']
                 elif scalers[source][uqname].isHighAlarm():
-                    print(name, 'high alarm')
                     color = colors['highalarm']
                 else:
                     color = colors['noalarm']
@@ -519,7 +517,6 @@ def main() -> None:
     
     sources = configuration.datasources()
     alarms = configuration.alarms()
-    print("alarms", alarms)
     scalers = dict()
     for source in sources:
         name = source['name']
