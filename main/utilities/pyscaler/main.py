@@ -295,8 +295,8 @@ def updateDisplay(scalers: dict, display: ScalerGui.ScalerDisplay) -> None:
             first_name = line_def['scalers'][0]
             source = first_name.split('.')[0]
             uqname = '.'.join(first_name.split('.')[1:])
-            counts = [scalers[source][uqname][0], ]
-            rates  = [scalers[source][uqname][1], ]
+            counts = [scalers[source][uqname].total(), ]
+            rates  = [scalers[source][uqname].rate(), ]
             
             #  pair and ratio have a second scaler name:
             
@@ -304,8 +304,8 @@ def updateDisplay(scalers: dict, display: ScalerGui.ScalerDisplay) -> None:
                 second_name = line_def['scalers'][1]
                 source = second_name.split('.')[0]
                 uqname = '.'.join(second_name.split('.')[1:])
-                counts.append(scalers[source][uqname][0])
-                rates.append(scalers[source][uqname][1])
+                counts.append(scalers[source][uqname].total())
+                rates.append(scalers[source][uqname].rate())
             
             # Update the line:
             
@@ -348,9 +348,8 @@ def updateCounters(
     if sourceinfo is None:
         raise AssertionError(f'**BUG** No such data source {name} in {sources} report to DAQ software group, provide your configuration file too please.')
     for index, scaler_name in enumerate(sourceinfo['scalers']):
-        rate = float(counters[index])/interval       # Rate of that scaler.
-        scalers[name][scaler_name][0] = counters[index]
-        scalers[name][scaler_name][1] = rate
+        scalers[name][scaler_name].update(item.startTime(), item.endTime(), counters[index])
+
 
     # Our scalers and their rates are now fully updated.
     
@@ -391,7 +390,7 @@ def update(
 #
 def sourceExited(name : str) -> None:
    
-    answer = QMessageBox.question(None, f'Data source {name} exited continue?')
+    answer = QMessageBox.question(None, 'Data Source Exited', f'Data source {name} exited continue?')
     if answer == QMessageBox.No:
         exit(-1)
 
