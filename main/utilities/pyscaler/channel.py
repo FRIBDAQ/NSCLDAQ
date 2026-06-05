@@ -82,11 +82,11 @@ class Channel:
             return self._total/self._elapsedSeconds
     def rateStdDev(self) -> float:
         ''' Std dev of average rate'''
-        if self._samples == 0:
+        if self._samples < 2:
             return 0.0
         else:
-            return math.sqrt(self._sumOfSquares/(self._samples) - 
-                             (self.averageRate()*self.averageRate()))
+            return math.sqrt(math.fabs(float(self._sumOfSquares)/float((self._samples)) - 
+                             float((self.averageRate()*self.averageRate()))))
 
     # Implement read/write attributes:
     

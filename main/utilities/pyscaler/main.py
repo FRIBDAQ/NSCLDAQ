@@ -96,12 +96,12 @@ def write_csv(
     scalers : dict
 ) -> None:
     filename = f'{output_basename}.csv'
-    with open(filename, 'w', newline='') as csv:
-        csvwriter = csv.writer(csv)
+    with open(filename, 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
         # Write the header line that identifies the run:
         
         csvwriter.writerow(
-            run_number, title, start, end,  duration
+            [run_number, title, start, end,  duration]
         )
         # Now write the scaler lines with fully qualified names:
         
@@ -110,7 +110,7 @@ def write_csv(
                 full_name = qualify_name(srcname, sclname)
                 ch = scalers[srcname][sclname]
                 csvwriter.writerow(
-                    full_name, ch.total(), ch.averageRate(), ch.rateStdDev()
+                    [full_name, ch.total(), ch.averageRate(), ch.rateStdDev()]
                 )
             
         
