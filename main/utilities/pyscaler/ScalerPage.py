@@ -23,7 +23,8 @@
 '''
 
 from PyQt5.QtWidgets import QLabel, QTableView, QVBoxLayout, QHBoxLayout, QWidget
-from PyQt5.QtGui     import QStandardItemModel, QStandardItem
+from PyQt5.QtGui     import QStandardItemModel, QStandardItem, QBrush, QColor
+from PyQt5.Qt        import *     # The constants.
 
 class ScalerPageException(Exception):
     def __init__(self, reason):
@@ -176,7 +177,7 @@ class ScalerPageModel(QStandardItemModel):
         
         #  Pairs and ratios have a second scaler:
         
-        if type in ['pair', 'ratio']:
+        if type in ('pair', 'ratio'):
             self.item(row, 4).setText(str(totals[1]))
             self.item(row, 5).setText(f'{rates[1]:.2f}')
             
@@ -194,6 +195,41 @@ class ScalerPageModel(QStandardItemModel):
             self.item(row, 6).setText(str(total_ratio))
             self.item(row, 7).setText(str(rates_ratio))
     
+    def set_line_color(self, row : int, which : int, color_name : str) -> None:
+        '''
+            Set the background color of the rate of a scaler on a line:
+            
+            @param row - the row 
+            @param which - the item (1, or2).
+            @param color_name -  A valid Qt predefined color name.
+            
+            If the item is not 1 or 2, ValueError is raised.
+            
+            @note no check is made on the type of item.  it is legal though
+                 silly e.g. to set the background color of the
+                 second scaler of a row with only a single item.
+            @note the qt docs wrongly stat5e that the Qt.Background role expects 
+                 a QBrush when, in fact, a QColor is needed and QBrush is just
+                 ignored.
+            
+        '''
+        
+        # Figure out which cells need to be colorized:
+        
+        match which:
+            case 1:
+                col = 2
+            case 2:
+                col = 5
+            case _:
+                raise ValueError
+        
+        # Set the background color of the appropriate cell:
+        
+        self.item(row, col).setData(QColor(color_name), Qt.BackgroundRole)
+            
+            
+        
         
 ##------------------------ The view class:   ----------------------------
 
