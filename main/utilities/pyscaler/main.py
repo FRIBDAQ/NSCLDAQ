@@ -67,7 +67,12 @@ def usage() -> None:
 def qualify_name(source: str, name: str) -> str :
     return f'{source}.{name}'
 
-  
+##
+#  unqualify a name into a tpule containing the source and the rest of the
+#  name.
+def unqualify_name(fully_qualified : str) -> tuple[str, str] :
+      split_name = fully_qualified.split('.')
+      return (split_name[0], '.'.join(split_name[1:]))
 ##
 #  clear_scalers
 #     
@@ -253,7 +258,6 @@ def runStarted(item : daqformat.statechangeitem, display: ScalerGui.ScalerDispla
     global StartTime
     state_change(item, 'Active', display)
     clear_scalers(scalers)
-    updateDisplay(scalers, display)
     StartTime = item.getTime()
     
 def runEnded(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay, 
@@ -272,6 +276,7 @@ def runPaused(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay
 def runResumed(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay) -> None:
     state_change(item, 'Active', display)
 
+
 #
 #  Update all the displays associated with the counters in a data source
 #  from the current internal data:
@@ -283,6 +288,7 @@ def runResumed(item : daqformat.statechangeitem, display: ScalerGui.ScalerDispla
 # 
 #    If that ever becomes a performance problem...we can fix that later.
 def updateDisplay(scalers: dict, display: ScalerGui.ScalerDisplay) -> None:
+
     for page in display.pageNames():
         definition = display.lineDefinition(page)
         model      = display.lineModel(page)
@@ -291,25 +297,27 @@ def updateDisplay(scalers: dict, display: ScalerGui.ScalerDisplay) -> None:
         
         for line_def in definition['lines']:
             line_no = line_def['number'] - 1 # Zero based in model.
-            # Every line has a first scaler and its rates:
-            first_name = line_def['scalers'][0]
-            source = first_name.split('.')[0]
-            uqname = '.'.join(first_name.split('.')[1:])
-            counts = [scalers[source][uqname].total(), ]
-            rates  = [scalers[source][uqname].rate(), ]
-            
-            #  pair and ratio have a second scaler name:
-            
-            if line_def['type'] in {'pair', 'ratio'} :
-                second_name = line_def['scalers'][1]
-                source = second_name.split('.')[0]
-                uqname = '.'.join(second_name.split('.')[1:])
-                counts.append(scalers[source][uqname].total())
-                rates.append(scalers[source][uqname].rate())
-            
-            # Update the line:
-            
-            model.update_line(line_no, counts, rates)
+            type = line_def['type']
+            # Every non empty line has a first scaler and its rates:
+            if type != 'empty':
+                first_name = line_def['scalers'][0]
+                (source, uqname) = unqualify_name(first_name)
+                counts = [scalers[source][uqname].total(), ]
+                rates  = [scalers[source][uqname].rate(), ]
+                    
+                
+                #  pair and ratio have a second scaler name:
+                
+                if type in {'pair', 'ratio'} :
+                    second_name = line_def['scalers'][1]
+                    source = second_name.split('.')[0]
+                    uqname = '.'.join(second_name.split('.')[1:])
+                    counts.append(scalers[source][uqname].total())
+                    rates.append(scalers[source][uqname].rate())
+                
+                # Update the line:
+                
+                model.update_line(line_no, counts, rates)
             
             
 
@@ -333,7 +341,6 @@ def updateCounters(
     ) -> None:
     display.setTime(item.endTime())     # Update the run time.
     display.setRunState('Active')       # In case we were added after the run started.
-    interval = item.endTime() - item.startTime() # for rate computations.
     
     counters = item.getScalers()       # Ok we have all the counters.
     sources = configuration.datasources()
@@ -353,8 +360,60 @@ def updateCounters(
 
     # Our scalers and their rates are now fully updated.
     
-    updateDisplay(scalers, display)
+    
 
+##
+#  Look at all of the scalers that have alamrs configured and 
+#  Colorize the appropriate cells and tabs in the display.
+#
+#  @param colors - a dict keyed by the alarm type 
+#                 whose value are the colors for that alarm.
+#                 See configfile.Configuration.alarm_colors().
+#  @param scalers - The dict of counters.
+#  @param display - The tabbed notebook containing all displays.
+#           
+def updateAlarms(colors : dict, scalers : dict, display : ScalerGui.ScalerDisplay) -> None:
+    for page in display.pageNames():
+        definition = display.lineDefinition(page)
+        model      = display.lineModel(page)
+        for line_def in definition['lines']:
+            line_no = line_def['number'] - 1
+            type = line_def['type']
+            if type != 'empty' :
+                name = line_def['scalers'][0]
+                (source, uqname) = unqualify_name(name)
+                
+                # is this scaler alarmed:
+                
+                if scalers[source][uqname].isLowAlarm():
+                    print(name, 'low alarm')
+                    color = colors['lowalarm']
+                elif scalers[source][uqname].isHighAlarm():
+                    print(name, 'high alarm')
+                    color = colors['highalarm']
+                else:
+                    color = colors['noalarm']
+            
+                model.set_line_color(line_no, 1, color)
+                
+                # If there's a second scaler do it too:
+                
+                if type in ('pair', 'ratio'):
+                    name = line_def['scalers'][1]
+                    (source, uqname) = unqualify_name(name)
+                
+                    # is this scaler alarmed:
+                    
+                    if scalers[source][uqname].isLowAlarm():
+                        color = colors['lowalarm']
+                    elif scalers[source][uqname].isHighAlarm():
+                        color = colors['highalarm']
+                    else:
+                        color = colors['noalarm']
+                
+                    model.set_line_color(line_no, 2, color)
+##
+#  update.
 #   name - name of that source.
 #   item - the ring item we got.
 #   configuration - our configuration.
@@ -380,7 +439,10 @@ def update(
         case daqformat.PERIODIC_SCALERS | daqformat.INCREMENTAL_SCALERS | daqformat. TIMESTAMPED_NONINCR_SCALERS:
             updateCounters(name, item, configuration, display, scalers)
 
-
+    # Set any alarm colors:
+    
+    updateAlarms(configuration.alarm_colors(), scalers, display)
+    updateDisplay(scalers, display)
 ##
 #  sourceExited
 #     Called when one of the data sources failed.  We popup
@@ -456,12 +518,23 @@ def main() -> None:
     #  totals and rates.
     
     sources = configuration.datasources()
+    alarms = configuration.alarms()
+    print("alarms", alarms)
     scalers = dict()
     for source in sources:
         name = source['name']
         source_scalers = dict()
         for scaler in source['scalers']:
             source_scalers[scaler] =  channel.Channel()
+            # Is the scaler alarmed:
+            
+            fqname = qualify_name(name, scaler)
+
+            #  If alarms are set on the scaler, apply them here.
+            
+            if fqname in alarms.keys():
+                source_scalers[scaler].setLowAlarm(alarms[fqname]['low'])
+                source_scalers[scaler].setHighAlarm(alarms[fqname]['high'])
         scalers[name] = source_scalers
         
     
