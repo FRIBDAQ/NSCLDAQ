@@ -27,6 +27,7 @@ stripchart graphs are displayed if requested.
 
 
 from PyQt5.QtWidgets import QTabWidget, QWidget, QVBoxLayout
+from PyQt5.QtGui    import QColor
 
 from ScalerPage import ScalerPageView, ScalerPageModel
 from RunInfo import RunInfo
@@ -51,9 +52,11 @@ class ScalerDisplay(QWidget):
         
         self._info = RunInfo(self)
         self._tabs = QTabWidget(self)
+        self._namehash = dict()        # Name to tab index.
         
         self._layout.addWidget(self._info)
         self._layout.addWidget(self._tabs)
+        
         
         self._models = {}     # indexed by page name has page model and definition.
         
@@ -77,6 +80,7 @@ class ScalerDisplay(QWidget):
             
         '''
         page = ScalerPageView(self._tabs)
+        self._namehash[definition['name']] = self._tabs.count()   # Index of tab we're adding.
         self._tabs.addTab(page, definition['name'])
         page.setTitle(definition['title'])
         
@@ -123,6 +127,17 @@ class ScalerDisplay(QWidget):
         return self._info.time()
     def setTime(self, seconds):
         self._info.setTime(seconds)
+        
+    def setTabTextColor(self, tab_name, color_name):
+        '''
+            Given the name of a tab set the color of the text in that tab
+            @param tab_name - name of a tab (datasource).
+            @param color_name - name of the color, one of the pre-defined QColor names.
+        '''
+        bar = self._tabs.tabBar()
+        tab_no = self._namehash[tab_name]
+        color  = QColor(color_name)
+        bar.setTabTextColor(tab_no, color)
     
     
 # Test code:
