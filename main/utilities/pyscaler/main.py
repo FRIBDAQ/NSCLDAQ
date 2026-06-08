@@ -316,7 +316,7 @@ def updateDisplay(scalers: dict, display: ScalerGui.ScalerDisplay) -> None:
                     rates.append(scalers[source][uqname].rate())
                 
                 # Update the line:
-                
+
                 model.update_line(line_no, counts, rates)
             
             
@@ -408,7 +408,6 @@ def updateAlarms(colors : dict, scalers : dict, display : ScalerGui.ScalerDispla
                         color = colors['highalarm']
                     else:
                         color = colors['noalarm']
-                
                     model.set_line_color(line_no, 2, color)
 ##
 #  update.

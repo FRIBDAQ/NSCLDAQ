@@ -145,9 +145,10 @@ class Configuration:
                testing.triggers.live is { ...'testing' : {'triggers" {'live': ...}}}
         '''
         result = {}
-        alarms = self._flatten_alarms()
+        if 'alarms' in self._rawconfig.keys():
+            
+            alarms = self._flatten_alarms(self._rawconfig['alarms'], '')
 
-        print('flattened alarms:\n', alarms)
             
         for fullname, alarm_spec in alarms.items():
             result[fullname] = {'low': None, 'high' : None}
@@ -155,14 +156,13 @@ class Configuration:
                 result[fullname]['low'] = alarm_spec['low']
             if 'high' in alarm_spec.keys():
                 result[fullname]['high'] = alarm_spec['high']
-        print('alarms returning\n', result)
         return result
         
     def alarm_colors(self):
         
         '''
             Returns a dict with the alarm colors.  These are used:
-            - For the scaler names that are in alarmed conditions.
+        - For the scaler names that are in alarmed conditions.
             - For the tab names that have alarms.
             
             The result is a dict containing the keys:
@@ -318,71 +318,52 @@ class Configuration:
             
 
             if 'alarms' in self._rawconfig.keys():
-                alarms = self._flatten_alarms()
+                alarms = self._flatten_alarms(self._rawconfig['alarms'], '')
                 for name in alarms:
-                    for scaler in item:                      
-                        if name not in scaler_names:
-                            lines.append(f'Alarm definition for {name} is not a defined scaler')
+                    if name not in scaler_names:
+                        lines.append(f'Alarm definition for {name} is not a defined scaler')
         return lines
 
-        ###  internal utilities.
-        
-        ###
-        # _flatten_alarms
-        #    Every period in an alamr name results in another level of dict nesting.
-        #    This method takes the alarm hash of hashes and turns into a flattened hash
-        #    The hash  is keyed on the fully qualified scaler name and containst thealarm
-        #    specification for that scaler.  Note that if someone is perverse enough to have
-        #     a.scaler.name.fully.qualified={}, that name is not included inthe final hash.
-        #
-        #    To give a sense of the problem we're trying to solve,   That would look like:
-        #     {'a': {'scaler': {'name': {'fully': {'qualified':{}}}}}}}
-        #
-        #  Which we're trying to turn into :{'a.scaler.name.fully.qualified' : {}}
-        #  which we then eliminate because there's no key in the hash with 'high' or 'low'.
-        #
-        # 
-    def _flatten_alarms(self):
-        result = dict()
-
-        if 'alarms' in self._rawconfig.keys():
-            raw_alarms = self._rawconfig['alarms']
-            print("Raw Alarms\n", raw_alarms)
-            for source, alarm in raw_alarms.items():
-                for name, specs  in alarm.items():
-                    (full_name, alarm_spec) = self.__class__._flatten_alarm(source, name, specs)
-                    if len(alarm_spec) > 0:
-                        result[full_name] = alarm_spec
-        
-        return result
+    ###  internal utilities.
     
     ###
-    #  _flatten_alarm
-    #      Parameters:
-    #         source_name - a data source name from the alarms hash.
-    #         next_name   - The next level name in the nexted hash.
-    #         spec        - The value of ['alarms'][source_name][next_name]
-    #   What this function does is continue to recurse into the hash until either:
-    #     'low', 'high' are found in the inner hash or the resulting hash has no keys at all.
-    # Returns:
-    #   A tupl containing the full name of the scaler and the alamrs dics.
-    def _flatten_alarm(source_name : str, next_name: str, spec : dict) -> tuple[str, dict] :
-        full_name = f'{source_name}.{next_name}'
-        result = dict()
-        while True:
-            if 'low' not in spec.keys() and 'high' not in spec.keys() and len(spec.keys()) > 0:
-                # There's one more level at least.  Set up for the next iteration.
-                next_name = list(spec.keys())[0]
-                full_name += '.' + next_name
-                spec = spec[next_name]
+    # _flatten_alarms
+    #    Every period in an alamr name results in another level of dict nesting.
+    #    This method takes the alarm hash of hashes and turns into a flattened hash
+    #    The hash  is keyed on the fully qualified scaler name and containst thealarm
+    #    specification for that scaler.  Note that if someone is perverse enough to have
+    #     a.scaler.name.fully.qualified={}, that name is not included inthe final hash.
+    #
+    #    To give a sense of the problem we're trying to solve,   That would look like:
+    #     {'a': {'scaler': {'name': {'fully': {'qualified':{}}}}}}}
+    #
+    #  Which we're trying to turn into :{'a.scaler.name.fully.qualified' : {}}
+    #  which we then eliminate because there's no key in the hash with 'high' or 'low'.
+    #
+    # Parameters:
+    #     d  - a dictionary to flatten.
+    #     parent - the parent key to combine.
+    # Result:
+    #    The flattened alarm dict.
+    # NOTE:
+    #    This function recurses until d is empty or  has one or more the keys
+    #     'high' or 'low' both indicate a terminal node.
+    #
+    def _flatten_alarms(self, d: dict, parent : str, ):
+        items = []    # Will be a tuple of key/value
+        for k, v in d.items():
+            newkey = parent + '.' + k if parent else k
+
+            # If value is a dict that  does not have 'high' or 'low' keys
+            # Recurse else, the value is the value.
+            
+            if 'high' in v.keys() or 'low' in v.keys():
+                items.append((newkey, v))
             else:
-                #  As deep as we can go:
-                
-                if 'low' in spec:
-                    result['low'] = spec['low']
-                if 'high' in spec:
-                    result['high'] = spec['high']
-                return (full_name, result)
+                items.extend(self._flatten_alarms(v, newkey).items())
+        return dict(items)
+    
+    
         
 ## If we are the main we can run tests:
 
