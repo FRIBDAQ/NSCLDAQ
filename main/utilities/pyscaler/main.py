@@ -376,6 +376,7 @@ def updateAlarms(colors : dict, scalers : dict, display : ScalerGui.ScalerDispla
     for page in display.pageNames():
         definition = display.lineDefinition(page)
         model      = display.lineModel(page)
+        alarms = set()                            # So we can figure out the tab color:
         for line_def in definition['lines']:
             line_no = line_def['number'] - 1
             type = line_def['type']
@@ -387,8 +388,10 @@ def updateAlarms(colors : dict, scalers : dict, display : ScalerGui.ScalerDispla
                 
                 if scalers[source][uqname].isLowAlarm():
                     color = colors['lowalarm']
+                    alarms.add('low')
                 elif scalers[source][uqname].isHighAlarm():
                     color = colors['highalarm']
+                    alarms.add('high')
                 else:
                     color = colors['noalarm']
             
@@ -403,12 +406,25 @@ def updateAlarms(colors : dict, scalers : dict, display : ScalerGui.ScalerDispla
                     # is this scaler alarmed:
                     
                     if scalers[source][uqname].isLowAlarm():
+                        alarms.add('low')
                         color = colors['lowalarm']
                     elif scalers[source][uqname].isHighAlarm():
+                        alarms.add('high')
                         color = colors['highalarm']
                     else:
                         color = colors['noalarm']
                     model.set_line_color(line_no, 2, color)
+        # Now set the page's tab color depending on the alarms:
+        
+        tab_color = colors['noalarm']
+        if len(alarms) == 2:
+            tab_color = colors['bothalarms']
+        elif 'low' in alarms:
+            tab_color = colors['lowalarm']
+        elif 'high' in alarms:
+            tab_color = colors['highalarm']
+        display.setTabTextColor(page, tab_color)
+    
 ##
 #  update.
 #   name - name of that source.
