@@ -13,38 +13,28 @@
              Michigan State University
              East Lansing, MI 48824-1321
 */
-#include <config.h>
 #include "RingSelectorMain.h"
 #include <Exception.h>
+#include <config.h>
 #include <iostream>
-#include <string>
-#include <stdlib.h>
-#include <signal.h>
 #include <os.h>
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string>
 
-int main(int argc, char** argv) 
-{
-  if (Os::blockSignal(SIGPIPE)) {
-    perror("failed to block SIGPIPE");
-  }
+int main(int argc, char **argv) {
   try {
     RingSelectorMain app;
     return app(argc, argv);
-  }
-  catch (CException& e) {
+  } catch (CException &e) {
     std::cerr << "Exception: " << e.ReasonText() << std::endl;
-    return(EXIT_FAILURE);
-  }
-  catch (std::string msg) {
+    return (EXIT_FAILURE);
+  } catch (std::string msg) {
     std::cerr << "Exception: " << msg << std::endl;
-    return(EXIT_FAILURE);
-  }
-  catch (const char* msg) {
+    return (EXIT_FAILURE);
+  } catch (const char *msg) {
     std::cerr << "Exception: " << msg << std::endl;
-    return(EXIT_FAILURE);
+    return (EXIT_FAILURE);
   }
-
-  
 }
-
