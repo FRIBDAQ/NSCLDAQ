@@ -21,7 +21,7 @@ jobs:
       image: fribdaq/frib-${{ inputs.os-version }}-ci
       options: --cpus 2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: autoreconf
         working-directory: ./main
         run: autoreconf -if
@@ -125,7 +125,7 @@ jobs:
           mv nscldaq-${{ github.ref_name }}.tar.gz nscldaq-${{ github.ref_name }}-dist-${{ inputs.os-version }}.tar.gz
       - name: Complete source distribution package
         if: ${{ inputs.packaging == true && inputs.dist-packaging == true}}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.os-version }} complete source distribution
           path: ./main/oot/nscldaq-${{ github.ref_name }}-dist-${{ inputs.os-version }}.tar.gz
@@ -135,7 +135,7 @@ jobs:
         run: tar -czf nscldaq-$GITHUB_REF_NAME-${{ inputs.os-version }}.tar.gz $GITHUB_REF_NAME
       - name: Upload binary distribution package
         if: ${{ inputs.packaging == true }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.os-version }} binary distribution
           path: /usr/opt/nscldaq/nscldaq-${{ github.ref_name }}-${{ inputs.os-version }}.tar.gz
@@ -145,7 +145,7 @@ jobs:
         run: tar -czf usropt-nscldaq-${{ github.ref_name }}-${{ inputs.os-version }}.tar.gz opt-${{ inputs.os-version }}
       - name: Upload usropt distribution package
         if: ${{ inputs.packaging == true }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.os-version }} usropt distribution
           path: /usr/opt/usropt-nscldaq-${{ github.ref_name }}-${{ inputs.os-version }}.tar.gz
