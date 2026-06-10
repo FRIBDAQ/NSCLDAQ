@@ -247,6 +247,9 @@ class ScalerStripChart(QtWidgets.QWidget):
         '''        
         return self._maxpts
     
+    def setMaxPoints(self, size: int) -> Self:
+        self._maxpts = size
+        
     def decimationFactor(self) -> int:
         '''
             @return int - the factor by which data are decimated.
@@ -303,7 +306,7 @@ class ScalerStripChart(QtWidgets.QWidget):
         return result
             
     
-# Testing
+# Test code.
 
 if __name__ == "__main__":
     from matplotlib.backends.qt_compat import QtCore
