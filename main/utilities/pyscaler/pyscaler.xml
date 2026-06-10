@@ -72,7 +72,7 @@
                 </listitem>
         </varlistentry>
         <varlistentry>
-                <term><literal>alarmas</literal></term>
+                <term><literal>alarms</literal></term>
                 <listitem>
                     <para>
                         Defines any alamr levels to apply to scalers.
@@ -259,12 +259,48 @@ line4={type='pair', scalers=['example.sin2', 'example.sin3']}
         <para>
             As with the <literal>pages</literal> sections, scaler names must be fully qualified.
         </para>
+        <para>
+            Two other keys can optionally be specified:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><literal>window</literal></term>
+                    <listitem>
+                        <para>
+                            The value of this is the integer number of seconds that will be shown
+                            in the plots.  As points are added, the plot is shifted to display
+                            the most recent time interval described by this.
+                            If not supplied, this defaults to <literal>3600</literal> or one hour.
+                            Note that the controls on the display  allow you to move the displayed
+                            window, for a while.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>trim_to</literal></term>
+                    <listitem>
+                        <para>
+                            For very long runs, the number of points plotted can grow without bounds 
+                            until the display runs out of virtual memory in which to hold them. 
+                            If specified, this describes a threshold number of points above which
+                            the points prior to the window are decimated.  Currently, the decimation
+                            factor is hard-coded to <literal>2</literal>. That is when decimation is done,
+                            every other data point before the window is deleted.  Bit by bit, older data
+                            will be retained with lower and lower time resolution.
+                            Note that if not supplied, this defaults to <literal>100000</literal> which,
+                            at typical scaler rates of 2 seconds is somewhat more than 2 days of data taking.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
         <example>
             <title>[graph]</title>
             <programlisting>
 [graph]
 individual=['example.triggers.live', example.sin1]
 ratios    =[['example.triggers.live', 'example.triggers']]
+window = 3600
+trim_to = 100000
             </programlisting>
         </example>
         <para>
@@ -272,7 +308,63 @@ ratios    =[['example.triggers.live', 'example.triggers']]
             The rate of the <literal>sin1</literal> scaler from the <literal>example</literal> data
             source is also plotted.
             Note how the <literal>ratios</literal> keyword takes an array of arrays.
+            The optional <literal>window</literal> keyword allows you to override the default display window of the last
+            hour of data by supplying a new display window in seconds.
+            The optiona <literal>trim_to</literal> allows you to specify the decimation threshold which defaults
+            to <literal>100000</literal>.
         </para>
+        <para>
+            Decimation prevents the data saved from growing without bound.  Once the number of points in any
+            data series grows above the <literal>trim_to</literal> decimation threshold, data before the display
+            window are decimated by removing every other data point.  The default of 100,000 means that at typical
+            scaler readout rates of once every 2 seconds, over 2 days of data are saved before decimation is triggered.
+            This is needed because the controls on the plot window allow scrollling the data prior to the
+            window.
+        </para>
+    </section>
+    <section>
+        <title>[output]</title>
+        <para>
+            At the end of the run, the scaler display writes several files. The <literal>path</literal> keyword, which
+            takes a string argument, allows you tot specify the directory in which those files are written.  If not
+            specified, the oputut directory defaults to the current working directory of the pyScaler.
+        </para>
+        <para>
+            The files written have names like <literal>run</literal><replaceable>nnnn</replaceable> where 
+            nnnn is the run number, and varying extension depending on what's written in the file:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><literal>.report</literal></term>
+                    <listitem>
+                        <para>
+                            Contains a human readable report of scaler totals and average rates.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>.csv</literal></term>
+                    <listitem>
+                        <para>
+                            Is a file that is machine readable (e.g. can be imported in to Excel).
+                            It consists of a header line that contains, in order, the run number, title, start time
+                            and end time as well as the duration.
+                            Subsequent lines contain the full scaler name, its total counts,
+                            its average rate and standard deviation from the average.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>.png</literal></term>
+                    <listitem>
+                        <para>
+                            This file is only written if strip charts are graphed. In that case,
+                            it is the plot at the end of the run in PNG format.
+                            One way to view these files is with the <command>xdg-open</command> command
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
     </section>
     <section>
         <title>[alarms]</title>
@@ -610,6 +702,45 @@ noalarm='black'
                 </para>
             </callout>
         </calloutlist>
+    </refsect1>
+    <refsect1>
+        <title>FILES</title>
+        <para>
+            At the end of the run, pyScaler writes several files.  Note that in the descriptions that
+            follow, <replaceable>nnnn</replaceable> is the run number of the run that ended.
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><literal>run</literal><replaceable>nnnn</replaceable><literal>.report</literal></term>
+                    <listitem>
+                        <para>
+                            Provides a human readable summary of the average rates and totals.  The format of this
+                            file should be obvious on inspection.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>run</literal><replaceable>nnnn</replaceable><literal>.csv</literal></term>
+                    <listitem>
+                        <para>
+                            A file in comma separated field format that can be imported into programs (e.g.
+                            directly into Excel).  The first line of the file provides the run number, ttle,
+                            start time, end time, and duration of the run.
+                            Subsequent lines provide the full name of a scaler, the total counts, average rate and standard
+                            deviation of counts from that average for each scaler.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><literal>run</literal><replaceable>nnnn</replaceable><literal>.png</literal></term>
+                    <listitem>
+                        <para>
+                            This file is only written if you graph stripcharts.  In that case, this file
+                            is a PNG image of the strip chart at the end of the run.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
     </refsect1>
 </refentry>
 <!-- /manpage -->
