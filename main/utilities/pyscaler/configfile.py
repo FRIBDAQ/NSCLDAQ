@@ -120,8 +120,13 @@ class Configuration:
             This will be a dict with the keys:
             * single - an array of scaler names whose rates will be strip charted.
             * ratio - an array of scaler pairs whos ratio will be strip charted [numerator, denominator]
+            * window- The number of seconds in the plot window...if present.
+            * trim_to - the threshold for decimation if present.
             
-            It is possible for either or both to be empty.
+            If window or trim_to are not presene, then allow the 
+            
+            It is possible for either 'single'  or 'ratio' or both to be empty, but they both 
+            will be present.
         '''
         result = {'single' : [], 'ratio' :[]}
         if 'graph' in self._rawconfig.keys():
@@ -129,6 +134,10 @@ class Configuration:
                 result['single'] = self._rawconfig['graph']['individual']
             if 'ratios' in self._rawconfig['graph'].keys():
                 result['ratio'] = self._rawconfig['graph']['ratios']
+            if 'window' in self._rawconfig['graph'].keys():
+                result['window'] = self._rawconfig['graph']['window']
+            if 'trim_to' in self._rawconfig['graph'].keys():
+                result['trim_to'] = self._rawconfig['graph']['trim_to']
         return result 
         
     def alarms(self):
