@@ -52,6 +52,8 @@ import configfile
 import ScalerGui
 import source_manager
 import channel
+from pathlib import  Path
+import os
 
 
 
@@ -228,7 +230,24 @@ def write_endRun(
         
         write_csv(output_basename, title, run_number, start_str, end_str, duration, scalers)
         write_report(output_basename, title, run_number, start_str, end_str, duration, scalers)
+
+##
+# write_plots  
+#   Save the plots to file:
+# path - directory in which to write the plot file.
+# run  - run number.
+# plots- Plot object.
+#
+def write_plots(path: str, run : int, plots : ScalerPlot.ScalerStripChart)   -> None:
+    filename = f'{path}/run{run:04d}.png'    # Png format.
     
+    # Note the matplolib tosses an exception if the file already exists 
+    # so destroy it here if that's the case:
+    fpath  = Path(filename)
+    if fpath.is_file():
+        os.remove(filename)
+        
+    plots.save(filename)
 ##
 #  configure_display
 #
@@ -304,8 +323,9 @@ def runStarted(item : daqformat.statechangeitem, display: ScalerGui.ScalerDispla
     clear_scalers(scalers)
     StartTime = item.getTime()
     
+# Plots is the plot widget, if any.
 def runEnded(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay, 
-             config : configfile.Configuration,  scalers: dict) -> None:
+             config : configfile.Configuration,  scalers: dict, plots: ScalerPlot.ScalerStripChart) -> None:
     global StartTime
     state_change(item, 'Halted', display)
     write_endRun(
@@ -313,6 +333,8 @@ def runEnded(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay,
         StartTime, item.getTime(), item.getElapsedTime(),
                   scalers
     )
+    if plots is not None:
+        write_plots(config.output_path(), item.getRunNumber(), plots)
 
 def runPaused(item : daqformat.statechangeitem, display: ScalerGui.ScalerDisplay) -> None:
     state_change(item, 'Paused', display)
@@ -519,7 +541,7 @@ def updateStripCharts(name, time, configuration, scalers, plots):
 def update(
         name: str, item: daqformat.ringitem,
         configuration: configfile.Configuration, display: ScalerGui.ScalerDisplay, 
-        scalers: dict, plots: dict
+        scalers: dict, plots: ScalerPlot.ScalerStripChart
     ) -> None:
     # We care about state transitions, and scalers...what did we get:
     
@@ -529,7 +551,7 @@ def update(
             if plots is not None:
                 plots.clear()                          # Clear any strip charts.
         case daqformat.END_RUN:
-            runEnded(item, display, configuration, scalers)
+            runEnded(item, display, configuration, scalers, plots)
         case daqformat.PAUSE_RUN:
             runPaused(item, display)
         case daqformat.RESUME_RUN:

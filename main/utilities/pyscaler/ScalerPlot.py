@@ -133,6 +133,7 @@ class ScalerStripChart(QtWidgets.QWidget):
             Returns the decimation factor.  Currently this is hard coded to 2, meaning decimation
             involves removing every other point older than most_recent - window.
         * update()->Self - after a bunch of add_point calls this can be called to update the plot.
+        * save(file : str, dpi: int = 300) -> Self - saves the image to file.
     
     '''
     
@@ -294,7 +295,17 @@ class ScalerStripChart(QtWidgets.QWidget):
             self._canvas.draw()       # Draw the canvas not done.
             self._canvasDraw = True
             
-                
+    def save(self, file : str, dpi : int = 300) -> Self:
+        '''
+            Save the current plot to file.
+            @param file - path to the output file.
+            @param dpi  - resolution of the output file in dots per inch.
+            @return self to all chaining.
+        '''
+        self._figure.savefig(file, dpi=dpi)
+        return self
+        
+                    
     #   Internal utilities:
     
     def _nextColor(self) -> str:
