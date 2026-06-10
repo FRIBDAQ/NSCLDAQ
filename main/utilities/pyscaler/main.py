@@ -464,7 +464,32 @@ def updateAlarms(colors : dict, scalers : dict, display : ScalerGui.ScalerDispla
         elif 'high' in alarms:
             tab_color = colors['highalarm']
         display.setTabTextColor(page, tab_color)
+
+##
+# Update the strip charts... we've determined there are some:
+#
+#  name          - Name of the datasource that updated.
+#  time          - End time for the scaler readout (used to tag the point times).
+#  configuration - The plot configuration.
+#  scalers       - The map of scale robjects  after they've been updated.
+#  plots         _ the ScalerPlot widget in which to draw the strip charts.
+#
+# Note the scalers in the configuration are fully qualified names.
+#
+
+def updateStripCharts(name, time, configuration, scalers, plots):
+
+    # Singles:
+    # Note, here we only need to do something for scalers in our data source.
     
+    for scaler in configuration['single']:
+        source, uqname = unqualify_name(scaler)
+        if source == name:
+            rate = scalers[source][uqname].rate()
+            plots.add_point(scaler, float(time), rate)
+            
+            
+    plots.update()
 ##
 #  update.
 #   name - name of that source.
@@ -485,6 +510,8 @@ def update(
     match item.type():
         case daqformat.BEGIN_RUN:
             runStarted(item, display, scalers)
+            if plots is not None:
+                plots.clear()                          # Clear any strip charts.
         case daqformat.END_RUN:
             runEnded(item, display, configuration, scalers)
         case daqformat.PAUSE_RUN:
@@ -493,6 +520,8 @@ def update(
             runResumed(item, display)
         case daqformat.PERIODIC_SCALERS | daqformat.INCREMENTAL_SCALERS | daqformat. TIMESTAMPED_NONINCR_SCALERS:
             updateCounters(name, item, configuration, display, scalers)
+            if plots is not None:
+                updateStripCharts(name, item.endTime() , configuration.plots(), scalers, plots)
 
     # Set any alarm colors:
     
