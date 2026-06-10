@@ -197,8 +197,7 @@ class ScalerStripChart(QtWidgets.QWidget):
         for _, value in self._plotlines.items():
             value['data'].clear()
         self._maxtime = 0
-        self._axis.clear()
-        self._canvas.draw()
+        self.update()                  # Update the picture with no data
         
         return self
         
@@ -249,7 +248,7 @@ class ScalerStripChart(QtWidgets.QWidget):
     
     def setMaxPoints(self, size: int) -> Self:
         self._maxpts = size
-        
+
     def decimationFactor(self) -> int:
         '''
             @return int - the factor by which data are decimated.
