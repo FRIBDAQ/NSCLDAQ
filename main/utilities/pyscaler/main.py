@@ -32,6 +32,16 @@ if 'DAQROOT' not in environ.keys():
 unified_fmt_dir = f'{environ["DAQROOT"]}/unifiedformat/python'
 path.append(unified_fmt_dir)
 
+# I think this has to come before ScalerPlot to ensure that
+# matplotlib used in that selects the qt5 bindings not qt6.
+# of course we could just flip our code to pyqt6.
+
+from   PyQt5.QtWidgets import (QApplication, QMainWindow, QMessageBox, 
+                               QWidget, QVBoxLayout)
+from   PyQt5.QtCore    import QObject
+
+
+import ScalerPlot
 import daqformat
 
 import time
@@ -46,8 +56,6 @@ import channel
 
 
 
-from   PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
-from   PyQt5.QtCore    import QObject
 
 
 
@@ -233,7 +241,39 @@ def configure_display(display : ScalerGui.ScalerDisplay, configuration: configfi
     for page in pages:
         display.addPage(page)
 
-
+# factor out making a plotline name for a ratio:
+def make_ratioName(scalers):
+    name = f'{scalers[0]}/{scalers[1]}'
+    return name
+##
+# configure_stripcharts
+#    Add the plotlines configured in the config file:
+#  plotter - the ScalerStripChart widget.
+#  config  - The result of the plots() call on a configuration.
+#
+# Note the caller must ensure that the config isn ot empty.
+#
+def configure_stripcharts(plotter, config):
+    #
+    #  If requested, set the window and decimation threshold.
+    #
+    if 'window' in config.keys():
+        plotter.setWindow(config['window'])
+    if 'trim_to' in config.keys():
+        plotter.setMaxPoints(config['trim_to'])
+        
+    # Add the plotlines for single scalers:
+    
+    for scaler in config['single']:              # The key is gauranteed.
+        plotter.add_plotline(scaler)
+        
+    # Add the plotlines for scaler ratios.
+    
+    for scalers in config['ratio']:
+        plotter.add_plotline(make_ratioName(scalers))
+    
+        
+        
 ##### Handlers for the various ring item types we care about.
 
 #
@@ -432,11 +472,13 @@ def updateAlarms(colors : dict, scalers : dict, display : ScalerGui.ScalerDispla
 #   configuration - our configuration.
 #   display  - the scaler display widget.
 #   scalers  - our cumulative counters and rates.
+#   plots    - The widget in which to display strip charts or "None'
+#              if there aren't any.
 # Note the scaler names in the scalers hashe are not fully qualified.
 def update(
         name: str, item: daqformat.ringitem,
         configuration: configfile.Configuration, display: ScalerGui.ScalerDisplay, 
-        scalers: dict
+        scalers: dict, plots: dict
     ) -> None:
     # We care about state transitions, and scalers...what did we get:
     
@@ -514,9 +556,23 @@ def main() -> None:
     application = QApplication(argv)
     main_window = QMainWindow()
     
-    
-    display     = ScalerGui.ScalerDisplay(main_window)
-    configure_display(display, configuration)
+    display           = QWidget(main_window)
+    scaler_counts     = ScalerGui.ScalerDisplay(display)
+    layout            = QVBoxLayout()
+    layout.addWidget(scaler_counts)
+    vsize = 700
+    configured_plots = configuration.plots()
+    #
+    # Add the stipr chart if there's at least one thing to plot
+    if len(configured_plots['single']) > 0 or len(configured_plots['ratio']) > 0:
+        plots         = ScalerPlot.ScalerStripChart(display)
+        layout.addWidget(plots)
+        configure_stripcharts(plots, configured_plots)
+        vsize += 300
+    else:
+        plots = None
+    display.setLayout(layout)
+    configure_display(scaler_counts, configuration)
     main_window.setCentralWidget(display)
     
     
@@ -560,12 +616,12 @@ def main() -> None:
     #  We use the lambda trick to pass additional
     #  parameters we need to those slots.
     
-    source_mgr = source_manager.DataSourceManager(display)
+    source_mgr = source_manager.DataSourceManager(scaler_counts)
     for source in sources:
         source_mgr.addSource(source['name'], source['url'], format=source['version'])
     
     source_mgr.newData.connect(
-        lambda name, item: update(name, item, configuration, display, scalers)
+        lambda name, item: update(name, item, configuration, scaler_counts, scalers, plots)
     )
     source_exit_signal = source_mgr.sourceExited.connect(sourceExited)
         
@@ -574,7 +630,7 @@ def main() -> None:
     main_window.show()
     # Set the size to 850 x 700 which works on WSL/Windows.
     # Though Y size needs some thought.
-    main_window.resize(850, 700)
+    main_window.resize(850, vsize)
     application.aboutToQuit.connect(lambda: kill_sources(source_mgr))    
     exit(application.exec())
 
