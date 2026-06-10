@@ -81,6 +81,10 @@ def qualify_name(source: str, name: str) -> str :
 def unqualify_name(fully_qualified : str) -> tuple[str, str] :
       split_name = fully_qualified.split('.')
       return (split_name[0], '.'.join(split_name[1:]))
+# factor out making a plotline name for a ratio:
+def make_ratioName(scalers):
+    name = f'{scalers[0]}/{scalers[1]}'
+    return name
 ##
 #  clear_scalers
 #     
@@ -478,7 +482,7 @@ def updateAlarms(colors : dict, scalers : dict, display : ScalerGui.ScalerDispla
 #
 
 def updateStripCharts(name, time, configuration, scalers, plots):
-
+    t = float(time)
     # Singles:
     # Note, here we only need to do something for scalers in our data source.
     
@@ -486,8 +490,20 @@ def updateStripCharts(name, time, configuration, scalers, plots):
         source, uqname = unqualify_name(scaler)
         if source == name:
             rate = scalers[source][uqname].rate()
-            plots.add_point(scaler, float(time), rate)
-            
+            plots.add_point(scaler, t, rate)
+    #
+    # Since the ratios may span boundaries,
+    # We just update all of them though that might make the rates
+    # look a bit spikey.
+    
+    for scaler_pair in configuration['ratio']:
+        plot_name = make_ratioName(scaler_pair)
+        numerator, denominator = scaler_pair
+        numsource, numname = unqualify_name(numerator)        
+        densource, denname = unqualify_name(denominator)
+        
+        ratio = scalers[numsource][numname].rate()/scalers[densource][denname].rate()
+        plots.add_point(plot_name, t, ratio)
             
     plots.update()
 ##
