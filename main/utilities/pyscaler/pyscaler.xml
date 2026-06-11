@@ -150,6 +150,26 @@
                         </para>
                     </listitem>
             </varlistentry>
+            <varlistentry>
+                    <term><literal>incremental</literal></term>
+                    <listitem>
+                        <para>
+                            The value of this optional key is a boolean.  Note that in toml booleans are
+                            specified by one of two  values: <literal>true</literal> or <literal>false</literal>.
+                            All lower case and not quoted See, the example.
+                        </para>
+                        <para>
+                            If the value is <literal>true</literal> (the default if not specified), scalers from
+                            the source are assumed to be cleared as the are read, providing incrmeental counts
+                            over the counting  interval.  If <literal>false</literal> the scalers are assumed
+                            to count continuously, cleared only at the beginnig of the run. 
+                            pyScaler assumes all scalers are 32 bits.  If a subsequent count value in a
+                            nonicremental channel
+                            is less than the previous count value, a single overflow of the scaler is assumed to 
+                            have occured and is properly accounted for.
+                        </para>
+                    </listitem>
+            </varlistentry>
         </variablelist>
         <para>
             Here is an example of a complete data source section for a data source named <literal>raw</literal>
@@ -163,6 +183,7 @@ version=12
 scalers=['triggers.live', 'triggers', 'sin1', 
     'sin2', 'sin3', 'sin4', 'sin5', 
     'sin6', 'sin7', 'sin8', 'sin9', 'sin10']
+incremental=false      # Scalers count continuously.
             </programlisting>
         </example>
         <para>
@@ -541,6 +562,7 @@ scalers=['name1', 'name2', 'name3']      <co id='pyscaler.source.scalers' />
 url='tcp://spdaq10.frib.msu.edu/raw_1'
 version=12.0                 # NSCLDAQ Version.
 scalers=['name1', 'name2', 'name3']
+incremental=false                        <co id='pyscaler.source.cont' />
 
 [pages.apage]                            <co id='pyscaler.pages' />
 title='This is the page title'           <co id='pyscaler.pages.title' />
@@ -609,6 +631,15 @@ noalarm='black'
                     for example, in this data sourcde, the fully qualified name of
                     <literal>name1</literal> is <literal>raw2.name1</literal>.  Note that
                     duplicate unqualified names are allowed if they are in different sources.
+                </para>
+            </callout>
+            <callout arearefs="pyscaler.source.cont">
+                <para>
+                    Scalers from this source will count continuously.  Note that scalers from raw2 are incremental
+                    because the <literal>incremental</literal> keyword is not given, and that is the default.
+                    You <emphasis>may</emphasis> explicitly tag the scalers from a
+                    data source as incremental by adding the
+                    key/value pair: <literal>incremental=true</literal>
                 </para>
             </callout>
             <callout arearefs="pyscaler.pages">
