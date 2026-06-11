@@ -21,7 +21,7 @@
 #	     Michigan State University
 #	     East Lansing, MI 48824-1321
 import math
-OVERFLOW_CORRECTION : int = 1 << 32    # Size of a single overflow.
+OVERFLOW_CORRECTION : int = (1 << 32)    # Size of a single overflow.
 
 class Channel:
     '''
@@ -150,13 +150,14 @@ class Channel:
     
     #  Update totals and ratss for an incremental scaler.
     def _updateIncremental(self, start : float, end : float, counts : int) -> None:
-        self._total += counts
+        counts       = counts & 0xffffffff     # So it can be treated as unsigned.
+        self._total += counts 
         self._rate  = counts/(end - start)
         
 
     # Update totals and ratses for a non-incremental scaler.
     def _updateNonIncremental(self, start : float, end : float, counts : int) -> None:
-        
+        counts = counts & 0xffffffff       # So it  can be treated as unsigned.
         if counts < self._lastValue:
             self._overflows += 1
         

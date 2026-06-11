@@ -420,6 +420,7 @@ def updateCounters(
             break
     if sourceinfo is None:
         raise AssertionError(f'**BUG** No such data source {name} in {sources} report to DAQ software group, provide your configuration file too please.')
+    
     for index, scaler_name in enumerate(sourceinfo['scalers']):
         scalers[name][scaler_name].update(item.startTime(), item.endTime(), counters[index])
 
@@ -658,9 +659,10 @@ def main() -> None:
     scalers = dict()
     for source in sources:
         name = source['name']
+        isIncremental = source['incremental']   # So we make the right type of scaler.
         source_scalers = dict()
         for scaler in source['scalers']:
-            source_scalers[scaler] =  channel.Channel()
+            source_scalers[scaler] =  channel.Channel(incremental=isIncremental)
             # Is the scaler alarmed:
             
             fqname = qualify_name(name, scaler)
