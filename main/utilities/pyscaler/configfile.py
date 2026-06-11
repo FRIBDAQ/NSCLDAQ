@@ -59,6 +59,8 @@ class Configuration:
             *  url  - URI of the ring buffer that is the data source.
             *  version - DAQ version.
             *  scalers - array of scalers that are contributed by that source.
+            *  incremental - a Boolean that is true if the source's scalers are incremental,
+                   and false if not.  If not specifid in the toml, True is used.
             
          @note and empty array as a result indicates the user does not define and datasources.
         '''
@@ -73,7 +75,10 @@ class Configuration:
                     source_dict['version'] = contents['version']
                 else :
                     source_dict['version'] = DEFAULT_VERSION
-                    
+                if 'incremental' in contents.keys():
+                    source_dict['incremental']  = contents['incremental']
+                else:
+                    source_dict['incremental']  = True
                 result.append(source_dict)
 
         return result
