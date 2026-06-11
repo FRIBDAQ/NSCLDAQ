@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 '''
   This module models a channel.  Channels contain the data required to keep
   track of a single scaler channel.

@@ -15,4 +15,8 @@ install-exec-hook:
 	done
 	$(INSTALL_SCRIPT) @srcdir@/$(MAIN) @bindir@/pyScaler
 
+# Some modules have tests that can run:
+
+TESTS=channel.py configfile.py
+
 EXTRA_DIST=$(MODULES) $(MAIN)
