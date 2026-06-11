@@ -67,6 +67,7 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/daq/evbtools/ringsource \
 	@top_srcdir@/daq/evbtools/unglom \
 	@top_srcdir@/utilities/newscaler \
+	@top_srcdir@/utilities/pyscaler \
 	@top_srcdir@/simplesetups/vmusb \
 	@top_srcdir@/simplesetups/v775 \
 	@top_srcdir@/simplesetups/v785 \

@@ -13,10 +13,7 @@
         This is a unix filter.  <application>compatibilitybuffer</application>
         accepts a stream of ring items on its standard input and produces
         a stream of spectrodaq style nscl data buffers on its output.
-        A trivial application of this program allows you to convert a ringCAEN_DGTZ_ErrorCode status = CAEN_DGTZ_(
-	handle,
-);
-CheckStatus(status);
+        A trivial application of this program allows you to convert a ring
         event file to a spectrodaq event file as shown below:
     </para>
     <example id="compatibilitybuffer-ex1">

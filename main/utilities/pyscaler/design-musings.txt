@@ -1,0 +1,61 @@
+Rather than adding a Ptyhon ring access mechanism,
+based on the poor performance of the Tcl thread/event trigger
+scheme for the exising scaler display, we'll just run n
+ringselector programs.  accepting only state changes and
+scaler items.  
+
+I think TOML might be a good way to do definitions so
+let's think about a definition file format:
+
+[datasources]
+
+[datasources.raw1]
+url='tcp://spdaq10.frib.msu.edu/raw_1'
+scalers=['name1', 'name2', 'name3']
+
+[datasources.raw2]
+url='tcp://spdaq11.frib.msu.edu'
+scalers=['name1', 'name2', 'name3']
+
+
+[pages]
+
+[pages.1]
+title='This is the page title'
+1.single= 'raw2.name1'    # Single scaler from raw1 source.
+2.pair= ['raw1.name1', 'raw1.name2'] # Pair of scalers no ratio done.
+3.ratio= ['raw2.name2', 'raw2.name3'] #  Pair with ratios.
+
+[graph]
+individual=['raw1.name1', 'raw2.name2']  # Graphed as individual scalers
+ratios = [['raw1.name2', 'raw1.name3'], ['raw2.name1', 'raw2.name2']]  # Graphed as ratios.
+
+
+This is TOML and the tomllib module can parse this.  We support
+an arbitrary number of data sources and each data source can have an array of
+scaler items.   These can b e placed on an arbitrary number of pages
+in pages.1, the .1 is the tab label and the title appears at the
+top of the page.  Each line of the a page is defined by
+ line#.type where type is single, pair or ratio and
+ the values are the scaler(s) to display.
+
+ [graph] describes the scalers plotted either as indivials
+ or ratios.
+
+ The tcl scaler display program supports alarms this could
+ be specified as:
+
+ [alarms]
+raw1.name1={high=1234, low=10}  # omitted entries don't have that alarm type.
+
+Colors for the alarmed cell backgrounds would be specified:
+with suitable defaults if not specified
+
+
+[alarmcolors]
+lowalarm='red'
+highalarm='yellow'
+bothalarams='green'
+noalarm='white'
+
+The stripchart can be done with matplotlib and dynamic data/upate.

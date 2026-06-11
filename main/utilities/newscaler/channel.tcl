@@ -109,11 +109,11 @@ snit::type Channel {
             # not possible to correct for multiple wraps:
             
             if {$counts < $lastUpdate} {
-		incr overflowCount
+		        incr overflowCount
             }   
-	    set lastUpdate $counts
-	    incr counts [expr $overflowCount * (1 << $options(-width))]; # Adjust for all historical oveflows.
-            
+            set lastUpdate $counts
+            incr counts [expr $overflowCount * (1 << $options(-width))]; # Adjust for all historical oveflows.
+                
             # non incremental scaler:
             
             set rate [expr {double($counts - $total)/$dt}]
