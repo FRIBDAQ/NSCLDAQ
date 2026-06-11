@@ -29,8 +29,8 @@ stripchart graphs are displayed if requested.
 from PyQt5.QtWidgets import QTabWidget, QWidget, QVBoxLayout
 from PyQt5.QtGui    import QColor
 
-from ScalerPage import ScalerPageView, ScalerPageModel
-from RunInfo import RunInfo
+from nscldaq.pyscaler.ScalerPage import ScalerPageView, ScalerPageModel
+from nscldaq.pyscaler.RunInfo import RunInfo
 
 from operator import itemgetter
 class ScalerDisplay(QWidget):

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 '''
   This contains the main line code for the pyScaler python scaler display.
   
@@ -41,17 +43,17 @@ from   PyQt5.QtWidgets import (QApplication, QMainWindow, QMessageBox,
 from   PyQt5.QtCore    import QObject
 
 
-import ScalerPlot
+import nscldaq.pyscaler.ScalerPlot as ScalerPlot
 import daqformat
 
 import time
 import csv
 import tabulate
 
-import configfile
-import ScalerGui
-import source_manager
-import channel
+import nscldaq.pyscaler.configfile as configfile
+import nscldaq.pyscaler.ScalerGui  as ScalerGui
+import nscldaq.pyscaler.source_manager as source_manager
+import nscldaq.pyscaler.channel  as channel
 from pathlib import  Path
 import os
 

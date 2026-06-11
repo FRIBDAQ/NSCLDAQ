@@ -3,7 +3,16 @@
 # wants it:
 
 pymodule_dir = @prefix@/pythonLibs/nscldaq
+MODULES      = channel.py configfile.py datasource.py RunInfo.py \
+	ScalerGui.py ScalerPage.py ScalerPlot.py source_manager.py
 
+MAIN=main.py
 install-exec-hook:
-	$(mkinstalldirs) @prefix@/pythonLibs/nscldaq
+	$(mkinstalldirs) $(pymodule_dir)
+	$(mkinstalldirs) $(pymodule_dir)/pyscaler
+	for f in $(MODULES); do \
+		$(INSTALL_SCRIPT) @srcdir@/$$f $(pymodule_dir)/pyscaler; \
+	done
+	$(INSTALL_SCRIPT) @srcdir@/$(MAIN) @bindir@/pyScaler
 
+EXTRA_DIST=$(MODULES) $(MAIN)

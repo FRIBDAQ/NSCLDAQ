@@ -40,7 +40,7 @@
 
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QEventLoop, Qt
 
-import datasource
+import nscldaq.pyscaler.datasource as datasource
 import daqformat
 import sys
 #  The default set of items to skip:
