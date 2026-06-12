@@ -56,8 +56,9 @@ class ReadoutClient:
     # Set a parameter value
     
     def _setParameter(self, what, value):
-        url=self._constructUri("setparam", what)
-        r = requests.get(url, params={what:value})
+        port = self._port()
+        response = requests.post(f'http://{self.host}:{port}/setparam', {'name': 'run', 'value': value})
+        return response.json()
         
         
     #----------------------- public methods ---------------------------------
@@ -121,11 +122,11 @@ class ReadoutClient:
             
     def setTitle(self, newTitle):
         ''' set a new title string. '''
-        self._setParameter("title", newTitle)
+        return self._setParameter("title", newTitle)
     
     def setRunNumber(self, newRun):
         ''' Set a new run number '''
-        self._setParameter("run", newRun)
+        return self._setParameter("run", newRun)
         #    This software is Copyright by the Board of Trustees of Michigan
 #    State University (c) Copyright 2014, 2026
 #
