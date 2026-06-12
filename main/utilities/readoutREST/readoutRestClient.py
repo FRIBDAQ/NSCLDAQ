@@ -9,7 +9,7 @@ import requests
 
 
 from nscldaq.portmanager.PortManager import PortManager
-import requests
+
 class ReadoutClient:
     
     def __init__(self, host, serviceName, readoutUser):
@@ -57,7 +57,7 @@ class ReadoutClient:
     
     def _setParameter(self, what, value):
         port = self._port()
-        response = requests.post(f'http://{self.host}:{port}/setparam', {'name': 'run', 'value': value})
+        response = requests.post(f'http://{self.host}:{port}/setparam', {'name': what, 'value': value})
         return response.json()
         
         
@@ -88,19 +88,19 @@ class ReadoutClient:
     
     def getState(self) :
         ''' Return the run state text '''
-        result = self._getStatusItem("state")
-        return result['state']
+        return self._getStatusItem("state")
+        
     
     def getTitle(self):
         ''' Return the current title: '''
         
-        result = self._getStatusItem("title")
-        return result['title']
+        return  self._getStatusItem("title")
+        
 
     def getRunNumber(self):
         ''' return the current run number'''
-        result = self._getStatusItem("runnumber")
-        return result['run']
+        return self._getStatusItem("runnumber")
+        
 
     def getStatistics(self):
         '''

@@ -50,6 +50,8 @@ Copy/pasted from that program:
 import sys
 import os
 from   nscldaq.readoutREST import readoutRestClient
+import tabulate
+
 
 ##  Utility functions:
 
@@ -121,7 +123,64 @@ def setRun(argv):
     
     client = make_client(sys.argv[1], sys.argv[2])
     return client.setRunNumber(run_num)
+
+def getRun(argv):
+    client= make_client(sys.argv[1], sys.argv[2])
+    json  = client.getRunNumber()
+    if json['status'] == 'OK':
+        print(json['run'])
+    return json 
+
+## Title functions:
+
+def setTitle(argv):
+    #  We're a bit more generous than the Tcl version.,
+    #  All word after setTitle are joined separated by " "
+    #  to form the title. 
+    # We do, however, require at least one word;
     
+    if len(argv) < 5:
+        print('The setTitle command requires title argument(s)', file=sys.stderr)
+        usage()
+        exit(-1)
+    
+    client= make_client(sys.argv[1], sys.argv[2])
+    return client.setTitle(' '.join(argv[4:]))
+def getTitle(argv):
+    client= make_client(sys.argv[1], sys.argv[2])
+    json  = client.getTitle()
+    if json['status'] == 'OK':
+        print(json['title'])
+    return json  
+
+# Miscellanous methods:
+
+def getRunState(argv):
+    client= make_client(sys.argv[1], sys.argv[2])
+    json  = client.getState()
+    if json['status'] == 'OK':
+        print(json['state'])
+    return json 
+
+def getStatistics(self):
+    client= make_client(sys.argv[1], sys.argv[2])
+    json  = client.getStatistics()
+    if json['status'] == 'OK':
+        # We can mechanically construct everything:
+        
+        titles = [t for t in json['cumulative'].keys()]   # could use either.
+        titles.insert(0, '')
+        
+        perrun = [v for v in json['perRun'].values()]
+        perrun.insert(0, 'Per Run')
+        
+        cumulative = [v for v in json['cumulative'].values()]
+        cumulative.insert(0, 'cumulative')
+        lines = [perrun, cumulative]
+        print(tabulate.tabulate(lines, headers=titles, tablefmt='grid'))
+        
+    return json 
+        
 ## Function dispatch table:
 #   This is a hash keyed on the subcommand name and
 #   with values a two element tuple containing  in order,
@@ -137,7 +196,12 @@ dispatch_table = {
     'init' : (init,  'Initialize the Readout program'),
     'end'  : (end,   'End an active run'),
     'shutdown': (shutdown, 'Request Readout exit NOTE: this is honored even if a run is active so be careful!!!'),
-    'setRun' : (setRun, ' Set the run number to the next commane line parameter'),
+    'setRun' : (setRun, 'Set the run number to the next commane line parameter'),
+    'getRun' : (getRun, 'Print the run number on stdout.'),
+    'setTitle' : (setTitle, 'Set a new title from the remaining command line words'),
+    'getTitle': (getTitle, 'Print the title on stdout'),
+    'getState' : (getRunState, 'Print the Run state to stdout'),
+    'getStatistics' : (getStatistics, 'Print run event statistics'),
 }
 
 ##-------------------- Entry point ## -----------------
