@@ -1,4 +1,4 @@
-#!/usr/env python3
+#!/usr/bin/env python3
 '''
   This program provides command line control over
   a Readout program over the ReST interface. It replaces
