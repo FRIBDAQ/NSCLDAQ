@@ -9,6 +9,7 @@ import requests
 
 
 from nscldaq.portmanager.PortManager import PortManager
+import requests
 class ReadoutClient:
     
     def __init__(self, host, serviceName, readoutUser):
@@ -38,12 +39,11 @@ class ReadoutClient:
         uri = f"http://{self.host}:{port}/{service}/{suffix}"
         return uri
     
-    #  Internal function to construct and perform a state transition request
-    #
-    def _transition(self, newstate):
-        uri = self._constructUri("control", newstate)
-        r   = requests.get(uri)
-        return r.json()
+    def _transition(self,  transition):
+        port = self._port()
+        response = requests.post(f'http://{self.host}:{port}/control', params={'operation': transition})
+        return response.json()
+    
     
     #
     #   Get a status item  sub is the subdomain with in /status.
@@ -126,4 +126,15 @@ class ReadoutClient:
     def setRunNumber(self, newRun):
         ''' Set a new run number '''
         self._setParameter("run", newRun)
-        
+        #    This software is Copyright by the Board of Trustees of Michigan
+#    State University (c) Copyright 2014, 2026
+#
+#    You may use this software under the terms of the GNU public license
+#    (GPL).  The terms of this license are described at:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+#
+#	     FRIB
+#	     Michigan State University
+#	     East Lansing, MI 48824-1321
+
