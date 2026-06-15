@@ -865,3 +865,223 @@ set value [name cget option]
     </refsect1>
 </refentry>
 <!-- /manpage -->
+
+<!-- manpage 3python -->
+<refentry>
+   <refmeta>
+      <refentrytitle>readoutRestClient</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>reaodutRestClient</refname>
+      <refpurpose>Python client for Readout ReST server.</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readoutREST import readoutRestClient
+
+client = readoutRestClient(<replaceable>host, serviceName, readoutUser</replaceable>)
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         FRIB/NSCLDAQ readout programs can be augmented with a ReST server that supports control from 
+         outside programs.  This is used by the managed experiment environment's helper functions to 
+         control Readout programs it managed though it is general enough.  
+      </para>
+      <para>
+         Readout program enable a ReST server by using the --init-script option to run an initialization
+          script that contains:
+      </para>
+      <informalexample>
+      <programlisting>
+package require ReadoutREST
+close stdin
+      </programlisting>
+      </informalexample>
+      <para>
+         The ReST server advertises with the FRIB/NSCLDAQ port manager. By default, the service it advertises is 
+         <literal>ReadoutREST</literal>, although the environment variable <literal>SERVICE_NAME</literal>
+         can be defined to override that name.  In the synopsis above, the the constructor is parameterized with:
+         <parameter>host</parameter>, the system that's running the Readout to be controlled, 
+         <parameter>serviceName</parameter>, the actual service advertised by the Readout's ReST server and
+         <parameter>readoutUser</parameter>, the user running that Readout.  Note that unless you really know
+         what you are doing, you should user your own username.  Note that in Containerized enviornments, os.getlogin() 
+         does not work, so your scripts shoud use getpass.getuser() which works in containerized and native enviornments
+         to get the logged in username.
+      </para>
+      <para>
+         The return value from all of the methods that interact with the ReST server is a dict.  The server might
+         accept or reject the request depending on the state of Readout and the request (for example attempting to 
+         start a run when the run is active is rejected).  The <literal>status</literal> key is always present
+         in the dict and it's value is either <literal>OK</literal>, which means the server performed the request
+         or <literal>ERROR</literal> which means it did not.  If the server failed to perform the request,
+         the dict will have a <literal>message</literal> key which contains a human readable string describing
+         why the server did not perform the request.
+      </para>
+      <para>
+         Some methods may set other key/value pairs in the dict. See <literal>METHODS</literal> where those
+         per-method dict contents are described in detail.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>METHODS</title>
+      <variablelist>
+         <varlistentry>
+               <term><constructorsynopsis language='python'>
+                  <methodname>ReadoutClient</methodname>
+                  <methodparam><type></type><parameter>host</parameter></methodparam>
+                  <methodparam><type></type><parameter>serviceName</parameter></methodparam>
+                  <methodparam><type></type><parameter>readoutUser</parameter></methodparam>
+               </constructorsynopsis></term>
+               <listitem>
+                  <para>
+                     <parameter>host</parameter> is the host in which the Readout is running.
+                     <parameter>serviceName</parameter> is the name of the service advertised 
+                     with the FRIB/NSCLDAQ port manager by
+                     the ReST server in the Readout program.
+                     <parameter>readoutUser</parameter> is the username of the user running the
+                     Readout program.  See <literal>DESCRIPTION</literal> for information about
+                     the service names that are used.
+                  </para>
+                  <para>
+                     ReST/HTTP as implemented by this class don't use persistent connections 
+                     but per request connections.  Therefore you don't really know if you have a viable
+                     client until you perform a request.  One typical approache is to construct the object
+                     then immediately execute the <methodname>getState</methodname> to get the run state.
+                     This will fail if the constructor parameters are incorrect and a connection cannot be performed.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type>dict</type><methodname>begin</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Requests the Readout to start a data taking run.  This is only possible if the
+                     Readout's state is <literal>idle</literal>  See <methodname>getState</methodname>
+                     below.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+               <type>dict</type><methodname>end</methodname>
+               <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Requests Readout to end the run.  This is only possible if the run state is
+                     <literal>active</literal> see the <methodname>getState</methodname> 
+                     method.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type>dict</type><methodname>init</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Requests Readout to perform hardware initializations. This is only possible if the
+                     Readout's state is <literal>idle</literal>  See <methodname>getState</methodname>
+                     below.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type>dict</type><methodname>shutdown</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Requests the Readout program exit.  Use with care as this request is always honored.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                    <type>dict</type><methodname>getRunState</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Gets the current run state of the Readout program.  The returned dict, on success, 
+                     will have the key <literal>state</literal> which will have one of the string values:
+                     <literal>active</literal>, <literal>paused</literal>, or <literal>idle</literal>
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type>dict</type><methodname>setRun</methodname>
+                  <methodparam><type></type><parameter>newRunNumber</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Requests that the Readout program set the run number for the next run to
+                     <parameter>newRunNumber</parameter> which must be a valid non-negative integer.
+                     This is only possible if the
+                     Readout's state is <literal>idle</literal>.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                    <type>dict</type><methodname>getRunNumber</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     On success, the dict returned will have key named <literal>run</literal> which will
+                     contain the current integer run number.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                    <type>dict</type><methodname>setTitle</methodname>
+                    <methodparam><type></type><parameter>newTitleString</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Attempts to set the title of the next run.
+                     This is only possible if the
+                     Readout's state is <literal>idle</literal>.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                    <type>dict</type> <methodname>getTitle</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Tries to get the current run title. On success, the dict will have a key
+                     <literal>title</literal> whose value is the string value of the run.  Note that the
+                     title placed in state transition ringitems is truncated to 80 bytes.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type>dict</type><methodname>getStatistics</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Requests the trigger statistics from the Readout program. On success, the 
+                     dict returned will have two keys, <literal>cumulative</literal> and <literal>perRun</literal>
+                     which contain the cumulative trigger statistics and the statistics in the current (or previous run
+                     if the state is <literal>idle</literal>).  The values of both of these keys is a dict that contains
+                     the keys: <literal>triggers</literal> the total number of input triggers.
+                     <literal>acceptedTriggers</literal> some FRIB/NSCLDAQ Readouts have the ability to software reject 
+                     events, the value of this key is the number of triggers that were not rejected.  In most
+                     cases this value will be the same as the <literal>acceptedTriggers</literal>
+                     <literal>bytes</literal>  the number of byts of data acquired.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+<!-- /manpage -->
