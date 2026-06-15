@@ -477,4 +477,15 @@ class OutputMonitor:
                 self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket = None
                 raise Disconnected     # Signal the caller we disconnected.
-            raise e              # Something else, so raise it.
+            raise e              # Something else, so raise it.#    This software is Copyright by the Board of Trustees of Michigan
+#    State University (c) Copyright 2014, 2026
+#
+#    You may use this software under the terms of the GNU public license
+#    (GPL).  The terms of this license are described at:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+#
+#	     FRIB
+#	     Michigan State University
+#	     East Lansing, MI 48824-1321
+
