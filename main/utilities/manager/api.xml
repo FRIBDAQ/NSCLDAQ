@@ -4082,7 +4082,7 @@ set fd [::program::run db name ?outputHandler?]
             </listitem>
          </varlistentry>
          <varlistentry>
-            <term>><command>program::getdef</command> <replaceable>db name</replaceable></term>
+            <term><command>program::getdef</command> <replaceable>db name</replaceable></term>
             <listitem>
                 <para>
                   Returns a dict that describes the program
@@ -6592,9 +6592,9 @@ name destroy
 
 <!-- manpage 5daq -->
 
-<refentry>
+<refentry id='man.managerrest'>
    <refmeta>
-      <refentrytitle>Manager REST</refentrytitle>
+      <refentrytitle id='man.managerrest.title'>Manager REST</refentrytitle>
       <manvolnum>5daq</manvolnum>
    </refmeta>
    <refnamediv>
@@ -8538,7 +8538,7 @@ def is_recording(self)
 <refentry>
    <refmeta>
       <refentrytitle>Program</refentrytitle>
-      <manvolnum>3Pytyhon</manvolnum>
+      <manvolnum>3python</manvolnum>
    </refmeta>
    <refnamediv>
       <refname>Program</refname>
@@ -8710,6 +8710,246 @@ def types(self)
                <literal>['Critical', 'Persistent', 'Transitory']</literal>
                </para>
             </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>mg_clientutils</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>mg_clientutils</refname>
+      <refpurpose>Common utilties for Python manager ReST clients</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+import getpass
+from nscldaq import mg_clientutils as cu
+
+port = cu.getServerPort('localhost', getpass.getuser())
+uri = cu.makeUrls('localhost', getpass.getuser(), 'KvStore', 'list')
+
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This module provides unbound utility functions that are
+         useful in to all manager ReST python client modules.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>FUNCTIONS</title>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+               <type>int</type> <methodname>getServerPort</methodname>
+               <methodparam><type>str</type><parameter>host</parameter></methodparam>
+               <methodparam><type>str</type><parameter>user</parameter></methodparam>
+               <methodparam><type>str</type><parameter>service</parameter>
+                  <initializer>'DAQManager'</initializer></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Obtains the port on which the manager is advertising
+                     its ReST server. Well, in reality, this will translate an
+                     arbitrary service to a port number but the defaults
+                     are such that the normal ReST service advertised by the port
+                     manager is translated.  <parameter>host</parameter> is the
+                     host in which the manager is running, <parameter>user</parameter> is
+                     the username of the account that started the manager and
+                     <parameter>service</parameter> is the name of the service it
+                     advertises.  The default value of <literal>DAQManager</literal>
+                     also is the default service name advertised by the manager for
+                     its ReST service.
+                  </para>
+                  <para>
+                     If the manager is not running, or advertising a different service,
+                     an <classname>IndexError</classname> is raised.  Network failures
+                     (e.g. mispelled host nqames) will result in exceptions that are
+                     derived from <classname>OsException</classname>.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type>str</type><methodname>makeUrl</methodname>
+                  <methodparam><type>str</type><parameter>host</parameter></methodparam>
+                  <methodparam><type>str</type><parameter>user</parameter></methodparam>
+                  <methodparam><type>str</type><parameter>domain</parameter></methodparam>
+                  <methodparam><type>str</type><parameter>subdomain</parameter>
+                     <initializer>None</initializer></methodparam>
+                  <methodparam><type>str</type><parameter>service</parameter>
+                     <initializer>'DAQManager'</initializer></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns a validly formatted URI for a ReST request of the manager.
+                     Normally this is used along with the Python <literal>requetsts</literal>
+                     module to form a full ReST request URI and query/post parameters.
+                  </para>
+                  <para>
+                     <parameter>host</parameter> is the host in which the manager is running.
+                     It can be a hostname that translates via DNS or a dotted IP address.
+                     <parameter>user</parameter> username under which the manager is running.
+                     If the invoking user ran the manager <function>getuser</function> from 
+                     the <literal>getpass</literal> module should be used to get the
+                     current username.  Note that <function>os.getlogin()</function>
+                     cannot be used in a containerized envirionment (the normal environment at
+                     the FRIB for data acquisition).
+                  </para><para>
+                     <parameter>domain</parameter> is the requrest domain.  The ReST URL space
+                     is divided into domains (that look like top level directories in web URLs).
+                     Each domain is responsible for fulfilling requests in a subset of the 
+                     manager's functionality.  For example <literal>KvStore</literal> is a domain
+                     that provides access to the manager's key value storage.
+                     <parameter>subdomain</parameter> is an optional sub-domain (this looks like
+                     a subdirectory in a web URL).  If not present, or <literal>None</literal>
+                     no subdomain is added to the generated URI.  In the example domain
+                     <literal>KvStore</literal> one sample subdomain is <literal>set</literal>
+                     which allows you to set the values of keys in the key value store.
+                     Refer 
+                     <link linkend='man.managerrest' endterm='man.managerrest.title' />
+                     for a full map of the domains and subdomains supported by the manager.
+                  </para>
+                  <para>
+                     <parameter>service</parameter> is an optional argument that
+                     is the name of the service the manager advertises. This defaults
+                     to <literal>DAQManager</literal> which is the default service
+                     advertised by the manager.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>mg_kvclient</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>mg_kvclient</refname>
+      <refpurpose>Provide ReST access to the manager key value store</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+   <programlisting>
+import getpass
+from nscldaq import mg_kvclient
+
+client = mg_kvclient.KvStore_ReST('localhost')
+print("title is:", client.getValue('title'))
+client.setValue('run', str(5))
+print('listing kvstore names:')
+for name in c.listNames():
+   print(name)
+
+for item in c.list():
+   print(item['name'] 'has value', item['value'])
+   </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This module provides access to the key/value store maintained by
+         the manager via its ReST server.  Therefore, the manager 
+         must be running for its methods to work properly.
+         Note that constructing a client object does not actually
+         perform any requests.  It is therefore possible to create
+         a client object and have that object fail miserably on the
+         first ReST request if the constructor was improperly created.
+         You can perform a harmless request just after construction to 
+         validate your client, however.
+      </para>
+      <para>
+         The object is tolerant of manager restarts between requests
+         as it retranslates the service name on each request, and does
+         not maintain a persistent connection to the server.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>METHODS</title>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type></type><methodname>__init__</methodname>
+                  <methodparam><type>str</type><parameter>host</parameter></methodparam>
+                  <methodparam><type>str</type><parameter>user</parameter>
+                     <initializer>getpass.getuser()</initializer></methodparam>
+                  <methodparam><type>str</type><parameter>service</parameter>
+                     <initializer>'DAQManager'</initializer></methodparam>
+               </methodsynopsis>
+               </term>
+               <listitem>
+                  <para>
+                     Constructor. This is called implicitly when you create an object
+                     of type <classname>mg_clientutils.KvStore_ReST</classname>
+                     <parameter>host</parameter> is the host on wihch the manager
+                     is running. <parameter>user</parameter> is the user running
+                     the manager.  If not supplied, it defaults to the current user.
+                     <parameter>service</parameter> is the service the manager is
+                     advertising with <parameter>host</parameter>'s port manager.
+                     This service is translated on each request making the client
+                     object tolerant of manager restarts.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type></type><methodname>getValue</methodname>
+                  <methodparam><type>str</type><parameter>key</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     On success, this returns the current value associated with the
+                     key <parameter>key</parameter>.   If there is no such
+                     <parameter>key</parameter> an <classname>IndexError</classname>
+                     is raised.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type></type><methodname>setValue</methodname>
+                   <methodparam><type>str</type><parameter>key</parameter></methodparam>
+                   <methodparam><type>str</type><parameter>value</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets the value associated with <parameter>key</parameter> to 
+                     <parameter>value</parameter>   If the <parameter>key</parameter>
+                     does not exist, an <classname>IndexError</classname> is raised.
+                     The database configuration program 
+                     <filename>$DAQBIN/mg_kvedit</filename> must be used to
+                     create new keys in the kvstore.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type></type><methodname>listNames</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns an iterable (list) of the names defined in the manager's
+                     kv store.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type></type><methodname>list</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns an iterable (list) of dicts.  Each dict
+                     has the keys <literal>name</literal> which has the
+                     name of a key and <literal>value</literal> which has
+                     the value of that named key.
+                  </para>
+               </listitem>
          </varlistentry>
       </variablelist>
    </refsect1>
