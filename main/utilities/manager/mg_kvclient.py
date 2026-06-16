@@ -31,7 +31,7 @@ class KvStore_ReST:
         Provide ReST interface access to the key/value store.
     '''
     
-    def __init__(self, host: str, user:str = getpass.getuser(), service = 'DAQMANAGER') :
+    def __init__(self, host: str, user:str = getpass.getuser(), service = 'DAQManager') :
         '''
         Construct the client. Note that since this is a ReST client, no
         actual network operations are done until requests are made.
@@ -44,6 +44,7 @@ class KvStore_ReST:
         self._host = host
         self._user = user
         self._service = service
+        self._domain = 'KVStore'
         
         
     def getValue(self, key : str) -> str:
@@ -55,7 +56,9 @@ class KvStore_ReST:
             @exception IndexError if the key does not exist.
         
         '''
-        uri = mg_clientutils.makeUrl(self._host, self._user, 'KVStore', 'value', self._service)
+        uri = mg_clientutils.makeUrl(
+            self._host, self._user, self._domain, 'value', self._service
+        )
         response = requests.get(uri, {'name': key})
         json = response.json()
         self.__class__._checkError(json, IndexError)
@@ -70,10 +73,12 @@ class KvStore_ReST:
           @exception IndexError - if the response returned an error.
           
         '''
-        uri = mg_clientutils.makeUrl(self._host, self._user, 'KVStore', 'set', self._service)
+        uri = mg_clientutils.makeUrl(
+            self._host, self._user, self._domain, 'set', self._service
+        )
         postdata = {'user': getpass.getuser(), 'name': key, 'value': value}
         response = requests.post(uri, postdata)
-        self._class__._checkError(response.json(), IndexError)
+        self.__class__._checkError(response.json(), IndexError)
     
     def listNames(self) -> list[str]:
         '''
@@ -83,10 +88,12 @@ class KvStore_ReST:
             @return list(str).
             @exception RuntimeError if the request failed.
         '''
-        uri = mg_clientutils.makeUrl(self._host, self._user, 'KVStore', 'listnames', self._service)
+        uri = mg_clientutils.makeUrl(
+            self._host, self._user, self._domain, 'listnames', self._service)
         response = requests.get(uri)               # No query params.
         json = response.json()
         self.__class__._checkError(json, RuntimeError)
+        return json['names']
         
     
     def list(self) -> dict:
@@ -96,14 +103,17 @@ class KvStore_ReST:
                 the associated keys.
                 
         '''
-        uri = mg_clientutils.makeUrl(self._host, self._user, 'KVSTORE', 'list')
-        json = uri.get(uri).json()
+        uri = mg_clientutils.makeUrl(
+            self._host, self._user, self._domain, 'list', self._service
+        )
+        r = requests.get(uri)
+        json = r.json()
         self.__class__._checkError(json, RuntimeError)
         
         return json['variables']
     
     #----------------------- private utility methods -----------------------------------------
-    @classmethod
+    
     def _checkError(json, etype):
         # check the response JsON for error and raise etype with the reason text if so.
         if json['status'] != 'OK':

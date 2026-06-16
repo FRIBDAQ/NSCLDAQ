@@ -7,7 +7,7 @@
    @author Ron Fox
 '''
 
-
+from nscldaq.portmanager import PortManager as pm
 
 #    This software is Copyright by the Board of Trustees of Michigan
 #    State University (c) Copyright 2014, 2026
@@ -21,7 +21,7 @@
 #	     Michigan State University
 #	     East Lansing, MI 48824-1321
 
-def getServerPort(host: str, user: str, service: str='DAQMANAGER') -> int:
+def getServerPort(host: str, user: str, service: str='DAQManager') -> int:
     '''
         Return the port on which the manager is listening for
         ReST connections/requests.
@@ -33,16 +33,16 @@ def getServerPort(host: str, user: str, service: str='DAQMANAGER') -> int:
         @exeption IndexError - the service is not advertised.
         @exception OsException derived errors if the request could not be completed.
     '''
-    manager = PortManager(host)
-    service_list = manager.find({'service': service, 'user':user })
+    manager = pm.PortManager(host)
+    service_list = manager.find(service= service, user= user)
     if len(service_list) == 0:
         raise IndexError(f'The service "{service}" is not advertised by the manager')                            
-    return service_list['port']
+    return service_list[0]['port']
     
 
 def makeUrl(
     host: str, user: str, domain: str, 
-    subdomain: str = None, service:str ='DAQMANAGER'
+    subdomain: str = None, service:str ='DAQManager'
 ) -> str:
     '''
        Construct the URL part of a request.  This is suitable for use
