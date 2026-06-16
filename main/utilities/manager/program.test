@@ -679,26 +679,25 @@ tcltest::test run_9 {Ensure the program is cleaned up.} \
 -setup {
     commonSetup
     ::container::add db minimal [file normalize ~/minimal.img ] "" ""
-    puts "Activating minimal @localhost"
     ::program::add db test $echo Transitory localhost [dict create \
         container minimal parameters [list Hello world]         \
     ]
 } \
 -cleanup {
-    puts "Deactivating container minimal@locahost"
+    
     container::deactivate localhost minimal
     commonCleanup
     after 200 incr waitover;              # For the container to stop.
     vwait waitover
 } \
 -body {
-    puts "Running"
+    
     set fd [program::run db test ]
     read $fd
-    puts "read"
+    
     after 200 incr waitover
     vwait waitover
-    puts "Waited"
+    
     
     set isactive [::program::isActive test]
    # set containers [::program::activeContainers];   #Note the container persists.
