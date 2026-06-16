@@ -96,7 +96,7 @@ class KvStore_ReST:
         return json['names']
         
     
-    def list(self) -> dict:
+    def list(self) -> list[dict]:
         '''
             @return a dict of the name/values of the KV store.  The 
                 dict is keyed by key names with values the values of 
