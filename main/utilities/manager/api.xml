@@ -8592,7 +8592,7 @@ def init(self, db)
             </code></term>
             <listitem>
                <para>
-               Called when a <classname>Program</classname> is constructed.  
+               Called when a <classname>Programs</classname> is constructed.  
                The <parameter>db</parameter> is an sqlite3 connection object that
                is connected to the FRIB managed experiment configuration/database file.
                See 
@@ -8710,6 +8710,569 @@ def types(self)
                <literal>['Critical', 'Persistent', 'Transitory']</literal>
                </para>
             </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>State</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>manager_client.State</refname>
+      <refpurpose>ReST client for the manager's state operations.</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.manager_client import State
+
+state_client        = State(manager_host,...)
+manager_state       = state_client.status()
+allowed_transitions = state_client.allowed()
+response            = state_client.transition(new_desired_state)
+elapsed_run_time    = state_client.elapsed()
+response            = state_client.shutdown()
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         At its heart the managed experiment environemnt's manage server is a state machine.
+         The state machine defines both what the experiment is doing (e.g. actively taking data)
+         and what transitions to new states are legal.  This class provides access to the
+         manager's state machine via it's ReST server.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>METHODS</title>
+      <para>
+         Note that the <parameter>self</parameter> is omitted from the method signatures
+         because clients of the class implicitly supply it.
+         Many of the methods described below return a dict that is decoded from the
+         JsON returned by the manager's ReST server.  In those cases, there will always
+         be a <literal>status</literal> key which contains <literal>OK</literal> if the
+         request succeeded or <literal>ERROR</literal> if not.  On error, there will be
+         a <literal>message</literal> key with a human readable error message.
+      </para>
+      <variablelist>
+      <!-- I'll keep providing parameter types in a forlorn hope that at some point langague='python
+         will provide type annotations.
+      '-->
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>__init__</methodname>
+                  <methodparam><type>str</type> <parameter>host</parameter></methodparam>
+                  <methodparam><type>str</type> <parameter>user</parameter>
+                     <initializer>None</initializer></methodparam>
+                  <methodparam><type>str</type> <parameter>service</parameter>
+                     <initializer>'DAQManager'</initializer></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     This is implicitly called at construction time, the parameters passed in to the
+                     constructor are relayed to this method. The only required parameter is
+                     <parameter>host</parameter> which is the host in which the manager server is running.
+                     <parameter>user</parameter> is the user which started the manager.  If allowed to default
+                     to <literal>None</literal>, the current username will be used to qualify the service name
+                     translation. <parameter>service</parameter> is the service the manager advertised with the
+                     port manager server.  If not provided, the default is <literal>DAQManager</literal>
+                     which is the default service advertised by the manager.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>status</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the current manager state.  This is a string that is one of:
+                     <itemizedlist>
+                        <listitem>
+                           <para>
+                              <literal>SHUTDOWN</literal>  - the system is shutdown, no programs associated
+                              witht the experiment are running other than the manager.
+                           </para>
+                        </listitem>
+                        <listitem>
+                           <para>
+                              <literal>BOOT</literal> - The system has been booted.  The core, persistent 
+                              programs are running in the appropriate containers.
+                           </para>
+                        </listitem>
+                        <listitem>
+                           <para>
+                              <literal>HWINIT</literal> - The system has perfomed one time hardware
+                              initialization.
+                           </para>
+                        </listitem>
+                        <listitem>
+                           <para>
+                              <literal>BEGIN</literal> - Data taking is in progress.
+                           </para>
+                        </listitem>
+                        <listitem>
+                           <para>
+                              <literal>END</literal> - Data taking has ended.
+                           </para>
+                        </listitem>
+                     </itemizedlist>
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                    <type /><methodname>allowed</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns a  list of the textual names of the allowed next states
+                     fromt he manager's current state.  For example, in 
+                     <literal>SHUTDOWN</literal> this will be a list containing <literal>BOOT</literal>.
+                     Only state transition requests in this list will not return an error.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /> <methodname>transition</methodname>
+                  <methodparam><type>str</type> <parameter>newstate</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Requesta a state transition to <parameter>newstate</parameter>.
+                     This method returns a decoded JsON dict.  If <literal>status</literal> is <literal>OK</literal>
+                     the dict will have a <literal>state</literal> key showing the current state.
+                     and <literal>completed</literal> with the text <literal>OK</literal> if the
+                     transition completed successfully.   
+                  </para>
+                  <para>
+                     <literal>status</literal> values of <literal>OK</literal> indicate that the server
+                     was allowed to initiate the transition. The transition itself may fail (e.g. programs run
+                     in the transition fail). the <literal>completed</literal> is used to differentiate between
+                     the two cases.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /> <methodname>elapsed</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     If the run is active, the elapsed run time is supplied in the form
+                     'd hh:mm:ss.fraction' is returned.  If not the string
+                     <literal>Inactive</literal> is returned.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /><methodname>shutdown</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Attempts to shutdown the manager server.  For obvious reasons, the server response
+                     comes before the shutown is attempted and only indicates the server will (or will not)
+                     actually try to shtudwon.   The returned value is the decoded JsON dict.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>KVStore</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>managerclient.KVStore</refname>
+      <refpurpose>Provide ReST access to the key value store of managed experiments</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.manager_client import KVStore
+
+kvclient        = KVStore(host[,...])
+value           = kvclient.value(key)
+names           = kvclient.listNames()
+name_value_list = kvclient.list()
+status          = kvclient.set(key, value)
+run_title       = kvclient.title()
+kvclient.setTitle(anewtitle)
+run_num         = kvclient.run()
+kvclient.setRun(newRunNum)
+
+
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         The managed experiment environment includes a key/value store.  This supports the storage
+         of arbitrary data associating it with a name (or key).  THe key value store keys are defined
+         by the <filename>$DAQBIN/mg_kvedit</filename>.  This class, however, provides  access to the
+         key value store via the manager's ReST server (when it is running). The Readout subsystem
+         defines two keys, <literal>title</literal> from which the Readout(s) title is supplied and
+         <literal>run</literal> from which the Readout(s) run number is supplied during the 
+         <literal>BEGIN</literal> transition (if properly set up).
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>METHODS</title>
+      <para>
+         Note that in the documentation of the methdodw below, the <parameter>self</parameter> is omitted,
+         as it is implied by the object calling the method.  
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>__init__</methodname>
+                  <methodparam><type>str</type><parameter>host</parameter></methodparam>
+                  <methodparam><type>str</type><parameter>user</parameter>
+                     <initializer>None</initializer></methodparam>
+                  <methodparam><type>str</type> <parameter>service</parameter>
+                     <initializer>'DAQManager'</initializer></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     This method is invoked as part of object construction.  THe parameters passed
+                     in construction are passed on to <methodname>__init__</methodname>.
+                     The only mandatory parameter is <parameter>host</parameter> which is the host
+                     in which the manager server is running.  If <parameter>user</parameter> is supplied,
+                     it must be the username under which the manager is running.  If not supplied or
+                     <literal>None</literal> the username of the logged in user is used.
+                     If <parameter>service</parameter> is  supplied, this is the service looked up in the
+                     portmanager to locate the port on which the manager server is listening for
+                     ReST connections.  If not supplied, the default value of <literal>DAQManager</literal>
+                     is the default servicde.
+                  </para>
+                  <para>
+                     Note that no requests are actually mande in construction.  It is possible to 
+                     construct a <classname>KVStore</classname> objrect that is unable to actually 
+                     perform any requests (e.g. the host was mispelled).
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>value</methodname>
+                  <methodparam><type>str</type><parameter>name</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Retuns the value associated with the key <parameter>name</parameter>
+                     The return value is always a string and may need conversion to the appropriate type.
+                     If the key does not exist a <classname>RuntimeError</classname> is raised.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>listNames</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns a  list of strings containing all of the keys that are defined in the
+                     Key value store.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>list</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns a list of dicts.  One per key defined in the key value store.
+                     Each lement of the list is a dict containing the keys
+                     <literal>name</literal> containing the name of a key and <literal>value</literal> containing
+                     the string value associated with that key.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='pascal'>
+                   <type /><methodname>set</methodname>
+                   <methodparam><type>str</type><parameter>name</parameter></methodparam>
+                   <methodparam><type>str</type><parameter>value</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Changes the value of the key <parameter>name</parameter> to 
+                     <parameter>value</parameter>. The return value is a JsON response decoded into a dict.
+                     the <literal>status</literal> key of this dict should be <literal>OK</literal>
+                     The <literal>name</literal> key will be the key again and <literal>value</literal>
+                     the new value, for historical reasons, quoted for Tcl (better to get it again as that
+                     removes the Tcl quoting).  If the key does not exist, a <classname>RuntimeError</classname>
+                     is raised.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+      <para>
+         In addition to the methods above, a few convenenience methods are provided for the pre-defined
+         keys used by the Readout program(s).  Note that setting these values does not affect the
+         running Redout(s) until the next <literal>BEGIN</literal> state transition.  Only the key value
+         store is modified.
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /> <methodname>title</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the run title string.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>setTitle</methodname>
+                  <methodparam><type>str</type><parameter>title</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets the new run title string to <parameter>title</parameter>
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>run</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the run number as an integer.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>setRun</methodname>
+                  <methodparam><type>int</type><parameter>run</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets the next run number to <parameter>run</parameter>
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>Logger</refentrytitle>
+      <manvolnum>3pytyhon</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>manager_client.Logger</refname>
+      <refpurpose>Provides a ReST client API for managed experiment event logging</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.manager_client import Logger
+client = Logger('localhost')
+client.enable(logger)
+client.disable(logger)
+loggers = client.list()
+client.record(1)
+if client.isRecording():
+    ...
+client.start()
+
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         The managed experiment environment supports any number of enent loggers from any
+         set of ringbuffers in the experiment.  Two types of event loggers are available;
+         <itemizedlist>
+            <listitem>
+               <para>
+                  <firstterm>partial</firstterm>  - these event loggers are like the ReadoutShell's multi logger
+                  event loggers.   Each logger logs events to a specific directory with no attempt to maintain any
+                  futher structure.
+               </para>
+            </listitem>
+            <listitem>
+               <para>
+                  <firstterm>complete</firstterm> - These loggers are like the primary event logger of the
+                  RedoutShell - a run view and  experiment view are maintained via symbolic links and
+                  metadata can be associated with each run by means of additional files/links dropped into the
+                  <filename>current</filename> directory.  Unlike the ReadoutShell, any number of complete
+                  event loggers can be defined.
+               </para>
+            </listitem>
+         </itemizedlist>
+      </para>
+      <para>
+         Individual loggers are referred to, in this module, by their destinations, that is by the directory
+         in which they store their data.  Individual event loggers can be enabled or disabled.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>METHODS</title>
+      <para>In the argument signatures shown, the <parameter>self</parameter> parameter is omitted.</para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>__init__</methodname>
+                  <methodparam><type>str</type><parameter>host</parameter></methodparam>
+                  <methodparam><type>str</type><parameter>user</parameter>
+                     <initializer>None</initializer></methodparam>
+                  <methodparam><type>str</type> <parameter>service</parameter>
+                     <initializer>'DAQManager'</initializer></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     This is invoked during the construction of a <classname>Logger</classname> object.
+                     The parameters passed to the constructor are relayed to this method.
+                     The only mandatory parameter is <parameter>host</parameter> which is the host
+                     in which the manager server is running.  <parameter>user</parameter> is optional and
+                     should be the username running the manager.  If omitted or <literal>None</literal>
+                     the logged in username is used to perform the service port lookuip.  The
+                     <parameter>service</parameter> is the name of the service that the manager
+                     advertises for its ReST server.  The default value of <literal>DAQManager</literal>
+                     is the default service name advertised by the manager server.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>enable</methodname>
+                  <methodparam><type>str</type><parameter>destination</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Enables the logger that stores data into <parameter>destination</parameter> for
+                     partial loggers, this is just their directory.  For complete loggers, this
+                     should be the top level of the directory tree they store into.
+                  </para>
+                  <para>
+                     When loggers are started, only the enabled ones get started.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>disable</methodname>
+                  <methodparam><type>str</type><parameter>destination</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Disables a logger. See <methodname>enable</methodname> above for more information.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /><methodname>list</methodname>
+                   <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns a list of dicts.  Each dict descrsibes one of the loggers configured for the
+                     managed environment.  Each dict has the following keys.
+                  </para>
+                  <itemizedlist>
+                     <listitem>
+                        <para>
+                           <literal>id</literal> A small integer that uniquely identifies the logger.
+                           THis is normally useless for this class.
+                        </para>
+                     </listitem>
+                     <listitem>
+                        <para>
+                           <literal>daqroot</literal> Containst the top level directory of the installation
+                           of FRIB/NSCLDAQ from which the event logger will be run.
+                        </para>
+                     </listitem>
+                     <listitem>
+                        <para>
+                           <literal>ring</literal> contains the URI of the ring item that data will be logged
+                           from.
+                        </para>
+                     </listitem>
+                     <listitem>
+                        <para>
+                           <literal>host</literal> the host in which the logger will be run.
+                        </para>
+                     </listitem>
+                     <listitem>
+                        <para>
+                           <literal>partial</literal> non-zero if the logger is a partial logger.
+                           If the logger is not partial, this is non-zero.
+                        </para>
+                     </listitem>
+                     <listitem>
+                        <para>
+                           <literal>destination</literal> The path to the directory in which the logger will
+                           store data.   When referring to a logger in e.g. <methodname>enable</methodname>,
+                           the value of this key should be used.
+                        </para>
+                     </listitem>
+                     <listitem>
+                        <para>
+                           <literal>critical</literal> if 1, this logger is critical. Loggers that are
+                           critical will end a run with transition to <literal>SHUTDOWN</literal> if they
+                           exit unexpectedly. 
+                        </para>
+                     </listitem>
+                     <listitem>
+                        <para>
+                           <literal>enabled</literal>  non-zero if the logger is enabled.
+                        </para>
+                     </listitem>
+                     <listitem>
+                        <para>
+                           <literal>container</literal> The name of the container definition in which the
+                           logger is run.  If a container is defined with the container wizard its name will
+                           be formed from the name of the container image and the version of FRIB/NSCLDAQ selected. 
+                           The start script for that container will run daqstart.bash for that version of
+                           the data acquisition system.
+                        </para>
+                     </listitem>
+                  </itemizedlist>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>record</methodname>
+                  <methodparam><type>int</type> <parameter>state</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Turns recording on if <parameter>state</parameter> is 1 or off if not.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /> <methodname>isRecording</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns a Boolean that is true if recording is enabled and false otherwise.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>start</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     If recording is not enabled, this method does nothing.  If it is enabled, all 
+                     enabled loggers are started.  This should be configured to run early in the 
+                     <literal>BEGIN</literal> transition.
+                  </para>
+               </listitem>
          </varlistentry>
       </variablelist>
    </refsect1>
@@ -8954,4 +9517,5 @@ for item in c.list():
       </variablelist>
    </refsect1>
 </refentry>
+
 <!-- /manpage -->
