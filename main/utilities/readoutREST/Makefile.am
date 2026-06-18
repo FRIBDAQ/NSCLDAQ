@@ -1,6 +1,6 @@
 program_scripts=rdo_titleFromKv.tcl rdo_runFromKv.tcl \
 	rdo_RunControl.tcl
-python_programs = rdo_control.py
+python_programs = rdo_control.py rdo_runFromKv.py
 server_scripts=ReadoutControl.tcl ReadoutStatus.tcl ReadoutParameters.tcl
 library_scripts=ReadoutREST.tcl ReadoutRESTClient.tcl ReadoutRESTUI.tcl \
 	rdo_utils.tcl
