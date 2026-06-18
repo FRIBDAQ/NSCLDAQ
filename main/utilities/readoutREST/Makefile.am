@@ -7,7 +7,7 @@ library_scripts=ReadoutREST.tcl ReadoutRESTClient.tcl ReadoutRESTUI.tcl \
 share_scripts=rest_init_script.tcl
 
 PythonLibDest = @prefix@/pythonLibs/nscldaq/readoutREST
-PythonModules = readoutRestClient.py
+PythonModules = readoutRestClient.py rdo_utils.py
 
 test_scripts=
 

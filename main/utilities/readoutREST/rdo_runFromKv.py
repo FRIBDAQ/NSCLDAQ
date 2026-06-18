@@ -20,9 +20,9 @@
 #	     East Lansing, MI 48824-1321
 import sys
 import os
-from nscldaq.manager_client import Programs, KVStore
+from nscldaq.manager_client import  KVStore
 from nscldaq.readoutREST.readoutRestClient import ReadoutClient
-
+from nscldaq.readoutREST.rdo_utils import getReadoutHost
 def usage() -> None:
     '''
         Print program usage on stderr.
@@ -42,26 +42,6 @@ def usage() -> None:
     print('    the value of that environment variable is used instead.', file=sys.stderr)
     
 
-def getReadoutHost(mgr_host: str, user: str, service: str, name: str) -> str:
-    '''
-        Get the host in which the named program is running:
-        @param mgr_host - where the manager is running.
-        @param user     - user running the DAQ
-        @param service  - mgr service.
-        @param name     - name of program to look up.
-    '''
-    client = Programs(mgr_host, user, service)
-    info = client.status()
-    if info['status'] != 'OK':
-        raise RuntimeError('Failed to fetch program status from server', info['message'])    
-
-    for program in info['programs']:
-        if program['name'] == name:
-            return program['host']
-    
-    # Not found:
-    
-    raise IndexError(f'There is no program named {name}')
 
 def getRunNumber(mgr_host : str, user: str, service: str) -> int:
     '''
