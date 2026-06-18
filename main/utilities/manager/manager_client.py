@@ -191,10 +191,10 @@ class Programs(_Client):
     Args:
         _Client (_type_): The standard client class is our base.
     """
-    def __init__(self, host, user=None, service='DAQManager'):
+    def __init__(self : str, host: str, user: str=None, service: str='DAQManager'):
         super().__init__(host, user, service)
         
-    def status(self):
+    def status(self) -> list[dict]:
         """status
               Returns the status of all defined programs.
         Retuns:
@@ -414,7 +414,7 @@ class OutputMonitor:
     
     
     """
-    def __init__(self, host, user=None, service='DAQManager-outputMonitor'):
+    def __init__(self, host: str, user: str |None=None, service :str='DAQManager-outputMonitor'):
         """
            We just resolve the service and store the host and port.
            Next we call our reconnect method to try to form a connection.
@@ -451,7 +451,7 @@ class OutputMonitor:
         except:
             raise Disconnected
         
-    def isConnected(self):
+    def isConnected(self) -> bool:
         """
             Returns (bool)
             True  - if the connected
@@ -459,7 +459,7 @@ class OutputMonitor:
         """   
         return self._socket is not None
     
-    def read(self):
+    def read(self) ->str:
         """Read data from the socket.  The data are assumed to be textual
         in nature and appropriately converted.  
         
