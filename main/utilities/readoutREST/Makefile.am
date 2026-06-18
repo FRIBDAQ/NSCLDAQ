@@ -1,6 +1,5 @@
-program_scripts=rdo_titleFromKv.tcl rdo_runFromKv.tcl \
-	rdo_RunControl.tcl
-python_programs = rdo_control.py rdo_runFromKv.py
+
+python_programs = rdo_control.py rdo_runFromKv.py rdo_titleFromKv.py
 server_scripts=ReadoutControl.tcl ReadoutStatus.tcl ReadoutParameters.tcl
 library_scripts=ReadoutREST.tcl ReadoutRESTClient.tcl ReadoutRESTUI.tcl \
 	rdo_utils.tcl
@@ -21,7 +20,6 @@ EXTRA_DIST=$(program_scripts) $(library_scripts) $(test_scripts) \
 
 
 install-exec-hook:
-	for f in $(program_scripts); do $(INSTALL_PROGRAM) @srcdir@/$$f @bindir@/`basename $$f .tcl`; done
 	for f in $(python_programs); do $(INSTALL_PROGRAM) @srcdir@/$$f @bindir@/`basename $$f .py`; done
 	$(mkinstalldirs) $(LIBRARY_DIR) $(SERVER_DIR)
 	for f in $(library_scripts); do $(INSTALL_DATA) @srcdir@/$$f $(LIBRARY_DIR); done
