@@ -8592,7 +8592,7 @@ def init(self, db)
             </code></term>
             <listitem>
                <para>
-               Called when a <classname>Programs</classname> is constructed.  
+               Called when a <classname>Program</classname> is constructed.  
                The <parameter>db</parameter> is an sqlite3 connection object that
                is connected to the FRIB managed experiment configuration/database file.
                See 
@@ -8884,6 +8884,216 @@ response            = state_client.shutdown()
 </refentry>
 <refentry>
    <refmeta>
+      <refentrytitle>Programs</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>manager_client.Programs</refname>
+      <refpurpose>View managed programs via manager ReST interface</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.manager_client import Programs
+pc = Programs('localhost')
+info = pc.status()
+if info['status'] == 'OK':
+   container_definitions = info['containers']
+   program_info          = info['programs']
+else:
+   print('Could not get program information:', info['message']')
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         The manager maintains programs, running them as required by state transitions.
+         Critical programs are monitored and their failure results in a forced transition to
+         <literal>SHUTDOWN</literal>  The <classname>Programs</classname> class provides
+         access to information about the programs defined and their current status.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>METHODS</title>
+      <para>
+         Note that for brevity, we don't include the <parameter>self</parameter> in the
+         method signatures below as it is implied by the object calling the method.
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type></type><methodname>__init__</methodname>
+                  <methodparam><type>str</type><parameter>host</parameter></methodparam>
+                  <methodparam><type>str</type><parameter>user</parameter>
+                     <initializer>None</initializer></methodparam>
+                  <methodparam><type>str</type><parameter>service</parameter>
+                     <initializer>'DAQManager'</initializer></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     This is called during the construction of a <classname>Programs</classname>
+                     object.  The parameters passed into the constructor are also passed in to
+                     <methodname>__init__</methodname>.
+                  </para>
+                  <para>
+                     The only required parameter is <parameter>host</parameter>, the host in which the
+                     manager server is running. If the <parameter>user</parameter> parameter is
+                     provided, it specifies the user that started the manager server.  If not supplied, 
+                     the default value, <literal>None</literal> causes the current username to be
+                     looked up and used instead.  The <parameter>service</parameter> specifies the
+                     service the manager server advertises for it ReST service with the FRIB/NSCLDAQ
+                     portmanager.  If <parameter>service</parameter> is not supplied, the default value,
+                     <literal>DAQManager</literal> is used.  <literal>DAQManager</literal> is the
+                     default service advertised by the manager server for its ReST requests.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/><methodname>status</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     THis method returns a dict.  The <literal>status</literal> key indicates the success
+                     of the request by containing <literal>OK</literal>.  The request failed if the
+                     value of <literal>status</literal> is <literal>ERROR</literal> and the
+                     human readable reason for the failure is in the <literal>message</literal> 
+                     key.
+                  </para>
+                  <para>
+                     On succeess the returned dict will have two keys that carry the status information:
+                     <literal>containers</literal> describes the set of containers defined and
+                     managed by the manager.  <literal>programs</literal> describes the programs defined
+                     and managed by the manager.
+                  </para>
+                  <para>
+                     The value of the <literal>containers</literal> key is a list of dicts. Each dict
+                     describes a container.  Each dict has the following keys:
+                  </para>
+                  <variablelist>
+                     <varlistentry>
+                           <term><literal>name</literal></term>
+                           <listitem>
+                              <para>
+                                 The name of the container.  If created by the container wizard this
+                                 will be constructed from the name of the container image and the
+                                 desried FRIB/NSCLDAQ version e.g. <literal>bookworm-12.2-009</literal>
+                              </para>
+                           </listitem>
+                     </varlistentry>
+                     <varlistentry>
+                           <term><literal>image</literal></term>
+                           <listitem>
+                              <para>
+                                 Is the path in the host system to the container image
+                              </para>
+                           </listitem>
+                     </varlistentry>
+                     <varlistentry>
+                           <term><literal>bindings</literal></term>
+                           <listitem>
+                              <para>
+                                 Is a list of bindings strings in the form accepted by the
+                                 Apptainer/Singularity <option>--bind</option> option.
+                              </para>
+                           </listitem>
+                     </varlistentry>
+                     <varlistentry>
+                           <term><literal>activiations</literal></term>
+                           <listitem>
+                              <para>
+                                 This is a list of the hosts in which this instance of the manager
+                                 activated this container.  Note that container images are acvtivated as 
+                                 persistent containers in which the manager runs programs.  If the
+                                 container is already activated in a host when the manager starts,
+                                 that host won't be in this list as it was activated by a prior instance
+                                 of the manager.  In any system, you can see which persistent images
+                                 have been activated, from a shell in the host system (not containerized
+                                 environment) by issuing the command 
+                                 <command>apptainer instance list</command>
+                              </para>
+                           </listitem>
+                     </varlistentry>
+                  </variablelist>
+                  <para>
+                     The <literal>programs</literal> is also a list of dicts.  In this case, each
+                     dict describes a program that is defined to the manager and its status, as of the
+                     time the ReST request was fulfilled.  Each of those dicts has the following keys:
+                  </para>
+                  <variablelist>
+                     <varlistentry>
+                           <term><literal>name</literal></term>
+                           <listitem>
+                              <para>
+                                 The name given to the program.  Note that the Readout Wizard, for example,
+                                 will create several programs.  The readout program itself will have
+                                 a <literal>_readout</literal> suffix.  The other programs it creates
+                                 are transitory programs, used to guide the actual readout program
+                                 through state transitions.
+                              </para>
+                           </listitem>
+                     </varlistentry>
+                     <varlistentry>
+                           <term><literal>path</literal></term>
+                           <listitem>
+                              <para>
+                                 Contains the filesystem path to the Readout program. Note that this path is
+                                 in the filesystem of the container in which it runs.
+                              </para>
+                           </listitem>
+                     </varlistentry>
+                     <varlistentry>
+                           <term><literal>type</literal></term>
+                           <listitem>
+                              <para>
+                                 Contains the program type.  This will be one of the following:
+                                 <literal>Critical</literal> program exit will result in a transition
+                                 to <literal>SHUTDOWN</literal> since this program is a required, persistent
+                                 part of the experiment, <literal>Transitory</literal> if the program is expected
+                                 to run for a short period of time (such as the programs that set the Readout's run
+                                 number in the <literal>BEGIN</literal> transition), and <literal>Persistent</literal>
+                                 which are programs that are expected to persist across the entire experiment but not
+                                 critical to its function.  For example, SpecTcl instances can exit without 
+                                 affecting data taking but normally persist for long periods of time.
+                              </para>
+                           </listitem>
+                     </varlistentry>
+                     <varlistentry>
+                           <term><literal>host</literal></term>
+                           <listitem>
+                              <para>
+                                 Contains the host in which the program will run.  Note that if a program must
+                                 run in more than one host (e.g. <literal>VMUSBReadout</literal>) it must be
+                                 given a different name for each host.
+                              </para>
+                           </listitem>
+                     </varlistentry>
+                     <varlistentry>
+                           <term><literal>container</literal></term>
+                           <listitem>
+                              <para>
+                                 The name of the container in which the program runs. Note that if a program must
+                                 run in the host system (not a containerized environment), this will be an
+                                 empty string.
+                              </para>
+                           </listitem>
+                     </varlistentry>
+                     <varlistentry>
+                           <term><literal>active</literal></term>
+                           <listitem>
+                              <para>
+                                 This will have the value <literal>1</literal> if the program is running
+                                 and <literal>0</literal> if not.
+                              </para>
+                           </listitem>
+                     </varlistentry>
+                  </variablelist>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+<refentry>
+   <refmeta>
       <refentrytitle>KVStore</refentrytitle>
       <manvolnum>3python</manvolnum>
    </refmeta>
@@ -8923,7 +9133,7 @@ kvclient.setRun(newRunNum)
    <refsect1>
       <title>METHODS</title>
       <para>
-         Note that in the documentation of the methdodw below, the <parameter>self</parameter> is omitted,
+         Note that in the documentation of the method below, the <parameter>self</parameter> is omitted,
          as it is implied by the object calling the method.  
       </para>
       <variablelist>
@@ -9271,6 +9481,136 @@ client.start()
                      If recording is not enabled, this method does nothing.  If it is enabled, all 
                      enabled loggers are started.  This should be configured to run early in the 
                      <literal>BEGIN</literal> transition.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>OutputMonitor</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>manager_client.OutputMonitor</refname>
+      <refpurpose>Allow a python program to capture output from managed programs</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.manager_client import OutputMonitor, Disconnected
+
+monitor = OutputMonitor('localhost')
+while True:
+   try:
+      text = monitor.read()
+      # Do something with the text.
+   except Disconected:
+      monitor.reconnect()
+
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         One of the main purposes of the managed experiment manager server is to 
+         run appropriate programs in approrpriate environments (containerized or native)
+         on appropriate hosts.  These programs might be persistent or transitory.
+         All depending on the experiment definition database.  The manager server,
+         catpures stdout and stderr from all of the programs it runs and, after
+         prefixing each line of text with the program name followed by a colon:
+         For example <literal>Readout_readout: Initializtion complete</literal>
+         furthermore, debugging output from the manager itself is included, between lines
+         consisting of <literal>=</literal> and lines consisting of <literal>-</literal>
+         For example:
+         <informalexample>
+            <programlisting>
+======================================
+Asked to transition to BOOT
+Completing transition: OK
+----------------------------------------
+            </programlisting>
+         </informalexample>
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>METHODS</title>
+      <para>
+         In the method signatures below, the <parameter>self</parameter> is omitted as 
+         it's implied by the object calling each method.
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type/> <methodname>__init__</methodname>
+                   <methodparam><type>str</type><parameter>host</parameter></methodparam>
+                   <methodparam><type>str</type><parameter>user</parameter>
+                     <initializer>None</initializer></methodparam>
+                   <methodparam><type>str</type><parameter>service</parameter>
+                     <initializer>'DAQManager-outputMonitor'</initializer></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Called during construction of a <classname>OutputMonitor</classname> object.
+                     The parameters passed to the constructor are passed to the
+                     <methodname>__init__</methodname> method.
+                  </para>
+                  <para>
+                     The only required parameter is the <parameter>host</parameter> which specifies the
+                     host in which the manager server is running.  This can be a DNS name or a
+                     dotted ip address string.
+                  </para>
+                  <para>
+                     The <parameter>user</parameter>  parameter supplies the username under which the
+                     manager server was started.  If not provided or <literal>None</literal> (the default
+                     value), the logged in user name will be used. 
+                  </para>
+                  <para>
+                     The <parameter>service</parameter> parameter supplies the service name the manager
+                     servers advertises with the FRIB/NSCLDAQ port manager for the output monitor service.
+                     The default value <literal>DAQManager-outputMonitor</literal> is the service
+                     advertised by the manager by default.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>reconnect</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     If the connection has been lost, this attempts to  reconnect to the manager server.
+                     This makes possible programs that monitor the output of the manager server but are
+                     tolerant of manager restarts.  If the connection fails the exception
+                     <classname>Disconnected</classname> is raised.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>isConnected</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns <literal>True</literal> if the object is known to be connected to 
+                     the server or <literal>False</literal> if not.  I should say that it is possible
+                     for the connection to be lost without the object knowing that fact.  For example,
+                     if the server drops the connection between a pair of <methodname>read</methodname>
+                     operations, the connection is not known to have lost its connection until the second
+                     read.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>read</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Attempts to do a read from the server.  If the server is conneected, the read
+                     will block until data is available.  The read data is returned as a string.
+                     If the connection is lost before data are read, a <classname>Disconnected</classname>
+                     exception is thrown.
                   </para>
                </listitem>
          </varlistentry>
