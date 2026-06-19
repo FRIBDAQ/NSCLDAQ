@@ -236,20 +236,23 @@ class RunInfo(QWidget):
         
     #  Slots that are private because they are really just signal relays:
     #  Really these could probably have been lambdas...
-    def _signalReqRunChanged(self):
+    def _signalReqRunChanged(self) -> None:
+
         # The requested run changed, signal that.
         
         reqRun = int(self._reqRun.text())
+        self._model.setRequestedRun(reqRun)
         self.requestedRunChanged.emit(reqRun)
         
-    def _signalReqTitleChanged(self):
+    def _signalReqTitleChanged(self) -> None:
         # Signal the requested title changed:
-        
-        self.requestedTitleChanged.emit(self._reqTitle.text())
+        title = self._reqTitle.text()
+        self._model.setRequestedTitle(title)
+        self.requestedTitleChanged.emit(title)
         
     ## Utiltity (internal) methods:
     
-    def _setTitleEditWidth(self):
+    def _setTitleEditWidth(self) -> None:
         # Set the width of the title line edit to 
         # hold the max chars (thank you google for this)
         # rather complex method.
@@ -286,6 +289,14 @@ if __name__ == '__main__':
     win = QMainWindow()
     widget = RunInfo(win)
     win.setCentralWidget(widget)
+    
+    # Put some initial values for requested and actuals
+    
+    widget.setTitle('This is a title')
+    widget.setRun(1)
+    
+    widget.model().setActualTitle("This is a title")
+    widget.model().setActualRun(1)
     
     # Connect to the GUI signals and just wrap those values into the
     # model which should change the actual values.
