@@ -30,7 +30,7 @@ from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QHBoxLayout, QVBoxLayo
 Constants = namedtuple('Constants', ['MANAGER_STATES', 'READOUT_STATES'])
 CONSTANTS = Constants(
     MANAGER_STATES=('SHUTDOWN', 'BOOT', 'HWINIT', 'BEGIN', 'END'),
-    READOUT_STATES =('idle', 'active', 'inconsistent')
+    READOUT_STATES =('idle', 'active', 'inconsistent', 'unresponsive')
 )
 
 
@@ -55,8 +55,9 @@ class RunStateModel(QObject):
         active   - Data is being collected.
         
         The experiment may have serveral Readouts from which events are built.
-        We therefore allow for an additional Readout collective state 
-        'inconsistent' which means that not all Readouts have the same state.
+        We therefore allow for an additional Readout collective states 
+        'inconsistent' which means that not all Readouts have the same state,
+        and 'unresponsive' which mean at least one Readout can't be polled.
         
     Attributes:
         managerState - Should be the current manager state.  Setting requires a set of valid next states
@@ -76,7 +77,7 @@ class RunStateModel(QObject):
     
     
     def __init__(self, 
-        managerInitial : str = 'SHUTDOWN', managerAllowed : str = 'BOOT',
+        managerInitial : str = 'SHUTDOWN', managerAllowed : str = ('BOOT',),
         readoutInitial: str = 'idle', 
         parent : QObject |None = None ):
         '''
@@ -95,15 +96,15 @@ class RunStateModel(QObject):
         # Validate the parameters:
         
         self._validateState(
-            managerInitial, CONSTANTS.MANAGER_STATES, 'Initial state {1} invalid must be one of {2} '
+            managerInitial, CONSTANTS.MANAGER_STATES, 'Initial state {0} invalid must be one of {1} '
         )
         self._validateStateSet(
             managerAllowed, CONSTANTS.MANAGER_STATES, 
-            'The next state {1} is invalid it must be one of {2} ' 
+            'The next state {0} is invalid it must be one of {1} ' 
         )
         self._validateState(
             readoutInitial, CONSTANTS.READOUT_STATES,
-            'Initial Readout state; {1} is invalid, must be one of {2}'
+            'Initial Readout state; {0} is invalid, must be one of {1}'
         )
         
         # Now that we know they're all good, save them:
@@ -111,6 +112,7 @@ class RunStateModel(QObject):
         self._managerState       = managerInitial
         self._managerTransitions = managerAllowed
         self._readoutState       = readoutInitial
+        
     
     
     # Attribute implementations:
@@ -129,11 +131,11 @@ class RunStateModel(QObject):
         '''
         self._validateState(
             proposed, CONSTANTS.MANAGER_STATES, 
-            'The proposed manager state {1} is not valid, must be one of {2}'
+            'The proposed manager state {0} is not valid, must be one of {1}'
         )
         self._validateStateSet(
             nextStates, CONSTANTS.MANAGER_STATES,
-            'The propposed possible transition {1} is not valid. Must be one of {2}'
+            'The propposed possible transition {0} is not valid. Must be one of {1}'
         )
         # Now success is assured:
         
@@ -154,7 +156,7 @@ class RunStateModel(QObject):
         '''
         self._validateState(
             proposed, CONSTANTS.READOUT_STATES, 
-            '{1} is not a valid Readout state.  Must be one of {2}'
+            '{0} is not a valid Readout state.  Must be one of {1}'
         )
         # Success is assured>.
         
@@ -166,7 +168,7 @@ class RunStateModel(QObject):
     
     def _validateStateSet(self, proposed : set[str], allowed: set[str], msgFormat:str):
         for state in proposed:
-            self._validateSTate(state, allowed, msgFormat)
+            self._validateState(state, allowed, msgFormat)
     
     
     def _validateState(self, proposed: str, stateSet: set[str], msgFormat:str):
@@ -197,8 +199,8 @@ class RunState(QWidget):
     transitionRequested = pyqtSignal(str)
     
     
-    def __init__(self, parent):
-        super.__init__(parent)
+    def __init__(self, parent : QObject | None= None):
+        super().__init__(parent)
         
         self._model = RunStateModel(parent=self)    # Gives us an initial state.
           
@@ -217,8 +219,8 @@ class RunState(QWidget):
         
         
         self._BootShutdown = QPushButton(self)
-        self._BeginEnd     = QPushButton(self)
-        self._HwInit       = QPushButton(self)
+        self._BeginEnd     = QPushButton('Begin', self)
+        self._HwInit       = QPushButton('HwInit', self)
         self._adjustButtons()       # Set the buttons according to the state.
         
         
@@ -239,7 +241,7 @@ class RunState(QWidget):
         self._line2.addWidget(self._HwInit)
         self._toplayout.addLayout(self._line2)
         
-        self.setLayout(self._topLayout)
+        self.setLayout(self._toplayout)
         
         # Connect our buttons clicked to 
         # hanbdlers that figure out what the 
@@ -250,6 +252,9 @@ class RunState(QWidget):
         self._BootShutdown.clicked.connect(self._bootshutdown)
         self._BeginEnd.clicked.connect(self._beginend)
         self._HwInit.clicked.connect(self._hwinit)
+        
+        self._model.managerStateChange.connect(self._newstate)
+        self._model.readoutStateChange.connect(self._adjustButtons)
         
     def model(self) -> RunStateModel:
         return self._model    
@@ -278,6 +283,11 @@ class RunState(QWidget):
     def _hwinit(self) ->None:
         self.transitionRequested.emit('HWINIT')
         
+    def _newstate(self, _state, _nexts) -> None:
+        # Actually just need to adjust the buttons:
+        
+        self._adjustButtons()
+        
         
     # Private utilties.    
     
@@ -301,12 +311,12 @@ class RunState(QWidget):
         
         if 'BEGIN' in validTransitions:
             self._BeginEnd.setText('Begin')
-            self._Begin.setEnabled(True)
+            self._BeginEnd.setEnabled(True)
         elif 'END' in validTransitions:
             self._BeginEnd.setText('End')
-            self._Begin.setEnabled(True)
+            self._BeginEnd.setEnabled(True)
         else:
-            self._Begin.setEnabled(False)
+            self._BeginEnd.setEnabled(False)
             
         # The HWINit button:
         
@@ -314,3 +324,52 @@ class RunState(QWidget):
             self._HwInit.setEnabled(True)
         else:
             self._HwInit.setEnabled(False)
+        
+        # Adjust the state labels too:
+        
+        self._mgrState.setText(self._model.managerState())
+        self._rdoState.setText(self._model.readoutState())
+            
+            
+#  Stupid test code....with hard coded state machine.
+
+if __name__ == "__main__":
+    import sys
+    from PyQt6.QtWidgets import QApplication, QMainWindow
+    
+    
+    def handleTransition(to_what):
+        model = widget.model()
+        # Run state:
+        if to_what in 'BEGIN':
+            model.setReadoutState('active')
+        elif to_what == 'SHUTDOWN':
+            model.setReadoutState('unresponsive')
+        else:
+            model.setReadoutState('idle')
+            
+        # The manager states:
+        
+        match to_what:
+            case 'SHUTDOWN':
+                model.setManagerState('SHUTDOWN', {'BOOT',})
+            case 'BOOT':
+                model.setManagerState('BOOT', {'BEGIN', 'HWINIT', 'SHUTDOWN'})
+            case 'HWINIT':
+                model.setManagerState('HWINIT', {'BEGIN', 'SHUTDOWN'})
+            case 'BEGIN':
+                model.setManagerState('BEGIN', {'END', 'SHUTDOWN'})
+            case 'END':
+                model.setManagerState('END', {'BEGIN', 'SHUTDOWN', 'HWINIT'})
+                            
+    
+    app = QApplication(sys.argv)
+    win = QMainWindow()
+    widget = RunState(win)
+    widget.transitionRequested.connect(handleTransition)
+    win.setCentralWidget(widget)
+    win.show()
+    
+    sys.exit(app.exec())
+    
+    
