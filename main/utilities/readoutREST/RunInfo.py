@@ -132,6 +132,8 @@ class RunInfo(QWidget):
             
         Attrributes:
             model (readonly)  retrieve the model.
+            title             requested title.
+            run               requested run number.
             
         
     '''
@@ -155,7 +157,7 @@ class RunInfo(QWidget):
         self._actualRun     = QLabel('0', self)
         
         self._reqRunLabel   = QLabel('Next run: ', self)
-        self._reqRun        = QSpinBox()
+        self._reqRun        = QSpinBox(self)
         self._reqRun.setMinimum(0)                    # non-negative values only.
         
         # Now lay them out:
@@ -190,6 +192,61 @@ class RunInfo(QWidget):
         
         # Hook our signals and signal relays:
         
+        # Handle the model signals:
+        
+        self._model.actualTitleChanged.connect(self.updateActualTitle)
+        self._model.actualRunChanged.connect(self.updateActualRun)
+        
+        # Relay the signals for our controls:
+        
+        self._reqRun.valueChanged.connect(self._signalReqRunChanged)
+        self._reqTitle.editingFinished.connect(self._signalReqTitleChanged)
+
+    # Attributes:
+    
+    def model(self) -> RunInfoModel:
+        return self._model
+    
+    def title(self) -> str:
+        return self._reqTitle.text()
+    def setTitle(self, title: str) -> None:
+        self._reqTitle.setText(title)
+        
+    def run(self) -> int:
+        return self._reqRun.value()
+    def setRun(self, run: int) -> None:
+        self._reqRun.setValue(run)
+        
+    # Signal handlers (slots) which are public:
+    
+    def updateActualTitle(self, title: str) -> None:
+        '''
+            Slot to update the actual title:
+            @param title  - string to put in the title edit.
+        '''
+        self._actualTitle.setText(title)
+    
+    def updateActualRun(self, run : int) -> None:
+        '''
+            slot to update the actual run number:
+            
+            @param run - the new run number.
+        '''
+        self._actualRun.setText(str(run))
+        
+    #  Slots that are private because they are really just signal relays:
+    #  Really these could probably have been lambdas...
+    def _signalReqRunChanged(self):
+        # The requested run changed, signal that.
+        
+        reqRun = int(self._reqRun.text())
+        self.requestedRunChanged.emit(reqRun)
+        
+    def _signalReqTitleChanged(self):
+        # Signal the requested title changed:
+        
+        self.requestedTitleChanged.emit(self._reqTitle.text())
+        
     ## Utiltity (internal) methods:
     
     def _setTitleEditWidth(self):
@@ -213,13 +270,28 @@ class RunInfo(QWidget):
 # Test code:
 
 if __name__ == '__main__':
+    
     from PyQt6.QtWidgets import QApplication, QMainWindow
     import sys
+    
+    
+    # Signal slots:
+    
+    def updateActualTitle(new_title: str) -> None:
+        widget.model().setActualTitle(new_title)
+    def updateActualRun(run: int) -> None:
+        widget.model().setActualRun(run)
     
     app = QApplication(sys.argv)
     win = QMainWindow()
     widget = RunInfo(win)
     win.setCentralWidget(widget)
+    
+    # Connect to the GUI signals and just wrap those values into the
+    # model which should change the actual values.
+    
+    widget.requestedTitleChanged.connect(updateActualTitle)
+    widget.requestedRunChanged.connect(updateActualRun)
     
     win.show()
     
