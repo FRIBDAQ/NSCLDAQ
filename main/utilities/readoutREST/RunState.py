@@ -63,10 +63,12 @@ class RunStateModel(QObject):
         managerState - Should be the current manager state.  Setting requires a set of valid next states
         legalTransitions (readonly) - the state transitions allowed from managerState
         readoutState - The readout state.
+        elapse4d     - Elapsed run time string
         
     Signals:
         managerStateChange(str, set[str]) - new manager state entered.
         readoutStateChange(str)            -new Readout state  entered.
+        elapsedChanged(str)                -Elapsed run time changed.
     
     Note:
         Next state validation (that is if a new state is loaded was it allowed?) is done by
@@ -74,7 +76,7 @@ class RunStateModel(QObject):
     '''
     managerStateChange = pyqtSignal(str, set)
     readoutStateChange = pyqtSignal(str)
-    
+    elapsedChanged     = pyqtSignal(str)
     
     def __init__(self, 
         managerInitial : str = 'SHUTDOWN', managerAllowed : str = ('BOOT',),
@@ -112,7 +114,7 @@ class RunStateModel(QObject):
         self._managerState       = managerInitial
         self._managerTransitions = managerAllowed
         self._readoutState       = readoutInitial
-        
+        self._elapsed            = '0 00:00:00'
     
     
     # Attribute implementations:
@@ -163,7 +165,13 @@ class RunStateModel(QObject):
         self._readoutState = proposed
         self.readoutStateChange.emit(proposed)
         
-    
+    def elapsed(self) -> str:
+        return self._elapsed
+    def setElapsed(self, elapsed : str) -> None:
+        self._elapsed = elapsed
+        self.elapsedChanged.emit(self._elapsed)
+        
+        
     #  Utility (private) methods:
     
     def _validateStateSet(self, proposed : set[str], allowed: set[str], msgFormat:str):
@@ -181,17 +189,17 @@ class RunStateModel(QObject):
 class RunState(QWidget):
     '''
         The view class for the run control/state part of the control panel.  Before I
-        start, what's explicitly _not_ here is the elapsed run time and the
-        recording toggle button. 
-        What is here is:
+        start, 
           - Button(s) to guide the system to the next state transitions.
           - Labels that show that the current states of both the Reaodut and Manager are.
+          - Elapsed time label.
         
         An accompanied RunStateModel which, in turn, is manipulated by an external controller
         provides the logic of all of this.
         
         Attributes:
             model (readonly) - Get everything you need from it.
+            elapsed          - The elapsed time string.
         Signals:
             transitionRequested(str) - Change to a new state was requested parameter is the next
                                         requested state.
@@ -211,6 +219,11 @@ class RunState(QWidget):
         
         self._rdoStateLabel  = QLabel('Readout State', self)
         self._rdoState      = QLabel(self._model.readoutState(), self)
+        
+        # And the3 elapsed time
+        
+        self._elapsedLabel   = QLabel('Elapsed Time:', self)
+        self._elapsed        = QLabel('0 00:00:00', self)
         
         # We need the following buttons:
         # Boot/Shutdown - If SHUTDOWN labeled with Boot otherwise with Shutdown
@@ -233,6 +246,8 @@ class RunState(QWidget):
         self._line1.addWidget(self._mgrState)
         self._line1.addWidget(self._rdoStateLabel)
         self._line1.addWidget(self._rdoState)
+        self._line1.addWidget(self._elapsedLabel)
+        self._line1.addWidget(self._elapsed)
         self._toplayout.addLayout(self._line1)
         
         self._line2 = QHBoxLayout(self)
@@ -255,10 +270,18 @@ class RunState(QWidget):
         
         self._model.managerStateChange.connect(self._newstate)
         self._model.readoutStateChange.connect(self._adjustButtons)
-        
+        self._model.elapsedChanged.connect(self._elapsedChanged)
+    #
+    # Attributes:
+    #    
     def model(self) -> RunStateModel:
         return self._model    
-        
+    
+    def elapsed(self) -> str:
+        return self._elapsed.text()
+    def setElapsed(self, elapsed : str) -> None:
+        self._elapsed.setText(elapsed)
+       
     # Slots (private).
     
     def _bootshutdown(self)->None:
@@ -288,7 +311,8 @@ class RunState(QWidget):
         
         self._adjustButtons()
         
-        
+    def _elapsedChanged(self, elapsed : str) -> None:
+        self.setElapsed(elapsed)  
     # Private utilties.    
     
     def _adjustButtons(self) -> None:

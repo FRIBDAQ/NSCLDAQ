@@ -123,6 +123,10 @@ class RunStateController(QObject):
         # update the readout state:
         
         self._updateReadoutState()
+        
+        # Update elapsed run time:
+        
+        self._view.model().setElapsed(self._stateClient.elapsed())
 
     def _updateManagerState(self):
         model = self._view.model()
