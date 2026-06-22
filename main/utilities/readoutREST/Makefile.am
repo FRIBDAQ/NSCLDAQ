@@ -8,7 +8,8 @@ share_scripts=rest_init_script.tcl
 PythonLibDest = @prefix@/pythonLibs/nscldaq/readoutREST
 PythonModules = readoutRestClient.py rdo_utils.py \
 	RunInfo.py RunInfoController.py \
-	RunState.py RunStateController.py
+	RunState.py RunStateController.py \
+	Eventlog.py
 
 test_scripts=
 
