@@ -88,7 +88,7 @@ class RunStateController(QObject):
         
         self._timer.setInterval(CONSTANTS.POLL_MS)
         self._timer.setSingleShot(False)
-        self._time.timeout.connect(self._poll)
+        self._timer.timeout.connect(self._poll)
     def start(self) -> None:
         '''
             Start operating.
@@ -108,7 +108,7 @@ class RunStateController(QObject):
         # @todo In the future we may report json 'ERROR' status in some way.
         # One error case I can see is if there are more than one of us and someone's
         # change the state in between our polls in a way that makes newstate invalid.
-        
+
         self._stateClient.transition(newstate)
         
     def _poll(self) -> None:
@@ -126,7 +126,7 @@ class RunStateController(QObject):
 
     def _updateManagerState(self):
         model = self._view.model()
-        model.setManagerState(self._stateClient.state(), self._stateClient.allowed())
+        model.setManagerState(self._stateClient.status(), set(self._stateClient.allowed()))
        
         
     def _updateReadoutState(self):
@@ -138,7 +138,7 @@ class RunStateController(QObject):
         for readout in self._readouts:
             name   = readout[0]
             service= readout[1] if readout[1] is not None else CONSTANTS.DEFAULT_READOUT_REST_SERVICE
-            host   = rdo_utils.getReadoutHost(self._host, self._user, self.service, name)
+            host   = rdo_utils.getReadoutHost(self._host, self._user, self._service, name)
             model  = self._view.model()
             client = readoutRestClient.ReadoutClient(host, service, self._user)
             try:
@@ -160,3 +160,22 @@ class RunStateController(QObject):
             
                 
             
+if __name__ == "__main__":
+    from PyQt6.QtWidgets import QApplication, QMainWindow
+    from RunState import RunState, RunStateModel
+    import sys
+
+    # Hardcoded Readouts:
+    #                 name             ReST service
+    readouts  =[('Readout_readout', 'ReadoutREST'),]
+
+    app = QApplication(sys.argv)
+    win = QMainWindow()
+    view = RunState(win)
+    win.setCentralWidget(view)
+    win.show()
+    
+    controller = RunStateController(readouts, view, 'localhost', parent = view)
+    controller.start()
+    app.exec()
+    
