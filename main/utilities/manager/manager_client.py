@@ -76,6 +76,7 @@ class _Client:
         """
         self._port = _service_port(host, service, 30000, user)
         self._host = host
+        self._user = user if user is not None else _getlogin()
         
     def _create_uri(self, request: str):
         return f'http://{self._host}:{self._port}{request}'
@@ -105,7 +106,8 @@ class _Client:
             raise RuntimeError(json['message'])
         return json
     
-    
+    def getUser(self) -> str:
+        return self._user
     
 
 class State(_Client):
@@ -157,7 +159,7 @@ class State(_Client):
         Note:
             SHUTDOWN when already SHUTDOWN seems to hang...does for Tcl client as well
         """
-        parameters = {'user': _getlogin(), 'state': newstate}  
+        parameters = {'user': self.getUser(), 'state': newstate}  
         uri = self._create_uri('/State/transition')
         json = self._post(uri, parameters)
         return json
@@ -182,7 +184,7 @@ class State(_Client):
         '''
         
         uri = self._create_uri('/State/shutdown')
-        parameters = {'user' : _getlogin()}
+        parameters = {'user' : self.getUser()}
         return self._post(uri, parameters)
 
 class Programs(_Client):
@@ -282,7 +284,7 @@ class KVStore(_Client):
             RunTimeError if the key does not exist. 
         """
         uri = self._create_uri('/KVStore/set')
-        parameters = {'user': _getlogin(), 'name': name, 'value': value}
+        parameters = {'user': self.getUser(), 'name': name, 'value': value}
         json = self._post(uri, parameters)
         return json
     
@@ -334,7 +336,7 @@ class Logger(_Client):
             destination (str): Logger destination.
         """
         uri = self._create_uri('/Loggers/enable')
-        parameters = {'logger': destination, 'user': _getlogin()}
+        parameters = {'logger': destination, 'user': self.getUser()}
         self._post(uri, parameters)
     
     def disable(self, destination: str) ->  None:
@@ -344,7 +346,7 @@ class Logger(_Client):
             destination (str): Logger destination.
         """
         uri = self._create_uri("/Loggers/disable")
-        parameters = {'logger': destination, 'user': _getlogin()}
+        parameters = {'logger': destination, 'user': self.getUser()}
         self._post(uri, parameters)
     
     def list(self) -> list[dict]:
@@ -377,7 +379,7 @@ class Logger(_Client):
         """
         
         uri  = self._create_uri('/Loggers/record')
-        parameters = {'user': _getlogin(), 'state': 1 if state else 0}
+        parameters = {'user': self.getUser(), 'state': 1 if state else 0}
         self._post(uri, parameters)
     
     def isRecording(self) -> bool:
@@ -391,7 +393,7 @@ class Logger(_Client):
         """
         
         uri = self._create_uri('/Loggers/start')
-        parameters = {'user': _getlogin()}
+        parameters = {'user': self.getUser()}
         self._post(uri, parameters)
         
 
