@@ -265,10 +265,10 @@ class RunState(QWidget):
         # The boot shutdown button was clicked:
         
         valids = self._model.legalTransitions()
-        if 'SHUTDOWN' in valids:
-            t = 'SHUTDOWN'
-        else:
+        if 'BOOT' in valids:
             t = 'BOOT'
+        else:
+            t = 'SHUTDOWN'
     
         self.transitionRequested.emit(t)
         
@@ -295,7 +295,7 @@ class RunState(QWidget):
         # this is driven completely off the valid next states:
         
         validTransitions = self._model.legalTransitions()
-        
+    
         # The boot/shutdown button:
         
         if 'BOOT' in validTransitions:
