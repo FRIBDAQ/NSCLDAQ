@@ -333,7 +333,7 @@ class Logger(QCheckBox):
        Provides a view class that can be used with LoggerModel.
        This is really just a checkbutton that follows signals from
        the LoggerModel it contains and signal requests for change in state
-       to the outside world via its chekStateChanged signal.
+       to the outside world via its clicked signal.
        
        Since this class derives from a QCheckBox all of the methods,
        properties and slots are available to clients.
@@ -356,8 +356,16 @@ class Logger(QCheckBox):
                            else Qt.CheckState.Unchecked)
         
         self._model.changed.connect(self._modelChanged)
-        
-    def _modelChanged(self, state : bool) -> None:
+    
+    
+    # Attributes:
+    
+    def model(self) -> LoggerModel:
+        return self._model
+     
+    # Private slot(s):
+       
+    def _modelChanged(self, state : bool) -> None
         self.setCheckState(Qt.CheckState.Checked if state else Qt.CheckState.Unchecked)
         
 
@@ -375,6 +383,18 @@ if __name__ == '__main__':
         {'ring': 'tcp://spdaq10/s800', 'host':'localhost', 'destination':'/home/ron/s800',
          'partial': True, 'enabled': False, 'critical': False}
     ]
+
+    # Signal handlers:
+    
+    def change_enable():
+        # Change the overall enable:
+        
+        state = enable.checkState()   # A Qt.CheckState.xxxx value.
+        enable_state = True if state == Qt.CheckState.Checked else False
+        enable.model().setEnabled(enable_state)
+        
+    
+    # main entry point:
 
     app = QApplication(sys.argv)
     win = QMainWindow()
@@ -395,6 +415,10 @@ if __name__ == '__main__':
     cfg_model = config.model()
     for logger in loggers:
         cfg_model.addLogger(logger)
+    
+    # Handle the view signals:
+    
+    enable.clicked.connect(change_enable)
     
     # Set the main widget:
     
