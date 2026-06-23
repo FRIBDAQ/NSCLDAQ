@@ -214,7 +214,7 @@ class LoggerEnableController(QObject):
 # Test code:
 
 if __name__ == '__main__':
-    import Eventlog
+    import nscldaq.readoutREST.Eventlog as Eventlog
     from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
     import sys
 
