@@ -96,7 +96,7 @@ class LoggerConfigModel(QObject):
         
     # Attributes:
     
-    def loggers(self) -> set[dict]:
+    def loggers(self) -> list[dict]:
         return self._loggers
 
     #  Methods:
@@ -144,7 +144,7 @@ class LoggerConfigModel(QObject):
         # Find a logger or raise if the logger does not exist:
         
         logger = [l for l in self._loggers if l['destination'] == dest]
-        if len(logger > 0):
+        if len(logger) > 0:
             return logger[0]    # It's a  list.
         else:
             raise IndexError(f'No logger to {dest}')
@@ -320,7 +320,7 @@ class LoggerConfig(QTableWidget):
     
     def _findLoggerRow(self, dest: str) -> int:
         
-        matches = self.findItem(dest, 0)
+        matches = self.findItems(dest, Qt.MatchFlag.MatchExactly)
         if len(matches) == 0:
             raise IndexError(f'There is no logger with the destination {dest}')
         
@@ -365,7 +365,7 @@ class Logger(QCheckBox):
      
     # Private slot(s):
        
-    def _modelChanged(self, state : bool) -> None
+    def _modelChanged(self, state : bool) -> None:
         self.setCheckState(Qt.CheckState.Checked if state else Qt.CheckState.Unchecked)
         
 
@@ -384,6 +384,8 @@ if __name__ == '__main__':
          'partial': True, 'enabled': False, 'critical': False}
     ]
 
+    toggles = 0
+
     # Signal handlers:
     
     def change_enable():
@@ -392,7 +394,28 @@ if __name__ == '__main__':
         state = enable.checkState()   # A Qt.CheckState.xxxx value.
         enable_state = True if state == Qt.CheckState.Checked else False
         enable.model().setEnabled(enable_state)
+    
+    def logger_changed(dest : str, state: bool)  -> None:
+    
+        # reflect this in the model but also:
+        # after 5 toggles, delete logger #0 in the model.
+        # after 7 toggles, put it back.
+        global toggles
+
+        model = config.model()
+        if state :
+            model.enableLogger(dest)
+        else:
+            model.disableLogger(dest)
+        toggles += 1
         
+        if toggles == 5:
+            model.deleteLogger(loggers[0]['destination'])
+        
+        if toggles == 7:
+            model.addLogger(loggers[0])
+        
+
     
     # main entry point:
 
@@ -419,6 +442,7 @@ if __name__ == '__main__':
     # Handle the view signals:
     
     enable.clicked.connect(change_enable)
+    config.enableChanged.connect(logger_changed)
     
     # Set the main widget:
     
