@@ -92,7 +92,7 @@ class LoggerConfigModel(QObject):
         # The set, when populated is a set of dict describedi n the signals section
         # of the class documentation.
          
-        self._loggers = set()
+        self._loggers = list()
         
     # Attributes:
     
@@ -108,8 +108,8 @@ class LoggerConfigModel(QObject):
             The addLogger signal is emitted with the logger passed
             as its value.  
         '''
-        self._loggers.add(logger)
-        self.addLogger.emit(logger)
+        self._loggers.append(logger)
+        self.loggerAdded.emit(logger)
         return self
     
     def deleteLogger(self, dest : str) -> Self:
@@ -174,7 +174,7 @@ class LoggerModel(QObject):
             @param parent - parent object, if there is one.
             @param state  - initial state of the enable.
         '''
-        super().__init__(state)
+        super().__init__(parent)
         self._state = state
         
     # Attributes:
@@ -190,7 +190,7 @@ class LoggerModel(QObject):
     
 # views:
 
-class LoggerConfig(QWidget):
+class LoggerConfig(QTableWidget):
     '''
         This is a view that's intended for use with the LoggerConfigModel.  We, sadly,
         can't use a QTableView because it's a pain to put a widget in it and we want
@@ -220,18 +220,18 @@ class LoggerConfig(QWidget):
         
         # Make the table widget and set its headings:
         
-        self._view = QTableWidget(self)
-        self._view.setRowCount(5)
-        self._view.setHorizontalHeaderLabels(
+        
+        self.setColumnCount(5)
+        self.setHorizontalHeaderLabels(
             ['Ring', 'Destination', 'P', 'C', 'Enabled']
         )
-        
+        self.resizeColumnsToContents()
         # Connect to the model's signals so we can maintain the view:
         
-        self._model.loggerAdded.connect(self._addLogger)
-        self._model.loggerDeleted.connect(self._deleteLogger)
-        self._model.loggerEnable.connect(self._enableLogger)
-        self._model.loggerDisable.connect(self._disableLogger)
+        self._model.loggerAdded.connect(self.addLogger)
+        self._model.loggerDeleted.connect(self.deleteLogger)
+        self._model.loggerEnabled.connect(self.enableLogger)
+        self._model.loggerDisabled.connect(self.disableLogger)
         
     
     ### attributes:
@@ -253,20 +253,24 @@ class LoggerConfig(QWidget):
         '''
         # Add a new row saving the index of the new row (they count from 0).
         
-        rowIndex = self._view.rowCount()
-        self._view.setRowCount(rowIndex+1)
+        rowIndex = self.rowCount()
+        self.setRowCount(rowIndex+1)
         
-        self._view.setItem(rowIndex, 0, QTableWidgetItem(logger['ring']))
-        self._view.setItem(rowIndex, 1, QTableWidgetItem(logger['destination']))
-        self._view.setItem(rowIndex, 2, QTableWidgetItem('X' if logger['partial'] else ' '))
-        self._view.setItem(rowIndex, 3, QTableWidgetItem('X' if logger['critical'] else ' '))
+        self.setItem(rowIndex, 0, QTableWidgetItem(logger['ring']))
+        self.setItem(rowIndex, 1, QTableWidgetItem(logger['destination']))
+        self.setItem(rowIndex, 2, QTableWidgetItem('X' if logger['partial'] else ' '))
+        self.setItem(rowIndex, 3, QTableWidgetItem('X' if logger['critical'] else ' '))
         
-        # Now the checkbutton:
+        # Now the checkbutton note that as of the time I'm writing this
+        # the distribution of Qt in our containers is < 6.7 so
+        # the checkStateChanged signal is not av ailable for use.
         
-        widget = QCheckBox(self._view)
+        widget = QCheckBox(self)
         widget.setCheckState(Qt.CheckState.Checked if logger['enabled'] else Qt.CheckState.Unchecked)
-        widget.checkStateChanged.connect(self._enableCHanged)
-        self._view.setCellWidget(rowIndex, 4, widget)  
+        widget.clicked.connect(self._enableChanged)
+        self.setCellWidget(rowIndex, 4, widget)  
+        
+        self.resizeColumnsToContents()
         
     def deleteLogger(self, dest: str) -> None:
         '''
@@ -276,7 +280,7 @@ class LoggerConfig(QWidget):
             @throws IndexError if there's no such logger.
         '''
         row = self._findLoggerRow(dest)
-        self._view.removeRow(row)
+        self.removeRow(row)
         
     def enableLogger(self, dest: str) -> None:
         '''
@@ -285,7 +289,7 @@ class LoggerConfig(QWidget):
             @param dest - logger destination
         '''
         row = self._findLoggerRow(dest)
-        widget = self._view.cellWidget(row, 4)
+        widget = self.cellWidget(row, 4)
         widget.setCheckState(Qt.CheckState.Checked)
     
     def disableLogger(self, dest: str) -> None:
@@ -296,25 +300,27 @@ class LoggerConfig(QWidget):
             
         '''
         row = self._findLoggerRow(dest)
-        widget = self._view.cellWidget(row, 4)
+        widget = self.cellWidget(row, 4)
         widget.setCheckState(Qt.CheckState.Unchecked)
         
-    def _enableChanged(self, state: int) -> None:
+    def _enableChanged(self) -> None:
         
-        # called when a checkbox has signalled a change.  We need to figure out
+        # called when a checkbox has been clicked. signalled a change.  We need to figure out
         # which checkbox it is, get the logger destination, figure out the new state
         # and emit the enableChanged signal:
         
-        row = self._view.currentRow()
-        destination = self._view.item(row, 1).text()
-        enabled     = True if state == Qt.CheckState.CHecked else False
+        row = self.currentRow()
+        widget  = self.cellWidget(row, 4)
+        state  = widget.checkState()
+        destination = self.item(row, 1).text()
+        enabled     = True if state == Qt.CheckState.Checked else False
 
         self.enableChanged.emit(destination, enabled)
         
     
     def _findLoggerRow(self, dest: str) -> int:
         
-        matches = self._view.findItem(dest, 0)
+        matches = self.findItem(dest, 0)
         if len(matches) == 0:
             raise IndexError(f'There is no logger with the destination {dest}')
         
@@ -322,8 +328,79 @@ class LoggerConfig(QWidget):
         return row
         
         
-        
-        
+class Logger(QCheckBox):
+    '''
+       Provides a view class that can be used with LoggerModel.
+       This is really just a checkbutton that follows signals from
+       the LoggerModel it contains and signal requests for change in state
+       to the outside world via its chekStateChanged signal.
+       
+       Since this class derives from a QCheckBox all of the methods,
+       properties and slots are available to clients.
+       
+       We instantiate labeled as "Record"
+       
+       we also have the readonly properly 
+       
+       model  - returns the model we're shadowing.
+    '''
     
+    def __init__(self, parent : QObject=None):
+        super().__init__('Recording', parent)
+        self._model = LoggerModel(self)
         
+        # Set our state to match the model and establish our slot to track
+        # the model's changes:
         
+        self.setCheckState(Qt.CheckState.Checked if self._model.enabled() 
+                           else Qt.CheckState.Unchecked)
+        
+        self._model.changed.connect(self._modelChanged)
+        
+    def _modelChanged(self, state : bool) -> None:
+        self.setCheckState(Qt.CheckState.Checked if state else Qt.CheckState.Unchecked)
+        
+
+#  Test code
+
+if __name__ == '__main__':
+    from PyQt6.QtWidgets import QApplication, QMainWindow, QHBoxLayout
+    import sys
+    
+    # Some logger definitions for show:
+    
+    loggers = [
+        {'ring': 'tcp://localhost/ron', 'host':'localhost', 'destination':'/home/ron/events',
+         'partial': False, 'enabled': True, 'critical': True},
+        {'ring': 'tcp://spdaq10/s800', 'host':'localhost', 'destination':'/home/ron/s800',
+         'partial': True, 'enabled': False, 'critical': False}
+    ]
+
+    app = QApplication(sys.argv)
+    win = QMainWindow()
+    
+    widget = QWidget(win)
+    layout = QHBoxLayout()
+    widget.setLayout(layout)
+    
+    # Add the UI elements we're testing:
+    
+    config = LoggerConfig(widget)
+    enable = Logger(widget)
+    layout.addWidget(config)
+    layout.addWidget(enable)
+    
+    # Add the logger defs to the config model:
+    
+    cfg_model = config.model()
+    for logger in loggers:
+        cfg_model.addLogger(logger)
+    
+    # Set the main widget:
+    
+    win.setCentralWidget(widget)
+    win.show()
+    
+    # Start the app:
+    
+    sys.exit(app.exec())
