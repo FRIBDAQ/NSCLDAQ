@@ -90,7 +90,7 @@ class RunStatisticsModel(QStandardItemModel):
         for which,stats in self._items.items():
             result[which] = dict()
             for name,item in stats.items():
-                result[stats][name] = int(item.text())
+                result[which][name] = int(item.text())
     
         return result
     
@@ -100,8 +100,8 @@ class RunStatisticsModel(QStandardItemModel):
             in the class docstring.
         '''
             
-        for which, statistic in statistics:
-            for name, value in statistics:
+        for which, statistic in statistics.items():
+            for name, value in statistic.items():
                 self._items[which][name].setText(str(value))
 
     #  Utilities:
@@ -131,12 +131,34 @@ class RunStatistics(QTableView):
 ## Test code:
 
 if __name__  == "__main__":
+    from PyQt6.QtCore    import QTimer
     from PyQt6.QtWidgets import QApplication, QMainWindow
     import sys
+
+    def update() -> None:
+        # Fake statistics update.
+        
+        model = widget.model()
+        add = 100
+        statistics = model.statistics()
+        
+        for section, statdict in statistics.items():
+            for item, counter in statdict.items():
+                statistics[section][item] = counter + add
+                add = add * 2
+                
+        model.setStatistics(statistics)
+        
 
     app = QApplication(sys.argv)
     win = QMainWindow()
     widget = RunStatistics(win)
+    
+    timer = QTimer()
+    timer.setInterval(1000)
+    timer.setSingleShot(False)
+    timer.timeout.connect(update)
+    timer.start()
     
     
     win.setCentralWidget(widget)
