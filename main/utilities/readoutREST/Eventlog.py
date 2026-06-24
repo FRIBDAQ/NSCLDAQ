@@ -256,10 +256,21 @@ class LoggerConfig(QTableWidget):
         rowIndex = self.rowCount()
         self.setRowCount(rowIndex+1)
         
-        self.setItem(rowIndex, 0, QTableWidgetItem(logger['ring']))
-        self.setItem(rowIndex, 1, QTableWidgetItem(logger['destination']))
-        self.setItem(rowIndex, 2, QTableWidgetItem('X' if logger['partial'] else ' '))
-        self.setItem(rowIndex, 3, QTableWidgetItem('X' if logger['critical'] else ' '))
+        ring = QTableWidgetItem(logger['ring'])
+        ring.setFlags(Qt.ItemFlag.ItemIsEnabled)
+        self.setItem(rowIndex, 0, ring)
+        
+        dest = QTableWidgetItem(logger['destination'])
+        dest.setFlags(Qt.ItemFlag.ItemIsEnabled)
+        self.setItem(rowIndex, 1, dest)
+        
+        partial = QTableWidgetItem('X' if logger['partial'] else ' ')
+        partial.setFlags(Qt.ItemFlag.ItemIsEnabled)
+        self.setItem(rowIndex, 2, partial)
+        
+        critical = QTableWidgetItem('X' if logger['critical'] else ' ')
+        critical.setFlags(Qt.ItemFlag.ItemIsEnabled)
+        self.setItem(rowIndex, 3, critical)
         
         # Now the checkbutton note that as of the time I'm writing this
         # the distribution of Qt in our containers is < 6.7 so
