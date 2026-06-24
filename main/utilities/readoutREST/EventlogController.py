@@ -270,7 +270,16 @@ class LoggerConfigController(QObject):
         # Start the timer for the logger state polls.
         
         self._timer.start()
+    
+    # Private methods.
+    
+    def _initModel(self) -> None:
+        # Load the model from the server:
         
+        loggers = self._logClient.list()
+        for logger in loggers:
+            self._view.model().addLogger(logger)    
+           
     def _updateRunState(self, new_state: str) -> None:    
         #  We can update enables only as long as the system is not in BEGIN.
         
@@ -306,7 +315,7 @@ class LoggerConfigController(QObject):
         model_logger_list = model.loggers()
         model_loggers    = {x['destination'] : x for x in model_logger_list}
         
-        server_logger_list = self._client.list()
+        server_logger_list = self._logClient.list()
         server_loggers    = {x['destination'] : x for x in server_logger_list}
         
         # Remove any loggers in model_loggers not in server_loggers:
@@ -386,12 +395,16 @@ if __name__ == '__main__':
     layout = QVBoxLayout()
     widget.setLayout(layout)
     
-    # MVC for logger enables:
+    # MVC for g;pbal; logger enable:
     enable = Eventlog.Logger(widget)
     layout.addWidget(enable)
     enable_controller = LoggerEnableController(enable, 'localhost', parent=widget)
     
-
+    # MVC for individual logger enables:
+    
+    config = Eventlog.LoggerConfig(widget)
+    layout.addWidget(config)
+    config_controller = LoggerConfigController(config, 'localhost', parent=widget)
     
     #  Start the application:
     
