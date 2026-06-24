@@ -210,7 +210,164 @@ class LoggerEnableController(QObject):
         enable_state = True if state == Qt.CheckState.Checked else False
         self._client.record(enable_state)
         
+    
 
+class LoggerConfigController(QObject):
+    '''
+        A controller in the MVC pattern sense mediating between the
+        Event log configuration view/model and the managed experiment
+        environment.  We need to:
+        - Poll the state and ghost the view if we're in the BEGIN state.
+        - Poll the configuration and update it in the model if it changes.
+          This is a bit more complex... For each poll, we need to:
+          * See if an existing logger changed configuration  in which case we
+            delete and re-create it.
+          * See if an existing logger has been removed, in which case delete it.
+          * See if a new logger has popped into existence, in which case, add it.
+          * See if an existing logger has changed enable state in which case update that state.
+        - connect to the view's enableChanged signal, and make the appropriate server request.
+        
+        
+    '''
+    def __init__(
+        self, view,
+        host: str, user : str | None = None, service :str = 'DAQManager', 
+        parent : QObject | None = None
+    ):
+        '''
+            @param view - the view object, must be duck type compatible with EventLog.LoggerConfig
+            @param host - host the manager server is running in.
+            @param user - (Optional defaults to None) User that ran the manager server.
+                          If None, the current logged in user is used.
+            @param service - (Optional defaults to 'DAQManager') Provides the name of the ReST service
+                         advertised  by the manager server.  If not supplied, the default service name
+                         is used.
+            @para parent - (Optional defaults to None) - Our parent object in the Qt6 sense of the word.
+        '''
+        super().__init__(parent)
+        
+        self._view = view
+        
+        # Get an instancde of our state poller and our logger client:
+        
+        self._statePoller = StatePollFactory.getInstance(host, user, service)
+        self._logClient   = Logger(host, user, service)
+        
+        self._initModel()                 # Set the initial set of loggers.
+        
+        # Create a timer to for polling the logger states:
+        
+        self._timer = QTimer(self)    
+        self._timer.setInterval(CONSTANTS.POLL_MS)
+        self._timer.setSingleShot(False)
+        
+        # Connect to the various signals
+        
+        self._statePoller.stateChanged.connect(self._updateRunState)
+        self._view.enableChanged.connect(self._changeEnable)
+        self._timer.timeout.connect(self._updateLoggers)
+        
+        # Start the timer for the logger state polls.
+        
+        self._timer.start()
+        
+    def _updateRunState(self, new_state: str) -> None:    
+        #  We can update enables only as long as the system is not in BEGIN.
+        
+        if new_state == 'BEGIN':
+            live = False
+        else:
+            live = True
+        self._view.setEnabled(live)
+        
+    def _changeEnable(self, which : str, enable : bool) -> None:
+        # Tell the server to change the state of a logger.  
+        # which - the destination of the logger that changed.
+        # enable - True to turn on , False to turn of.
+        # Presumably the next _updateLoggers call will make the model/view
+        # update.  Letting that take care of it handles multlple controllers
+        # properly.
+        #
+        if enable:
+            self._logClient.enable(which)
+        else:
+            self._logClient.disable(which)
+            
+    def _updateLoggers(self):
+        # This is probably the most complicated chunk of code. 
+        # See the class comments for a list of what we have to do:
+        
+        # To begin with throw the loggers the model knows about
+        # and the ones the manager server knows about into maps that are
+        # indexed by the destination as that's unique:
+        # That can be done trough the magic of a dict comprehension:
+        
+        model = self._view.model()
+        model_logger_list = model.loggers()
+        model_loggers    = {x['destination'] : x for x in model_logger_list}
+        
+        server_logger_list = self._client.list()
+        server_loggers    = {x['destination'] : x for x in server_logger_list}
+        
+        # Remove any loggers in model_loggers not in server_loggers:
+        
+        for ml in model_loggers:
+            if ml not in server_loggers.keys():
+                model.deleteLogger(model_loggers[ml]['destination'])
+        
+        # Add any loggers in server loggers that are _not_ in model_loggers.
+        
+        for sl in server_loggers:
+            if sl not in model_loggers.keys():
+                model.addLogger(server_loggers[sl])
+        
+
+        # If loggers in server loggers differ in definition from the same logger in
+        # the model, delete and re-enter it...remove that entry from the
+        # model_loggers to exempt it from checking to update the enable state since we just
+        # implicitly set it properly.
+        
+        
+        for dest, sl in server_loggers.items():
+            if dest in model_loggers.keys() and      \
+                not self.compare_loggers(sl, model_loggers[dest]):
+                model.deleteLogger(dest)
+                model.addLogger(sl)
+                del model_loggers[dest]
+        
+        
+        # For the loggers in the server log list, if they existin
+        # in the model but their enable state differs, 
+        # Update that as well.  Note any sever loggers _not_ in the
+        # model logger list have been set in the model from the server logger list and
+        # therefore have the correct enable state.
+        
+        
+        for dest, sl in server_loggers.items():
+            if dest in model_loggers.keys() and \
+                sl['enabled'] != model_loggers[dest]['enabled']:
+                if sl['enabled']:
+                    model.enableLogger(dest)
+                else:
+                    model.disableLogger(dest)
+    
+    # Utility method to see if logger definition changed.
+        
+    def compare_loggers(self, l1: dict, l2: dict) -> bool:
+        # Determine if two loggers are the same (not considering
+        # their ids, enable state and destination) as the
+        # destination is assumed the same.
+        
+        return (
+            l1['ring'] == l2['ring']        and
+            l1['daqroot'] == l2['daqroot']  and
+            l1['host'] == l2['host']        and
+            l1['partial'] == l2['partial']  and
+            l1['critical'] == l2['critical'] and
+            l1['container'] == l2['container']
+        )
+        
+    
 # Test code:
 
 if __name__ == '__main__':
