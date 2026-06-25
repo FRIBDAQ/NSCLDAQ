@@ -6,6 +6,7 @@
     
     @file RunInfoController.py
     @brief Provide controller (MVC sense) for Run Info and the manager server.
+    @author Ron Fox
 '''
 
 #    This software is Copyright by the Board of Trustees of Michigan

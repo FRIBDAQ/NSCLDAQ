@@ -1,6 +1,10 @@
 '''
     Provides the model and view for Readout statistics.  The readout provide the
     per run and cumulative trigger statistics for a readout program.
+    
+    @file ReadoutStatistics.py
+    @brief Provides a model and view for Readout trigger statistics.
+    @author Ron Fox
 '''
 
 

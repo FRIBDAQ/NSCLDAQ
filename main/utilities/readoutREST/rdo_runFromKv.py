@@ -5,6 +5,9 @@
     via a Readout ReST server.
     
     $DAQBIN/rod_runFromKv host user program
+@file rdo_runFromKv.py
+@brief Program to set a readout's run number from the Key value store in the manager.
+@author Ron Fox
 '''
 
 #    This software is Copyright by the Board of Trustees of Michigan

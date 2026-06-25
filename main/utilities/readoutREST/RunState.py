@@ -7,6 +7,9 @@
     The controller for thie MVC pattern is external so that it could
     be plugged into more than one mechanism of control/status.
     
+    @file RunState.py
+    @brief Model and view for the state of a run.
+    @author Ron Fox    
     
 '''
 

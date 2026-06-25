@@ -1,7 +1,10 @@
 '''
     readoutRestClient provides a Python client for the Readout Rest server.
     The client has functionality very similar to that of the Tcl rest client.
-    
+
+@file readoutRestClient.py
+@brief Provide a ReST client for readouts runing the ReST server plugin.
+@author Ron Fox.    
 '''
 
 import requests

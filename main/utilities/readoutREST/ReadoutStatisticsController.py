@@ -2,6 +2,10 @@
    Provides a controller class that integrates the ReadoutStatistcs Model/View
    with the managed experiment environment given a Readout in it runs the
    ReST server.
+   
+   @file ReadoutStatisticsController.py
+   @brief Controller mediating between the readout statistics MV and the manager and a Readout.
+   @author Ron Fox
 '''
 
 #    This software is Copyright by the Board of Trustees of Michigan

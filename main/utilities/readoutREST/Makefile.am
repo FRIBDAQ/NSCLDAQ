@@ -10,7 +10,8 @@ PythonModules = readoutRestClient.py rdo_utils.py \
 	RunInfo.py RunInfoController.py \
 	RunState.py RunStateController.py \
 	Eventlog.py EventlogController.py \
-	ReadoutStatistics.py ReadoutStatisticsController.py
+	ReadoutStatistics.py ReadoutStatisticsController.py \
+	TimedRun.py
 
 test_scripts=
 

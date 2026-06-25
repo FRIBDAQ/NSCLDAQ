@@ -3,6 +3,7 @@
   
   @file rdo_utils.py
   @brief  Useful utility functions factored out of Readout ReST clients.
+  @author Ron Fox
 '''
 from nscldaq.manager_client import Programs
 #    This software is Copyright by the Board of Trustees of Michigan

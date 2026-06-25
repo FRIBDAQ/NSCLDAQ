@@ -4,6 +4,10 @@
     
     LoggerConfigurationController - mediates the configuration of event logging programs.
     LoggerEnableController        - mediates the overall eventlog enable.
+
+@file EventlogController.py
+@brief Provide a controller for the Event log MVs for the managed environment.
+@author Ron Fox.
     
 '''
 #    This software is Copyright by the Board of Trustees of Michigan
