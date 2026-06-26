@@ -260,6 +260,18 @@ class TimedRunView(QWidget):
     def model(self) -> QObject:
         return self._model  
     
+    # Note: Override setEnabled so that the elapsed stuff is always
+    # Highly visible:
+    
+    def setEnabled(self, state: bool) -> None:
+       
+        self._elapsedLabel.setEnabled(True)
+        self._elapsedTime.setEnabled(True)
+        
+        for widget in [self._isTimed, self._days, self._hours, self._mins, self._secs]:
+            widget.setEnabled(state)
+    
+        # Set the widgets that do get modified:
     # Private slots:
     
     def _forwardEnable(self) -> None:
@@ -329,6 +341,7 @@ class TimedRunView(QWidget):
 # Test code:
 
 if __name__ == '__main__':
+    
     from PyQt6.QtWidgets import QApplication, QMainWindow
     from PyQt6.QtCore import QTimer
     import sys
@@ -381,6 +394,7 @@ if __name__ == '__main__':
     widget.model().runExpired.connect(endRun)
     widget.timedChanged.connect(setTimed)
     widget.desiredChanged.connect(setNewDesired)
+    
     # A timer to update the elapsed time (run is always active here.).
     
     elapsed_secs = 0
