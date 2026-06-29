@@ -135,7 +135,7 @@ class ReadoutStatusModel(QStandardItemModel):
         
         
         
-class ReadoutView(QTableView):
+class ReadoutStatus(QTableView):
     '''
         This is a view of the Reaodut statuses.
         It's intended to be used with ReadoutStatusModel
@@ -181,7 +181,7 @@ if __name__ == "__main__":
         win.model().update(data)
 
     app = QApplication(sys.argv)
-    win = ReadoutView()
+    win = ReadoutStatus()
     
     # Put some stuff in the model:
     
