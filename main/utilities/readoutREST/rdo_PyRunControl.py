@@ -60,7 +60,7 @@ from nscldaq.readoutREST import (
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, 
                              QVBoxLayout, QHBoxLayout, QTabWidget)
 from PyQt6.QtCore import QObject
-#
+
 # This is the megawidget that is the user interface: It contains all the views
 # and accessors for them to allow controllser to be establisehd for them.
 #
@@ -104,6 +104,12 @@ class GUI(QWidget):
       
       
       self._statisticsViews = list()
+      self._originalStyle = self._tabs.styleSheet()
+
+   def setRecordingBackground(self):
+      self._tabs.setStyleSheet('background-color: green;')
+   def setNormalBackground(self):
+      self._tabs.setStyleSheet(self._originalStyle)
 
    def runInfo(self) -> RunInfo.RunInfo:
       return  self._runInfo
@@ -243,6 +249,7 @@ def main():
    _controllers = createControllers(
       gui, mgr_host, mgr_user, mgr_service, readout_list
    )
+   
    
    # @todo - figure out how to increment the runnumber if
    # event recording was active.
