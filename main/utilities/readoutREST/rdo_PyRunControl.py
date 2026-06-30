@@ -46,7 +46,7 @@ Reeadout_two,MyService
 import sys
 import csv
 from nscldaq.readoutREST import rdo_utils
-from nscldaq.manager_client import KVStore
+from nscldaq.manager_client import KVStore, Logger
 from nscldaq.manager_client import CONSTANTS as MGRCONSTS
 from nscldaq.readoutREST import (
    RunInfo, RunState, Eventlog, ReadoutStatus, ReadoutStatistics,
@@ -225,6 +225,26 @@ def process_arguments(arglist : list[str]) -> tuple[str, str, list[str]]:
    return (mgr_host, mgr_user, mgr_service, readout_list)     
       
 
+def state_transition(
+   newstate :str, gui : GUI, host: str, user: str, service: str
+) -> None:
+   # This handles stuff that can't be easily done in the multi
+   # MVC world.
+   
+   # If we went to BEGIN state with recording active, 
+   # tell the GUI to set the background color else,
+   # normal color:
+   
+   
+   if newstate == 'BEGIN':
+      logger = Logger(host, user, service)
+      if logger.isRecording():
+         gui.setRecordingBackground()
+      else:
+         gui.setNormalBackground()
+   else:
+      gui.setNormalBackground()   
+   
 
 def main():
    if len(sys.argv) < 4 or len(sys.argv) > 5:
@@ -250,6 +270,16 @@ def main():
       gui, mgr_host, mgr_user, mgr_service, readout_list
    )
    
+   # We want to monitor state transitions to do some stuff
+   # that's cross controller..
+   
+   state_poller = rdo_utils.StatePollFactory.getInstance(
+      mgr_host, mgr_user, mgr_service
+   )
+   state_poller.stateChanged.connect(
+      lambda newstate, gui= gui, host=mgr_host, user=mgr_user, service=mgr_service:
+         state_transition(newstate, gui, host, user, service)
+   )
    
    # @todo - figure out how to increment the runnumber if
    # event recording was active.
