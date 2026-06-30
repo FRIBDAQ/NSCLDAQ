@@ -118,11 +118,11 @@ class RunStateController(QObject):
         #
         
         # Update the model's manager state (that's easy).
-        
+    
         self._updateManagerState()
         
         # update the readout state:
-        
+            
         self._updateReadoutState()
         
         # Update elapsed run time:
@@ -138,8 +138,8 @@ class RunStateController(QObject):
         # Poll all the readouts for their states.
         # - if any are unreachable the state is 'unresponsive'
         # - if any differ from any others, the state is 'inconsistent'
-        
-        state_set = {}    #  Used to detect inconsitent.
+    
+        state_set = set()    #  Used to detect inconsitent.
         for readout in self._readouts:
             name   = readout[0]
             service= readout[1] if readout[1] is not None else CONSTANTS.DEFAULT_READOUT_REST_SERVICE
@@ -153,9 +153,9 @@ class RunStateController(QObject):
                     return
                 state = state['state']
                 state_set.add(state)
-            except Exception:
+            except Exception as e:
                 model.setReadoutState('unresponsive')
-        
+                return
         if len(state_set) != 1:
             model.setReadoutState('inconsistent')
         else:
