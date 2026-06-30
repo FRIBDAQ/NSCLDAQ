@@ -51,7 +51,7 @@ class ReadoutStatisticsController(QObject):
    def __init__(
       self, view : QObject,  rdo_name : str,
       mgr_host : str, mgr_user : str | None = None,
-      mgr_service : str = MGRCONSTS.MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE,
+      mgr_service : str = MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE,
       rdo_service : str = RDO_CONSTS.DEFAULT_READOUT_REST_SERVICE, 
       parent : QObject |None = None
    ): 
