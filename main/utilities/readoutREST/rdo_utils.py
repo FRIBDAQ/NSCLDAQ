@@ -9,6 +9,16 @@ from nscldaq.manager_client import Programs, State
 from PyQt6.QtCore import QTimer, QObject, pyqtSignal, Qt     # For polling the  state.
 from collections import namedtuple
 
+# Define some useful constants.
+
+
+Constants = namedtuple('Constants', ['POLL_MS', 'DEFAULT_READOUT_REST_SERVICE'])
+CONSTANTS = Constants(
+    POLL_MS = 1000,
+    DEFAULT_READOUT_REST_SERVICE = 'ReadoutREST'
+)
+
+
 
 #    This software is Copyright by the Board of Trustees of Michigan
 #    State University (c) Copyright 2014, 2026
@@ -47,8 +57,6 @@ def getReadoutHost(mgr_host: str, user: str, service: str, name: str) -> str:
 
 # Define the ms between polls in milliseconds.
 
-Constants = namedtuple('Constants', ['POLL_MS',])
-CONSTANTS = Constants(POLL_MS = 1000)
 
 class StatePoller(QObject):
     '''
