@@ -48,10 +48,11 @@ import csv
 from nscldaq.readoutREST import rdo_utils
 from nscldaq.manager_client import KVStore
 from nscldaq.manager_client import CONSTANTS as MGRCONSTS
-from nscldaq.readoutREST import RunInfo, RunState, Eventlog
+from nscldaq.readoutREST import RunInfo, RunState, Eventlog, ReadoutStatus
 
 from nscldaq.readoutREST import (
-   RunInfoController, RunStateController, EventlogController)
+   RunInfoController, RunStateController, EventlogController,
+   ReadoutStatusController)
 
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, 
                              QVBoxLayout, QHBoxLayout, QTabWidget)
@@ -92,6 +93,8 @@ class GUI(QWidget):
       self._logConfig = Eventlog.LoggerConfig(self)
       self._tabs.addTab(self._logConfig, 'EventLogging')
    
+      self._readoutStatuses = ReadoutStatus.ReadoutStatus(self)
+      self._tabs.addTab(self._readoutStatuses, 'Readout Summary')
       
 
    def runInfo(self) -> RunInfo.RunInfo:
@@ -105,6 +108,9 @@ class GUI(QWidget):
    
    def logConfig(self) -> Eventlog.LoggerConfig:
       return self._logConfig
+
+   def readoutStatuses(self) -> ReadoutStatus.ReadoutStatus:
+      return self._readoutStatuses
 
 def createControllers(
    gui : GUI, mgr_host : str, mgr_user : str, mgr_service: str, 
@@ -136,8 +142,15 @@ def createControllers(
       gui.logConfig(), mgr_host, mgr_user, mgr_service
    )
    
+   #  Readout status:
+   
+   readout_summary = ReadoutStatusController.ReadoutStatusController(
+      gui.readoutStatuses(), readout_list, mgr_host, mgr_user, mgr_service
+   )
+   
    return (run_info_controller, run_state_controller, 
-           log_enable, log_config )
+           log_enable, log_config,
+           readout_summary)
    
 
 def Usage() -> None:
@@ -185,9 +198,13 @@ def main():
    # We hold them here to prevent them from being garbage collected
    # away...though we don't need to do anything with them:
    
+   
    _controllers = createControllers(
       gui, mgr_host, mgr_user, mgr_service, readout_list
    )
+   
+   # @todo - figure out how to increment the runnumber if
+   # event recording was active.
    
    main_win.show()
    return(app.exec())
