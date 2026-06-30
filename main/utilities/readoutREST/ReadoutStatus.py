@@ -129,7 +129,7 @@ class ReadoutStatusModel(QStandardItemModel):
     
     def _initializeModel(self) -> None:
         self.setColumnCount(4)
-        self.setHorizontalHeaderLabels(['Name', 'Host', 'State', 'Running'])
+        self.setHorizontalHeaderLabels(['Name', 'Host', 'Running', 'Status'])
         
         
         
