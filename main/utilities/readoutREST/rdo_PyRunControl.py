@@ -46,10 +46,79 @@ Reeadout_two,MyService
 import sys
 import csv
 from nscldaq.readoutREST import rdo_utils
+from nscldaq.manager_client import KVStore
 from nscldaq.manager_client import CONSTANTS as MGRCONSTS
+from nscldaq.readoutREST import RunInfo, RunState, Eventlog
 
-from PyQt6.QtWidgets import QMainWindow, QApplication
+from nscldaq.readoutREST import (
+   RunInfoController, RunStateController, EventlogController)
 
+from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, 
+                             QVBoxLayout, QHBoxLayout)
+from PyQt6.QtCore import QObject
+#
+# This is the megawidget that is the user interface: It contains all the views
+# and accessors for them to allow controllser to be establisehd for them.
+#
+
+class GUI(QWidget):
+   def __init__(self, parent :QObject | None  = None):
+      super().__init__(parent)
+      self._layout = QVBoxLayout()
+      
+      self._runInfo = RunInfo.RunInfo(self)
+      self._layout.addWidget(self._runInfo)
+      
+      self._stateloggerlayout = QHBoxLayout()
+      self._runState = RunState.RunState(self)
+      self._stateloggerlayout.addWidget(self._runState)
+      
+      self._loggerEnable = Eventlog.Logger(self)
+      self._stateloggerlayout.addWidget(self._loggerEnable)
+      
+      self._layout.addLayout(self._stateloggerlayout)
+      
+      self.setLayout(self._layout)
+
+   def runInfo(self) -> RunInfo.RunInfo:
+      return  self._runInfo
+   
+   def runState(self) -> RunState.RunState:
+      return self._runState
+     
+   def loggerEnable(self) -> Eventlog.Logger:
+      return self._loggerEnable
+   
+
+def createControllers(
+   gui : GUI, mgr_host : str, mgr_user : str, mgr_service: str, 
+   readout_list : list[tuple[str, str]]
+) -> tuple[QObject]:
+   # Create the controllers for all the views in the GUI:
+   # I think the parameters are self explanatory except maybe for the
+   # readout_list which is a list of 2 element tuples containing
+   # in order, the names of readouts and their ReST service names.
+   # we return the tuples we created to prevent them from being
+   # garbage collected.
+   
+   # Run info controller:
+   
+   run_info_controller = RunInfoController.RunInfoController(
+      gui.runInfo(), KVStore(mgr_host, mgr_user, mgr_service)
+   )
+   # Run state controller:
+   run_state_controller = RunStateController.RunStateController(
+      readout_list, gui.runState(), mgr_host, mgr_user, mgr_service
+   )
+   run_state_controller.start()
+   # Event logging global enable:
+   
+   log_enable = EventlogController.LoggerEnableController(
+      gui.loggerEnable(), mgr_host, mgr_user, mgr_service
+   )
+   
+   return (run_info_controller, run_state_controller, log_enable )
+   
 
 def Usage() -> None:
    # Print the program usagbe on stderr.
@@ -88,6 +157,17 @@ def main():
    
    app = QApplication(sys.argv)
    main_win = QMainWindow()
+   
+   gui = GUI(main_win)
+   main_win.setCentralWidget(gui)
+   
+   # Create the controllers for the  views.
+   # We hold them here to prevent them from being garbage collected
+   # away...though we don't need to do anything with them:
+   
+   _controllers = createControllers(
+      gui, mgr_host, mgr_user, mgr_service, readout_list
+   )
    
    main_win.show()
    return(app.exec())

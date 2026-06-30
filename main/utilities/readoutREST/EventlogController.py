@@ -28,7 +28,7 @@
 #  view widgets when the state is Active.
 #
 from nscldaq.manager_client import Logger, State
-
+from nscldaq.manager_client import CONSTANTS as MGRCONSTS
 from PyQt6.QtCore import QTimer, QObject, pyqtSignal, Qt     # For polling the  state.
 from collections import namedtuple
 from nscldaq.readoutREST.rdo_utils import StatePollFactory, CONSTANTS
@@ -49,7 +49,8 @@ class LoggerEnableController(QObject):
     '''
     def __init__(
         self, view,
-        host : str, user: str | None = None, service : str = 'DAQManager', 
+        host : str, user: str | None = None, 
+        service : str =  MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE, 
         parent : QObject = None
     ):
         '''
