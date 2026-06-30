@@ -48,6 +48,8 @@ import csv
 from nscldaq.readoutREST import rdo_utils
 from nscldaq.manager_client import CONSTANTS as MGRCONSTS
 
+from PyQt6.QtWidgets import QMainWindow, QApplication
+
 
 def Usage() -> None:
    # Print the program usagbe on stderr.
@@ -82,10 +84,14 @@ def main():
 
    mgr_host, mgr_user, mgr_service, readout_list = process_arguments(sys.argv)
          
-   print('host', mgr_host)
-   print('user', mgr_user)
-   print('manager service', mgr_service)
-   print(readout_list)
+   # Set up the GUJI:
+   
+   app = QApplication(sys.argv)
+   main_win = QMainWindow()
+   
+   main_win.show()
+   return(app.exec())
+   
 
 if __name__ == '__main__':
-   main()
+   sys.exit(main())
