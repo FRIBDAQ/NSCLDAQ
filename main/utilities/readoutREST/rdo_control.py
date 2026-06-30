@@ -49,7 +49,7 @@ Copy/pasted from that program:
 
 import sys
 import os
-from   nscldaq.readoutREST import readoutRestClient
+from   nscldaq.readoutREST import readoutRestClient, rdo_utils
 import tabulate
 
 
@@ -71,7 +71,7 @@ def usage():
     print("Note that the port is gotten byt one of the following:", file=sys.stderr)
     print("Translating the environment variable SERVICE_NAME which must be", file=sys.stderr)
     print("the name of the service advertised by the Readout's ReST service", file=sys.stderr)
-    print("If SERVICE_NAME does not exist, we default to the service name 'ReadoutREST'", file=sys.stderr)
+    print(f"If SERVICE_NAME does not exist, we default to the service name {rdo_utils.CONSTANTS.DEFAULT_READOUT_REST_SERVICE}", file=sys.stderr)
     for key, value in dispatch_table.items(): 
         print(f"    {key}  - {value[1]}", file=sys.stderr)
     
@@ -79,7 +79,8 @@ def make_client(host, user):
     # Create the ReadoutRestClient object.  See the usage
     # text for a description of how the service name is determined.
     # Or just look at the next line :-P
-    service_name = os.environ['SERVICE_NAME'] if 'SERVICE_NAME' in os.environ.keys() else 'ReadoutREST'
+    service_name = os.environ['SERVICE_NAME'] if 'SERVICE_NAME' in os.environ.keys() else \
+        rdo_utils.CONSTANTS.DEFAULT_READOUT_REST_SERVICE
     
     return readoutRestClient.ReadoutClient(host, service_name, user)
 
