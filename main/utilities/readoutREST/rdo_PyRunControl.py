@@ -49,12 +49,13 @@ from nscldaq.readoutREST import rdo_utils
 from nscldaq.manager_client import KVStore
 from nscldaq.manager_client import CONSTANTS as MGRCONSTS
 from nscldaq.readoutREST import (
-   RunInfo, RunState, Eventlog, ReadoutStatus, ReadoutStatistics
+   RunInfo, RunState, Eventlog, ReadoutStatus, ReadoutStatistics,
+   TimedRun
 )
 
 from nscldaq.readoutREST import (
    RunInfoController, RunStateController, EventlogController,
-   ReadoutStatusController, ReadoutStatisticsController)
+   ReadoutStatusController, ReadoutStatisticsController, TimedRunController)
 
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, 
                              QVBoxLayout, QHBoxLayout, QTabWidget)
@@ -79,8 +80,11 @@ class GUI(QWidget):
       
       self._loggerEnable = Eventlog.Logger(self)
       self._stateloggerlayout.addWidget(self._loggerEnable)
-      
       self._layout.addLayout(self._stateloggerlayout)
+      
+      self._timedRuns = TimedRun.TimedRunView(self)
+      self._layout.addWidget(self._timedRuns)
+      
       
       # In the very bottom, we need a tabbed widget
       # That has in the first tab a
@@ -98,6 +102,7 @@ class GUI(QWidget):
       self._readoutStatuses = ReadoutStatus.ReadoutStatus(self)
       self._tabs.addTab(self._readoutStatuses, 'Readout Summary')
       
+      
       self._statisticsViews = list()
 
    def runInfo(self) -> RunInfo.RunInfo:
@@ -105,6 +110,9 @@ class GUI(QWidget):
    
    def runState(self) -> RunState.RunState:
       return self._runState
+     
+   def timedRuns(self)-> TimedRun.TimedRunView:
+      return self._timedRuns
      
    def loggerEnable(self) -> Eventlog.Logger:
       return self._loggerEnable
@@ -147,11 +155,20 @@ def createControllers(
       readout_list, gui.runState(), mgr_host, mgr_user, mgr_service
    )
    run_state_controller.start()
-   # Event logging global enable and configuration:
+   
+   # Event logging global enable
    
    log_enable = EventlogController.LoggerEnableController(
       gui.loggerEnable(), mgr_host, mgr_user, mgr_service
    )
+   
+   # Timed runs:
+   timed_runs = TimedRunController.TimedRunController(
+      gui.timedRuns(), mgr_host, mgr_user, mgr_service
+   )
+   
+   # Event log configuration
+   
    log_config = EventlogController.LoggerConfigController(
       gui.logConfig(), mgr_host, mgr_user, mgr_service
    )
@@ -166,13 +183,13 @@ def createControllers(
    
    statistics_controllers = list()
    for (name, service) in readout_list:
-      view = gui.addReadoutStatisticsView(name)
+      view = gui.addReadoutStatisticsView(name + ' stats')
       controller = ReadoutStatisticsController.ReadoutStatisticsController(
          view, name, mgr_host, mgr_user, mgr_service, service
       )
       statistics_controllers.append(controller)
    
-   return (run_info_controller, run_state_controller, 
+   return (run_info_controller, run_state_controller, timed_runs,
            log_enable, log_config,
            readout_summary, statistics_controllers)
    
