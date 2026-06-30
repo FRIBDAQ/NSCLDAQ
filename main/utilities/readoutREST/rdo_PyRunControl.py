@@ -54,7 +54,7 @@ from nscldaq.readoutREST import (
    RunInfoController, RunStateController, EventlogController)
 
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, 
-                             QVBoxLayout, QHBoxLayout)
+                             QVBoxLayout, QHBoxLayout, QTabWidget)
 from PyQt6.QtCore import QObject
 #
 # This is the megawidget that is the user interface: It contains all the views
@@ -65,6 +65,7 @@ class GUI(QWidget):
    def __init__(self, parent :QObject | None  = None):
       super().__init__(parent)
       self._layout = QVBoxLayout()
+      self.setLayout(self._layout)
       
       self._runInfo = RunInfo.RunInfo(self)
       self._layout.addWidget(self._runInfo)
@@ -78,7 +79,20 @@ class GUI(QWidget):
       
       self._layout.addLayout(self._stateloggerlayout)
       
-      self.setLayout(self._layout)
+      # In the very bottom, we need a tabbed widget
+      # That has in the first tab a
+      # an eventlog configuration controller.
+      # In the second tab, a list of the readouts and their states,
+      # Clients can add tabs for each Readout to show its
+      # triggers statistics.
+      
+      self._tabs = QTabWidget(self)
+      self._layout.addWidget(self._tabs)
+      
+      self._logConfig = Eventlog.LoggerConfig(self)
+      self._tabs.addTab(self._logConfig, 'EventLogging')
+   
+      
 
    def runInfo(self) -> RunInfo.RunInfo:
       return  self._runInfo
@@ -89,6 +103,8 @@ class GUI(QWidget):
    def loggerEnable(self) -> Eventlog.Logger:
       return self._loggerEnable
    
+   def logConfig(self) -> Eventlog.LoggerConfig:
+      return self._logConfig
 
 def createControllers(
    gui : GUI, mgr_host : str, mgr_user : str, mgr_service: str, 
@@ -111,13 +127,17 @@ def createControllers(
       readout_list, gui.runState(), mgr_host, mgr_user, mgr_service
    )
    run_state_controller.start()
-   # Event logging global enable:
+   # Event logging global enable and configuration:
    
    log_enable = EventlogController.LoggerEnableController(
       gui.loggerEnable(), mgr_host, mgr_user, mgr_service
    )
+   log_config = EventlogController.LoggerConfigController(
+      gui.logConfig(), mgr_host, mgr_user, mgr_service
+   )
    
-   return (run_info_controller, run_state_controller, log_enable )
+   return (run_info_controller, run_state_controller, 
+           log_enable, log_config )
    
 
 def Usage() -> None:

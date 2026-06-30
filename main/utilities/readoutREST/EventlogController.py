@@ -134,7 +134,8 @@ class LoggerConfigController(QObject):
     '''
     def __init__(
         self, view,
-        host: str, user : str | None = None, service :str = 'DAQManager', 
+        host: str, user : str | None = None, 
+        service :str = MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE, 
         parent : QObject | None = None
     ):
         '''
