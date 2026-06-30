@@ -30,13 +30,14 @@ from PyQt6.QtWidgets import QWidget
 from PyQt6.QtCore import QObject, QTimer
 from nscldaq.readoutREST import readoutRestClient, rdo_utils
 from nscldaq.manager_client import State
+from nscldaq.manager_client import CONSTANTS as MGRCONSTS
 import getpass
 from collections import namedtuple
 
 Constants = namedtuple('Constants', ['DEFAULT_READOUT_REST_SERVICE', 'DEFAULT_MANAGER_REST_SERVICE', 'POLL_MS'])
 CONSTANTS = Constants(
     DEFAULT_READOUT_REST_SERVICE = rdo_utils.CONSTANTS.DEFAULT_READOUT_REST_SERVICE,
-    DEFAULT_MANAGER_REST_SERVICE = 'DAQManager',
+    DEFAULT_MANAGER_REST_SERVICE = MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE,
     POLL_MS                      = 1000,
 )
 class RunStateController(QObject):

@@ -6,6 +6,7 @@
   @author Ron Fox
 '''
 from nscldaq.manager_client import Programs, State
+from nscldaq.manager_client import CONSTANTS as MGRCONSTS
 from PyQt6.QtCore import QTimer, QObject, pyqtSignal, Qt     # For polling the  state.
 from collections import namedtuple
 
@@ -68,12 +69,13 @@ class StatePoller(QObject):
     '''
     stateChanged =pyqtSignal(str)
     
-    def __init__(self, host: str, user: str | None = None, service: str = 'DAQManager', parent: QObject =None):
+    def __init__(self, host: str, user: str | None = None, 
+                 service: str = MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE, parent: QObject =None):
         '''
             @param host  - host in which the manager server is running.
             @param user  - user that ran the manager server defaults to the logged in user.
             @param servcie - the Service the manager is advertising for its ReST endpoint.
-                   defaults to 'DAQManager', the default service.
+                   defaults to the default manager service.
             @param parent - Parent object, defaults to None.
             
         '''

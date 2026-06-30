@@ -26,6 +26,7 @@
 from PyQt6.QtCore import QObject, QTimer
 from nscldaq.readoutREST.rdo_utils import StatePollFactory
 from nscldaq.manager_client        import State
+from nscldaq.manager_client        import CONSTANTS as MGRCONSTS
 from parse import parse
 class TimedRunController(QObject):
     '''
@@ -36,7 +37,8 @@ class TimedRunController(QObject):
     '''
     def __init__(self, 
         view : QObject, 
-        mgr_host : str, mgr_user : str|None = None , mgr_service : str  = 'DAQManager', 
+        mgr_host : str, mgr_user : str|None = None ,
+        mgr_service : str  = MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE, 
         parent: QObject | None = None
     ):
         '''
@@ -46,7 +48,7 @@ class TimedRunController(QObject):
         @param mgr_user - (Optional) user running the manager, if omitted or None, the current user
                         is assumed.
         @param mgr_service (Optional) The ReST service advertised by the manager.
-                        if omitted, 'DAQManager' is used which is the default.
+                        if omitted,  the default service is used.
         '''
         
         super().__init__(parent)

@@ -23,9 +23,10 @@
 #	     East Lansing, MI 48824-1321
 import sys
 import os
-from nscldaq.manager_client import  KVStore
+from nscldaq.manager_client import  KVStore, CONSTANTS
 from nscldaq.readoutREST.readoutRestClient import ReadoutClient
-from nscldaq.readoutREST.rdo_utils import getReadoutHost, CONSTANTS
+from nscldaq.readoutREST.rdo_utils import getReadoutHost
+from nscldaq.readoutREST.rdo_utils import CONSTANTS as MGR_CONSTS
 def usage() -> None:
     '''
         Print program usage on stderr.
@@ -38,7 +39,7 @@ def usage() -> None:
     print('   user  - Is the user running the manager server', file=sys.stderr)
     print('   program_name - the name of the Readout program whose run number will be set.', file=sys.stderr)
     print('   service - if provided is the service on which the manager server is running', file=sys.stderr)
-    print('             Defaults to "DAQManager" If not given', file=sys.stderr)
+    print(f'             Defaults to "{MGR_CONSTS.DEFAULT_MANAGER_REST_SERVICE}" If not given', file=sys.stderr)
     print('Note:', file=sys.stderr)
     print(f'   The Readout program is assumed to be advertising the "{CONSTANTS.DEFAULT_READOUT_REST_SERVICE}" service unless', file=sys.stderr)
     print('   The "SERVICE_NAME" environament variable is defined, in which case', file=sys.stderr)
@@ -71,7 +72,7 @@ def main():
     
     # Now the optional one:
     
-    mgr_service = 'DAQManager'
+    mgr_service = MGR_CONSTS.DEFAULT_MANAGER_REST_SERVICE
     if len(sys.argv) == 5:
         mgr_service = sys.argv[4]
     elif len(sys.argv) > 5:

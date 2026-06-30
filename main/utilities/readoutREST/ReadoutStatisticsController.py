@@ -24,6 +24,8 @@
 from nscldaq.readoutREST.readoutRestClient import ReadoutClient
 from nscldaq.readoutREST.rdo_utils         import getReadoutHost
 from nscldaq.readoutREST.rdo_utils         import CONSTANTS as RDO_CONSTS
+from nscldaq.manager_client import CONSTANTS as MGRCONSTS
+
 
 from PyQt6.QtCore import QObject, QTimer
 from collections import namedtuple
@@ -48,7 +50,8 @@ class ReadoutStatisticsController(QObject):
    
    def __init__(
       self, view : QObject,  rdo_name : str,
-      mgr_host : str, mgr_user : str | None = None, mgr_service : str = 'DAQManager', 
+      mgr_host : str, mgr_user : str | None = None,
+      mgr_service : str = MGRCONSTS.MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE,
       rdo_service : str = RDO_CONSTS.DEFAULT_READOUT_REST_SERVICE, 
       parent : QObject |None = None
    ): 
@@ -57,8 +60,7 @@ class ReadoutStatisticsController(QObject):
          @param rdo_name - Name of the Readout program we're connecting to.
          @param mgr_host - host in which the manager is running.
          @param mgr_user  - User running the manager, the default value of None will user the current user.
-         @param mgr_service - The ReST service advertised by the manager, defaults to 'DAQManager'
-                              which is the manager's normal value.
+         @param mgr_service - The ReST service advertised by the manager, defaults to  the manager's normal value.
          @param rdo_service - The ReST service advertised by the  readout program, defaults to 'ReadoutREST'
                         which is the default value.
          @param parent    - The parent of this QObject, if not supplied defaults to None.

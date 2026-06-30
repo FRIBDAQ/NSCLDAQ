@@ -26,6 +26,7 @@
 
 
 from nscldaq.manager_client import Programs
+from nscldaq.manager_client import CONSTANTS as MGRCONSTS
 import nscldaq.readoutREST.rdo_utils as rdo_utils
 import nscldaq.readoutREST.readoutRestClient as readoutRest
 
@@ -45,7 +46,7 @@ class ReadoutStatusController(QObject):
         readouts : list[tuple[str, str | None]],
         mgr_host : str, 
         mgr_user : str | None = None,
-        mgr_service : str = 'DAQManager',
+        mgr_service : str = MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE,
         parent : QObject | None = None
     ):
         '''
@@ -55,7 +56,7 @@ class ReadoutStatusController(QObject):
                     ReadoutREST None if it is that default value.
             @param mgr_host - the host in wich the manager is running.
             @param mgr_user - The user running the manager if not the current user, None if it is.
-            @param mgr_service - The ReST service of the manager, defaults to DAQManager, the default
+            @param mgr_service - The ReST service of the manager, defaults to  the default
                 service name.
             @param parent - our parent object if there is one. None if not.
             
