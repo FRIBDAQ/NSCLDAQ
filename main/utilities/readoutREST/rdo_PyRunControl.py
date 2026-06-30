@@ -21,13 +21,14 @@
 pgm_usage= \
 '''   
    Usage:
-      $DAQBIN/rdo_PyRunControl mgr_host, mgr_user /path/to/readout_descriptions
+      $DAQBIN/rdo_PyRunControl mgr_host, mgr_user /path/to/readout_descriptions [mgr_service]
       
       Where:
          mgr_host is the host on which the manager is running.
-         mgr_user is the user that's running thye manager.
+         mgr_user is the user that's running the manager.
          /path/to/readout_descriptions is a readout description file, see below.
-      
+         mgr_service if present is the ReST service advertised by the manager, defaults to 
+             the manager default service.
          The readout description file is a CSV file. Each line in the file describes
          a Readout program.
          *  If there is one field in a line, that's just the name of a Readout program
@@ -45,6 +46,7 @@ Reeadout_two,MyService
 import sys
 import csv
 from nscldaq.readoutREST import rdo_utils
+from nscldaq.manager_client import CONSTANTS as MGRCONSTS
 
 
 def Usage() -> None:
@@ -67,21 +69,22 @@ def process_arguments(arglist : list[str]) -> tuple[str, str, list[str]]:
             line.append(rdo_utils.CONSTANTS.DEFAULT_READOUT_REST_SERVICE)
          readout_list.append(line)
       
-
-   return (mgr_host, mgr_user, readout_list)     
+   mgr_service = arglist[4] if len(arglist) == 5 else MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE
+      
+   return (mgr_host, mgr_user, mgr_service, readout_list)     
       
 
 
 def main():
-   if len(sys.argv) != 4:
+   if len(sys.argv) < 4 or len(sys.argv) > 5:
       Usage()
       sys.exit(-1)
 
-   mgr_host, mgr_user, readout_list = process_arguments(sys.argv)
+   mgr_host, mgr_user, mgr_service, readout_list = process_arguments(sys.argv)
          
    print('host', mgr_host)
    print('user', mgr_user)
-      
+   print('manager service', mgr_service)
    print(readout_list)
 
 if __name__ == '__main__':
