@@ -27,7 +27,7 @@ import sys
 import os
 from nscldaq.manager_client import  KVStore
 from nscldaq.readoutREST.readoutRestClient import ReadoutClient
-from nscldaq.readoutREST.rdo_utils import getReadoutHost
+from nscldaq.readoutREST.rdo_utils import getReadoutHost, CONSTANTS
 def usage() -> None:
     '''
         Print program usage on stderr.
@@ -42,9 +42,9 @@ def usage() -> None:
     print('   service - if provided is the service on which the manager server is running', file=sys.stderr)
     print('             Defaults to "DAQManager" If not given', file=sys.stderr)
     print('Note:', file=sys.stderr)
-    print('   The Readout program is assumed to be advertising the "ReadoutREST" service unless', file=sys.stderr)
+    print(f'   The Readout program is assumed to be advertising the "{CONSTANTS.DEFAULT_READOUT_REST_SERVICE}" service unless', file=sys.stderr)
     print('   The "SERVICE_NAME" environament variable is defined, in which case', file=sys.stderr)
-    print('    the value of that environment variable is used instead.', file=sys.stderr)
+    print('   the value of that environment variable is used instead.', file=sys.stderr)
     
 
 
@@ -82,7 +82,7 @@ def main():
         
     # Now figure out the Readout service:
     
-    readout_service = 'ReadoutREST'
+    readout_service = CONSTANTS.DEFAULT_READOUT_REST_SERVICE
     if 'SERVICE_NAME' in os.environ:
         readout_service = os.environ['SERVICE_NAME']
         

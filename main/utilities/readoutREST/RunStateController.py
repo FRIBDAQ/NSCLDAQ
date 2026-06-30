@@ -35,7 +35,7 @@ from collections import namedtuple
 
 Constants = namedtuple('Constants', ['DEFAULT_READOUT_REST_SERVICE', 'DEFAULT_MANAGER_REST_SERVICE', 'POLL_MS'])
 CONSTANTS = Constants(
-    DEFAULT_READOUT_REST_SERVICE = 'ReadoutREST',
+    DEFAULT_READOUT_REST_SERVICE = rdo_utils.CONSTANTS.DEFAULT_READOUT_REST_SERVICE,
     DEFAULT_MANAGER_REST_SERVICE = 'DAQManager',
     POLL_MS                      = 1000,
 )

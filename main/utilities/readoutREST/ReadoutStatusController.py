@@ -103,7 +103,9 @@ class ReadoutStatusController(QObject):
         for program in all_programs:
             for name, service in self._readouts:
                 if program['name'] == name:
-                    program['service'] = 'ReadoutREST' if service is None else service
+                    program['service'] = \
+                        rdo_utils.CONSTANTS.DEFAULT_READOUT_REST_SERVICE \
+                            if service is None else service
                     readout_programs.append(program)
                     break
         

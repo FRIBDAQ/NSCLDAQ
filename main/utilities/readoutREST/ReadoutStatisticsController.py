@@ -23,10 +23,12 @@
 
 from nscldaq.readoutREST.readoutRestClient import ReadoutClient
 from nscldaq.readoutREST.rdo_utils         import getReadoutHost
+from nscldaq.readoutREST.rdo_utils         import CONSTANTS as RDO_CONSTS
 
 from PyQt6.QtCore import QObject, QTimer
 from collections import namedtuple
 import getpass
+
 
 Constants = namedtuple('Constants', ['POLL_MS',])
 CONSTANTS = Constants(POLL_MS = 1000)             # Milliseconds between polls.
@@ -47,7 +49,8 @@ class ReadoutStatisticsController(QObject):
    def __init__(
       self, view : QObject,  rdo_name : str,
       mgr_host : str, mgr_user : str | None = None, mgr_service : str = 'DAQManager', 
-      rdo_service : str = 'ReadoutREST', parent : QObject |None = None
+      rdo_service : str = RDO_CONSTS.DEFAULT_READOUT_REST_SERVICE, 
+      parent : QObject |None = None
    ): 
       '''
          @param view     - The view object that's connected to the model.

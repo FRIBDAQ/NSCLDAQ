@@ -44,7 +44,7 @@ Reeadout_two,MyService
 
 import sys
 import csv
-
+from nscldaq.readoutREST import rdo_utils
 
 
 def Usage() -> None:
@@ -53,11 +53,6 @@ def Usage() -> None:
    global pgm_usage
    print(pgm_usage, file = sys.stderr)
 
-
-def main():
-   if len(sys.argv) != 4:
-      Usage()
-      sys.exit(-1)
 
 def process_arguments(arglist : list[str]) -> tuple[str, str, list[str]]:
    
@@ -68,17 +63,26 @@ def process_arguments(arglist : list[str]) -> tuple[str, str, list[str]]:
       readouts = csv.reader(readout_file)
       readout_list = list()
       for line in readouts:
+         if len(line) < 2:
+            line.append(rdo_utils.CONSTANTS.DEFAULT_READOUT_REST_SERVICE)
          readout_list.append(line)
       
 
    return (mgr_host, mgr_user, readout_list)     
       
-mgr_host, mgr_user, readout_list = process_arguments(sys.argv)
+
+
+def main():
+   if len(sys.argv) != 4:
+      Usage()
+      sys.exit(-1)
+
+   mgr_host, mgr_user, readout_list = process_arguments(sys.argv)
+         
+   print('host', mgr_host)
+   print('user', mgr_user)
       
-print('host', mgr_host)
-print('user', mgr_user)
-   
-print(readout_list)
+   print(readout_list)
 
 if __name__ == '__main__':
    main()
