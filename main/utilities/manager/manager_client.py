@@ -18,8 +18,16 @@ import requests
 import socket
 import errno
 from nscldaq.portmanager.PortManager import PortManager
+from collections import namedtuple
 
-
+Constants = namedtuple('Constants', ['DEFAULT_MANAGER_REST_SERVICE', 
+                                     'DEFAULT_MANAGER_OUTPUT_SERVICE',
+                                     'DEFAULT_PORTMAN_PORT'])
+CONSTANTS = Constants(
+    DEFAULT_MANAGER_REST_SERVICE = 'DAQManager',
+    DEFAULT_MANAGER_OUTPUT_SERVICE = 'DAQManager-outputMonitor',
+    DEFAULT_PORTMAN_PORT=30000
+)
 
 def _getlogin() -> str:
     """
@@ -32,7 +40,9 @@ def _getlogin() -> str:
     except:
         return os.getenv('USER')
 
-def _service_port(host: str, name: str, port: int=30000, user: str=None) ->int:
+def _service_port(host: str, name: str, 
+                  port: int=CONSTANTS.DEFAULT_PORTMAN_PORT, 
+                  user: str=None) ->int:
     """Determines the port associated with a service both in the presence of the port manager.
     
 
@@ -63,7 +73,8 @@ def _service_port(host: str, name: str, port: int=30000, user: str=None) ->int:
 class _Client:
     #  This is a base class for REST clients, containing, as it does,
     # the utilities that make REST requests easy
-    def __init__(self, host: str, user: str=None, service: str="DAQManager"):
+    def __init__(self, host: str, user: str=None, 
+                 service: str=CONSTANTS.DEFAULT_MANAGER_REST_SERVICE):
         """Construct the _Client object.
 
         Args:
@@ -122,7 +133,8 @@ class State(_Client):
         
         
     """
-    def __init__(self, host: str, user:str =None, service:str ='DAQManager'):
+    def __init__(self, host: str, user:str =None, 
+                 service:str =CONSTANTS.DEFAULT_MANAGER_REST_SERVICE):
         super().__init__(host, user, service)
     
     def status(self) -> str:
@@ -193,7 +205,8 @@ class Programs(_Client):
     Args:
         _Client (_type_): The standard client class is our base.
     """
-    def __init__(self : str, host: str, user: str=None, service: str='DAQManager'):
+    def __init__(self : str, host: str, user: str=None, 
+                 service: str=CONSTANTS.DEFAULT_MANAGER_REST_SERVICE):
         super().__init__(host, user, service)
         
     def status(self) -> list[dict]:
@@ -236,7 +249,8 @@ class KVStore(_Client):
     Args:
         _Client - generic client utility base class.
     """
-    def __init__(self, host:str , user:str=None, service:str='DAQManager'):
+    def __init__(self, host:str , user:str=None, 
+                 service:str=CONSTANTS.DEFAULT_MANAGER_REST_SERVICE):
         ''' See _Client.__init__'''
         super().__init__(host, user, service)
     
@@ -326,7 +340,8 @@ class Logger(_Client):
         _Client (class): Base class that provides common services for 
         all ReST clients.
     """
-    def __init__(self, host: str, user:str =None, service:str ='DAQManager'):
+    def __init__(self, host: str, user:str =None, 
+                 service:str =CONSTANTS.DEFAULT_MANAGER_REST_SERVICE):
         super().__init__(host, user, service)
         
     def enable(self, destination:str) -> None:
@@ -416,7 +431,8 @@ class OutputMonitor:
     
     
     """
-    def __init__(self, host: str, user: str |None=None, service :str='DAQManager-outputMonitor'):
+    def __init__(self, host: str, user: str |None=None, 
+                 service :str=CONSTANTS.DEFAULT_MANAGER_OUTPUT_SERVICE):
         """
            We just resolve the service and store the host and port.
            Next we call our reconnect method to try to form a connection.
