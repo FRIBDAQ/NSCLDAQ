@@ -48,11 +48,13 @@ import csv
 from nscldaq.readoutREST import rdo_utils
 from nscldaq.manager_client import KVStore
 from nscldaq.manager_client import CONSTANTS as MGRCONSTS
-from nscldaq.readoutREST import RunInfo, RunState, Eventlog, ReadoutStatus
+from nscldaq.readoutREST import (
+   RunInfo, RunState, Eventlog, ReadoutStatus, ReadoutStatistics
+)
 
 from nscldaq.readoutREST import (
    RunInfoController, RunStateController, EventlogController,
-   ReadoutStatusController)
+   ReadoutStatusController, ReadoutStatisticsController)
 
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, 
                              QVBoxLayout, QHBoxLayout, QTabWidget)
@@ -96,6 +98,7 @@ class GUI(QWidget):
       self._readoutStatuses = ReadoutStatus.ReadoutStatus(self)
       self._tabs.addTab(self._readoutStatuses, 'Readout Summary')
       
+      self._statisticsViews = list()
 
    def runInfo(self) -> RunInfo.RunInfo:
       return  self._runInfo
@@ -111,6 +114,17 @@ class GUI(QWidget):
 
    def readoutStatuses(self) -> ReadoutStatus.ReadoutStatus:
       return self._readoutStatuses
+   
+   def addReadoutStatisticsView(self, name : str) -> ReadoutStatistics.RunStatistics:
+      # Add a new Readout statistics view
+      # tab and return the view.
+      
+      statView = ReadoutStatistics.RunStatistics(self)
+      self._statisticsViews.append(statView)
+      self._tabs.addTab(statView, name)
+      
+      return statView
+      
 
 def createControllers(
    gui : GUI, mgr_host : str, mgr_user : str, mgr_service: str, 
@@ -148,9 +162,19 @@ def createControllers(
       gui.readoutStatuses(), readout_list, mgr_host, mgr_user, mgr_service
    )
    
+   # Add readout statistics tabs for each Readout:
+   
+   statistics_controllers = list()
+   for (name, service) in readout_list:
+      view = gui.addReadoutStatisticsView(name)
+      controller = ReadoutStatisticsController.ReadoutStatisticsController(
+         view, name, mgr_host, mgr_user, mgr_service, service
+      )
+      statistics_controllers.append(controller)
+   
    return (run_info_controller, run_state_controller, 
            log_enable, log_config,
-           readout_summary)
+           readout_summary, statistics_controllers)
    
 
 def Usage() -> None:
