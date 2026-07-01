@@ -1085,3 +1085,128 @@ close stdin
    </refsect1>
 </refentry>
 <!-- /manpage -->
+<!-- manpage 1daq -->
+<refentry id='daq1.rdo_PyRunControl'>
+   <refmeta>
+      <refentrytitle id='daq1.rdo_PyRunControl.title'>rdo_PyRunControl</refentrytitle>
+      <manvolnum>1daq</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>rdo_PyRunControl</refname>
+      <refpurpose>A control panel for the managed experiment environment</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <cmdsynopsis>
+         <command>$DAQBIN/rdo_PyRunControl</command>
+         <arg choice='plain'>mgr_host</arg>
+         <arg choice='plain'>mgr_user</arg>
+         <arg choice='plain'>readout_description_file</arg>
+         <arg choice='opt'>mgr_service</arg>
+      </cmdsynopsis>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This program provides a control panel for experiments in the managed environment.
+         More than one control panel can be spun up at a time, allowing the experiment to be
+         controlled from more than one physical location. Furthermore, since the manager server
+         actually controls the experiment, it will continue in its current state if there are no
+         control panels.
+      </para>
+      <para>
+         The top section of the control panel provides control over the requested next run number
+         and title as well as the actual run number as  known by the manager server.
+      </para>
+      <para>
+         The next section displays the the state of the system and aggregate readout state
+         as well as the elapsed run time if the run is active. Below that are a set of three buttons
+         that are enabled and labeled depending on the allowed state transitions of the system.
+      </para>
+      <para>
+         The left most button either boots up the experiment or shuts down all processes associated with
+         the experiment. The middle button either begins or ends a run if that is legal. The
+         right most button requests that the readouts perform hardware initialization.
+      </para>
+      <para>
+         The normal sequence of experiment startup is to boot the system and then do a HWINIT although
+         that is supported any time the run is halted (in case attached intrumentation has been power
+         cycled e.g.).  Once the system is in the HWINIT state, runs can be started and stopped.
+         The title and run number will be loaded from the editable parts of the top set of controls.
+      </para>
+      <para>
+         Note that if event recording is enabled, the control panel will increment the requested and
+         actual run numbers when the run ends.  This is done in a manner that supports multiple control
+         panels consistently.
+      </para>
+      <para>
+         Below the state management/status region are controls that support taking data over a timed run.
+         Note that timed runs are not part of the server, therefore, the duration and the fact that the
+         run is timed, is local to the control panel that has enabled this.  This can be confusing if
+         one control panel has enabled a timed run and another, that has not starts the run, as the 
+         panel that's enabled timed runs will, end the run after the requested duration.
+      </para>
+      <para>
+         The bottom part of the control panel is a tabbed notebook that provides:
+         <itemizedlist>
+            <listitem>
+               <para>
+                  A tab labeled <literal>EventLogging</literal>.  This tab, when selected
+                  displays the set of event loggers and provides contrls to or disable them individually.
+               </para>
+            </listitem>
+            <listitem>
+               <para>
+                  A tab labeled <literal>Readout Summary</literal> that, when selected displays a list
+                  of all Readout programs and their status.  See the section <literal>READOUT DESCRIPTION FILE</literal>
+                  for a description of how these are defined and made known to the program.
+               </para>
+            </listitem>
+            <listitem>
+               <para>
+                  One tab for each readout program labeled with its name.  Those tabs provide 
+                  trigger statistics for each program.
+               </para>
+            </listitem>
+         </itemizedlist>
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>READOUT DESCRIPTION FILE</title>
+      <para>
+         The <parameter>readout_description_file</parameter> parameter to the program is the path
+         to a file that describes the readout programs.  This is required because while there is
+         a wizard you can use to define/describe Readout programs to the managed experiment environment,
+         once described, there is nothing to distinguish them from any other critical program.
+         If you have used the wizard to create a Readout, the Readout program itself will have the
+         name <literal>yourname_readout</literal> where <replaceable>yourname</replaceable> is the
+         name you gave to the Readout definition wizard.
+      </para>
+      <para>
+         The readout description file is a comma separated field file (CSV) each line of the
+         file describes one readout program.  The first, and manadatory, field is the name of the
+         program as known by the manager.  The second, optional, field provides the name of the
+         ReST service that will be advertised by that Readout program.  If not provided,
+         the default value of <literal>ReadoutREST</literal> will be used to locate the port used by
+         that Readout to provide its ReST control service.
+      </para>
+      <example>
+         <title>Example rdo_PyRunControl readout configuration file</title>
+         <programlisting>
+Readoutone_readout
+Reeadouttwo_readout,MyService
+         </programlisting>
+      </example>
+      <para>
+         This file defines two readout programs (presumably the experiment has configured an event
+         builder to glue the events from these two together). The 
+         managed experiment database describes where the
+         two Readouts will run and the environment in which they will be run.  The first readout program
+         is named <literal>Readoutone_readout</literal> and advertises the default ReST service name of
+         <literal>ReadoutREST</literal>.  The second readout program is named 
+         <literal>Readouttwo_readout</literal> and advertises its ReST service with the port manager
+         with the name <literal>MyService</literal>  Using differing service names for each readout
+         supports the use case when one system must run more than one Readout.
+      </para>
+   </refsect1>
+</refentry>
+<!-- /manpage -->

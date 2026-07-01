@@ -21,7 +21,7 @@
 pgm_usage= \
 '''   
    Usage:
-      $DAQBIN/rdo_PyRunControl mgr_host, mgr_user /path/to/readout_descriptions [mgr_service]
+      $DAQBIN/rdo_PyRunControl mgr_host mgr_user /path/to/readout_descriptions [mgr_service]
       
       Where:
          mgr_host is the host on which the manager is running.
@@ -35,11 +35,11 @@ pgm_usage= \
          *  If there are two fields, the second field is the name of that Readout's ReST service
          For example:
       
-Readout_one
-Reeadout_two,MyService
+Readoutone_readout
+Reeadouttwo_readout,MyService
 
-         Describes two Readouts.  'Readout_one 'uses the default ReST service of ReadoutREST while 
-         'Readout_two' advertises its ReST server on 'MyService'
+         Describes two Readouts.  'Readoutone_readout 'uses the default ReST service of ReadoutREST while 
+         'Readouttwo_readout' advertises its ReST server on 'MyService'
 
 '''
 
