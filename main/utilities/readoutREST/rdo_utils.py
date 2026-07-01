@@ -130,7 +130,7 @@ class StatePollFactory:
     
     pollers : list[dict] = list()   #  The pollers we've made so far.
     
-    def getInstance(host : str, user: str | None = None, service : str = 'DAQManager') -> StatePoller:
+    def getInstance(host : str, user: str | None = None, service : str = MGRCONSTS.DEFAULT_MANAGER_REST_SERVICE) -> StatePoller:
         '''
           Creates an instance of a new poller or returns an existing one.
         '''
