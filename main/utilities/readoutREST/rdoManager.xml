@@ -1084,6 +1084,177 @@ close stdin
       </variablelist>
    </refsect1>
 </refentry>
+
+<refentry>
+   <refmeta>
+      <refentrytitle>rdo_utils</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>rdo_utils</refname>
+      <refpurpose>Provide useful utilities for dealing with readouts.</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readoutREST import rdo_utils
+import getpass
+
+a_good_polling_inteval_inms  = rdo_utils.CONSTANTS.POLL_MS
+default_readout_rest_service =rdo_utils.CONSTANTS.DEFAULT_READOUT_REST_SERVICE
+
+host_for_readout = rdo_utils.getReadoutHost(
+   'localhost', getpass.getuser(), 'DAQManager', 'readout_readout'
+)
+
+state_poller = rdo_utils.StatePollFactory.getInstance('localhost', getpass.getuser())
+def newstate(state_name):
+   print('state changed: ', state_name)
+
+state_poller.stateChanged.connect(newstate)    # Needs a Qt application to work.
+print('The current state is: ', state_poller.state())
+
+      </programlisting>
+   </refsynopsisdiv>
+
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This module contains a potpourri of functionality that is useful
+         when working with readout programs in the managed experiment environment.
+         These consist of:
+      </para>
+      <itemizedlist>
+         <listitem>
+            <para>
+               Constant definitions.
+            </para>
+         </listitem>
+         <listitem>
+            <para>
+               Function to allow you to find the host in which a program runs
+            </para>
+         </listitem>
+         <listitem>
+            <para>
+               A class that provides a centralized state polling objects and
+               a factory for getting instances for them (requires Qt applications).
+            </para>
+         </listitem>
+      </itemizedlist>
+   </refsect1>
+   <refsect1>
+      <title>CONSTANTS</title>
+      <para>
+         These are held in named enumerator calld <literal>CONSTANTS</literal>.
+         See the synopsis for an example that shows how to reference them.
+         The constants are:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><literal>rdo_utils.CONSTANTS.POLL_MS</literal></term>
+               <listitem>
+                  <para>
+                     The number of milliseconds usually used to poll things.
+                     Can be used, e.g. to set the interval of a <classname>QTimer</classname>
+                     e.g.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>rdo_utils.CONSTANTS.DEFAULT_READOUT_REST_SERVICE</literal></term>
+               <listitem>
+                  <para>
+                     The default name of the ReST service that ia advertised by Readout programs.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+   <refsect1>
+      <title>FUNCTIONS</title>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type>str</type> <methodname>rdo_utils.getReadoutHost</methodname>
+                  <methodparam><type /> <parameter>mgr_host</parameter></methodparam>
+                  <methodparam><type /> <parameter>user</parameter></methodparam>
+                  <methodparam><type /> <parameter>service</parameter></methodparam>
+                  <methodparam><type /> <parameter>name</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the host in which a program is running.  In fact this can look up
+                     any program in the manager database, not just readout programs.
+                     <parameter>mgr_host</parameter> is the host in which the manager server is running,
+                     <parameter>user</parameter> is the username of the account that started this manager.
+                     <parameter>service</parameter> is the service name advertised by the manager
+                     for its ReST service. Note that the module 
+                     <literal>nscldaq.manager_client</literal> defines 
+                     <literal>nscldaq.manager_client.CONSTANTS.DEFAULT_MANAGER_REST_SERVICE</literal>
+                     to be the default manager ReST service name.
+                     <parameter>name</parameter> is the name of the program to look up.
+                     Note that if the program <parameter>name</parameter> has not been defined
+                     <classname>IndexError</classname> is raised. 
+                  </para>
+                  <para>
+                     Getting a host name back is no gaurantee that the program is actually running.
+                     For persistent and critical programs, the experiment must have been booted
+                     to start them. Transient programs are unlikely to be running for very long.
+                  </para>
+               </listitem>
+         </varlistentry>
+         
+      </variablelist>
+   </refsect1>
+   <refsect1>
+      <title>STATE POLLING</title>
+      <para>
+         It is not uncommon for Qt client programs of the manager to want to know when the
+         system changes state.  If not handled, properly this can lead to a proliferation of
+         timer objects and a periodic cascade of requests for the system state.
+      </para>
+      <para>
+         <literal>rdo_utils</literal> provides a <classname>StatePollFactory</classname> that
+         attempts to maintain <classname>StatePoll</classname> objects as singletons for
+         any given manager host/usr/service triplet.
+      </para>
+      <para>
+         <classname>rdo_utils.StatePoller</classname> is a <classname>QObject</classname>
+         that periodically polls a  manager for tis state.  It can be created on its
+         own but it is recommended that <classname>StatePollFactory</classname> be used
+         to get an instance instead so that they don't proliferate throuhgout your application.
+      </para>
+      <para>
+         The <classname>StatePoller</classname> provides the signal <methodname>stateChanged</methodname>
+         which it emits when the manager servers's state has changed.  <methodname>stateChanged</methodname>
+         passes the new state name to slots that connect to it.  <classname>StatePoller</classname> instances
+         also define the method <methodname>state</methodname> which returns the state of the manager as
+         of its last poll of the manager.
+      </para>
+      <para>
+         The static method <classname>rdo_utils.StatePollFactory.</classname><methodname>getInstance</methodname>
+         produces either a new instance of a <classname>StatePoller</classname> or an existing
+         instance if appropriate.  Its signauture is:
+      </para>
+      <para>
+         <methodsynopsis language='python'>
+            <type>rdo_utils.StatePoller</type><methodname>rdo_utils.StatePollFactory.getInstnce</methodname>
+            <methodparam><type /><parameter>host</parameter></methodparam>
+            <methodparam><type /><parameter>user</parameter><initializer>None</initializer></methodparam>
+            <methodparam><type /><parameter>service</parameter><initializer>DEFAULT_MANAGER_REST_SERVICE</initializer></methodparam>
+         </methodsynopsis>
+      </para>
+      <para>
+         <parameter>host</parameter> is the only required parameter.  It is the host in which
+         the manager is running.  <parameter>user</parameter> is the username of the account that
+         started the manager. The default value <literal>None</literal> uses the current username.
+         <parameter>service</parameter> is the ReST service that's advertised by the manager for that
+         user in that host.  If not supplied it defaults to the default ReST service name which should
+         be correct most, if not all, of the time.
+      </para>
+   </refsect1>
+</refentry>
+
 <!-- /manpage -->
 <!-- manpage 1daq -->
 <refentry id='daq1.rdo_PyRunControl'>
