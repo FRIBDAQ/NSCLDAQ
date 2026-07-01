@@ -61,6 +61,11 @@ from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget,
                              QVBoxLayout, QHBoxLayout, QTabWidget)
 from PyQt6.QtCore import QObject
 
+
+# Global data:
+
+run_number : int = -1               # Not known yet.
+
 # This is the megawidget that is the user interface: It contains all the views
 # and accessors for them to allow controllser to be establisehd for them.
 #
@@ -228,6 +233,8 @@ def process_arguments(arglist : list[str]) -> tuple[str, str, list[str]]:
 def state_transition(
    newstate :str, gui : GUI, host: str, user: str, service: str
 ) -> None:
+   global run_number
+   
    # This handles stuff that can't be easily done in the multi
    # MVC world.
    
@@ -235,16 +242,32 @@ def state_transition(
    # tell the GUI to set the background color else,
    # normal color:
    
-   
+   logger = Logger(host, user, service)
+   kvstore = KVStore(host, user, service)
+   if run_number < 0:
+      run_number = kvstore.run()    # Initial run number.
    if newstate == 'BEGIN':
-      logger = Logger(host, user, service)
+      
       if logger.isRecording():
          gui.setRecordingBackground()
       else:
          gui.setNormalBackground()
+      # Save the run number for transitions to idle:
+      run_number = kvstore.run()
    else:
       gui.setNormalBackground()   
    
+   if newstate == 'END':
+      
+      # increment the run number if recording:
+      # We joined in the middle if run_number == -1:
+      if logger.isRecording() and run_number >= 0:
+         run_number += 1
+         kvstore.setRun(run_number)
+         gui.runInfo().setRun(run_number)
+         gui.runInfo().model().setRequestedRun(run_number)
+         kvstore.setRun(run_number)
+
 
 def main():
    if len(sys.argv) < 4 or len(sys.argv) > 5:
