@@ -1399,18 +1399,19 @@
      <section id='sec.mgr.runcontrol'>
         <title id='sec.mgr.runcontrol.title'>The Run Control Panel</title>
         <para>
-          The run control panel application, <command>mg_RunControl</command>
+          The run control panel application, <command>mg_PyRunControl</command>
           provides a control panel that can manage state transitions, run
           metadata, event logging and can monitor trigger statistics from
           compatible readout programs.
         </para>
         <para>
           Full reference information for this program is in
-          <link linkend='daq1.rdo_RunControl' endterm='daq1.rdo_RunControl.title' />
+          <link linkend='daq1.rdo_PyRunControl' endterm='daq1.rdo_PyRunControl.title' />
           Note that unlike many of the manager control panels, in additionto
           needing the host on which the manager is running and the name of the
           user running it, this control panel must also be given the list of
-          programs that run Readout REST interfaces.  This is used to maintain
+          programs that run Readout REST interfaces, and their service names.  
+          This is used to maintain
           a status display of those programs as well as trigger statistics
           for each readout.
         </para>
@@ -3659,93 +3660,9 @@ $DAQBIN/rdo_RunControl <replaceable>host user readout-program-name...</replaceab
     <refsect1>
              <title>DESCRIPTION</title>
           <para>
-            Provides a DAQ Manager run control panel.  The program parameter,
-            <replaceable>host</replaceable> is the host in which the DAQ manager
-            is running.  <replaceable>user</replaceable> is the user name
-            of the user that started the manager.  In addition to these, a
-            sequence of
-            <replaceable>readout-program-name</replaceable> parameters must
-            be provided which are the names of the programs that are readouts
-            which implement the ReadoutREST protocol.  If there are non
-            standard (e.g. Non NSCLDAQ) Readout programs which don't have
-            a ReadoutREST controlling front end, these should be omitted
-            from the list.
-          </para>
-          <para>
-            The user interface is divided into roughly three sections.
-            The top section provides the capability to monitor and modify run
-            metadata.  This metadata inlcudes the current and next title as well
-            as the current and next run.
-          </para>
-          <para>
-            The middle section provides controls and status information
-            to control state transitions in the manager and to monitor
-            the aggregate state of the Readout programs.  This consists of
-            three blocks of controls.  The left block supports booting and
-            shutting down the experiment as well as monitoring the manager state.
-          </para>
-          <para>
-            All state information is polled from the appropriate data source,
-            therefore, if more than one control panel is run, all will show
-            consistent state information regardless of which of thos panels
-            changed system state.  For example if the user running one control panel
-            changes the title, all other control panels will reflect that change
-            after their next poll for status.  Status polling is approximately once
-            per second.
-          </para>
-          <para>
-            The middle block provides run control when the system is booted.
-            It  always allows the system to be shutdown.  If the system can
-            start a run a <guibutton>Begin</guibutton> button is present to do that.
-            If the system is actively taking data an <guibutton>End</guibutton>
-            button allows data taking to be halted.  A booted/idle system
-            can also request that readout programs, that support this,
-            re-initialize their hardware via the <guibutton>Initialize</guibutton>
-            button.
-          </para>
-          <para>
-            The <literal>State</literal> shown in this section is an aggregate
-            state from all specified readouts.  If all Readouts report the same
-            state, this state is reflected here.  If Readouts show differing states,
-            the text <literal>inconsistent</literal> is displayed.  This can
-            happen normally during state transitions as the Readouts asynchronously
-            change state.
-          </para>
-          <para>
-            Finally at the right hand side of the run controls section a
-            checkbox labeled <literal>Recording</literal>, when checked informs
-            the manager that eventloggers should be started when the run starts,
-            recording data for that run.
-          </para>
-          <para>
-            The bottom section of the user interface show the status of all of the
-            readout programs described on the command line.  Note that if you miss
-            one, it will still participate in run transitions if sequences are
-            appropriately defined, as it is the sequences executed by the manager
-            that are actually responsible for starting data taking in readout programs.
-          </para>
-          <para>
-            The bottom section is a tabbed notebook. A single tab labeled
-            <literal>summary</literal> provides a table of all of the readout
-            programs specified on the command line.  Columns of the table provide
-            the name of the program, the host  in which it runs, whether or not
-            the program is responding to REST requests and the whether or not
-            the manager thinks the program is running.
-          </para>
-          <para>
-            Once the Readout programs start and become responsive to REST requests
-            for the first time, additional tabs are created for them.  Each additional
-            tab provides trigger statistics for one of the Readout programs.  The
-            labels on these tabs will be of the form <replaceable>name@host</replaceable>
-            where <replaceable>name</replaceable> is the program name and
-            <replaceable>host</replaceable> is the host in which it runs.
-          </para>
-          <para>
-            The statistics tabs will dynamically show the number of triggers,
-            accepted triggers, and approximate bytes of data generated (event body
-            sizes).  Both cumulative statistics (across all runs), and Statistics
-            for the current run will be shown.  These statistics will update
-            approximately every second.
+            This application has been replaced by <command>$DAQBIN/rdo_PyRunControL</command>.
+            See its reference information at:
+            <link linkend='daq1.rdo_PyRunControl' endterm='daq1.rdo_PyRunControl.title' />.
           </para>
     </refsect1>
 </refentry>

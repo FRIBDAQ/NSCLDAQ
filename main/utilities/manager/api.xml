@@ -1127,7 +1127,7 @@ db close
                for statemachines is simply that there's an initial state
                named <literal>SHUTDOWN</literal> and that this state is directly
                reachable from any other state.  Note that various other GUI's
-               such as <link linkend='daq1.rdo_RunControl' endterm='daq1.rdo_RunControl.title' />
+               such as <link linkend='daq1.rdo_PyRunControl' endterm='daq1.rdo_PyRunControl.title' />
                have additional requirements.
             </para>
             <para>
