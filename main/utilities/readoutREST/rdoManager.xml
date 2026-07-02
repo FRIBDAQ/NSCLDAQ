@@ -34,7 +34,7 @@ name setRunNumber new-run-number
             based Tcl driven Readout programs a REST server that can be used
             to remotely control and query the Readout.  This facility is normally
             used in conjunction with the NSCLDAQ DAQ manager facility to
-            manage Readout programs as critical programs that require attention
+            manage Readout programs as critical grams that require attention
             during state transitions.
           </para>
           <para>
@@ -1251,6 +1251,360 @@ print('The current state is: ', state_poller.state())
          <parameter>service</parameter> is the ReST service that's advertised by the manager for that
          user in that host.  If not supplied it defaults to the default ReST service name which should
          be correct most, if not all, of the time.
+      </para>
+   </refsect1>
+</refentry>
+
+<!-- EventLog MVC configuration and global enables. -->
+<refentry>
+   <refmeta>
+      <refentrytitle>Eventlog MV</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>Eventlog MV</refname>
+      <refpurpose>Eventlog configuration and global enable Model/View.</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readoutREST import Eventlog
+
+evenglogConfigurationView = LoggerConfig()
+eventlogConfigModel  = eventlogConfiguration.model()
+
+eventlogGlobalEnableView = Logger()
+eventlogGlobalEnableModel = eventlogGlobalEnableView.model()
+
+# We need to establishs controllers to complete the MVC pattern.
+
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This module provides two models and views related to event logging.
+         The first, <classname>LoggerConfig</classname> and 
+         <classname>LoggerConfigModel</classname> provide the view and model
+         for a set of event loggers. The second set, <classname>Logger</classname>
+         and <classname>LoggerModel</classname> the view and model.
+         for a global enable of event recording when data taking is active.
+      </para>
+      <para>
+         Both class sets assume that there is an external entity, a controller,
+         that hooks the user interface to the data acquisition system being
+         controlled and back to the model as that data acquisition state 
+         changes with respect to event logging.
+      </para>
+      <para>
+         Both sets of models and views assume that you are working in side
+         the PyQt6 enviornment.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>Event log configuration LoggerConfig and LoggerConfigModel</title>
+      <para>
+         The view and modedl of the logger configuration assume that the system
+         can have several event loggers active.  These loggers can be selectively 
+         enabled and the characteristics of those loggers are interesting to users.
+         Instantiating a <classname>LoggerConfig</classname> object automatically
+         instantiates a <classname>LoggerConfigModel</classname> to supply its data.
+         This object can be retrieved using the view's <methodname>model</methodname>
+      </para>
+      <para>
+            Within this model/view pair, loggers are communicated using
+            a <firstterm>logger dict</firstterm>.  This is a python dict
+            that contains:
+      </para>
+      <itemizedlist>
+         <listitem>
+            <para>
+               <literal>ring</literal>  The source of the data logged (ringbuffer URI in FRIB/NSCLDAQ).
+            </para>
+         </listitem>
+         <listitem>
+            <para>
+               <literal>host</literal> The host in which the event logger runs.
+            </para>
+         </listitem>
+         <listitem>
+            <para>
+               <literal>destination</literal> Where the logged data goes (usually a filesystem path).
+            </para>
+         </listitem>
+         <listitem>
+            <para>
+               <literal>partial</literal> True if the logger is a partial logger. FRIB/NSCLDAQ
+               provides for full loggers which maintain a directory struture and can capture
+               metadata along with a run as well as partial loggers that just create a soup of
+               event log files in the destiniation.
+            </para>
+         </listitem>
+         <listitem>
+            <para>
+               <literal>enabled</literal> True if the logger is enabled.  The logger will record
+               data if the global enable is enabled and the logger itself is enabled.  This allows
+               loggers to be turned on and off individually.
+            </para>
+         </listitem>
+         <listitem>
+            <para>
+               <literal>criticial</literal> True if the logger is critical.  If a critical logger
+               exists, the FRIB/NSCLDAQ managed experiment environmet shuts down the experiment
+               (transitions to the SHUTDOWN state).
+            </para>
+         </listitem>
+      </itemizedlist>
+
+      <para>
+         The subsections below present the methods of, first, the <classname>LoggerConfig</classname>
+         view and then the <classname>LoggerConfigModel</classname> model.
+      </para>
+      <refsect2>
+         <title><classname>LoggerConfig</classname> (view)</title>
+         <para>
+            The <classname>LoggerConfig</classname> provides a signal named
+            <literal>enableChanged</literal> that indicates the user has requested
+            a change in the enable state of a logger by interacting with its controls.  
+            Note that  the view, itself,
+            takes no action to change the internal state of the model, 
+            nor does it interact with a data acquisition system.
+         </para>
+         
+         <para>
+            The view has slots that are connected to model signals,
+            these will be described as if they were any other method.
+         </para>
+         <variablelist>
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                     <type /> <methodname>__init__</methodname>
+                     <methodparam><type /><parameter>parent</parameter>
+                        <initializer>None</initializer></methodparam>
+                  </methodsynopsis></term>
+                  <listitem>
+                     <para>
+                        Called as part of the construction process. The optional
+                        <parameter>parent</parameter> parameter provides an object
+                        that parents the constructed <classname>LoggerConfig</classname>
+                        view object.  If omitted the object is created without a parent.
+                     </para>
+                  </listitem>
+            </varlistentry>
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                     <type /><methodname>model</methodname> <void />
+                  </methodsynopsis>
+                  </term>
+                  <listitem>
+                     <para>
+                        Returns the view's associated model. This is normally  a
+                        <classname>LoggerConfigModel</classname> but really only has
+                        to implement the same signals and methos of that class.
+                     </para>
+                  </listitem>
+            </varlistentry>
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                     <type /> <methodname>addLogger</methodname>
+                        <methodparam><type /><parameter>logger</parameter></methodparam>
+                  </methodsynopsis></term>
+                  <listitem>
+                     <para>
+                        This is a public slot that adds a new logger to the view.
+                        Note that loggers are identified by their destiniation path.
+                        The parameter is a logger dict as described prior to this
+                        list of method descriptions.
+                     </para>
+                  </listitem>
+            </varlistentry>
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                     <type /> <methodname>deleteLogger</methodname>
+                     <methodparam><type /><parameter>destiniation</parameter></methodparam>
+                  </methodsynopsis></term>
+                  <listitem>
+                     <para>
+                        Deletes a logger from the view. The logger is identified by 
+                        <parameter>destination</parameter> which must match the
+                        value of a <literal>destination</literal> value in the logger's dictionary.
+                        If the logger is not found, 
+                        <classname>IndexError</classname> is raised.
+                     </para>
+                  </listitem>
+            </varlistentry>
+            
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                  <type /> <methodname>enableLogger</methodname>
+                  <methodparam><type /><parameter>destination</parameter></methodparam>
+               </methodsynopsis></term>
+                  <listitem>
+                     <para>
+                        Marks the logger identified by <parameter>destination</parameter>
+                        as enabled.  If there is no matching logger in the view,
+                        <classname>IndexError</classname> is raised.
+                     </para>
+                     
+                  </listitem>
+            </varlistentry>
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                     <type /> <methodname>disableLogger</methodname>
+                     <methodparam><type /> <parameter>destination</parameter></methodparam>
+                  </methodsynopsis></term>
+                  <listitem>
+                     <para>
+                        Marks the event logger identified by <parameter>destinatino</parameter>
+                        as disabled in the view.   If 
+                        no longger with that <parameter>destination</parameter>
+                        is in the view, <classname>IndexError</classname> is raised.
+                     </para>
+                  </listitem>
+            </varlistentry>
+            
+         </variablelist>
+      </refsect2>
+      <refsect2>
+         <title>LoggerConfigModel (model)</title>
+         <para>
+            This class provides the data that drives a <classname>LoggerConrfig</classname>
+            view. The class provides several signals in the Qt sense:
+         </para>
+         <itemizedlist>
+            <listitem>
+               <para>
+                  <literal>loggerAdded(dict)</literal> Is signalled when a logger is aded to the
+                  model.  The dict is the logger dict that describes the logger.
+               </para>
+            </listitem>
+            <listitem>
+               <para>
+                  <literal>loggerDeleted(str)</literal> emitted when a logger is deleted from the model.
+                  The string is the value of the <literal>destination</literal> key of the logger dict
+                  for the deleted logger.
+               </para>
+            </listitem>
+            <listitem>
+               <para>
+                  <literal>loggerEnabled(str)</literal> emitted with a logger is deletd from model.
+                  The string is the value of it <literal>destination</literal> key of the logger
+                  dict of the enabled logger.
+               </para>
+            </listitem>
+            <listitem>
+               <para>
+                  <literal>loggerDisabled(str)</literal> emitted with a logger is deletd from model.
+                  The string is the value of it <literal>destination</literal> key of the logger
+                  dict of the disabled logger.
+               </para>
+            </listitem>
+         </itemizedlist>
+         <para>
+            The following methods are procvided by the <classname>LoggerConfigModel</classname> instances:
+         </para>
+         <variablelist>
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                      <type /><methodname>logggers</methodname>
+                  </methodsynopsis></term>
+                  <listitem>
+                     <para>
+                        Returns a list of the logger description dictionaries that have been loade into
+                        the model.  
+                     </para>
+                  </listitem>
+            </varlistentry>
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                      <type /><methodname>addLogger</methodname>
+                      <methodparam><type/><parameter>logger</parameter></methodparam> 
+                  </methodsynopsis></term>
+                  <listitem>
+                     <para>
+                        Adds a logger to the model.  The <parameter>logger</parameter> parameter is
+                        a logger descsription dictionary.  This method also emits the 
+                        <literal>loggerAdded</literal> signal with the <parameter>logger</parameter>
+                        that was passed in as its parameter.
+                     </para>
+                  </listitem>
+            </varlistentry>
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                      <type /><methodname>deleteLogger</methodname>
+                      <methodparam><type/><parameter>destination</parameter></methodparam>
+                  </methodsynopsis></term>
+                  <listitem>
+                     <para>
+                        Removes a logger from the model. The logger whose <literal>destination</literal>
+                        key matches the <parameter>destiniation</parameter> key is removed and
+                        the <literal>loggerDeleted</literal> signa emitted with  <parameter>destination</parameter>
+                        as its parameter.  If there is no logger with the specified <parameter>destination</parameter>
+                        an <classname>IndexError</classname> is raised.
+                     </para>
+                  </listitem>
+            </varlistentry>
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                      <type /><methodname>enableLogger</methodname>
+                      <methodparam><type /><parameter>destination</parameter></methodparam>
+                  </methodsynopsis></term>
+                  <listitem>
+                     <para>
+                        Marks the specified logger as enabled.  Enabled loggers will log data for
+                        runs when global event logging is enabled.  The <literal>loggerEnabled</literal>
+                        signal is emitted with <parameter>destiniation</parameter> as its parameter.
+                        If <parameter>destination</parameter>
+                        does not match a logger <classname>IndexError</classname> is raised.
+                     </para>
+                  </listitem>
+            </varlistentry>
+            <varlistentry>
+                  <term><methodsynopsis language='python'>
+                      <type /><methodname>disableLogger</methodname>
+                      <methodparam><type /><parameter>destination</parameter></methodparam>
+                  </methodsynopsis></term>
+                  <listitem>
+                     <para>
+                        Marks the specified loggers as disabled.  Disabled loggers will not log
+                        data during runs even if the global event logging enable is True.
+                        The <literal>loggerDisabled</literal> signal is emitted with
+                        <parameter>destiniation</parameter> as its parameter.
+                        If <parameter>destination</parameter> does not match any logger, 
+                        <classname>IndexError</classname> is raised.
+                     </para>
+                  </listitem>
+            </varlistentry>
+         </variablelist>
+      </refsect2>
+   </refsect1>
+   <refsect1>
+      <title>The LoggerModel and Logger model and view.</title>
+      <para>
+         The event logging system is assumed to have a global enable.  If the enable is
+         true, then all loggers that are enabled will log event data from their sources
+         to their destinations.  This pair of classes captures that.  It is assumed there is
+         an external controller object that links the view operations to the DAQ system and
+         changes in the DAQ system to the model. 
+      </para>
+      <para>
+         <classname>Logger</classname> instantiations, creates a <classname>LoggerModel</classname>
+         which can be retrieved via the <methodname>model</methodname> method.  The <classname>Logger</classname>
+         connects to the <literal>changed</literal> signal of its <methodname>LoggerModel</methodname>
+         so that it can reflect changes made to the model.  Note that since the model/view reflect
+         a single boolean, the <classname>Logger</classname> is just derived from a 
+         <classname>QCheckBox</classname>. Its sole method is
+         <methodsynopsis language='python'>
+            <type /><methodname>model</methodname><void />
+         </methodsynopsis> which returns the model it is reflecting.
+      </para>
+      <para>
+         <classname>LoggerModel</classname> is quite simple as  well. It emits a signal
+         <literal>changed</literal> when told the state of the global logger enable has changed
+         and passes that new state as a <type>bool</type> parameter to slots connected to it.
+         It as a single property, <literal>enabled</literal> with a getter and setter with the
+         standard <methodname>enabled</methodname> and <methodname>setEnabled</methodname> method
+         names.  Invoking <methodname>setEnabled</methodname> will set the internal state as well
+         as emit <literal>changed</literal> with the new state as an argument.
       </para>
    </refsect1>
 </refentry>
