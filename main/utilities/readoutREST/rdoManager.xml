@@ -1833,6 +1833,136 @@ model = view.model()
       </para>
    </refsect1>
 </refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>ReadoutStatisticsController</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>ReadoutStatisticsController</refname>
+      <refpurpose>Controller linking statstics model/view through the managed environment</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readoutREST imoprt ReadoutStatisticsController
+
+#  view is a ReadoutStatistics object
+
+controller = ReadoutStatisticsController.ReadoutStatisticsController(
+   view, readout_name, manager_host, parent=view
+)
+
+# Once the Qt6 event loop starts (e.g. exec from the QApplication)
+# the model will be maintained.
+
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         <link linkend='python3.readoutstatistics'>(3python)ReadoutStatitistcs</link>
+         described model and view classes for maintaining and displaying the trigger
+         statistics from a Readout program.  Those two classes require a controller to 
+         actually gather the statistics from a Readout program and maintain the
+         model.
+      </para>
+      <para>
+         <classname>ReadoutStatisticsCOntroller</classname> provides that functionality
+         for the managed experiment environment in FRIB/NSCLDAQ.  It polls the ReST
+         server of a Readout program periodocally and updates the model associated with the
+         view from the data it obtains.
+      </para>
+      <para>
+         The construction <methodname>__init__</methodname> method  has the following signature:
+      </para>
+      <para>
+         <methodsynopsis language='python'>
+            <type /><methodname>__init__</methodname>
+            <methodparam><type /><parameter>view</parameter></methodparam>
+
+            <methodparam><type /><parameter>mgr_host</parameter></methodparam>
+            <methodparam><type /><parameter>mgr_user</parameter>
+               <initializer>None</initializer></methodparam>
+            <methodparam><type /><parameter>mgr_service</parameter>
+               <initializer>manager_client.CONSTANTS.DEFAULT_MANAGER_REST_SERVICE</initializer></methodparam>
+            <methodparam><type /><parameter>rdo_service</parameter>
+               <initializer>rdo_utils.CONSANTS.DEFAULT_READOUT_REST_SERVICE</initializer></methodparam>
+            <methodparam><type /><parameter>parent</parameter>
+               <initializer>None</initializer></methodparam>
+         </methodsynopsis>
+      </para>
+      <para>Where:</para>
+      <variablelist>
+         <varlistentry>
+               <term><parameter>view</parameter></term>
+               <listitem>
+                  <para>
+                     Is the view whose model the controller will maintain.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>readout_name</parameter></term>
+               <listitem>
+                  <para>
+                     Is the name of the readout program as defined in the manager's
+                     database. Note that if the readout program was defined with the
+                     Readout Wizard, it will be the name of the Readout chosen with 
+                     <literal>_readout</literal> appended to it.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mgr_host</parameter></term>
+               <listitem>
+                  <para>
+                     The host in which the manager server is running.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mgr_user</parameter></term>
+               <listitem>
+                  <para>
+                     This optional parameter is the username of the user that started the manager.
+                     If not supplied or <literal>None</literal> the logged in user is used
+                     from <function>getpass.getuser()</function>
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mgr_service</parameter></term>
+               <listitem>
+                  <para>
+                     The service advertised with the FRIB/NSCLDAQ port manager
+                     by the manager server for its ReST interface.
+                     If not supplied, the default value used by the manager is used.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>rdo_service</parameter></term>
+               <listitem>
+                  <para>
+                     The service advertised by the Readout with the FRIB/NSCLDAQ port
+                     manager for its ReST server.  If not supplied this is the default 
+                     value.  
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>parent</parameter></term>
+               <listitem>
+                  <para>
+                     The parent <classname>QObject</classname> for the controller.
+                     If not supplied, this defaults to <literal>None</literal> 
+                     which leaves the controller unparented.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
 <refentry id='daq1.rdo_PyRunControl'>
