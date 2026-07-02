@@ -1963,6 +1963,139 @@ controller = ReadoutStatisticsController.ReadoutStatisticsController(
       </variablelist>
    </refsect1>
 </refentry>
+<refentry id='python3.readoutstatusmv'>
+   <refmeta>
+      <refentrytitle>ReadoutStatus</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>ReadoutStatus</refname>
+      <refpurpose>Model and view for status of all readouts.</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readoutREST import ReadoutStatus
+
+view = ReadoutStatus.ReadoutStatus()
+model = view.model()  # A ReadoutStatus.ReadoutStatusModel object
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         A data acquisition system may have several readout programs.
+         This Model/View pair provides a means to view the readouts,
+         where they run, if they are currently active and their run state.
+      </para>
+      <para>
+         Instantiating the view (<classname>ReadoutStatus</classname>) creates and
+         associates a model object (<classname>ReadoutStatusModel</classname>) object
+         so, in general, you don't need to directly instantiate one as the view's
+         <methodname>model</methodname> will fetch it for you.
+      </para>
+      <para>
+         The currnet implementation of this MV is as a <classname>QTableView</classname>
+         and associated extended <classname>QStandardItemModel</classname>. However the model
+         provides a higher level interface for describing the data than the base class does.
+         The set of readouts is descdribed by a list of dicts. Each dict describing a single readout
+         with the keys:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><literal>name</literal></term>
+               <listitem>
+                  <para>
+                     A name given to the readout program. This should be unique.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>host</literal></term>
+               <listitem>
+                  <para>
+                     Which system the Readout should run in.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>active</literal>></term>
+               <listitem>
+                  <para>
+                     Boolean that is true if the Readout is running.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>state</literal>></term>
+               <listitem>
+                  <para>
+                     Textual run state of the readout (e.g. <literal>active</literal> if taking data).
+                     If active is not true, typically this should be set to
+                     <literal>unresponsive</literal>
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+      <para>
+         The model and signal don't expose any additional signals other than those of their
+         base classes.  See <literal>MODEL METHODS</literal> for methods that are
+         considered public in <classname>ReadoutStatusModel</classname>
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>MODEL METHODS</title>
+      <para>
+         Note that these are all instance methods and the <parameter>self</parameter> is omitted
+         for brevity.
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>__init__</methodname>
+                  <methodparam><type /><parameter>parent</parameter>
+                     <initializer>None</initializer></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Called implicitly when contructing an instance.  <parameter>parent</parameter>
+                     is the optional parent <classname>QOBject</classname>. If omitted, the
+                     model is unparented.  Note that usually a <classname>ReadoutStatistics</classname>
+                     view is responsible for constructing instances, however it is certainly possible
+                     to construct it to supply data for some other custom view type.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname> load</methodname>
+                  <methodparam><type /><parameter>readouts</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Called intially to initialize the model and load its data.
+                     <parameter>readouts</parameter> is the list of dicts describing the
+                     readouts.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>update</methodname>
+                  <methodparam><type /><parameter>readouts</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Once initial data are loaded into the model, update can be used
+                     to update the active and state elements of existing items in the model.
+                     If Readouts have disappeared, <methodname>load</methodname> must be used
+                     instead.  <parameter>readouts</parameter> is the list of readout description
+                     dicts.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
 <refentry id='daq1.rdo_PyRunControl'>
