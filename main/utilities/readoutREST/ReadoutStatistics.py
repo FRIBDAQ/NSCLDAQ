@@ -43,9 +43,9 @@ class RunStatisticsModel(QStandardItemModel):
         statistics  - read/write where the representation is a dict with the keys 
             'perRun' for per run statistics and 'cumulative' for cumulative statistics.
             The values of these keys are dicts with the keys:
-            * 'trigger' - number of triggers seen.
+            * 'triggers' - number of triggers seen.
             * 'acceptedTriggers' - number of triggers that resulted in an event.
-            * 'bytes' - number of bytes of event data emitted.
+            * 'bytes' - number of bytes of event data emitted.  
     '''
     def __init__(self, parent : QObject = None):
         super().__init__(parent)
