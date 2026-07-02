@@ -1256,9 +1256,9 @@ print('The current state is: ', state_poller.state())
 </refentry>
 
 <!-- EventLog MVC configuration and global enables. -->
-<refentry>
+<refentry id='python3.eventlogmv'>
    <refmeta>
-      <refentrytitle>Eventlog MV</refentrytitle>
+      <refentrytitle id='python3.eventlogmv.title'>Eventlog MV</refentrytitle>
       <manvolnum>3python</manvolnum>
    </refmeta>
    <refnamediv>
@@ -1608,7 +1608,231 @@ eventlogGlobalEnableModel = eventlogGlobalEnableView.model()
       </para>
    </refsect1>
 </refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>EventLogController</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>EventLogController</refname>
+      <refpurpose>Controllers connecting the Eventlog models and views via the managed environment</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+   <programlisting>
+from nscldaq.readoutREST import EventLogController
 
+...
+
+# enable_view is a <classname>Logger</classname> instance
+
+enable_controller = EventLogController.LoggerEnableController(
+   enable_view, manager_host, parent=enable_view
+)
+
+...
+
+# config_view is a <classname>LoggerConfig</classname> instance:
+
+config_controller = EventLogController.LoggerConfigController(
+   config_view, manager_host, parent=config_controller
+)
+
+# When the QApplication starts executing all this just works.
+
+   </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         The <link linkend='python3.eventlogmv'> EventLog model and view</link>
+         manpage described a pair of models and views for configuring the 
+         event loggers in a system and managing the globel enable for event logging.
+         These classes require an external controller to actually interface
+         between the signals emitted by the views, indicating user interactions
+         with those views, and the underlying data acqusition system environment.
+      </para>
+      <para>
+         The <classname>LoggerConfigController</classname> and 
+         <classname>LoggerEnableController</classname> classes in this module provide that
+         functionality for the managed experiment environment in FRIB/NSCLDAQ.  They are both
+         intended, as are their view/model pairs to operate under the PyQt6 environment.
+      </para>
+      <para>
+         Once constructed and linked to their views, and the Qt event loop started,
+         no futher programmatic intervention is required.  The 
+         constructor parameterization for both classes is identical:
+      </para>
+      <para>
+         <methodsynopsis language='python'>
+            <type /><methodname>__init__</methodname>
+            <methodparam><type/> <parameter>view</parameter></methodparam>
+            <methodparam><type/> <parameter>mgr_host</parameter></methodparam>
+            <methodparam><type/> <parameter>mgr_user</parameter>
+               <initializer>None</initializer></methodparam>
+            <methodparam><type/> <parameter>service</parameter>
+               <initializer>manager_client.CONSTANTS.DEFAULT_MANAGER_REST_SERVICE</initializer></methodparam>
+            <methodparam><type/> <parameter>parent</parameter>
+               <initializer>None</initializer></methodparam>
+         </methodsynopsis>
+      </para>
+      <para>
+         The parameter meanings are: 
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><parameter>view</parameter></term>
+               <listitem>
+                  <para>
+                     The view (which also contains) the model the instance needs to 
+                     interact with.  This parameter is mandatory.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mgr_host</parameter></term>
+               <listitem>
+                  <para>
+                     The host in which the manager server is running.  This parameter is mandatory.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mgr_user</parameter></term>
+               <listitem>
+                  <para>
+                     If provided, this optional parameter specifies the username of the user
+                     that started the manager server. If omitted or <literal>None</literal>,
+                     the function <function>getpass.getuser()</function> is used to obtain the
+                     username of the logged in user.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>service</parameter></term>
+               <listitem>
+                  <para>
+                     This optional parameter, if present, specifies the service the manager 
+                     server advertises with the FRIB/NSCLDAQ port manager.  If omitted, it defaults
+                     to the service the manager normally advertises.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>parent</parameter></term>
+               <listitem>
+                  <para>
+                     This optional parameter, if present, sets the parent of the <classname>QObject</classname>
+                     that the controllers are derived from.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
+<refentry id='python3.readoutstatistics'>
+   <refmeta>
+      <refentrytitle id='python3.readoutstatistics.title'>ReadoutStatistics</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>ReadoutStatistics</refname>
+      <refpurpose>Model and view for statistics from a Readout</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+   <programlisting>
+from nscldaq.readoutREST import ReadoutStatistics
+
+view = ReadoutRestStatistics.RunStatistics()
+model = view.model()
+   </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         Readout programs in FRIB/NSCLDAQ maintain both per run and cumulative trigger
+         statistics. The <classname>RunStatistics</classname> view class in this 
+         module provides a tabular view of these statistics. In fact, it is derived from 
+         <classname>QTableView</classname> from PyQt6.  The <classname>RunStatisticsModel</classname>
+         derived from <classname>QStandardItemModel</classname> provides the model for that view.
+         The view of statistics is readonly so no additional signals are defined other than those
+         the base classes emit.
+      </para>
+      <para>
+         The MV pair rely on an external controller object to maintain the model
+         statistics.  This makes them only dependent on the ability to get the
+         required trigger statistics from a Readout program.
+      </para>
+      <para>
+         The representation of triger statistics provided to the outside world by
+         <classname>RunStatisticsModel</classname> is a dict with the keys
+         <literal>perRun</literal> and <literal>cumulative</literal>  The values of
+         these keys are dicts desribing the per run and cumulative trigger statistics
+         respectively.  These dicts have the same set of keys:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><literal>triggers</literal></term>
+               <listitem>
+                  <para>
+                     Number of triggers seen by the readout.  This might be live triggers depending
+                     on the type of Readout.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>acceptedTriggers</literal></term>
+               <listitem>
+                  <para>
+                     The number of triggers that resulted in an event.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>bytes</literal></term>
+               <listitem>
+                  <para>
+                     Number of bytes of event data emitted.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+      <para>
+         The <classname>RunStatistics</classname> exports only the methods that
+         <classname>QTableView</classname> exports.  Construction takes the usual
+         optional <parameter>parent</parameter> that default to none.
+         The <literal>MODEL METHODS</literal> below describes the methods the
+         model exports in addition to the <classname>QStandardItemModel</classname>
+         methods.  Under normal circumstances clients will only need the methods
+         described below.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>MODEL METHODS</title>
+      <para>
+         The interface provided to <classname>RunStatistics</classname> is much simpler
+         than the direct <classname>QStandardItemModel</classname> interface.
+         A single poperty, <literal>statistics</literal> is defined which is a dict
+         of the form described in <literal>DESCRIPTION</literal> above.  
+      </para>
+      <para>
+         The <methodname>statistics</methodname> method, therefore returns the 
+         current statistics dict 
+      </para>
+      <para>
+         <methodsynopsis language='python'>
+            <type /> <methodname>setStatistics</methodname>
+            <methodparam><type /><parameter>statistics_dict</parameter></methodparam>
+         </methodsynopsis>
+      </para>
+      <para>
+         Allows a new set of statistics to be loaded into the model.  
+         <parameter>statistics_dict</parameter> is a new statistics dict of the form
+         documented in the <literal>DESCRIPTION</literal> section.
+         The model
+         takes care of updating the <classname>QStandardItemModel</classname> appropriately.
+      </para>
+   </refsect1>
+</refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
 <refentry id='daq1.rdo_PyRunControl'>
