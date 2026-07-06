@@ -2217,6 +2217,308 @@ controller = ReadoutStatusController.ReadoutStatusController(
       </variablelist>
    </refsect1>
 </refentry>
+<refentry id='python3.runinfomv'>
+   <refmeta>
+      <refentrytitle id='python3.runinfomv.title'>RunInfo MV</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>RunInfo MV</refname>
+      <refpurpose>Provide model and view for Run informationin Qt6</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readoutREST import RunInfo
+
+...
+view = RunInfo.RunInfo(parent)
+model = view.model()   # RunInfo.RunInfoModel object
+...
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This module provides a view of run information and a model to drive the view.  Run information
+         consists of the current title and run number along with the requested next title and run number.
+         It is assumed there will be an external controller that will connect the signals from the view
+         to the underlying data acquisition system environment and connect changes in that environment
+         to the model which drives the view.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>RunInfo (view)</title>
+      <para>
+         The view class provides textual display of the current title and  run number. It also
+         supplies an editable line input which, when &gt;Enter&lt; is typed sends the
+         <literal>requestedTItleChanged</literal> signal which will have as a parameter the 
+         value of that line edit.  Finally, it supplies a Spinbox which can change the requested
+         run number.  Changes to the value of the spinbox send the 
+         <literal>requestedRunChanged</literal> signal which will have the new requested run
+         number as a parameter.
+      </para>
+      <para>
+         The view provides the vollowing methods and slots. Note that for brevity we omit the
+         <parameter>self</parameter> from the method signatures.
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /><methodname>__init__</methodname>
+                   <methodparam><type /><parameter>parent</parameter><initializer>None</initializer>
+                   </methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     This method is invoked automatically during object construction with the
+                     construction parameters.   The <parameter>parent</parameter> allows the constructing
+                     code to specify a parent <classname>QOjbect</classname> instance.  
+                     <parameter>parent</parameter> defaults to <literal>None</literal> if not 
+                     provided which leaves the widget unparented.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /><methodname>model</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     When constructed <classname>RunInfo</classname> creates and holds a reference
+                     to a <classname>RunInfoModel</classname> object.  A reference to this model
+                     can be obtained by calling this method. 
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /><methodname>title</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the value of the requested title text entry field of the
+                     view.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /><methodname>setTitle</methodname>
+                   <methodparam><type /><parameter>newTitle</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Loads <parameter>newTitle</parameter> into the text edit field for
+                     the requested title.  This does <emphasis>not</emphasis> emit the
+                     <literal>requestedTitleChanged</literal> signal.  Only user interaction
+                     with the requested title field can do that.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/><methodname>run</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the integer requested run number from the run  number spinbox.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/><methodname>setRun</methodname>
+                  <methodparam><type /><parameter>newRun</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets the value of the requested run number spinbox to the value
+                     <parameter>newRUn</parameter>. Note that the 
+                     <literal>requestedRunChanged</literal> is <emphasis>not</emphasis> 
+                     emitted. Only user interaction with the control can cause that
+                     to be emitted.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/><methodname>updateActualTitle</methodname>
+                  <methodparam><type /><parameter>title</parameter></methodparam>
+               </methodsynopsis> (slot)</term>
+               <listitem>
+                  <para>
+                     This slot updates the value shown in the actual title label of the
+                     widget to <parameter>title</parameter>.  
+                     Note that normally, the controller will update the
+                     actual title in the model and, since this slot is connecte to the
+                     model's <literal>actualTitleChanged</literal> signal, that will cause
+                     the view to update automatically.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/><methodname>updateActualRun</methodname>
+                  <methodparam><type /><parameter>run</parameter></methodparam>
+               </methodsynopsis> (slot)</term>
+               <listitem>
+                  <para>
+                     This slot upates the value shown in the actual run number label
+                     to <parameter>run</parameter>.  Note that normally the controller
+                     will update the actual run number in the model and the
+                     model's connection of the model's <literal>actualRunChanged</literal>
+                     signal to this slot causes the view widget to update
+                     automatically.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+   <refsect1>
+      <title>RunInfoModel (model)</title>
+      <para>
+         This model contains the data that's intended to drive the 
+         <classname>RunInfo</classname> view's visual appearance. It will normally be
+         maintained by an external controller object that mediates between the model/view and a
+         data acquisition system environment.  The model can emit a pair of signals:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><literal>actualTitleChanged(str)</literal></term>
+               <listitem>
+                  <para>
+                     Signalled whe the model's actual title was changed via a call
+                     to <methodname>setActualRun</methodname>.  See the method list
+                     below.  THe view normally connects this signal to its
+                     <methodname>updateActualTitle</methodname> slot.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>actualRunChanged(int)</literal></term>
+               <listitem>
+                  <para>
+                     Signalled when the models' actual run number was changed via
+                     a call to <methodname>setActualRun</methodname>. See the method list
+                     below.  The view normally connects this signal to  its
+                     <methodname>updateActualRun</methodname> slot.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+      <para>
+         Several methods are provided to allow an external program to interact with the
+         model and set its values in accorance with the data acquisition system environment.
+         For brevity the <parameter>self</parameter> parameter is omitted from the
+         method signatures below:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /> <methodname>__init__</methodname>
+                   <methodparam><type /><parameter>parent</parameter><initializer>None</initializer>
+                   </methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Called during construction with the paramters passed into the constructor.
+                     THe <parameter>parent</parameter> allows you to provide a parent to the
+                     <classname>QObject</classname> from which this calss is derived.
+                     If omitted the object created will not have  a parent.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /> <methodname>requestedTitle</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the requested title (str) from the model.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /> <methodname>setRequestedModel</methodname>
+                   <methodparam><type /> <parameter>title</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Changes the requested title to <parameter>title</parameter>.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /> <methodname>requestedRun</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Retrieves the requested run number from the model (int).
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /> <methodname>setRequestedRun</methodname>
+                   <methodparam><type /><parameter>run</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Changes the value of the requested run number to <parameter>run</parameter>
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /> <methodname>actualTitle</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the actual title (str) from the model.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /> <methodname>setActualTitle</methodname>
+                   <methodparam><type /><parameter>title</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets the model's actual title to <parameter>title</parameter>.
+                     This also emits the <literal>actualTitleChanged</literal> signal
+                     with the new title as the signal's parameter.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /> <methodname>actualRun</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the model's actual run number (int).
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                   <type /> <methodname>setActualRun</methodname>
+                   <methodparam><type /><parameter>run</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets the model's actual run number to <parameter>run</parameter> (int).
+                     The <literal>actualRunChanged</literal> signal is emitted with the
+                     new run number as its parameter.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
 <refentry id='daq1.rdo_PyRunControl'>
