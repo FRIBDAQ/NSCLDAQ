@@ -3043,6 +3043,10 @@ controller.start()
                </listitem>
          </varlistentry>
       </variablelist>
+      <para>
+         Once created, the <methodname>start</methodname>() should be called to start the operation
+         of the controller.   
+      </para>
    </refsect1>
 </refentry>
 <!-- /manpage -->
