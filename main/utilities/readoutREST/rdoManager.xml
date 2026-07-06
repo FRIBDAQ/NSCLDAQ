@@ -2519,6 +2519,94 @@ model = view.model()   # RunInfo.RunInfoModel object
       </variablelist>
    </refsect1>
 </refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>RunInfoController</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>RunInfoController</refname>
+      <refpurpose>Controller for the 
+         <link linkend='python3.runinfomv'>RunInfo model/view</link></refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readoutREST import RunInfo, RunInfoController
+from nscldaq.manager_client import KVStore
+
+client = KVStore(manager_host)
+view   = RunInfo.RunInfo()
+
+controller = RunInfoController.RunInfoController(view, client)
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This module provides a controller that can mediate between the
+         managed FRIB/NSCLDAQ environment and the
+         <classname>RunInfo</classname> and <classname>RunInfoModel</classname>
+         desribed in the <link linkend='python3.runinfomv'>(3python)RunInfo</link> manpage.
+         Note that all of these classes are intended to be used within the 
+         <literal>PyQt6</literal> programming/GUI environment.
+      </para>
+      <para>
+         Once constructed on a view (<classname>RunInfo</classname> compatible object), the
+         controller operates autonomously when the Qt6 event loop is entered.
+      </para>
+      <para>
+         The constructor's <methodname>__ini__</methodname> method has the following synopsis:
+      </para>
+      <methodsynopsis language='python'>
+         <type /><methodname>__init__</methodname>
+         <methodparam><type /><parameter>view</parameter></methodparam>
+         <methodparam><type /><parameter>kvclient</parameter></methodparam>
+         <methodparam><type /><parameter>parent</parameter>
+            <initializer>None</initializer></methodparam>
+      </methodsynopsis>
+      <para>
+         Where:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><parameter>view</parameter></term>
+               <listitem>
+                  <para>
+                     Is the view object.  It will supply a 
+                     <methodname>model</methodname> method to obtain the
+                     associated model.  Note the view and model
+                     must be compatible with the classes described in
+                     the view and model classes in
+                     the <link linkend='python3.runinfomv'>(3python)RunInfo</link> manpage.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>kvclient</parameter></term>
+               <listitem>
+                  <para>
+                     A client of the key value (KV) store of the manager.
+                     This can be created fromt he <literal>nscldaq.manager_client</literal>
+                     <classname>KVClient</classname> class.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>parent</parameter></term>
+               <listitem>
+                  <para>
+                     Optional parent object for our object. The
+                     <classname>RunInfoController</classname> Is derived from 
+                     <classname>QObject</classname> and therefore can have a 
+                     <classname>QOjbect</classname> parent.  If no <parameter>parent</parameter>
+                     is given, the default value of <literal>None</literal> means the
+                     object will have no parent.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
 <refentry id='daq1.rdo_PyRunControl'>
