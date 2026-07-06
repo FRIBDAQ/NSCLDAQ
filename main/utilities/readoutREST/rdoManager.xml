@@ -2607,6 +2607,333 @@ controller = RunInfoController.RunInfoController(view, client)
       </variablelist>
    </refsect1>
 </refentry>
+<refentry id='python3.runstatemv'>
+   <refmeta>
+      <refentrytitle>RunState MV</refentrytitle>
+      <manvolnum>3pytyhon</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>RunState</refname>
+      <refpurpose>Provide model and view for the run state</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readoutREST import RunState
+
+view  = RunState()
+model = view.model()
+
+
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         Provides a <literal>PyQt6</literal> view and model to capture
+         the state machine that is a data acquisitino system and an
+         aggregate state of all of the Readout programs it is running.
+         Buttons are provided to request state transitions, and the buttons
+         may have different labels depending on the known state of the system.
+      </para>
+      <para>
+         The system is modeled by a very simple state machine with states:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><literal>SHUTDOWN</literal></term>
+               <listitem>
+                  <para>
+                     The system is shutdown and none of the persistent 
+                     programs that compose the experiment is running.
+                     A transition to this state is always legal when 
+                     not in this state.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>BOOT</literal></term>
+               <listitem>
+                  <para>
+                     The persistent programs that compose the experiment 
+                     have been started.  One can transition to this state
+                     from <literal>SHUTDOWN</literal>
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>HWINIT</literal>></term>
+               <listitem>
+                  <para>
+                     The hardware of the system has been initialized.
+                     It is legal to transition to this state from
+                     <literal>END</literal> and <literal>BOOT</literal>
+                  </para>
+               </listitem>
+         </varlistentry>
+      
+         <varlistentry>
+               <term><literal>BEGIN</literal></term>
+               <listitem>
+                  <para>
+                     The system is taking data. One can transition to this
+                     state from <literal>HWINIT</literal> or <literal>END</literal>
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>END</literal></term>
+               <listitem>
+                  <para>
+                     The system is not taking data.  This state can be reached
+                     from <literal>BEGIN</literal>
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+      <para>
+         It is no coincidence that these states match those of the FRIB/NSCLDAQ managed experiment
+         environment.  Note that it is expected an external controller ojbect will actually
+         interface to some underlying data acquisition system, maintaining the model and
+         reacting to signals from the view.
+      </para>
+   </refsect1>
+   <refsect1>
+      <title>RunState (view)</title>
+      <para>
+         This view class provides the controls to request state transitions for the system
+         and displaying the current state of the system and aggregate state of the Readout(s).
+         Elapsed time in a run is also indicated.   
+      </para>
+      <para>
+         The controls to request a state transition are three buttons with variable lables and 
+         variably enabled so that only legal transition requests are allowed. For example when the
+         system is shutdown, only one button is enabled and its label is <literal>Boot</literal> the
+         only legal transition request for a shtudown system.
+      </para>
+      <para>
+         When a buttons clicked the view emits a signal <literal>transitionRequest</literal>
+         passing the requested state transition to th e slots connected to the signal.
+         For example, if the system is shutdown and the <literal>Boot</literal> button is clicked,
+         the string <literal>BOOT</literal> is passed to slots.
+      </para>
+      <para>
+         The view provides the following methods that are considered public:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>__init__</methodname>
+                  <methodparam><type /><parameter>parent</parameter>
+                     <initializer>None</initializer></methodparam>
+                  </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Calle during contruction passed in all arguments of the constructor.
+                     <parameter>parent </parameter> if provided is the <classname>QObject</classname>
+                     that will be considered the parent of this object.  If omitted, this defaults
+                     to <literal>None</literal> and the view won't have a parent.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>model</methodname> <void />
+                  </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     When constructed, the view creates a <classname>RunStateModel</classname>
+                     and encapsulates it.  This method returns a reference to that model.
+                     This is inteded for use by controllers so that they can make appropriate
+                     modifications to the model in light of changes to the state of the
+                     experiment.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>elapsed</methodname><void />
+                  </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the elapsed time string.  This can be one of a valid elapsed time
+                     string, if the run is active, or <literal>*Inactive*</literal> if the
+                     run is not active.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>setElapsed</methodname>
+                  <methodparam><type /><parameter>elapsed</parameter></methodparam>
+                  </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Provides the string that will be placed, without interpretation,
+                     in the elapsed time field label. THe convention is that this should
+                     either be a string of the form:
+                     <literal>dd hh:mm:ss</literal> if the run is active or
+                     <literal>*inactive*</literal> if not.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+   <refsect1>
+      <title>RunStateModel (Model)</title>
+      <para>
+         This class encapsulates the data and state that drive what the view presents.  It
+         provides several signals that the view can connect to to know when to update its presentation:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><literal>managerStateChange</literal></term>
+               <listitem>
+                  <para>
+                     Signalled whenver the system state has been changed. Two parameters
+                     are passed to slots:  A string that contains the new state name and a 
+                     set, of strings that indicate the valid next states that can be reached
+                     from the new state.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>readoutStateChange</literal></term>
+               <listitem>
+                  <para>
+                     Signalled when the aggregated state of the readout progmas has changed.
+                     Slots will be passed a string containing the new readout state string. Typically,
+                     this is one of <literal>idle</literal>, <literal>active</literal>, <literal>inconsistent</literal>
+                     or <literal>unresponsive</literal>, however the model does not enforce any specific 
+                     values.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>elapsedChanged</literal></term>
+               <listitem>
+                  <para>
+                     The model's elapsed time changed.  The slots are passed the string reqpresentatino
+                     of the new alapsed time.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+      <para>
+         Normally an external controller will inform the model of changes in the data acquisition
+         system by interacting with it an dcalling the appropriate model methods.
+         The full set of methods and their signatures is described below. As usual, the
+         <parameter>self</parameter> is omitted from the method signatures for brevity.
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /> <methodname>__init__</methodname>
+                  <methodparam><type /><parameter>managerInitial</parameter>
+                     <initializer>'SHUTDOWN'</initializer></methodparam>
+                  <methodparam><type /><parameter>managerAllowed</parameter>
+                     <initializer>('BOOT',)</initializer></methodparam>
+                  <methodparam><type /><parameter>readoutInitial</parameter>
+                     <initializer>'idle'</initializer></methodparam>
+                  <methodparam><type /><parameter>parent</parameter>
+                     <initializer>None</initializer></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Called during instance construction, passed all of the paramteers
+                     to the constructor.  <parameter>managerInitial</parameter>
+                     is the textual initial state of the acquisition system as a whole.
+                     <parameter>managerAllowed</parameter> is a tuple containing the 
+                     valid next states of the initial system state.  <parameter>readoutInitial</parameter>
+                     is the initial aggregate readout state.  Finally, <parameter>parent</parameter>
+                     is the <classname>QObject</classname> parent object of the instance if
+                     desired.  If omitted, the default value of <literal>None</literal>
+                     will leave the object with no parent.
+                  </para>
+                  <para>
+                     Note that the <parameter>managerInitial</parameter> and
+                     <parameter>managerAllowed</parameter> parameters are checked against
+                     valid states described in the <literal>DESCRIPTION</literal> section above.
+                     The <parameter>readoutInitial</parameter> must be one of the
+                     readout states described as well.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /> <methodname>managerState</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the current overall (manager) state of the sytsem.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /> <methodname>setManagerSTate</methodname>
+                  <methodparam><type /><parameter>proposed </parameter></methodparam>
+                  <methodparam><type /><parameter>nextStates</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets a new overall (manager) system state to 
+                     <parameter>proposed</parameter>.  The <parameter>nextStates</parameter>
+                     parameter is the set of allowed next states.  The states are all validated.
+                     If acceptable, <literal>managerStateChange</literal> is emitted and
+                     the new state as well as next states are passed to the slots connected to this
+                     signal.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /> <methodname>legalTransitions</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns a set containing the valid transitions from the current state.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /> <methodname>reeadoutState</methodname>
+                  <methodparam><type /><parameter>proposed</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets a new state for the aggregate readout state.  Once this new state is determined
+                     to be valid, <literal>readoutStateChanged</literal> is emitted and slots are 
+                     passed the new state as a parameter.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /> <methodname>elapsed</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the current elapsed time string.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type /><methodname>setElapsed</methodname>
+                  <methodparam><type /><parameter>elapsed</parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets a new elapsed time string.  The <literal>elapsedChanged</literal>
+                     signal is emitted and slots recive the <parameter>elapsed</parameter>
+                     value as a parameter.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
 <refentry id='daq1.rdo_PyRunControl'>
