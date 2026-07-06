@@ -2934,6 +2934,117 @@ model = view.model()
       </variablelist>
    </refsect1>
 </refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>RunStateController</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>RunStateController</refname>
+      <refpurpose>Provide a managed experiment controller for 
+         <link linkend='python3.runstatemv'>(3python)RunState</link></refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readoutREST.RunState import RunState
+from nscldaq.readoutREST import RunStateController
+
+view = RunState()
+controller = RunStateController.RunStateController(
+   readout_list, view,  manager_host
+)
+controller.start()
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         <classname>RunStateController</classname> provides a controller that can mediate between
+         the model and view described in <link linkend='python3.runstatemv'>(3python)RunState</link>
+         and the FRIB/NSCLDAQ managed experiment environment.  Once instantiated and started,
+         the operation of the controller is autonomous through the Qt6 event loop.  
+         the <methodname>__init__</methodname> signature is:
+      </para>
+      <methodsynopsis language='python'>
+         <type /><methodname>__init__</methodname>
+         <methodparam><type /><parameter>readouts</parameter></methodparam>
+         <methodparam><type /><parameter>view</parameter></methodparam>
+         <methodparam><type /><parameter>mgr_host</parameter></methodparam>
+         <methodparam><type /><parameter>mgr_user</parameter>
+            <initializer>getpas.getuser()</initializer></methodparam>
+         <methodparam><type /><parameter>mgr_service</parameter>
+            <initializer>manager_client.CONSTANTS.DEFAULT_MANAGER_REST_SERVICE</initializer>
+            </methodparam>
+         <methodparam><type /><parameter>parent</parameter>
+            <initializer>None</initializer></methodparam>
+      </methodsynopsis>
+      <para>
+         Note that <parameter>self</parameter> has been omitted.  THe meaning of the parameters is:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><parameter>readouts</parameter>></term>
+               <listitem>
+                  <para>
+                     This is an iterable of tuples that are pairs of strings. The first
+                     element of each tuple is the name of a Readout program as known to the manager.
+                     If the Readout was defined using the Readout Wizard, this will be the name of the
+                     readout with <literal>_readout</literal> appended to it.  The second element of the
+                     tuple is either the name of the service the Readout program will advertise
+                     with the port manager for its ReST server or <literal>None</literal> if the
+                     default service (<literal>ReadoutREST</literal>) is used.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>view</parameter></term>
+               <listitem>
+                  <para>
+                     The view that contains the model that we will be a contoller for.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mgr_host</parameter></term>
+               <listitem>
+                  <para>
+                     The host on which the manager server is running.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mg_user</parameter></term>
+               <listitem>
+                  <para>
+                     Optional parameter that is the
+                     user that started the manager server. If not provided, this
+                     defaults to the logged in user as returned by <function>getpass.getuser()</function>
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mgr_service</parameter></term>
+               <listitem>
+                  <para>
+                     Optional parameter that is the service the manager advertises with the port manager
+                     for its ReST service.  If not provided, the default manager service is used
+                     instead. 
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>parent</parameter></term>
+               <listitem>
+                  <para>
+                     The optional parent <classname>QObject</classname> for the
+                     controller object (which is derived itself from <classname>QObject</classname>).
+                     If omitted the object has no parent.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
 <refentry id='daq1.rdo_PyRunControl'>
