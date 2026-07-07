@@ -1,5 +1,5 @@
 '''
-This modlue provides client software for python appolications that interact with the manager.
+This module provides client software for python appolications that interact with the manager.
 Note that the following classes are intended to be public:
 
 *  State - interact with the state machine and transitions.
@@ -13,31 +13,36 @@ REST control provided by Readout programs.
 
 '''
 import os
+import getpass
 import requests
 import socket
 import errno
 from nscldaq.portmanager.PortManager import PortManager
+from collections import namedtuple
 
+Constants = namedtuple('Constants', ['DEFAULT_MANAGER_REST_SERVICE', 
+                                     'DEFAULT_MANAGER_OUTPUT_SERVICE',
+                                     'DEFAULT_PORTMAN_PORT'])
+CONSTANTS = Constants(
+    DEFAULT_MANAGER_REST_SERVICE = 'DAQManager',
+    DEFAULT_MANAGER_OUTPUT_SERVICE = 'DAQManager-outputMonitor',
+    DEFAULT_PORTMAN_PORT=30000
+)
 
-
-def _getlogin():
-    """Return the login name.
-    Note that in a shell under WSL with MSVisual code, os.getlogin() fails with the exception:
-    
-    Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-OSError: [Errno 6] No such device or address
-
-    Therefore we use os.getlogin() and if it throws an exception fallback to os.getenv('USER').
-    
+def _getlogin() -> str:
+    """
+        Return the logged in username.
     
     """
+    
     try :
-        return os.getlogin()
+        return getpass.getuser()  # works in containers...maybe even windows but...
     except:
         return os.getenv('USER')
 
-def _service_port(host, name, port=30000, user=None):
+def _service_port(host: str, name: str, 
+                  port: int=CONSTANTS.DEFAULT_PORTMAN_PORT, 
+                  user: str=None) ->int:
     """Determines the port associated with a service both in the presence of the port manager.
     
 
@@ -68,7 +73,8 @@ def _service_port(host, name, port=30000, user=None):
 class _Client:
     #  This is a base class for REST clients, containing, as it does,
     # the utilities that make REST requests easy
-    def __init__(self, host, user=None, service="DAQManager"):
+    def __init__(self, host: str, user: str=None, 
+                 service: str=CONSTANTS.DEFAULT_MANAGER_REST_SERVICE):
         """Construct the _Client object.
 
         Args:
@@ -81,11 +87,12 @@ class _Client:
         """
         self._port = _service_port(host, service, 30000, user)
         self._host = host
+        self._user = user if user is not None else _getlogin()
         
-    def _create_uri(self, request):
+    def _create_uri(self, request: str):
         return f'http://{self._host}:{self._port}{request}'
     
-    def _get(self, uri, parameters = {}):
+    def _get(self, uri: str, parameters: dict = {}):
         response = requests.get(uri, parameters)
         response.raise_for_status()
         try:
@@ -97,7 +104,7 @@ class _Client:
             raise RuntimeError(json['message'])
         return json
     
-    def _post(self, uri, parameters):
+    def _post(self, uri: str, parameters: dict):
         response = requests.post(uri, parameters)
         response.raise_for_status()
         try:
@@ -110,7 +117,8 @@ class _Client:
             raise RuntimeError(json['message'])
         return json
     
-    
+    def getUser(self) -> str:
+        return self._user
     
 
 class State(_Client):
@@ -125,10 +133,11 @@ class State(_Client):
         
         
     """
-    def __init__(self, host, user=None, service='DAQManager'):
+    def __init__(self, host: str, user:str =None, 
+                 service:str =CONSTANTS.DEFAULT_MANAGER_REST_SERVICE):
         super().__init__(host, user, service)
     
-    def status(self):
+    def status(self) -> str:
         """Return the manager's  current state.  
         
         Raises:
@@ -140,36 +149,54 @@ class State(_Client):
         json = self._get(uri)
         return json['state']
    
-    def allowed(self):
+    def allowed(self) -> list[str]:
         """Return an iterable containing the allowed next state.
         """
         uri = self._create_uri('/State/allowed')
         json = self._get(uri)
         return json['states']
         
-    def transition(self, newstate):
+    def transition(self, newstate: str) -> dict:
         """Request a state transition.
 
         Args:
             newstate (str): Textual name of the state (e.g. "BOOT")
 
         Returns:
-            The full JSON returned by the server.
+            The full JSON returned by the server.  This is a dict that will have the
+            usual 'status' and, on error, 'message' keys, on success, ('status' value 'OK')
+            the keys present will be:
+            * 'state' - the final current state of the system _after_ the transition was attempted.
+            * 'completed' - If the state transition completed properly, this will be 'OK'
         Note:
             SHUTDOWN when already SHUTDOWN seems to hang...does for Tcl client as well
         """
-        parameters = {'user': _getlogin(), 'state': newstate}  
+        parameters = {'user': self.getUser(), 'state': newstate}  
         uri = self._create_uri('/State/transition')
         json = self._post(uri, parameters)
         return json
     
-    def elapsed(self):
+    def elapsed(self) ->str :
+        '''
+         If the run is active, this provides the elapsed run time. If it is not acttive,
+         the string 'Inactive' is returned.  Otherwise a string containing the elapsed time
+         in the format 'd hh:mm:ss.fraction' is returned.
+        '''
+        
         uri = self._create_uri('/State/elapsed')
         return self._get(uri)['elapsed']
     
-    def shutdown(self):
+    def shutdown(self) ->dict:
+        '''
+            Attempts to shutdown the manager.
+            Returns the full JSON response from the server.
+            This is a dict that will have the fields
+            'status' - 'OK' on success (just before the actual shutdown).
+            'message - empty string on success, the human readable reason for the failure if not.
+        '''
+        
         uri = self._create_uri('/State/shutdown')
-        parameters = {'user' : _getlogin()}
+        parameters = {'user' : self.getUser()}
         return self._post(uri, parameters)
 
 class Programs(_Client):
@@ -178,10 +205,11 @@ class Programs(_Client):
     Args:
         _Client (_type_): The standard client class is our base.
     """
-    def __init__(self, host, user=None, service='DAQManager'):
+    def __init__(self : str, host: str, user: str=None, 
+                 service: str=CONSTANTS.DEFAULT_MANAGER_REST_SERVICE):
         super().__init__(host, user, service)
         
-    def status(self):
+    def status(self) -> list[dict]:
         """status
               Returns the status of all defined programs.
         Retuns:
@@ -221,11 +249,12 @@ class KVStore(_Client):
     Args:
         _Client - generic client utility base class.
     """
-    def __init__(self, host, user=None, service='DAQManager'):
+    def __init__(self, host:str , user:str=None, 
+                 service:str=CONSTANTS.DEFAULT_MANAGER_REST_SERVICE):
         ''' See _Client.__init__'''
         super().__init__(host, user, service)
     
-    def value(self, name):
+    def value(self, name: str) -> str:
         """Returns the value of a key in the KVStore.
 
         Args:
@@ -237,7 +266,7 @@ class KVStore(_Client):
         json = self._get(uri, parameters)
         return json['value'].strip('{').strip('}')
     
-    def listNames(self):
+    def listNames(self) -> list[str]:
         """Returns:
            The names of all of the keys in the KVStore.
         """
@@ -245,35 +274,43 @@ class KVStore(_Client):
         json = self._get(uri)
         return json['names']
     
-    def list(self):
+    def list(self) -> list[dict]:
         """Returns the list of {'name': varname, 'value': value} dicts
         """
         uri = self._create_uri('/KVStore/list')
         json = self._get(uri)
         return json['variables']
     
-    def set(self, name, value):
+    def set(self, name, value) -> dict:
         """Sets the value of a kvstore element.  Note it is an exception
         to set the value of a 'name' that has not been created.
 
         Args:
             name (str): Name of the variable.
             value (str): New value of the variable.
+        RETURNS:    
+            The full JsON reponse decoded into a dict. the main thing to look at are
+            the 'status' key which is 'OK' on success and  on anything else, the
+            'message' key has a human readable error message.  The 
+            'name' key will be the name key set and 'value' its new value 
+            quoted for use in Tcl scripts (e.g. strip the { and })
+        RAISES:
+            RunTimeError if the key does not exist. 
         """
         uri = self._create_uri('/KVStore/set')
-        parameters = {'user': _getlogin(), 'name': name, 'value': value}
+        parameters = {'user': self.getUser(), 'name': name, 'value': value}
         json = self._post(uri, parameters)
         return json
     
-    # These are convenince methods based on the fact that 'title'
+    # These are convenience methods based on the fact that 'title'
     # and 'run' are always defined:
     
-    def title(self):
+    def title(self) -> str:
         """Returns the title:
         """
         return self.value('title')
         
-    def setTitle(self, title):
+    def setTitle(self, title) -> None:
         """Set the new title value
 
         Args:
@@ -281,13 +318,13 @@ class KVStore(_Client):
         """
         self.set('title', title)
     
-    def run(self):
+    def run(self) -> int:
         """
         Returns:
             The run number as an integer.
         """
         return int(self.value('run'))
-    def setRun(self, runNumber):
+    def setRun(self, runNumber) -> str:
         """Set the the run number
 
         Args:
@@ -303,30 +340,31 @@ class Logger(_Client):
         _Client (class): Base class that provides common services for 
         all ReST clients.
     """
-    def __init__(self, host, user=None, service='DAQManager'):
+    def __init__(self, host: str, user:str =None, 
+                 service:str =CONSTANTS.DEFAULT_MANAGER_REST_SERVICE):
         super().__init__(host, user, service)
         
-    def enable(self, destination):
+    def enable(self, destination:str) -> None:
         """Enables a logger
 
         Args:
             destination (str): Logger destination.
         """
         uri = self._create_uri('/Loggers/enable')
-        parameters = {'logger': destination, 'user': _getlogin()}
+        parameters = {'logger': destination, 'user': self.getUser()}
         self._post(uri, parameters)
     
-    def disable(self, destination):
+    def disable(self, destination: str) ->  None:
         """Disable a loggers.
 
         Args:
             destination (str): Logger destination.
         """
         uri = self._create_uri("/Loggers/disable")
-        parameters = {'logger': destination, 'user': _getlogin()}
+        parameters = {'logger': destination, 'user': self.getUser()}
         self._post(uri, parameters)
     
-    def list(self):
+    def list(self) -> list[dict]:
         """Fetch a list of the loggers.
 
         Returns:
@@ -347,7 +385,7 @@ class Logger(_Client):
         uri = self._create_uri('/Loggers/list')
         return self._get(uri)['loggers']
     
-    def record(self, state):
+    def record(self, state: int) -> None:
         """Enable/disable event recording.  Next time the run starts, all enabled loggers will record
         data from that run.
         
@@ -356,21 +394,21 @@ class Logger(_Client):
         """
         
         uri  = self._create_uri('/Loggers/record')
-        parameters = {'user': _getlogin(), 'state': 1 if state else 0}
+        parameters = {'user': self.getUser(), 'state': 1 if state else 0}
         self._post(uri, parameters)
     
-    def isRecording(self):
+    def isRecording(self) -> bool:
         uri = self._create_uri('/Loggers/isrecording')
         json = self._get(uri)
         
         return json['state'] != 0
     
-    def start(self):
+    def start(self) -> None:
         """Start all enabled loggers.
         """
         
         uri = self._create_uri('/Loggers/start')
-        parameters = {'user': _getlogin()}
+        parameters = {'user': self.getUser()}
         self._post(uri, parameters)
         
 
@@ -393,7 +431,8 @@ class OutputMonitor:
     
     
     """
-    def __init__(self, host, user=None, service='DAQManager-outputMonitor'):
+    def __init__(self, host: str, user: str |None=None, 
+                 service :str=CONSTANTS.DEFAULT_MANAGER_OUTPUT_SERVICE):
         """
            We just resolve the service and store the host and port.
            Next we call our reconnect method to try to form a connection.
@@ -410,7 +449,13 @@ class OutputMonitor:
         self._port = _service_port(host, service, 30000, user)
         self._socket = None     # Not yet connected.
         self.reconnect()
-        
+
+    def socket(self):
+        '''
+            Return the os socket object.
+        '''
+        return self._socket
+            
     def reconnect(self):
         """Reconnect to the ouptput monitor service.
             We make use of self._host and self_port to know how to do this.
@@ -430,7 +475,7 @@ class OutputMonitor:
         except:
             raise Disconnected
         
-    def isConnected(self):
+    def isConnected(self) -> bool:
         """
             Returns (bool)
             True  - if the connected
@@ -438,7 +483,7 @@ class OutputMonitor:
         """   
         return self._socket is not None
     
-    def read(self):
+    def read(self) ->str:
         """Read data from the socket.  The data are assumed to be textual
         in nature and appropriately converted.  
         
@@ -476,5 +521,18 @@ class OutputMonitor:
                 # Lost the connection:
                 self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket = None
-                raise Disconnected     # Signal the caller we disconnected.
+                raise Disconnected from e # py3.    # Signal the caller we disconnected.
             raise e              # Something else, so raise it.
+        
+#    This software is Copyright by the Board of Trustees of Michigan
+#    State University (c) Copyright 2014, 2026
+#
+#    You may use this software under the terms of the GNU public license
+#    (GPL).  The terms of this license are described at:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+#
+#	     FRIB
+#	     Michigan State University
+#	     East Lansing, MI 48824-1321
+

@@ -37,6 +37,17 @@ package require stateclient;             # To query/control manager state.
 package require kvclient;                # Title and run# are in kv store.
 package require Tk
 
+
+# Flag to the user this is deprecated in favor of rdo_PyRunControl:
+# Issue #496 , #496 In case someone decides to install this again.
+
+tk_messageBox -icon warning -title "Deprecated application" -type ok \
+    -message {$DAQBIN/rdo_RunControl is deprecated in favor of $DAQBIN/rdo_PyRunControl for now youcan continue
+but you should change your scripts gainst the day we pull this from the installation.}
+
+
+
+
 #-------------------------------------------------------------------------------
 #   User interface megawidgets.
 
@@ -1482,6 +1493,7 @@ set programs [lrange $argv 2 end]
 
 RunControlGUI .gui
 pack .gui -fill both -expand 1
+
 
 # Make the models needed by the controller
 
