@@ -3378,6 +3378,113 @@ model = view.model()  #TimedRun.TimedRun object
       </variablelist>
    </refsect1>
 </refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>TimedRunController</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>TimedRunController</refname>
+      <refpurpose>Controller for timed runs with the manage experiment environment</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readouREST import TimedRun, TimedRunController
+
+view = TimedRun.TimedRunView()
+controller = TimedRunController.TimedRunController(
+   view, manager_host
+)
+   
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         The <classname>TimedRunController</classname> class provides a controller to 
+         mediate between the FRIB/NSCLDAQ managed experiment environment and the
+         view and model described in
+         <link linkend='python3.timedrunmv'>(3python)TimedRun</link>.
+      </para>
+      <para>
+         The idea is that your program will instantiate a controller passing the
+         <classname>TimedRunView</classname> to the new object.  Once the Qt6 event loop
+         is entered, everything else is driven by signals and the MVC will operate autonomously.
+      </para>
+      <para>
+         The signature of the <methodname>__init__</methodname> method of the controller,
+         which is called during construction with the constructor's parameters is:
+      </para>
+      <methodsynopsis language='python'>
+         <type /><methodname>__init__</methodname>
+         <methodparam><type /><parameter>view : QObject</parameter></methodparam>
+         <methodparam><type /><parameter>mgr_host : str</parameter></methodparam>
+         <methodparam><type /><parameter>mgr_user : str | None</parameter>
+            <initializer>None</initializer></methodparam>
+         <methodparam><type /><parameter>mgr_service : str</parameter>
+            <initializer>nscldaq.manager_client.CONSTANTS.DEFAULT_MANAGER_REST_SERVICE</initializer>
+            </methodparam>
+         <methodparam><type /><parameter>parent : QObject | None</parameter>
+            <initializer>None</initializer></methodparam>
+      </methodsynopsis>
+      <para>
+         Where:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><parameter>view</parameter></term>
+               <listitem>
+                  <para>
+                     Is the view object with which the controler will operate.  The
+                     view must be compatible (ducktype) with <classname>TimedRunView</classname>.
+                     Type type hint shows a <classname>QObject</classname> because the imports in the
+                     <literal>TimedRunController</literal> module are as few as possible.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mgr_host</parameter></term>
+               <listitem>
+                  <para>
+                     The host on which the manager server is running.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mgr_user</parameter></term>
+               <listitem>
+                  <para>
+                     Optional parameter.  Specfies the user name under which the manager
+                     server is running, if provided.  If missing or <literal>None</literal>
+                     the username the application is running under is used instead.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>mgr__service</parameter></term>
+               <listitem>
+                  <para>
+                     Optional parameter that specifies the service name that the manager server
+                     is advertising its ReST service under.  If omitted, this defaults to the default
+                     service name.  This is normally correct.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><parameter>parent</parameter></term>
+               <listitem>
+                  <para>
+                     To operate properly in the Qt6 environment, the controller class derivers
+                     from <classname>QObject</classname> as such, it can have a parent object.
+                     If <parameter>parent</parameter> is supplied it becomes the controller's
+                     parent object.  If omitted, the default value of <literal>None</literal>
+                     leaves the controller without a parent.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
 <refentry id='daq1.rdo_PyRunControl'>
