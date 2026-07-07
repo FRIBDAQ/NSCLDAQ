@@ -7,7 +7,7 @@ program_scripts=startServer.tcl mg_mkconfig.tcl mg_cfgcontainers.tcl \
 
 
 PY_PACKAGES=mg_database.py manager_client.py editablelist.py mg_clientutils.py \
-	mg_kvclient.py
+	mg_kvclient.py OutputMonitorQt.py
 PYPROGRAMS=mg_logwizard.py mg_program_wizard.py mg_import.py
 server_scripts=mg_statusserver.tcl  mg_programserver.tcl \
 	mg_kvserver.tcl mg_evlogserver.tcl
@@ -43,7 +43,6 @@ install-exec-local:
 	for f in $(PYPROGRAMS); do \
 		$(INSTALL_PROGRAM) @srcdir@/$$f @bindir@/`basename $$f .py` ; \
 	done
-	
 
 
 check:
