@@ -66,7 +66,7 @@ class RunStateModel(QObject):
         managerState - Should be the current manager state.  Setting requires a set of valid next states
         legalTransitions (readonly) - the state transitions allowed from managerState
         readoutState - The readout state.
-        elapse4d     - Elapsed run time string
+        elapsed     - Elapsed run time string
         
     Signals:
         managerStateChange(str, set[str]) - new manager state entered.
