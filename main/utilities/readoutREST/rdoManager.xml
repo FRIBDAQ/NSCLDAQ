@@ -3049,6 +3049,335 @@ controller.start()
       </para>
    </refsect1>
 </refentry>
+<refentry id='python3.timedrunmv'>
+   <refmeta>
+      <refentrytitle id='python3.timedrunmv.title'>TimedRun</refentrytitle>
+      <manvolnum>3python</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>TimedRun Model/view</refname>
+      <refpurpose>Model and view for initiating timed runs</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <programlisting>
+from nscldaq.readoutREST import TimedRun
+...
+view  = TimedRun.TimedRunView()
+model = view.model()  #TimedRun.TimedRun object
+...
+      </programlisting>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This module provides a view and model for capturing the 
+         controls and data associted with a timed data taking run.
+         A timed run is a run that automaticall halts after a pre-set
+         elapsed time.  
+      </para>
+      <para>
+         The view provides controls that enable the run
+         to be timed and to control how long a run will be. The elapsed run
+         time can also be displayed.  See the <literal>VIEW</literal>
+         section below for
+         more about the view class <classname>TimedRunView</classname>.
+      </para>
+      <para>
+         The model holds the data displayed by the view or defined
+         in the data acquisition system. Signals connect the
+         model with the view to indicate the model has changed
+         and the view is connected to some external controller
+         that is supposed to actually interact with the
+         underlying data acquisition system environment.
+         For more about the <classname>TimedRun</classname> model
+         class see <literal>MODEL</literal> below.
+      </para>
+      <para>
+         Throughout, times are represented as dicts with the following
+         keys:
+      </para>
+      <itemizedlist>
+         <listitem>
+            <para>
+               <literal>days</literal> number of days of elapsed or desired time.
+            </para>
+         </listitem>
+         <listitem>
+            <para>
+               <literal>hours</literal> number of hours of elapsed or desired time.
+            </para>
+         </listitem>
+         <listitem>
+            <para>
+               <literal>minutes</literal> number of minutes of elapsed or desired time.
+            </para>
+         </listitem>
+         <listitem>
+            <para>
+               <literal>seconds</literal> number of seconds of elapsed or desried time.
+            </para>
+         </listitem>
+      </itemizedlist>
+   </refsect1>
+   <refsect1>
+      <title>VIEW</title>
+      <para>
+         The <classname>TimedRunView</classname> class is the view
+         class.  It provides controls that the user can manipulate
+         to request changes to timed run data.  Neither the view nor
+         model actually modify anything in the data acquisition system.
+         That is done by an external controller object.
+      </para>
+      <para>
+         The view, however, provides the following signals that controller
+         can use to know when it must take actions based on the user's
+         interaction with the view object:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><literal>desiredchanged(dict)</literal></term>
+               <listitem>
+                  <para>
+                     The user changed the desired length of the run.  The dict passed
+                     is the new desired time. See <literal>DESCRIPTION</literal> above for
+                     the keys this dict will have.  Note that this change does not imply
+                     that the user has selected the run be timed.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>timeChanged(bool)</literal></term>
+               <listitem>
+                  <para>
+                     The user changed the state of the timed run checkbox.  The bool passed
+                     to the slot will be <literal>True</literal> if the run should be timed.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+      <para>
+         The <classname>TimedRunView</classname> class has the following methods that are
+         intended to be public, or visible in  some way. As usual the <parameter>self</parameter>
+         is omitted from the signatures for brevity.
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/> <methodname>__init__</methodname>
+                  <methodparam><type />
+                     <parameter>parent : <classname>QObject</classname> | <literal>None</literal></parameter>
+                     <initializer>None</initializer>
+                     </methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     This is invoked at construction time during object initialization.  The
+                     parameters passsed in are those passed to the constructor.  The 
+                     <classname>TimedRunView</classname> is derived from <classname>QWidget</classname>
+                     and therefore can be given a <parameter>parent</parameter> object as a construction
+                     parmeter to set the object that is its parent.  If the <parameter>parent</parameter> parameter
+                     is omitted, it defaults to  <literal>None</literal> and the object has no parent.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/> <methodname>Model</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the model associated with this view. When <classname>TimedRunView</classname>
+                     is constructed it constructs a <classname>TimedRun</classname> model object.  This
+                     method returns a reference to that model.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/> <methodname>setEnabled</methodname>
+                  <methodparam><type /><parameter>state : <type>bool</type></parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     This method overrides the <methodname>setEnabled</methodname> of the
+                     <classname>QWdiget</classname> base class.  Instead of ghosting the entire
+                     widget, which would make the elapsed time hard to read, all subwidgets 
+                     <emphasis>except</emphasis> those involved in displaying an elapsed time
+                     are disabled.  Since you can't interact with labels, the effect is what's desired,
+                     to prevent the user from interacting wit <emphasis>controls</emphasis>
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+   <refsect1>
+      <title>MODEL</title>
+      <para>
+         The <classname>TimedRun</classname> model maintains the data displayed by the
+         <classname>TimedRunView</classname>.  An external controller object will 
+         mainpulate these data through method calls.  The model will emit signals that the
+         view will typically connect private slots to in order to change what it displays in reponse
+         to changes in the model.  When the elapsed time is updated by the controller, the 
+         model will signal if it's time to halt the run. This will only occur if the run length
+         is limited.
+      </para>
+      <para>
+         This might be made a bit clearer with a list of the signals that the
+         model can emit:
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><literal>runExpired</literal></term>
+               <listitem>
+                  <para>
+                     If updating the elapsed time should end the run (requires that timed run be enabled)
+                     this signal is emitted.  Nothing is passed to slots receiving this signal.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>newDesired(dict)</literal></term>
+               <listitem>
+                  <para>
+                     This signal is emitted if the desired run time limite has beeen modified. It
+                     is emitted even if the run length has not been limited.  The dict passed
+                     to the slot(s) is a time dict that is described in <literal>DESCRIPTION</literal>
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>elapsedChanged(dict)</literal></term>
+               <listitem>
+                  <para>
+                     Called when the elapsed run time has been changed.  The dict passed to the
+                     slot(s) is the new elapsed time.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><literal>limitChanged(bool)</literal></term>
+               <listitem>
+                  <para>
+                     Signalled when the limit flag has been modified. The limit flag is
+                     <literal>True</literal> when the length of a run should be limited.
+                     The <type>bool</type> passsed to slot(s) is the new value of the flag.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+      <para>
+         The <classname>TimedRun</classname> model class provides several methods.
+         These are described below.  As usual, the <parameter>self</parameter> is omitted
+         from the argument signatures for brevity.
+      </para>
+      <variablelist>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/> <methodname>__init__</methodname>
+                  <methodparam><type />
+                     <parameter>parent : <classname>QObject</classname> | <literal>None</literal></parameter>
+                     <initializer>None</initializer>
+                     </methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Called during construction to initialize the object. <classname>TimedRun</classname>
+                     is derived from <classname>QObject</classname> as such, it can have a parent object.
+                     This can be specified using the <parameter>parent</parameter> parameter. If that's omitted,
+                     it defaults to <literal>None</literal> leaving the model unparented.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/> <methodname>desiredLength</methodname><void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the desired run length as a time dict described in 
+                     <literal>DESCRIPTION</literal> above.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/> <methodname>setDesiredLength</methodname>
+                  <methodparam><type /><parameter>timestring : <type>str</type></parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets the desired time to the new time specified by the relative time string. 
+                     Relative time strings havfe the form:
+                     <literal>dd hh:mm:ss</literal>.  If <parameter>timestring</parameter> cannot be
+                     decoded via this format, a <classname>ValueError</classname> exception is
+                     raised. If the desired run length is properly set, <literal>newDesired</literal> is
+                     emitted with the new time represented as a time dict.
+                  </para>
+                  <para>
+                     Note that calling this has no effect on the limit flag.  See
+                     <methodname>setLimitRun</methodname> below.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/> <methodname>elapsedTime</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns the current elapsedd run time as a time dict.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/> <methodname>setElapsedTime</methodname>
+                  <methodparam><type /><parameter>timestring : <type>str</type></parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets the current elapsed time. <parameter>timestring</parameter> is a 
+                     string containing a relative time (see <methodname>setDesiredLength</methodname>
+                     above).  If <parameter>timestring</parameter> is invalid, a 
+                     <classname>ValueError</classname> is raised. If the new elapsed time is 
+                     properly set, <literal>elapsedChanged</literal> is emitted with the new
+                     elapsed time in its dict representation passed.
+                  </para>
+                  <para>
+                     If the limit flag is <literal>True</literal> indicating a timed
+                     run is in progress, and the elapsed time is now at least as long as the
+                     desried time, the <literal>runExpired</literal> signal is emitted indicating
+                     it's time to stop the run automatically.
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/> <methodname>limitRun</methodname> <void />
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Returns <literal>True</literal> if the run should be automatically ended after
+                     the desired run time.  Returns <literal>False</literal> if not.  
+                  </para>
+               </listitem>
+         </varlistentry>
+         <varlistentry>
+               <term><methodsynopsis language='python'>
+                  <type/> <methodname>setLimitRun</methodname>
+                  <methodparam><type/><parameter>limit : <type>bool</type></parameter></methodparam>
+               </methodsynopsis></term>
+               <listitem>
+                  <para>
+                     Sets the limit run flag to the valuie of the <parameter>limit</parameter>
+                     parameter.  The <literal>limitChanged</literal> signal is emitted and
+                     slots are passed the new value of the limit flag.
+                  </para>
+               </listitem>
+         </varlistentry>
+      </variablelist>
+   </refsect1>
+</refentry>
 <!-- /manpage -->
 <!-- manpage 1daq -->
 <refentry id='daq1.rdo_PyRunControl'>
