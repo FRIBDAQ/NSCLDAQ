@@ -449,7 +449,13 @@ class OutputMonitor:
         self._port = _service_port(host, service, 30000, user)
         self._socket = None     # Not yet connected.
         self.reconnect()
-        
+
+    def socket(self):
+        '''
+            Return the os socket object.
+        '''
+        return self._socket
+            
     def reconnect(self):
         """Reconnect to the ouptput monitor service.
             We make use of self._host and self_port to know how to do this.
@@ -515,7 +521,7 @@ class OutputMonitor:
                 # Lost the connection:
                 self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket = None
-                raise Disconnected     # Signal the caller we disconnected.
+                raise Disconnected from e # py3.    # Signal the caller we disconnected.
             raise e              # Something else, so raise it.
         
 #    This software is Copyright by the Board of Trustees of Michigan
