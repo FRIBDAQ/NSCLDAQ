@@ -16,12 +16,14 @@ Provides a python substitute for  mg_monitorOutput.py
 #	     East Lansing, MI 48824-1321
 
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QMessageBox
-from PyQt6.QtGui import QFont, QFontMetrics, QCursor
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QMessageBox,
+    QMenuBar, QMenu, QFileDialog)
+from PyQt6.QtGui import QFont, QFontMetrics, QCursor, QAction
+from PyQt6.QtCore import QObject, Qt, pyqtSignal
 
 from nscldaq import OutputMonitorQt
 import sys
+import os
 from collections import namedtuple
 
 Constants = namedtuple('Constants', 
@@ -51,6 +53,8 @@ def usage() -> None:
     
     print(usage_text, file=sys.stderr)
     sys.exit(-1)
+
+#--------------- Gui setup helpers
 
 def setOutputWinCharacteristics(win : QTextEdit) -> None:
     #  Setup the characteristics of the output window.
@@ -90,6 +94,75 @@ def setOutputWinCharacteristics(win : QTextEdit) -> None:
     viewport.setCursor(cursor)  
     
     
+# This class handles all the file menu stuff.
+# It has signals like startLogging, stopLogging
+# 
+
+class FileMenu(QObject):
+    logfileChanged = pyqtSignal(str) # Passed the filename.
+    startLogging = pyqtSignal()   
+    stopLogging  = pyqtSignal()      # stop logging.
+    
+    def __init__(self, menu : QMenu, parent= None):
+        super().__init__(parent)
+        
+        # Add the actions to the menu:
+        self._menu = menu
+        self._logfileName = None       # Will hold the log file name when set.
+        
+        self._log_file = QAction('Log File..', self._menu)
+        self._menu.addAction(self._log_file)
+        self._log_file.triggered.connect(self._setLogFile)
+    
+        self._logging_enable = QAction('Log', self._menu)
+        self._logging_enable.setCheckable(True)
+        self._logging_enable.setEnabled(False)    # not until a log file is set.
+        self._menu.addAction(self._logging_enable)
+        self._logging_enable.triggered.connect(self._changeEnable)
+    
+    # Slots
+    
+    def _setLogFile(self):
+        # Called when 'Log file...' action is triggered.
+        # - Prompt for a log file.
+        # - if one is given, then emit logfileChanged with that as the logfile
+        # and enable the 'Log' action.
+        
+        prompt = QFileDialog(self._menu, 'Select log file', os.getcwd(), '*.log')
+        prompt.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+        prompt.setOptions(QFileDialog.Option.DontConfirmOverwrite)   # We're appending so ovewrite is ok.
+        prompt.setFileMode(QFileDialog.FileMode.AnyFile)
+        if prompt.exec():
+            logfile = prompt.selectedFiles()
+            if len(logfile) != 0:
+                file = logfile[0]
+                self.logfileChanged.emit(file)
+                self._logging_enable.setEnabled(True)
+        
+        
+        
+        
+    def _changeEnable(self):
+        if self._logging_enable.isChecked():
+            self.startLogging.emit()
+        else:
+            self.stopLogging.emit()
+            
+            
+def setupMenus(menubar : QMenuBar) -> None:
+    file_menu = menubar.addMenu('&File')
+    
+    
+    file_menu_object = FileMenu(file_menu, menubar)
+    
+    return (file_menu_object,)
+ 
+    
+    
+    
+#-------------------- End of gui setup helpers.
+#-------------------- slots:
+    
 def append_output(text : str, win : QTextEdit) -> None:
 
     #  Slot  new output from the manager.
@@ -105,7 +178,7 @@ def connection_lost(app : QApplication, output: QTextEdit) -> None:
     )
     app.exit(-1)
     
-   
+#--------------------- end slots   
 def main() -> int:
     # Entry point.
     
@@ -140,6 +213,10 @@ def main() -> int:
     logger.input.connect(lambda text: append_output(text, output_win))
     logger.lost.connect(lambda : connection_lost(app, output_win))
     
+    # Set up  the menus:
+    
+    menubar = main_win.menuBar()
+    menus = setupMenus(menubar) 
     
     # Start the application.
     
