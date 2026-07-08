@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 Provides a python substitute for  mg_monitorOutput.py
 
