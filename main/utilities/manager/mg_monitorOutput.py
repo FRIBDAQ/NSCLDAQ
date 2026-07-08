@@ -87,10 +87,15 @@ def setOutputWinCharacteristics(win : QTextEdit) -> None:
     
     viewport = win.viewport()     # This is the widget whose cursor we must change.
     cursor = QCursor(Qt.CursorShape.ArrowCursor)  #  Normal arrow cursor.
-    viewport.setCursor(cursor)
+    viewport.setCursor(cursor)  
     
     
+def append_output(text : str, win : QTextEdit) -> None:
+
+    #  Signal handler for new output from the manager.
+    #  Simply append it to the output_win:
     
+    win.append(text)
     
 def main() -> int:
     # Entry point.
@@ -117,6 +122,14 @@ def main() -> int:
     output_win = QTextEdit(main_win)
     main_win.setCentralWidget(output_win)
     setOutputWinCharacteristics(output_win)
+    
+    # Create the output monitor object and connect it's signals to what we need to
+    # append new text to the widget:
+    
+    logger = OutputMonitorQt.OutputMonitorQt(host, user) if service is None else \
+            OutputMonitorQt.OutputMOnitor(host, user, service)
+    logger.input.connect(lambda text: append_output(text, output_win))
+    
     
     # Start the application.
     
