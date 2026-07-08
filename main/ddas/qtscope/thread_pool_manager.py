@@ -11,10 +11,10 @@ class WorkerSignals(QObject):
     into classes derived from QRunnable for signals/slots in threads.
 
     Supported signals are:
+        running: No data.
         finished: No data.
         error: Tuple (exctype, value, traceback.format_exc()).
         result: Object data returned from processing, anything.
-        progress: int indicating % progress.
     """
 
     running = pyqtSignal()
@@ -155,7 +155,16 @@ class ThreadPoolManager:
         super().__init__(*args, **kwargs)
         self.pool = QThreadPool.globalInstance()
 
-    def start_thread(self, fcn=None, running=[], finished=[], *args, **kwargs):
+    def start_thread(
+        self,
+        fcn=None,
+        running=None,
+        finished=None,
+        results=None,
+        errors=None,
+        *args,
+        **kwargs,
+    ):
         """Configure and run a thread given the passed parameters.
 
         Though you can in principle pass parameters to `fcn` using args and
@@ -173,16 +182,24 @@ class ThreadPoolManager:
             List of functions called when fcn runs.
         finished : list of QObjects
             List of functions called when fcn finishes.
+        results : list of QObjects
+            List of functions called when fcn produces results.
+        errors : list of QObjects
+            List of functions called when fcn produces errors.
         args : tuple
             Arguments to pass to the callback function.
         kwargs : dict
             Keyword arguments to pass to the callback function.
         """
         worker = Worker(fcn, *args, **kwargs)
-        for f in running:
+        for f in running or []:
             worker.signals.running.connect(f)
-        for f in finished:
+        for f in finished or []:
             worker.signals.finished.connect(f)
+        for f in results or []:
+            worker.signals.results.connect(f)
+        for f in errors or []:
+            worker.signals.errors.connect(f)
         self.pool.start(worker)
 
     def get_active_thread_count(self):
