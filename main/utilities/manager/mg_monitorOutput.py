@@ -16,7 +16,7 @@ Provides a python substitute for  mg_monitorOutput.py
 #	     East Lansing, MI 48824-1321
 
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QMessageBox
 from PyQt6.QtGui import QFont, QFontMetrics, QCursor
 from PyQt6.QtCore import Qt
 
@@ -92,11 +92,20 @@ def setOutputWinCharacteristics(win : QTextEdit) -> None:
     
 def append_output(text : str, win : QTextEdit) -> None:
 
-    #  Signal handler for new output from the manager.
+    #  Slot  new output from the manager.
     #  Simply append it to the output_win:
     
     win.append(text)
+
+def connection_lost(app : QApplication, output: QTextEdit) -> None:
+    QMessageBox.critical(
+        output,
+        'Connection Failed',
+        'The connection to the manager server has been lost and could not be re-established'
+    )
+    app.exit(-1)
     
+   
 def main() -> int:
     # Entry point.
     
@@ -126,9 +135,10 @@ def main() -> int:
     # Create the output monitor object and connect it's signals to what we need to
     # append new text to the widget:
     
-    logger = OutputMonitorQt.OutputMonitorQt(host, user) if service is None else \
+    logger = OutputMonitorQt.OutputMonitorQt(host, user,  parent=output_win) if service is None else \
             OutputMonitorQt.OutputMOnitor(host, user, service)
     logger.input.connect(lambda text: append_output(text, output_win))
+    logger.lost.connect(lambda : connection_lost(app, output_win))
     
     
     # Start the application.
