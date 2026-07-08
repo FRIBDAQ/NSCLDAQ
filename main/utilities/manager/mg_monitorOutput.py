@@ -158,17 +158,55 @@ def setupMenus(menubar : QMenuBar) -> None:
     return (file_menu_object,)
  
     
+#---------------------- logging
+class Logger(QObject):
+    # This class is connected to the File menu's logging signals and
+    # provides a method to append log data. 
     
+    def __init__(self, menu, parent=None):
+        super().__init__(parent)
+        self._logging = False
+        self._filename = None
+        
+        # Seems like I should be able to do this with lambdas but I'm evidently
+        # Too stupid.
+        
+        menu.logfileChanged.connect(self._setLogFile)
+        menu.startLogging.connect(lambda : self._setState(True))
+        menu.stopLogging.connect(lambda: self._setState(False))
+        
+    
+    #  Add to the log file if enabled:
+    #  We only hold the logfile open long enough to write.
+    #
+    def append(self, text) :
+        if self._logging:
+            with open(self._filename, 'a') as f:
+                f.write(text)
+    
+    
+    #  Slots:
+    def _setLogFile(self, path):
+        self._filename = path
+    
+    def _setState(self, state):
+        self._logging = state
+        
+        
+        
+        
+#---------------------- end loggers.    
     
 #-------------------- End of gui setup helpers.
 #-------------------- slots:
     
-def append_output(text : str, win : QTextEdit) -> None:
+def append_output(text : str, win : QTextEdit, logger : Logger) -> None:
 
     #  Slot  new output from the manager.
     #  Simply append it to the output_win:
     
     win.append(text)
+    logger.append(text)   # logs if enabled.
 
 def connection_lost(app : QApplication, output: QTextEdit) -> None:
     QMessageBox.critical(
@@ -205,18 +243,21 @@ def main() -> int:
     main_win.setCentralWidget(output_win)
     setOutputWinCharacteristics(output_win)
     
+    
+    # Set up  the menus:
+    
+    menubar = main_win.menuBar()
+    (file_menu,)  = setupMenus(menubar) 
+    log= Logger(file_menu)     
+    
     # Create the output monitor object and connect it's signals to what we need to
     # append new text to the widget:
     
     logger = OutputMonitorQt.OutputMonitorQt(host, user,  parent=output_win) if service is None else \
             OutputMonitorQt.OutputMOnitor(host, user, service)
-    logger.input.connect(lambda text: append_output(text, output_win))
+    logger.input.connect(lambda text: append_output(text, output_win, log))
     logger.lost.connect(lambda : connection_lost(app, output_win))
     
-    # Set up  the menus:
-    
-    menubar = main_win.menuBar()
-    menus = setupMenus(menubar) 
     
     # Start the application.
     
