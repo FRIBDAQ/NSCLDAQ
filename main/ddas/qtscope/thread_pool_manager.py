@@ -169,10 +169,10 @@ class ThreadPoolManager:
 
         Though you can in principle pass parameters to `fcn` using args and
         kwargs, this feature is not used within QtScope and is untested.
-        In any event, all `running` and `finished` functions are expected to
-        take no arguments. If they require arguments this can be circumvented
-        via some via a locally-defined lambda function. The same can be done
-        with `fcn`, for the time being.
+        In any event, all signals are expected to take no arguments. If no
+        error-handler is provided, a default handler is used. If they require
+        arguments this can be circumvented via some via a locally-defined
+        lambda function. The same can be done with `fcn`, for the time being.
 
         Parameters
         ----------
@@ -197,9 +197,9 @@ class ThreadPoolManager:
         for f in finished or []:
             worker.signals.finished.connect(f)
         for f in results or []:
-            worker.signals.results.connect(f)
-        for f in errors or []:
-            worker.signals.errors.connect(f)
+            worker.signals.result.connect(f)
+        for f in errors or [self._default_error_handler]:
+            worker.signals.error.connect(f)
         self.pool.start(worker)
 
     def get_active_thread_count(self):
@@ -230,3 +230,14 @@ class ThreadPoolManager:
         """
         self.pool.clear()
         self.wait()
+
+    ##
+    # Private functions
+    #
+
+    def _default_error_handler(self, err):
+        """Default error handler for worker threads. Logs the error to the QtScope logger."""
+        exctype, value, tb = err
+        logging.getLogger("qtscope_logger").error(
+            f"Unhandled worker error: {value}\n{tb}"
+        )

@@ -2,6 +2,7 @@ import copy
 import inspect
 import logging
 import os
+import math
 
 import numpy as np
 
@@ -469,141 +470,197 @@ class MainWindow(QMainWindow):
 
     def _run_control(self):
         """Start or stop a run depending on current run status."""
-
-        # If there is a thread running, wait for it to exit:
-
-        nthreads = self.pool_mgr.get_active_thread_count()
-        if nthreads > 0:
-            print(
-                f"{nthreads} threads are currently communicating with "
-                f"the module(s). Waiting..."
-            )
-            self.pool_mgr.wait()
-
-        # Access thread from global thread pool for the begin/end operation
-        # If a run is active, end it, otherwise start a new one:
-
         if self.run_active:
-            self.logger.debug(
-                f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Run active {self.run_active}, type {self.active_type}; Ending current run"
-            )
-            self.pool_mgr.start_thread(
-                fcn=self._end_run,
-                finished=[
-                    self.chan_gui.toolbar.enable,
-                    self.mod_gui.toolbar.enable,
-                    self.acq_toolbar.enable,
-                ],
-            )
+            self._end_run()
         else:
-            self.logger.debug(
-                f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Run active {self.run_active}, type {self.active_type}; Beginning new run"
-            )
-            self.pool_mgr.start_thread(
-                fcn=self._begin_run,
-                running=[
-                    self.chan_gui.toolbar.disable,
-                    self.mod_gui.toolbar.disable,
-                    self.acq_toolbar.enable_run_active,
-                ],
-            )
+            self._begin_run()
 
     def _begin_run(self):
-        """Start a data run in the currently selected module.
-
-        Check and update the run status, set the current run type, and update
-        the acquisition toolbar button states.
-        """
+        """Start a data run in the currently selected module."""
         module = self.acq_toolbar.current_mod.value()
-        self.active_type = RunType(self.acq_toolbar.run_type.currentIndex())
-        self.logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Beginning {self.active_type} run in Mod. {module}"
-        )
-
-        # XIA API call to begin run in the current module:
-
+        run_type = RunType(self.acq_toolbar.run_type.currentIndex())
         nchannels = self.channel_map[module]
-        self.run_utils.begin_run(module, nchannels, self.active_type)
-        self.run_active = self.run_utils.get_run_active()
         self.logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Started, run active {self.run_active}"
+            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: "
+            f"Beginning {run_type} run in Mod. {module} with {nchannels} channels"
         )
 
-        # Reconfigure the run control button and communicate run status:
+        self.pool_mgr.start_thread(
+            fcn=lambda: self._start_run(module, nchannels, run_type),
+            running=[
+                lambda: self.acq_toolbar.b_run_control.setEnabled(False),
+                self.chan_gui.toolbar.disable,
+                self.mod_gui.toolbar.disable,
+            ],
+            results=[self._on_run_started],
+            errors=[self._show_worker_error],
+            finished=[self._on_begin_finished],
+        )
 
-        if self.run_active:
+    def _start_run(self, module, nchannels, run_type):
+        """Worker: Make the API call to start the run.
+
+        Parameters
+        ----------
+        module : int
+            The module number.
+        nchannels : int
+            The number of channels.
+        run_type : RunType
+            The type of the run.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the module, run type, and active status.
+        """
+        self.run_utils.begin_run(module, nchannels, run_type)
+        return module, run_type, self.run_utils.get_run_active()
+
+    def _on_run_started(self, result):
+        """Slot (GUI thread): all widget and state changes for active runs.
+
+        Parameters
+        ----------
+        result : tuple
+            A tuple containing the module, run type, and active status.
+        """
+        module, run_type, active = result
+        self.run_active = active
+        self.active_type = run_type if active else RunType.INACTIVE
+        if active:
             self.acq_toolbar.b_run_control.setText("End run")
-            self.mplplot.on_begin_run(module, self.active_type)
+            self.acq_toolbar.enable_run_active()
+            self.mplplot.on_begin_run(module, run_type)
             self.mod_gui.setEnabled(False)
             self.chan_gui.setEnabled(False)
 
-    def _end_run(self):
-        """Stop an MCA run in the currently selected module.
+    def _on_begin_finished(self):
+        """Slot (GUI thread): recovery floor. Runs after results/errors,
+        success or failure, so the GUI can never be left locked."""
+        self.acq_toolbar.b_run_control.setEnabled(True)
+        if not self.run_active:
+            self.acq_toolbar.enable()
+            self.chan_gui.toolbar.enable()
+            self.mod_gui.toolbar.enable()
 
-        Check and update the run status and update the acquisition toolbar
-        button states.
-        """
+    def _end_run(self):
+        """Stop a data run in the currently selected module."""
         module = self.acq_toolbar.current_mod.value()
+        run_type = self.active_type
         self.logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Ending {self.active_type} run in Mod. {module}"
+            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: "
+            f"Ending run type {run_type} in Mod. {module}"
         )
 
-        # XIA API call to end run in the current module:
+        self.pool_mgr.start_thread(
+            fcn=lambda: self._stop_run(module, run_type),
+            running=[lambda: self.acq_toolbar.b_run_control.setEnabled(False)],
+            results=[self._on_run_stopped],
+            errors=[self._show_worker_error],
+            finished=[lambda: self.acq_toolbar.b_run_control.setEnabled(True)],
+        )
 
-        self.run_utils.end_run(module, self.active_type)
-        self.run_active = self.run_utils.get_run_active()
+    def _stop_run(self, module, run_type):
+        """Worker: Make API calls to end the run and read run statistics.
+        Reads run stats only after a confirmed stop.
 
-        # Print run stats for histogram run and reconfigure GUI:
+        Parameters
+        ----------
+        module : int
+            The module number.
+        run_type : RunType
+            The type of the run.
 
+        Returns
+        -------
+        tuple
+            A tuple containing the module and active status.
+        """
+        self.run_utils.end_run(module, run_type)
+        run_active = self.run_utils.get_run_active()
+        if not run_active and run_type == RunType.HISTOGRAM:
+            self.run_utils.read_stats(module)
+        return module, run_active
+
+    def _on_run_stopped(self, result):
+        """Slot (GUI thread): all widget and state changes for stopped runs.
+        Returns the GUI to the state it was in before the run was started.
+
+        Parameters
+        ----------
+        result : tuple
+            A tuple containing the module and active status.
+        """
+        module, run_active = result
+        self.run_active = run_active
         if not self.run_active:
-            if self.active_type == RunType.HISTOGRAM:
-                self.run_utils.read_stats(module)
             self.acq_toolbar.b_run_control.setText("Begin run")
+            self.acq_toolbar.enable()
+            self.chan_gui.toolbar.enable()
+            self.mod_gui.toolbar.enable()
             self.mod_gui.setEnabled(True)
             self.chan_gui.setEnabled(True)
             self.active_type = RunType.INACTIVE
-
         self.logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: End run finalized, run active {self.run_active}, type {self.active_type}"
+            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: "
+            f"End run type {self.active_type} in Mod. {module} finalized, "
+            f"run active status: {self.run_active}"
         )
 
     def _read_data(self):
-        """Configure worker to read data from a module.
+        """Configure a worker to read data from a module.
 
-        If a run is active, read histogram or baseline data based on the
-        active run type, otherwise read a trace.
+        If a run is active, read histogram or baseline data for the active
+        run type, otherwise read trace(s). All GUI state is read here, on
+        the GUI thread, before the worker starts.
         """
+        module = self.acq_toolbar.current_mod.value()
+        selected_channel = self.acq_toolbar.current_chan.value()
+        read_all = self.acq_toolbar.read_all.isChecked()
+        channels = (
+            list(range(self.channel_map[module])) if read_all else [selected_channel]
+        )
+        self.logger.debug(f"Reading data from Mod. {module}, Ch. {channels}")
 
-        # If there is a thread running, wait for it to exit:
-
-        nthreads = self.pool_mgr.get_active_thread_count()
-        if nthreads > 0:
-            print(
-                nthreads,
-                "threads are currently communicating with the module(s). Waiting...",
-            )
-            self.pool_mgr.wait()
-
-        # Access thread from global thread pool for the data read operation.
-        # If a run is active, read either an energy histogram or baseline
-        # depending on the run type, otherwise read a trace.
-
-        if self.run_active:  # Histogram run.
+        if self.run_active:  # Histogram or baseline run.
+            run_type = self.active_type
             self.pool_mgr.start_thread(
-                fcn=self._read_run_data,
-                running=[self.acq_toolbar.disable],
-                finished=[self.acq_toolbar.enable_run_active],
-            )
-        else:  # Trace acquisition.
-            self.pool_mgr.start_thread(
-                fcn=self._read_trace_data,
+                fcn=lambda: self._acquire_run_data(module, channels, run_type),
                 running=[
+                    self.acq_toolbar.disable,
                     self.chan_gui.toolbar.disable,
                     self.mod_gui.toolbar.disable,
                     lambda: self.chan_gui.setEnabled(False),
                     lambda: self.mod_gui.setEnabled(False),
                 ],
+                results=[self._show_run_data],
+                errors=[self._show_worker_error],
                 finished=[
+                    self.acq_toolbar.enable_run_active,
+                    self.chan_gui.toolbar.enable,
+                    self.mod_gui.toolbar.enable,
+                    lambda: self.chan_gui.setEnabled(True),
+                    lambda: self.mod_gui.setEnabled(True),
+                ],
+            )
+        else:  # Trace acquisition.
+            fast = self.acq_toolbar.fast_acq.isChecked()
+            self.pool_mgr.start_thread(
+                fcn=lambda: self._acquire_trace_data(
+                    module, channels, selected_channel, fast
+                ),
+                running=[
+                    self.acq_toolbar.disable,
+                    self.chan_gui.toolbar.disable,
+                    self.mod_gui.toolbar.disable,
+                    lambda: self.chan_gui.setEnabled(False),
+                    lambda: self.mod_gui.setEnabled(False),
+                ],
+                results=[self._show_trace_data],
+                errors=[self._show_worker_error],
+                finished=[
+                    self.acq_toolbar.enable,
                     self.chan_gui.toolbar.enable,
                     self.mod_gui.toolbar.enable,
                     lambda: self.chan_gui.setEnabled(True),
@@ -611,207 +668,229 @@ class MainWindow(QMainWindow):
                 ],
             )
 
-    def _read_run_data(self):
-        """Read run (energy histogram or baseline) data.
+    def _acquire_run_data(self, module, channels, run_type):
+        """Worker: read run data for the given channels. Hardware only.
 
-        Read data from the currently selected module and channel(s) and
-        update the main display.
+        Parameters
+        ----------
+        module : int
+            The module number.
+        channels : list
+            Channel numbers to read.
+        run_type : RunType
+            The type of the run, snapshotted at click time.
+
+        Returns
+        -------
+        tuple
+            (module, run_type, list of (channel, data) pairs).
         """
+        acquired = []
+        for ch in channels:
+            self.run_utils.read_data(module, ch, run_type)
+            acquired.append((ch, self.run_utils.get_data(module, run_type)))
+        return module, run_type, acquired
+
+    def _show_run_data(self, result):
+        """Slot (GUI thread): draw one channel or the full grid.
+
+        Parameters
+        ----------
+        result : tuple
+            (module, run_type, list of (channel, data) pairs).
+        """
+        module, run_type, acquired = result
         self.mplplot.figure.clear()
-
-        module = self.acq_toolbar.current_mod.value()
-        nchannels = self.channel_map[module]
-        channel = self.acq_toolbar.current_chan.value()
-
-        # Read from module and get data, then draw:
-
-        if self.acq_toolbar.read_all.isChecked():
-            for i in range(nchannels):
-                self.run_utils.read_data(module, i, self.active_type)
-                data = self.run_utils.get_data(module, self.active_type)
-                # Expect either 16 or 32 channels, so 4x4 or 8x4:
-                self.mplplot.draw_run_data(
-                    data, self.active_type, int(nchannels / 4), 4, i + 1
-                )
-            self.mplplot.update_canvas()
+        if len(acquired) == 1:
+            _, data = acquired[0]
+            self.mplplot.draw_run_data(data, run_type)
         else:
-            self.run_utils.read_data(module, channel, self.active_type)
-            data = self.run_utils.get_data(module, self.active_type)
-            self.mplplot.draw_run_data(data, self.active_type)
+            nrows = math.ceil(len(acquired) / 4)
+            for ch, data in acquired:
+                self.mplplot.draw_run_data(data, run_type, nrows, 4, ch + 1)
 
-    def _read_trace_data(self):
-        """Read trace data.
+    def _acquire_trace_data(self, module, channels, selected, fast):
+        """Worker: acquire traces for the given channels. Hardware only.
 
-        Read trace(s) from the currently selected module and channel(s) and
-        update the main display.
+        Parameters
+        ----------
+        module : int
+            The module number.
+        channels : list
+            Channel numbers to read.
+        selected : int
+            The channel selected on the toolbar at click time, kept for
+            single-channel trace info used by the analyzer.
+        fast : bool
+            Whether to skip signal validation.
+
+        Returns
+        -------
+        tuple
+            (module, selected, list of (channel, data) pairs).
         """
-        self.mplplot.figure.clear()
-
-        module = self.acq_toolbar.current_mod.value()
-        nchannels = self.channel_map[module]
-        channel = self.acq_toolbar.current_chan.value()
-
-        # Retrieve trace from this module and channel and get its data. If
-        # signal validation is required (fast acquisition mode is not
-        # selected), the read function will validate and reacquire trace
-        # signals until it either finds a good trace or hits a retry limit.
-
-        if self.acq_toolbar.read_all.isChecked():  # Read all.
-            for i in range(nchannels):
-                if self.acq_toolbar.fast_acq.isChecked():
-                    self.trace_utils.read_fast_trace(module, i)
-                else:
-                    self.trace_utils.read_trace(module, i)
-
-                data = self.trace_utils.get_trace_data(module)
-                # Expect either 16 or 32 channels, so 4x4 or 8x4:
-                self.mplplot.draw_trace_data(
-                    data, module, i, int(nchannels / 4), 4, i + 1
-                )
-
-                # Keep the single channel trace information:
-
-                if i == channel:
-                    self.trace_info.update(
-                        {"trace": copy.copy(data), "module": module, "channel": channel}
-                    )
-
-            self.mplplot.update_canvas()
-        else:  # Read single channel.
-            if self.acq_toolbar.fast_acq.isChecked():
-                self.trace_utils.read_fast_trace(module, channel)
+        acquired = []
+        for ch in channels:
+            if fast:
+                self.trace_utils.read_fast_trace(module, ch)
             else:
-                self.trace_utils.read_trace(module, channel)
+                self.trace_utils.read_trace(module, ch)
+            acquired.append((ch, self.trace_utils.get_trace_data(module)))
+        return module, selected, acquired
 
-            data = self.trace_utils.get_trace_data(module)
-            self.mplplot.draw_trace_data(data, module, channel)
+    def _show_trace_data(self, result):
+        """Slot (GUI thread): draw one channel or the full grid and keep
+        the selected channel's trace for analysis.
 
-            # Keep the single channel trace information:
-
-            self.trace_info.update(
-                {"trace": copy.copy(data), "module": module, "channel": channel}
-            )
+        Parameters
+        ----------
+        result : tuple
+            (module, selected, list of (channel, data) pairs).
+        """
+        module, selected, acquired = result
+        self.mplplot.figure.clear()
+        if len(acquired) == 1:
+            ch, data = acquired[0]
+            self.mplplot.draw_trace_data(data, module, ch)
+        else:
+            nrows = math.ceil(len(acquired) / 4)
+            for ch, data in acquired:
+                self.mplplot.draw_trace_data(data, module, ch, nrows, 4, ch + 1)
+        for ch, data in acquired:
+            if ch == selected:
+                self.trace_info.update(
+                    {"trace": copy.copy(data), "module": module, "channel": ch}
+                )
+                break
 
     def _analyze_trace(self):
-        """Setup worker to analyze a single-channel ADC trace."""
+        """Analyze the trace for the currently selected channel.
+
+        Always single-channel, regardless of the "Read all" checkbox.
+        We have to handle a few different cases, in order:
+         - Acquire a new trace if nothing is stored
+         - Warn if the selection no longer matches the stored trace
+         - Pull from the appropriate channel if "Read all" is checked
+        """
+        module = self.acq_toolbar.current_mod.value()
+        channel = self.acq_toolbar.current_chan.value()
+        read_all = self.acq_toolbar.read_all.isChecked()
+
+        # Nothing stored: acquire this channel, then analyze:
+        if not self.trace_info["trace"].size:
+            self._acquire_then_analyze(module, channel)
+            return
+
+        # Module changed since acquisition, stale trace:
+        if module != self.trace_info["module"]:
+            self._warn_stale_trace(module, channel)
+            return
+
+        # Channel changed: read-all has the data for it is on
+        # the canvas; a single-channel read for another channel
+        # is stale:
+        if channel != self.trace_info["channel"]:
+            if not read_all:
+                self._warn_stale_trace(module, channel)
+                return
+            self.trace_info.update(
+                {
+                    "trace": copy.copy(self.mplplot.get_subplot_data(channel)),
+                    "module": module,
+                    "channel": channel,
+                }
+            )
+
+        # Stored trace matches the selection, analyze and draw:
+        self._analyze_and_plot()
+
+    def _acquire_then_analyze(self, module, channel):
+        """Acquire a single-channel trace, then analyze it in the slot.
+
+        Parameters
+        ----------
+        module : int
+            The module number.
+        channel : int
+            The channel number.
+        """
+        fast = self.acq_toolbar.fast_acq.isChecked()
+        self.acq_toolbar.disable()
         self.pool_mgr.start_thread(
-            fcn=self._analyze_and_show_trace,
-            running=[
-                self.chan_gui.toolbar.disable,
-                self.mod_gui.toolbar.disable,
-                self.acq_toolbar.disable,
-                lambda: self.chan_gui.setEnabled(False),
-                lambda: self.mod_gui.setEnabled(False),
-            ],
+            fcn=lambda: self._acquire_trace_data(module, [channel], channel, fast),
+            running=[self.chan_gui.toolbar.disable, self.mod_gui.toolbar.disable],
+            results=[self._store_trace_and_analyze],
+            errors=[self._show_worker_error],
             finished=[
+                self.acq_toolbar.enable,
                 self.chan_gui.toolbar.enable,
                 self.mod_gui.toolbar.enable,
-                self.acq_toolbar.enable,
-                lambda: self.chan_gui.setEnabled(True),
-                lambda: self.mod_gui.setEnabled(True),
             ],
         )
 
-    # @todo Should analyze trace be an available feature if read all?
-    # @todo try-except block is pretty long for a single function.
-    def _analyze_and_show_trace(self):
-        """Display single channel trace filter output.
+    def _store_trace_and_analyze(self, result):
+        """Slot (GUI thread): store the acquired trace, then analyze.
 
-        Raises
-        ------
-        ValueError
-            If the module number is changed between acquisition and analyze
-            attempt.
-            If the channel number for a single-channel read is changed
-            between acquisition and analysis.
+        Parameters
+        ----------
+        result : tuple
+            (module, selected, list of (channel, data) pairs).
         """
-        module = self.acq_toolbar.current_mod.value()
-        channel = self.acq_toolbar.current_chan.value()
+        module, selected, acquired = result
+        ch, data = acquired[0]
+        self.trace_info.update(
+            {"trace": copy.copy(data), "module": module, "channel": ch}
+        )
+        self._analyze_and_plot()
 
-        # If there is no current trace data, acquire a trace. We have a whole
-        # bunch of possibilities depending on whether or not the user has
-        # toggled the module and channel selection boxes and what data was
-        # read on the last trace acquisition (single channel or all channels).
-        # Below we handle the various cases:
+    def _warn_stale_trace(self, module, channel):
+        """Tell the user the stored trace does not match the selection."""
+        msg = (
+            f"Stored trace data for Mod. {self.trace_info['module']} "
+            f"Ch. {self.trace_info['channel']} does not match the current "
+            f"selection Mod. {module} Ch. {channel}"
+        )
+        self.logger.warning(msg)  # warning, not exception: no traceback needed
+        print(
+            f"{msg}:\n\tNew trace data must be acquired by clicking the "
+            "'Read trace' button prior to analysis."
+        )
 
+    def _analyze_and_plot(self):
+        """Compute filters for the stored trace and draw them.
+
+        trace_info is reset after any analysis attempt.
+        """
         try:
-            if not self.trace_info["trace"].size:
-                # If there is no trace data, acquire a new trace:
-                if self.acq_toolbar.fast_acq.isChecked():
-                    self.trace_utils.read_fast_trace(module, channel)
-                else:
-                    self.trace_utils.read_trace(module, channel)
-
-                self.trace_info.update(
-                    {
-                        "trace": copy.copy(self.trace_utils.get_trace_data(module)),
-                        "module": module,
-                        "channel": channel,
-                    }
-                )
-            elif module != self.trace_info["module"]:
-                # Module number changed between acquisition and
-                # analysis, user needs to acquire new trace for
-                # the currently selected channel:
-                raise ValueError(
-                    f"Stored trace data for Mod. {self.trace_info['module']} "
-                    f"Ch. {self.trace_info['channel']} does not match the "
-                    f"current selection box Mod. {module} Ch. {channel}"
-                )
-            elif (
-                self.acq_toolbar.read_all.isChecked()
-                and channel != self.trace_info["channel"]
-            ):
-                # Channel number changed between acquisition and
-                # analysis. We've read all channel trace data so
-                # we just need to grab the appropriate data:
-                self.trace_info.update(
-                    {
-                        "trace": copy.copy(self.mplplot.get_subplot_data(channel)),
-                        "module": module,
-                        "channel": channel,
-                    }
-                )
-            elif (
-                not self.acq_toolbar.read_all.isChecked()
-                and channel != self.trace_info["channel"]
-            ):
-                # Channel number changed between acquisition and
-                # analysis. We have _not_ read all channel trace
-                # data so user needs to re-acquire:
-                raise ValueError(
-                    f"Stored trace data for Mod. {self.trace_info['module']} "
-                    f"Ch. {self.trace_info['channel']} does not match the "
-                    f"current selection box Mod. {module} Ch. {channel}"
-                )
-        except ValueError as e:
+            self.trace_analyzer.analyze(
+                self.trace_info["module"],
+                self.trace_info["channel"],
+                self.trace_info["trace"],
+            )
+        except Exception as e:
             self.logger.exception(
-                "Channel selection changed between acquisition and analysis"
+                f"Error analyzing acquired trace from Mod. {self.trace_info['module']} "
+                f"Ch. {self.trace_info['channel']}"
             )
-            print(
-                f"{e}:\n\tNew trace data must be acquired by clicking the 'Read trace' button prior to analysis."
-            )
+            print(e)
         else:
-            # No exceptions, analyze and draw:
-            try:
-                self.trace_analyzer.analyze(
-                    self.trace_info["module"],
-                    self.trace_info["channel"],
-                    self.trace_info["trace"],
-                )
-            except Exception as e:
-                self.logger.exception("Error analyzing acquired trace")
-                print(e)
-            else:
-                self.mplplot.figure.clear()
-                self.mplplot.draw_analyzed_trace(
-                    self.trace_info["trace"],
-                    self.trace_analyzer.fast_filter,
-                    self.trace_analyzer.cfd,
-                    self.trace_analyzer.slow_filter,
-                )
-            finally:
-                # Reset the single channel trace information:
-                self.trace_info.update(
-                    {"trace": np.empty(0), "module": None, "channel": None}
-                )
+            self.mplplot.figure.clear()
+            self.mplplot.draw_analyzed_trace(
+                self.trace_info["trace"],
+                self.trace_analyzer.fast_filter,
+                self.trace_analyzer.cfd,
+                self.trace_analyzer.slow_filter,
+            )
+        finally:
+            self.trace_info.update(
+                {"trace": np.empty(0), "module": None, "channel": None}
+            )
+
+    def _show_worker_error(self, err):
+        """General-purpose user-facing error presenter (GUI tier).
+
+        MainWindow owns this; the manager's default handler only logs.
+        """
+        exctype, value, tb = err
+        self.logger.error(f"Worker failed: {value}\n{tb}")
+        print(f"Operation failed: {value}")

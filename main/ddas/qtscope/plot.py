@@ -294,33 +294,8 @@ class Plot(QWidget):
             self.canvas.draw_idle()
 
     def update_canvas(self):
-        """Wait and redraw the whole canvas.
-
-        draw_idle() occasionally does not render the last ~few plots on
-        the main canvas. Introduce a short wait to ensure all draw_idle()
-        operations have completed and redraw the entire canvas one time.
-        """
-        sleep(0.5)
+        """Wait and redraw the whole canvas."""
         self.canvas.draw()
-
-    def get_subplot_data(self, chan):
-        """Get data from a subplot (channel).
-        Arguments
-        ---------
-        chan : int
-            Channel number.
-        Returns
-        -------
-        NumPy array
-            Data on the subplot or empty if none.
-        """
-        # If there are more than one set of data on the plot this probably
-        # does not work as intended, but that should be impossible (hopefully)
-        axs = self.figure.get_axes()
-        if axs[chan].get_lines():
-            return np.array(axs[chan].lines[0].get_ydata())
-        else:
-            return np.empty(0)
 
     def draw_test_data(self):
         """Draw test data.
