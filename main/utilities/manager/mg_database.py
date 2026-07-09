@@ -78,7 +78,19 @@ def _make_Programs_schema(handle : sqlite3.Connection) -> None:
             INSERT INTO program_type (type)
                 VALUES ('Transitory'), ('Critical'), ('Persistent')
         ''')
-    
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS program (
+            id           INTEGER PRIMARY KEY,
+            name         TEXT,      -- Name used to refer to the program.
+            path         TEXT,
+            type_id      INTEGER, -- FK to program_type
+            host         TEXT,
+            directory    TEXT,
+            container_id INTEGER, -- FK to container
+            initscript   TEXT,
+            service      TEXT
+        )
+    ''')
     handle.execute('''
         CREATE TABLE IF NOT EXISTS program_option (
                 id          INTEGER PRIMARY KEY,
