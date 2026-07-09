@@ -7,6 +7,295 @@ and so on.
 '''
 
 import sqlite3
+
+def _is_empty_table(handle: sqlite3.Connection, table_name : str) -> bool:
+    cursor = handle.execute(
+        f'''
+            SELECT COUNT(*) as count FROM {table_name}
+        '''
+    )
+    row = cursor.fetchone()
+    if row is None:
+        raise RuntimeError(f'Failed to get count of table {table_name}')
+    
+    return row[0] == 0
+
+def _state_id(handle : sqlite3.Connection, state_name: str) -> int:
+    # Get the state id for a state that's in the table... 
+    # It's a bugcheck for there not to be a state by that name.
+    
+    cursor = handle.execute(
+        '''
+        SELECT id FROM transition_name WHERE name=?
+        ''',
+        (state_name,)
+    )
+    row = cursor.fetchone()
+    if row is None:
+        raise RuntimeError(f'There is no state named {state_name} in transition_name')
+    return row[0]
+    
+def _make_Container_schema(handle : sqlite3.Connection) -> None:
+    # Make the tables associated with defining containers:
+    # The caller must commit this transaction.
+    
+    handle.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS container  (
+            id         INTEGER PRIMARY KEY,
+            container  TEXT,
+            image_path TEXT,
+            init_script TEXT
+        )
+        '''
+        
+    )
+    handle.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS bindpoint (
+            id            INTEGER PRIMARY KEY,
+            container_id  INTEGER,    -- FK to container
+            path          TEXT,
+            mountpoint    TEXT DEFAULT NULL
+        )
+        '''
+        
+    )
+def _make_Programs_schema(handle : sqlite3.Connection) -> None:
+    # Create the tables that define programs.  Note that
+    # The caller must commit this transaction.  The program type table
+    # is populated.
+    
+    handle.execute('''
+            CREATE TABLE IF NOT EXISTS program_type (
+            id                INTEGER PRIMARY KEY,
+            type              TEXT
+        )
+    ''')
+    # If the program type table has not been populated, we must populate it.
+    if _is_empty_table(handle, 'program_type'):
+        handle.execute('''
+            INSERT INTO program_type (type)
+                VALUES ('Transitory'), ('Critical'), ('Persistent')
+        ''')
+    
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS program_option (
+                id          INTEGER PRIMARY KEY,
+                program_id  INTEGER,  -- FK to program
+                option      TEXT,
+                value       TEXT
+            )
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS program_parameter (
+            id             INTEGER PRIMARY KEY,
+            program_id     INTEGER,   -- FK to program.
+            parameter      TEXT
+        )          
+    ''')
+    handle.execute('''
+       CREATE TABLE IF NOT EXISTS program_environment (
+                id         INTEGER PRIMARY KEY,
+                program_id INTEGER,
+                name       TEXT,
+                value      TEXT
+            ) 
+    ''')
+    
+def _make_StateMachine_schema(handle : sqlite3.Connection) -> None:
+    # Create/populate the schema for the state machine.
+    
+    #  Initial valid state transition table keyed by initial state name
+    # contents are tuples of legal subsequent states.
+    
+    legalTransitions = {
+        'BOOT'     : ('SHUTDOWN', 'HWINIT'),
+        'SHUTDOWN' : ('SHUTDOWN', 'BOOT'),
+        'HWINIT'   : ('SHUTDOWN', 'BEGIN'),
+        'BEGIN'    : ('SHUTDOWN', 'END'),
+        'END'      : ('SHUTDOWN', 'BEGIN', 'HWINIT')
+    }
+    
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS sequence (
+            id                INTEGER PRIMARY KEY,
+            name              TEXT,
+            transition_id     INTEGER -- FK to transition triggering seq.
+        )           
+    ''')
+    handle.execute('''
+         CREATE TABLE IF NOT EXISTS transition_name (
+            id        INTEGER PRIMARY KEY,
+            name      TEXT
+        )           
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS legal_transition (
+            id              INTEGER PRIMARY KEY,
+            from_id         INTEGER,   -- FK in to transition_name
+            to_id           INTEGER    -- Also FK into transition_name
+        )
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS last_transition (
+            state           INTEGER     -- FK to transition_name
+        )
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS step (
+            id                       INTEGER PRIMARY KEY,
+            sequence_id              INTEGER, -- fk to sequence
+            step                     REAL,
+            program_id               INTEGER, -- fk to program table.
+            predelay                 INTEGER DEFAULT 0,
+            postdelay                INTEGER DEFAULT 0
+        )
+    ''')
+    #  If there's no entries in the transition_name table, stock it:
+       
+    if _is_empty_table(handle, 'transition_name'):
+        for state in legalTransitions.keys():
+            handle.execute('''
+                INSERT INTO transition_name (name)
+                VALUES (?)
+            ''', [state,])
+    
+    # If there are no sequences, one named 'run_state'.
+    
+    if _is_empty_table(handle, 'sequence'):
+        handle.execute('''
+            INSERT INTO sequence (name) VALUES ('run_state')
+        ''')
+    
+    if _is_empty_table(handle, 'legal_transition'):
+        for from_name, to_names in legalTransitions.items():
+            from_id = _state_id(handle, from_name)
+            for to_name in to_names:
+                to_id = _state_id(handle, to_name)
+                handle.execute('''
+                INSERT INTO legal_transition
+                    ( from_id, to_id)
+                    VALUES (?,?)
+                ''', (from_id, to_id))
+   
+    # If there is no last state, set it to 'SHUTDOWN'.
+    
+    if _is_empty_table(handle, 'last_transition'):
+        shutdown_id = _state_id(handle, 'SHUTDOWN')
+        handle.execute('''
+            INSERT INTO last_transition (state) VALUES (?)
+        ''', (shutdown_id,))
+
+def _make_transitionLog_schema(handle: sqlite3.Connection) -> None:
+    # Make the transition log table.
+    
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS transition_log  (
+            id            INTEGER PRIMARY KEY,
+            transition_id INTEGER,  -- FK to transition_name
+            timestamp     INTEGER,
+            success       INTEGER
+        )
+    ''')
+
+def _make_eventLog_schema(handle : sqlite3.Connection) -> None:
+    # Make the schema needed to describve event logging.  
+    # Caller needs to commit:
+    
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS logger (
+            id                 INTEGER PRIMARY KEY,
+            daqroot            TEXT,
+            ring               TEXT,
+            host               TEXT,
+            partial            INTEGER DEFAULT 0,
+            destination        TEXT,
+            critical           INTEGER DEFAULT 1,
+            enabled            INTEGER DEFAULT 1,
+            container_id       INTEGER DEFAULT NULL -- FK to container tbl.
+        )
+    ''') 
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS recording (
+            state     INTEGER
+        )
+    ''') 
+    if _is_empty_table(handle, 'recording'):
+        # Set initial recording state to off.:
+        
+        handle.execute('''
+            INSERT INTO recording (state) VALUES (0)
+        ''') 
+def _make_kvStore_schema(handle : sqlite3.Connection) -> None:
+    # Make the kv store and stock it with the run number and
+    # title.
+    
+    initial_kvStore = {   # Initial store contents.
+        'run': '0',
+        'title' : 'Set a new title'
+    }
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS kvstore (
+            id        INTEGER PRIMARY KEY,
+            keyname   TEXT,
+            value     TEXT
+        )
+    ''')
+    # If needed, stock the kv store for the first time:
+    
+    if _is_empty_table(handle, 'kvstore'):
+        for key, value in initial_kvStore.items():
+            handle.execute(
+                '''INSERT INTO kvstore (keyname, value) VALUES (?,?)''',
+                (key, value)
+            )
+def _make_userAndRoles_schema(handle : sqlite3.Connection) -> None:
+    #  the user and roles are not yet used but are there for
+    #  future applications where the things a particular user is allowed
+    #  to do might be limited.
+
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id        INTEGER PRIMARY KEY,
+            username  TEXT
+        )
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS roles (
+            id       INTEGER PRIMARY KEY,
+            role     TEXT
+        )
+    ''')
+    handle.execute('''
+         CREATE TABLE IF NOT EXISTS user_roles (
+            user_id    INTEGER,
+            role_id    INTEGER
+        )
+    ''')
+
+def make_schema(handle : sqlite3.Connection) -> None:
+    '''
+        Creates the manager schema
+        @param handle - a writable connection to an sqlit3 database
+        @note  If there are already tables in the database referred to by
+        'handle', the new tables are simple added to it.  
+        @note since CREATE TABLE IF NOT EXISTS is used to create
+             all of the tables,  if this is already a manager configuration
+             database the function is a no-op.
+    '''
+    _make_Container_schema(handle)
+    _make_Programs_schema(handle)
+    _make_StateMachine_schema(handle)
+    _make_transitionLog_schema(handle)
+    _make_eventLog_schema(handle)
+    _make_kvStore_schema(handle)
+    _make_userAndRoles_schema(handle)
+    
+    #  None of the above actually commit their changes so:
+    
+    handle.commit()
+
 def boolToInt(b):
     return  1 if b else 0
 def boolToInt(b):
