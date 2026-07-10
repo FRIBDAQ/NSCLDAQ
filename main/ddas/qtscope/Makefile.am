@@ -14,7 +14,8 @@ libPixieUtilities_la_SOURCES = \
 	CPixieRunUtilities.cpp CPixieRunUtilities.h 		\
 	CPixieSystemUtilities.cpp CPixieSystemUtilities.h 	\
 	CPixieTraceUtilities.cpp CPixieTraceUtilities.h 	\
-	CDataGenerator.cpp CDataGenerator.h
+	CDataGenerator.cpp CDataGenerator.h					\
+	CPixieErrors.h CPixieShimGuard.h
 libPixieUtilities_la_CPPFLAGS = \
 	-I@top_builddir@/ddas 								\
 	-I@top_srcdir@/ddas/configuration 					\

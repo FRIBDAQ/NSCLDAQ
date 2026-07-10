@@ -4,6 +4,10 @@ import traceback
 
 from PyQt5.QtCore import QObject, QThreadPool, QRunnable, pyqtSignal, pyqtSlot
 
+from pixie_utilities import PixieError
+
+_logger = logging.getLogger("qtscope_logger")
+
 
 class WorkerSignals(QObject):
     """Defines the signals available from a running worker thread. Encapsulates
@@ -67,8 +71,6 @@ class Worker(QRunnable):
         """
         super().__init__()
 
-        self.logger = logging.getLogger("qtscope_logger")
-
         # Store constructor arguments (re-used for processing):
 
         self.fn = fn
@@ -83,9 +85,7 @@ class Worker(QRunnable):
             self.signals.running.emit()
             result = self.fn(*self.args, **self.kwargs)
         except:
-            traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
-            self.logger.exception(f"Error running worker thread: {exctype} {value}")
             self.signals.error.emit((exctype, value, traceback.format_exc()))
         else:
             self.signals.result.emit(result)
@@ -238,6 +238,8 @@ class ThreadPoolManager:
     def _default_error_handler(self, err):
         """Default error handler for worker threads. Logs the error to the QtScope logger."""
         exctype, value, tb = err
-        logging.getLogger("qtscope_logger").error(
-            f"Unhandled worker error: {value}\n{tb}"
-        )
+        _logger = logging.getLogger("qtscope_logger")
+        if isinstance(value, PixieError):
+            _logger.error(f"Unhandled worker error: {value}")
+        else:
+            _logger.error(f"Unhandled worker error:\n{tb}")

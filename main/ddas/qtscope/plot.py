@@ -15,6 +15,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QMessageBox
 from fit_panel import FitPanel
 from run_type import RunType
 
+_logger = logging.getLogger("qtscope_logger")
+
 
 class Plot(QWidget):
     """Plotting widget for the GUI utilizing the matplotlib Qt5 backend.
@@ -35,8 +37,6 @@ class Plot(QWidget):
         Factory method for fitting plot data.
     toolbar : PlotToolBar
         Figure navigation toolbar imported from Qt5 NavigationToolbar2QT.
-    logger : Logger
-        QtScope Logger object.
     raw_data : dict
         Dictionary of raw data from the digitizers keyed by the subplot index
         on which it is displayed.
@@ -82,10 +82,6 @@ class Plot(QWidget):
 
         """
         super().__init__(*args, **kwargs)
-
-        # Get the logger instance:
-
-        self.logger = logging.getLogger("qtscope_logger")
 
         # We need the manager to read the XDT value which sets the
         # default trace bin width:
@@ -242,7 +238,7 @@ class Plot(QWidget):
         """
         self.raw_data[idx - 1] = data
         ax = self.figure.add_subplot(nrows, ncols, idx)
-        self._plot_histogram(ax, idx - 1)
+        self._plot_histogram(ax, idx - 1)log.
 
         if run_type == RunType.HISTOGRAM:
             ax.set_xlabel("Energy (ADC units)")
@@ -281,7 +277,7 @@ class Plot(QWidget):
                     f"Encountered unexpected run type {run_type}, select a valid run type and begin a new run"
                 )
         except ValueError as e:
-            self.logger.exception("Encountered unknown run type")
+            _logger.exception("Encountered unknown run type")
             print(e)
         else:
             ax = self.figure.add_subplot(1, 1, 1)
@@ -489,9 +485,9 @@ class Plot(QWidget):
             idx_min = int(limits[0])
             idx_max = int(limits[1])
 
-            self.logger.debug(f"Fit limits: {limits[0]}, {limits[1]}")
-            self.logger.debug(f"Fit limit indices: {idx_min}, {idx_max}")
-            self.logger.debug(f"Fit panel guess params: {params}")
+            _logger.debug(f"Fit limits: {limits[0]}, {limits[1]}")
+            _logger.debug(f"Fit limit indices: {idx_min}, {idx_max}")
+            _logger.debug(f"Fit panel guess params: {params}")
 
             # If the current subplot has data, get the fit limits and call the
             # fit function's start() rountine to perform the fit.

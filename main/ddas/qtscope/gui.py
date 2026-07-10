@@ -13,21 +13,17 @@ from chan_dsp_gui import ChanDSPGUI
 import colors
 from dsp_manager import DSPManager
 from mod_dsp_gui import ModDSPGUI
-from pixie_utilities import SystemUtilities, RunUtilities, TraceUtilities
+from pixie_utilities import SystemUtilities, RunUtilities, TraceUtilities, PixieError
 from plot import Plot
 from run_type import RunType
 from trace_analyzer import TraceAnalyzer
 from thread_pool_manager import ThreadPoolManager
 
-##
-# @todo Would like to run the system as per custom DSP parameter formatted
-# text file output -- as currently implemented the save DSP settings do not
-# contain a full set of DSP parameters and are written using some standard
-# python module functions. The XIA API call to boot modules requires a DSP
-# settings file of a particular size and format which is inconsistent with
-# our custom file format and differs by API version.
+_logger = logging.getLogger("qtscope_logger")
 
 # @todo Toolbar disable shouldn't disable cancel button to close the windows.
+
+SETTINGS_FILE_FILTER = "XIA settings file (*.json)"
 
 
 class MainWindow(QMainWindow):
@@ -40,8 +36,6 @@ class MainWindow(QMainWindow):
 
     Attributes
     ----------
-    logger : Logger
-        QtScope Logger object.
     xia_api_version : int
         XIA API version QtScope was compiled against.
     pool_mgr : ThreadPoolManager
@@ -117,10 +111,6 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.WindowMinimizeButtonHint, True)
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
         self.setMouseTracking(True)
-
-        # Get the Logger instance:
-
-        self.logger = logging.getLogger("qtscope_logger")
 
         # Set XIA API version. This is needed to support XIA API 3 JSON
         # settings files with a .json extension iff QtScope was compiled
@@ -235,25 +225,27 @@ class MainWindow(QMainWindow):
         GUIs. Only attempt to boot if the system has not been booted already.
         """
         # Access thread from global thread pool to boot:
-
         if self.sys_utils.get_boot_status() == False:
             self.pool_mgr.start_thread(
                 fcn=self.sys_utils.boot,
-                running=[self.sys_toolbar.disable, self.acq_toolbar.disable],
+                errors=[self._show_worker_error],
                 finished=[self._on_boot],
             )
 
         self.adjustSize()
 
     def _on_boot(self):
-        """Configure the system following a successful boot."""
-        if self.sys_utils.get_boot_status() == True:
+        """Configure the system following a (hopefully) successful boot."""
+        if not self.sys_utils.get_boot_status():
+            # Boot failed: reason already presented via the error signal.
+            # Re-enable the system toolbar: the user may fix the problem
+            # (copy cfgPixie16.txt into the launch directory, load a
+            # different settings file, ...) and retry, or exit.
+            self.sys_toolbar.b_boot.setEnabled(True)
+            return
+
+        try:
             num_modules = self.sys_utils.get_num_modules()
-
-            # Populate list of module MSPS and channel map. In principle
-            # could try and grab the whole array at once... but this works
-            # well enough for now.
-
             msps_list = []
             channel_map = []
             histogram_lengths = []
@@ -271,41 +263,37 @@ class MainWindow(QMainWindow):
             # and trace lengths in the plot widget for proper axis scaling.
 
             self.channel_map = channel_map
-
             self.mplplot.set_histogram_length(histogram_lengths)
             self.mplplot.set_trace_length(trace_lengths)
-
             self.dsp_mgr.initialize_dsp(num_modules, self.channel_map)
             self.chan_gui.configure(
                 self.dsp_mgr, num_modules, msps_list, self.channel_map
             )
             self.mod_gui.configure(self.dsp_mgr, num_modules, self.channel_map)
+        except RuntimeError as e:
+            print(f"Post-boot configuration failed: {e}")
+            self.sys_toolbar.b_boot.setEnabled(True)
+            return
 
-            # Configure toolbars, enable widgets:
+        # Configure toolbars, enable widgets:
 
-            self.sys_toolbar.b_boot.setText("Booted")
-            self.sys_toolbar.b_boot.setStyleSheet(colors.GREEN)
-            self.sys_toolbar.enable()
+        self.sys_toolbar.b_boot.setText("Booted")
+        self.sys_toolbar.b_boot.setStyleSheet(colors.GREEN)
+        self.sys_toolbar.enable()
+        self.acq_toolbar.set_module_spinbox_range(num_modules)
+        self.acq_toolbar.set_channel_spinbox_range(self.channel_map[0])
+        self.acq_toolbar.enable()
+        self.mplplot.toolbar.enable()
 
-            self.acq_toolbar.set_module_spinbox_range(num_modules)
-            self.acq_toolbar.set_channel_spinbox_range(self.channel_map[0])
-            self.acq_toolbar.enable()
-
-            self.mplplot.toolbar.enable()
-
-            print("QtScope system configuration complete!")
-            self.logger.info("System configuration successful")
+        print("QtScope system configuration complete!")
+        _logger.info("System configuration successful")
 
     # @todo (ASC 3/21/23): Define another custom human-readable text format
     # independent of the XIA API version.
     # @todo (ASC 6/9/23): Add some GUI blocking to save/load to prevent
     # settings file corruption.
     def _save_settings(self):
-        """Save DSP parameters to an XIA settings file.
-
-        XIA API 2 binary settings files are required to have the extension
-        .set while XIA API 3 JSON settings files are required to have either
-        one of .set or .json. Extensions are not case-sensitive.
+        """Save DSP parameters to an XIA settings file. Must have extension .json.
 
         Raises
         ------
@@ -316,33 +304,25 @@ class MainWindow(QMainWindow):
             If the file extension is invalid for the API version.
         """
         fname, opt = self._save_dialog()
+        if not (fname and opt):
+            return  # User canceled the save dialog.
         fext = os.path.splitext(fname)[-1].lower()
-        if fname and opt:
-            try:
-                if self.xia_api_version >= 3:
-                    if opt != "XIA settings file (*.set, *.json)":
-                        raise RuntimeError(f"Unrecognized option '{opt}'")
-                    elif fext != ".set" and fext != ".json":
-                        raise RuntimeError(
-                            f"Unsupported extension for settings file: "
-                            f"'{fext}.'\n\tSupported extenstions are: .set"
-                            f"or .json. Your settings file has not been saved"
-                        )
-                else:
-                    if opt != "XIA settings file (*.set)":
-                        raise RuntimeError(f"Unrecognized option '{opt}'")
-                    elif fext != ".set":
-                        raise RuntimeError(
-                            f"Unsupported extension for settings file:"
-                            f"'{fext}.'\n\tSupported extension are: .set."
-                            f"Your settings file has not been saved"
-                        )
-            except RuntimeError as e:
-                self.logger.exception("Error saving settings file")
-                print(e)
-            else:
-                self.sys_utils.save_set_file(fname)
-                print(f"DSP parameter file saved to: {fname}")
+        if opt != SETTINGS_FILE_FILTER:
+            print(f"Unrecognized option '{opt}'")
+            return
+        if fext != ".json":
+            print(
+                f"Unsupported extension for settings file: '{fext}': "
+                f"must be '.json'. Settings file has not been saved."
+            )
+            return
+
+        try:
+            self.sys_utils.save_set_file(fname)
+        except RuntimeError as e:
+            print(f"Failed to save settings file: {e}")
+        else:
+            print(f"DSP parameter file saved to: {fname}")
 
     def _load_settings(self):
         """Load DSP parameters from an XIA settings file.
@@ -353,28 +333,26 @@ class MainWindow(QMainWindow):
             If file format is unrecognized.
         """
         fname, opt = self._load_dialog()
-        if fname and opt:
-            try:
-                if (
-                    opt == "XIA settings file (*.set)"
-                    or "XIA settings file (*.set, *.json)"
-                ):
-                    self.sys_utils.load_set_file(fname)
-                else:
-                    raise RuntimeError(f"Unrecognized option '{opt}'")
-            except RuntimeError as e:
-                self.logger.exception("Error loading settings file")
-                print(e)
+        if not (fname and opt):
+            return  # User canceled the load dialog.
+        if opt != SETTINGS_FILE_FILTER:
+            print(f"Unrecognized option '{opt}'")
+            return
 
-        # If the system has been booted, reload the DSP into the dataframe,
-        # and reload the current channel DSP tab and module DSP (other channel
-        # DSP loaded when a new tab is selected). Otherwise wait for system
-        # boot (message issued by SystemMananager.cpp in this case).
-
-        if self.sys_utils.get_boot_status() == True:
-            self.dsp_mgr.load_new_dsp()
-            self.chan_gui.load_dsp()
-            self.mod_gui.load_dsp()
+        try:
+            self.sys_utils.load_set_file(fname)
+        except RuntimeError as e:
+            print(f"Failed to load settings file: {e}")
+        else:
+            print(f"DSP parameter file loaded from: {fname}")
+            if self.sys_utils.get_boot_status() == True:
+                try:
+                    self.dsp_mgr.load_new_dsp()
+                except RuntimeError as e:
+                    print(f"Failed to load new DSP: {e}")
+                # Spawn workers with their own signal paths:
+                self.chan_gui.load_dsp()
+                self.mod_gui.load_dsp()
 
     def _save_dialog(self):
         """Get a file name and extension from QFileDialog.
@@ -386,24 +364,14 @@ class MainWindow(QMainWindow):
         opt : str
             The file extension option from QFileDialog.getSaveFileName.
         """
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        if self.xia_api_version >= 3:
-            fname, opt = QFileDialog.getSaveFileName(
-                self,
-                "Save file",
-                "",
-                "XIA settings file (*.set, *.json)",
-                options=options,
-            )
-        else:
-            fname, opt = QFileDialog.getSaveFileName(
-                self, "Save file", "", "XIA settings file (*.set)", options=options
-            )
-        if (fname, opt):
-            return fname, opt
-        else:
-            return None, None
+        dialog = QFileDialog(self, "Save file")
+        dialog.setAcceptMode(QFileDialog.AcceptSave)
+        dialog.setNameFilter(SETTINGS_FILE_FILTER)
+        dialog.setDefaultSuffix("json")
+        dialog.setOption(QFileDialog.DontUseNativeDialog)
+        if dialog.exec_() == QFileDialog.Accepted:
+            return dialog.selectedFiles()[0], dialog.selectedNameFilter()
+        return "", ""
 
     def _load_dialog(self):
         """Get a file name and extension from QFileDialog.
@@ -411,9 +379,9 @@ class MainWindow(QMainWindow):
         Returns
         -------
         fname : str
-            The file name from QFileDialog.getSaveFileName.
+            The file name from QFileDialog.getOpenFileName.
         opt : str
-            The file extension option from QFileDialog.getSaveFileName.
+            The file extension option from QFileDialog.getOpenFileName.
 
         Note
         ----
@@ -423,27 +391,31 @@ class MainWindow(QMainWindow):
         """
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        if self.xia_api_version >= 3:
-            fname, opt = QFileDialog.getOpenFileName(
-                self,
-                "Load file",
-                "",
-                "XIA settings file (*.set, *.json)",
-                options=options,
-            )
-        else:
-            fname, opt = QFileDialog.getOpenFileName(
-                self, "Load file", "", "XIA settings file (*.set)", options=options
-            )
-
+        fname, opt = QFileDialog.getOpenFileName(
+            self, "Load file", "", SETTINGS_FILE_FILTER, options=options
+        )
         if (fname, opt):
             return fname, opt
         else:
-            return None, None
+            return "", ""
 
     def _system_exit(self):
-        """Closes connection to Pixie modules and exits the application."""
-        self.sys_utils.exit_system()
+        """Closes connection to Pixie modules and exits the application.
+
+        Hardware calls run synchronously on the GUI thread here by design:
+        app.quit() must not race them, and a brief freeze during shutdown
+        is accepted. Failures are logged and exit contin
+        """
+        if self.run_active:
+            try:
+                module = self.acq_toolbar.current_mod.value()
+                self._run_utils.end_run(module, self.active_type)
+            except RuntimeError as e:
+                _logger.error(f"Failed to end run during exit: {e}")
+        try:
+            self.sys_utils.exit_system()
+        except RuntimeError as e:
+            _logger.error(f"Failed to exit system cleanly: {e}")
         self.pool_mgr.exit()
         app = QApplication.instance()
         app.quit()
@@ -480,7 +452,7 @@ class MainWindow(QMainWindow):
         module = self.acq_toolbar.current_mod.value()
         run_type = RunType(self.acq_toolbar.run_type.currentIndex())
         nchannels = self.channel_map[module]
-        self.logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: "
             f"Beginning {run_type} run in Mod. {module} with {nchannels} channels"
         )
@@ -548,7 +520,7 @@ class MainWindow(QMainWindow):
         """Stop a data run in the currently selected module."""
         module = self.acq_toolbar.current_mod.value()
         run_type = self.active_type
-        self.logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: "
             f"Ending run type {run_type} in Mod. {module}"
         )
@@ -601,10 +573,11 @@ class MainWindow(QMainWindow):
             self.mod_gui.toolbar.enable()
             self.mod_gui.setEnabled(True)
             self.chan_gui.setEnabled(True)
+            active_type = self.active_type
             self.active_type = RunType.INACTIVE
-        self.logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: "
-            f"End run type {self.active_type} in Mod. {module} finalized, "
+            f"End run type {active_type} in Mod. {module} finalized, "
             f"run active status: {self.run_active}"
         )
 
@@ -621,7 +594,7 @@ class MainWindow(QMainWindow):
         channels = (
             list(range(self.channel_map[module])) if read_all else [selected_channel]
         )
-        self.logger.debug(f"Reading data from Mod. {module}, Ch. {channels}")
+        _logger.debug(f"Reading data from Mod. {module}, Ch. {channels}")
 
         if self.run_active:  # Histogram or baseline run.
             run_type = self.active_type
@@ -850,7 +823,7 @@ class MainWindow(QMainWindow):
             f"Ch. {self.trace_info['channel']} does not match the current "
             f"selection Mod. {module} Ch. {channel}"
         )
-        self.logger.warning(msg)  # warning, not exception: no traceback needed
+        _logger.warning(msg)  # warning, not exception: no traceback needed
         print(
             f"{msg}:\n\tNew trace data must be acquired by clicking the "
             "'Read trace' button prior to analysis."
@@ -868,7 +841,7 @@ class MainWindow(QMainWindow):
                 self.trace_info["trace"],
             )
         except Exception as e:
-            self.logger.exception(
+            _logger.exception(
                 f"Error analyzing acquired trace from Mod. {self.trace_info['module']} "
                 f"Ch. {self.trace_info['channel']}"
             )
@@ -887,10 +860,8 @@ class MainWindow(QMainWindow):
             )
 
     def _show_worker_error(self, err):
-        """General-purpose user-facing error presenter (GUI tier).
-
-        MainWindow owns this; the manager's default handler only logs.
-        """
+        """General purpose error handler for worker threads."""
         exctype, value, tb = err
-        self.logger.error(f"Worker failed: {value}\n{tb}")
+        if not isinstance(value, PixieError):
+            _logger.error(f"Worker failed: {value}\n{tb}")
         print(f"Operation failed: {value}")

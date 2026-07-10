@@ -15,13 +15,15 @@
 #include <SystemBooter.h>
 #include <string>
 
+#include "CPixieErrors.h"
+
 using namespace DAQ::DDAS;
 namespace HR = DAQ::DDAS::HardwareRegistry;
 
 /**
  * @details
  * Default: boot in online mode and read the settings file specified in
- * cfgPixie16.txt.
+ * cfgPixie16.txt. The last error message is initialized to an empty string.
  */
 CPixieSystemUtilities::CPixieSystemUtilities()
     : m_bootMode(0), m_booted(false), m_ovrSetFile(false) {}
@@ -44,12 +46,19 @@ int CPixieSystemUtilities::Boot() {
   // If a FW file is specified, use it, otherwise use managed FW:
 
   const char *fwFile = getenv("FIRMWARE_FILE");
-  if (fwFile) {
-    m_config =
-        *(Configuration::generate(fwFile, "cfgPixie16.txt", "modevtlen.txt"));
-  } else {
-    m_config =
-        *(Configuration::generateManagedFW("cfgPixie16.txt", "modevtlen.txt"));
+  try {
+    if (fwFile) {
+      m_config =
+          *(Configuration::generate(fwFile, "cfgPixie16.txt", "modevtlen.txt"));
+    } else {
+      m_config = *(
+          Configuration::generateManagedFW("cfgPixie16.txt", "modevtlen.txt"));
+    }
+  } catch (const std::exception &e) {
+    m_lastErrorMessage = e.what();
+    std::cerr << "CPixieSystemUtilities::Boot() failed: " << m_lastErrorMessage
+              << std::endl;
+    return CPIXIEERROR_INVALID_CONFIG;
   }
 
   // (Re)set the custom settings file path here if used:
@@ -72,14 +81,16 @@ int CPixieSystemUtilities::Boot() {
    */
 
   SystemBooter::BootType type = SystemBooter::FullBoot;
-  if (getenv("DDAS_BOOT_WHEN_REQUESTED"))
+  if (getenv("DDAS_BOOT_WHEN_REQUESTED")) {
     type = SystemBooter::SettingsOnly;
+  }
   SystemBooter booter;
   booter.setOfflineMode(m_bootMode); // 1: offline, 0: online
   try {
     booter.boot(m_config, type);
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -105,7 +116,8 @@ int CPixieSystemUtilities::SaveSetFile(char *fileName) {
                           retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -142,7 +154,8 @@ int CPixieSystemUtilities::LoadSetFile(char *fileName) {
                 << std::endl;
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -174,7 +187,8 @@ int CPixieSystemUtilities::ExitSystem() {
     }
     m_booted = false;
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     m_booted = false;
     return e.ReasonCode();
   }
@@ -191,9 +205,10 @@ int CPixieSystemUtilities::ExitSystem() {
  */
 int CPixieSystemUtilities::GetModuleMSPS(int module) {
   if (!m_booted) {
-    std::cerr << "CPixieSystemUtilities::GetModuleMSPS() system not booted."
-              << std::endl;
-    return -1;
+    m_lastErrorMessage =
+        "CPixieSystemUtilities::GetModuleMSPS() system not booted.";
+    std::cerr << m_lastErrorMessage << std::endl;
+    return CPIXIEERROR_NOT_BOOTED;
   }
 
   auto numModules = m_config.getNumberOfModules();
@@ -202,8 +217,9 @@ int CPixieSystemUtilities::GetModuleMSPS(int module) {
     msg << "CPixieSystemUtilities::GetModuleMSPS()";
     msg << " invalid module number " << module << " for " << numModules
         << " module system.";
-    std::cerr << msg.str() << std::endl;
-    return -2;
+    m_lastErrorMessage = msg.str();
+    std::cerr << m_lastErrorMessage << std::endl;
+    return CPIXIEERROR_INVALID_MODULE;
   }
 
   const auto &hdwrMap = m_config.getHardwareMap();
@@ -221,10 +237,10 @@ int CPixieSystemUtilities::GetModuleMSPS(int module) {
  */
 int CPixieSystemUtilities::GetModuleChannelCount(int module) {
   if (!m_booted) {
-    std::string msg(
-        "CPixieSystemUtilities::GetModuleChannelCount() system not booted.");
-    std::cerr << msg << std::endl;
-    return -1;
+    m_lastErrorMessage =
+        "CPixieSystemUtilities::GetModuleChannelCount() system not booted.";
+    std::cerr << m_lastErrorMessage << std::endl;
+    return CPIXIEERROR_NOT_BOOTED;
   }
 
   auto numModules = m_config.getNumberOfModules();
@@ -233,8 +249,9 @@ int CPixieSystemUtilities::GetModuleChannelCount(int module) {
     msg << "CPixieSystemUtilities::GetModuleChannelCount()";
     msg << " invalid module number " << module << " for " << numModules
         << " module system.";
-    std::cerr << msg.str() << std::endl;
-    return -2;
+    m_lastErrorMessage = msg.str();
+    std::cerr << m_lastErrorMessage << std::endl;
+    return CPIXIEERROR_INVALID_MODULE;
   }
 
   return static_cast<int>(m_config.getModuleChannelCount(module));
