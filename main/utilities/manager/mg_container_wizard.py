@@ -23,7 +23,7 @@
 
 
 from PyQt6.QtWidgets import (QWizard, QWizardPage, QTextEdit, QVBoxLayout, QApplication,
-    QListWidget, QLabel, QPushButton, QLineEdit, QFileDialog, QHBoxLayout)
+    QListWidget, QLabel, QPushButton, QLineEdit, QFileDialog, QHBoxLayout, QTextEdit)
 from PyQt6.QtCore import pyqtProperty
 
 from collections import namedtuple
@@ -309,6 +309,41 @@ class BindingsSelectionPage(QWizardPage):
         if dir:
             self._source.setText(dir)
             
+class InitializationScritPage(QWizardPage):
+    #  Editor for the initialization script.
+    #  This will get pre-stocked with the shebang
+    #  for /usr/bin/bash
+    #  and a source of the correct daqsetup.bash script.
+    
+    def __init__(self, configuration, parent=None):
+        super().__init__(parent)
+        
+        self._configuration = configuration
+    
+    def initializePage(self) -> None:
+        self.setTitle('Edit initialization script')
+        self._layout = QVBoxLayout(self)
+        self._help   = QLabel('This script is run to before executing programs in the container')
+        self._layout.addWidget(self._help)
+        
+        
+        self._editor = QTextEdit(self)
+        self._layout.addWidget(self._editor)
+        
+        # Load the editor with the initial stuff:
+        daqdir =  self.wizard().field('daqversion')
+        self._editor.setPlainText(
+f'''#!/usr/bin/bash
+source {daqdir}/daqsetup.bash
+'''
+        )
+        self.setLayout(self._layout)
+        
+        # Make the text editor a field.
+        
+        self.registerField('startscript', self._editor, 'plainText')
+        self._editor.textChanged.connect(self.completeChanged.emit)
+               
                 
 class ContainerWizard(QWizard):
     ''' 
@@ -334,6 +369,9 @@ class ContainerWizard(QWizard):
         
         self._bindingsPage = BindingsSelectionPage(configuration, self)
         self.addPage(self._bindingsPage)
+        
+        self._initScriptPage = InitializationScritPage(configuration, self)
+        self.addPage(self._initScriptPage)
         
         self.setWindowTitle("Container definition wizard")
 
@@ -362,6 +400,7 @@ def done(r: int, win: QWizard) -> None:
         print('Container: ', win.field('containername'))
         print('Use daq:' , win.field('daqversion'))
         print('bindings:' , win.bindings())
+        print('initscript:', win.field('startscript'))
 
 def main() -> int:
     config = read_config_file()
