@@ -248,13 +248,8 @@ class BindingsSelectionPage(QWizardPage):
         
         self._connectButtons()
         
-        # Make a field of the list box with the list property.
         
         
-        
-    # Implement the 'list' property of the widget so that we can define 
-    # a field on it:
-    
     def bindings(self) -> list[str]:
         result = list()
         for index in range(self._bindingsList.count()):
@@ -309,7 +304,12 @@ class BindingsSelectionPage(QWizardPage):
         self._bindingsList.takeItem(self._bindingsList.currentRow())
         
     def _browseDirs(self) -> None:
-        pass
+        #  Browse for a directory to put in the source of the bindings list.
+        
+        dir = QFileDialog.getExistingDirectory(self, 'Choose a source directory')
+        if dir:
+            self._source.setText(dir)
+            
                 
 class ContainerWizard(QWizard):
     ''' 
