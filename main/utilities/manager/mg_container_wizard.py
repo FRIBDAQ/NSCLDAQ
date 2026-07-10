@@ -23,7 +23,9 @@
 
 
 from PyQt6.QtWidgets import (QWizard, QWizardPage, QTextEdit, QVBoxLayout, QApplication,
-    QListWidget, QLabel)
+    QListWidget, QLabel, QPushButton, QLineEdit, QFileDialog, QHBoxLayout)
+from PyQt6.QtCore import pyqtProperty
+
 from collections import namedtuple
 import sys, os, pathlib
 import configparser
@@ -92,6 +94,7 @@ starting point of this script will set up the environment
         self.setLayout(self._layout)
         
 class ContainerSelectionPage(QWizardPage):
+    
     def __init__(self,configuration, parent = None):
         super().__init__(parent)
         self._configuration = configuration
@@ -178,7 +181,133 @@ class DAQSelectionPage(QWizardPage):
         
         self.wizard().setField('daqversion', t)
         self.completeChanged.emit()
+
+class BindingsSelectionPage(QWizardPage):  
+    # Setup the list of bindings.
+    # Note that we pre-populate the bindings for /usr/opt.
+    
+    def __init__(self, config, parent=None):
+        super().__init__(parent)
+        self._configuration = config
+    
+    def initializePage(self) -> None:
+        # We're going to do something a bit funky with
+        # fields.  We'll define a property that
+        # will return the entire contents of the bindings
+        # list widget and use that for our field property.
+        #   First let's set up the page to look like
+        #   a list of bindings above a pair QLineEdits
+        #   source: [ (source dir)]  [browse...] binds to: [dest path]
+        #   [add]  [remove-selected]
         
+        self._layout = QVBoxLayout(self)
+        
+        # List widget, pre-populated with the /usr/opt binding:
+        
+        self._bindingsList = QListWidget(self)
+        self._populateInitialBinding()
+        self._layout.addWidget(self._bindingsList)
+        
+        # labels, entries and browse buttons on line w:
+        
+        self._bindinglayout = QHBoxLayout(self)
+        self._srclabel = QLabel('Source: ', self)
+        self._bindinglayout.addWidget(self._srclabel)
+        self._source  = QLineEdit(self)
+        self._bindinglayout.addWidget(self._source)
+        self._browse  = QPushButton('Browse...', self)
+        self._bindinglayout.addWidget(self._browse)
+        self._tgtlabel = QLabel('Bound at:', self)
+        self._bindinglayout.addWidget(self._tgtlabel)
+        self._target = QLineEdit(self)
+        self._bindinglayout.addWidget(self._target)
+        
+        self._layout.addLayout(self._bindinglayout)
+        
+        # Binally, a pair of push buttons to add and delete bindings 
+        # from the list:
+        
+        self._actionlayout = QHBoxLayout(self)
+        self._add   = QPushButton('Add Binding', self)
+        self._actionlayout.addWidget(self._add)
+        self._delete = QPushButton('Remove selected', self)
+        self._actionlayout.addWidget(self._delete)
+        
+        self._layout.addLayout(self._actionlayout)
+        
+        #  Add a note about blank destinations.
+        
+        self._notelabel = QLabel(
+            'Note that if the "Bound At" entry is empty, it is the same as Source', 
+            self
+        )
+        self._layout.addWidget(self._notelabel)
+        self.setLayout(self._layout)        
+        
+        # Set up the button handlers:
+        
+        self._connectButtons()
+        
+        # Make a field of the list box with the list property.
+        
+        
+        
+    # Implement the 'list' property of the widget so that we can define 
+    # a field on it:
+    
+    def bindings(self) -> list[str]:
+        result = list()
+        for index in range(self._bindingsList.count()):
+            result.append(self._bindingsList.item(index).text())
+        
+        return result
+    def setBindings(self, items) -> None:
+        # Clear the items:
+        
+        for _ in range(self._bindingsList.count()):
+            self._bindingsList.take(0)
+            
+        self._bindingsList.addItems(items)
+        
+    def _populateInitialBinding(self) -> None:
+        #   Populate the bindings list with the usr/opt binding:
+        
+        container_name = self.wizard().field('containername')
+        usropt         = self._configuration[container_name]['usropt']
+        usropt += ':/usr/opt'
+        self._bindingsList.addItem(usropt)
+
+    def _connectButtons(self) -> None:
+        # Connect button signal handlers:
+        self._browse.clicked.connect(self._browseDirs)
+        self._add.clicked.connect(self._addBinding)
+        self._delete.clicked.connect(self._deleteSelected)
+        
+    # Private slots
+
+    def _addBinding(self) -> None:
+        # The sourcde must be non blank.  If the destination is also non-blank it's
+        # It's appended along with a colon:
+        # Both src and dest have extra blanks stripped:
+        
+        source = self._source.text().strip()
+        if source:
+            binding = source
+            dest  = self._target.text().strip()
+            if dest:
+                binding += ':' + dest
+            
+            # Add to the list of bindings, and clear the src/dest:
+            
+            self._bindingsList.addItem(binding)
+            self._source.setText('')
+            self._target.setText('')
+        
+    def _deleteSelected(self) -> None:
+        pass
+    def _browseDirs(self) -> None:
+        pass
+                
 class ContainerWizard(QWizard):
     ''' 
         Encapsulates the entire wizard.
@@ -201,9 +330,15 @@ class ContainerWizard(QWizard):
         self._daqChooser = DAQSelectionPage(configuration, self)
         self.addPage(self._daqChooser)
         
+        self._bindingsPage = BindingsSelectionPage(configuration, self)
+        self.addPage(self._bindingsPage)
+        
         self.setWindowTitle("Container definition wizard")
 
-       
+    # Can't make fields lists so:
+    
+    def bindings(self) -> list[str]:
+        return self._bindingsPage.bindings()   
     
 
 def read_config_file() -> dict:
@@ -224,6 +359,7 @@ def done(r: int, win: QWizard) -> None:
     if r == 1:
         print('Container: ', win.field('containername'))
         print('Use daq:' , win.field('daqversion'))
+        print('bindings:' , win.bindings())
 
 def main() -> int:
     config = read_config_file()
