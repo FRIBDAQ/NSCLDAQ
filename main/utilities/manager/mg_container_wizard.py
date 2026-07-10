@@ -142,6 +142,7 @@ class DAQSelectionPage(QWizardPage):
         self._configuration = config
     
     def initializePage(self) -> None:
+        self.setTitle('Select DAQ version')
         #
         #   The 'containername' field already
         #   has the container we've chosen.  Using
@@ -191,14 +192,12 @@ class BindingsSelectionPage(QWizardPage):
         self._configuration = config
     
     def initializePage(self) -> None:
-        # We're going to do something a bit funky with
-        # fields.  We'll define a property that
-        # will return the entire contents of the bindings
-        # list widget and use that for our field property.
-        #   First let's set up the page to look like
-        #   a list of bindings above a pair QLineEdits
-        #   source: [ (source dir)]  [browse...] binds to: [dest path]
-        #   [add]  [remove-selected]
+        self.setTitle('Create bindings list')
+        
+        # We can't do fields the way we want to.
+        # We'll supply a method, the wizard will
+        # relay to to provide the list of strings
+        # in the bindings QListWidget.
         
         self._layout = QVBoxLayout(self)
         
