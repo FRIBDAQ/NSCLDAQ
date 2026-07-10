@@ -129,6 +129,55 @@ class ContainerSelectionPage(QWizardPage):
     def _updateContainer(self, t : str) -> None:
         self.wizard().setField('containername', t)
         self.completeChanged.emit()
+
+class DAQSelectionPage(QWizardPage):
+    # Select DAQ version. 
+    def __init__(self, config, parent=None):
+        # config is the read in configuration dict.
+        
+        super().__init__(parent)
+        self._configuration = config
+    
+    def initializePage(self) -> None:
+        #
+        #   The 'containername' field already
+        #   has the container we've chosen.  Using
+        #   the config, we know it's /usr/opt/ directory tree
+        #   and can enumerate the daq directory to get the list of 
+        #   versions:
+        
+        container_name = self.wizard().field('containername')
+        usropt = self._configuration[container_name]['usropt']
+        daqdir = pathlib.Path(usropt) / 'daq'
+        
+        # Make a listbox and populate it with all of the subdirs 
+        # daqdir:
+        
+        self._layout = QVBoxLayout(self)
+        self.setLayout(self._layout)
+        self._list   = QListWidget(self)
+        for name in daqdir.iterdir():
+            if name.is_dir():
+                self._list.addItem(str(name))
+        
+        self._layout.addWidget(self._list)
+    
+        # A label for the selected item..register the field and 
+        # connect to the text changed signal to update the field
+        # and let the wizard know that.
+        
+        self._selected = QLabel(self)
+        self._layout.addWidget(self._selected)
+        self.registerField('daqversion', self._selected, 'text')
+        
+        self._list.currentTextChanged.connect(self._update)
+    
+    def _update(self, t: str) -> None:
+        # Update the field from the new selection and 
+        # Let the wizard know:
+        
+        self.wizard().setField('daqversion', t)
+        self.completeChanged.emit()
         
 class ContainerWizard(QWizard):
     ''' 
@@ -149,10 +198,12 @@ class ContainerWizard(QWizard):
         self._containerChooser = ContainerSelectionPage(configuration, self)
         self.addPage(self._containerChooser)
     
-        
+        self._daqChooser = DAQSelectionPage(configuration, self)
+        self.addPage(self._daqChooser)
         
         self.setWindowTitle("Container definition wizard")
-        
+
+       
     
 
 def read_config_file() -> dict:
@@ -172,6 +223,7 @@ def read_config_file() -> dict:
 def done(r: int, win: QWizard) -> None:
     if r == 1:
         print('Container: ', win.field('containername'))
+        print('Use daq:' , win.field('daqversion'))
 
 def main() -> int:
     config = read_config_file()
