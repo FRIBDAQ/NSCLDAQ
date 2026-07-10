@@ -304,7 +304,10 @@ class BindingsSelectionPage(QWizardPage):
             self._target.setText('')
         
     def _deleteSelected(self) -> None:
-        pass
+        # Support deleting the selected item:
+        
+        self._bindingsList.takeItem(self._bindingsList.currentRow())
+        
     def _browseDirs(self) -> None:
         pass
                 
