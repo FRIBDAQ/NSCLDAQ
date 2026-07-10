@@ -23,18 +23,22 @@
 
 
 from PyQt6.QtWidgets import (QWizard, QWizardPage, QTextEdit, QVBoxLayout, QApplication,
-    QListWidget, QLabel, QPushButton, QLineEdit, QFileDialog, QHBoxLayout, QTextEdit)
+    QListWidget, QLabel, QPushButton, QLineEdit, QFileDialog, QHBoxLayout, QTextEdit,
+    QMessageBox)
 from PyQt6.QtCore import pyqtProperty
+
+from nscldaq.mg_database import Container
 
 from collections import namedtuple
 import sys, os, pathlib
 import configparser
+import sqlite3
+import tempfile
 
 Constants = namedtuple('Constants',
     ['DESCRIPTION_FILENAME',
     'DESCRIPTION_SEARCH_PATHS']
 )
-
 
 
 if 'CONTAINER_CNFIG' in os.environ:
@@ -49,6 +53,7 @@ CONSTANTS = Constants(
     DESCRIPTION_SEARCH_PATHS = spath
 )
 
+#-------------------------------------- The wizard and its pages 
 class IntroPage(QWizardPage):
     '''
         This page of the wizard just provides
@@ -91,6 +96,21 @@ starting point of this script will set up the environment
         '''
         self._introText.setHtml(intro_text)    
         self._layout.addWidget(self._introText)
+        
+        # Prompt, as well for the name of a container:
+        
+        self._nameLabel = QLabel('Container name in experiment:', self)
+        self._name      = QLineEdit(self)
+        
+        # Require the user name the container for the experiment.
+        
+        self._namelayout = QHBoxLayout(self)
+        self._namelayout.addWidget(self._nameLabel)
+        self._namelayout.addWidget(self._name)
+        self._layout.addLayout(self._namelayout)
+        
+        self.registerField('econtainer*', self._name)
+        
         self.setLayout(self._layout)
         
 class ContainerSelectionPage(QWizardPage):
@@ -380,6 +400,18 @@ class ContainerWizard(QWizard):
     def bindings(self) -> list[str]:
         return self._bindingsPage.bindings()   
     
+# Utility functions:
+
+def usage() -> None:
+    #  Print out the program usage and exit with an error:
+    
+    print('''
+Usage:
+    $DAQBIN/mg_container_wizard  config-path
+Where:
+    config-path is the path to a managed experiment configuration Sqlite database file.
+          ''', file = sys.stderr)
+    sys.exit(-1)
 
 def read_config_file() -> dict:
     # Search for the container configuration file
@@ -395,21 +427,70 @@ def read_config_file() -> dict:
             return parser
     raise FileNotFoundError('The container configuration file could not be found')
 
-def done(r: int, win: QWizard) -> None:
+def convert_bindings(raw_bindings : list[str]) -> list:
+    # We have to convert the bindings from the wizard into the
+    # form expected by the database add method.  That's
+    # a list of either singles or pairs.
+    
+    return [x.split(':') for x in raw_bindings]
+
+def done(r: int, config : dict, win: QWizard) -> None:
+    # Save the configured container if the wizard finished with Finish:
+    
     if r == 1:
-        print('Container: ', win.field('containername'))
-        print('Use daq:' , win.field('daqversion'))
-        print('bindings:' , win.bindings())
-        print('initscript:', win.field('startscript'))
+        
+        econtainer = win.field('econtainer')
+        cfgcontainer = win.field('containername')
+        bindings     = convert_bindings(win.bindings())
+        startscript = win.field('startscript')
+        
+        handle = sqlite3.connect(sys.argv[1])    # Connect to the database file.
+        # The api expects the init script in a file... we'll stuff it in a tempfile.
+        
+        script = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8')
+        scriptname = script.name
+        with  script.file as f:
+            print(startscript, file=f)
+            f.flush()
+            scriptname = script.name
+            database = Container(handle)
+            
+            # Prompt for deletion if it exists:
+            
+            if database.exists(econtainer):
+                if QMessageBox.question(
+                    win, 'Container exists', 
+                    f'There is already a container named {econtainer}. Replace it?'
+                ) == QMessageBox.StandardButton.Yes:
+                    database.remove(econtainer)
+                else:
+                    QApplication.quit()
+                    return
+            
+            # Shoulid be able to add the container:
+            
+            database.add(econtainer, config[cfgcontainer]['path'], scriptname, bindings)
+    QApplication.quit()
+
+# Main entry point.
 
 def main() -> int:
+    
+    # Ensure we have a database filename and
+    # It exists:
+    
+    if len (sys.argv) != 2:
+        usage()
+    
+    
+    
     config = read_config_file()
-    print(config.sections())
 
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
     win = ContainerWizard(config)
     win.show()
-    win.finished.connect(lambda r : done(r, win))
+    win.finished.connect(lambda r : done(r, config, win))
     
     return app.exec()
     
