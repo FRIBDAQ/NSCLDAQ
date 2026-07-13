@@ -22,16 +22,16 @@
 #	     East Lansing, MI 48824-1321
 
 
-from PyQt6.QtWidgets import (QWidget, QListWidget, QPushButton, QVBoxLayout, QHBoxLayout, 
-        QFrame, QLabel, QLineEdit, QFileDialog, QDialog)
+from PyQt6.QtWidgets import (QWidget, QListWidget, QListWidgetItem,
+        QPushButton, QVBoxLayout, QHBoxLayout, 
+        QFrame, QLabel, QLineEdit, QFileDialog, QDialog, QDialogButtonBox)
 from PyQt6.QtCore import QObject, pyqtSignal
 
 
 # Utility method:
 
 def _clearListWidget(widget : QListWidget) -> None:
-    while widget.count() > 0:
-        widget.takeItem(0)
+    widget.clear()
 
 class ContainerSelectionWidget(QWidget):
     ''' 
@@ -87,6 +87,7 @@ class ContainerSelectionWidget(QWidget):
         self._new.clicked.connect(self.create)
         self._exit.clicked.connect(self.done)
         self._edit.clicked.connect(self._emitEdit)
+        self._containers.itemDoubleClicked.connect(self._editItem)
         
     #  Attribute  implementations:
     
@@ -118,7 +119,8 @@ class ContainerSelectionWidget(QWidget):
         if selected is not None:
             self.edit.emit(selected.text())
             
-
+    def _editItem(self, _ : QListWidgetItem) -> None:
+        self._emitEdit()
 class ContainerEdit(QWidget):
     '''
         This widget is an editor for a container.
@@ -225,7 +227,7 @@ class ContainerEdit(QWidget):
         # First get the raw bindings:
         raw_bindings = list()
         for row in range(self._bindinglist.count()):
-            raw_bindings.append(self._bindingtlist.item(row).text())
+            raw_bindings.append(self._bindinglist.item(row).text())
         
         return self._rawbindingsToBindingList(raw_bindings)
     
@@ -319,7 +321,7 @@ class ContainerEdit(QWidget):
         
         for bstring in raw:
             item = list()
-            elements = raw.split('->')
+            elements = bstring.split('->')
             item.append(elements[0].strip())
             
             # Only add a second element if there's a 2 element list
@@ -411,7 +413,39 @@ class ContainerEdit(QWidget):
         self._initscriptlayout.addWidget(self._browseScript) 
         
         return self._initscript
+ 
+class ContainerEditDialog(QDialog):
+    '''
+        This will be a modal dialog with a ContainerEdit in the
+        work area.  Rather than delegating all of the attributes of that
+        dialog, we just supply getEditor to get a reference to it.
         
+        Properties:
+            workArea - gets the editor object.
+    
+        Normal usage is to construct one, populate its work area
+        exec() it and then query the work area if  exec() returned
+        QDialog.Accepted.  
+    '''     
+    def  __init__(self, parent=None):
+        super().__init__(parent)
+        
+        self._layout = QVBoxLayout(self)
+        self._workarea = ContainerEdit(self)
+        self._layout.addWidget(self._workarea)
+        
+        self._buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel, self)
+        self._layout.addWidget(self._buttons)
+        
+        self._buttons.accepted.connect(self.accept)
+        self._buttons.rejected.connect(self.reject)
+        
+        self.setLayout(self._layout)
+    
+    def workArea(self) -> ContainerEdit:
+        return self._workarea
+    
         
 # For now test code:
 
@@ -422,11 +456,17 @@ if __name__ == '__main__':
     def new():
         print('make a new container')
     def edit(name):
-        global cheat
-        cheat = ContainerEdit(parent=None)
-        cheat.setName(name)
-        cheat.show()
-        print('edit container named', name)
+        dialog = ContainerEditDialog(win)
+        dialog.workArea().setName(name)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            print('Accepted')
+            editor = dialog.workArea()
+            print('name' , editor.name())
+            print('image', editor.image())
+            print('bindings', editor.bindings())
+            print('initscript path', editor.initscript())
+        else:
+            print('cancelled')
 
     def done() :
         app.exit(0)
