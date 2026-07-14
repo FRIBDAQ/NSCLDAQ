@@ -23,7 +23,7 @@
 
 
 from PyQt6.QtWidgets import (QApplication, QWidget, QListWidget, QListWidgetItem,
-        QPushButton, QVBoxLayout, QHBoxLayout, 
+        QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox,
         QFrame, QLabel, QLineEdit, QFileDialog, QDialog, QDialogButtonBox)
 from PyQt6.QtCore import QObject, pyqtSignal
 from nscldaq.mg_database import Container
@@ -31,6 +31,7 @@ import sqlite3
 import sys
 import os
 import subprocess
+import tempfile
 
 # Utility method:
 
@@ -256,7 +257,7 @@ class ContainerEdit(QWidget):
             @note initialization scripts get sucked into the 
                   container definition.
         '''
-        self._initscript.setText(path)
+        self._initscriptfilename.setText(path)
         
     #   Private slots:    
         
@@ -491,11 +492,88 @@ class ContainerEditController(QObject):
         container_list = self._containers.list()
         container_names = [container['name'] for container in container_list]
         self._view.setContainers(container_names)
+    
+    def _makeInitScriptFile(self, script: str) -> str:
+        # Save the init script in TMPDIR
         
+        file = tempfile.NamedTemporaryFile(mode='w', encoding='utf8')
+        print(script, file=file.file)
+        file.file.flush()
+        return file
+        
+    
     # Private slots that handle signals from the view:
     
     def _editContainer(self, name: str) -> None:
-        pass
+        #
+        #  Get the container definition so we can load the dialog:
+        
+        container_list = self._containers.list()  # All of them.
+        matching       = [c for c in container_list if c['name'] == name]
+        if len(matching) != 1:
+            raise RuntimeError(
+                f'Failure to get only one matching container for {name}')
+        
+        container_def = matching[0]
+        
+        # Make the dialog and load the work area:
+        
+        dialog = ContainerEditDialog(self._view)
+        dialog_view = dialog.workArea()
+        dialog_view.setName(container_def['name'])
+        dialog_view.setImage(container_def['image'])
+        dialog_view.setBindings(container_def['bindings'])
+        initscriptfile = self._makeInitScriptFile(container_def['init_script'])
+        dialog_view.setInitsscript(initscriptfile.name)
+    
+        # Need to put the initialization script in to a tempfile and
+        # load the name of that into the initFile attribute:
+        
+        
+        #  Run the dialog:
+        
+        while  dialog.exec() == QDialog.DialogCode.Accepted:
+            # Pull the stuff from the dialog and
+            # Update the container def....note
+            # that if the name changed, we just add it:
+            #
+            cname = dialog_view.name()
+            image = dialog_view.image()
+            bindings = dialog_view.bindings()
+            initscript = dialog_view.initscript()
+            
+            # Require a name and image 
+            # Massage the initscript to None if empty:
+            
+            if not initscript.strip():
+                initscript = None
+            
+            # Sufficient stuff?
+            
+            if (not cname.strip())  or (not image.strip()):
+                # Message box for error and 
+                # Keep looping on the dialog so the
+                # user can fix the problem.
+                
+                QMessageBox.warning(dialog, 'Missing input', 
+                '''Both the container name and the image must be non-empty''')
+            else:
+                # If replacing, delete the old one (simpler than deciding
+                # if replace or add).
+                
+                if self._containers.exists(cname):
+                    self._containers.remove(cname)
+                # Create the container.
+                
+                self._containers.add(cname, image, initscript, bindings)
+                initscriptfile.file.close()   # Delete the initscsript tempfile.
+                
+                break      # Done with the retry loop
+        
+            # Might have made a new container so...
+            
+        self._updateContainerList()
+        
     def _createContainer(self) -> None:
         # Run the mg_container_wizard on the database file:
         
