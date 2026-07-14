@@ -494,7 +494,9 @@ class ContainerEditController(QObject):
     def _createContainer(self) -> None:
         pass
     def _exit(self) -> None:
-        pass
+        #  Exit the program:
+        
+        QApplication.instance().exit(0)
 
 def usage() -> None:
     # Output the usage string to stderr.
