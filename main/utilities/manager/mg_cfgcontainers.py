@@ -22,11 +22,14 @@
 #	     East Lansing, MI 48824-1321
 
 
-from PyQt6.QtWidgets import (QWidget, QListWidget, QListWidgetItem,
+from PyQt6.QtWidgets import (QApplication, QWidget, QListWidget, QListWidgetItem,
         QPushButton, QVBoxLayout, QHBoxLayout, 
         QFrame, QLabel, QLineEdit, QFileDialog, QDialog, QDialogButtonBox)
 from PyQt6.QtCore import QObject, pyqtSignal
-
+from nscldaq.mg_database import Container
+import sqlite3
+import sys
+import os
 
 # Utility method:
 
@@ -446,53 +449,97 @@ class ContainerEditDialog(QDialog):
     def workArea(self) -> ContainerEdit:
         return self._workarea
     
-        
-# For now test code:
 
-if __name__ == '__main__':
-    from PyQt6.QtWidgets import QApplication
-    import sys
-    cheat = None
-    def new():
-        print('make a new container')
-    def edit(name):
-        dialog = ContainerEditDialog(win)
-        dialog.workArea().setName(name)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            print('Accepted')
-            editor = dialog.workArea()
-            print('name' , editor.name())
-            print('image', editor.image())
-            print('bindings', editor.bindings())
-            print('initscript path', editor.initscript())
-        else:
-            print('cancelled')
-
-    def done() :
-        app.exit(0)
+class ContainerEditController(QObject):
+    '''
+        Controller for the editor
+        We work with a database and a container selection widget.
+        - If New... is clicked we spin off a $DAQBIN/mg_container_wizard
+        - If Edit.. we spin off a ContainerEditDialog loaded with the selected
+          container, and we serve as an interface between the database
+          and the view widgets....so this is kind of an Controller/View
+          pattern with  no model in the middle.
+    '''
+    
+    def __init__(
+        self, database_file: str, view : ContainerSelectionWidget, 
+        parent : QObject | None = None):
+        super().__init__(parent)
         
+        self._view = view
+        
+        # Open the database file and hold the connection
+        
+        self._configfile = database_file
+        self._connection = sqlite3.connect(database_file)
+        self._containers = Container(self._connection)
+        
+        # Stuff the view with the container names known to the
+        # config file.
+        
+        container_list = self._containers.list()
+        container_names = [container['name'] for container in container_list]
+        view.setContainers(container_names)
+        
+        #  Now connect to the view's signals
+        
+        self._view.edit.connect(self._editContainer)
+        self._view.create.connect(self._createContainer)
+        self._view.done.connect(self._exit)
+    
+    # Private slots that handle signals from the view:
+    
+    def _editContainer(self, name: str) -> None:
+        pass
+    def _createContainer(self) -> None:
+        pass
+    def _exit(self) -> None:
+        pass
+
+def usage() -> None:
+    # Output the usage string to stderr.
+    
+    print('''
+Usage:
+    $DAQBIN/mg_cfgcontainers config-path
+Where:
+    config-path - is the filesytstem path to the configuration database file.
+    
+    ''', file = sys.stderr)
+def main() -> None:
+    # Program entry point
+    
+    # A DAQ Version must be set up
+    
+    if 'DAQBIN' not in os.environ.keys():
+        print(''' 
+You must source a daqsetup.bash script to define the necessary environment 
+variables.
+              ''', file = sys.stderr)
+        exit(-1)
+    
+    # We need a database file:
+    
+    if len(sys.argv) != 2:
+        usage()
+        sys.exit(-1)
+    
+    dbfile = sys.argv[1]
+    
+    # Set up the pp, view and controller.
+    
+    
     app = QApplication(sys.argv)
+    view = ContainerSelectionWidget()
+    controller = ContainerEditController(dbfile, view)
     
-    win = ContainerSelectionWidget()
-    
-    # Pout some containers in the widget:
-    
-    win.setContainers([
-        'container1', 'container2', 'lastone'
-    ])
-    print('loaded: ', win.containers())
-    
-    # Hook up signals:
-    
-    win.create.connect(new)
-    win.edit.connect(edit)
-    win.done.connect(done)
-    
-    win.show()
+    view.show()
     
     sys.exit(app.exec())
-        
-        
+
+if __name__ == '__main__':
+    
+    main()
         
         
         
