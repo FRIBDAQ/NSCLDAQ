@@ -30,6 +30,7 @@ from nscldaq.mg_database import Container
 import sqlite3
 import sys
 import os
+import subprocess
 
 # Utility method:
 
@@ -477,9 +478,7 @@ class ContainerEditController(QObject):
         # Stuff the view with the container names known to the
         # config file.
         
-        container_list = self._containers.list()
-        container_names = [container['name'] for container in container_list]
-        view.setContainers(container_names)
+        self._updateContainerList()
         
         #  Now connect to the view's signals
         
@@ -487,12 +486,27 @@ class ContainerEditController(QObject):
         self._view.create.connect(self._createContainer)
         self._view.done.connect(self._exit)
     
+    # utilities
+    def _updateContainerList(self) -> None:
+        container_list = self._containers.list()
+        container_names = [container['name'] for container in container_list]
+        self._view.setContainers(container_names)
+        
     # Private slots that handle signals from the view:
     
     def _editContainer(self, name: str) -> None:
         pass
     def _createContainer(self) -> None:
-        pass
+        # Run the mg_container_wizard on the database file:
+        
+        dir = os.environ['DAQBIN']
+        program = dir + '/' + 'mg_container_wizard'
+        subprocess.run([program, self._configfile])
+        
+        # On exit we should refesh our list of containers.
+        
+        self._updateContainerList()
+        
     def _exit(self) -> None:
         #  Exit the program:
         
