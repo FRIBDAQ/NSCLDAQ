@@ -448,7 +448,7 @@ class ProgramEditor(QWidget):
         # It's a bug for one not to be set:
         
         raise AssertionError('The program type is not set but shoulid be!')
-    
+        
     def setProgramType(self, ptype : str) -> None:
         
         for widget in [self._critical, self._persistent, self._transitory]:
@@ -457,7 +457,28 @@ class ProgramEditor(QWidget):
                 return
         
         raise ValueError(f'Invalid program type {ptype}')
+    
+    def options(self) -> list[tuple[str,str]]:
+        ''' @return list[tuple[str,str]] list of name value pairs of program options.'''
+        return self._options.items()
+    def setOptions(self, options : list[tuple[str,str]]) -> None:
+        '''@param options the name value pairs to set in the program options list'''
+        self._options.setItems(options)
         
+    def parameters(self) -> list[str]:
+        ''' @return list[str] - list of program parameters.'''
+        return self._parameters.items()
+    def setParameters(self, params  : list[str]) -> None:
+        ''' @praam params - list of program parameters'''
+        self._parameters.setItems(params)
+        
+    def environment(self) -> list[tuple[str,str]]:
+        ''' @return list[tuple[str, str]] - the list of name value pairs for the environment'''
+        return self._environment.items()
+    def setEnvironment(self, env : list[tuple[str, str]]) -> None:
+        ''' @param env - name value pairs that make up the environment'''
+        self._environment.setItems(env)
+
     # Internal slots for autonomous operation:
     
     def _browseProgram(self) -> None:
@@ -596,6 +617,14 @@ if __name__ == '__main__':
         editor.setWd('/home/ron')
         editor.setContainer('bookworm-12.2-009')
         editor.setProgramType('Persistent')
+        editor.setOptions([
+            ('--ring', 'ron'), ('---id', '2')
+        ])
+        editor.setParameters(['pop', 'goes', 'the', 'weasel'])
+        editor.setEnvironment([
+            ('TCLLIBPATH', '/usr/opt/daq/12.2-009/TclLibs'),
+            ('DAQROOT', '/usr/opt/daq/12.2-009')
+        ])
         editor.show();
     
     
