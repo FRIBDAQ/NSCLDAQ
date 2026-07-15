@@ -385,6 +385,7 @@ class ProgramEditor(QWidget):
         # Connect signals to interna slots.
         
         self._browseprogram.clicked.connect(self._browseProgram)
+        self._wdbrowse.clicked.connect(self._browseWd)
     
     # Implement attributes:
     
@@ -428,6 +429,14 @@ class ProgramEditor(QWidget):
         ''' @param containers - list of valid containers in the combobox. '''
         self._container.clear()
         self._container.addItems(containers)
+    
+    def wd(self) -> str:
+        ''' @return str - working directory value: '''
+        return self._wd.text()
+    
+    def setWd(self, wd : str) -> None:
+        ''' @param wd - the new working directory string. '''
+        self._wd.setText(wd)
         
     # Internal slots for autonomous operation:
     
@@ -439,7 +448,14 @@ class ProgramEditor(QWidget):
         if name.strip():
             self.setPath(name)
         
-    
+    def _browseWd(self) -> None:
+        #  The browse.. button was clicked for the working directory.
+        # Use a QFileDialog.getExistingDirectory to browse for one:
+        
+        name = QFileDialog.getExistingDirectory(self, 'Choose working directory', self.wd())
+        if name.strip():
+            self.setWd(name)
+        
     # Gui segment creating utilitty methods:
     
     def _createIdFrame(self) -> QFrame:
@@ -554,6 +570,7 @@ if __name__ == '__main__':
             'bookworm-12.2-009',
             'bullseye'
         ])
+        editor.setWd('/home/ron')
         editor.setContainer('bookworm-12.2-009')
         editor.show();
     
