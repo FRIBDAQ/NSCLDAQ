@@ -401,7 +401,34 @@ class ProgramEditor(QWidget):
     def setPath(self, path : str) -> None:
         '''@param path - the new value to load in the path text edit.'''
         self._path.setText(path)
+        
+    def host(self) -> str:
+        ''' @return str - the host in which the program should run. '''
+        return self._host.text()
+    def setHost(self, host : str) -> None:
+        ''' @param host - new value for the host line edit '''
+        self._host.setText(host)
     
+    def container(self) -> str:
+        ''' @return str - value selected in the containers combobox. '''
+        return self._container.currentText()
+    def setContainer(self, container: str) -> None:
+        ''' @param container - name of selected container. '''
+        self._container.setCurrentText(container)
+    
+    def containers(self) -> list[str] :
+        ''' @return list[str] - names of the containers user can select fromn '''
+        result = [list]
+        for index in range(self._container.count()):
+            index.append(self._container.itemText(index))
+
+        return result
+    
+    def setContainers(self, containers : list[str]) -> None:
+        ''' @param containers - list of valid containers in the combobox. '''
+        self._container.clear()
+        self._container.addItems(containers)
+        
     # Internal slots for autonomous operation:
     
     def _browseProgram(self) -> None:
@@ -521,6 +548,13 @@ if __name__ == '__main__':
         editor = ProgramEditor(None)
         editor.setName(name)
         editor.setPath('/some/path/for/now')
+        editor.setHost('localhost')
+        editor.setContainers([
+            'buster',
+            'bookworm-12.2-009',
+            'bullseye'
+        ])
+        editor.setContainer('bookworm-12.2-009')
         editor.show();
     
     from PyQt6.QtWidgets import QApplication
