@@ -1005,7 +1005,7 @@ class Program:
         *  host - Host the program will run in .
         *  directory  -directory in the container that will be the cwd of the program when started.
         *  container - name of the container the program runs in.
-        *  more     - Dict of additionalal stuff.  This can be fed back to the 'options'
+        *  more     - Dict of additional stuff.  This can be fed back to the 'options'
         *       parameter on the 'add' method with the exception that 'initscript'
         *       will be 'initscript_contents' and will contain the text of the initialization
         *       script.
