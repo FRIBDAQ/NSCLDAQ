@@ -174,6 +174,11 @@ class ValueBox(QWidget):
         self._new = QPushButton('Add', self)
         self._layout.addWidget(self._new)
         
+        # Hook the signals to our internal slots:
+        
+        self._new.clicked.connect(self._add)
+        self._list.itemDoubleClicked.connect(self._edit)
+        
     # Attributes:
     
     def title(self) -> str:
@@ -187,6 +192,42 @@ class ValueBox(QWidget):
         '''
         self._title.setText(title)
     
+    def items(self) -> list[str]:
+        '''
+        @return list[str] - the names in the list.
+        '''
+        result = list()
+        for row in range(self._list.rowCount()):
+            result.append(self._list.item(row).text())
+        return result
+
+    def setItems(self, items : list[str]) -> None:
+        '''
+        @param items - new strings to put in the list box.
+        '''
+        self._list.clear()
+        for item in items:
+            self._list.addItem(item)
+        
+    # internal slots:
+    
+    def _add(self) -> None:
+        # Add was clicked add the text and clear the entry:
+        
+        self._list.addItem(self._value.text())
+        self._value.setText('')
+    
+    def _edit(self, item : QListWidgetItem) -> None:
+        # Load the item into the edit and remove it from the
+        # list:
+        
+        self._value.setText(item.text())
+        
+        row = self._list.row(item)
+        self._list.takeItem(row)
+        
+        
+        
 class NameValueBox(QWidget):
     '''
         This widget is a listbox that has name=value stuff
