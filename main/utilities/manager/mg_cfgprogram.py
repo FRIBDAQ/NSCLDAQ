@@ -28,7 +28,8 @@ the user to define all of the characteristics of a program.
 
 from PyQt6.QtWidgets import (
     QWidget,  QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,
-    QTableView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton)
+    QTableView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton,
+    QFileDialog)
 from PyQt6.QtGui import (QStandardItemModel, QStandardItem)
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject
 
@@ -380,6 +381,37 @@ class ProgramEditor(QWidget):
         self._layout.addWidget(self._createWdFrame())
         self._layout.addWidget(self._createProgramTypeFrame())
         self._layout.addWidget(self._createEnvironmentFrame())
+        
+        # Connect signals to interna slots.
+        
+        self._browseprogram.clicked.connect(self._browseProgram)
+    
+    # Implement attributes:
+    
+    def name(self) -> str:
+        ''' @return str - name of the program. '''
+        return self._name.text()
+    def setName(self, name : str) -> None:
+        '''@param name - new name to set in the widget:'''
+        self._name.setText(name)
+        
+    def path(self) -> str:
+        '''@return str - the value of the path entry'''
+        return self._path.text()
+    def setPath(self, path : str) -> None:
+        '''@param path - the new value to load in the path text edit.'''
+        self._path.setText(path)
+    
+    # Internal slots for autonomous operation:
+    
+    def _browseProgram(self) -> None:
+        # The Browse... button was clicked next to the Program File
+        # line edit... browse for a new file and load it into the
+        # path.
+        (name, flt)  = QFileDialog.getOpenFileName(self, 'Choose Program file')
+        if name.strip():
+            self.setPath(name)
+        
     
     # Gui segment creating utilitty methods:
     
@@ -398,6 +430,9 @@ class ProgramEditor(QWidget):
         idlayout.addWidget(QLabel('Program File:', self._idframe))
         self._path = QLineEdit(self._idframe)
         idlayout.addWidget(self._path)
+        
+        self._browseprogram = QPushButton('Browse...', self._idframe)
+        idlayout.addWidget(self._browseprogram)
         
         return self._idframe
 
@@ -484,6 +519,8 @@ if __name__ == '__main__':
     def edit(name : str) -> None:
         global editor
         editor = ProgramEditor(None)
+        editor.setName(name)
+        editor.setPath('/some/path/for/now')
         editor.show();
     
     from PyQt6.QtWidgets import QApplication
