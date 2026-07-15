@@ -357,7 +357,7 @@ class ProgramEditor(QWidget):
         container - Container in which the program is run.
         containers - THe containers the user can select from.
         wd   - Working directory in which the program is run.
-        type - program type, one of 'Transitory', 'Critical' or 'Persistent'
+        programType - program type, one of 'Transitory', 'Critical' or 'Persistent'
         options - list of option/value pairs e.g. [['--ring', 'ringname'], ['--id', '2'],...]
         parameters - List of program parameters that don't have values
         environment - List of name/value pairs in the environment e.g. 
@@ -437,6 +437,26 @@ class ProgramEditor(QWidget):
     def setWd(self, wd : str) -> None:
         ''' @param wd - the new working directory string. '''
         self._wd.setText(wd)
+        
+    def programType(self) -> str:
+        ''' @return the label of the program type radio button that's checked'''
+        
+        for widget in [self._critical, self._persistent, self._transitory]:
+            if widget.checked():
+                return widget.text()
+            
+        # It's a bug for one not to be set:
+        
+        raise AssertionError('The program type is not set but shoulid be!')
+    
+    def setProgramType(self, ptype : str) -> None:
+        
+        for widget in [self._critical, self._persistent, self._transitory]:
+            if ptype == widget.text():
+                widget.setChecked(True)
+                return
+        
+        raise ValueError(f'Invalid program type {ptype}')
         
     # Internal slots for autonomous operation:
     
@@ -523,6 +543,7 @@ class ProgramEditor(QWidget):
         frame.setLayout(layout)
         
         self._critical = QRadioButton('Critical', frame)
+        self._critical.setChecked(True)                 # The default until overiden.
         self._persistent= QRadioButton('Persistent', frame)
         self._transitory= QRadioButton('Transitory', frame)
         for widget in (self._critical, self._persistent, self._transitory):
@@ -554,7 +575,9 @@ class ProgramEditor(QWidget):
 # test code (for now)
 
 if __name__ == '__main__':
-    
+    from PyQt6.QtWidgets import QApplication
+    import sys
+
     def create() -> None:
         print("Make a new program.")
         
@@ -572,11 +595,10 @@ if __name__ == '__main__':
         ])
         editor.setWd('/home/ron')
         editor.setContainer('bookworm-12.2-009')
+        editor.setProgramType('Persistent')
         editor.show();
     
-    from PyQt6.QtWidgets import QApplication
-    import sys
-
+    
     app = QApplication(sys.argv)
     win = ProgramSelector()
     
