@@ -29,7 +29,7 @@ the user to define all of the characteristics of a program.
 from PyQt6.QtWidgets import (
     QWidget,  QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,
     QTableView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton,
-    QFileDialog)
+    QFileDialog, QDialog, QDialogButtonBox)
 from PyQt6.QtGui import (QStandardItemModel, QStandardItem)
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject
 
@@ -592,6 +592,36 @@ class ProgramEditor(QWidget):
         
         self._envframe = frame
         return frame
+
+class ProgramEditorDialog(QDialog):
+    '''
+        This is a dialog that contains a ProgramEditor 
+        and Save/Cancel buttons.
+        
+        Attributes:
+        editor - readonly - gets a reference to the ProgramEditor widget.
+    
+    '''        
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._editor = ProgramEditor(self)
+        self._layout.addWidget(self._editor)
+        
+        self._buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel, self)
+        self._layout.addWidget(self._buttons)
+        
+        self._buttons.accepted.connect(self.accept)
+        self._buttons.rejected.connect(self.reject)
+        
+    def editor(self) -> ProgramEditor:
+        ''' @return ProgramEditor - the editor the dialog is presenting. '''
+        return self._editor
+        
+        
         
 # test code (for now)
 
@@ -602,10 +632,11 @@ if __name__ == '__main__':
     def create() -> None:
         print("Make a new program.")
         
-    editor = None
+    
     def edit(name : str) -> None:
-        global editor
-        editor = ProgramEditor(None)
+        
+        dialog = ProgramEditorDialog(win)
+        editor = dialog.editor()
         editor.setName(name)
         editor.setPath('/some/path/for/now')
         editor.setHost('localhost')
@@ -625,7 +656,11 @@ if __name__ == '__main__':
             ('TCLLIBPATH', '/usr/opt/daq/12.2-009/TclLibs'),
             ('DAQROOT', '/usr/opt/daq/12.2-009')
         ])
-        editor.show();
+        
+        if dialog.exec() ==  QDialog.DialogCode.Accepted:
+            print('Accepted')
+        else:
+            print('cancelled')
     
     
     app = QApplication(sys.argv)
