@@ -27,7 +27,7 @@ the user to define all of the characteristics of a program.
 
 
 from PyQt6.QtWidgets import (
-    QWidget,  QVBoxLayout, QHBoxLayout, QPushButton, QListWidget,
+    QWidget,  QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,
     QTableView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton)
 from PyQt6.QtGui import (QStandardItemModel, QStandardItem)
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject
@@ -231,7 +231,13 @@ class NameValueBox(QWidget):
         
         self._new = QPushButton('Add', self)
         self._layout.addWidget(self._new)
-     
+        
+        self._new.clicked.connect(self._addItem)
+        self._list.itemDoubleClicked.connect(self._editItem)
+        
+
+    # Attribute implementations.
+    
     def title(self) -> str:
         '''
         @return str the title attribute
@@ -242,7 +248,58 @@ class NameValueBox(QWidget):
         @param title - the new value of the title attribute/widget text.
         '''
         self._title.setText(title)
-
+    def items(self) -> list[tuple[str, str]]:
+        '''
+            Return the name/value pairs currently  in the
+            list box.
+            
+            @return list of name value pairs (tuples).
+        '''
+        result = list()
+        for row in range(self._list.rowCount()):
+            item = self._list.item(row)
+            (name,value) = item.split('=')
+            result.append((name, value))
+        
+        return result
+    
+    def setItems(self, nameValuePairs : list[tuple[str,str]]) -> None:
+        '''
+            @param nameValuePairs - an iterable of name value pairs. to load
+                 into the listbox.
+        '''
+        self._list.clear()
+        for item in nameValuePairs:
+            self._list.addItem(f'{item[0]}={item[1]}')
+    
+    #internal slots.
+    
+    def _addItem(self) -> None:
+        # To operate both the name and values must be nonempty.
+        
+        name = self._name.text().strip()
+        value = self._value.text().strip()
+        
+        if name and value:
+            self._list.addItem(f'{name}={value}')
+            # Clear the text entries to make adding another simpler
+            
+            self._name.setText('')
+            self._value.setText('')
+            
+    def _editItem(self, item : QListWidgetItem) -> None:
+        # Load the double clicked item into the editor
+        # and remove it from the list.
+        
+        (name, value) = item.text().split('=')
+        row = self._list.row(item)
+        self._list.takeItem(row)
+        
+        self._name.setText(name)
+        self._value.setText(value)
+        
+        
+        
 class ProgramEditor(QWidget):
     '''
         This is a form that can be used to edit a program
