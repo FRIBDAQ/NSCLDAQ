@@ -31,12 +31,13 @@ from PyQt6.QtWidgets import (
     QTableView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton,
     QFileDialog, QDialog, QDialogButtonBox, QMessageBox)
 from PyQt6.QtGui import (QStandardItemModel, QStandardItem)
-from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject
+from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject, Qt
 from mg_database import Program, Container
 
 import os
 import subprocess
 import pathlib
+import tempfile
 import sqlite3
 
 class ProgramSelector(QWidget):
@@ -92,6 +93,8 @@ class ProgramSelector(QWidget):
         
         self._newButton.clicked.connect(self.new)   # Just relay new.
         self._list.doubleClicked.connect(self._editRequested)
+        
+        
         
     # Private slots.
     
@@ -151,10 +154,8 @@ class ProgramSelector(QWidget):
                 name, image, host, container
             ])
         self._list.resizeColumnsToContents()
-        self._list.adjustSize()
-        self.adjustSize()
-        if self.parent():
-            self.parent().adjustSize()
+        
+        
         
 class ValueBox(QWidget):
     '''
@@ -212,7 +213,7 @@ class ValueBox(QWidget):
         @return list[str] - the names in the list.
         '''
         result = list()
-        for row in range(self._list.rowCount()):
+        for row in range(self._list.count()):
             result.append(self._list.item(row).text())
         return result
 
@@ -312,9 +313,9 @@ class NameValueBox(QWidget):
             @return list of name value pairs (tuples).
         '''
         result = list()
-        for row in range(self._list.rowCount()):
+        for row in range(self._list.count()):
             item = self._list.item(row)
-            (name,value) = item.split('=')
+            (name,value) = item.text().split('=')
             result.append((name, value))
         
         return result
@@ -376,7 +377,7 @@ class ProgramEditor(QWidget):
         parameters - List of program parameters that don't have values
         environment - List of name/value pairs in the environment e.g. 
             [['TCLLIBPATH', '/usr/opt/daq/12.2-009'], ...]
-        
+        initscript   - A file that contains the initialization script.
     Slots
         addOption(name: str, value: str) - add a new option to the options list.
         addParameter(param: str)         - add a new program parameter to the parameter list.
@@ -400,7 +401,7 @@ class ProgramEditor(QWidget):
         
         self._browseprogram.clicked.connect(self._browseProgram)
         self._wdbrowse.clicked.connect(self._browseWd)
-    
+        self._initscriptbrowse.clicked.connect(self._browseIscript)
     # Implement attributes:
     
     def name(self) -> str:
@@ -456,7 +457,7 @@ class ProgramEditor(QWidget):
         ''' @return the label of the program type radio button that's checked'''
         
         for widget in [self._critical, self._persistent, self._transitory]:
-            if widget.checked():
+            if widget.isChecked():
                 return widget.text()
             
         # It's a bug for one not to be set:
@@ -492,6 +493,13 @@ class ProgramEditor(QWidget):
     def setEnvironment(self, env : list[tuple[str, str]]) -> None:
         ''' @param env - name value pairs that make up the environment'''
         self._environment.setItems(env)
+        
+    def initscript(self) -> str:
+        ''' @return str - path to init script file that gets sucked into the db.'''
+        return self._initscript.text()
+    def setInitScript(self, path : str) -> None:
+        ''' @param path  - path to the initscript file to suck into the database '''
+        self._initscript.setText(path)
 
     # Internal slots for autonomous operation:
     
@@ -510,7 +518,12 @@ class ProgramEditor(QWidget):
         name = QFileDialog.getExistingDirectory(self, 'Choose working directory', self.wd())
         if name.strip():
             self.setWd(name)
-        
+    def _browseIscript(self) -> None:
+        # Browse.. button was clicked for the init script.
+        (path, flt) = QFileDialog.getOpenFileName(self, 'Choose program initialization script')
+        if path.strip():
+            self.setInitScript(path)
+          
     # Gui segment creating utilitty methods:
     
     def _createIdFrame(self) -> QFrame:
@@ -564,6 +577,12 @@ class ProgramEditor(QWidget):
         layout.addWidget(self._wd)
         self._wdbrowse = QPushButton('Browse...', frame)
         layout.addWidget(self._wdbrowse)
+        
+        layout.addWidget(QLabel('Init Script'))
+        self._initscript = QLineEdit(frame)
+        layout.addWidget(self._initscript)
+        self._initscriptbrowse = QPushButton('Browse...')
+        layout.addWidget(self._initscriptbrowse)
                 
         self._wdframe  = frame
         return frame
@@ -680,7 +699,14 @@ class ProgramEditController(QObject):
             raise RuntimeError('A DAQ version must have been setup to create a new program.')
         program = pathlib.Path(os.environ['DAQBIN'])
         program = program / 'mg_program_wizard'
-        status = subprocess.run([str(program), self._file])
+        
+        status = subprocess.run(
+            [ str(program), self._file,]
+        )
+        
+       
+        
+        
         if status.returncode != 0:
             # Failed for some reason:
         
@@ -693,10 +719,113 @@ class ProgramEditController(QObject):
         self._loadView()   
     
     def _editProgram(self, name : str) -> None:
-        pass              
+        # We need both a container and program api:
+        
+        container_api = Container(self._db)
+        program_api  =  Program(self._db)
+    
+        # Find our program:
+        
+        program_def = [x for x in program_api.list() if x['name'] == name]
+        
+        # If it doesn't exist (e.g. some outside agent removed it)
+        # pop a dialog, reload the view and return:
+        
+        if len(program_def) != 1:
+            _ = QMessageBox.warning(
+                self._view, 'No such program', 
+                f'The program named {name} no longer exists.  When you dismiss this dialog the list will update'
+            )
+            self._loadView()
+            return
+
+        program_def = program_def[0]
+        
+        # Edit the program 'name'. 
+        #
+        dialog = ProgramEditorDialog(self._view) 
+        form   = dialog.editor()
+        
+        # Stock the dialog, better start with the container names first:
+        
+        container_names = [x['name'] for x in container_api.list()]
+        form.setContainers(container_names)
+        form.setName(program_def['name'])
+        form.setPath(program_def['path'])
+        form.setHost(program_def['host'])
+        form.setContainer(program_def['container'])
+        form.setWd(program_def['directory'])
+        
+        more_info = program_def['more']
+        form.setProgramType(more_info['type'])
+        form.setOptions(more_info['options'])
+        form.setParameters(more_info['parameters'])
+        form.setEnvironment(more_info['environment'])
+        
+        # The initscript has to be written to a temp, named file:
+        
+        initscript_file = self._makeInitscriptFile(more_info['initscript_contents'])
+        form.setInitScript(initscript_file.name)
+                                                   
+        while dialog.exec() == QDialog.DialogCode.Accepted:
+            
+            #name, image, host  
+            
+            pgm_name = form.name().strip()
+            image = form.path().strip()
+            host = form.host().strip()
+            
+            
+            if not pgm_name or not image or not host:
+                _ = QMessageBox.warning(
+                    dialog, 'Missing input', 'The program name, image and host must be non-empty'
+                )
+            else:
+                # Got a valid definition..;.. buld the definition.
+                container = form.container()
+                wd        = form.wd()
+             
+                options = {
+                    'type' : form.programType(),
+                }
+                # We only need to include others if they're non-empty:
+                
+                pgm_opts = form.options()
+                if len(pgm_opts) > 0:
+                    options['options'] = pgm_opts
+                params = form.parameters()
+                if len(params) > 0:
+                    options['parameters'] = params
+                env = form.environment()
+                if len(env) > 0:
+                    options['environment'] = env
+                initscript = form.initscript().strip()
+                if initscript:
+                    options['initscript'] = initscript
+
+                # If the new name already exists, we need to kill it off first.
+                
+                if program_api.exists(pgm_name):
+                    program_api.delete(pgm_name)
+
+                program_api.add(pgm_name, image, host, container, wd, options)
+                    
+                break                   # Can go on to re-load the view.
+            
+
+        self._loadView()     # Update the view.
         
     # Utilities:
     
+    def _makeInitscriptFile(self, script : str) -> tempfile.NamedTemporaryFile:
+        # Make a named temp file  containing script and return it
+        # so it's still alive.
+        
+        file = tempfile.NamedTemporaryFile(mode='w', encoding='utf8')
+        print(script, file=file.file)
+        file.file.flush()
+        return file
+        
     def _loadView(self) -> None:
         #  Load the view with the existing programs.
         program_api = Program(self._db)
@@ -745,7 +874,11 @@ if __name__ == '__main__':
     
     app = QApplication(sys.argv)
     view  = ProgramSelector()
-
+    # I think it's weird that this should actually resize the window but
+    # what do I know?
+        
+    size = view.size()
+    view.resize(size)
     
     controller = ProgramEditController(view, 'testing.db')
     

@@ -493,7 +493,7 @@ class ContainerEditController(QObject):
         container_names = [container['name'] for container in container_list]
         self._view.setContainers(container_names)
     
-    def _makeInitScriptFile(self, script: str) -> str:
+    def _makeInitScriptFile(self, script: str) -> tempfile.NamedTemporaryFile:
         # Save the init script in TMPDIR
         
         file = tempfile.NamedTemporaryFile(mode='w', encoding='utf8')

@@ -924,8 +924,8 @@ class Program:
             
             for env in cmd_environment:
                 name = env[0]
-                if len(opt) > 1:
-                    value = opt[1]
+                if len(env) > 1:
+                    value = env[1]
                 else: 
                     value = ''
                 cursor.execute(
