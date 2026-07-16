@@ -29,11 +29,13 @@ the user to define all of the characteristics of a program.
 from PyQt6.QtWidgets import (
     QWidget,  QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,
     QTableView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton,
-    QFileDialog, QDialog, QDialogButtonBox, QMessageBox)
+    QFileDialog, QDialog, QDialogButtonBox, QMessageBox, QApplication)
 from PyQt6.QtGui import (QStandardItemModel, QStandardItem)
-from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject, Qt
+from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject
+
 from mg_database import Program, Container
 
+import sys
 import os
 import subprocess
 import pathlib
@@ -832,56 +834,34 @@ class ProgramEditController(QObject):
         programs    = program_api.list()
         self._view.setPrograms(programs)
         
-# test code (for now)
+
+def Usage() -> None:
+    #  output the program usage to stderr:
+    
+    print('''
+Usage:
+   $DAQBIN/mg_cfgprogram config-path
+Where:
+    config-path - is the path to the configuration database file.
+                  this should have been created with $DAQBIN/mg_mkconfig
+          ''', file = sys.stderr
+    )
+
+#  Program entry:
+
+def main() -> int:
+    if len(sys.argv) != 2:
+        Usage()
+        return -1
+
+    app = QApplication(sys.argv)
+    win = ProgramSelector()
+    controller = ProgramEditController(win, sys.argv[1])
+    
+    win.resize(win.size())    # For some reason this sets the size properly.
+    
+    win.show()
+    return app.exec()
 
 if __name__ == '__main__':
-    from PyQt6.QtWidgets import QApplication
-    import sys
-
-    def create() -> None:
-        print("Make a new program.")
-        
-    
-    def edit(name : str) -> None:
-        
-        dialog = ProgramEditorDialog(win)
-        editor = dialog.editor()
-        editor.setName(name)
-        editor.setPath('/some/path/for/now')
-        editor.setHost('localhost')
-        editor.setContainers([
-            'buster',
-            'bookworm-12.2-009',
-            'bullseye'
-        ])
-        editor.setWd('/home/ron')
-        editor.setContainer('bookworm-12.2-009')
-        editor.setProgramType('Persistent')
-        editor.setOptions([
-            ('--ring', 'ron'), ('---id', '2')
-        ])
-        editor.setParameters(['pop', 'goes', 'the', 'weasel'])
-        editor.setEnvironment([
-            ('TCLLIBPATH', '/usr/opt/daq/12.2-009/TclLibs'),
-            ('DAQROOT', '/usr/opt/daq/12.2-009')
-        ])
-        
-        if dialog.exec() ==  QDialog.DialogCode.Accepted:
-            print('Accepted')
-        else:
-            print('cancelled')
-    
-    
-    app = QApplication(sys.argv)
-    view  = ProgramSelector()
-    # I think it's weird that this should actually resize the window but
-    # what do I know?
-        
-    size = view.size()
-    view.resize(size)
-    
-    controller = ProgramEditController(view, 'testing.db')
-    
-    
-    view.show()
-    sys.exit(app.exec())
+    sys.exit(main())
