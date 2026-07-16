@@ -29,10 +29,15 @@ the user to define all of the characteristics of a program.
 from PyQt6.QtWidgets import (
     QWidget,  QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,
     QTableView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton,
-    QFileDialog, QDialog, QDialogButtonBox)
+    QFileDialog, QDialog, QDialogButtonBox, QMessageBox)
 from PyQt6.QtGui import (QStandardItemModel, QStandardItem)
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject
+from mg_database import Program, Container
 
+import os
+import subprocess
+import pathlib
+import sqlite3
 
 class ProgramSelector(QWidget):
     '''
@@ -65,10 +70,13 @@ class ProgramSelector(QWidget):
         # Table of programs:
         
         self._model = QStandardItemModel(self)
-        self.setPrograms(list())
+        
         
         self._list = QTableView(self)
         self._list.setModel(self._model)
+        self.setPrograms(list())
+        
+        
         
         self._newButton = QPushButton('New...', self)
         
@@ -142,6 +150,12 @@ class ProgramSelector(QWidget):
             self._model.appendRow([
                 name, image, host, container
             ])
+        self._list.resizeColumnsToContents()
+        self._list.adjustSize()
+        self.adjustSize()
+        if self.parent():
+            self.parent().adjustSize()
+        
 class ValueBox(QWidget):
     '''
      This widget is a list box that has names that can be edited.
@@ -621,7 +635,73 @@ class ProgramEditorDialog(QDialog):
         ''' @return ProgramEditor - the editor the dialog is presenting. '''
         return self._editor
         
+
+class ProgramEditController(QObject):
+    '''
+        This class provides a controller that
+        - Stocks the view (ProgramSelector widget) with the data on the known programs.
+        - Responds to signals in the view:
+          *  new - Spawns off the program creation wizard ($DAQBIN/mg_program_wizard) then
+                 refreshes the program list.
+          *  edit - pops up and stocks a ProgramEditorDialog and, if the use accepts
+                 the changes modifies the program.  Since the edit can
+                 change the name of the program (e.g. create a modified program with a different name),
+                 again the selector widget is restocked.
+    ''' 
+    def __init__(
+        self, view : ProgramSelector, config_file : str, 
+        parent : QObject | None = None):
+        '''
+        @param view - the ProgramSelector widget that is the main view
+                      controlled.
+        @param config_file - the configuration file database we are editing.
+                     THe caller must have verified existence.
+                     
+        '''
         
+        super().__init__(parent)
+        self._file = config_file
+        self._db = sqlite3.connect(config_file)
+        self._view = view
+        
+        self._loadView()
+        
+        # Handle the view signals:
+        
+        self._view.new.connect(self._newProgram)
+        self._view.edit.connect(self._editProgram)
+        
+    #  Internal slots:
+    
+    def _newProgram(self) -> None:
+        #   Spin up a program wizards with our database file:
+        
+        if 'DAQBIN' not in os.environ:
+            raise RuntimeError('A DAQ version must have been setup to create a new program.')
+        program = pathlib.Path(os.environ['DAQBIN'])
+        program = program / 'mg_program_wizard'
+        status = subprocess.run([str(program), self._file])
+        if status.returncode != 0:
+            # Failed for some reason:
+        
+            _ = QMessageBox.information(
+                self._view, 'Wizard error.', 
+                'Program creation wizard returned a non-zero exit code'
+            )
+        
+        
+        self._loadView()   
+    
+    def _editProgram(self, name : str) -> None:
+        pass              
+        
+    # Utilities:
+    
+    def _loadView(self) -> None:
+        #  Load the view with the existing programs.
+        program_api = Program(self._db)
+        programs    = program_api.list()
+        self._view.setPrograms(programs)
         
 # test code (for now)
 
@@ -664,24 +744,11 @@ if __name__ == '__main__':
     
     
     app = QApplication(sys.argv)
-    win = ProgramSelector()
+    view  = ProgramSelector()
+
     
-    # Fake program defs (enough to make win.setPrograms work).
-    
-    fake_programs = [
-        {'name': 'george', 
-         'path' : '/usr/opt/daq/12.2-009/bin/ddasReadout', 
-         'host' : 'localhost',
-         'container': 'bookworm-12.2-009'},
-        {'name' : 'shemp', 
-         'path' : '/home/ron/bin/Readout',
-         'host' : 'localhost',
-         'container' : 'bullseye-11.3-021'}
-    ]
-    win.setPrograms(fake_programs)
-    win.new.connect(create)
-    win.edit.connect(edit)
+    controller = ProgramEditController(view, 'testing.db')
     
     
-    win.show()
+    view.show()
     sys.exit(app.exec())
