@@ -92,9 +92,15 @@ class StateEditor(QWidget):
         
         # Connect Signals to internal slots:
         
+        #   Clicks in the state list:
         self._stateList.itemClicked.connect(self._setPrecursors)
         self._stateList.itemClicked.connect(self._setSuccessors)
         self._stateList.itemClicked.connect(self._loadStateLabel)
+        
+        # Clicks in the precursor and successor lists:
+        
+        self._precursorWidgets['list'].itemClicked.connect(self._selectPrecursor)
+        self._successorWidgets['list'].itemClicked.connect(self._selectSuccessor)
     
     # Attributes implementations.
     
@@ -153,8 +159,16 @@ class StateEditor(QWidget):
         states = self._enumerateStates()
         selectable_states = [x for x in states if x not in transitions]
         self._stockComboBox(whichWidgets['statelist'], selectable_states)
+   
+    #  Methods handle clicks in the precursor/successor list.
+    #  Too small to be worth factoring  into common code.
+    
+    def _selectPrecursor(self, item :  QListWidgetItem) -> None:
+        self._precursorWidgets['selected'].setText(item.text())
         
-        
+    def _selectSuccessor(self, item : QListWidgetItem) -> None:
+        self._successorWidgets['selected'].setText(item.text())
+    
     #  GUI layout utilities:
     
     def _createPrecursorWidgets(self) -> QVBoxLayout:
