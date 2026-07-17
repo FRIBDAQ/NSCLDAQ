@@ -28,7 +28,7 @@ legals state transitions.  Legal state transitions are defined
 from PyQt6.QtWidgets import (QListWidget, QListWidgetItem, 
             QLabel, QLineEdit, QPushButton, QComboBox,
             QVBoxLayout, QHBoxLayout, QWidget)
-from PyQt6.QtCore import QObject
+from PyQt6.QtCore import QObject, pyqtSignal
 
 
 class StateEditor(QWidget):
@@ -73,6 +73,8 @@ class StateEditor(QWidget):
             A successor state is one that 'name' can transition to.
         
     '''
+    addState    = pyqtSignal(str)
+    deleteState = pyqtSignal(str)
     def __init__(self, parent : QObject | None = None):
         super().__init__(parent)
         
@@ -101,6 +103,12 @@ class StateEditor(QWidget):
         
         self._precursorWidgets['list'].itemClicked.connect(self._selectPrecursor)
         self._successorWidgets['list'].itemClicked.connect(self._selectSuccessor)
+        
+        # Set up the button slots for the delete and add buttons on the
+        # state  list widget.
+    
+        self._deleteState.clicked.connect(self._signalDeleteState)
+        self._addState.clicked.connect(self._signalAddState)
     
     # Attributes implementations.
     
@@ -169,6 +177,21 @@ class StateEditor(QWidget):
     def _selectSuccessor(self, item : QListWidgetItem) -> None:
         self._successorWidgets['selected'].setText(item.text())
     
+    # Methods to handle the buttons under the state list:
+    
+    def _signalAddState(self) -> None:
+        # Add button clicked to emit the signal requires the text edit to be non empty:
+        
+        newState = self._newStateName.text()
+        if newState.strip():
+            self.addState.emit(newState)
+        
+    def _signalDeleteState(self) -> None:
+        # The delete button was clicked  Pass the current item in the
+        # list to the signal:
+        
+        self.deleteState.emit(self._stateList.currentItem().text())
+        
     #  GUI layout utilities:
     
     def _createPrecursorWidgets(self) -> QVBoxLayout:
@@ -296,6 +319,12 @@ if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
     import sys
 
+    def add(name :str) -> None:
+        print("add", name)
+    
+    def remove(name : str) -> None:
+        print('remove', name)
+
     app = QApplication (sys.argv)
     win = StateEditor()
     
@@ -306,6 +335,9 @@ if __name__ == '__main__':
     ]
     
     win.setStateMachine(dummy_statemachine)
+    win.addState.connect(add)
+    win.deleteState.connect(remove)
+    
     
     win.show()
     sys.exit(app.exec())
