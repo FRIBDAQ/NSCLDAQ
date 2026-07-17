@@ -180,6 +180,56 @@ class StateEditor(QWidget):
         
         # Refresh the state list:
         self._stockListBox(self._stateList, self._enumerateStates())
+    
+    def newTransition(self, initial : str, final : str) -> None:
+        '''
+            Adds a new transition to the model.  This adds
+            * final to the successor states of initial and
+            * initial to the precursor states of final.
+            
+            @param initial  - name of the initial state of the transition.
+            @param final    - name of the final state of the transition.
+            @throw ValueError if initial or final are not valid states
+                              * initial is already a precursor for final
+                              * final is already a successor for initial.
+        '''
+        states = self._enumerateStates();
+        if initial not in states :
+            raise ValueError(f'{initial} is not a defined state')
+        if final not in states:
+            raise ValueError(f'{final} is not a defined state')
+        
+        initial_info = self._findState(initial)
+        final_info   = self._findState(final)
+        
+        if final in initial_info['successors']:
+            raise ValueError(f'{final} is already a successor state for {initial}')
+        if initial in final_info['precursors']:
+            raise ValueError(f'{initial} is already a precursor to {final}')
+        
+        # Update the data and load the listboxes for the precursor/successors:
+        
+        initial_info['successors'].append(final)
+        final_info['precursors'].append(initial)
+        
+        # If the current state is the initial state, load the successor list box.
+        # and the combobox
+        
+        current_state= self._stateList.currentItem().text()
+        if initial == current_state:
+            self._stockListBox(self._successorWidgets['list'], initial_info['successors'])
+            self._stockComboBox(
+                self._successorWidgets['statelist'], 
+                [x for x in states if x not in initial_info['successors']])
+        
+        # If the current state is the final state, load the precursor listbox.
+        # and the combobox.
+        
+        if final == current_state:
+            self._stockListBox(self._precursorWidgets['list'], final_info['precursors'])
+            self._stockComboBox(
+                self._precursorWidgets['statelist'], 
+                [x for x in states if x not in final_info['precursors']])
         
     # Internal slots:
     
@@ -416,6 +466,7 @@ if __name__ == '__main__':
 
     def addt(f: str, t: str) -> None:
         print('add Transition:', f, '->', t)
+        win.newTransition(f, t)
     def delt(f: str, t: str) -> None:
         print('delete transition', f, '->', t)
     app = QApplication (sys.argv)
