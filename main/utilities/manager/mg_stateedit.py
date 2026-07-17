@@ -49,8 +49,8 @@ class StateEditor(QWidget):
           stateMachine - Allows the entire state machine to be loaded/fetched.
           
         Key methods:
-          addState    - Add a new state to the internal model of the state machine
-          addTransition - Add a new transition to the internal model of the state machine
+          newState    - Add a new state to the internal model of the state machine
+          newTransition - Add a new transition to the internal model of the state machine
           removeState  - Remove a new state from the internal state machine model
           removeTransition - Remove a transition from the internal state machine model.
           
@@ -143,6 +143,26 @@ class StateEditor(QWidget):
         # Now load the state list, and signal the current row was clicked  to 
         # Load the precursor and successor list boxes.
         # Clear the selected labels in all list boxes.
+        
+        self._stockListBox(self._stateList, self._enumerateStates())
+    
+    
+    # The public mthods needed to edit the internal model.
+    
+    def newState(self, state: str) -> None:
+        '''
+            Add a new state to the model. 
+            @param state -name of the new state.
+            @throws ValueError if the state aready exists.
+        '''
+        
+        if state  in self._enumerateStates():
+            raise ValueError(f'There is already a state named {state}')
+        
+        self._stateModel.append( {
+            'name': state, 'precursors':  list(), 'successors': list()
+        })
+        # Update the list box too:
         
         self._stockListBox(self._stateList, self._enumerateStates())
     
@@ -367,6 +387,10 @@ if __name__ == '__main__':
 
     def add(name :str) -> None:
         print("add", name)
+        try :
+            win.newState(name)
+        except ValueError as e:
+            print("add state failed:", e)
     
     def remove(name : str) -> None:
         print('remove', name)
