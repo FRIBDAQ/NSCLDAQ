@@ -118,6 +118,9 @@ class StateEditor(QWidget):
         self._precursorWidgets['delete'].clicked.connect(self._signalDeletePrecursor)
         
         # Set up the button slots for the successor widgets to work correctly.
+        
+        self._successorWidgets['add'].clicked.connect(self._signalAddSuccessor)
+        self._successorWidgets['delete'].clicked.connect(self._signalDeleteSuccessor)
     
     # Attributes implementations.
     
@@ -220,7 +223,21 @@ class StateEditor(QWidget):
         to_state   = self._selectedState.text()
         
         self.deleteTransition.emit(from_state, to_state)
+    
+    # Methods to handle clicks inthe successor buttons:
+    
+    def _signalAddSuccessor(self) -> None:
+        # Now the succesor is the to tate:
         
+        from_state = self._selectedState.text()
+        to_state   = self._successorWidgets['statelist'].currentText()
+        self.addTransition.emit(from_state, to_state)
+        
+    def _signalDeleteSuccessor(self) -> None:
+        
+        from_state = self._selectedState.text()
+        to_state   = self._successorWidgets['selected'].text()
+        self.deleteTransition.emit(from_state, to_state)
     #  GUI layout utilities:
     
     def _createPrecursorWidgets(self) -> QVBoxLayout:
