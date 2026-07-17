@@ -166,6 +166,21 @@ class StateEditor(QWidget):
         
         self._stockListBox(self._stateList, self._enumerateStates())
     
+    def removeState(self, state : str) -> None:
+        '''
+            Remove a state from the model.
+            @param state -name of the state to remove.
+            @throw ValueError if the state does not exist.
+        '''
+        if state not in self._enumerateStates():
+            raise ValueError(f'There is no state named {state}')
+        
+        info = self._findState(state)
+        self._stateModel.remove(info)
+        
+        # Refresh the state list:
+        self._stockListBox(self._stateList, self._enumerateStates())
+        
     # Internal slots:
     
     
@@ -394,6 +409,10 @@ if __name__ == '__main__':
     
     def remove(name : str) -> None:
         print('remove', name)
+        try :
+            win.removeState(name)
+        except ValueError as e:
+            print("remove state failed", e)
 
     def addt(f: str, t: str) -> None:
         print('add Transition:', f, '->', t)
