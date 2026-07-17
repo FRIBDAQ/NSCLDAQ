@@ -58,7 +58,7 @@ class StateEditor(QWidget):
             addState(str) - A new state was added
             deleteState(str) - A state was removed.
             addTransition(str, str) - A new transition was added, parameters are from/to.
-            deleteTransition(str, str) - A transition was deleted, parameters are from/to.
+            ransition(str, str) - A transition was deleted, parameters are from/to.
             
         Note, the signals don't automatically run the methods associated with them.  That's left
         for the signal handler to do...as after all, databgase manipulations to do that may fail.
@@ -230,7 +230,54 @@ class StateEditor(QWidget):
             self._stockComboBox(
                 self._precursorWidgets['statelist'], 
                 [x for x in states if x not in final_info['precursors']])
+    
+    def removeTransition(self, initial, final) -> None:
+        '''
+        Removes a transition from the model and updates the view accordingly.  This
+        removes the initial state from the precursors of the final state and removes
+        the final state from the successors of the initial state:
         
+        @param initial - initial state of the transition to remove.
+        @param final   -  final state of the trnsition to remove.
+        @raise ValueError if either initial or final are not valid states or:
+                         initial is _not_ a precursor to to final, or
+                         final is _not_ a successor to initial
+        '''
+        states = self._enumerateStates();
+        if initial not in states :
+            raise ValueError(f'{initial} is not a defined state')
+        if final not in states:
+            raise ValueError(f'{final} is not a defined state')
+        
+        initial_info = self._findState(initial)
+        final_info   = self._findState(final)
+        
+        if final not in initial_info['successors'] and initial not in final_info['precursors']:
+            raise ValueError(f'{final} -> {initial} is not a known state transition')
+        
+        
+        # Update the model:
+        
+        initial_info['successors'].remove(final)
+        final_info['precursors'].remove(initial)
+        
+        # Now update the appropriate list of states and combo boxes:
+        
+        current_state = self._stateList.currentItem().text()
+        if initial == current_state:
+            # sucessors needs updating:
+            
+            self._stockListBox(self._successorWidgets['list'], initial_info['successors']) 
+            self._stockComboBox(
+                self._successorWidgets['statelist'], 
+                [x for x in states if x not in initial_info['successors']])
+        
+        if final == current_state:
+            self._stockListBox(self._precursorWidgets['list'], final_info['precursors'])
+            self._stockComboBox(
+                self._precursorWidgets['statelist'], 
+                [x for x in states if x not in final_info['precursors']])
+            
     # Internal slots:
     
     
@@ -469,11 +516,12 @@ if __name__ == '__main__':
         win.newTransition(f, t)
     def delt(f: str, t: str) -> None:
         print('delete transition', f, '->', t)
+        win.removeTransition(f, t)
     app = QApplication (sys.argv)
     win = StateEditor()
     
     dummy_statemachine = [
-        {'name': 'SHUTDOWN', 'precursors': ['SHUTDOWN', 'BOOT', 'HWINIT'], 'successors' : ['BOOT',]}, 
+        {'name': 'SHUTDOWN', 'precursors': [ 'BOOT', 'HWINIT'], 'successors' : ['BOOT']}, 
         {'name': 'BOOT',     'precursors' : ['SHUTDOWN',], 'successors': ['HWINIT', 'SHUTDOWN'] },
         {'name': "HWINIT",   'precursors' : ['BOOT',], 'successors' : ['SHUTDOWN']},
     ]
