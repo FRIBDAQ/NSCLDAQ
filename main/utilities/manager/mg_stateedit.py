@@ -27,7 +27,7 @@ legals state transitions.  Legal state transitions are defined
 
 from PyQt6.QtWidgets import (QListWidget, QListWidgetItem, 
             QLabel, QLineEdit, QPushButton, QComboBox,
-            QVBoxLayout, QHBoxLayout, QWidget)
+            QVBoxLayout, QHBoxLayout, QWidget, QDialog, QDialogButtonBox)
 from PyQt6.QtCore import QObject, pyqtSignal
 
 
@@ -491,7 +491,29 @@ class StateEditor(QWidget):
         
     def _enumerateStates(self) -> list[str]:
         return   [x['name'] for x in self._stateModel]      
-# Test code for now:
+
+class StateEditorDialog(QDialog):
+    '''
+        This is a dialog that has the state editor as the
+        work area.  
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        
+        self._workarea = StateEditor(self)
+        self._buttons  = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,  
+            self)
+        
+        # Now stack them vertically:
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        self._layout.addWidget(self._workarea)
+        self._layout.addWidget(self._buttons)
+    
+    def workarea(self) -> StateEditor:
+        return self._workarea    
 
 if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
@@ -518,10 +540,10 @@ if __name__ == '__main__':
         print('delete transition', f, '->', t)
         win.removeTransition(f, t)
     app = QApplication (sys.argv)
-    win = StateEditor()
-    
+    dlg  = StateEditorDialog()
+    win  = dlg.workarea()
     dummy_statemachine = [
-        {'name': 'SHUTDOWN', 'precursors': [ 'BOOT', 'HWINIT'], 'successors' : ['BOOT']}, 
+        {'name': 'SHUTDOWN', 'precursors': ['BOOT', 'HWINIT'], 'successors' : ['BOOT']}, 
         {'name': 'BOOT',     'precursors' : ['SHUTDOWN',], 'successors': ['HWINIT', 'SHUTDOWN'] },
         {'name': "HWINIT",   'precursors' : ['BOOT',], 'successors' : ['SHUTDOWN']},
     ]
@@ -533,8 +555,6 @@ if __name__ == '__main__':
     win.addTransition.connect(addt)
     win.deleteTransition.connect(delt)
     
-    
-    win.show()
-    sys.exit(app.exec())
+    dlg.exec()
         
         
