@@ -73,8 +73,10 @@ class StateEditor(QWidget):
             A successor state is one that 'name' can transition to.
         
     '''
-    addState    = pyqtSignal(str)
-    deleteState = pyqtSignal(str)
+    addState         = pyqtSignal(str)
+    deleteState      = pyqtSignal(str)
+    addTransition    = pyqtSignal(str, str)
+    deleteTransition = pyqtSignal(str, str)
     def __init__(self, parent : QObject | None = None):
         super().__init__(parent)
         
@@ -109,6 +111,13 @@ class StateEditor(QWidget):
     
         self._deleteState.clicked.connect(self._signalDeleteState)
         self._addState.clicked.connect(self._signalAddState)
+        
+        # Set up button slots below the precursor widgets to work properly.
+        
+        self._precursorWidgets['add'].clicked.connect(self._signalAddPrecursor)
+        self._precursorWidgets['delete'].clicked.connect(self._signalDeletePrecursor)
+        
+        # Set up the button slots for the successor widgets to work correctly.
     
     # Attributes implementations.
     
@@ -191,6 +200,26 @@ class StateEditor(QWidget):
         # list to the signal:
         
         self.deleteState.emit(self._stateList.currentItem().text())
+    
+    # Methods to handle clicks inthe precursor buttons.
+    
+    def _signalAddPrecursor(self) -> None:
+        # Get the combobox as From and the selecte state as to and signal
+        # addTransition:
+        
+        from_state = self._precursorWidgets['statelist'].currentText()
+        to_state   = self._selectedState.text()
+        
+        self.addTransition.emit(from_state, to_state)
+        
+    def _signalDeletePrecursor(self) -> None:
+        # The selected precursor is the from state and the selected state the to state
+        # to signal deleteTransition:
+        
+        from_state = self._precursorWidgets['selected'].text()
+        to_state   = self._selectedState.text()
+        
+        self.deleteTransition.emit(from_state, to_state)
         
     #  GUI layout utilities:
     
@@ -325,6 +354,10 @@ if __name__ == '__main__':
     def remove(name : str) -> None:
         print('remove', name)
 
+    def addt(f: str, t: str) -> None:
+        print('add Transition:', f, '->', t)
+    def delt(f: str, t: str) -> None:
+        print('delete transition', f, '->', t)
     app = QApplication (sys.argv)
     win = StateEditor()
     
@@ -337,6 +370,9 @@ if __name__ == '__main__':
     win.setStateMachine(dummy_statemachine)
     win.addState.connect(add)
     win.deleteState.connect(remove)
+    
+    win.addTransition.connect(addt)
+    win.deleteTransition.connect(delt)
     
     
     win.show()
