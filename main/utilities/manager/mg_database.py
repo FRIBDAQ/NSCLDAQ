@@ -1128,6 +1128,14 @@ class Sequence:
         self._db = db
         self._program = Program(self._db)
 
+    def _raiseIfNoState(self, name : str) -> int:
+        # Raise a value error the state 'name' does not exist:
+        # Return the state id if it does.
+        result = self.stateExists(name)
+        if result is None:
+            raise ValueError(f'There is no state named {name}')
+    
+        return result
     def _trigger_id(self, trigger_name):
         # Convert a trigger state/transition name into a trigger/transition id:
         
@@ -1263,7 +1271,177 @@ class Sequence:
             seq_dict['steps'] = cursor.fetchall()
             result.append(seq_dict)
         
-        return result#    This software is Copyright by the Board of Trustees of Michigan
+        return result
+    
+    def stateExists(self, name : str) -> id | None:
+        '''
+            @param name - name of the state to look for.
+            @return id of the state if it exists or None if it does not.
+        '''
+        cursor = self._db.cursor()
+        
+        cursor.execute('''
+            SELECT id FROM transition_name WHERE name = ?
+        ''', (name,))
+        ids = cursor.fetchall()
+        if len(ids) == 0:
+            return None
+        else:
+            return ids[0][0]              # Assume we're not allowing dupllicates.
+    def addState(self, name: str) -> None:
+        '''
+            Add a new state to the state machine.
+            
+            @param name - name of the new state.
+            @throws ValueError - if the state already exists.
+        '''
+        if self.stateExists(name):
+            raise ValueError(f'There is already a state named {name}')
+        
+        self._db.execute(
+            '''
+                INSERT INTO transition_name (name) VALUES(?)
+            ''',
+            (name,)
+        )
+        self._db.commit()
+    def addTransition(self, initial :str, final: str) -> None:
+        '''
+            Add a legal transition:
+            @param initial - initial state name.
+            @param final   - final state name.
+            @throw ValueError if either initial or final don't exist or
+                    the transition is already defined.
+        '''
+        
+        from_id = self._raiseIfNoState(initial)
+        to_id = self._raiseIfNoState(final)
+        
+        # Does the transition already exist?
+        
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT COUNT(*) FROM legal_transition WHERE from_id = ? AND to_id =?
+        ''', (from_id, to_id))
+        result = cursor.fetchone()  
+        if result[0] != 0:
+            raise ValueError(f'The state transition {initial} -> {final} is already defined')
+        
+        # Insert the new transition:
+        
+        self._db.execute('''
+            INSERT INTO legal_transition (from_id, to_id) VALUES(?,?)                         
+        ''', (from_id, to_id))
+        self._db.commit()
+        
+    def removeTransition(self, initial: str, final: str) -> None:
+        '''
+            Remove the legal transition descsribed by:
+            @param initial - the name of the initial state.
+            @param final   - the final state name.
+            @throw ValueError if either initial or final are not defined.  
+            @note it is a no-op to delete a transition that is not legal.
+        '''
+        
+        from_id = self._raiseIfNoState(initial)
+        to_id   = self._raiseIfNoState(final)
+        
+        self._db.execute('''
+            DELETE from legal_transition WHERE from_id = ? AND to_id = ?
+        ''', (from_id, to_id))
+        self._db.commit()
+        
+    def listStates(self) -> list[str]:
+        '''
+            @return list[str] - lits of known state names.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT name FROM transition_name
+        ''', tuple())
+        
+        # Marshall the results:
+        
+        result =list()
+        for row in cursor.fetchall():
+            result.append(row[0])
+        return result
+    
+    def legalFromStates(self, name : str) -> list[str]:
+        ''''
+            List the names of the legal predecessor states
+            to the named state.
+            @param name - the successor state we're asking about.
+            @return list[str] - list or state names that can transition  to 'name'
+            @throw ValueError - if name is not a state:
+        '''
+        to_id = self._raiseIfNoState(name)
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT name FROM legal_transition INNER JOIN
+                transition_name ON legal_transition.from_id = transition_name.id
+                WHERE legal_transition.to_id = ?
+        ''', (to_id,))
+        
+        result = list()
+        for row in cursor.fetchall():
+            result.append(row[0])
+        
+        return result
+    def legalSuccessorStates(self, name : str) -> list[str]:
+        '''
+            Determine the successor states for the named state:
+            @param name - name of the state whose successor states we want.
+            @return list[str] -state names we can transition to.
+            @throw ValueError if name is not a valid state.
+        '''
+        from_id = self._raiseIfNoState(name)
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT name FROM legal_transition INNER JOIN
+                transition_name ON legal_transition.to_id_id = transition_name.id
+                WHERE legal_transition.from_id = ?''',
+            (from_id,))
+        
+        result = list()
+        for row in cursor.fetchall():
+            result.append(row[0])
+        return result            
+    
+    def deleteState(self, name):
+        '''
+            Remove a state from the database.  Note this also removes transitions
+            from and to the state.
+            
+            @param name - the name of the state to remove.
+            @throw ValueError - if the state is not defined.
+        '''
+        # do the entire operation  in a save point. in case there are errors.
+        self._db.execute('SAVEPOINT deleting_state', tuple())
+        try:
+            self._raiseIfNoState(name)
+            
+            # Delete predecessors:
+            
+            predecessors = self.legalFromStates(name)
+            for from_state in predecessors:
+                self.removeTransition(from_state, name)
+                
+            # Delete successors:
+            
+            successors = self.legalSuccessorStates(name)
+            for to_state in successors:
+                self.removeTransition(name, to_state)
+        except Exception as e:
+            self._db.execute('ROLLBACK TO SAVEPOINT deleteing_state')
+            raise       # Propagate the exception
+         
+        self._db.execute('RELEASE SAVEPOINT deleteing_state', tuple())   
+            
+        
+    
+#    This software is Copyright by the Board of Trustees of Michigan
+    
 #    State University (c) Copyright 2014, 2026
 #
 #    You may use this software under the terms of the GNU public license
