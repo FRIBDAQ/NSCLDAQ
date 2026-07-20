@@ -545,7 +545,7 @@ class StateEditorController(QObject):
         
         self._computeStateMachine()
         
-        self._dialog.finished.connect(self._processStateMachine)
+        self._dialog.accepted.connect(self._processStateMachine)
         
     def _computeStateMachine(self):
         # Compute the state machine for he dialog.
@@ -562,10 +562,11 @@ class StateEditorController(QObject):
             db_info.append(state_info)
         self._workarea.setStateMachine(db_info)
             
-    def _processStateMachine(self, code):
-        # For now just call done.
+    def _processStateMachine(self):
+        # The user accepted the dialog.  Update the state machine
+        # to match the current image of it.
         
-       pass
+       print('accepted')
 
 def usage():
     ''' Print program usage to stderr '''
