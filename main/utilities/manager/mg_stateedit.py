@@ -26,9 +26,14 @@ legals state transitions.  Legal state transitions are defined
 '''
 
 from PyQt6.QtWidgets import (QListWidget, QListWidgetItem, 
-            QLabel, QLineEdit, QPushButton, QComboBox,
+            QLabel, QLineEdit, QPushButton, QComboBox, QApplication,
             QVBoxLayout, QHBoxLayout, QWidget, QDialog, QDialogButtonBox)
 from PyQt6.QtCore import QObject, pyqtSignal
+
+from nscldaq import mg_database
+
+import sqlite3
+import sys
 
 
 class StateEditor(QWidget):
@@ -511,50 +516,87 @@ class StateEditorDialog(QDialog):
         self.setLayout(self._layout)
         self._layout.addWidget(self._workarea)
         self._layout.addWidget(self._buttons)
+        
+        # Hook the buttons in:
+        
+        self._buttons.accepted.connect(self.accept)
+        self._buttons.rejected.connect(self.reject)
     
     def workarea(self) -> StateEditor:
-        return self._workarea    
+        return self._workarea
+
+
+class StateEditorController(QObject):
+    ''''
+        This class provides the controller for runnning
+        a StateEditor Dialog.
+    
+    '''
+    def __init__(self, dbfile : str, view : StateEditorDialog, parent : QObject| None = None) :
+        super().__init__(parent)
+        
+        # Save the file and view.
+        # create an sqlite3 connection on the file and stock the view..
+        
+        self._config = dbfile
+        self._db     = sqlite3.Connection(self._config)
+        self._dialog = view
+        self._workarea = view.workarea()
+        
+        self._computeStateMachine()
+        
+        self._dialog.finished.connect(self._processStateMachine)
+        
+    def _computeStateMachine(self):
+        # Compute the state machine for he dialog.
+        # We need to build the list of dicts descsribed in the docstring heading for 
+        # StateEditor.
+        dbapi = mg_database.Sequence(self._db)
+        states = dbapi.listStates()
+        db_info = list()
+        for state in states:
+            state_info = {'name': state}
+            # Find the precursors and sucessor states:
+            state_info['precursors'] = dbapi.legalFromStates(state)
+            state_info['successors'] = dbapi.legalSuccessorStates(state)
+            db_info.append(state_info)
+        self._workarea.setStateMachine(db_info)
+            
+    def _processStateMachine(self, code):
+        # For now just call done.
+        
+       pass
+
+def usage():
+    ''' Print program usage to stderr '''
+    print('''
+Usage:
+    $DAQBIN/mg_stateedit config-path
+Where:
+    config-path - is the filesystem path to the configuration database file.
+    
+    ''', file = sys.stderr)
+
+def main() -> int:
+    ''' Program entry point'''
+    if len(sys.argv) != 2:
+        usage()
+        return -1
+    
+    dbfile = sys.argv[1]
+    
+    #  Create the application, the dialog
+    # the controller and run this all:
+    
+    app = QApplication(sys.argv)
+    win = StateEditorDialog()
+    controller = StateEditorController(dbfile, win)
+    
+    win.exec()
+    
+    return 0
 
 if __name__ == '__main__':
-    from PyQt6.QtWidgets import QApplication
-    import sys
-
-    def add(name :str) -> None:
-        print("add", name)
-        try :
-            win.newState(name)
-        except ValueError as e:
-            print("add state failed:", e)
-    
-    def remove(name : str) -> None:
-        print('remove', name)
-        try :
-            win.removeState(name)
-        except ValueError as e:
-            print("remove state failed", e)
-
-    def addt(f: str, t: str) -> None:
-        print('add Transition:', f, '->', t)
-        win.newTransition(f, t)
-    def delt(f: str, t: str) -> None:
-        print('delete transition', f, '->', t)
-        win.removeTransition(f, t)
-    app = QApplication (sys.argv)
-    dlg  = StateEditorDialog()
-    win  = dlg.workarea()
-    dummy_statemachine = [
-        {'name': 'SHUTDOWN', 'precursors': ['BOOT', 'HWINIT'], 'successors' : ['BOOT']}, 
-        {'name': 'BOOT',     'precursors' : ['SHUTDOWN',], 'successors': ['HWINIT', 'SHUTDOWN'] },
-        {'name': "HWINIT",   'precursors' : ['BOOT',], 'successors' : ['SHUTDOWN']},
-    ]
-    
-    win.setStateMachine(dummy_statemachine)
-    win.addState.connect(add)
-    win.deleteState.connect(remove)
-    
-    win.addTransition.connect(addt)
-    win.deleteTransition.connect(delt)
-    
-    dlg.exec()
+    sys.exit(main())
         
         
