@@ -29,7 +29,7 @@ from PyQt6.QtWidgets import (QListView, QLabel, QLineEdit, QComboBox, QPushButto
         QWidget, QHBoxLayout, QVBoxLayout)
 
 from PyQt6.QtGui import  QStandardItemModel, QStandardItem
-from PyQt6.QtCore import QModelIndex, QObject
+from PyQt6.QtCore import QModelIndex, QObject, pyqtSignal
 
 
 class SequenceSelector(QWidget):
@@ -47,10 +47,12 @@ class SequenceSelector(QWidget):
     Signals:
         editSequence(str) - Requested that an existing sequence be edited, 
                             the parameter is the name of an existing sequence.
-        newSequence(str, str) - Requests the creation of a new sequence
+        createSequence(str, str) - Requests the creation of a new sequence
                            the parameters are, in order, the name of the sequence
                            and the name of the trigger state.
     '''
+    editSequence = pyqtSignal(str)
+    createSequence = pyqtSignal(str, str)
     def __init__(self, parent : QObject | None  = None):
         super().__init__(parent)
         
@@ -80,7 +82,30 @@ class SequenceSelector(QWidget):
         
         self._new = QPushButton('New...', self)
         self._layout.addWidget(self._new)
+        
+        # Set up the internal signal handling:
+        
+        self._seqview.doubleClicked.connect(self._editRelay)
+        self._new.clicked.connect(self._newRelay)
     
+    # Internal slots:
+    
+    def _editRelay(self, index : QModelIndex) -> None:
+        # Figure out which item in the listbox was
+        # double clicked and emit an editSequence signal for it.
+        
+        seqname = self._seqlist.itemFromIndex(index).text()
+        self.editSequence.emit(seqname)
+    
+    def _newRelay(self) -> None:
+        # Marshall the name of the new signal and the trigger state.
+        # Only emit a newSequence signal if the new sequence line edit is
+        # not blank.
+        
+        seq_name = self.newSequence()
+        if seq_name.strip():
+            trigger_state = self.triggerState()
+            self.createSequence.emit(seq_name, trigger_state)
     # Attribute definitions:
     
     def  setSequenceNames(self, names : list[str]) -> None:
@@ -91,7 +116,7 @@ class SequenceSelector(QWidget):
         for name in names:
             self._seqlist.appendRow(QStandardItem(name))
     
-    def sequencNames(self) -> list[str] :
+    def sequenceNames(self) -> list[str] :
         '''
             @return list [str] - the names of the sequences in the box.
         '''
@@ -155,6 +180,13 @@ if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
     import sys
     
+    
+    def edit(name):
+        print('edit seq', name)
+        
+    def create(name, trigger):
+        print('create seq', name, 'triggered on', trigger)
+    
     app = QApplication(sys.argv)
     
     win = SequenceSelector()
@@ -163,7 +195,7 @@ if __name__ == '__main__':
     # Test the sequenceName attribute:
     
     win.setSequenceNames(['seq1', 'seq2', 'seq3', 'last'])
-    print(win.sequencNames())
+    print(win.sequenceNames())
     
     win.setStates(['SHUTDOWN', 'BOOT', 'HWINIT', 'BEGIN', 'END'])
     print(win.states())
@@ -173,6 +205,11 @@ if __name__ == '__main__':
     
     win.setNewSequence('new')
     print(win.newSequence())
+    
+    # Test signals:
+    
+    win.editSequence.connect(edit)
+    win.createSequence.connect(create)
     
     sys.exit(app.exec())
         
