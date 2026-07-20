@@ -1273,7 +1273,7 @@ class Sequence:
         
         return result
     
-    def stateExists(self, name : str) -> id | None:
+    def stateExists(self, name : str) -> int | None:
         '''
             @param name - name of the state to look for.
             @return id of the state if it exists or None if it does not.
@@ -1351,7 +1351,8 @@ class Sequence:
         ''', (from_id, to_id))
         self._db.commit()
         
-    def listStates(self) -> list[str]:
+    def listStates(self) ->list:
+    
         '''
             @return list[str] - lits of known state names.
         '''
@@ -1367,7 +1368,7 @@ class Sequence:
             result.append(row[0])
         return result
     
-    def legalFromStates(self, name : str) -> list[str]:
+    def legalFromStates(self, name : str) -> list:
         ''''
             List the names of the legal predecessor states
             to the named state.
@@ -1388,7 +1389,7 @@ class Sequence:
             result.append(row[0])
         
         return result
-    def legalSuccessorStates(self, name : str) -> list[str]:
+    def legalSuccessorStates(self, name : str) -> list:
         '''
             Determine the successor states for the named state:
             @param name - name of the state whose successor states we want.
@@ -1399,7 +1400,7 @@ class Sequence:
         cursor = self._db.cursor()
         cursor.execute('''
             SELECT name FROM legal_transition INNER JOIN
-                transition_name ON legal_transition.to_id_id = transition_name.id
+                transition_name ON legal_transition.to_id = transition_name.id
                 WHERE legal_transition.from_id = ?''',
             (from_id,))
         
