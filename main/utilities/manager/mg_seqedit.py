@@ -62,6 +62,7 @@ class SequenceSelector(QWidget):
         
         self._seqlist = QStandardItemModel(self)  # Model for the sequences.
         self._seqview = QListView(self)        # Displays seqlist.
+        self._seqview.setModel(self._seqlist)
         self._layout.addWidget(self._seqview)
         
         # The bottom is a bit more complex
@@ -79,6 +80,73 @@ class SequenceSelector(QWidget):
         
         self._new = QPushButton('New...', self)
         self._layout.addWidget(self._new)
+    
+    # Attribute definitions:
+    
+    def  setSequenceNames(self, names : list[str]) -> None:
+        '''
+            @param names - names of the sequences that will be in the list.
+        '''
+        self._seqlist.clear()
+        for name in names:
+            self._seqlist.appendRow(QStandardItem(name))
+    
+    def sequencNames(self) -> list[str] :
+        '''
+            @return list [str] - the names of the sequences in the box.
+        '''
+        result = list()
+        for row in range(self._seqlist.rowCount()):
+            result.append(self._seqlist.item(row).text())
+    
+        return result
+    
+    def setStates(self, states: list[str]) -> None:
+        '''
+        @param states - the states with which to populate 
+             trigger combobox.
+        '''
+        self._trigger.clear()
+        for state in states:
+            self._trigger.addItem(state)
+    
+    def states(self) -> list[str]:
+        '''
+        @return list[str] - list of states in the trigger combobox:
+        '''
+        result = list()
+        for index in range(self._trigger.count()):
+            result.append(self._trigger.itemText(index))
+        return result
+        
+    
+    def setTriggerState(self, state : str) -> None:
+        '''
+        @param state - new value for the trigger state combobox.
+        @raise ValueError - if the state is not in the combobox.
+        
+        
+        '''
+        if state not in self.states():
+            raise ValueError(f'{state} is not a valid state name')
+        self._trigger.setCurrentText(state)
+            
+    def triggerState(self) -> str:
+        '''
+        @return str - the current selected trigger state:
+        '''
+        return self._trigger.currentText()
+    
+    def setNewSequence(self, name : str) -> None:
+        ''''
+            @param name - name to shove in the new sequence text edit.
+        '''   
+        self._newname.setText(name)
+    def newSequence(self) -> str:
+        '''
+            @return  str - the value of the new sequence text edit.
+        '''
+        return self._newname.text()
         
         
 # Test code for noow.
@@ -91,6 +159,20 @@ if __name__ == '__main__':
     
     win = SequenceSelector()
     win.show()
+    
+    # Test the sequenceName attribute:
+    
+    win.setSequenceNames(['seq1', 'seq2', 'seq3', 'last'])
+    print(win.sequencNames())
+    
+    win.setStates(['SHUTDOWN', 'BOOT', 'HWINIT', 'BEGIN', 'END'])
+    print(win.states())
+    
+    win.setTriggerState('BOOT')
+    print(win.triggerState())
+    
+    win.setNewSequence('new')
+    print(win.newSequence())
     
     sys.exit(app.exec())
         
