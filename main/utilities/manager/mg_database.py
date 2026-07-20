@@ -1433,12 +1433,20 @@ class Sequence:
             successors = self.legalSuccessorStates(name)
             for to_state in successors:
                 self.removeTransition(name, to_state)
+            self._db.execute('DELETE FROM transition_name WHERE name = ?', (name,))
         except Exception as e:
-            self._db.execute('ROLLBACK TO SAVEPOINT deleteing_state')
+            self._db.execute('ROLLBACK TO SAVEPOINT deleting_state')
             raise       # Propagate the exception
          
-        self._db.execute('RELEASE SAVEPOINT deleteing_state', tuple())   
-            
+        # Some inner calls do commits.:
+        try:
+            self._db.execute('RELEASE SAVEPOINT deleting_state', tuple())   
+        except Exception:
+            pass
+        try:
+            self._db.commit()       # May need to commit the outer xaction.
+        except Exception:
+            pass
         
     
 #    This software is Copyright by the Board of Trustees of Michigan

@@ -63,7 +63,7 @@ class StateEditor(QWidget):
             addState(str) - A new state was added
             deleteState(str) - A state was removed.
             addTransition(str, str) - A new transition was added, parameters are from/to.
-            ransition(str, str) - A transition was deleted, parameters are from/to.
+            removeTransition(str, str) - A transition was deleted, parameters are from/to.
             
         Note, the signals don't automatically run the methods associated with them.  That's left
         for the signal handler to do...as after all, databgase manipulations to do that may fail.
@@ -544,8 +544,14 @@ class StateEditorController(QObject):
         self._workarea = view.workarea()
         
         self._computeStateMachine()
+        # Hook into the signals we have to process:
         
-        self._dialog.accepted.connect(self._processStateMachine)
+        self._dialog.accepted.connect(self._processStateMachine)   # Done update the db.
+        
+        self._workarea.addState.connect(self._newState)
+        self._workarea.deleteState.connect(self._stateDeleted)
+        self._workarea.addTransition.connect(self._newTransition)
+        self._workarea.deleteTransition.connect(self._deleteTransition)
         
     def _computeStateMachine(self):
         # Compute the state machine for he dialog.
@@ -561,12 +567,116 @@ class StateEditorController(QObject):
             state_info['successors'] = dbapi.legalSuccessorStates(state)
             db_info.append(state_info)
         self._workarea.setStateMachine(db_info)
-            
+    
+    # Slots:
+    
+    def _newState(self, name : str) -> None:
+        # New state added:
+        
+        self._workarea.newState(name)
+
+    def _stateDeleted(self, name: str) -> None:
+        # State deleted.
+        
+        self._workarea.removeState(name)
+        
+    def _newTransition(self, pred: str, succ : str) -> None:
+        # New transition added:
+        self._workarea.newTransition (pred, succ)
+        
+    def _deleteTransition(self, pred: str, succ: str) -> None:
+        # Transition deleted:
+        self._workarea.removeTransition(pred, succ)
+          
     def _processStateMachine(self):
         # The user accepted the dialog.  Update the state machine
         # to match the current image of it.
+            
+        state_machine = self._workarea.stateMachine()
+        api           = mg_database.Sequence(self._db)
         
-       print('accepted')
+        # This whole thing should be rolled back
+        # if there are exceptions:
+        
+        self._db.execute('''SAVEPOINT updating_statemachine''', tuple())
+        
+        try:
+            
+            my_states = [x['name'] for x in state_machine]
+            db_states = api.listStates()
+            
+            # Add any new states:
+            
+            for ms in my_states:
+                if ms not in db_states:
+                    api.addState(ms)         # New state.
+                    
+            # reconcile the transitions and ensure they are the same.
+            
+            for state in state_machine:
+                self._reconcilePredecessors(api, state)
+                self._reconcileSuccessors(api, state)
+                
+        
+            # Delete any obsolete states.
+            
+           
+            for dbs in db_states:
+                if dbs not in my_states:
+                    api.deleteState(dbs)     # Obsolete state.
+            
+                
+                
+            
+        except Exception:
+            # Roll back the operation if there's any error.
+            self._db.execute('''ROLLBACK TO SAVEPOINT updating_statemachine''', tuple())
+            raise
+        # Commit the changes:
+        # Some methods of sequence commit so we ignore errors below:
+        try: 
+            self._db.execute('''RELEASE SAVEPOINT updating_statemachine''', tuple())
+        except Exception:
+            pass
+    def _reconcilePredecessors(self, api : mg_database.Sequence, state: dict) -> None:
+        # Make the database valid precursors match those in the dialog.
+        # state the dict of state name, precursors and successors:
+        
+        name = state['name']
+        my_precursors = state['precursors']
+        db_precursors = api.legalFromStates(name)
+        
+        # Remove obsolete transitions:
+        
+        for dbp in db_precursors:
+            if dbp not in my_precursors:
+                api.removeTransition(dbp, name)
+        
+        # add in any new transitions:
+        
+        for myp in my_precursors:
+            if myp not in db_precursors:
+                api.addTransition(myp, name)
+
+    def _reconcileSuccessors(self, api : mg_database.Sequence, state : dict) -> None:
+        # Make the database valid successors match the dialog's:
+        # state the dict of sttae name, precursors and successors
+        
+        name = state['name']
+        my_successors = state['successors']
+        db_successors = api.legalSuccessorStates(name)
+        
+        # Remove obsolete transitions:
+        
+        for dbs  in db_successors:
+            if dbs not in my_successors:
+                api.removeTransition(name, dbs)
+            
+        # Add in new transitions:
+        
+        for mys in my_successors:
+            if mys not in db_successors:
+                api.addTransition(name, mys)
 
 def usage():
     ''' Print program usage to stderr '''
@@ -589,9 +699,9 @@ def main() -> int:
     #  Create the application, the dialog
     # the controller and run this all:
     
-    app = QApplication(sys.argv)
+    _app = QApplication(sys.argv)
     win = StateEditorDialog()
-    controller = StateEditorController(dbfile, win)
+    _controller = StateEditorController(dbfile, win)
     
     win.exec()
     
