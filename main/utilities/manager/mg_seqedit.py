@@ -371,9 +371,9 @@ class StepCreator(QWidget):
         
         Attributes:
            programNames - the legal program names from which to select the:
-           programName  - The selected program name.
-           predelay     - ms in the pre-delay.
-           postdelay    - ms in the post delay.
+           programName  - The selected program name. (readonly)
+           predelay     - ms in the pre-delay. (readonly)
+           postdelay    - ms in the post delay. (readonly)
        
        Signals:
         add(name, pre, post)     - The add button was clicked.  the parameters in the widget are passed.
@@ -400,6 +400,43 @@ class StepCreator(QWidget):
         self._predelay  = self._addDelaySpinBox('Pre delay')
         self._postdelay = self._addDelaySpinBox('Post delay')
         
+        
+        self._addButton.clicked.connect(self._relayAdd)
+    # Define attributes:
+    
+    def programNames(self) -> list[str]:
+        ''' @return list[str] names of programs in the combobox.'''
+        
+        return [self._program.itemText(row) for row in range(self._program.count())]
+    
+    def setProgramNames(self, names: list[str]) -> None:
+        self._program.clear()
+        for name in names:
+            self._program.addItem(name)
+    
+    def programName(self) -> str:
+        '''@return str return the value of the program name combobox.'''
+        
+        return self._program.currentText()
+    
+    def predelay(self) -> int:
+        ''' @return int - value of the predelay spinbox'''
+        
+        return self._predelay.value()
+    
+    def postdelay(self) -> int:
+        ''' @return int - value of he postdelay spinbox. '''
+        return self._postdelay.value()
+    
+    
+    #  INternal privatge slots:
+    
+    def _relayAdd(self) -> None:
+        
+        #emit the add signal:
+            
+        self.add.emit(self.programName(), self.predelay(), self.postdelay())   
+    
     # Utilities:
     
     def _addDelaySpinBox(self, label : str) -> QSpinBox:
@@ -426,6 +463,8 @@ if __name__ == '__main__':
     def create(name, trigger):
         print('create seq', name, 'triggered on', trigger)
     
+    def newstep(name, pre, post):
+        print("new step program ", name, "pre", pre, 'post', post)
     app = QApplication(sys.argv)
     
     win = SequenceSelector()
@@ -466,6 +505,8 @@ if __name__ == '__main__':
     seqtbl.show()
     
     add  = StepCreator()
+    add.setProgramNames(['eventlog', 'showrings', 'makering', 'settitle', 'setrun', 'begrun'])
+    add.add.connect(newstep)
     add.show()
     
     
