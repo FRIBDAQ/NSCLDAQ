@@ -26,7 +26,8 @@ actions that trigger as a result of a state transition.
 
 
 from PyQt6.QtWidgets import (QListView, QLabel, QLineEdit, QComboBox, QPushButton, 
-        QWidget, QHBoxLayout, QVBoxLayout, QTableView, QStyle, QSpinBox)
+        QWidget, QHBoxLayout, QVBoxLayout, QTableView, QStyle, QSpinBox,
+        QDialog, QDialogButtonBox)
 
 from PyQt6.QtGui import  QStandardItemModel, QStandardItem
 from PyQt6.QtCore import QModelIndex, QObject, pyqtSignal
@@ -562,7 +563,36 @@ class SequenceEditor(QWidget):
             'program_name': name, 'pre_delay': pre, 'post_delay': post
         }
         self._sequence.append(step)
+
+class SequenceEditorDialog(QDialog): 
+    '''
+        This is a dialog with a work area that consists of a SequenceEditor
+        the workarea method returns the SequencdeEditor object it contains.
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
         
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._workarea = SequenceEditor(self)
+        self._layout.addWidget(self._workarea)
+        
+        self._buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
+            self
+        )
+        self._layout.addWidget(self._buttons)
+        
+        # Hook in the buttons.
+        
+        self._buttons.accepted.connect(self.accept)
+        self._buttons.rejected.connect(self.reject)
+    
+    def workarea(self) -> SequenceEditor:
+        ''' @return the SequenceEditor widget that is the workarea: '''
+        
+        return self._workarea
     
 # Test code for noow.
 
@@ -603,7 +633,9 @@ if __name__ == '__main__':
     win.editSequence.connect(edit)
     win.createSequence.connect(create)
     
-    seqedit = SequenceEditor()
+    dialog = SequenceEditorDialog(win)
+    
+    seqedit = dialog.workarea()
     sequence = [
         {'program_name': 'setrun', 'pre_delay': 0, 'post_delay': 0},
         {'program_name': 'settitle', 'pre_delay': 100, 'post_delay': 150},
@@ -616,6 +648,7 @@ if __name__ == '__main__':
     seqedit.creator().setProgramNames(['makering', 'eventlog', 'bootactions', 'setrun', 'settitle', 'begrun', 'readout'])
     seqedit.show()
     
+    dialog.exec()
     
     
     sys.exit(app.exec())
