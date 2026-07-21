@@ -447,9 +447,110 @@ class StepCreator(QWidget):
         spinbox.setRange(0, 1000*3600)  # An hour should be enough.
         spinbox.setSingleStep(100)      # 100ms steps. are grand.
         self._layout.addWidget(spinbox)
-        
-        
+               
         return spinbox
+
+class SequenceEditor(QWidget):
+    '''
+        Compound widget to support editing a 
+        sequence.  So this is basically a SequenceTable stacked on top
+        of a StepCreator with the autonomous handling of the 
+        Add Step button in the step creator working
+        to add a step to the sequence table.
+        
+        We also add some decoration:  
+        sequence name and the trigger state.  To make our life easier,
+        the attributes are:
+        
+        name - Sequence name. 
+        states - triggers states to select from.
+        trigger - The selected trigger.
+        sequence - The SequencdeTable widget from which the steps can be fetched
+               (readonly)
+        creator - The StepCreator object (readonly).
+               
+        No signals are mitted, though normally this all gets embedded in a 
+        SequenceEditorDialog so the external controller code knows if/when
+        to save te sequence.
+        
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        # Step and trigger are laid out horizontally:
+        
+        decorators = QHBoxLayout()
+        decorators.addWidget(QLabel('Sequence name: ', self))
+        self._name = QLineEdit(self)
+        decorators.addWidget(self._name)
+        
+        decorators.addWidget(QLabel('Trigger Stte', self))
+        self._trigger = QComboBox(self)
+        decorators.addWidget(self._trigger)
+        
+        self._layout.addLayout(decorators)
+        
+        
+        # The meat of the widget.
+        
+        self._sequence = SequenceTable(self)
+        self._layout.addWidget(self._sequence)
+        
+        self._stepmaker = StepCreator(self)
+        self._layout.addWidget(self._stepmaker)
+        
+        # Connect the add in stepmaker to an internal slot to
+        # add the step to the table:
+        
+        self._stepmaker.add.connect(self._addStep)
+    
+    
+    #  Attribute implementations.
+    
+    def name(self) -> str:
+        ''' @return str - name of the sequence '''
+        return self._name.text()
+    def setName(self, name : str) -> None:
+        '''
+        @param name - new name for the sequence.
+        '''
+        self._name.setText(name)
+        
+    def states(self) -> list[str]:
+        ''' @return list[str] - list of states'''
+        return [self._trigger.itemText(c) for c in range(self._trigger.count())]
+    
+    def setStates(self, states: list[str]) -> None:
+        '''  
+            @param states - list of state names to populate the trigger selection combobox.
+        '''
+        self._trigger.clear()
+        for state in states:
+            self._trigger.addItem(state)
+        
+    def sequence(self) -> SequenceTable:
+        ''' @return SequenceTable - the table with the sequence steps.'''
+        return self._sequence
+    
+    def creator(self) -> StepCreator:
+        ''' @return StepCreator - the step creation subwidget.'''
+        
+        return self._stepmaker
+    
+    # Internal, private slots:
+    
+    def _addStep(self, name : str, pre : int, post: int) -> None:
+        # Handle the Add Step button click:
+        
+        step = {
+            'program_name': name, 'pre_delay': pre, 'post_delay': post
+        }
+        self._sequence.append(step)
+        
+    
 # Test code for noow.
 
 if __name__ == '__main__':
@@ -489,25 +590,18 @@ if __name__ == '__main__':
     win.editSequence.connect(edit)
     win.createSequence.connect(create)
     
-    # Now a sequence table:
-    
-    seqtbl = SequenceTable()
-    
-    # Make a sequence and insert it:
-    
+    seqedit = SequenceEditor()
     sequence = [
         {'program_name': 'setrun', 'pre_delay': 0, 'post_delay': 0},
         {'program_name': 'settitle', 'pre_delay': 100, 'post_delay': 150},
         {'program_name': 'begrun', 'pre_delay': 0, 'post_delay': 1000}
     ]
-    seqtbl.setSteps(sequence)
-    print(seqtbl.steps())
-    seqtbl.show()
+    seqedit.sequence().setSteps(sequence)
+    seqedit.setName('aSequence')
+    seqedit.setStates(['BOOT', "SHUTDOWN", 'HWINIT', 'BEGIN', 'END'])
+    seqedit.creator().setProgramNames(['makering', 'eventlog', 'bootactions', 'setrun', 'settitle', 'begrun', 'readout'])
+    seqedit.show()
     
-    add  = StepCreator()
-    add.setProgramNames(['eventlog', 'showrings', 'makering', 'settitle', 'setrun', 'begrun'])
-    add.add.connect(newstep)
-    add.show()
     
     
     sys.exit(app.exec())
