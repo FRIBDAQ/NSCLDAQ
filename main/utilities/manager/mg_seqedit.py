@@ -530,7 +530,20 @@ class SequenceEditor(QWidget):
         self._trigger.clear()
         for state in states:
             self._trigger.addItem(state)
+    
+    def trigger(self) -> str:
+        ''' @return str - current trigger state'''    
+        return self._trigger.currentText()
+    def setTrigger(self, state: str) -> None:
+        ''' @param state - a state from the comboboxl (set states  value)
+             @throws ValueError if state is not in the combobox.
         
+        '''
+        if state not in self.states():
+            raise ValueError(f'{state} is not a valid trigger state')
+        self._trigger.setCurrentText(state)
+        
+    
     def sequence(self) -> SequenceTable:
         ''' @return SequenceTable - the table with the sequence steps.'''
         return self._sequence
@@ -599,6 +612,7 @@ if __name__ == '__main__':
     seqedit.sequence().setSteps(sequence)
     seqedit.setName('aSequence')
     seqedit.setStates(['BOOT', "SHUTDOWN", 'HWINIT', 'BEGIN', 'END'])
+    seqedit.setTrigger('BEGIN')
     seqedit.creator().setProgramNames(['makering', 'eventlog', 'bootactions', 'setrun', 'settitle', 'begrun', 'readout'])
     seqedit.show()
     
