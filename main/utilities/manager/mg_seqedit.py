@@ -26,7 +26,7 @@ actions that trigger as a result of a state transition.
 
 
 from PyQt6.QtWidgets import (QListView, QLabel, QLineEdit, QComboBox, QPushButton, 
-        QWidget, QHBoxLayout, QVBoxLayout, QTableView, QStyle, QTableView)
+        QWidget, QHBoxLayout, QVBoxLayout, QTableView, QStyle, QSpinBox)
 
 from PyQt6.QtGui import  QStandardItemModel, QStandardItem
 from PyQt6.QtCore import QModelIndex, QObject, pyqtSignal
@@ -356,7 +356,63 @@ class SequenceTable(QTableView):
         if len(selection) > 0:
             row = selection[0].row()
             self._sequence.takeRow(row)
+    
+class StepCreator(QWidget):
+    ''''
+        Compount widget that supports the creation of a step.
+        A step consits of 
+        * a program, selected from a list of valid program names,
+        * A delay in ms before the program is run (can, of course be zero).
+        * A delay in ms after the program is run (can of course be zero).
         
+        So this widget is a strip of controls to define these 
+        step elements and a button to request it be added to a sequence
+        being edited (preumably in a SequenceTable widget).
+        
+        Attributes:
+           programNames - the legal program names from which to select the:
+           programName  - The selected program name.
+           predelay     - ms in the pre-delay.
+           postdelay    - ms in the post delay.
+       
+       Signals:
+        add(name, pre, post)     - The add button was clicked.  the parameters in the widget are passed.
+        
+        
+    '''
+    add = pyqtSignal(str, int, int)
+    
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        # This is all a horizontal strip of widgets:
+        
+        self._layout = QHBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._addButton = QPushButton('Add Step', self)
+        self._layout.addWidget(self._addButton)
+        
+        self._layout.addWidget(QLabel('Program Name:', self))
+        self._program  = QComboBox(self)
+        self._layout.addWidget(self._program)
+        
+        self._predelay  = self._addDelaySpinBox('Pre delay')
+        self._postdelay = self._addDelaySpinBox('Post delay')
+        
+    # Utilities:
+    
+    def _addDelaySpinBox(self, label : str) -> QSpinBox:
+        # Add a labeled spinbox suitable for setting delays.
+        
+        self._layout.addWidget(QLabel(label, self))
+        spinbox = QSpinBox(self)
+        spinbox.setRange(0, 1000*3600)  # An hour should be enough.
+        spinbox.setSingleStep(100)      # 100ms steps. are grand.
+        self._layout.addWidget(spinbox)
+        
+        
+        return spinbox
 # Test code for noow.
 
 if __name__ == '__main__':
@@ -407,10 +463,12 @@ if __name__ == '__main__':
     ]
     seqtbl.setSteps(sequence)
     print(seqtbl.steps())
-    
     seqtbl.show()
     
-    seqtbl.resize(seqtbl.size())
+    add  = StepCreator()
+    add.show()
+    
+    
     sys.exit(app.exec())
         
         
