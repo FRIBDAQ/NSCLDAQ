@@ -26,7 +26,7 @@ actions that trigger as a result of a state transition.
 
 
 from PyQt6.QtWidgets import (QListView, QLabel, QLineEdit, QComboBox, QPushButton, 
-        QWidget, QHBoxLayout, QVBoxLayout)
+        QWidget, QHBoxLayout, QVBoxLayout, QTableView, QStyle, QTableView)
 
 from PyQt6.QtGui import  QStandardItemModel, QStandardItem
 from PyQt6.QtCore import QModelIndex, QObject, pyqtSignal
@@ -173,6 +173,189 @@ class SequenceSelector(QWidget):
         '''
         return self._newname.text()
         
+class SequenceTable(QTableView):
+    '''
+        This is a table view and associated model
+        that allows the display and limited editing of
+        a sequence  A sequencde is an  orderd list of objects that each have
+        *  step_number -  A floating point number that defines the position of the
+                          step in the sequence (the ordering).
+        *  program_name - the name of the program that will be run for that step.
+        *  pre_delay    - ms to delay before running the program (int).
+        *  post_delay   - ms to delay _after_ running the program (int).
+        
+        As you can imagine, the external representation of a sequence is, therefore
+        a list of dicts containing the keys described above.  Internally, the
+        tableview maintains its own StandardItemModel
+        
+        Attributes:
+           steps    - The list of dicts described above.
+           
+        Methods of interest:
+           append   - Add a new step at the end of the sequence.
+           
+        Autonomous actions:
+        *   The selected item can be moved upwards in the sequence.  This will
+            change its step number.
+        *   The selected item can be moved downwards in the sequence.  This will change
+            its step number.
+            
+        Note:
+           The step numbers are not maintained in the model.  Instead, they are used
+           to order the table and, assigned on retrieval.  This is much simpler
+           than the scheme used by the Tcl editor.
+        
+        Since all actions are autonomous, no signals are emitted from the widget.
+    '''
+    def __init__(self, parent : QObject | None = None):
+        '''
+            A bit about the layout.  The main feature is a table view.
+            To its right will be  a stack of buttons. These are labeled 
+            top to bottom with the icons:
+            * SP_ArrowUp - an up arrow, clicking it will move the selected step up.
+            * Sp_ArrowDown - A down arrow, clicking it will move the selected step down.
+            * SP_DialogCancelButton - a red x, clicking it will delete the selected item.
+            
+        '''
+
+        super().__init__(parent)
+        
+        # The primary layout is, therefore, an HBOX layout with
+        # a VBOX sublayout for the buttons:
+        
+        self._layout = QHBoxLayout()
+        self.setLayout(self._layout)
+        
+        buttonLayout = QVBoxLayout()
+        
+        # The table at the left:
+        
+        self._table = QTableView(self)
+        self._sequence = QStandardItemModel()
+        self._initializeModel()                  # clear and set column headers.
+        self._table.setModel(self._sequence)
+        self._layout.addWidget(self._table)
+        
+        # The buttons at the right:
+        
+        self._moveup = QPushButton(self)
+        self._setButtonIcon(self._moveup, 'SP_ArrowUp')
+        buttonLayout.addWidget(self._moveup)
+        
+        self._movedown= QPushButton(self)
+        self._setButtonIcon(self._movedown, 'SP_ArrowDown')
+        buttonLayout.addWidget(self._movedown)
+        
+        self._delete = QPushButton(self)
+        self._setButtonIcon(self._delete, 'SP_DialogCancelButton')
+        buttonLayout.addWidget(self._delete)
+        
+        self._layout.addLayout(buttonLayout)
+        
+        # Hook in the buttons:
+        
+        self._moveup.clicked.connect(self._moveRowUp)
+        self._movedown.clicked.connect(self._moveRowDown)
+        self._delete.clicked.connect(self._deleteRow)
+            
+    # Implement attributes:
+    
+    def setSteps(self, steps : list[dict]) -> None:
+        '''
+            Clear the table view model and fill it with steps
+            
+            @param steps a list of dicts described in the class header.
+        '''
+        self._initializeModel()            # clear and reset the headers:
+        
+        for step in steps:
+            self.append(step)
+    
+    def steps(self) -> list[dict]:
+        '''
+            Returns the contents of the model as a list of steps.
+            Note that we assign step numbers:
+            
+        '''
+        result = list()
+        for row in range(self._sequence.rowCount()):
+            step_no = (row+1)*10.0
+            program = self._sequence.item(row, 0).text()
+            pre_delay = float(self._sequence.item(row, 1).text())
+            post_delay= float(self._sequence.item(row, 2).text())
+            
+            step = {'step_number' : step_no, 
+                    'program_name': program, 
+                    'pre_delay': pre_delay,
+                    'post_delay': post_delay}
+            result.append(step)
+        
+        return result
+        
+    
+    def append(self, step : dict) -> None:
+        '''
+            Append a new step to the model:
+            @param step - the step dict described in the class docstring.
+        
+        '''
+        program = QStandardItem(step['program_name'])
+        pre     = QStandardItem(str(step['pre_delay']))
+        post    = QStandardItem(str(step['post_delay']))
+        self._sequence.appendRow([program, pre, post])
+        
+    # Utility methods:
+    
+    def _initializeModel(self):
+        #  Clear the model and set the column headers:
+        
+        self._sequence.clear()
+        self._sequence.setHorizontalHeaderLabels(
+            ['Program', 'Pre delay', 'Post Delay']
+        )
+        
+    def _setButtonIcon(self, button : QPushButton, name : str) -> None:
+        # Set the pixmp of the 'button' to the standard one  
+        # designated by 'name'
+        
+        pixmap = getattr(QStyle.StandardPixmap, name)
+        icon   = self.style().standardIcon(pixmap)
+        button.setIcon(icon)
+        
+    # Private slots:
+    
+    def _moveRowUp(self) -> None:
+        # Move the selected item up, if it's not the first item already:
+        
+        selection = self._table.selectedIndexes()
+        if len(selection) > 0:
+            row = selection[0].row()
+            if row > 0:                          # Can only move non top row up.
+                row_items = self._sequence.takeRow(row)
+                row -= 1                         # insert in prior position.
+                self._sequence.insertRow(row, row_items)
+                self._table.selectRow(row)
+    
+    def _moveRowDown(self) -> None:
+        # Move the selected item down. If it's the last item 
+        # It's not moved.
+        
+        selection = self._table.selectedIndexes()  
+        if len(selection) > 0:
+            row = selection[0].row()
+            if row < self._sequence.rowCount() -1:
+                # not the last row.
+                row_items = self._sequence.takeRow(row) 
+                row += 1
+                self._sequence.insertRow(row, row_items) 
+                self._table.selectRow(row)
+    
+    def _deleteRow(self) -> None:
+        # Delete the selected row:
+        selection = self._table.selectedIndexes()  
+        if len(selection) > 0:
+            row = selection[0].row()
+            self._sequence.takeRow(row)
         
 # Test code for noow.
 
@@ -211,6 +394,23 @@ if __name__ == '__main__':
     win.editSequence.connect(edit)
     win.createSequence.connect(create)
     
+    # Now a sequence table:
+    
+    seqtbl = SequenceTable()
+    
+    # Make a sequence and insert it:
+    
+    sequence = [
+        {'program_name': 'setrun', 'pre_delay': 0, 'post_delay': 0},
+        {'program_name': 'settitle', 'pre_delay': 100, 'post_delay': 150},
+        {'program_name': 'begrun', 'pre_delay': 0, 'post_delay': 1000}
+    ]
+    seqtbl.setSteps(sequence)
+    print(seqtbl.steps())
+    
+    seqtbl.show()
+    
+    seqtbl.resize(seqtbl.size())
     sys.exit(app.exec())
         
         
