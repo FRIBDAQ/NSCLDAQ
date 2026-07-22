@@ -403,7 +403,7 @@ class Container:
                     (container_id, source, dest)
                 )
             self._db.commit()
-        except:
+        except Exception:
             self._db.rollback()
             raise
         
@@ -934,7 +934,7 @@ class Program:
                     VALUES (?, ?, ?)
                     ''', (program_id, name, value)
                 )
-        except:
+        except Exception:
             self._db.rollback()
             raise
             
@@ -988,7 +988,7 @@ class Program:
                 DELETE FROM program_environment WHERE program_id = ?
                 ''', (program_id,)
             )
-        except:
+        except Exception:
             self._db.rollback()
         
         
@@ -1165,7 +1165,7 @@ class Sequence:
             ''', (name,)
         )
         return cursor.fetchone()[0] > 0
-    def add(self, name, trigger, steps):
+    def add(self, name : str, trigger: str, steps : list):
         '''
            Adds a new sequence.
            
@@ -1226,7 +1226,7 @@ class Sequence:
         
         '''
             List all of the sequences that have been deefined and their steps.  This returns a list of dicts.  Each dict
-            describes a sequence and hast the keys:
+            describes a sequence and has the keys:
             
             id     - id of the sequence.
             name  - Name ofthe sequnce
@@ -1273,6 +1273,27 @@ class Sequence:
         
         return result
     
+    def deleteSequence(self, name: str) -> None:
+        '''
+            @param name -name of the sequence to delete.
+            @throw ValueError if name is not a sequence.
+        '''
+        seq_def = [x for x in self.list() if x['name'] == name]
+        if len(seq_def) == 0:
+            raise ValueError(f'There is no sequence named {name}')
+        
+        seq_def = seq_def[0]
+        # Remove the steps and then
+        # the sequence itself:
+        
+        self._db.execute('''
+            DELETE FROM step WHERE sequence_id = ?
+        ''',(seq_def['id'],))
+        self._db.execute('''
+             DELETE FROM SEQUENCE WHERE id = ?            
+        ''', (seq_def['id'],))
+        self._db.commit()
+        
     def stateExists(self, name : str) -> int | None:
         '''
             @param name - name of the state to look for.
