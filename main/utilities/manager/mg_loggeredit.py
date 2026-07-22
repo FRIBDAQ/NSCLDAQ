@@ -32,7 +32,7 @@ Event loggers have the following properties:
 from PyQt6.QtWidgets import (QTableView, QLabel, QLineEdit, QComboBox, QPushButton, QCheckBox,
     QVBoxLayout, QHBoxLayout)
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
-from PyQt6.QtCore import pyqtSignal, QObject
+from PyQt6.QtCore import pyqtSignal, QObject, QModelIndex
 
 
 class LoggerTable(QTableView):
@@ -42,7 +42,7 @@ class LoggerTable(QTableView):
       
       Attributes:
         loggers - the logger definitions. See below.
-    
+        selected - (readonly) the selected logger.
       Signals:
         loggerSelected(dict) - A logger was selected via a double click.
         
@@ -58,7 +58,9 @@ class LoggerTable(QTableView):
      * 'container' - Name of the container in which the logger runs.
      
      loggers are an iterable object of these dicts.
+     
     '''
+    loggerSelected = pyqtSignal(dict)
     def __init__(self, parent : QObject | None = None):
         super().__init__(parent)
         
@@ -66,8 +68,55 @@ class LoggerTable(QTableView):
         self.setModel(self._model)
         
         self._clearModel()
+        self.doubleClicked.connect(self._selectRelay)
+    
+    # Attributes:
+    
+    def setLoggers(self, loggers : list[dict]) -> None:
+        '''
+            Clear the table and set the loggers as requested.
+            @param loggers - list of logger definitions. See the class docstring for what a 
+                logger definition is.
+        '''
+        self._clearModel()                # Clear what was there and set the headers.
         
+        for logger in loggers:
+            container = QStandardItem(logger['container'])
+            ring      = QStandardItem(logger['ring'])
+            root      = QStandardItem(logger['root'])
+            host      = QStandardItem(logger['host'])
+            destination= QStandardItem(logger['destination'])
+            enabled   = QStandardItem(self._indicator(logger['enabled']))
+            critical  = QStandardItem(self._indicator(logger['critical'])) 
+            partial   = QStandardItem(self._indicator(logger['partial']))
+            
+            self._model.appendRow([
+                container, ring, root, host, destination, enabled, critical, partial
+            ])
+    
+    def loggers(self) -> list[dict]:
+        '''
+            @return list[dict] - the dicts have the stucture of a logger definition. See class
+               docstring above.
+        '''
+        result = list()
+        for row in range(self._model.rowCount()):   
+            result.append(self._rowToDict(row))    
+        return result
+    
+    def selected(self) -> dict | None:
+        '''' @return dict | None - the selected logger. None if nothing is selected. '''
+        selection = self.selectedIndexes()
+        if len(selection) > 0:
+            row = selection[0].row()
+            return self._rowToDict(row)
         
+        return None
+    # Private slots:
+    
+    def _selectRelay(self, index : QModelIndex):
+        definition = self._rowToDict(index.row())
+        self.loggerSelected.emit(definition)
     # Utilities:
     
     def _clearModel(self) -> None:
@@ -75,9 +124,29 @@ class LoggerTable(QTableView):
         
         self._model.clear()
         self._model.setHorizontalHeaderLabels([
-            'Container', 'Ring', 'DAQROOT', 'Host', 'Source', 'Destination', 'E', 'C', 'P' 
+            'Container', 'Source', 'DAQROOT', 'Host',  'Destination', 'E', 'C', 'P' 
         ])
-        
+    
+    def _rowToDict(self, row :int) -> dict:
+        container = self._model.item(row, 0).text()
+        ring      = self._model.item(row, 1).text()
+        root      = self._model.item(row, 2).text()
+        host      = self._model.item(row, 3).text()
+        destination = self._model.item(row, 4).text()
+        enabled  = self._indicatorBool(self._model.item(row, 5))
+        critical  = self._indicatorBool(self._model.item(row, 6))
+        partial   = self._indicatorBool(self._model.item(row, 7)) 
+        return {
+                'container' : container, 'ring': ring, 'root': root,
+                'host': host, 'destination':destination, 
+                'enabled': enabled, 'critical': critical, 'partial': partial
+                
+            }
+    def _indicator(self, item : bool) -> str:
+        return 'X' if item else ' '
+    
+    def _indicatorBool(self, item : QStandardItemModel) -> bool:
+        return True if item.text() == 'X' else False
         
         
 # Test code for now
@@ -86,8 +155,23 @@ if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
     import sys
 
+    def dbl(logger : dict) -> None:
+        print(logger)
+        
+        
     app = QApplication(sys.argv)
     win = LoggerTable()
     
+    loggers = [
+        {'container': 'bucky', 'ring': 'tcp://localhost/ron', 
+         'root':'/usr/opt/daq/12.2-009', 'host': 'localhost', 'destination': '/events/ron', 
+         'enabled': False, 'critical': True, 'partial': True},
+    ]
+    win.setLoggers(loggers)
+    print(loggers)
+    print(win.loggers())
+    print(loggers == win.loggers())
+    
+    win.loggerSelected.connect(dbl)
     win.show()
     sys.exit(app.exec())
