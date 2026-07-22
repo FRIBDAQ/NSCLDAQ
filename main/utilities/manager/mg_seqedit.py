@@ -55,9 +55,11 @@ class SequenceSelector(QWidget):
         createSequence(str, str) - Requests the creation of a new sequence
                            the parameters are, in order, the name of the sequence
                            and the name of the trigger state.
+        deleteSequence(str) - The delete selected button was clicked
     '''
     editSequence = pyqtSignal(str)
     createSequence = pyqtSignal(str, str)
+    deleteSequence = pyqtSignal(str)
     def __init__(self, parent : QObject | None  = None):
         super().__init__(parent)
         
@@ -71,6 +73,8 @@ class SequenceSelector(QWidget):
         self._seqview = QListView(self)        # Displays seqlist.
         self._seqview.setModel(self._seqlist)
         self._layout.addWidget(self._seqview)
+        self._deleteSelected = QPushButton('Delete Selected')
+        self._layout.addWidget(self._deleteSelected)
         
         # The bottom is a bit more complex
         
@@ -92,6 +96,7 @@ class SequenceSelector(QWidget):
         
         self._seqview.doubleClicked.connect(self._editRelay)
         self._new.clicked.connect(self._newRelay)
+        self._deleteSelected.clicked.connect(self._deleteRelay)
     
     # Internal slots:
     
@@ -111,6 +116,16 @@ class SequenceSelector(QWidget):
         if seq_name.strip():
             trigger_state = self.triggerState()
             self.createSequence.emit(seq_name, trigger_state)
+    
+    def _deleteRelay(self) -> None:
+        # Emit the deleteSequence signal with the name of the selected sequence.
+        
+        selected = self._seqview.selectedIndexes()
+        if len(selected) > 0:
+            seqname = self._seqlist.itemFromIndex(selected[0]).text()
+            self.deleteSequence.emit(seqname)
+            
+            
     # Attribute definitions:
     
     def  setSequenceNames(self, names : list[str]) -> None:
@@ -625,6 +640,7 @@ class SequenceEditController(QObject):
         
         self._view.editSequence.connect(self._editExistingSequence)
         self._view.createSequence.connect(self._createNewSequence)
+        self._view.deleteSequence.connect(self._deleteSequence)
     
     # Private slots:
     
@@ -646,13 +662,21 @@ class SequenceEditController(QObject):
         dialog = self._stockCommonDialogElements(name, trigger)
         self._processDialog(dialog)
     
+    def _deleteSequence(self, name : str) -> None:
+        # Delete the named sequence.
+        
+        seq_api = Sequence(self._db)
+        seq_api.deleteSequence(name)
+        self._stock_view()
+        
     def _acceptSequence(self, dialog : SequenceEditorDialog) -> None:
         # This slot is called when the sequence editing dialog 
         # completes with the user accepting the edited sequence.
         # If the sequencde exists we first need to delete it.
         # Either way, we fish the stuff we need out of the dialog
         # and make a new one.  Note that if the sequence name is blank
-        # we pop up a message box and  exec again.  That'll recurse us.
+        # we pop up a message box can't exec again because
+        # dialog does not like recursive execs
         #
         seq_api  = Sequence(self._db)
         workarea = dialog.workarea()
@@ -661,7 +685,7 @@ class SequenceEditController(QObject):
             QMessageBox.warning(dialog,
                                 'Missing sequence name', 
                                 'To make a sequence you must give it a name')
-            return dialog.exec()  # On Ok, we'll get signalled again, so return is fine.
+            return
         
         # If the sequence exists we need to delete it.
         
@@ -800,7 +824,7 @@ def main() -> int:
     app = QApplication(sys.argv)
     win = SequenceSelector()
     
-    controller = SequenceEditController(win, str(config_path))
+    _controller = SequenceEditController(win, str(config_path))
     
     win.show()
     return app.exec()
