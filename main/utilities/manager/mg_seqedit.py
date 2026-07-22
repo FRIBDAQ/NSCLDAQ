@@ -27,11 +27,15 @@ actions that trigger as a result of a state transition.
 
 from PyQt6.QtWidgets import (QListView, QLabel, QLineEdit, QComboBox, QPushButton, 
         QWidget, QHBoxLayout, QVBoxLayout, QTableView, QStyle, QSpinBox,
-        QDialog, QDialogButtonBox)
+        QDialog, QDialogButtonBox, QApplication, QMessageBox)
 
 from PyQt6.QtGui import  QStandardItemModel, QStandardItem
 from PyQt6.QtCore import QModelIndex, QObject, pyqtSignal
 
+import sys
+import sqlite3
+import pathlib
+from nscldaq.mg_database import Sequence, Program
 
 class SequenceSelector(QWidget):
     '''
@@ -470,7 +474,7 @@ class SequenceEditor(QWidget):
                (readonly)
         creator - The StepCreator object (readonly).
                
-        No signals are mitted, though normally this all gets embedded in a 
+        No signals are emitted, though normally this all gets embedded in a 
         SequenceEditorDialog so the external controller code knows if/when
         to save te sequence.
         
@@ -593,65 +597,217 @@ class SequenceEditorDialog(QDialog):
         ''' @return the SequenceEditor widget that is the workarea: '''
         
         return self._workarea
+
+class SequenceEditController(QObject):
+    ''''
+        This controller mediates between the sequence editor views 
+        and a manager configuration database.
+    '''  
+    def __init__(self, view : SequenceSelector, dbfile : str, parent : QObject | None = None):
+        '''
+            @param view - the top level view of the controller. Note that  the
+                  controller may spin off SequenceEditorDialog windows too.
+            @param dbfile - The path to the configuration database file.
+            @param parent - parent object of the controlle.r
+        '''
+        super().__init__(parent)
+        self._view = view
+        self._config_file = dbfile
+        self._db = sqlite3.Connection(dbfile)
     
-# Test code for noow.
+        # Populate the view:
+        
+        self._stock_view()
+        
+        # Connect view signals:
+        # We're going to see about channelling the 
+        # Handling of the dialog to mostly common code:
+        
+        self._view.editSequence.connect(self._editExistingSequence)
+        self._view.createSequence.connect(self._createNewSequence)
+    
+    # Private slots:
+    
+    def _editExistingSequence(self, name : str) -> None:
+        # Pop up a dialog for editing an existing sequence.
+        # Note that the trigger state has to come from the database,
+        # though the valid triggers come from the view.
+        
+        seq_api = Sequence(self._db)
+        seq_def = [x for x in seq_api.list() if x['name'] == name][0]
+        dialog = self._stockCommonDialogElements(name, seq_def['trigger'])
+        self._stockSequenceDefinition(dialog, seq_def)
+        
+        self._processDialog(dialog)
+    
+    def _createNewSequence(self, name : str, trigger : str) -> None:
+        #  Pop up a dialog to create a brand new sequence:
+        
+        dialog = self._stockCommonDialogElements(name, trigger)
+        self._processDialog(dialog)
+    
+    def _acceptSequence(self, dialog : SequenceEditorDialog) -> None:
+        # This slot is called when the sequence editing dialog 
+        # completes with the user accepting the edited sequence.
+        # If the sequencde exists we first need to delete it.
+        # Either way, we fish the stuff we need out of the dialog
+        # and make a new one.  Note that if the sequence name is blank
+        # we pop up a message box and  exec again.  That'll recurse us.
+        #
+        seq_api  = Sequence(self._db)
+        workarea = dialog.workarea()
+        seq_name = workarea.name()
+        if not seq_name.strip():
+            QMessageBox.warning(dialog,
+                                'Missing sequence name', 
+                                'To make a sequence you must give it a name')
+            return dialog.exec()  # On Ok, we'll get signalled again, so return is fine.
+        
+        # If the sequence exists we need to delete it.
+        
+        if seq_api.exists(seq_name):
+            seq_api.deleteSequence(seq_name)
+        
+        # Now we know we can insert the new sequence definition:
+        
+        trigger = workarea.trigger()
+        sequence_widget = workarea.sequence()
+        step_dictlist = sequence_widget.steps()
+        
+        # Need to impedance match the steps to what Sequence.add expects:
+        
+        steps = list()
+        for step in step_dictlist:
+            steps.append(
+                [step['program_name'], step['pre_delay'], step['post_delay']]
+            )
+    
+        seq_api.add(seq_name, trigger, steps)   # Step #s get assigned here too.
+        
+
+    #  Utilities:
+    
+    def _stock_view(self) -> None:
+        # Fill the view:
+        
+        seq_api = Sequence(self._db)
+        states = seq_api.listStates()
+        
+        self._view.setStates(states)
+        
+        seq_names = [x['name'] for x in seq_api.list()]
+        self._view.setSequenceNames(seq_names)
+            
+    
+    def _stockCommonDialogElements(self, name : str, trigger: str) -> SequenceEditorDialog:
+        # This utility creates a SequenceEditorDialog and stocsk the elements
+        # that are present no matter if the dialog is creating a new sequence
+        # or editing an old one.
+        
+        dialog = SequenceEditorDialog(self._view)
+        workarea = dialog.workarea()      # This is the SequencEditor objecft:
+        workarea.setStates(self._view.states())
+        workarea.setName(name)
+        workarea.setTrigger(trigger)
+        
+        
+        # for the work area, we need to set the program names
+        
+        creator = workarea.creator()    # StepCreator object.
+        program_api = Program(self._db)
+        program_names = [x['name'] for x in program_api.list()]
+        creator.setProgramNames(program_names)
+        
+        return dialog
+        
+    def _stockSequenceDefinition(self, dialog: SequenceEditorDialog, definition : dict) -> None:
+        #
+        #  This is called when setting up the dialog to edit an existing sequence.
+        #  We need to stock the SequenceTable element with the sequence steps.
+        #
+        workarea = dialog.workarea()   # SequenceEditor
+        seqTable = workarea.sequence() # SequenceTable.
+        
+        
+        # Marshall the steps into the form expected by
+        # The table, for this we need a dict of program_id -> name
+        programapi = Program(self._db)
+        program_list = programapi.list()
+        
+        
+        steps = list()       # List of program dicts.
+        for step in definition['steps']:
+            program = step[0]
+            pre  = step[1]
+            post = step[2]
+            
+            number = step[4]
+            
+            step_dict = {
+                'step_number' : number,
+                'program_name': program,
+                'pre_delay':    pre,
+                'post_delay':   post
+            }
+            steps.append(step_dict)
+            
+        seqTable.setSteps(steps)
+        
+        
+    def _processDialog(self, dialog: SequenceEditorDialog) -> None:
+        
+        # We're going to connect the accepted signal to a 
+        # Lambda that passses the dialog to the 
+        # acceptance handler so it can fish stuff out of the
+        # dialog:
+        
+        dialog.accepted.connect(lambda :self._acceptSequence(dialog))
+        
+        dialog.exec()
+        self._stock_view()    # Update the list of sequences
+        
+        
+
+def usage() -> None:
+    '''
+    Print the program usage.
+    '''
+    print('''
+Usage:
+    $DAQBIN/mg_seqedit config-path
+Where:
+    config-path - is the filesystem path to the configuration database file.
+          ''', file=sys.stderr)
+    
+def main() -> int:
+    '''
+    The entry point for the program.  We need a databas filepath
+    '''
+    if len(sys.argv) != 2:
+        usage()
+        return -1
+    
+    # Let's make sure the config-path exist:
+    
+    config_path = pathlib.Path(sys.argv[1])
+    if not config_path.exists() :
+        print('No such file: ', str(config_path))
+        usage()
+        return -1
+    
+    #  Make the user interface and attach a controller to it:
+    
+    app = QApplication(sys.argv)
+    win = SequenceSelector()
+    
+    controller = SequenceEditController(win, str(config_path))
+    
+    win.show()
+    return app.exec()
+    
 
 if __name__ == '__main__':
-    from PyQt6.QtWidgets import QApplication
-    import sys
     
-    
-    def edit(name):
-        print('edit seq', name)
-        
-    def create(name, trigger):
-        print('create seq', name, 'triggered on', trigger)
-    
-    def newstep(name, pre, post):
-        print("new step program ", name, "pre", pre, 'post', post)
-    app = QApplication(sys.argv)
-    
-    win = SequenceSelector()
-    win.show()
-    
-    # Test the sequenceName attribute:
-    
-    win.setSequenceNames(['seq1', 'seq2', 'seq3', 'last'])
-    print(win.sequenceNames())
-    
-    win.setStates(['SHUTDOWN', 'BOOT', 'HWINIT', 'BEGIN', 'END'])
-    print(win.states())
-    
-    win.setTriggerState('BOOT')
-    print(win.triggerState())
-    
-    win.setNewSequence('new')
-    print(win.newSequence())
-    
-    # Test signals:
-    
-    win.editSequence.connect(edit)
-    win.createSequence.connect(create)
-    
-    dialog = SequenceEditorDialog(win)
-    
-    seqedit = dialog.workarea()
-    sequence = [
-        {'program_name': 'setrun', 'pre_delay': 0, 'post_delay': 0},
-        {'program_name': 'settitle', 'pre_delay': 100, 'post_delay': 150},
-        {'program_name': 'begrun', 'pre_delay': 0, 'post_delay': 1000}
-    ]
-    seqedit.sequence().setSteps(sequence)
-    seqedit.setName('aSequence')
-    seqedit.setStates(['BOOT', "SHUTDOWN", 'HWINIT', 'BEGIN', 'END'])
-    seqedit.setTrigger('BEGIN')
-    seqedit.creator().setProgramNames(['makering', 'eventlog', 'bootactions', 'setrun', 'settitle', 'begrun', 'readout'])
-    seqedit.show()
-    
-    dialog.exec()
-    
-    
-    sys.exit(app.exec())
-        
+    sys.exit(main())
         
     
