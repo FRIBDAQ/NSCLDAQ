@@ -30,7 +30,7 @@ Event loggers have the following properties:
 '''
 
 from PyQt6.QtWidgets import (QTableView, QLabel, QLineEdit, QComboBox, QPushButton, QCheckBox,
-    QVBoxLayout, QHBoxLayout, QWidget, QFileDialog, QStyle)
+    QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QFileDialog, QStyle)
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from PyQt6.QtCore import pyqtSignal, Qt, QObject, QModelIndex
 
@@ -500,6 +500,8 @@ class EditLoggers(QWidget):
         
         self._table.loggerSelected.connect(self._loadDescription)
         self._delButton.clicked.connect(self._deleteSelected)
+        self._description.accept.connect(self._addReplace)
+        
     
     # Attributes:
         
@@ -524,6 +526,45 @@ class EditLoggers(QWidget):
         if len(selection) :
             row = selection[0].row()
             self._table.model().takeRow(row)
+            
+    def _addReplace(self) -> None:
+        # The logger needs to have a root, destination, ring and host
+        # Otherwise we just popup a messagebox and return.
+        edit_logger = self._description.logger()
+        if self._incomplete(edit_logger):
+            QMessageBox.warning(self, 'Incomplete',
+                'Loggers must have the root, destination, ring and host nonempty')
+            return
+        
+        # If there's a logger with the same destination as the
+        # described logger, replace it, otherwise, 
+        # add it to the logger list:
+        
+        loggers = self._table.loggers()
+        
+        replaced = False
+        for i, logger in enumerate(loggers):
+            if edit_logger['destination'] == logger['destination']:
+                loggers[i] = edit_logger
+                replaced = True
+                break
+        if not replaced:
+            loggers.append(edit_logger)
+            
+        # Rewrite the table
+    
+        self._table.setLoggers(loggers)
+    
+    # Utility methods        
+    
+    def _incomplete(self, logger: dict) -> bool:
+        # Return false if we are missing elements of the
+        # logger:
+        
+        return  not logger['root'].strip() or  \
+                not logger['ring'].strip() or  \
+                not logger['host'].strip() or  \
+                not logger['destination'].strip()
 # Test code for now
 
 if __name__ == '__main__':
