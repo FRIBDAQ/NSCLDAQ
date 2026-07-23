@@ -44,6 +44,7 @@ class LoggerTable(QTableView):
       Attributes:
         loggers - the logger definitions. See below.
         selected - (readonly) the selected logger.
+        model    - (readonly) the standard item model.
       Signals:
         loggerSelected(dict) - A logger was selected via a double click.
         
@@ -498,6 +499,7 @@ class EditLoggers(QWidget):
         # Set up local slots:
         
         self._table.loggerSelected.connect(self._loadDescription)
+        self._delButton.clicked.connect(self._deleteSelected)
     
     # Attributes:
         
@@ -514,7 +516,14 @@ class EditLoggers(QWidget):
         #  Load the description with the double clicked logger:
         
         self._description.setLogger(logger)
+    def _deleteSelected(self) -> None:
+        # Delete the selected table item.  We leverage that
+        # the table really is a table view:
         
+        selection = self._table.selectedIndexes()
+        if len(selection) :
+            row = selection[0].row()
+            self._table.model().takeRow(row)
 # Test code for now
 
 if __name__ == '__main__':
