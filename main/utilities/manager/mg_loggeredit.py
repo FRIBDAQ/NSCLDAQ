@@ -292,7 +292,7 @@ class  LoggerDescription(QWidget):
     def setLogger(self, definition: dict) -> None:
         '''
         Set the logger defintition in one throw.
-        @param definition is a dict whose definition is given in the docstrings fro LoggerTable.
+        @param definition is a dict whose definition is given in the docstrings for LoggerTable.
         @note  Some other agency had better have set the containers attribute first or else this will
             fail with a value error when calling setContainer to select the container.
         '''
@@ -304,6 +304,25 @@ class  LoggerDescription(QWidget):
         self.setCritical(definition['critical'])
         self.setEnabled(definition['enabled'])
         self.setContainer(definition['container'])
+    
+    def logger(self) -> dict:
+        '''
+            @return dict - A logger definition that contains the current state of the
+                editor. 
+            @note that there may be empty (not None) values in the dict.
+            @note See the docstring for LoggerTable for a description of the dict returned.
+        '''
+        return {
+            'root': self.daqroot(),
+            'ring': self.ring(),
+            'host': self.host(), 
+            'partial': self.partial(),
+            'destination': self.destination(),
+            'critical' : self.critical(),
+            'enabled'  : self.enabled(),
+            'container': self.container()
+
+        }
         
     # Local/private slots:
 
@@ -419,6 +438,8 @@ if __name__ == '__main__':
         
     def accept() -> None:
         print('accepted')
+        print(edit.logger())
+        
     app = QApplication(sys.argv)
     win = LoggerTable()
     
