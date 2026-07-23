@@ -34,6 +34,7 @@ from PyQt6.QtWidgets import (QTableView, QLabel, QLineEdit, QComboBox, QPushButt
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from PyQt6.QtCore import pyqtSignal, Qt, QObject, QModelIndex
 
+import pathlib
 
 class LoggerTable(QTableView):
     '''
@@ -334,7 +335,12 @@ class  LoggerDescription(QWidget):
 
     def _browseDest(self) -> None:
         # Browse for a destination directory
-        pass
+        
+        dir = QFileDialog.getExistingDirectory(
+            self, 'Choose recording destination', str(pathlib.Path.home())
+        )
+        if dir.strip():
+            self.setDestination(dir)
 
     def _clear(self) -> None:
         # Clear all the settable controls.  Note that the set of containers that can
