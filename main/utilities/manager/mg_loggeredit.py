@@ -30,7 +30,7 @@ Event loggers have the following properties:
 '''
 
 from PyQt6.QtWidgets import (QTableView, QLabel, QLineEdit, QComboBox, QPushButton, QCheckBox,
-    QVBoxLayout, QHBoxLayout, QWidget)
+    QVBoxLayout, QHBoxLayout, QWidget, QFileDialog)
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from PyQt6.QtCore import pyqtSignal, Qt, QObject, QModelIndex
 
@@ -328,7 +328,9 @@ class  LoggerDescription(QWidget):
 
     def _browseRoot(self) -> None:
         #  Browse for a directory to put in the self._daqroot QLineEdit
-        pass
+        dir = QFileDialog.getExistingDirectory(self, 'Choose DAQ Root directory', '/usr/opt/daq')
+        if dir.strip():
+            self.setDaqroot(dir)
 
     def _browseDest(self) -> None:
         # Browse for a destination directory
