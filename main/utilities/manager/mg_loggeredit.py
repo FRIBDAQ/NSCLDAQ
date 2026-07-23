@@ -335,8 +335,18 @@ class  LoggerDescription(QWidget):
         pass
 
     def _clear(self) -> None:
-        # Clear all the settable controls.
-        pass
+        # Clear all the settable controls.  Note that the set of containers that can
+        # be chosen is retained.  the first container in the list is
+        # selected All checkboxes are unchecked.
+        self.setDaqroot('')
+        self.setDestination('')
+        self.setRing('')
+        self.setContainer(self.containers()[0])
+        self.setHost('')
+        self.setCritical(False)
+        self.setPartial(False)
+        self.setEnabled(False)
+        
 
     # private GUI utility methods:
 
