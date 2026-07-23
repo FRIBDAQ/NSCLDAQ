@@ -21,7 +21,7 @@ Event loggers have the following properties:
 - A DAQROOT   - which determines that actual program image that's run.
 - A host      - the system in which they execute.
 - A source    - The URI of a ringbuffer from which they take data
-- A destinatino - A directory into which they log.
+- A destination - A directory into which they log.
 - An enable flag - when this is true, the logger logs if global logging is enabled.
 - A complete flag - This determines if the logger operates like a primary logger or a multilogger
                  (In the old ReadoutShell sense of the word).
@@ -30,7 +30,7 @@ Event loggers have the following properties:
 '''
 
 from PyQt6.QtWidgets import (QTableView, QLabel, QLineEdit, QComboBox, QPushButton, QCheckBox,
-    QVBoxLayout, QHBoxLayout, QWidget, QFileDialog)
+    QVBoxLayout, QHBoxLayout, QWidget, QFileDialog, QStyle)
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from PyQt6.QtCore import pyqtSignal, Qt, QObject, QModelIndex
 
@@ -445,42 +445,74 @@ class  LoggerDescription(QWidget):
         box.setCheckState(
             Qt.CheckState.Checked if value else Qt.CheckState.Unchecked
         )
+
+
+class EditLoggers(QWidget):
+    ''''
+        This consists of:
+        LoggerTable  [Delete selected]
+        LoggerDescription
+        
+        Autonomous activity:
+           delete selected button removes the selected logger from the table.
+           double clicking a logger loads it into the description.
+           Add/Replace:
+              - If a logger with that destination exists it is replaced with the definition in the description
+              - Otherwise the description is added to the table.
+              Note that if elements of the logger are missing, a messgae box will indicate that and Add/Replace
+              will not happen.
+        
+        Attributes:
+            table - returns the LoggerTable widget.
+            description - Returns the LoggerDescription widget.
+            
+        Note: Normally, this will be encapsulated in an EditLoggersDialog, see that class below.
+    
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        # The primary layout is vertical stacking with the excursion to horiztonal 
+        
+        self._layout = QVBoxLayout(self)
+        
+        # Layout the table and delete selected buttons horiztonally though
+        
+        table_layout = QHBoxLayout()
+        self._table = LoggerTable(self)
+        table_layout.addWidget(self._table)
+        
+        self._delButton = QPushButton('Delete Selected', self)
+        pixmap          = getattr(QStyle.StandardPixmap, 'SP_DialogCancelButton')
+        icon            = self.style().standardIcon(pixmap)
+        self._delButton.setIcon(icon)
+        table_layout.addWidget(self._delButton)
+        
+        self._layout.addLayout(table_layout)
+        
+        # With the LoggerDescription below all of this:
+        
+        self._description  = LoggerDescription(self)
+        self._layout.addWidget(self._description)
+        
 # Test code for now
 
 if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
     import sys
 
-    def dbl(logger : dict) -> None:
-        print(logger)
-        
-    def accept() -> None:
-        print('accepted')
-        print(edit.logger())
         
     app = QApplication(sys.argv)
-    win = LoggerTable()
+    win = EditLoggers()
     
     loggers = [
         {'container': 'bucky', 'ring': 'tcp://localhost/ron', 
          'root':'/usr/opt/daq/12.2-009', 'host': 'localhost', 'destination': '/events/ron', 
          'enabled': False, 'critical': True, 'partial': True},
     ]
-    win.setLoggers(loggers)
-    print(loggers)
-    print(win.loggers())
-    print(loggers == win.loggers())
-    
-    win.loggerSelected.connect(dbl)
+    containers = ['jessie', 'buster', 'bullseye', 'bucky', 'bookworm']
     win.show()
     
-    # Edit widget:
     
-    edit = LoggerDescription()
-    
-    edit.setContainers(['jessie', 'buster', 'bullseye', 'bucky', 'bookworm'])
-    edit.setLogger(loggers[0])
-    edit.show()
-    edit.accept.connect(accept)
     
     sys.exit(app.exec())
