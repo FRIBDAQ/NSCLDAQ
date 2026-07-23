@@ -462,7 +462,7 @@ class EditLoggers(QWidget):
               Note that if elements of the logger are missing, a messgae box will indicate that and Add/Replace
               will not happen.
         
-        Attributes:
+        Attributes (readonly):
             table - returns the LoggerTable widget.
             description - Returns the LoggerDescription widget.
             
@@ -495,6 +495,26 @@ class EditLoggers(QWidget):
         self._description  = LoggerDescription(self)
         self._layout.addWidget(self._description)
         
+        # Set up local slots:
+        
+        self._table.loggerSelected.connect(self._loadDescription)
+    
+    # Attributes:
+        
+    def table(self) -> LoggerTable:
+        ''' @return LoggerTable - reference to the table widget.'''
+        return self._table
+    def description(self) -> LoggerDescription:
+        ''' @return LoggerDescription  - reference to the description widget '''
+        return self._description
+    
+    # Private slots:
+    
+    def _loadDescription(self, logger: dict) -> None:
+        #  Load the description with the double clicked logger:
+        
+        self._description.setLogger(logger)
+        
 # Test code for now
 
 if __name__ == '__main__':
@@ -508,9 +528,17 @@ if __name__ == '__main__':
     loggers = [
         {'container': 'bucky', 'ring': 'tcp://localhost/ron', 
          'root':'/usr/opt/daq/12.2-009', 'host': 'localhost', 'destination': '/events/ron', 
-         'enabled': False, 'critical': True, 'partial': True},
+         'enabled': False, 'critical': False, 'partial': True},
+        {'container': 'bookworm', 'ring': 'tcp://localhost/built',
+         'root': '/usropt/daq/12.2-009', 'host': 'localhost', 'destination': '/home/ron/stagearea',
+         'enabled' : True, 'critical': True, 'partial' : False}
     ]
+    win.table().setLoggers(loggers)
+    
+    editor = win.description()
     containers = ['jessie', 'buster', 'bullseye', 'bucky', 'bookworm']
+    editor.setContainers(containers)
+    
     win.show()
     
     
