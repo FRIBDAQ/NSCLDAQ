@@ -167,9 +167,11 @@ class  LoggerDescription(QWidget):
     enabled  - bool - true if the logger is enabled.
     
     Methods:
-    
+      These two are a pseudo attribute:
+      
     setLogger - Given a logger definition dict (see LoggerTable class), fills the attributes of
              the form.
+    logger - Retrieve the logger definition from the form.
     
     Signals:
         accept - the Add/Modify button is clicked.
@@ -285,6 +287,24 @@ class  LoggerDescription(QWidget):
         ''' @param value: bool - state to set the enabled checkbox.'''
         self._setCheckbox(self._enabled, value)
     
+    # Public methods:
+    
+    def setLogger(self, definition: dict) -> None:
+        '''
+        Set the logger defintition in one throw.
+        @param definition is a dict whose definition is given in the docstrings fro LoggerTable.
+        @note  Some other agency had better have set the containers attribute first or else this will
+            fail with a value error when calling setContainer to select the container.
+        '''
+        self.setDaqroot(definition['root'])
+        self.setRing(definition['ring'])
+        self.setHost(definition['host'])
+        self.setPartial(definition['partial'])
+        self.setDestination(definition['destination'])
+        self.setCritical(definition['critical'])
+        self.setEnabled(definition['enabled'])
+        self.setContainer(definition['container'])
+        
     # Local/private slots:
 
     def _browseRoot(self) -> None:
@@ -383,6 +403,8 @@ class  LoggerDescription(QWidget):
         return box.checkState() == Qt.CheckState.Checked
     
     def _setCheckbox(self, box : QCheckBox, value: bool):
+        if type(value) is not bool:
+            raise ValueError(f'Setting a checkbox: {box.text()}; {value} was not a bool.')
         box.setCheckState(
             Qt.CheckState.Checked if value else Qt.CheckState.Unchecked
         )
@@ -396,8 +418,7 @@ if __name__ == '__main__':
         print(logger)
         
     def accept() -> None:
-        print('accepted'
-              )
+        print('accepted')
     app = QApplication(sys.argv)
     win = LoggerTable()
     
@@ -417,15 +438,9 @@ if __name__ == '__main__':
     # Edit widget:
     
     edit = LoggerDescription()
-    edit.setDaqroot('/usr/opt/daq/12.2-009')
-    edit.setDestination('/events/ron')
-    edit.setRing('tcp://localhost/ron')
-    edit.setContainers(['jessie', 'buster', 'bullseye', 'bookworm'])
-    edit.setContainer('bullseye')
-    edit.setHost('spdaq20.frib.msu.edu')
-    edit.setCritical(True)
-    edit.setPartial(False)
-    edit.setEnabled(True)
+    
+    edit.setContainers(['jessie', 'buster', 'bullseye', 'bucky', 'bookworm'])
+    edit.setLogger(loggers[0])
     edit.show()
     edit.accept.connect(accept)
     
