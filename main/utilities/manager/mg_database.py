@@ -1468,8 +1468,115 @@ class Sequence:
             self._db.commit()       # May need to commit the outer xaction.
         except Exception:
             pass
-        
+      
+class KvStore:
+    ''' Implement access to the key value store: '''  
     
+    def __init__(self, db : sqlite3.Connection):
+        self._db = db
+    
+    def exists(self, key : str) -> bool:
+        '''
+        @return bool - True if 'key' exists in the database
+        
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT COUNT(*) FROM kvstore WHERE keyname = ?
+                       ''', (key,))
+        result = cursor.fetchone()
+        assert result is not None, f'Unable to determine if {key} is in the KvStore'
+        return result[0] != 0
+    
+    def create(self, key: str, value: str) -> None:
+        '''
+            @param key -  a new key to create, must be new.
+            @param value - the value to give that key.
+            @throws If the key already exists, ValueError is thrown
+            
+        '''
+        if self.exists(key):
+            raise ValueError(f'{key} already exists')
+        
+        self._db.execute('''
+            INSERT INTO kvstore (keyname, value) VALUES (?,?)
+            ''', (key, value))
+        self._db.commit()
+    
+    def modify(self, key : str, value : str) -> None:
+        '''
+            @param key - key to modify.
+            @param value - New value for th key.
+            @throws ValueError if the key does not exist.
+        '''
+        if not self.exists(key):
+            raise ValueError(f'{key} has not been defined, use the "create" method to do  so.')
+        
+        self._db.execute('''
+                UPDATE kvstore SET value = ? WHERE keyname = ?
+            ''', (value, key))
+        self._db.commit()
+        
+    def remove(self, key : str) -> None:
+        '''
+           @param key - the key to delete.
+           @throws ValueError if the key does not exist.
+        '''
+        if not self.exists(key):
+            raise ValueError(f'{key} does not exist.')
+        
+        self._db.execute('''
+            DELETE FROM kvstore WHERE keyname = ?
+            ''', (key,))
+        self._db.commit()
+    
+    def get(self, key : str) -> str:
+        '''
+          @param key - key whose value must be retrieved.
+          @return str - the value of the key.
+          @raise ValueError if there is no such key.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+               SELECT value FROM kvstore WHERE keyname = ?                            
+            ''', (key,))
+        
+        row = cursor.fetchone()
+        if row is None:
+            raise ValueError(f'{key} does not exist.')
+        
+        return row[0]
+
+    def listKeys(self) -> list[str]:
+        '''
+            @return list[str] - list of the defined keys.
+        '''
+        
+        cursor = self._db.cursor()
+        cursor.execute('''SELECT keyname FROM kvstore''', tuple[str]())
+        rows = cursor.fetchall()
+        if rows is None:
+            return list()
+        
+        return [r[0] for r in rows]
+        
+    def listAll(self) -> list[tuple[str,str]]:
+        '''
+            @return list[tuple[str,str]]  list of all key value pairs in the store.
+                The first element of each tuple is the key, the second, its value.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT keyname, value FROM kvstore
+                       ''', tuple[str]())
+        
+        result = cursor.fetchall()
+        if result is None:
+            return []
+        return result
+        
+        
+        
 #    This software is Copyright by the Board of Trustees of Michigan
     
 #    State University (c) Copyright 2014, 2026
