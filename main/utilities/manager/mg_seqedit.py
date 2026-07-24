@@ -26,7 +26,7 @@ actions that trigger as a result of a state transition.
 
 
 from PyQt6.QtWidgets import (QListView, QLabel, QLineEdit, QComboBox, QPushButton, 
-        QWidget, QHBoxLayout, QVBoxLayout, QTableView, QStyle, QSpinBox,
+        QWidget, QHBoxLayout, QVBoxLayout, QTableView, QAbstractItemView, QStyle, QSpinBox,
         QDialog, QDialogButtonBox, QApplication, QMessageBox)
 
 from PyQt6.QtGui import  QStandardItemModel, QStandardItem
@@ -240,6 +240,8 @@ class SequenceTable(QTableView):
 
         super().__init__(parent)
         
+        
+        
         # The primary layout is, therefore, an HBOX layout with
         # a VBOX sublayout for the buttons:
         
@@ -251,6 +253,7 @@ class SequenceTable(QTableView):
         # The table at the left:
         
         self._table = QTableView(self)
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._sequence = QStandardItemModel()
         self._initializeModel()                  # clear and set column headers.
         self._table.setModel(self._sequence)

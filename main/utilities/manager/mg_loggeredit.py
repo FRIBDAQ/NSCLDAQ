@@ -29,7 +29,8 @@ Event loggers have the following properties:
                 SHUTDOWN.
 '''
 
-from PyQt6.QtWidgets import (QTableView, QLabel, QLineEdit, QComboBox, QPushButton, QCheckBox, QApplication,
+from PyQt6.QtWidgets import (QTableView, QAbstractItemView, QLabel, QLineEdit, QComboBox, 
+    QPushButton, QCheckBox, QApplication,
     QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QFileDialog, QStyle, QDialog, QDialogButtonBox)
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from PyQt6.QtCore import pyqtSignal, Qt, QObject, QModelIndex
@@ -68,6 +69,8 @@ class LoggerTable(QTableView):
     loggerSelected = pyqtSignal(dict)
     def __init__(self, parent : QObject | None = None):
         super().__init__(parent)
+        
+        self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         
         self._model = QStandardItemModel()
         self.setModel(self._model)

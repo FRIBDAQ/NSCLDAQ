@@ -28,7 +28,7 @@ the user to define all of the characteristics of a program.
 
 from PyQt6.QtWidgets import (
     QWidget,  QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,
-    QTableView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton,
+    QTableView, QAbstractItemView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton,
     QFileDialog, QDialog, QDialogButtonBox, QMessageBox, QApplication)
 from PyQt6.QtGui import (QStandardItemModel, QStandardItem)
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject
@@ -76,6 +76,7 @@ class ProgramSelector(QWidget):
         
         
         self._list = QTableView(self)
+        self._list.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._list.setModel(self._model)
         self.setPrograms(list())
         
