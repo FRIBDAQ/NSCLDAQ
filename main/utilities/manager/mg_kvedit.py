@@ -18,7 +18,8 @@ key value database of the FRIB/NSCLDAQ managed experiment environment.
 
 '''
 
-from PyQt6.QtWidgets import QTableView
+from PyQt6.QtWidgets import (QTableView, QWidget, QPushButton, QStyle, QLabel, QLineEdit, 
+        QHBoxLayout, QVBoxLayout)
 from PyQt6.QtGui import QStandardItemModel,  QStandardItem
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject, Qt
 
@@ -129,12 +130,63 @@ class KvTable(QTableView):
         self._model.clear()
         self._model.setHorizontalHeaderLabels(['Key', 'Value'])
         
+class KvSpecifier(QWidget):
+    '''
+      This widget provides the controls needed to specify a key/value pair
+      Specifically labeled line entries for the key and value as well as
+      an Add button.
+      Attributes:
+        key - Contents of the key line entry.
+        value - Contents of the value line entry.
+      Signals:
+        add - the add button was clicked.
+    '''
+    add = pyqtSignal()
+    
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        self._layout = QHBoxLayout(self)
+        self.setLayout(self._layout)
+        
+        self._layout.addWidget(QLabel('Key: ', self))
+        self._key = QLineEdit(self)
+        self._layout.addWidget(self._key)
+        
+        self._layout.addWidget(QLabel('Value: ', self))
+        self._value = QLineEdit(self)
+        self._layout.addWidget(self._value)
+        
+        
+        self._addbutton = QPushButton('Add', self)
+        self._layout.addWidget(self._addbutton)
+        self._addbutton.clicked.connect(self.add)
+    
+    # Implement the attributes:
+    
+    def key(self) -> str:
+        ''' @return str - the contents of the key entry.
+        '''
+        return self._key.text()
+    def setKey(self, key: str) -> None: 
+        ''' @param key : str - new contents of the key entry.'''
+        self._key.setText(key)
+    
+    def value(self) -> str:
+        ''' @return str - the contents of the value line endit'''
+        return self._value.text()
+    def setValue(self, value: str) -> None:
+        ''' @param value: str - nea contents of  the value line edit.'''
+        self._value.setText(value)
+        
 # Debug/test code for now.
 
 if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
     import sys
     
+    def add() -> None:
+        print('want add', edit.key(), '->', edit.value())
     app = QApplication(sys.argv)
     
     win = KvTable()
@@ -144,6 +196,12 @@ if __name__ == '__main__':
     
     print(win.kv())
     win.show()
+    
+    edit = KvSpecifier()
+    edit.show()
+    edit.setKey('akey')
+    edit.setValue('avalue')
+    edit.add.connect(add)
     sys.exit(app.exec())
         
         
