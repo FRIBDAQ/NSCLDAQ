@@ -30,7 +30,7 @@ Event loggers have the following properties:
 '''
 
 from PyQt6.QtWidgets import (QTableView, QLabel, QLineEdit, QComboBox, QPushButton, QCheckBox,
-    QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QFileDialog, QStyle)
+    QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QFileDialog, QStyle, QDialog, QDialogButtonBox)
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from PyQt6.QtCore import pyqtSignal, Qt, QObject, QModelIndex
 
@@ -95,6 +95,9 @@ class LoggerTable(QTableView):
             self._model.appendRow([
                 container, ring, root, host, destination, enabled, critical, partial
             ])
+            
+        self.resizeColumnsToContents()
+        
     
     def loggers(self) -> list[dict]:
         '''
@@ -530,6 +533,9 @@ class EditLoggers(QWidget):
     def _addReplace(self) -> None:
         # The logger needs to have a root, destination, ring and host
         # Otherwise we just popup a messagebox and return.
+        # If that's the case, the user an always complete the specification
+        # Add/replace again.
+        
         edit_logger = self._description.logger()
         if self._incomplete(edit_logger):
             QMessageBox.warning(self, 'Incomplete',
@@ -567,13 +573,46 @@ class EditLoggers(QWidget):
                 not logger['destination'].strip()
 # Test code for now
 
+class EditLoggersDialog(QDialog):
+    ''''
+        A dialog that encapsulates the EditLoggers widget and Save/Cancel buttons
+        workarea() retrieves the EditLoggers widget in the work area.
+        
+     Note that typicall, the controll just needs to connect with the accepted signal.
+     The editor workarea is autonomous in all other respects.
+     
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._workarea = EditLoggers(self)
+        self._layout.addWidget(self._workarea)
+        
+        self._buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+        )
+        self._layout.addWidget(self._buttons)
+        
+        # Hook the button box into the dialog roles:
+        
+        self._buttons.accepted.connect(self.accept)
+        self._buttons.rejected.connect(self.reject)
+    
+    def workarea(self) -> EditLoggers:
+        ''' @return EditLoggers - the work area of the dialog'''
+        
+        return self._workarea
+
 if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
     import sys
 
         
     app = QApplication(sys.argv)
-    win = EditLoggers()
+    win = EditLoggersDialog()
     
     loggers = [
         {'container': 'bucky', 'ring': 'tcp://localhost/ron', 
@@ -583,9 +622,9 @@ if __name__ == '__main__':
          'root': '/usropt/daq/12.2-009', 'host': 'localhost', 'destination': '/home/ron/stagearea',
          'enabled' : True, 'critical': True, 'partial' : False}
     ]
-    win.table().setLoggers(loggers)
+    win.workarea().table().setLoggers(loggers)
     
-    editor = win.description()
+    editor = win.workarea().description()
     containers = ['jessie', 'buster', 'bullseye', 'bucky', 'bookworm']
     editor.setContainers(containers)
     
