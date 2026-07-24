@@ -639,7 +639,39 @@ class EditLoggersController(QObject):
     # Internal slots:
     
     def _updateDatabase(self) -> None:
-        print('update')
+        # To reconcile thingswe need both the table loggers and the
+        # database loggers:
+        
+        logger_api = EventLog(self._db)
+        db_list = logger_api.list()
+        
+        #Loggers are uniquified by their database Id which the table does not have,
+        #and their destinations;
+        
+        db_dict = {x['destination'] : x for x in db_list}
+        
+        dlg_list = self._view.workarea().table().loggers()
+        
+        # An existing logger can be deleted:
+        
+        dlg_dests = [x['destination'] for x in dlg_list]
+        for dest in db_dict:
+            if dest not in dlg_dests:
+                logger_api.delete(db_dict[dest]['id'])
+        
+        # An existing logger could be modified:  For now, if there's an
+        # existing dest in the dialog, we delete and recreate it.
+        # Otherwise it's a new logger:
+        for logger in dlg_list:
+            if logger['destination'] in db_dict.keys():
+                logger_api.delete(db_dict[logger['destination']]['id'])   # Delete if modified. 
+            logger_api.add(logger['root'], logger['ring'], logger['destination'], logger['container'], logger['host'],
+                            {
+                                'partial' : logger['partial'],
+                                'critical' : logger['critical'],
+                                'enabled'  : logger['enabled']
+                            }
+            )
     
     # Utilities
     def _stockWorkarea(self) -> None:
