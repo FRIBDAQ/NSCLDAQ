@@ -29,12 +29,15 @@ Event loggers have the following properties:
                 SHUTDOWN.
 '''
 
-from PyQt6.QtWidgets import (QTableView, QLabel, QLineEdit, QComboBox, QPushButton, QCheckBox,
+from PyQt6.QtWidgets import (QTableView, QLabel, QLineEdit, QComboBox, QPushButton, QCheckBox, QApplication,
     QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QFileDialog, QStyle, QDialog, QDialogButtonBox)
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 from PyQt6.QtCore import pyqtSignal, Qt, QObject, QModelIndex
 
 import pathlib
+import sqlite3
+import sys
+from mg_database import Container, EventLog
 
 class LoggerTable(QTableView):
     '''
@@ -606,30 +609,95 @@ class EditLoggersDialog(QDialog):
         
         return self._workarea
 
-if __name__ == '__main__':
-    from PyQt6.QtWidgets import QApplication
-    import sys
-
+class EditLoggersController(QObject):
+    '''
+        Provide a controller for the EditLoggerDialog that
+        can load it from the data base and handle the 
+        accept button so that the database gets updated with the
+        new definitions.
+    '''
+    def __init__(self, view : EditLoggersDialog, config: str, parent : QObject | None = None):
+        '''
+            @param view - the dialog widget.  
+            @param config - The database configuration file.
+            @param parewnt - any parent object desired by the application.
+        '''
+        super().__init__(parent)
         
+        # * Save the parameters.
+        # * Open and save a database connection.
+        # * Stock the dialog (container list and logger definitions).
+        # * Connect the dialog's accepted() signal to our code to update the
+        #   database:
+        
+        self._view = view
+        self._config = config
+        self._db = sqlite3.connect(self._config)
+        self._stockWorkarea()
+        self._view.accepted.connect(self._updateDatabase)
+        
+    # Internal slots:
+    
+    def _updateDatabase(self) -> None:
+        print('update')
+    
+    # Utilities
+    def _stockWorkarea(self) -> None:
+        # Get the components of the dialog:
+        
+        table = self._view.workarea().table()
+        desc  = self._view.workarea().description()
+        
+        # Load the valid containers:
+        
+        container_api = Container(self._db)
+        container_names = [x['name'] for x in container_api.list()]
+        desc.setContainers(container_names)
+        
+        # Load the table with the existing event log definitions:
+        
+        eventlog_api = EventLog(self._db)
+        table.setLoggers(eventlog_api.list())
+    
+    
+def usage() -> None:
+    ''' Print the program usage on stderr: '''    
+    print('''
+Usage:
+    $DAQBIN/mg_loggeredit config_file_path
+    
+Edit the set of event loggers in the managed experment environment.
+See, also, $DAQBIN/mg_logwizard for a wizard that creates loggers.
+
+Where:
+    config_file_path - is the path to the configuration file databsae.
+        ''', file = sys.stderr)
+
+
+
+def main() -> int:
+    '''
+      Program entry point.  Ensure the user gave us a database file and that it exists.
+      
+    '''
+    if len(sys.argv) != 2:
+        usage()
+        return -1
+    
+    config_file = sys.argv[1]
+    if not pathlib.Path(config_file).exists():
+        print(f'{config_file} does not exist!', sys.stderr)
+        usage()
+        return -1
+    
+    # Set up the application user interface and hook in a controller:
+    
     app = QApplication(sys.argv)
-    win = EditLoggersDialog()
+    dialog = EditLoggersDialog()
+    _controller = EditLoggersController(dialog, config_file, dialog)
     
-    loggers = [
-        {'container': 'bucky', 'ring': 'tcp://localhost/ron', 
-         'root':'/usr/opt/daq/12.2-009', 'host': 'localhost', 'destination': '/events/ron', 
-         'enabled': False, 'critical': False, 'partial': True},
-        {'container': 'bookworm', 'ring': 'tcp://localhost/built',
-         'root': '/usropt/daq/12.2-009', 'host': 'localhost', 'destination': '/home/ron/stagearea',
-         'enabled' : True, 'critical': True, 'partial' : False}
-    ]
-    win.workarea().table().setLoggers(loggers)
+    dialog.show()
+    return app.exec()
     
-    editor = win.workarea().description()
-    containers = ['jessie', 'buster', 'bullseye', 'bucky', 'bookworm']
-    editor.setContainers(containers)
-    
-    win.show()
-    
-    
-    
-    sys.exit(app.exec())
+if __name__ == '__main__':
+    sys.exit(main())
