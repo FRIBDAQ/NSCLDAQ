@@ -35,7 +35,7 @@ from PyQt6.QtWidgets import (QWidget, QListView, QHBoxLayout, QVBoxLayout, QComb
         QMessageBox, QPushButton, QDialog, QStyle)
 from PyQt6.QtGui     import (QStandardItemModel, QStandardItem)
 from PyQt6.QtCore    import (QObject, QModelIndex, pyqtSignal)
-
+from nscldaq.editablelist6 import ListToListEditor
 
 class ItemDefiner(QWidget):
     '''
@@ -54,9 +54,12 @@ class ItemDefiner(QWidget):
         Signals:
         add(str)  - Add the string to the list.
         remove(str)  - Remove the string from the list.
+        selected(str) - an ite was double clicked.
+        
     '''
     add     = pyqtSignal(str)
     remove  = pyqtSignal(str)
+    selected= pyqtSignal(str)
     
     def __init__(self, parent : QObject | None = None):
         super().__init__(parent)
@@ -103,6 +106,7 @@ class ItemDefiner(QWidget):
         
         self._addButton.clicked.connect(self._addRelay)
         self._delButton.clicked.connect(self._delRelay)
+        self._list.doubleClicked.connect(self._selectRelay)
         
     # Attributes:
     
@@ -177,19 +181,72 @@ class ItemDefiner(QWidget):
             item  = self._model.itemFromIndex(index).text()
             self.remove.emit(item)
             
+    def _selectRelay(self, index : QModelIndex) -> None:
+        # Relay the double clikced signal -> selected.
+        # Probably could just have easily have been a lambda
+        self.selected.emit(self._model.itemFromIndex(index).text())
+
+class RoleDefiner(ListToListEditor):
+    '''
+        This extends the list to list editor by 
+        providing  a mechanism to more easily stock
+        the list boxes:
         
+    Attributes:
+        roles - the set of roles in the left box (the ones the user doesn't have).
+        granted - the set of roles in the right box (the ones that the user does have).
+    '''
+    def __init__(self, parent: QObject | None = None):
+        super().__init__(parent)
+    
+    #  Public methods:
+    
+    def roles(self) -> list[str]:
+        ''' @return list[str] - the roles the user could get.'''
+        sb = self.sourcebox()
+        result = list()
+        for row in sb.count():
+            result.append(sb.item(row).text())
+        
+        return result
+    def setRoles(self, roles : list[str]) -> None:
+        ''' @param roles : list[str]  - roles the user can be granted.'''
+        sb = self.sourcebox()
+        sb.clear()
+        for role in roles:
+            sb.addItem(role)
+        
+    def granted(self) -> list[str]:
+        ''' @return list[str] - roles the user was granted'''
+        return self.list()
+    def setGranted(self, roles : list[str]) -> None:
+        ''' @param roles - the roles that have been granted to the user.'''
+        
+        rb = self.selectedbox()
+        rb.setList(roles)
     
 if __name__ == '__main__':
     import sys
     from PyQt6.QtWidgets import QApplication
     
+    def sel(item: str) -> None:
+        print("double clicked", item)
+       
     app = QApplication(sys.argv)
-
+    
     win = ItemDefiner()
     win.setItems(['a', 'b', 'c', 'd'])
     win.add.connect(win.addItem)
     win.remove.connect(win.removeItem)
+    win.selected.connect(sel)
     win.setLabel('a label')
-    win.show()
     
+    win.show()
+        
+    granted = RoleDefiner()
+    granted.setRoles(['shift', 'admin', 'owner'])
+    granted.setGranted(['user'], )
+    granted.show()
+    
+    sys.exit(app.exec())
     sys.exit(app.exec())
