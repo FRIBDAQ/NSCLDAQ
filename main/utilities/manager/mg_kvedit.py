@@ -19,7 +19,7 @@ key value database of the FRIB/NSCLDAQ managed experiment environment.
 '''
 
 from PyQt6.QtWidgets import (QTableView, QWidget, QPushButton, QStyle, QLabel, QLineEdit, 
-        QHBoxLayout, QVBoxLayout, QStyle, QMessageBox)
+        QHBoxLayout, QVBoxLayout, QStyle, QMessageBox, QDialog, QDialogButtonBox)
 from PyQt6.QtGui import QStandardItemModel,  QStandardItem
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject, Qt
 
@@ -228,6 +228,7 @@ class KvEdit(QWidget):
     # Implement table attribute:
     
     def table(self) -> KvTable:
+        ''' @return KvTable - the key/value table component of the widget.'''
         return self._table
     
     # Internal slots
@@ -265,21 +266,51 @@ class KvEdit(QWidget):
         self._editor.setKey('')
         self._editor.setValue('')
         
+
+class KvEditDialog(QDialog):    
+    '''
+        Wraps KvEdit in a dialog with Save/Cancel buttons.
         
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._editor = KvEdit(self)
+        self._layout.addWidget(self._editor)
+        
+        self._buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel, 
+            self
+        )
+        self._layout.addWidget(self._buttons)
+        
+        # Make the buttons actually work:
+        
+        self._buttons.accepted.connect(self.accept)
+        self._buttons.rejected.connect(self.reject)
+    
+    def workarea(self) -> KvEdit:
+        return self._editor
+    
+    
 # Debug/test code for now.
 
 if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
     import sys
     
+    def accept() -> None:
+        print("accepting:", win.workarea().table().kv())
     
     app = QApplication(sys.argv)
     
-    win = KvEdit()
-    win.table().setKv([
+    win = KvEditDialog()
+    win.workarea().table().setKv([
         ('run', '0'), ('title', 'this is a title')
     ])
-    
+    win.accepted.connect(accept)
     win.show()
     
     
