@@ -1575,6 +1575,233 @@ class KvStore:
             return []
         return result
         
+class Auth:
+    ''' 
+    Note that while user/and role restrictions are not yet implemented/enforced,
+    the mechanisms for defining them are.
+    There are three tables we're concerned with:
+    1. roles which defines the set of roles in the system.
+    2. users which defines the users in the experiment
+    3. user_roles which defines the set of roles a user has.
+    
+    We support:
+    - Defining and removing roles.
+    - Adding and removing users.
+    - Granting and revoking roles to a user.
+    
+    Getting this information.
+    '''
+    def __init__(self, db: sqlite3.Connection):
+        self._db = db
+    
+    def role_id(self, role : str) -> int | None:
+        '''
+        @param role : str - the name of a role to query for.
+        @return int | None- If the role exists, returns its id. 
+        @retval None  no such role.
+        '''
+        cursor = self._db.cursor()
+        cursor.exec('''
+            SELECT id FROM roles WHERE role = ?
+        ''', (role, ))
+        row = cursor.fetchone()                   # We will enforce uniqueness.
+        return row[0] if row else None
+    
+    def addRole(self, role : str) -> None:
+        '''
+            @param role : str- The new role to add.
+            @throws ValueError if there's already sucha a row.
+            
+        '''
+        if self.rol_id(role):
+            raise ValueError(f'{role} is an existing role.  Refusing to make a duplicate')
+    
+        self._db.execute('''
+            INSERT INTO roles (role) VALUES(?)
+        ''', (role,))
+        
+        self._db.commit()
+    
+    def removeRole(self, role : str) -> None:
+        '''
+            @param role : str - the role to remove.
+            @note all user_roles table entries with that role are also removed.
+            @throws KeyError if the role does not exist.
+        '''
+        
+        role_id = self.role_id(role)
+        if not role_id:
+            raise KeyError(f'There is no role named {role}')
+        
+        # This is already a transaction so just commit at the end.
+        
+        self._db.execute('''
+            DELETE FROM user_roles WHERE role_id = ?
+        ''',  (role_id,))
+        
+        self._db.execute('''
+            DELETE FROM roles WHERE id = ?
+                         ''', (role_id,))
+        
+        self._db.commit()
+        
+    def user_id(self, username : str) -> int | None:
+        '''
+        @param username : str - a username to hunt for.
+        @return int | None - the user id of the user.
+        @retval None - there is no such user.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT id FROM users WHERE username = ?
+            ''', (username, ))
+        row = cursor.fetchone()
+        return row[0] if row else None
+    
+    def addUser(self, username: str) -> None:
+        '''
+        @param username : str - name of new user to add.
+        @throws ValueError if the user already exists.
+        '''
+        if self.user_id(username):
+            raise ValueError(f'{username} is already a user. Not going to make a duplicate')
+
+        self._db.execute('''
+            INSERT INTO USERS (username) VALUES (?)
+        ''', (username,))
+        
+        self._db.commit()
+        
+    def removeUser(self, username : str) -> None:
+        '''
+            @param username : str - Name of the user to remove.
+            @note The entries in the user_roles table that pertain to this user are also removed.
+            @throws KeyError if the username does not exist.
+        '''
+        id = self.user_id(username)
+        if not id:
+            raise KeyError(f'There is no user named {username}')
+        
+        self._db.execute('''
+            DELETE FROM user_roles WHERE user_id = ?
+            ''', (id,))
+        self._db.execute('''
+            DELETE FROM users WHERE id=?
+            ''', (id, ))
+        
+        self._db.commit()
+        
+    def grant(self, role_name : str, username: str) -> None:
+        '''
+            @parm role_name : str - name of the role to grant to
+            @param username  :str - the username getting the role.
+            @throws KeyError if either rol_name or username don't exist.
+            @throws ValuError If the user already has the role.
+            
+        '''
+        uid = self.user_id(username)
+        if not uid:
+            raise KeyError(f'There is no user named {username}')
+        role = self.role_id(role_name)
+        if not role:
+            raise KeyError(f'There is no role named {role_name}')
+        
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT COUNT(*) FROM user_roles WHERE user_id = ? AND role_id = ?
+            ''', (uid, role))
+        row = cursor.next()
+        if row[0] != 0:
+            raise ValueError(f'{username} has already been granted {role_name}')        
+        
+        # Now finally we can grant the role:
+        
+        self._db.execute('''
+              INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)      
+        ''',(uid, role))
+        
+        self._db.commit()
+        
+    def revoke(self, role_name : str, username : str) -> None:
+        '''
+            @param role_name : str - name of the role to revoke.
+            @param username  : str - name of the user from whom it is revoked.
+            @raise KeyError - if either the user or the role is not defined.
+            @raise ValueError - If the user doesn't have the role to begin with.
+        '''
+        
+        uid = self.user_id(username)
+        if not uid:
+            raise KeyError(f'There is no user named {username}')
+        rid = self.role_id(role_name)
+        if not rid:
+            raise KeyError(f'There is no role named {role_name}')
+        
+        # Does the user have the rol to begin with:
+        
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT COUNT(*) FROM user_roles WHERE user_id = ? AND role_id = ?
+            ''', (uid, rid))
+        row = cursor.next()
+        if row[0] == 0:
+            raise ValueError(f'{username} was never granted {role_name}')        
+        
+        # Finally, Revoke the role:
+        
+        self._db.execute('''
+            DELETE FROM user_roles WHERE user_id = ? AND role_id = ?
+            ''', (uid, rid))
+    
+    # Queries:
+    
+    def listUsers(self) -> list[str]:
+        '''
+            @return list[str] - list of valid usernames.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute(
+            '''
+            SELECT username FROM users
+            ''')
+        rows = cursor.fetchall()
+
+        return [row[0] for row in rows]
+    
+    def listRoles(self) -> list[str]:
+        '''
+            @return list[str] - list of all the defined roles.
+        '''
+        
+        cursor = self._db.cursor()
+        cursor.execute(
+            '''
+                SELECT role FROM roles
+            '''
+        )
+        rows = cursor.fetchall()
+        return [row[0] for row in rows]
+    
+    def grantedRoles(self, user : str) -> list[str]:
+        '''
+        @param user : str - username to check
+        @return list[str] - A list of the roles this user has been granted.
+        @raises KeyError if the user is not valiid.
+        '''
+        
+        userid = self.user_id(user)
+        if not userid:
+            raise KeyError(f'{user} is not a defined username.')
+        
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT roles.role FROM user_roles
+            INNER JOIN roles ON roles.id = user_roles.role_id
+            WHERE user_roles.user_id = ?
+            ''', (userid,))
+        rows = cursor.fetchall()
+        
+        return [row[0] for row in rows]
         
         
 #    This software is Copyright by the Board of Trustees of Michigan
