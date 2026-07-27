@@ -67,7 +67,7 @@ class EditableList(QWidget):
         self._add.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_MediaPlay')))
         self._add.setMaximumWidth(25)
         self._delete = QPushButton(self)
-        self._delete.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_DialogCancelButton')))
+        self._delete.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_DialogDiscardButton')))
         self._delete.setMaximumWidth(25)
         adddel_layout.addWidget(self._add)
         adddel_layout.addWidget(self._delete)

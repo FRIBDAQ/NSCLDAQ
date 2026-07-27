@@ -493,7 +493,7 @@ class EditLoggers(QWidget):
         table_layout.addWidget(self._table)
         
         self._delButton = QPushButton('Delete Selected', self)
-        pixmap          = getattr(QStyle.StandardPixmap, 'SP_DialogCancelButton')
+        pixmap          = getattr(QStyle.StandardPixmap, 'SP_DialogDiscardButton')
         icon            = self.style().standardIcon(pixmap)
         self._delButton.setIcon(icon)
         table_layout.addWidget(self._delButton)

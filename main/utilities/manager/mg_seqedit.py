@@ -270,7 +270,7 @@ class SequenceTable(QTableView):
         buttonLayout.addWidget(self._movedown)
         
         self._delete = QPushButton(self)
-        self._setButtonIcon(self._delete, 'SP_DialogCancelButton')
+        self._setButtonIcon(self._delete, 'SP_DialogDiscardButton')
         buttonLayout.addWidget(self._delete)
         
         self._layout.addLayout(buttonLayout)

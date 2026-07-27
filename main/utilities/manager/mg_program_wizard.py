@@ -73,7 +73,7 @@ class EditableTable(QWidget):
         self._addrow = QPushButton('+', self)
         buttonlayout.addWidget(self._addrow)
         self._deleterow = QPushButton(self)
-        self._deleterow.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_DialogCancelButton')))
+        self._deleterow.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_DialogDiscardButton')))
         buttonlayout.addWidget(self._deleterow)
         
         

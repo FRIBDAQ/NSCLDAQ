@@ -224,7 +224,7 @@ class KvEdit(QWidget):
         table_layout.addWidget(self._table)
         
         self._deletebutton = QPushButton('Delete Selected', self)
-        pixmap = getattr(QStyle.StandardPixmap, 'SP_DialogCancelButton')
+        pixmap = getattr(QStyle.StandardPixmap, 'SP_DialogDiscardButton')
         icon   = self.style().standardIcon(pixmap)
         self._deletebutton.setIcon(icon)
         table_layout.addWidget(self._deletebutton)
