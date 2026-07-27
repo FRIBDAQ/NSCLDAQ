@@ -19,7 +19,7 @@ key value database of the FRIB/NSCLDAQ managed experiment environment.
 '''
 
 from PyQt6.QtWidgets import (QTableView, QWidget, QPushButton, QStyle, QLabel, QLineEdit, 
-        QHBoxLayout, QVBoxLayout)
+        QHBoxLayout, QVBoxLayout, QStyle, QMessageBox)
 from PyQt6.QtGui import QStandardItemModel,  QStandardItem
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject, Qt
 
@@ -143,6 +143,8 @@ class KvSpecifier(QWidget):
     '''
     add = pyqtSignal()
     
+    
+    
     def __init__(self, parent : QObject | None = None):
         super().__init__(parent)
         
@@ -178,6 +180,91 @@ class KvSpecifier(QWidget):
     def setValue(self, value: str) -> None:
         ''' @param value: str - nea contents of  the value line edit.'''
         self._value.setText(value)
+
+
+class KvEdit(QWidget):
+    '''
+    Compound of KvTable and KvSpecifier, and a delete button.
+    KvEdit autonomously handles the delete and add buttons manipulating
+    the table as needed.
+    
+    Attributes (readonly)
+    
+    table - gets the KvTableWidget.
+    
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        # Primarily stacked widgets:
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        # Though delete current and the table are side by side:
+        
+        table_layout = QHBoxLayout()
+        self._table = KvTable(self)
+        table_layout.addWidget(self._table)
+        
+        self._deletebutton = QPushButton('Delete Selected', self)
+        pixmap = getattr(QStyle.StandardPixmap, 'SP_DialogCancelButton')
+        icon   = self.style().standardIcon(pixmap)
+        self._deletebutton.setIcon(icon)
+        table_layout.addWidget(self._deletebutton)
+        
+        self._layout.addLayout(table_layout)
+        
+        #  Now the editor widget:
+        
+        self._editor = KvSpecifier(self)
+        self._layout.addWidget(self._editor)
+        
+        # Hook into signals for autonmous actions:
+        
+        self._deletebutton.clicked.connect(self._deleteSelected)
+        self._editor.add.connect(self._addEntry)
+    
+    # Implement table attribute:
+    
+    def table(self) -> KvTable:
+        return self._table
+    
+    # Internal slots
+    
+    def _deleteSelected(self) -> None:
+        # Delete the selected table entry.
+        
+        selection = self._table.selected()
+        if selection:
+            self._table.remove(selection[0])
+    
+    def _addEntry(self) -> None:
+        # The add button in the specifier was clicked. 
+        # If either key or value are empty, that's a popup
+        # dialog info box.
+        # If the key is already in the table, that's a warning dialog.
+        # If neither is true, the table's add method is called.
+        
+        key = self._editor.key().strip()
+        value = self._editor.value().strip()
+        
+        if not key or not value:
+            QMessageBox.information(self, 'Missing input', 'Both the "Key" and "Value" fields must be non-empty.')
+            return
+        
+        existing_keys = dict(self.table().kv()).keys()
+        if key in existing_keys:
+            QMessageBox.warning(
+                self, 'Duplicate key', 
+                f"There's already a '{key}' in the table. To edit the value of an existing key, just edit the value in the table"
+            )
+            return
+        
+        self._table.add(key, value)
+        self._editor.setKey('')
+        self._editor.setValue('')
+        
         
 # Debug/test code for now.
 
@@ -185,23 +272,17 @@ if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
     import sys
     
-    def add() -> None:
-        print('want add', edit.key(), '->', edit.value())
+    
     app = QApplication(sys.argv)
     
-    win = KvTable()
-    win.setKv([
+    win = KvEdit()
+    win.table().setKv([
         ('run', '0'), ('title', 'this is a title')
     ])
     
-    print(win.kv())
     win.show()
     
-    edit = KvSpecifier()
-    edit.show()
-    edit.setKey('akey')
-    edit.setValue('avalue')
-    edit.add.connect(add)
+    
     sys.exit(app.exec())
         
         
