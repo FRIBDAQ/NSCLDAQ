@@ -17,11 +17,27 @@ This program provides an editor for key value pairs in the
 key value database of the FRIB/NSCLDAQ managed experiment environment.
 
 '''
+import sqlite3
+import sys
 
-from PyQt6.QtWidgets import (QTableView, QWidget, QPushButton, QStyle, QLabel, QLineEdit, 
-        QHBoxLayout, QVBoxLayout, QStyle, QMessageBox, QDialog, QDialogButtonBox)
-from PyQt6.QtGui import QStandardItemModel,  QStandardItem
-from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject, Qt
+from nscldaq.mg_database import KvStore
+from PyQt6.QtCore import QModelIndex, QObject, Qt, pyqtSignal
+from PyQt6.QtGui import QStandardItem, QStandardItemModel
+from PyQt6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QDialogButtonBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QStyle,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
+)
+
 
 class KvTable(QTableView):
     '''
@@ -294,26 +310,81 @@ class KvEditDialog(QDialog):
     def workarea(self) -> KvEdit:
         return self._editor
     
+
+class KvEditController(QObject):
+    '''
+    Controller object for the KvEditDialog view.
+    We are going to stock it with the existing kv pairs from the
+    database and update the database if the dialog's save is clicked.
     
-# Debug/test code for now.
+    '''
+    def __init__(self, view : KvEditDialog, config_path : str, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        self._view = view
+        self._config = config_path
+        self._db     = sqlite3.connect(self._config)
+        
+        self._loadView()
+        
+        self._view.accepted.connect(self._update)
+   
+    # internal slots
+    
+    def _update(self) -> None:
+        # We'll do as minimal an update as possible:
+        
+        api = KvStore(self._db)
+        existing = dict(api.listAll())
+        proposed = dict(self._view.workarea().table().kv())
+        
+        # Remove the entries in existing that are not in proposed:
+        
+        for item in existing:
+            if item not in proposed:
+                api.remove(item)
+                
+        # For every item in proposed, if it's new add it.
+        # if it exists but the value changed modify it otherwise do nothing:
+        
+        for (keyword, value) in proposed.items():
+            if keyword not in existing:
+                api.create(keyword, value)
+            elif value != existing[keyword]:
+                api.modify(keyword, value)
+   
+    # Utilities
+    
+    def _loadView(self) -> None:
+        api = KvStore(self._db)
+        self._view.workarea().table().setKv(api.listAll())
+        
+        
+def usage():
+    print('''
+Usage:
+    $DAQBIN/mg_kvedit config_path
+
+Edit the contents of the key/value pairs in the configuration database
+of the managed experiment environment.
+
+Where:
+    config_path - is the path to the configuration database file.
+        ''', file=sys.stderr)
+    
+def main():
+    if len(sys.argv) != 2:
+        usage()
+        return -1
+
+    dbpath = sys.argv[1]
+    app = QApplication(sys.argv)
+    win = KvEditDialog()
+    _controller = KvEditController(win, dbpath, win)
+    
+    win.show()
+    return app.exec()
+
 
 if __name__ == '__main__':
-    from PyQt6.QtWidgets import QApplication
-    import sys
-    
-    def accept() -> None:
-        print("accepting:", win.workarea().table().kv())
-    
-    app = QApplication(sys.argv)
-    
-    win = KvEditDialog()
-    win.workarea().table().setKv([
-        ('run', '0'), ('title', 'this is a title')
-    ])
-    win.accepted.connect(accept)
-    win.show()
-    
-    
-    sys.exit(app.exec())
-        
-        
+    sys.exit(main())
