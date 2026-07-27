@@ -25,6 +25,8 @@ Attributes:
 Notable public functions:
     appendItem - appends a new item to the list box.
     insertItem - inserts an item at a specific position in the list box.
+    
+PyQt6 port
 '''
 
 from PyQt6.QtWidgets import (
