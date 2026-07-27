@@ -98,6 +98,86 @@ class ItemDefiner(QWidget):
         add_layout.addWidget(self._addButton)
         
         self._layout.addLayout(add_layout)
+        
+        #  Hook in the buttons:
+        
+        self._addButton.clicked.connect(self._addRelay)
+        self._delButton.clicked.connect(self._delRelay)
+        
+    # Attributes:
+    
+    def label(self) -> str:
+        '''
+            @return str - the contents of the label of the line edit:
+        '''
+        return self._label.text()
+    def setLabel(self, label: str) -> None:
+        '''
+            @param label : str - new label for the line edit.
+        '''
+        self._label.setText(label)
+        
+    def items(self) -> list[str]:
+        '''
+           @return list[str] - contents of the list.
+        '''
+        result = list()
+        for row in range(self._model.rowCount):
+            result.append(self._model.item(row).text())
+        return result
+    def setItems(self, items: list[str]) -> None:
+        '''
+         @param items : list [str] - new items to set in the list box.
+        '''
+        self._model.clear()
+        for item in items:
+            self.addItem(item)
+    
+    # Public method:
+    
+    def addItem(self, item : str) -> None:
+        '''
+            @param item : str - new item to append to the list.
+        '''
+        self._model.appendRow([QStandardItem(item),])
+    
+    def removeItem(self, item : str) -> None:
+        '''
+            @param item : str - the item to remove from the list.
+            @throws KeyError - if item is not in the list.
+        '''
+        for row in range(self._model.rowCount()):
+            if self._model.item(row).text() == item:
+                self._model.takeRow(row)
+                return
+        
+        # No such item:
+        
+        raise KeyError(f'The list does not contain {item}')
+    
+    #  Private slots:
+    
+    def _addRelay(self) -> None:
+        # Pick up the list box value and emit the add signal.
+        # If the item is empty, a message box letting them know we need something to add
+        # Is popped instead.
+        
+        item_text = self._item.text().strip()
+        if not item_text:
+            QMessageBox.information(self, 'Need an item', "Can't add nothing.")
+            return
+        self.add.emit(item_text)
+        
+    def _delRelay(self) -> None:
+        #  Get the selection and relay it to the delete. 
+        # 
+        indices = self._list.selectedIndexes()
+        if len(indices) > 0:
+            index = indices[0]
+            item  = self._model.itemFromIndex(index).text()
+            self.remove.emit(item)
+            
+        
     
 if __name__ == '__main__':
     import sys
@@ -106,6 +186,10 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
 
     win = ItemDefiner()
+    win.setItems(['a', 'b', 'c', 'd'])
+    win.add.connect(win.addItem)
+    win.remove.connect(win.removeItem)
+    win.setLabel('a label')
     win.show()
     
     sys.exit(app.exec())
