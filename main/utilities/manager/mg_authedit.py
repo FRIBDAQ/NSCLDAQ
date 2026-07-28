@@ -290,7 +290,16 @@ class DefineRolesDialog(DefineUsersDialog):
     def __init__(self, parent : QObject | None = None):
         super().__init__(parent)
         self.workarea().setLabel('Role')
-        
+
+class GrantRevokeDialog(SaveDialog):
+    '''
+        Save dialog with a RoleDefiner as the 
+        work area.
+    '''
+    def __init__(self, parent : QObject|None = None):
+        super().__init__(RoleDefiner(), parent)
+    
+            
 if __name__ == '__main__':
     import sys
     from PyQt6.QtWidgets import QApplication
@@ -300,7 +309,7 @@ if __name__ == '__main__':
        
     app = QApplication(sys.argv)
     
-    win = DefineRolesDialog()
+    win = GrantRevokeDialog()
     win.show()
     
     
