@@ -299,17 +299,105 @@ class GrantRevokeDialog(SaveDialog):
     def __init__(self, parent : QObject|None = None):
         super().__init__(RoleDefiner(), parent)
     
-            
+class AuthorizeUsers(QWidget):
+    '''
+        Top level widget for the UI.
+        This is mostly just a button box with buttons
+        for defining new users, roles and assigning roles
+        to users.
+        
+        Attributes:
+        users   - Get/Set the users in the combobox next to the 'grant/revoke roles button'
+        selectedUser - readonly the currently selected user
+        Signals:
+        
+        defineUsers()
+        defineRoles()
+        grantRoles(str) - the str is the user to work with.
+        done()   
+    '''
+    defineUsers = pyqtSignal()
+    defineRoles = pyqtSignal()
+    grantRoles  = pyqtSignal(str)
+    done        = pyqtSignal()
+    
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._users = QPushButton('Add/Remove Users...', self)
+        self._layout.addWidget(self._users)
+        
+        self._roles = QPushButton('Add/Remove Roles...', self)
+        self._layout.addWidget(self._roles)
+        
+        grantlayout = QHBoxLayout()
+        
+        self._assignroles = QPushButton('Assign Roles for...', self)
+        grantlayout.addWidget(self._assignroles)
+        
+        self._userlist = QComboBox(self)
+        grantlayout.addWidget(self._userlist)
+        
+        self._layout.addLayout(grantlayout) 
+        
+        self._done = QPushButton('Exit', self)
+        self._layout.addWidget(self._done)
+        
+        # Connect the button singnals.. Except for grantRoles,
+        # these are effectively passthroughs:
+        
+        self._users.clicked.connect(self.defineUsers)
+        self._roles.clicked.connect(self.defineRoles)
+        self._assignroles.clicked.connect(self._assignRolesRelay)
+        self._done.clicked.connect(self.done)
+        
+    # Implement roles:
+    def users(self) -> list[str] :
+        ''' @return list[str] users in the user selection combobox.'''    
+        result = []
+        for row in range(self._userlist.count()):
+            result.append(self._userlist.itemText(row))
+        return result
+    
+    def setUsers(self, users: list[str]) -> None:
+        ''' @param users : list[str] = new set of users to load in to the combobox.'''
+        self._userlist.clear()
+        self._userlist.addItems(users)
+        
+    def selectedUser(self) -> str:
+         ''' @return str - the currently selected user.'''           
+         return self._userlist.currentText()
+    
+    # internal (Private) signals
+    
+    def _assignRolesRelay(self) -> None:
+        self.grantRoles.emit(self.selectedUser())
+        
 if __name__ == '__main__':
     import sys
     from PyQt6.QtWidgets import QApplication
     
-    def sel(item: str) -> None:
-        print("double clicked", item)
        
+    def  defusers() -> None:
+        print('define users')
+    def defrole() -> None:
+        print("define roles")
+    def grant(user : str) -> None:
+        print('Grant/revoke roles from : ', user)
+    def done() -> None:
+        global app
+        
+        app.exit(0)
     app = QApplication(sys.argv)
     
-    win = GrantRevokeDialog()
+    win = AuthorizeUsers()
+    win.setUsers(['fox', 'cerizza', 'rockwell', 'chester', 'chang'])
+    win.defineUsers.connect(defusers)
+    win.defineRoles.connect(defrole)
+    win.grantRoles.connect(grant)
+    win.done.connect(done)
     win.show()
     
     
