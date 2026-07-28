@@ -32,11 +32,44 @@ So this program has to be able to do three things:
 
 
 from PyQt6.QtWidgets import (QWidget, QListView, QHBoxLayout, QVBoxLayout, QComboBox, QLabel, QLineEdit,
-        QMessageBox, QPushButton, QDialog, QStyle)
+        QMessageBox, QPushButton, QDialog, QDialogButtonBox, QStyle)
 from PyQt6.QtGui     import (QStandardItemModel, QStandardItem)
 from PyQt6.QtCore    import (QObject, QModelIndex, pyqtSignal)
 from nscldaq.editablelist6 import ListToListEditor
 
+class SaveDialog(QDialog):
+    '''
+        This is a dialog with a button box that has save and cancel buttons.
+        with a workarea widget that's passed in at construction time.
+
+    '''
+    def __init__(self, work_area: QWidget, parent: QObject | None = None):
+        super().__init__(parent)
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._workarea = work_area
+        self._layout.addWidget(self._workarea)
+        
+        self._buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
+            self
+        )
+        self._layout.addWidget(self._buttons)
+    
+        self._buttons.accepted.connect(self.accept)
+        self._buttons.rejected.connect(self.reject)
+        
+        
+    def workarea(self) -> QWidget:
+        return self._workarea
+    
+    # Turn off key handling:
+    
+    def keyPressEvent(self, event) -> None:
+        pass
+    
 class ItemDefiner(QWidget):
     '''
         This is a ListView and mechanisms for adding and removing items from the list.
@@ -107,6 +140,7 @@ class ItemDefiner(QWidget):
         self._addButton.clicked.connect(self._addRelay)
         self._delButton.clicked.connect(self._delRelay)
         self._list.doubleClicked.connect(self._selectRelay)
+        self._item.returnPressed.connect(self._addRelay)
         
     # Attributes:
     
@@ -126,7 +160,7 @@ class ItemDefiner(QWidget):
            @return list[str] - contents of the list.
         '''
         result = list()
-        for row in range(self._model.rowCount):
+        for row in range(self._model.rowCount()):
             result.append(self._model.item(row).text())
         return result
     def setItems(self, items: list[str]) -> None:
@@ -159,6 +193,9 @@ class ItemDefiner(QWidget):
         
         raise KeyError(f'The list does not contain {item}')
     
+    def clearEntry(self) -> None:
+        '''  Clear the text entry widget:'''
+        self._item.setText('')
     #  Private slots:
     
     def _addRelay(self) -> None:
@@ -225,6 +262,30 @@ class RoleDefiner(ListToListEditor):
         rb = self.selectedbox()
         rb.setList(roles)
     
+# These dialogs are for adding users and roles to the system.
+
+class DefineUsers(SaveDialog):
+    '''  A Save dialog with an ItemDefiner workarea that is
+         labeled 'Users'
+    '''
+    def __init__(self, parent: QObject | None = None):
+        super().__init__(ItemDefiner(), parent)
+        self.workarea().setLabel('Users')
+        self.workarea().add.connect(self._addItem)
+        self.workarea().remove.connect(self.workarea().removeItem)
+
+    def _addItem(self, name :str) -> None:
+        # Don't allow duplicates:
+        if name in self.workarea().items():
+            QMessageBox.warning(
+                self, 'Duplicate name', 
+                f'{name} would be a duplicate user.'
+            )
+        else:
+            self.workarea().addItem(name)
+            self.workarea().clearEntry()
+            
+        
 if __name__ == '__main__':
     import sys
     from PyQt6.QtWidgets import QApplication
@@ -234,19 +295,8 @@ if __name__ == '__main__':
        
     app = QApplication(sys.argv)
     
-    win = ItemDefiner()
-    win.setItems(['a', 'b', 'c', 'd'])
-    win.add.connect(win.addItem)
-    win.remove.connect(win.removeItem)
-    win.selected.connect(sel)
-    win.setLabel('a label')
-    
+    win = DefineUsers()
     win.show()
-        
-    granted = RoleDefiner()
-    granted.setRoles(['shift', 'admin', 'owner'])
-    granted.setGranted(['user'], )
-    granted.show()
     
-    sys.exit(app.exec())
+    
     sys.exit(app.exec())
