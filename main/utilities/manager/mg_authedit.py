@@ -264,9 +264,9 @@ class RoleDefiner(ListToListEditor):
     
 # These dialogs are for adding users and roles to the system.
 
-class DefineUsers(SaveDialog):
+class DefineUsersDialog(SaveDialog):
     '''  A Save dialog with an ItemDefiner workarea that is
-         labeled 'Users'
+         labeled 'User'
     '''
     def __init__(self, parent: QObject | None = None):
         super().__init__(ItemDefiner(), parent)
@@ -279,12 +279,17 @@ class DefineUsers(SaveDialog):
         if name in self.workarea().items():
             QMessageBox.warning(
                 self, 'Duplicate name', 
-                f'{name} would be a duplicate user.'
+                f'{name} would be a duplicate.'
             )
         else:
             self.workarea().addItem(name)
             self.workarea().clearEntry()
-            
+
+class DefineRolesDialog(DefineUsersDialog):
+    ''' Relabel the label Role'''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        self.workarea().setLabel('Role')
         
 if __name__ == '__main__':
     import sys
@@ -295,7 +300,7 @@ if __name__ == '__main__':
        
     app = QApplication(sys.argv)
     
-    win = DefineUsers()
+    win = DefineRolesDialog()
     win.show()
     
     
