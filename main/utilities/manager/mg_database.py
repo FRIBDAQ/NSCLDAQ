@@ -1710,7 +1710,7 @@ class Auth:
         cursor.execute('''
             SELECT COUNT(*) FROM user_roles WHERE user_id = ? AND role_id = ?
             ''', (uid, role))
-        row = cursor.next()
+        row = cursor.fetchone()
         if row[0] != 0:
             raise ValueError(f'{username} has already been granted {role_name}')        
         
@@ -1743,7 +1743,7 @@ class Auth:
         cursor.execute('''
             SELECT COUNT(*) FROM user_roles WHERE user_id = ? AND role_id = ?
             ''', (uid, rid))
-        row = cursor.next()
+        row = cursor.fetchone()
         if row[0] == 0:
             raise ValueError(f'{username} was never granted {role_name}')        
         
