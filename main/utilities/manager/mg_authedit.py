@@ -421,7 +421,14 @@ class AuthorizationController(QObject):
             self._loadUsers()                      # update the combobox too.
         
     def _roles(self) -> None:
-        pass
+        dialog = DefineRolesDialog(self._view)
+        workarea = dialog.workarea()
+        auth_api = Auth(self._db)
+        workarea.setItems(auth_api.listRoles())
+        
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self._updateRoles(auth_api, workarea)
+            
     def _grant(self, user : str) -> None:
         pass
 
@@ -449,6 +456,21 @@ class AuthorizationController(QObject):
             api.removeUser(user)
         for user in add_userlist:
             api.addUser(user)
+        
+    def _updateRoles(self, api: Auth, rolelist : ItemDefiner) -> None:
+        # Update the database deleteing deleted roles and adding added roles:
+        
+        dlg_roles = rolelist.items()
+        db_roles  = api.listRoles()
+        
+        deleted_rolelist = [x for x in db_roles if x not in dlg_roles]
+        add_rolelist     = [x for x in dlg_roles if x not in db_roles]
+        
+        for role in deleted_rolelist:
+            api.removeRole(role)
+        for role in add_rolelist:
+            api.addRole(role)
+    
         
 def usage():
     ''' Output program usage to stderr: '''  
