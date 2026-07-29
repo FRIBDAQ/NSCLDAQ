@@ -23,8 +23,17 @@ import pathlib
 import sys
 import os
 import subprocess
+import getpass
+
+from nscldaq.portmanager.PortManager import PortManager
 
 
+def service_used(svcname : str) -> bool:
+    ''' return True if svcname is already advertised by this user.'''
+    
+    pm = PortManager('localhost')
+    info = pm.find(service=svcname, user=getpass.getuser())
+    return len(info) != 0
 
 def usage() -> None:
     ''' output program usage to stderr'''
@@ -67,5 +76,9 @@ def main() -> int:
         usage()
         return -1
 
+    if service_used(service):
+        print('The manager appears to already be running', file=sys.stderr)
+        return -1
+        
 if __name__ == '__main__':
     sys.exit(main())
