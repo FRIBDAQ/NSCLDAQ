@@ -1,12 +1,8 @@
-import bitarray as ba
-
-ver = [int(i) for i in ba.__version__.split(".")]
-if bool(ver[0] >= 1 or (ver[0] == 1 and ver[1] >= 6)):
+try:
     from bitarray.util import ba2int, int2ba
-else:
+except ImportError:
     from converters import ba2int, int2ba
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QCheckBox, QWidget, QHBoxLayout
 
 from chan_dsp_widget import ChanDSPWidget

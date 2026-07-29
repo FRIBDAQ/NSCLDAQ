@@ -1,14 +1,10 @@
 import inspect
 import logging
 
-import bitarray
-
-ver = [int(i) for i in bitarray.__version__.split(".")]
-if bool(ver[0] >= 1 or (ver[0] == 1 and ver[1] >= 6)):
+try:
     from bitarray.util import ba2int, int2ba, zeros
-else:
+except ImportError:
     from converters import ba2int, int2ba, zeros
-import numpy as np
 
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import (

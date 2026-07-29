@@ -299,8 +299,50 @@ def _strip(a, mode="right"):
     last = len(a) - 1
     if mode in ("right", "both"):
         try:
-            last = rindex(a)
+            last = _rindex(a)
         except ValueError:
             return bitarray(0, a.endian())
 
     return a[first : last + 1]
+
+
+def _rindex(a, value=True):
+    """Return the rightmost index of `value` in a bitarray.
+
+    Replicates bitarray.util.rindex for hosts whose bitarray version
+    predates the util module. Upstream implements this in C; this is a
+    pure Python equivalent which scans the bitarray in reverse and returns
+    on the first match.
+
+    See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
+    Required by strip(), which relies on the ValueError to detect a
+    bitarray containing no set bits.
+
+    Parameters
+    ----------
+    a : bitarray
+        A bitarray object.
+    value : bool, optional, default=True
+        Bit value to search for.
+
+    Returns
+    -------
+    int
+        Index of the rightmost occurrence of `value` in the bitarray.
+
+    Raises
+    ------
+    TypeError
+        If the argument to rindex is not a bitarray.
+    ValueError
+        If `value` does not occur in the bitarray.
+    """
+    if not isinstance(a, bitarray):
+        raise TypeError("bitarray expected")
+
+    # Backwards scan: range(start, stop, step)
+    for i in range(len(a) - 1, -1, -1):
+        if a[i] == value:
+            return i
+
+    raise ValueError("rindex(x): x not in bitarray")

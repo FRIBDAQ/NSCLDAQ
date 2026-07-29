@@ -841,7 +841,7 @@ class RunUtilities:
         )
 
         # The data arrays returned via a pointer are unguarded. There are only two run
-        # types: histogram and baseline, which are guarded by the enum, if its not a
+        # types: histogram and baseline, which are guarded by the enum; if its not a
         # histogram run, it has to be a baseline run.
         if run_type == RunType.HISTOGRAM:
             d = _lib.CPixieRunUtilities_GetHistogramData(self.obj)
