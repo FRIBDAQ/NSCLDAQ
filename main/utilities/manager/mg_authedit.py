@@ -411,6 +411,7 @@ class AuthorizationController(QObject):
     # internal/private slots:
     
     def _users(self) -> None:
+        # Add/remove users.
         dialog = DefineUsersDialog(self._view)
         workarea = dialog.workarea()
         auth_api = Auth(self._db)
@@ -421,6 +422,7 @@ class AuthorizationController(QObject):
             self._loadUsers()                      # update the combobox too.
         
     def _roles(self) -> None:
+        # Add/remove roles.
         dialog = DefineRolesDialog(self._view)
         workarea = dialog.workarea()
         auth_api = Auth(self._db)
@@ -430,9 +432,28 @@ class AuthorizationController(QObject):
             self._updateRoles(auth_api, workarea)
             
     def _grant(self, user : str) -> None:
-        pass
+        # grant/revoke roles for a user.
+        
+        dialog = GrantRevokeDialog(self._view)
+        dialog.setWindowTitle(f'Grant/revoke roles for {user}')
+        workarea = dialog.workarea()
+        api      = Auth(self._db)
+        
+        # The left list is all the roles the user does not have
+        # the right list all the ones they do have:
+        
+        all_roles = api.listRoles()
+        granted_roles = api.grantedRoles(user)
+        ungranted_roles = [x for x in all_roles if x not in granted_roles]
+        workarea.setRoles(ungranted_roles)
+        workarea.setGranted(granted_roles)
+        
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self._updateGrants(api, user, workarea)
+        
 
     def _exit(self) -> None:
+        # User wants to exit.
         QApplication.instance().exit(0)
   
     # Utility methods:
@@ -471,6 +492,20 @@ class AuthorizationController(QObject):
         for role in add_rolelist:
             api.addRole(role)
     
+    def _updateGrants(self, api: Auth, user : str, listing : RoleDefiner) -> None:
+        # Update the database to reflect the roles that have been granted to the user:
+        
+        dialog_roles = listing.granted()
+        db_roles     = api.grantedRoles(user)
+        
+        revoke_list = [x for x in db_roles if x not in dialog_roles]
+        grant_list  = [x for x in dialog_roles if x not in db_roles]
+        
+        for role in revoke_list:
+            api.revoke(role, user)
+        for role in grant_list:
+            api.grant(role, user)
+
         
 def usage():
     ''' Output program usage to stderr: '''  
