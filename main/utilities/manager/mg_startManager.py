@@ -28,6 +28,27 @@ import getpass
 from nscldaq.portmanager.PortManager import PortManager
 
 
+def startServer():
+    ''' Start the actual server using:
+        os.environ['DAQ_MGRSERVICE'] as the service name.
+        os.environ['DAQ_EXPCONFIG] is the configuration filename.
+    '''
+    
+    # Construct the program name and parameter list:
+    
+    program = pathlib.Path(os.environ['DAQBIN'])
+    program = program/'tclhttpdlaunch'
+    
+    httplib = pathlib.Path(os.environ['DAQTCLLIBS'])
+    httplib = httplib / 'manager_server'
+    
+    args = [program, os.environ['DAQ_MGRSERVICE'], httplib]
+    
+    # Fire it off detached:
+    
+    subprocess.Popen(args, env=os.environ, start_new_session=True, stdin=subprocess.DEVNULL)
+    
+
 def service_used(svcname : str) -> bool:
     ''' return True if svcname is already advertised by this user.'''
     
@@ -56,8 +77,8 @@ Notes:
 def main() -> int:
     '''  program entry point. '''
     service = 'DAQManager'    # Default servicename.
-    if 'DAQ_MGRSERVICE' in os.environ:
-        service = os.environ['DAQ_MGRSERVICE']
+    if 'DAQ_MGRSERVICE' not in os.environ:
+        os.environ['DAQ_MGRSERVICE'] = 'DAQManager'
         
     # Figure out the database file:
     # The environment variable overrides the inline file.
@@ -79,6 +100,8 @@ def main() -> int:
     if service_used(service):
         print('The manager appears to already be running', file=sys.stderr)
         return -1
-        
+  
+    startServer()
+    return 0
 if __name__ == '__main__':
     sys.exit(main())
