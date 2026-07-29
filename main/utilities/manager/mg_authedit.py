@@ -32,10 +32,14 @@ So this program has to be able to do three things:
 
 
 from PyQt6.QtWidgets import (QWidget, QListView, QHBoxLayout, QVBoxLayout, QComboBox, QLabel, QLineEdit,
-        QMessageBox, QPushButton, QDialog, QDialogButtonBox, QStyle)
+        QMessageBox, QPushButton, QDialog, QDialogButtonBox, QStyle, QApplication)
 from PyQt6.QtGui     import (QStandardItemModel, QStandardItem)
 from PyQt6.QtCore    import (QObject, QModelIndex, pyqtSignal)
 from nscldaq.editablelist6 import ListToListEditor
+
+from nscldaq.mg_database import Auth
+import sqlite3
+import sys
 
 class SaveDialog(QDialog):
     '''
@@ -338,6 +342,7 @@ class AuthorizeUsers(QWidget):
         grantlayout.addWidget(self._assignroles)
         
         self._userlist = QComboBox(self)
+        self._userlist.setEditable(False)   # Just in case.
         grantlayout.addWidget(self._userlist)
         
         self._layout.addLayout(grantlayout) 
@@ -374,31 +379,106 @@ class AuthorizeUsers(QWidget):
     
     def _assignRolesRelay(self) -> None:
         self.grantRoles.emit(self.selectedUser())
+
+
+class AuthorizationController(QObject):
+    '''
+        Interacts with the AuthorizeUsers view and 
+        pops up dialogs as needed, stocking them and
+        updating the database from the results of their  operation.
         
-if __name__ == '__main__':
-    import sys
-    from PyQt6.QtWidgets import QApplication
+        Note to simplify somewhat, nested controller classes are defined
+        for each of the dialog types we can pop up.
+        
+    '''
+    def __init__(
+        self, view : AuthorizeUsers, config_file : str, parent : QObject | None = None
+    ):
+        super().__init__(parent)
+        self._view = view
+        self._config = config_file
+        self._db     = sqlite3.connect(self._config)
+        
+        self._loadUsers()                 # Load the user pull down in the view.
+        
+        # Connect to the buttons:
+        
+        self._view.defineUsers.connect(self._users)
+        self._view.defineRoles.connect(self._roles)
+        self._view.grantRoles.connect(self._grant)
+        self._view.done.connect(self._exit)
+        
+    # internal/private slots:
     
-       
-    def  defusers() -> None:
-        print('define users')
-    def defrole() -> None:
-        print("define roles")
-    def grant(user : str) -> None:
-        print('Grant/revoke roles from : ', user)
-    def done() -> None:
-        global app
+    def _users(self) -> None:
+        dialog = DefineUsersDialog(self._view)
+        workarea = dialog.workarea()
+        auth_api = Auth(self._db)
+        workarea.setItems(auth_api.listUsers())
         
-        app.exit(0)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self._updateUsers(auth_api, workarea)
+            self._loadUsers()                      # update the combobox too.
+        
+    def _roles(self) -> None:
+        pass
+    def _grant(self, user : str) -> None:
+        pass
+
+    def _exit(self) -> None:
+        QApplication.instance().exit(0)
+  
+    # Utility methods:
+    
+    def _loadUsers(self):
+        # Load the defined users into the View' combobox:
+        
+        auth_api = Auth(self._db)
+        self._view.setUsers(auth_api.listUsers())
+    
+    def _updateUsers(self, api: Auth, userlist : ItemDefiner) -> None:
+        # UPdate the database, deleting deleted users  and adding new ones:
+        
+        dlg_users = userlist.items()
+        db_users   = api.listUsers()
+        
+        delete_userlist = [x for x in db_users if x not in dlg_users]
+        add_userlist    = [x for x in dlg_users if x not in db_users]
+        
+        for user in delete_userlist:
+            api.removeUser(user)
+        for user in add_userlist:
+            api.addUser(user)
+        
+def usage():
+    ''' Output program usage to stderr: '''  
+    print('''
+Configure users and roles and grant/revoke them from users in the FRIB/NSCLDAQ
+managed experiment environment.
+
+Usage:
+    $DAQBIN/mg_authedit config_file_path
+Where:
+    config_file_path - Path to the configuration database file for the experiment.
+        ''', file = sys.stderr)
+    
+# Program entry:
+def main()  -> int:    
+    if len(sys.argv) != 2:
+        usage()
+        return -1
+    
+    config =sys.argv[1]
     app = QApplication(sys.argv)
     
-    win = AuthorizeUsers()
-    win.setUsers(['fox', 'cerizza', 'rockwell', 'chester', 'chang'])
-    win.defineUsers.connect(defusers)
-    win.defineRoles.connect(defrole)
-    win.grantRoles.connect(grant)
-    win.done.connect(done)
-    win.show()
+    ui = AuthorizeUsers()
     
+    _controller = AuthorizationController(ui, config, ui)
     
-    sys.exit(app.exec())
+    ui.show()
+    return app.exec()
+    
+if __name__ == '__main__':
+    
+    sys.exit(main())       
+    
