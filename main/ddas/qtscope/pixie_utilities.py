@@ -830,23 +830,23 @@ class RunUtilities:
         list
             Python list containing the list-mode run histogram or baseline
             histogram data with default 1 ADC unit/channel binning.
+
+        Raises
+        ------
+        ValueError if the run type is unknown.
         """
-        size = _check_retval(
-            _lib.CPixieRunUtilities_GetHistogramLength(self.obj, module),
-            "Get histogram length",
-            self.get_last_error_message,
-        )
-        _logger.debug(
-            f"Reading run type {run_type} data of length {size} from Mod. {module}"
-        )
+        # Assume all channels on the module have the same histogram length:
+        size = self.get_histogram_length(module)
 
         # The data arrays returned via a pointer are unguarded. There are only two run
-        # types: histogram and baseline, which are guarded by the enum; if its not a
-        # histogram run, it has to be a baseline run.
+        # types: histogram and baseline, which are guarded by the enum and the run start;
+        # if its not a histogram run, it has to be a baseline run.
         if run_type == RunType.HISTOGRAM:
             d = _lib.CPixieRunUtilities_GetHistogramData(self.obj)
         elif run_type == RunType.BASELINE:
             d = _lib.CPixieRunUtilities_GetBaselineData(self.obj)
+        else:
+            raise ValueError(f"Cannot read data for unrecognized run type {run_type}")
 
         return np.array(d[:size], dtype=np.uint32)
 
@@ -878,7 +878,7 @@ class RunUtilities:
         Returns
         -------
         int
-            Number of bins in the histogram or -1 if error.
+            Number of bins in the histogram.
         """
         return _check_retval(
             _lib.CPixieRunUtilities_GetHistogramLength(self.obj, module),
@@ -897,7 +897,7 @@ class RunUtilities:
         Returns
         -------
         int
-            Maximum number of baselines or -1 if error.
+            Maximum number of baselines.
         """
         return _check_retval(
             _lib.CPixieRunUtilities_GetMaxBaselines(self.obj, module),
