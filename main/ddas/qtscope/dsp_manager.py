@@ -52,6 +52,8 @@ class DSPManager:
         Get a module parameter value from the dataframe.
     set_mod_par(mod, pname, value):
         Set a module parameter value in the dataframe.
+    get_module_msps(mod):
+        Get the module MSPS value.
     read(mod, pnames):
         Read DSP parameter(s) into the dataframe.
     write(mod, pnames):
@@ -74,7 +76,7 @@ class DSPManager:
             "SLOW_FILTER_RANGE": ["ENERGY_RISETIME", "ENERGY_FLATTOP"],
         }
 
-    def initialize_dsp(self, nmod, channel_map):
+    def initialize_dsp(self, nmod, channel_map, msps_list):
         """Initialize the DSP dataframe.
 
         Read DSP parameters from the modules into the dataframe storage.
@@ -89,6 +91,7 @@ class DSPManager:
         self._dsp = {}
         self._nmodules = nmod
         self._channel_map = channel_map
+        self._msps_list = msps_list
 
         for i in range(self._nmodules):
             self._dsp[i] = {}  # dict of dicts. Key is module number.
@@ -218,6 +221,20 @@ class DSPManager:
         if pname not in xia.MOD_PARS:
             raise ValueError(f"{pname} is not a module paramter name")
         self._dsp[mod]["mod_par"].at[0, pname] = value
+
+    def get_module_msps(self, mod):
+        """Get the ADC sampling rate in MSPS for a module.
+
+        Parameters
+        ----------
+        mod : int
+            Module number.
+
+        Returns
+        -------
+        The module MSPS
+        """
+        return self._msps_list[mod]
 
     def read(self, mod, pnames):
         """Read DSP settings into internal storage.

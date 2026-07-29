@@ -267,11 +267,9 @@ class MainWindow(QMainWindow):
             self.channel_map = channel_map
             self.mplplot.set_histogram_length(histogram_lengths)
             self.mplplot.set_trace_length(trace_lengths)
-            self.dsp_mgr.initialize_dsp(num_modules, self.channel_map)
-            self.chan_gui.configure(
-                self.dsp_mgr, num_modules, msps_list, self.channel_map
-            )
-            self.mod_gui.configure(self.dsp_mgr, num_modules, self.channel_map)
+            self.dsp_mgr.initialize_dsp(num_modules, channel_map, msps_list)
+            self.chan_gui.configure(self.dsp_mgr, num_modules, msps_list, channel_map)
+            self.mod_gui.configure(self.dsp_mgr, num_modules, channel_map)
         except RuntimeError as e:
             print(f"Post-boot configuration failed: {e}")
             self.sys_toolbar.b_boot.setEnabled(True)

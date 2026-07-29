@@ -194,8 +194,6 @@ class ChanDSPGUI(QMainWindow):
                 # signals e.g. adjust offsets:
 
                 tab_name = self.chan_params[i].tabText(j)
-                if tab_name == "CFD" and msps_list[i] == 500:
-                    tab.disable_settings()
                 if tab_name == "AnalogSignal":
                     tab.b_adjust_offsets.clicked.connect(self.adjust_offsets)
                 if tab_name == "MultCoincidence":
@@ -210,6 +208,12 @@ class ChanDSPGUI(QMainWindow):
         to the module.
         """
         self._set_current_tab_info()
+
+        reason = getattr(self.tab, "unsupported_reason", None)
+        if reason:
+            print(f"{self.tab_name}: {reason}. Nothing was applied.")
+            return
+
         self.tab.update_dsp(self.dsp_mgr, self.mod_idx)
 
         _fcn = lambda: self._write_chan_dsp(self.mod_idx, self.tab)
@@ -236,6 +240,11 @@ class ChanDSPGUI(QMainWindow):
         values from the internal DSP. Reconfigure the tab toolbar if necessary.
         """
         self._set_current_tab_info()
+
+        reason = getattr(self.tab, "unsupported_reason", None)
+        if reason:
+            print(f"{self.tab_name}: {reason}. Nothing was applied.")
+            return
 
         _fcn = lambda: self._read_chan_dsp(self.mod_idx, self.tab)
         _running = [self.toolbar.disable]

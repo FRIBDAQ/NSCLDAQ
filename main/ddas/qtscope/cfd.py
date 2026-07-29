@@ -10,8 +10,6 @@ class CFD(ChanDSPWidget):
 
     Methods
     -------
-    disable_settings()
-        Disable CFD delay and scale.
     configure(mgr, mod)
         Configure the CFD display. Overridden from the base class.
     display_dsp(mgr, mod)
@@ -42,16 +40,6 @@ class CFD(ChanDSPWidget):
 
         super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
 
-    def disable_settings(self):
-        """Disable CFD delay and scale.
-
-        Used to disable CFD settings for 500 MSPS modules which are not
-        configurable. See Pixie-16 User's Manual Sec. 3.3.8.2 for details.
-        """
-        for i in range(self.nchannels):
-            self.param_grid[i + 1, 1].setEnabled(False)
-            self.param_grid[i + 1, 2].setEnabled(False)
-
     ##
     # Overridden class methods
     #
@@ -59,7 +47,8 @@ class CFD(ChanDSPWidget):
     def configure(self, mgr, mod):
         """Overridden template configuration operations.
 
-        Setup integer validator for CFDScale parameter.
+        Setup integer validator for CFDScale parameter. Disable CFD
+        settings for 500 MSPS modules.
 
         Parameters
         ----------
@@ -71,7 +60,9 @@ class CFD(ChanDSPWidget):
         """
         col = self.param_names.index("CFDScale") + 1
         for row in range(1, self.nchannels + 1):
-            w = self.param_grid[row, col].setValidator(QIntValidator(0, 7))
+            self.param_grid[row, col].setValidator(QIntValidator(0, 7))
+        if mgr.get_module_msps(mod) == 500:
+            self._disable_settings()
         super().configure(mgr, mod)
 
     def display_dsp(self, mgr, mod):
@@ -101,6 +92,16 @@ class CFD(ChanDSPWidget):
                         mgr.get_chan_par(mod, i, name), precision=3, unique=False
                     )
                 self.param_grid[i + 1, col].setText(val)
+
+    def _disable_settings(self):
+        """Disable CFD delay and scale.
+
+        Used to disable CFD settings for 500 MSPS modules which are not
+        configurable. See Pixie-16 User's Manual Sec. 3.3.8.2 for details.
+        """
+        for i in range(self.nchannels):
+            self.param_grid[i + 1, 1].setEnabled(False)
+            self.param_grid[i + 1, 2].setEnabled(False)
 
 
 class CFDBuilder:
