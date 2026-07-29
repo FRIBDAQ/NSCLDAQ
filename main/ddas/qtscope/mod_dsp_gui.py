@@ -170,7 +170,7 @@ class ModDSPGUI(QMainWindow):
         whether the cancel button or the window [X] button is used by passing
         a QCloseEvent to an overridden QWidget closeEvent function.
         """
-        self.closeEvent(QCloseEvent())
+        self.close()
 
     def closeEvent(self, event):
         """Override default QWidget closeEvent to handle closing child windows.
@@ -183,8 +183,6 @@ class ModDSPGUI(QMainWindow):
         event : QCloseEvent
             Signal to intercept, always accepted.
         """
-        self.pool_mgr.wait()
-
         for w in self.mod_params.param_widgets:
             name = type(w).__name__
             if (
@@ -193,8 +191,6 @@ class ModDSPGUI(QMainWindow):
                 or (name == "TrigConfigExtra")
             ):
                 w.grid.close()
-
-        self.close()
         event.accept()
 
     ##

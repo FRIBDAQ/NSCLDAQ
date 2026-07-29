@@ -1,5 +1,6 @@
 import inspect
 import logging
+import numpy as np
 
 try:
     from bitarray.util import ba2int, int2ba, zeros

@@ -307,11 +307,10 @@ class ChanDSPGUI(QMainWindow):
     def cancel(self):
         """Close the ChanDSPGUI window.
 
-        Ensure other opened windows are closed when the manager is closed
-        whether the cancel button or the window [X] button is used by passing
-        a QCloseEvent to an overridden QWidget closeEvent function.
+        Requests a close through Qt, which delivers a QCloseEvent to
+        closeEvent() -- the same path the window [X] button takes.
         """
-        self.closeEvent(QCloseEvent())
+        self.close()
 
     def closeEvent(self, event):
         """Override default QWidget closeEvent to handle closing child windows.
@@ -324,10 +323,8 @@ class ChanDSPGUI(QMainWindow):
         event : QCloseEvent
             Signal to intercept, always accepted.
         """
-        self.pool_mgr.wait()
         if self.timing_diagram.isVisible():
             self.timing_diagram.close()
-        self.close()
         event.accept()
 
     ##
