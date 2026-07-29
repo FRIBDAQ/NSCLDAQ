@@ -1601,7 +1601,7 @@ class Auth:
         @retval None  no such role.
         '''
         cursor = self._db.cursor()
-        cursor.exec('''
+        cursor.execute('''
             SELECT id FROM roles WHERE role = ?
         ''', (role, ))
         row = cursor.fetchone()                   # We will enforce uniqueness.
@@ -1613,7 +1613,7 @@ class Auth:
             @throws ValueError if there's already sucha a row.
             
         '''
-        if self.rol_id(role):
+        if self.role_id(role):
             raise ValueError(f'{role} is an existing role.  Refusing to make a duplicate')
     
         self._db.execute('''
