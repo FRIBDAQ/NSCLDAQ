@@ -3,6 +3,8 @@ import sys
 
 from bitarray import bitarray, bits2bytes
 
+_is_py2 = bool(sys.version_info[0] == 2)
+
 """
 converters.py
 
@@ -16,15 +18,11 @@ str2char(pystr)
     Convert a Python string to C-type char*.
 zeros(length, endian="big") 
     Create a bitarray of given length and endianness filled with all zeroes.
-strip(a, mode='right') 
-    Strip zeroes off the end(s) of a bitarray.
 ba2int(a, signed=False) 
     Convert a bitarray to an integer.
 int2ba(i, length=None, endian="big", signed=False) 
     Convert an integer to a bitarray.
 """
-
-_is_py2 = bool(sys.version_info[0] == 2)
 
 
 def str2char(pystr):
@@ -54,7 +52,7 @@ def str2char(pystr):
 
 
 def zeros(length, endian="big"):
-    """Create a bitarray of zeroes.
+    """Create a bitarray of zeros.
 
     Create a bitarray of length, with all values 0, and optional
     endianness, which may be 'big', 'little'.
@@ -91,59 +89,6 @@ def zeros(length, endian="big"):
     a = bitarray(length, endian)
     a.setall(0)
     return a
-
-
-def strip(a, mode="right"):
-    """Strip zeros from left, right or both ends.
-
-    Allowed values for mode are the strings: `left`, `right`, `both`.
-
-    See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
-    Copied from tag 1.6.3, which is the version of the bitarray module
-    available in the Debian 11 repo.
-
-    Parameters
-    ----------
-    a : bitarray
-        A bitarray object.
-    mode : str, optional, default='right'
-        End of the bitarray to strip zeroes from.
-
-    Returns
-    -------
-    bitarray
-        bitarray with zeroes stripped of the end(s).
-
-    Raises
-    ------
-    TypeError
-        If the argument to strip is not a bitarray.
-        If mode argument is not a string.
-    ValueError
-        If the mode string is not "left," "right," or "both."
-    """
-    if not isinstance(a, bitarray):
-        raise TypeError("bitarray expected")
-    if not isinstance(mode, str):
-        raise TypeError("String expected for mode")
-    if mode not in ("left", "right", "both"):
-        raise ValueError("Allowed values 'left', 'right', 'both', got: %r" % mode)
-
-    first = 0
-    if mode in ("left", "both"):
-        try:
-            first = a.index(1)
-        except ValueError:
-            return bitarray(0, a.endian())
-
-    last = len(a) - 1
-    if mode in ("right", "both"):
-        try:
-            last = rindex(a)
-        except ValueError:
-            return bitarray(0, a.endian())
-
-    return a[first : last + 1]
 
 
 def ba2int(a, signed=False):
@@ -291,7 +236,7 @@ def int2ba(i, length=None, endian="big", signed=False):
 
     a.frombytes(b)
     if length is None:
-        return strip(a, "left" if big_endian else "right")
+        return _strip(a, "left" if big_endian else "right")
 
     la = len(a)
     if la > length:
@@ -301,3 +246,61 @@ def int2ba(i, length=None, endian="big", signed=False):
         a = pad + a if big_endian else a + pad
     assert len(a) == length
     return a
+
+
+##
+# Private methods
+#
+
+
+def _strip(a, mode="right"):
+    """Strip zeros from left, right or both ends.
+
+    Allowed values for mode are the strings: `left`, `right`, `both`.
+
+    See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
+    Copied from tag 1.6.3, which is the version of the bitarray module
+    available in the Debian 11 repo.
+
+    Parameters
+    ----------
+    a : bitarray
+        A bitarray object.
+    mode : str, optional, default='right'
+        End of the bitarray to strip zeroes from.
+
+    Returns
+    -------
+    bitarray
+        bitarray with zeroes stripped of the end(s).
+
+    Raises
+    ------
+    TypeError
+        If the argument to strip is not a bitarray.
+        If mode argument is not a string.
+    ValueError
+        If the mode string is not "left," "right," or "both."
+    """
+    if not isinstance(a, bitarray):
+        raise TypeError("bitarray expected")
+    if not isinstance(mode, str):
+        raise TypeError("String expected for mode")
+    if mode not in ("left", "right", "both"):
+        raise ValueError("Allowed values 'left', 'right', 'both', got: %r" % mode)
+
+    first = 0
+    if mode in ("left", "both"):
+        try:
+            first = a.index(1)
+        except ValueError:
+            return bitarray(0, a.endian())
+
+    last = len(a) - 1
+    if mode in ("right", "both"):
+        try:
+            last = rindex(a)
+        except ValueError:
+            return bitarray(0, a.endian())
+
+    return a[first : last + 1]

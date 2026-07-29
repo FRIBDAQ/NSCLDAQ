@@ -30,6 +30,8 @@ class SystemToolBar(QToolBar):
         Disable all toolbar widgets.
     enable()
         Enable all toolbar widgets.
+    enable_booted()
+        Enable toolbar widgets following a successful system boot.
     _about()
         Display program information and Qt acknowledgments.
     """
@@ -98,6 +100,18 @@ class SystemToolBar(QToolBar):
             if c.isWidgetType():
                 c.setEnabled(True)
                 c.repaint()
+
+    def enable_booted(self):
+        """Enable widgets for the booted system state. The boot button is colored green and disabled."""
+        self.b_boot.setText("Booted")
+        self.b_boot.setStyleSheet(colors.GREEN)
+        self.b_boot.setEnabled(False)
+        self.b_chan_gui.setEnabled(True)
+        self.b_mod_gui.setEnabled(True)
+        self.b_load.setEnabled(True)
+        self.b_save.setEnabled(True)
+        self.b_about.setEnabled(True)
+        self.b_exit.setEnabled(True)
 
     def _about(self):
         """Popup a QMessageBox containing the relevant info."""

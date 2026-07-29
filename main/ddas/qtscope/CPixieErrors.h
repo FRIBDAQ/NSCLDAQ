@@ -24,6 +24,9 @@ constexpr int CPIXIEERROR_NOT_BOOTED = -1001;
 /** Invalid module number: Attempted to perform an operation on an invalid
  * module. */
 constexpr int CPIXIEERROR_INVALID_MODULE = -1002;
+/** Error during trace acquisition: trace length cannot be read from module,
+ * trace is empty, or generator returns empty trace. */
+constexpr int CPIXIEERROR_TRACE_ACQUIRE = -1003;
 
 /** @} */
 

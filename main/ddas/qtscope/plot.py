@@ -61,6 +61,8 @@ class Plot(QWidget):
         Draw a blank histogram-style canvas when starting a histogram run.
     update_canvas()
         Redraw the entire canvas and all its subplots.
+    get_subplot_data()
+        Scrape data from a subplot (e.g., if 'Read all' is checked).
     draw_test_data(idx)
         Draw a test figure with a random number of subplots.
     set_histogram_length(lengths)
@@ -238,7 +240,7 @@ class Plot(QWidget):
         """
         self.raw_data[idx - 1] = data
         ax = self.figure.add_subplot(nrows, ncols, idx)
-        self._plot_histogram(ax, idx - 1)log.
+        self._plot_histogram(ax, idx - 1)
 
         if run_type == RunType.HISTOGRAM:
             ax.set_xlabel("Energy (ADC units)")
@@ -277,7 +279,7 @@ class Plot(QWidget):
                     f"Encountered unexpected run type {run_type}, select a valid run type and begin a new run"
                 )
         except ValueError as e:
-            _logger.exception("Encountered unknown run type")
+            _logger.error("Encountered unknown run type")
             print(e)
         else:
             ax = self.figure.add_subplot(1, 1, 1)
@@ -292,6 +294,31 @@ class Plot(QWidget):
     def update_canvas(self):
         """Wait and redraw the whole canvas."""
         self.canvas.draw()
+
+    def get_subplot_data(self, chan):
+        """Get data from a subplot (channel).
+
+        Intended to be called to scrape data from a single subplot if the
+        'Read all' checkbox is selected. Note that this uses
+        `axs[chan].lines[0].get_ydata()` to scrape data from the subplot,
+        which we assume is our data. It should be impossible for any other
+        data to populate the subplot at this stage.
+
+        Arguments
+        ---------
+        chan : int
+            Subplot/channel number.
+
+        Returns
+        -------
+        NumPy array
+            Data on the subplot or empty if none.
+        """
+        axs = self.figure.get_axes()
+        if axs[chan].get_lines():
+            return np.array(axs[chan].lines[0].get_ydata())
+        else:
+            return np.empty(0)
 
     def draw_test_data(self):
         """Draw test data.

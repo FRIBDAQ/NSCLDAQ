@@ -125,12 +125,6 @@ class ChanDSPGUI(QMainWindow):
             lambda m: self.toolbar.set_channel_spinbox_range(self.channel_map[m])
         )
 
-        ##
-        # @todo (ASC 1/9/25): This appears to load twice. Really want to
-        # reload parameters on _currently displayed_ widget when we switch
-        # _any_ widget, module or not. Try to do with a single function or
-        # in a way that doesn't load multiple times. Resolved???
-
         self.chan_params.currentChanged.connect(self._display_new_tab)
 
     def configure(self, dsp_manager, num_modules, msps_list, channel_map):
@@ -156,12 +150,7 @@ class ChanDSPGUI(QMainWindow):
         self.channel_map = channel_map
 
         logging.getLogger("qtscope_logger").debug(
-            "{}.{}: Configuring GUI for {} modules using {}".format(
-                self.__class__.__name__,
-                inspect.currentframe().f_code.co_name,
-                num_modules,
-                self.dsp_mgr,
-            )
+            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Configuring GUI for {num_modules} modules using {self.dsp_mgr}"
         )
 
         # Initialize tab indices and widget:
@@ -226,8 +215,10 @@ class ChanDSPGUI(QMainWindow):
 
         _fcn = lambda: self._write_chan_dsp(self.mod_idx, self.tab)
         _running = [self.toolbar.disable]
-        _finished = [
+        _results = [
             lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx),
+        ]
+        _finished = [
             self.toolbar.enable,
         ]
 
@@ -235,7 +226,9 @@ class ChanDSPGUI(QMainWindow):
             _running.append(lambda: self.tab.b_adjust_offsets.setEnabled(False))
             _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
 
-        self.pool_mgr.start_thread(fcn=_fcn, running=_running, finished=_finished)
+        self.pool_mgr.start_thread(
+            fcn=_fcn, running=_running, results=_results, finished=_finished
+        )
 
     def load_dsp(self):
         """Load the channel DSP settings for the selected tab.
@@ -247,8 +240,10 @@ class ChanDSPGUI(QMainWindow):
 
         _fcn = lambda: self._read_chan_dsp(self.mod_idx, self.tab)
         _running = [self.toolbar.disable]
-        _finished = [
+        _results = [
             lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx),
+        ]
+        _finished = [
             self.toolbar.enable,
         ]
 
@@ -256,7 +251,9 @@ class ChanDSPGUI(QMainWindow):
             _running.append(lambda: self.tab.b_adjust_offsets.setEnabled(False))
             _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
 
-        self.pool_mgr.start_thread(fcn=_fcn, running=_running, finished=_finished)
+        self.pool_mgr.start_thread(
+            fcn=_fcn, running=_running, results=_results, finished=_finished
+        )
 
     def copy_mod_dsp(self):
         """Copy DSP from one module to another."""

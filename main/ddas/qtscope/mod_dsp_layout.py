@@ -38,7 +38,7 @@ class ModDSPLayout(QWidget):
 
         self.param_widgets = []
 
-        # Dictionary of DSP parameter widgets included in each  group box. Key
+        # Dictionary of DSP parameter widgets included in each group box. Key
         # is the group box name, value is a list of class widgets to include in
         # that box (by factory create method name).
 

@@ -49,4 +49,4 @@ fit_gauss_creator.py fit_gauss_p1_creator.py fit_gauss_p2_creator.py fit_panel.p
 histogram.py main.py mod_dsp_gui.py mod_dsp_layout.py mult_coincidence.py pixie_utilities.py 				\
 plot.py plot_toolbar.py qdclen.py run_type.py system_toolbar.py tau.py thread_pool_manager.py 				\
 timing_control.py trace_analyzer.py trigconfig0.py trigconfigextra.py trigger_filter.py 					\
-widget_factory.py xia_constants.py qtscope.dox figures
+widget_factory.py xia_constants.py pixie_error.py qtscope.dox figures

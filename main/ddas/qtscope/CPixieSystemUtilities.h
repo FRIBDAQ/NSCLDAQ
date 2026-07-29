@@ -7,10 +7,11 @@
 #ifndef CPIXIESYSTEMUTILITIES_H
 #define CPIXIESYSTEMUTILITIES_H
 
-#include "CPixieShimGuard.h"
 #include <vector>
 
 #include <Configuration.h>
+
+#include "CPixieShimGuard.h"
 
 /**
  * @addtogroup utilities libPixieUtilities.so

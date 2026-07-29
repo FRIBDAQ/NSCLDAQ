@@ -16,8 +16,6 @@ class ModDSPGUI(QMainWindow):
 
     Attributes
     ----------
-    logger : Logger
-        QtScope Logger object.
     pool_mgr : ThreadPoolManager
         Global thread pool manager.
     mod_dsp_factory : ModDSPFactory
@@ -62,10 +60,6 @@ class ModDSPGUI(QMainWindow):
         super().__init__(*args, **kwargs)
 
         self.setWindowTitle("Module DSP configuration")
-
-        # Get Logger instance:
-
-        self.logger = logging.getLogger("qtscope_logger")
 
         # Access to global thread pool for this applicaition:
 
@@ -112,7 +106,7 @@ class ModDSPGUI(QMainWindow):
         self.nmodules = nmodules
         self.dsp_mgr = mgr
 
-        self.logger.debug(
+        logging.getLogger("qtscope_logger").debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Configuring GUI for {self.nmodules} modules using {self.dsp_mgr}"
         )
 
@@ -152,6 +146,7 @@ class ModDSPGUI(QMainWindow):
         self.pool_mgr.start_thread(
             fcn=self._write_mod_dsp,
             running=[self.toolbar.disable],
+            results=[self._display_mod_dsp],
             finished=[self.toolbar.enable_mod_dsp],
         )
 
@@ -164,7 +159,8 @@ class ModDSPGUI(QMainWindow):
         self.pool_mgr.start_thread(
             fcn=self._read_mod_dsp,
             running=[self.toolbar.disable],
-            finished=[self._display_mod_dsp, self.toolbar.enable_mod_dsp],
+            results=[self._display_mod_dsp],
+            finished=[self.toolbar.enable_mod_dsp],
         )
 
     def cancel(self):

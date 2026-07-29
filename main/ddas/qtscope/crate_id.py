@@ -75,8 +75,8 @@ class CrateID(QWidget):
         ValueError
             If the crate ID values are not consistent for all modules.
         """
-        # Valid crate ID values [0, 15] for now:
-        self.crate_id.setRange(0, 15)
+        # Rev. H data word 0 data format stores the crate ID in bits 11:10, so we restrict the crate ID values to [0, 3].
+        self.crate_id.setRange(0, 3)
 
         # Check crate ID consistency for all channels:
         id_list = []

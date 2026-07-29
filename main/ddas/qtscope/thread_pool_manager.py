@@ -4,7 +4,7 @@ import traceback
 
 from PyQt5.QtCore import QObject, QThreadPool, QRunnable, pyqtSignal, pyqtSlot
 
-from pixie_utilities import PixieError
+from pixie_error import PixieError
 
 _logger = logging.getLogger("qtscope_logger")
 
@@ -84,7 +84,7 @@ class Worker(QRunnable):
         try:
             self.signals.running.emit()
             result = self.fn(*self.args, **self.kwargs)
-        except:
+        except Exception:
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, traceback.format_exc()))
         else:
@@ -198,7 +198,10 @@ class ThreadPoolManager:
             worker.signals.finished.connect(f)
         for f in results or []:
             worker.signals.result.connect(f)
-        for f in errors or [self._default_error_handler]:
+        # Reporting is always connected; errors= adds recovery handlers,
+        # it does not replace reporting:
+        worker.signals.error.connect(self._report_worker_error)
+        for f in errors or []:
             worker.signals.error.connect(f)
         self.pool.start(worker)
 
@@ -235,11 +238,19 @@ class ThreadPoolManager:
     # Private functions
     #
 
-    def _default_error_handler(self, err):
-        """Default error handler for worker threads. Logs the error to the QtScope logger."""
+    def _report_worker_error(self, err):
+        """Report a worker failure. Connected to every worker.
+
+        PixieError was already logged at origin with its reason, so only
+        the user-facing line is emitted. Anything else is a bug and gets a
+        full traceback in the log.
+
+        Parameters
+        ----------
+        err : tuple
+            (exctype, value, traceback) emitted by the worker.
+        """
         exctype, value, tb = err
-        _logger = logging.getLogger("qtscope_logger")
-        if isinstance(value, PixieError):
-            _logger.error(f"Unhandled worker error: {value}")
-        else:
-            _logger.error(f"Unhandled worker error:\n{tb}")
+        if not isinstance(value, PixieError):
+            _logger.error(f"Unexpected worker error:\n{tb}")
+        print(f"Operation failed: {value}")

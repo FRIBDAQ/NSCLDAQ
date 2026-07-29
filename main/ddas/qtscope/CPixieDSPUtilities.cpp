@@ -21,7 +21,8 @@ int CPixieDSPUtilities::AdjustOffsets(int module) {
       throw CXIAException(msg.str(), "Pixie16AdjustOffsets()", retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -44,7 +45,8 @@ int CPixieDSPUtilities::WriteChanPar(int module, int channel, char *paramName,
       throw CXIAException(msg.str(), "Pixie16WriteSglChanPar()", retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -67,7 +69,8 @@ int CPixieDSPUtilities::ReadChanPar(int module, int channel, char *paramName,
       throw CXIAException(msg.str(), "Pixie16ReadSglChanPar()", retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -90,7 +93,8 @@ int CPixieDSPUtilities::WriteModPar(int module, char *paramName,
       throw CXIAException(msg.str(), "Pixie16WriteSglModPar()", retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -113,7 +117,8 @@ int CPixieDSPUtilities::ReadModPar(int module, char *paramName,
       throw CXIAException(msg.str(), "Pixie16ReadSglModPar()", retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 

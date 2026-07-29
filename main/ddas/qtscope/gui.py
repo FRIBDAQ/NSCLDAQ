@@ -222,16 +222,17 @@ class MainWindow(QMainWindow):
 
         SystemUtilities is a C++ interface tp call the relavent XIA API
         functions. If the boot is successful, configure the DSP and DSP
-        GUIs. Only attempt to boot if the system has not been booted already.
+        GUIs. Only attempt to boot if the system has not been booted
+        already. The 'Boot system' button is disabled during the boot
+        cycle to prevent the possibility of double clicking.
         """
         # Access thread from global thread pool to boot:
-        if self.sys_utils.get_boot_status() == False:
+        if not self.sys_utils.get_boot_status():
+            self.sys_toolbar.b_boot.setEnabled(False)
             self.pool_mgr.start_thread(
                 fcn=self.sys_utils.boot,
-                errors=[self._show_worker_error],
                 finished=[self._on_boot],
             )
-
         self.adjustSize()
 
     def _on_boot(self):
@@ -255,6 +256,7 @@ class MainWindow(QMainWindow):
                 msps_list.append(self.sys_utils.get_module_msps(i))
                 channel_map.append(self.sys_utils.get_module_channel_count(i))
                 histogram_lengths.append(self.run_utils.get_histogram_length(i))
+                # We assume all channels on the module have the same max trace length:
                 trace_lengths.append(self.trace_utils.get_trace_length(i))
 
             # Configure DSP and managers. Performs first time load of DSP
@@ -277,9 +279,7 @@ class MainWindow(QMainWindow):
 
         # Configure toolbars, enable widgets:
 
-        self.sys_toolbar.b_boot.setText("Booted")
-        self.sys_toolbar.b_boot.setStyleSheet(colors.GREEN)
-        self.sys_toolbar.enable()
+        self.sys_toolbar.enable_booted()
         self.acq_toolbar.set_module_spinbox_range(num_modules)
         self.acq_toolbar.set_channel_spinbox_range(self.channel_map[0])
         self.acq_toolbar.enable()
@@ -288,20 +288,12 @@ class MainWindow(QMainWindow):
         print("QtScope system configuration complete!")
         _logger.info("System configuration successful")
 
-    # @todo (ASC 3/21/23): Define another custom human-readable text format
-    # independent of the XIA API version.
-    # @todo (ASC 6/9/23): Add some GUI blocking to save/load to prevent
-    # settings file corruption.
     def _save_settings(self):
-        """Save DSP parameters to an XIA settings file. Must have extension .json.
+        """Save DSP parameters to an XIA settings file. Must have file
+        extension '.json'.
 
-        Raises
-        ------
-        RuntimeError
-            If the file extension options differ from what is expected from
-            the API version.
-        RuntimeError
-            If the file extension is invalid for the API version.
+        @todo (ASC 6/9/23): Add some GUI blocking to save/load to prevent
+        settings file corruption.
         """
         fname, opt = self._save_dialog()
         if not (fname and opt):
@@ -325,13 +317,7 @@ class MainWindow(QMainWindow):
             print(f"DSP parameter file saved to: {fname}")
 
     def _load_settings(self):
-        """Load DSP parameters from an XIA settings file.
-
-        Raises
-        ------
-        RuntimeError
-            If file format is unrecognized.
-        """
+        """Load DSP parameters from an XIA settings file."""
         fname, opt = self._load_dialog()
         if not (fname and opt):
             return  # User canceled the load dialog.
@@ -350,9 +336,10 @@ class MainWindow(QMainWindow):
                     self.dsp_mgr.load_new_dsp()
                 except RuntimeError as e:
                     print(f"Failed to load new DSP: {e}")
-                # Spawn workers with their own signal paths:
-                self.chan_gui.load_dsp()
-                self.mod_gui.load_dsp()
+                else:
+                    # Spawn workers with their own signal paths:
+                    self.chan_gui.load_dsp()
+                    self.mod_gui.load_dsp()
 
     def _save_dialog(self):
         """Get a file name and extension from QFileDialog.
@@ -382,42 +369,37 @@ class MainWindow(QMainWindow):
             The file name from QFileDialog.getOpenFileName.
         opt : str
             The file extension option from QFileDialog.getOpenFileName.
-
-        Note
-        ----
-        Will return None, None if the filename and extension do not exist
-        which can occur if the user closes the QFileDialog window before
-        selecting a file to load.
         """
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        fname, opt = QFileDialog.getOpenFileName(
-            self, "Load file", "", SETTINGS_FILE_FILTER, options=options
-        )
-        if (fname, opt):
-            return fname, opt
-        else:
-            return "", ""
+        dialog = QFileDialog(self, "Load file")
+        dialog.setAcceptMode(QFileDialog.AcceptOpen)
+        dialog.setFileMode(QFileDialog.ExistingFile)
+        dialog.setNameFilter(SETTINGS_FILE_FILTER)
+        dialog.setOption(QFileDialog.DontUseNativeDialog)
+        if dialog.exec_() == QFileDialog.Accepted:
+            return dialog.selectedFiles()[0], dialog.selectedNameFilter()
+        return "", ""
 
     def _system_exit(self):
         """Closes connection to Pixie modules and exits the application.
 
         Hardware calls run synchronously on the GUI thread here by design:
         app.quit() must not race them, and a brief freeze during shutdown
-        is accepted. Failures are logged and exit contin
+        is accepted. Failures are logged and exit continues.
         """
         if self.run_active:
             try:
                 module = self.acq_toolbar.current_mod.value()
-                self._run_utils.end_run(module, self.active_type)
+                self.run_utils.end_run(module, self.active_type)
             except RuntimeError as e:
                 _logger.error(f"Failed to end run during exit: {e}")
         try:
             self.sys_utils.exit_system()
         except RuntimeError as e:
-            _logger.error(f"Failed to exit system cleanly: {e}")
+            _logger.exception(f"Failed to exit system cleanly: {e}")
+            print(e)
         self.pool_mgr.exit()
         app = QApplication.instance()
+        _logger.info("System exiting")
         app.quit()
 
     ##
@@ -457,15 +439,14 @@ class MainWindow(QMainWindow):
             f"Beginning {run_type} run in Mod. {module} with {nchannels} channels"
         )
 
+        self.acq_toolbar.b_run_control.setEnabled(False)
         self.pool_mgr.start_thread(
             fcn=lambda: self._start_run(module, nchannels, run_type),
             running=[
-                lambda: self.acq_toolbar.b_run_control.setEnabled(False),
                 self.chan_gui.toolbar.disable,
                 self.mod_gui.toolbar.disable,
             ],
             results=[self._on_run_started],
-            errors=[self._show_worker_error],
             finished=[self._on_begin_finished],
         )
 
@@ -525,11 +506,10 @@ class MainWindow(QMainWindow):
             f"Ending run type {run_type} in Mod. {module}"
         )
 
+        self.acq_toolbar.b_run_control.setEnabled(False)
         self.pool_mgr.start_thread(
             fcn=lambda: self._stop_run(module, run_type),
-            running=[lambda: self.acq_toolbar.b_run_control.setEnabled(False)],
             results=[self._on_run_stopped],
-            errors=[self._show_worker_error],
             finished=[lambda: self.acq_toolbar.b_run_control.setEnabled(True)],
         )
 
@@ -566,6 +546,7 @@ class MainWindow(QMainWindow):
         """
         module, run_active = result
         self.run_active = run_active
+        active_type = self.active_type
         if not self.run_active:
             self.acq_toolbar.b_run_control.setText("Begin run")
             self.acq_toolbar.enable()
@@ -573,7 +554,6 @@ class MainWindow(QMainWindow):
             self.mod_gui.toolbar.enable()
             self.mod_gui.setEnabled(True)
             self.chan_gui.setEnabled(True)
-            active_type = self.active_type
             self.active_type = RunType.INACTIVE
         _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: "
@@ -594,21 +574,19 @@ class MainWindow(QMainWindow):
         channels = (
             list(range(self.channel_map[module])) if read_all else [selected_channel]
         )
-        _logger.debug(f"Reading data from Mod. {module}, Ch. {channels}")
 
         if self.run_active:  # Histogram or baseline run.
             run_type = self.active_type
+            self.acq_toolbar.disable()
             self.pool_mgr.start_thread(
                 fcn=lambda: self._acquire_run_data(module, channels, run_type),
                 running=[
-                    self.acq_toolbar.disable,
                     self.chan_gui.toolbar.disable,
                     self.mod_gui.toolbar.disable,
                     lambda: self.chan_gui.setEnabled(False),
                     lambda: self.mod_gui.setEnabled(False),
                 ],
                 results=[self._show_run_data],
-                errors=[self._show_worker_error],
                 finished=[
                     self.acq_toolbar.enable_run_active,
                     self.chan_gui.toolbar.enable,
@@ -619,19 +597,18 @@ class MainWindow(QMainWindow):
             )
         else:  # Trace acquisition.
             fast = self.acq_toolbar.fast_acq.isChecked()
+            self.acq_toolbar.disable()
             self.pool_mgr.start_thread(
                 fcn=lambda: self._acquire_trace_data(
                     module, channels, selected_channel, fast
                 ),
                 running=[
-                    self.acq_toolbar.disable,
                     self.chan_gui.toolbar.disable,
                     self.mod_gui.toolbar.disable,
                     lambda: self.chan_gui.setEnabled(False),
                     lambda: self.mod_gui.setEnabled(False),
                 ],
                 results=[self._show_trace_data],
-                errors=[self._show_worker_error],
                 finished=[
                     self.acq_toolbar.enable,
                     self.chan_gui.toolbar.enable,
@@ -759,9 +736,9 @@ class MainWindow(QMainWindow):
             self._warn_stale_trace(module, channel)
             return
 
-        # Channel changed: read-all has the data for it is on
-        # the canvas; a single-channel read for another channel
-        # is stale:
+        # Channel changed: read-all has the data for the currently
+        # selected channel on the canvas; a single-channel read for
+        # another channel is stale:
         if channel != self.trace_info["channel"]:
             if not read_all:
                 self._warn_stale_trace(module, channel)
@@ -793,7 +770,6 @@ class MainWindow(QMainWindow):
             fcn=lambda: self._acquire_trace_data(module, [channel], channel, fast),
             running=[self.chan_gui.toolbar.disable, self.mod_gui.toolbar.disable],
             results=[self._store_trace_and_analyze],
-            errors=[self._show_worker_error],
             finished=[
                 self.acq_toolbar.enable,
                 self.chan_gui.toolbar.enable,
@@ -815,19 +791,6 @@ class MainWindow(QMainWindow):
             {"trace": copy.copy(data), "module": module, "channel": ch}
         )
         self._analyze_and_plot()
-
-    def _warn_stale_trace(self, module, channel):
-        """Tell the user the stored trace does not match the selection."""
-        msg = (
-            f"Stored trace data for Mod. {self.trace_info['module']} "
-            f"Ch. {self.trace_info['channel']} does not match the current "
-            f"selection Mod. {module} Ch. {channel}"
-        )
-        _logger.warning(msg)  # warning, not exception: no traceback needed
-        print(
-            f"{msg}:\n\tNew trace data must be acquired by clicking the "
-            "'Read trace' button prior to analysis."
-        )
 
     def _analyze_and_plot(self):
         """Compute filters for the stored trace and draw them.
@@ -859,9 +822,15 @@ class MainWindow(QMainWindow):
                 {"trace": np.empty(0), "module": None, "channel": None}
             )
 
-    def _show_worker_error(self, err):
-        """General purpose error handler for worker threads."""
-        exctype, value, tb = err
-        if not isinstance(value, PixieError):
-            _logger.error(f"Worker failed: {value}\n{tb}")
-        print(f"Operation failed: {value}")
+    def _warn_stale_trace(self, module, channel):
+        """Tell the user the stored trace does not match the selection."""
+        msg = (
+            f"Stored trace data for Mod. {self.trace_info['module']} "
+            f"Ch. {self.trace_info['channel']} does not match the current "
+            f"selection Mod. {module} Ch. {channel}"
+        )
+        _logger.warning(msg)  # warning, not exception: no traceback needed
+        print(
+            f"{msg}:\n\tNew trace data must be acquired by clicking the "
+            "'Read trace' button prior to analysis."
+        )
