@@ -3,9 +3,19 @@ import logging
 import os
 import sys
 
-sys.path.append(str(os.environ.get("DAQROOT")) + "/ddas/qtscope")
+daqroot = os.getenv("DAQROOT")
+if not daqroot:
+    sys.exit(
+        "ERROR: DAQROOT is undefined, source appropriate daqsetup.bash and run QtScope as $DAQBIN/qtscope"
+    )
+qtscope_path = os.path.join(daqroot, "ddas", "qtscope")
+if not os.path.isdir(qtscope_path):
+    sys.exit(
+        "ERROR: {qtscope_path} does not exist. Check that DAQROOT ({daqroot}) points at a valid NSCLDAQ installation"
+    )
+sys.path.append(qtscope_path)
 os.environ["NO_PROXY"] = ""
-os.environ["XDG_RUNTIME_DIR"] = os.environ.get("PWD")
+os.environ["XDG_RUNTIME_DIR"] = os.getcwd()
 logging.basicConfig(
     filename="qtscope.log", format="%(levelname)s - %(asctime)s: %(message)s"
 )

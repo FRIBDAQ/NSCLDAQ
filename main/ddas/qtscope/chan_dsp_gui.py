@@ -104,8 +104,7 @@ class ChanDSPGUI(QMainWindow):
         # the diagram and add some padding to the edges of the image because
         # its very tightly cropped:
 
-        daqroot = str(os.environ.get("DAQROOT"))
-        fig_path = daqroot + "/ddas/qtscope/figures/timing_diagram.png"
+        fig_path = os.environ["DAQROOT"] + "/ddas/qtscope/figures/timing_diagram.png"
         fig = QPixmap(fig_path)
         self.timing_diagram = QLabel()
         self.timing_diagram.setWindowTitle("Timing diagram")
