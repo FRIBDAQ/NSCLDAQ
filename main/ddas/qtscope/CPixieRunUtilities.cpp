@@ -17,6 +17,7 @@
 #include <config_pixie16api.h>
 
 #include "CDataGenerator.h"
+#include "CPixieShimGuard.h"
 
 /**
  * @details

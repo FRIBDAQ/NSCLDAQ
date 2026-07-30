@@ -16,6 +16,7 @@
 #include <string>
 
 #include "CPixieErrors.h"
+#include "CPixieShimGuard.h"
 
 using namespace DAQ::DDAS;
 namespace HR = DAQ::DDAS::HardwareRegistry;

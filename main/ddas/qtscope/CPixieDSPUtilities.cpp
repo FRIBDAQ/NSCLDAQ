@@ -12,6 +12,8 @@
 #include <config.h>
 #include <config_pixie16api.h>
 
+#include "CPixieShimGuard.h"
+
 int CPixieDSPUtilities::AdjustOffsets(int module) {
   try {
     int retval = Pixie16AdjustOffsets(module);

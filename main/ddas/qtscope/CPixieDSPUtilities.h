@@ -9,8 +9,6 @@
 
 #include <string>
 
-#include "CPixieShimGuard.h"
-
 /**
  * @addtogroup utilities libPixieUtilities.so
  * @{

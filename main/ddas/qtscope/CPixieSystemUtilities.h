@@ -11,8 +11,6 @@
 
 #include <Configuration.h>
 
-#include "CPixieShimGuard.h"
-
 /**
  * @addtogroup utilities libPixieUtilities.so
  * @{

@@ -16,6 +16,7 @@
 
 #include "CDataGenerator.h"
 #include "CPixieErrors.h"
+#include "CPixieShimGuard.h"
 
 /**
  * @details
