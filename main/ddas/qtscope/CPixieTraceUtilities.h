@@ -11,8 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "CPixieShimGuard.h"
-
 class CDataGenerator;
 
 /**
