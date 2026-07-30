@@ -3,7 +3,7 @@ import logging
 import os
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QCloseEvent, QPixmap
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QMainWindow, QLabel
 
 from chan_dsp_layout import ChanDSPLayout

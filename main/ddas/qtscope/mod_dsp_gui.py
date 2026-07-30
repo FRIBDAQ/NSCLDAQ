@@ -2,7 +2,6 @@ import inspect
 import logging
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import QMainWindow
 
 from mod_dsp_layout import ModDSPLayout

@@ -165,6 +165,7 @@ class SystemUtilities:
 
         # Dtor:
         _lib.CPixieSystemUtilities_delete.argtypes = [POINTER(c_char)]
+        _lib.CPixieSystemUtilities_delete.restype = None
 
         self.obj = _lib.CPixieSystemUtilities_new()
         if not self.obj:
@@ -447,6 +448,7 @@ class DSPUtilities:
 
         # Dtor:
         _lib.CPixieDSPUtilities_delete.argtypes = [POINTER(c_char)]
+        _lib.CPixieDSPUtilities_delete.restype = None
 
         self.obj = _lib.CPixieDSPUtilities_new()
         if not self.obj:
@@ -724,6 +726,7 @@ class RunUtilities:
 
         # Dtor:
         _lib.CPixieRunUtilities_delete.argtypes = [POINTER(c_char)]
+        _lib.CPixieRunUtilities_delete.restype = None
 
         self.obj = _lib.CPixieRunUtilities_new()
         if not self.obj:

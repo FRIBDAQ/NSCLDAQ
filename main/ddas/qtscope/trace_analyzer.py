@@ -67,10 +67,6 @@ class TraceAnalyzer:
             Channel number.
         trace : array
             Single channel ADC trace.
-
-        Raises
-        ------
-            Every exception back to the caller.
         """
         self.trace = trace
         self._compute_filters(mod, chan)
