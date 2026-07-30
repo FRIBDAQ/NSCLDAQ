@@ -229,6 +229,10 @@ def create_fit_factory():
 
 
 def _log_uncaught(exc_type, exc_value, exc_tb):
+    """Last-resort backstop: log any uncaught exception before exiting."""
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_tb)   # Ctrl-C is normal; don't log it
+        return
     _logger.("qtscope_logger").critical(
         "Uncaught exception", exc_info=(exc_type, exc_value, exc_tb)
     )
