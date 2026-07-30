@@ -78,7 +78,7 @@ class Worker(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        """Initialise the runner function with passed args, kwargs."""
+        """Initialize the runner function with passed args, kwargs."""
         try:
             self.signals.running.emit()
             result = self.fn(*self.args, **self.kwargs)
