@@ -11,14 +11,18 @@ if not daqroot:
 qtscope_path = os.path.join(daqroot, "ddas", "qtscope")
 if not os.path.isdir(qtscope_path):
     sys.exit(
-        "ERROR: {qtscope_path} does not exist. Check that DAQROOT ({daqroot}) points at a valid NSCLDAQ installation"
+        f"ERROR: {qtscope_path} does not exist. Check that DAQROOT ({daqroot}) points at a valid NSCLDAQ installation"
     )
 sys.path.append(qtscope_path)
 os.environ["NO_PROXY"] = ""
 os.environ["XDG_RUNTIME_DIR"] = os.getcwd()
-logging.basicConfig(
-    filename="qtscope.log", format="%(levelname)s - %(asctime)s: %(message)s"
-)
+
+_logger = logging.getLogger("qtscope_logger")
+_logger.setLevel(logging.INFO)  # Default; overridden from env in main()
+_logger.propagate = False  # Own our logging; never touch the root logger
+_handler = logging.FileHandler("qtscope.log")
+_handler.setFormatter(logging.Formatter("%(levelname)s - %(asctime)s: %(message)s"))
+_logger.addHandler(_handler)
 
 from PyQt5 import QtWidgets, QtCore
 
@@ -69,22 +73,21 @@ def main():
         if log_level not in logging._levelToName.values():
             allowed = logging._levelToName.values()
             raise ValueError(f"QTSCOPE_LOG_LEVEL={log_level} not in {allowed}")
-    except Exception as e:
-        logging.exception("Error occurred while configuring logger")
-        print(f"Failed to configure logger. See qtscope.log for details.")
+    except Exception:
+        _logger.exception("Error occurred while configuring logger")
+        print("Failed to configure logger. See qtscope.log for details.")
         sys.exit()
     else:
-        logger = logging.getLogger("qtscope_logger")
-        logger.setLevel(log_level)
-        logger.info(f"PATH: {sys.path}")
-        logger.debug(f"Environ: {os.environ}")
+        _logger.setLevel(log_level)
+        _logger.info(f"PATH: {sys.path}")
+        _logger.debug(f"Environ: {os.environ}")
+        sys.excepthook = _log_uncaught  # Any uncaught errors are logged
 
     try:
         offline = int(os.getenv("QTSCOPE_OFFLINE", 0))
     except Exception as e:
-        print(f"QtScope main caught an exception:\n\t{e}.")
         logger.exception("Failed to read QTSCOPE_OFFLINE from env")
-        sys.exit()
+        sys.exit(f"QtScope main caught an exception:\n\t{e}.")
     else:
         if offline:
             print("\n-----------------------------------")
@@ -119,7 +122,7 @@ def create_chan_dsp_factory():
         Factory with registered channel DSP widgets.
     """
     factory = WidgetFactory()
-    logging.getLogger("qtscope_logger").debug("Registering channel DSP")
+    _logger.("qtscope_logger").debug("Registering channel DSP")
     factory.register_builder("AnalogSignal", AnalogSignalBuilder())
     factory.register_builder("TriggerFilter", TriggerFilterBuilder())
     factory.register_builder("EnergyFilter", EnergyFilterBuilder())
@@ -145,7 +148,7 @@ def create_mod_dsp_factory():
         Factory with registered module DSP widgets.
     """
     factory = WidgetFactory()
-    logging.getLogger("qtscope_logger").debug("Registering module DSP")
+    _logger.("qtscope_logger").debug("Registering module DSP")
     factory.register_builder("CrateID", CrateIDBuilder())
     factory.register_builder("CSRB", CSRBBuilder())
     factory.register_builder("TrigConfig0", TrigConfig0Builder())
@@ -163,7 +166,7 @@ def create_toolbar_factory():
         Factory with registered toolbar widgets.
     """
     factory = WidgetFactory()
-    logging.getLogger("qtscope_logger").debug("Registering toolbars")
+    _logger.("qtscope_logger").debug("Registering toolbars")
     factory.register_builder("sys", SystemToolBarBuilder())
     factory.register_builder("acq", AcquisitionToolBarBuilder())
     factory.register_builder("dsp", DSPToolBarBuilder())
@@ -212,7 +215,7 @@ def create_fit_factory():
     # Register fit factory classes:
 
     factory = FitFactory()
-    logging.getLogger("qtscope_logger").debug("Registering fit functions")
+    _logger.("qtscope_logger").debug("Registering fit functions")
     factory.register_builder("Exponential", ExpFitBuilder(), config_fit_exp)
     factory.register_builder("Gaussian", GaussFitBuilder(), config_fit_gauss)
     factory.register_builder(
@@ -223,6 +226,13 @@ def create_fit_factory():
     )
 
     return factory
+
+
+def _log_uncaught(exc_type, exc_value, exc_tb):
+    _logger.("qtscope_logger").critical(
+        "Uncaught exception", exc_info=(exc_type, exc_value, exc_tb)
+    )
+    sys.__excepthook__(exc_type, exc_value, exc_tb)  # Keep the normal behavior too
 
 
 # Run main when executed as a script, the way we intend to do this:
