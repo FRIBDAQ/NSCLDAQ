@@ -18,7 +18,7 @@ from plot import Plot
 from run_type import RunType
 from trace_analyzer import TraceAnalyzer
 from thread_pool_manager import ThreadPoolManager
-from pixie_error improt PixieError
+from pixie_error import PixieError
 
 _logger = logging.getLogger("qtscope_logger")
 
@@ -402,7 +402,7 @@ class MainWindow(QMainWindow):
             print(e)
         finally:
             for u in (self.trace_utils, self.run_utils, self.dsp_mgr, self.sys_utils):
-            u.close()
+                u.close()
         self.pool_mgr.exit()
         app = QApplication.instance()
         _logger.info("System exiting")

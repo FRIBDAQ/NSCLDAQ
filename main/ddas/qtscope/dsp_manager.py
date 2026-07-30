@@ -39,8 +39,6 @@ class DSPManager:
         List of number of channels per module (zero-)indexed by module number.
     _msps_list : list
         ADC sampling rate in MSPS for each module, indexed by module number.
-    _logger : Logger
-        QtScope Logger object.
 
     Methods
     -------
@@ -64,6 +62,8 @@ class DSPManager:
         Adjust the DC offset of all channels on a single module.
     load_new_dsp():
         Load new DSP settings into the dataframe.
+    close()
+        Release resources the manager owns.
     """
 
     def __init__(self):
@@ -297,6 +297,10 @@ class DSPManager:
         """
         for mod in range(self._nmodules):
             self.read(mod, [*xia.CHAN_PARS, *xia.MOD_PARS])
+
+    def close(self):
+        """Release the native resources this manager owns."""
+        self._utils.close()
 
     ##
     # Private methods

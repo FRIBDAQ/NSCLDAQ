@@ -239,7 +239,7 @@ class ChanDSPGUI(QMainWindow):
 
         reason = getattr(self.tab, "unsupported_reason", None)
         if reason:
-            print(f"{self.tab_name}: {reason}. Nothing was applied.")
+            print(f"{self.tab_name}: {reason}. Nothing was read.")
             return
 
         self.toolbar.disable

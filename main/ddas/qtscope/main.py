@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
 import os
+import signal
 import sys
 
 daqroot = os.getenv("DAQROOT")
@@ -96,7 +97,7 @@ def main():
 
     # Create the factories:
 
-    logger.info("Creating factory methods and registering builders")
+    _logger.info("Creating factory methods and registering builders")
     cdf = create_chan_dsp_factory()
     mdf = create_mod_dsp_factory()
     tbf = create_toolbar_factory()
@@ -104,11 +105,24 @@ def main():
 
     # Start application and open the main GUI window:
 
-    logger.info("Factory creation complete, starting GUI")
+    _logger.info("Factory creation complete, starting GUI")
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
     app = QtWidgets.QApplication(sys.argv)
     gui = MainWindow(cdf, mdf, tbf, ftf, 4, offline)
+
+    # Ensure safe shutdown on Ctrl-C. signal always passes two args: the signum
+    # and frame. The *_ business says to collect all positional args and ignore
+    # them, since gui.close() takes no arguments.
+    signal.signal(
+        signal.SIGINT, lambda *_: gui.close()
+    )  # close() -> closeEvent -> _system_exit
+    # Wake the interpreter periodically so a pending Ctrl-C can be delivered
+    # while the C++ event loop is running (otherwise the handler never runs):
+    sigint_timer = QtCore.QTimer()
+    sigint_timer.timeout.connect(lambda: None)
+    sigint_timer.start(200)  # ms
+
     gui.show()
     sys.exit(app.exec_())
 
@@ -121,8 +135,8 @@ def create_chan_dsp_factory():
     WidgetFactory
         Factory with registered channel DSP widgets.
     """
+    _logger.debug("Registering channel DSP")
     factory = WidgetFactory()
-    _logger.("qtscope_logger").debug("Registering channel DSP")
     factory.register_builder("AnalogSignal", AnalogSignalBuilder())
     factory.register_builder("TriggerFilter", TriggerFilterBuilder())
     factory.register_builder("EnergyFilter", EnergyFilterBuilder())
@@ -147,8 +161,8 @@ def create_mod_dsp_factory():
     WidgetFactory
         Factory with registered module DSP widgets.
     """
+    _logger.debug("Registering module DSP")
     factory = WidgetFactory()
-    _logger.("qtscope_logger").debug("Registering module DSP")
     factory.register_builder("CrateID", CrateIDBuilder())
     factory.register_builder("CSRB", CSRBBuilder())
     factory.register_builder("TrigConfig0", TrigConfig0Builder())
@@ -165,8 +179,8 @@ def create_toolbar_factory():
     WidgetFactory
         Factory with registered toolbar widgets.
     """
+    _logger.debug("Registering toolbars")
     factory = WidgetFactory()
-    _logger.("qtscope_logger").debug("Registering toolbars")
     factory.register_builder("sys", SystemToolBarBuilder())
     factory.register_builder("acq", AcquisitionToolBarBuilder())
     factory.register_builder("dsp", DSPToolBarBuilder())
@@ -214,8 +228,8 @@ def create_fit_factory():
 
     # Register fit factory classes:
 
+    _logger.debug("Registering fit functions")
     factory = FitFactory()
-    _logger.("qtscope_logger").debug("Registering fit functions")
     factory.register_builder("Exponential", ExpFitBuilder(), config_fit_exp)
     factory.register_builder("Gaussian", GaussFitBuilder(), config_fit_gauss)
     factory.register_builder(
@@ -231,11 +245,11 @@ def create_fit_factory():
 def _log_uncaught(exc_type, exc_value, exc_tb):
     """Last-resort backstop: log any uncaught exception before exiting."""
     if issubclass(exc_type, KeyboardInterrupt):
-        sys.__excepthook__(exc_type, exc_value, exc_tb)   # Ctrl-C is normal; don't log it
+        sys.__excepthook__(
+            exc_type, exc_value, exc_tb
+        )  # Ctrl-C is normal; don't log it
         return
-    _logger.("qtscope_logger").critical(
-        "Uncaught exception", exc_info=(exc_type, exc_value, exc_tb)
-    )
+    _logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_tb))
     sys.__excepthook__(exc_type, exc_value, exc_tb)  # Keep the normal behavior too
 
 

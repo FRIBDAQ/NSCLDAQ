@@ -4,6 +4,7 @@ except ImportError:
     from converters import ba2int, int2ba
 
 from PyQt5.QtWidgets import QCheckBox, QWidget, QHBoxLayout
+import logging
 
 from chan_dsp_widget import ChanDSPWidget
 import xia_constants as xia
