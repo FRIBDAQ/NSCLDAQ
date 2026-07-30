@@ -140,55 +140,26 @@ private:
 
 extern "C" {
 /** @brief Wrapper for the class constructor. */
-CPixieTraceUtilities *CPixieTraceUtilities_new() {
-  return shimGuardNew("CPixieTraceUtilities_new",
-                      []() { return new CPixieTraceUtilities(); });
-}
+CPixieTraceUtilities *CPixieTraceUtilities_new();
 /** @brief Wrapper for reading a validated trace. */
 int CPixieTraceUtilities_ReadTrace(CPixieTraceUtilities *utils, int mod,
-                                   int chan) {
-  return shimGuard(utils, "CPixieTraceUtilities_ReadTrace",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->ReadTrace(mod, chan); });
-}
+                                   int chan);
 /** @brief Wrapper for reading an unvalidated trace. */
 int CPixieTraceUtilities_ReadFastTrace(CPixieTraceUtilities *utils, int mod,
-                                       int chan) {
-  return shimGuard(utils, "CPixieTraceUtilities_ReadFastTrace",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->ReadFastTrace(mod, chan); });
-}
+                                       int chan);
 /** @brief Wrapper to get trace length. */
 int CPixieTraceUtilities_GetTraceLength(CPixieTraceUtilities *utils, int mod,
-                                        int chan) {
-  return shimGuard(utils, "CPixieTraceUtilities_GetTraceLength",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->GetTraceLength(mod, chan); });
-}
+                                        int chan);
 /** @brief Wrapper to get trace data; cannot throw, unguarded. */
-unsigned short *CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities *utils) {
-  return utils->GetTraceData();
-}
+unsigned short *CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities *utils);
 /** @brief Wrapper to set generator use. */
 void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities *utils,
-                                          bool mode) {
-  return shimGuardVoid(utils, "CPixieTraceUtilities_SetUseGenerator",
-                       [=]() { return utils->SetUseGenerator(mode); });
-}
+                                          bool mode);
 /** @brief Wrapper to get the last error message. Cannot throw, unguarded. */
 const char *
-CPixieTraceUtilities_GetLastErrorMessage(CPixieTraceUtilities *utils) {
-  return utils->GetLastErrorMessage();
-}
-
+CPixieTraceUtilities_GetLastErrorMessage(CPixieTraceUtilities *utils);
 /** @brief Wrapper for the class destructor. */
-void CPixieTraceUtilities_delete(CPixieTraceUtilities *utils) {
-  try {
-    delete utils;
-  } catch (...) {
-    std::cerr << "CPixieTraceUtilities_delete unknown exception" << std::endl;
-  }
-};
+void CPixieTraceUtilities_delete(CPixieTraceUtilities *utils);
 }
 
 #endif

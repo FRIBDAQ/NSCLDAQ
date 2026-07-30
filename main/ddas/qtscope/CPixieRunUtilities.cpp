@@ -322,8 +322,8 @@ int CPixieRunUtilities::ReadModuleStats(int module) {
  * @details
  * It is assumed that all channels on a module have the same histogram length.
  * Since this function cannot be called until after the system is booted, there
- * is no need to check for that condition here. The caller assumes responsibility
- * for making sure the module number is valid.
+ * is no need to check for that condition here. The caller assumes
+ * responsibility for making sure the module number is valid.
  */
 int CPixieRunUtilities::GetHistogramLength(int module) {
   unsigned int histLength = 0;
@@ -349,8 +349,8 @@ int CPixieRunUtilities::GetHistogramLength(int module) {
  * @details
  * It is assumed that all channels on a module have the same max baseline size.
  * Since this function cannot be called until after the system is booted, there
- * is no need to check for that condition here. The caller assumes responsibility
- * for making sure the module number is valid.
+ * is no need to check for that condition here. The caller assumes
+ * responsibility for making sure the module number is valid.
  */
 int CPixieRunUtilities::GetMaxBaselines(int module) {
   unsigned int maxBaselines = 0;
@@ -425,4 +425,99 @@ void CPixieRunUtilities::UpdateBaselineHistograms(int module) {
       }
     }
   }
+}
+
+extern "C" {
+CPixieRunUtilities *CPixieRunUtilities_new() {
+  return shimGuardNew("CPixieRunUtilities_new",
+                      []() { return new CPixieRunUtilities(); });
+}
+
+int CPixieRunUtilities_BeginHistogramRun(CPixieRunUtilities *utils, int mod,
+                                         unsigned nchan) {
+  return shimGuard(utils, "CPixieRunUtilities_BeginHistogramRun",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->BeginHistogramRun(mod, nchan); });
+}
+
+int CPixieRunUtilities_EndHistogramRun(CPixieRunUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieRunUtilities_EndHistogramRun",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->EndHistogramRun(mod); });
+}
+
+int CPixieRunUtilities_ReadHistogram(CPixieRunUtilities *utils, int mod,
+                                     int chan) {
+  return shimGuard(utils, "CPixieRunUtilities_ReadHistogram",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ReadHistogram(mod, chan); });
+}
+
+int CPixieRunUtilities_BeginBaselineRun(CPixieRunUtilities *utils, int mod,
+                                        unsigned nchan) {
+  return shimGuard(utils, "CPixieRunUtilities_BeginBaselineRun",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->BeginBaselineRun(mod, nchan); });
+}
+
+int CPixieRunUtilities_EndBaselineRun(CPixieRunUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieRunUtilities_EndBaselineRun",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->EndBaselineRun(mod); });
+}
+
+int CPixieRunUtilities_ReadBaseline(CPixieRunUtilities *utils, int mod,
+                                    int chan) {
+  return shimGuard(utils, "CPixieRunUtilities_ReadBaseline",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ReadBaseline(mod, chan); });
+}
+
+int CPixieRunUtilities_ReadModuleStats(CPixieRunUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieRunUtilities_ReadModuleStats",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ReadModuleStats(mod); });
+}
+
+unsigned int *CPixieRunUtilities_GetHistogramData(CPixieRunUtilities *utils) {
+  return utils->GetHistogramData();
+}
+
+unsigned int *CPixieRunUtilities_GetBaselineData(CPixieRunUtilities *utils) {
+  return utils->GetBaselineData();
+}
+
+bool CPixieRunUtilities_GetRunActive(CPixieRunUtilities *utils) {
+  return shimGuard(utils, "CPixieRunUtilities_GetRunActive", false,
+                   [=]() { return utils->GetRunActive(); });
+}
+
+void CPixieRunUtilities_SetUseGenerator(CPixieRunUtilities *utils, bool mode) {
+  return shimGuardVoid(utils, "CPixieRunUtilities_SetUseGenerator",
+                       [=]() { return utils->SetUseGenerator(mode); });
+}
+
+int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieRunUtilities_GetHistogramLength",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetHistogramLength(mod); });
+}
+
+int CPixieRunUtilities_GetMaxBaselines(CPixieRunUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieRunUtilities_GetMaxBaselines",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetMaxBaselines(mod); });
+}
+
+const char *CPixieRunUtilities_GetLastErrorMessage(CPixieRunUtilities *utils) {
+  return utils->GetLastErrorMessage();
+}
+
+void CPixieRunUtilities_delete(CPixieRunUtilities *utils) {
+  try {
+    delete utils;
+  } catch (...) {
+    std::cerr << "CPixieRunUtilities_delete unknown exception" << std::endl;
+  }
+};
 }

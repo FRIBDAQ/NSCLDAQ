@@ -256,3 +256,83 @@ int CPixieSystemUtilities::GetModuleChannelCount(int module) {
 
   return static_cast<int>(m_config.getModuleChannelCount(module));
 }
+
+extern "C" {
+CPixieSystemUtilities *CPixieSystemUtilities_new() {
+  return shimGuardNew("CPixieSystemUtilities_new",
+                      []() { return new CPixieSystemUtilities(); });
+}
+
+int CPixieSystemUtilities_Boot(CPixieSystemUtilities *utils) {
+  return shimGuard(utils, "CPixieSystemUtilities_Boot", SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->Boot(); });
+}
+
+int CPixieSystemUtilities_SaveSetFile(CPixieSystemUtilities *utils,
+                                      char *fName) {
+  return shimGuard(utils, "CPixieSystemUtilities_SaveSetFile",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->SaveSetFile(fName); });
+}
+
+int CPixieSystemUtilities_LoadSetFile(CPixieSystemUtilities *utils,
+                                      char *fName) {
+  return shimGuard(utils, "CPixieSystemUtilities_LoadSetFile",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->LoadSetFile(fName); });
+}
+
+int CPixieSystemUtilities_ExitSystem(CPixieSystemUtilities *utils) {
+  return shimGuard(utils, "CPixieSystemUtilities_ExitSystem",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ExitSystem(); });
+}
+
+void CPixieSystemUtilities_SetBootMode(CPixieSystemUtilities *utils, int mode) {
+  return shimGuardVoid(utils, "CPixieSystemUtilities_SetBootMode",
+                       [=]() { return utils->SetBootMode(mode); });
+}
+
+int CPixieSystemUtilities_GetBootMode(CPixieSystemUtilities *utils) {
+  return shimGuard(utils, "CPixieSystemUtilities_GetBootMode",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetBootMode(); });
+}
+
+bool CPixieSystemUtilities_GetBootStatus(CPixieSystemUtilities *utils) {
+  return shimGuard(utils, "CPixieSystemUtilities_GetBootStatus", false,
+                   [=]() { return utils->GetBootStatus(); });
+}
+
+int CPixieSystemUtilities_GetNumModules(CPixieSystemUtilities *utils) {
+  return shimGuard(utils, "CPixieSystemUtilities_GetNumModules",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetNumModules(); });
+}
+
+int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieSystemUtilities_GetModuleMSPS",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetModuleMSPS(mod); });
+}
+
+int CPixieSystemUtilities_GetModuleChannelCount(CPixieSystemUtilities *utils,
+                                                int mod) {
+  return shimGuard(utils, "CPixieSystemUtilities_GetModuleChannelCount",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetModuleChannelCount(mod); });
+}
+
+const char *
+CPixieSystemUtilities_GetLastErrorMessage(CPixieSystemUtilities *utils) {
+  return utils->GetLastErrorMessage();
+}
+
+void CPixieSystemUtilities_delete(CPixieSystemUtilities *utils) {
+  try {
+    delete utils;
+  } catch (...) {
+    std::cerr << "CPixieSystemUtilities_delete unknown exception" << std::endl;
+  }
+};
+}

@@ -193,104 +193,43 @@ private:
 
 extern "C" {
 /** @brief Wrapper for the class constructor. */
-CPixieRunUtilities *CPixieRunUtilities_new() {
-  return shimGuardNew("CPixieRunUtilities_new",
-                      []() { return new CPixieRunUtilities(); });
-}
-
+CPixieRunUtilities *CPixieRunUtilities_new();
 /** @brief Wrapper to begin a list-mode histogram data run. */
 int CPixieRunUtilities_BeginHistogramRun(CPixieRunUtilities *utils, int mod,
-                                         unsigned nchan) {
-  return shimGuard(utils, "CPixieRunUtilities_BeginHistogramRun",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->BeginHistogramRun(mod, nchan); });
-}
+                                         unsigned nchan);
 /** @brief Wrapper to end a list-mode histogram data run. */
-int CPixieRunUtilities_EndHistogramRun(CPixieRunUtilities *utils, int mod) {
-  return shimGuard(utils, "CPixieRunUtilities_EndHistogramRun",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->EndHistogramRun(mod); });
-}
+int CPixieRunUtilities_EndHistogramRun(CPixieRunUtilities *utils, int mod);
 /** @brief Wrapper to read histogram data. */
 int CPixieRunUtilities_ReadHistogram(CPixieRunUtilities *utils, int mod,
-                                     int chan) {
-  return shimGuard(utils, "CPixieRunUtilities_ReadHistogram",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->ReadHistogram(mod, chan); });
-}
-
+                                     int chan);
 /** @brief Wrapper to begin a baseline data run. */
 int CPixieRunUtilities_BeginBaselineRun(CPixieRunUtilities *utils, int mod,
-                                        unsigned nchan) {
-  return shimGuard(utils, "CPixieRunUtilities_BeginBaselineRun",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->BeginBaselineRun(mod, nchan); });
-}
+                                        unsigned nchan);
 /** @brief Wrapper to end a baseline data run. */
-int CPixieRunUtilities_EndBaselineRun(CPixieRunUtilities *utils, int mod) {
-  return shimGuard(utils, "CPixieRunUtilities_EndBaselineRun",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->EndBaselineRun(mod); });
-}
+int CPixieRunUtilities_EndBaselineRun(CPixieRunUtilities *utils, int mod);
 /** @brief Wrapper to read the baseline data. */
 int CPixieRunUtilities_ReadBaseline(CPixieRunUtilities *utils, int mod,
-                                    int chan) {
-  return shimGuard(utils, "CPixieRunUtilities_ReadBaseline",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->ReadBaseline(mod, chan); });
-}
-
+                                    int chan);
 /** @brief Wrapper to read run statistics from the module. */
-int CPixieRunUtilities_ReadModuleStats(CPixieRunUtilities *utils, int mod) {
-  return shimGuard(utils, "CPixieRunUtilities_ReadModuleStats",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->ReadModuleStats(mod); });
-}
+int CPixieRunUtilities_ReadModuleStats(CPixieRunUtilities *utils, int mod);
 /** @brief Wrapper to marshall the histogram data; cannot throw, unguarded. */
-unsigned int *CPixieRunUtilities_GetHistogramData(CPixieRunUtilities *utils) {
-  return utils->GetHistogramData();
-}
+unsigned int *CPixieRunUtilities_GetHistogramData(CPixieRunUtilities *utils);
 /** @brief Wrapper to marshall the baseline data; cannot throw, unguarded. */
-unsigned int *CPixieRunUtilities_GetBaselineData(CPixieRunUtilities *utils) {
-  return utils->GetBaselineData();
-}
+unsigned int *CPixieRunUtilities_GetBaselineData(CPixieRunUtilities *utils);
 /** @brief Wrapper to get the run active status. */
-bool CPixieRunUtilities_GetRunActive(CPixieRunUtilities *utils) {
-  return shimGuard(utils, "CPixieRunUtilities_GetRunActive", false,
-                   [=]() { return utils->GetRunActive(); });
-}
+bool CPixieRunUtilities_GetRunActive(CPixieRunUtilities *utils);
 /** @brief Wrapper to setup the offline data generator; no return value,
  * unguarded. */
-void CPixieRunUtilities_SetUseGenerator(CPixieRunUtilities *utils, bool mode) {
-  return shimGuardVoid(utils, "CPixieRunUtilities_SetUseGenerator",
-                       [=]() { return utils->SetUseGenerator(mode); });
-}
+void CPixieRunUtilities_SetUseGenerator(CPixieRunUtilities *utils, bool mode);
 /** @brief Wrapper to get histogram length for a single module. */
-int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities *utils, int mod) {
-  return shimGuard(utils, "CPixieRunUtilities_GetHistogramLength",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->GetHistogramLength(mod); });
-}
+int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities *utils, int mod);
 /** @brief Wrapper to get the maximum number of baselines for a single module.
  */
-int CPixieRunUtilities_GetMaxBaselines(CPixieRunUtilities *utils, int mod) {
-  return shimGuard(utils, "CPixieRunUtilities_GetMaxBaselines",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->GetMaxBaselines(mod); });
-}
+int CPixieRunUtilities_GetMaxBaselines(CPixieRunUtilities *utils, int mod);
 /** @brief Wrapper to get the last error message. Cannot throw; unguarded. */
-const char *CPixieRunUtilities_GetLastErrorMessage(CPixieRunUtilities *utils) {
-  return utils->GetLastErrorMessage();
-}
-
+const char *CPixieRunUtilities_GetLastErrorMessage(CPixieRunUtilities *utils);
 /** @brief Wrapper for the class destructor. */
-void CPixieRunUtilities_delete(CPixieRunUtilities *utils) {
-  try {
-    delete utils;
-  } catch (...) {
-    std::cerr << "CPixieRunUtilities_delete unknown exception" << std::endl;
-  }
-};
+void CPixieRunUtilities_delete(CPixieRunUtilities *utils);
 }
 
 #endif

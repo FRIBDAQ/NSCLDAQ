@@ -97,58 +97,25 @@ public:
 
 extern "C" {
 /** @brief Wrapper for the class constructor. */
-CPixieDSPUtilities *CPixieDSPUtilities_new() {
-  return shimGuardNew("CPixieDSPUtilities_new",
-                      []() { return new CPixieDSPUtilities(); });
-}
-
+CPixieDSPUtilities *CPixieDSPUtilities_new();
 /** @brief Wrapper to adjust DC offsets. */
-int CPixieDSPUtilities_AdjustOffsets(CPixieDSPUtilities *utils, int mod) {
-  return shimGuard(utils, "CPixieDSPUtilities_AdjustOffsets",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->AdjustOffsets(mod); });
-}
-/**  @brief Wrapper to write a channel parameter. */
+int CPixieDSPUtilities_AdjustOffsets(CPixieDSPUtilities *utils, int mod);
+/** @brief Wrapper to write a channel parameter. */
 int CPixieDSPUtilities_WriteChanPar(CPixieDSPUtilities *utils, int mod,
-                                    int chan, char *pName, double val) {
-  return shimGuard(
-      utils, "CPixieDSPUtilities_WriteChanPar", SHIM_UNEXPECTED_ERROR,
-      [=]() { return utils->WriteChanPar(mod, chan, pName, val); });
-}
-/**  @brief Wrapper to read a channel parameter. */
+                                    int chan, char *pName, double val);
+/** @brief Wrapper to read a channel parameter. */
 int CPixieDSPUtilities_ReadChanPar(CPixieDSPUtilities *utils, int mod, int chan,
-                                   char *pName, double *val) {
-  return shimGuard(
-      utils, "CPixieDSPUtilities_ReadChanPar", SHIM_UNEXPECTED_ERROR,
-      [=]() { return utils->ReadChanPar(mod, chan, pName, *val); });
-}
-/**  @brief Wrapper to write a module parameter. */
+                                   char *pName, double *val);
+/** @brief Wrapper to write a module parameter. */
 int CPixieDSPUtilities_WriteModPar(CPixieDSPUtilities *utils, int mod,
-                                   char *pName, unsigned int val) {
-  return shimGuard(utils, "CPixieDSPUtilities_WriteModPar",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->WriteModPar(mod, pName, val); });
-}
-/**  @brief Wrapper to read a module parameter. */
+                                   char *pName, unsigned int val);
+/** @brief Wrapper to read a module parameter. */
 int CPixieDSPUtilities_ReadModPar(CPixieDSPUtilities *utils, int mod,
-                                  char *pName, unsigned int *val) {
-  return shimGuard(utils, "CPixieDSPUtilities_ReadModPar",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->ReadModPar(mod, pName, *val); });
-}
+                                  char *pName, unsigned int *val);
 /** @brief Wrapper to get the last error message. Cannot throw; unguarded. */
-const char *CPixieDSPUtilities_GetLastErrorMessage(CPixieDSPUtilities *utils) {
-  return utils->GetLastErrorMessage();
-}
-
-/**  @brief Wrapper for the class destructor. */
-void CPixieDSPUtilities_delete(CPixieDSPUtilities *utils) {
-  try {
-    delete utils;
-  } catch (...) {
-    std::cerr << "CPixieDSPUtilities_delete unknown exception" << std::endl;
-  }
-};
+const char *CPixieDSPUtilities_GetLastErrorMessage(CPixieDSPUtilities *utils);
+/** @brief Wrapper for the class destructor. */
+void CPixieDSPUtilities_delete(CPixieDSPUtilities *utils);
 }
 
 #endif

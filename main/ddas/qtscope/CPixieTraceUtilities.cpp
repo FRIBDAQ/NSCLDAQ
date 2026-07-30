@@ -227,3 +227,54 @@ void CPixieTraceUtilities::ResetTrace(unsigned int len) {
   }
   std::fill(m_trace.begin(), m_trace.end(), 0);
 }
+
+extern "C" {
+CPixieTraceUtilities *CPixieTraceUtilities_new() {
+  return shimGuardNew("CPixieTraceUtilities_new",
+                      []() { return new CPixieTraceUtilities(); });
+}
+
+int CPixieTraceUtilities_ReadTrace(CPixieTraceUtilities *utils, int mod,
+                                   int chan) {
+  return shimGuard(utils, "CPixieTraceUtilities_ReadTrace",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ReadTrace(mod, chan); });
+}
+
+int CPixieTraceUtilities_ReadFastTrace(CPixieTraceUtilities *utils, int mod,
+                                       int chan) {
+  return shimGuard(utils, "CPixieTraceUtilities_ReadFastTrace",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ReadFastTrace(mod, chan); });
+}
+
+int CPixieTraceUtilities_GetTraceLength(CPixieTraceUtilities *utils, int mod,
+                                        int chan) {
+  return shimGuard(utils, "CPixieTraceUtilities_GetTraceLength",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetTraceLength(mod, chan); });
+}
+
+unsigned short *CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities *utils) {
+  return utils->GetTraceData();
+}
+
+void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities *utils,
+                                          bool mode) {
+  return shimGuardVoid(utils, "CPixieTraceUtilities_SetUseGenerator",
+                       [=]() { return utils->SetUseGenerator(mode); });
+}
+
+const char *
+CPixieTraceUtilities_GetLastErrorMessage(CPixieTraceUtilities *utils) {
+  return utils->GetLastErrorMessage();
+}
+
+void CPixieTraceUtilities_delete(CPixieTraceUtilities *utils) {
+  try {
+    delete utils;
+  } catch (...) {
+    std::cerr << "CPixieTraceUtilities_delete unknown exception" << std::endl;
+  }
+};
+}

@@ -132,86 +132,35 @@ public:
 
 extern "C" {
 /** @brief Wrapper for the class constructor. */
-CPixieSystemUtilities *CPixieSystemUtilities_new() {
-  return shimGuardNew("CPixieSystemUtilities_new",
-                      []() { return new CPixieSystemUtilities(); });
-}
-
+CPixieSystemUtilities *CPixieSystemUtilities_new();
 /** @brief Wrapper to boot the crate. */
-int CPixieSystemUtilities_Boot(CPixieSystemUtilities *utils) {
-  return shimGuard(utils, "CPixieSystemUtilities_Boot", SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->Boot(); });
-}
+int CPixieSystemUtilities_Boot(CPixieSystemUtilities *utils);
 /** @brief Wrapper to save a settings file. */
 int CPixieSystemUtilities_SaveSetFile(CPixieSystemUtilities *utils,
-                                      char *fName) {
-  return shimGuard(utils, "CPixieSystemUtilities_SaveSetFile",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->SaveSetFile(fName); });
-}
+                                      char *fName);
 /** @brief Wrapper to load a settings file. */
 int CPixieSystemUtilities_LoadSetFile(CPixieSystemUtilities *utils,
-                                      char *fName) {
-  return shimGuard(utils, "CPixieSystemUtilities_LoadSetFile",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->LoadSetFile(fName); });
-}
+                                      char *fName);
 /** @brief Wrapper to exit the system file. */
-int CPixieSystemUtilities_ExitSystem(CPixieSystemUtilities *utils) {
-  return shimGuard(utils, "CPixieSystemUtilities_ExitSystem",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->ExitSystem(); });
-}
-
+int CPixieSystemUtilities_ExitSystem(CPixieSystemUtilities *utils);
 /** @brief Wrapper to set the boot mode. */
-void CPixieSystemUtilities_SetBootMode(CPixieSystemUtilities *utils, int mode) {
-  return shimGuardVoid(utils, "CPixieSystemUtilities_SetBootMode",
-                       [=]() { return utils->SetBootMode(mode); });
-}
+void CPixieSystemUtilities_SetBootMode(CPixieSystemUtilities *utils, int mode);
 /** @brief Wrapper to get the boot mode. */
-int CPixieSystemUtilities_GetBootMode(CPixieSystemUtilities *utils) {
-  return shimGuard(utils, "CPixieSystemUtilities_GetBootMode",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->GetBootMode(); });
-}
+int CPixieSystemUtilities_GetBootMode(CPixieSystemUtilities *utils);
 /** @brief Wrapper to get the boot status. */
-bool CPixieSystemUtilities_GetBootStatus(CPixieSystemUtilities *utils) {
-  return shimGuard(utils, "CPixieSystemUtilities_GetBootStatus", false,
-                   [=]() { return utils->GetBootStatus(); });
-}
+bool CPixieSystemUtilities_GetBootStatus(CPixieSystemUtilities *utils);
 /** @brief Wrapper to get the number of modules. */
-int CPixieSystemUtilities_GetNumModules(CPixieSystemUtilities *utils) {
-  return shimGuard(utils, "CPixieSystemUtilities_GetNumModules",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->GetNumModules(); });
-}
+int CPixieSystemUtilities_GetNumModules(CPixieSystemUtilities *utils);
 /** @brief Wrapper to get a single module ADC MSPS from the HW map. */
-int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities *utils, int mod) {
-  return shimGuard(utils, "CPixieSystemUtilities_GetModuleMSPS",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->GetModuleMSPS(mod); });
-}
+int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities *utils, int mod);
 /** @brief Wrapper to get the channel count for a single module. */
 int CPixieSystemUtilities_GetModuleChannelCount(CPixieSystemUtilities *utils,
-                                                int mod) {
-  return shimGuard(utils, "CPixieSystemUtilities_GetModuleChannelCount",
-                   SHIM_UNEXPECTED_ERROR,
-                   [=]() { return utils->GetModuleChannelCount(mod); });
-}
+                                                int mod);
 /** @brief Wrapper to get the last error message. Cannot throw; unguarded. */
 const char *
-CPixieSystemUtilities_GetLastErrorMessage(CPixieSystemUtilities *utils) {
-  return utils->GetLastErrorMessage();
-}
-
+CPixieSystemUtilities_GetLastErrorMessage(CPixieSystemUtilities *utils);
 /** @brief Wrapper for the class destructor. */
-void CPixieSystemUtilities_delete(CPixieSystemUtilities *utils) {
-  try {
-    delete utils;
-  } catch (...) {
-    std::cerr << "CPixieSystemUtilities_delete unknown exception" << std::endl;
-  }
-};
+void CPixieSystemUtilities_delete(CPixieSystemUtilities *utils);
 }
 
 #endif
