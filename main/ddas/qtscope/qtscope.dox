@@ -65,7 +65,6 @@ on QtScope startup.
 
 @section sec_qtscope_quickstart Getting Started
 @par
-@par
 The very first thing that a user needs to do to run QtScope is to connect a PXI crate with at least one Pixie-16 
 card to a host PC. The PXI crate must be powered on.
 @attention
@@ -82,8 +81,7 @@ to Pixie-16 hardware--at FRIB this is typically an spdaq computer--and from a di
  @ref cfgpixie16 "cfgPixie16.txt" and @ref modevtlen "modevtlen.txt" configuration files. Running the `qtscope` 
  executable launches the QtScope GUI. The various elements of the GUI are labeled on the figure below.
 
-@image html qtscope_unbooted_wtoolbars.png "The QtScope GUI state on startup with labeled GUI elements. Note that most 
-GUI elements besides [Boot system], [About] and [Exit] on the system toolbar are disabled." width=1200px
+@image html qtscope_unbooted_wtoolbars.png "The QtScope GUI state on startup with labeled GUI elements. Note that most GUI elements besides [Boot system], [About] and [Exit] on the system toolbar are disabled." width=1200px
 
 @par
 Upon startup, the majority of the GUI elements besides **[Boot system]** and **[Exit]** on the system toolbar are disabled. 
@@ -121,8 +119,7 @@ QtScope system configuration complete!
 and the **[Boot system]** button will turn green and read **[Booted]**. GUI elements on the various toolbars will also 
 be enabled; these GUI elements are explained in more detail in the subsequent sections.
 
-@image html qtscope_booted.PNG "The QtScope GUI state after a successful system boot. Note that the button previously 
-displaying [Boot system] is now green and reads [Booted]. The GUI elements are enabled upon a successful boot." width=1200px
+@image html qtscope_booted.PNG "The QtScope GUI state after a successful system boot. Note that the button previously displaying [Boot system] is now green and reads [Booted]. The GUI elements are enabled upon a successful boot." width=1200px
 
 @section sec_qtscope_gui The QtScope GUI
 @par
@@ -161,9 +158,7 @@ installed in slot 2 is module 0 and the module in slot 4 is module 1 in the QtSc
 Selecting a tab will display that tab's DSP parameters. The DSP parameters which can be configured on each tab are described 
 in more detail in the @ref sec_qtscope_chandsp section.
 
-@image html analog_signal.PNG "The channel DSP popup window displayed when clicking the [Channel DSP] button. The tab controlling 
-the analog signal properties and DC offset on module 0 is selected. If more modules were installed, additional tabs reading 
-''Mod. 1,'' ''Mod. 2,'' etc. would be present."
+@image html analog_signal.PNG "The channel DSP popup window displayed when clicking the [Channel DSP] button. The tab controlling the analog signal properties and DC offset on module 0 is selected. If more modules were installed, additional tabs reading ''Mod. 1,'' ''Mod. 2,'' etc. would be present."
 
 @par
 A common feature of all channel DSP parameter tabs are the **[Apply]**, **[Load]**, **[Copy mod.]** and **[Copy chan.]** buttons. 
@@ -198,8 +193,7 @@ for loading and saving module, the save dialog window is shown below. For both t
 ''File name:'' line or an existing file can be selected by using the browser. Existing DSP settings files with the same name will 
 be overwritten.
 
-@image html save_dialog.PNG "The QtScope save dialog window opened when the [Save settings] button is clicked. 
-The [Load settings] button will popup a dialog window which looks and functions similarly."
+@image html save_dialog.PNG "The QtScope save dialog window opened when the [Save settings] button is clicked. The [Load settings] button will popup a dialog window which looks and functions similarly."
 
 @par
 The format of the DSP settings file depends on the version of the XIA API that QtScope and NSCLDAQ were compiled with. For XIA API 
@@ -254,8 +248,7 @@ button. Clicking this button will divide the canvas into three sub-canvases, dis
 the timing filter and CFD output, and the energy filter output. These outputs can be used to guide the choice of DSP parameters. 
 If no trace is displayed on the canvas and the **[Analyze trace]** button is clicked, QtScope will attempt to acquire a trace to analyze.
 
-@image html analyzed_trace.PNG "QtScope displaying a trace and its simulated filter outputs from Mod. 0, Chan. 0 after 
-clicking the [Analyze trace] button." width=1200px
+@image html analyzed_trace.PNG "QtScope displaying a trace and its simulated filter outputs from Mod. 0, Chan. 0 after clicking the [Analyze trace] button." width=1200px
 
 @subsubsection sec_qtscope_gui_acq_runctl The Run Control Box
 @par
@@ -274,15 +267,13 @@ like the message @verbatim Beginning histogram run in Mod. 0 @endverbatim will b
 features that cannot be used while a run is active will be disabled. Clicking on a disabled feature will have no effect while the 
 run is active.
 
-@image html acquisition_toolbar_runactive.PNG "The acquisition toolbar state while a run is active. Some GUI elements are disabled
- while a run is active, for example, the buttons to read and analyze ADC traces."
+@image html acquisition_toolbar_runactive.PNG "The acquisition toolbar state while a run is active. Some GUI elements are disabled while a run is active, for example, the buttons to read and analyze ADC traces."
 
 @par
 To read run data and display a histogram on the canvas, click the **[Read data]** button. The canvas will be updated with the 
 acquired data as shown below.
 
-@image html histogram.PNG "Energy histogram for a pulser signal connected to a Pixie-16 module. The spectrum was displayed on 
-the canvas using the [Read data] button. Only the region of interest containing the peak is shown." width=1200px
+@image html histogram.PNG "Energy histogram for a pulser signal connected to a Pixie-16 module. The spectrum was displayed on the canvas using the [Read data] button. Only the region of interest containing the peak is shown." width=1200px
 
 @par
 When the **[End run]** button is clicked, the run will end and QtScope will return to its run inactive state. An end run message 
@@ -343,10 +334,7 @@ in the "Min x" and "Max x" boxes. The parameters p[0], p[1], etc. shown in the "
 p0, p1, etc. in the "Fit range and parameters" box. If initial parameters are not supplied by the user, QtScope will do its best 
 to guess initial parameters from the displayed data.
 
-@image html histogram_with_fit_and_panel.png "(Left) A single-channel energy histogram fit with a Gaussian function. The zoom 
-function of the plot toolbar was used to select a subset of the canvas containing the peak. (Right) The QtScope fit panel 
-displaying fit results in the ''Fit output'' text box. The fit limits and initial parameters were determined by QtScope using 
-the displayed data." width=1200px
+@image html histogram_with_fit_and_panel.png "(Left) A single-channel energy histogram fit with a Gaussian function. The zoom function of the plot toolbar was used to select a subset of the canvas containing the peak. (Right) The QtScope fit panel displaying fit results in the ''Fit output'' text box. The fit limits and initial parameters were determined by QtScope using the displayed data." width=1200px
 
 @par
 The above figures shows the best-fit Gaussian curve to the displayed data on the QtScope canvas as well as the best-fit parameter values 
@@ -463,9 +451,7 @@ channels at once.
 This is intended to prevent users from unintentionally changing previously set values. CSRA bits set on other tabs will display their status 
 on this page, but the column will be grayed out.
 
-@image html csra.PNG "The CSRA tab. Note that bits in the ''HiG'' column are enabled but the column is grayed out, indicating that the gain 
-setting must be configured elsewhere in the GUI (in this case on the ''AnalogSignal'' tab). Tooltips describing CSRA bit values can be viewed 
-by hovering the mouse over the column headings."
+@image html csra.PNG "The CSRA tab. Note that bits in the ''HiG'' column are enabled but the column is grayed out, indicating that the gain setting must be configured elsewhere in the GUI (in this case on the ''AnalogSignal'' tab). Tooltips describing CSRA bit values can be viewed by hovering the mouse over the column headings."
 
 @par
 The CSRA configurable CSRA bits and their meanings are summarized in the table below. CSRA bits are "enabled" (1) when the corresponding box 
@@ -538,8 +524,7 @@ To configure the relative timing between the module fast triggers and the valida
 timing parameters. Clicking the **[Show timing diagram]** button will display the following graphical representation of the timing parameters in 
 a popup window:
 
-@image html timing_diagram.png "A visual representation of the various timing parameters configurable on this tab. To show this diagram, click 
-the [Show timing diagram] button. The nominal fast trigger point for the hit is given by the dashed vertical line at t = 0."
+@image html timing_diagram.png "A visual representation of the various timing parameters configurable on this tab. To show this diagram, click the [Show timing diagram] button. The nominal fast trigger point for the hit is given by the dashed vertical line at t = 0."
 
 @par
 The function of the timing control parameters can be inferred from the diagram. Two details are worth mentioning: the first is that the 
@@ -576,9 +561,7 @@ system there should be only one crate configured as the director.
 <a href="https://docs.nscl.msu.edu/daq/newsite/pixie16/Pixie16_UserManual.pdf">Pixie-16 User Manual</a> for custom applications.
 Clicking the **[Display CSRB]** button will show a graphical representation of the CSRB bits, similar to @ref sec_qtscope_chandsp_csra "CSRA" tab are displayed:
 
-@image html csrb.PNG "The CSRB settings for the current crate, shown after clicking the [Display CSRB] button. Each row contains a complete set of 
-CSRB settings for a single module. Tooltips describing CSRB bit values can be viewed by hovering the mouse over the column headings. In order to 
-directly manipulate the CSRB bit values, the ''Custom'' setting must be selected from the configuration list."
+@image html csrb.PNG "The CSRB settings for the current crate, shown after clicking the [Display CSRB] button. Each row contains a complete set of CSRB settings for a single module. Tooltips describing CSRB bit values can be viewed by hovering the mouse over the column headings. In order to directly manipulate the CSRB bit values, the ''Custom'' setting must be selected from the configuration list."
 
 @subsection sec_qtscope_moddsp_trigconfig The Trigger Configuration Box
 @par
@@ -588,9 +571,7 @@ and a "Custom" option where the TrigConfig0 register is fully user-controlled. T
 the **[Display TrigConfig]** button; more information about the configurable options is given in mouse-over tooltips for each setting and in the 
 <a href="https://docs.nscl.msu.edu/daq/newsite/pixie16/Pixie16_UserManual.pdf">Pixie-16 User Manual</a>.
 
-@image html tc0.PNG "The user interface to the TrigConfig0 register. Each row contains a complete set of TrigConfig0 settings for a single module. 
-Tooltips describing the configurable settings can be viewed by hovering the mouse over the column headings. In order to directly manipulate the 
-TrigConfig0 register, select the ''Custom'' setting from the configuration list."
+@image html tc0.PNG "The user interface to the TrigConfig0 register. Each row contains a complete set of TrigConfig0 settings for a single module. Tooltips describing the configurable settings can be viewed by hovering the mouse over the column headings. In order to directly manipulate the TrigConfig0 register, select the ''Custom'' setting from the configuration list."
 
 @par
 The most common use case at the lab for configuring custom TrigConfig0 settings is to enable or disable outputs on the front panel LVDS of a module. 
