@@ -2,6 +2,8 @@ import logging
 
 from PyQt5.QtWidgets import QWidget, QSpinBox, QLabel, QHBoxLayout
 
+_logger = logging.getLogger("qtscope_logger")
+
 
 class CrateID(QWidget):
     """CrateID class widget.
@@ -18,8 +20,6 @@ class CrateID(QWidget):
         Number of modules installed in the crate.
     crate_id : QSpinBox
         Spin box to set the crate ID value.
-    logger : Logger
-        QtScope Logging instance.
 
     Methods
     -------
@@ -46,8 +46,6 @@ class CrateID(QWidget):
             Keyword arguments passed to parent ChanDSPWidget.
         """
         super().__init__(*args, **kwargs)
-
-        self.logger = logging.getLogger("qtscope_logger")
 
         self.param_names = ["CrateID"]
         self.nmodules = nmodules
@@ -87,7 +85,7 @@ class CrateID(QWidget):
             if not all(id == id_list[0] for id in id_list):
                 raise ValueError(f"Inconsistent crate IDs read on Mod. {i}")
         except ValueError as e:
-            self.logger.exception(f"Inconsistent crate ID values Mod. {i}: {id_list}")
+            _logger.exception(f"Inconsistent crate ID values Mod. {i}: {id_list}")
             print(
                 f"{e}: Re-apply your module DSP parameters and check your settings file, it may be corrupt."
             )

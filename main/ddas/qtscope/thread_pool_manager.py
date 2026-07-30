@@ -115,8 +115,8 @@ class ThreadPoolManager:
 
     The main way to interact with this class is through the `start_thread()`
     method, specifying the function to be executed within the thread and the
-    functions connected to the thread's `running`, `finished`, `result`, and
-    `error` signals. The `start_thread()` method will create and configure and
+    functions connected to the thread's `running`, `finished`, `results`, and
+    `error` signals. The `start_thread()` method will create, configure, and
     run an object encapsulating a worker thread in a QRunnable. Note that
     QThreadPool takes ownership of the runnable and will delete it if it
     returns true; otherwise ownership remains with the caller. Worker failures
@@ -211,8 +211,7 @@ class ThreadPoolManager:
         self.pool.start(worker)
 
     def get_active_thread_count(self):
-        """Return the number of threads from
-        QThreadPool.getActiveThreadCount().
+        """Return the number of threads from QThreadPool.getActiveThreadCount().
 
         Returns
         -------

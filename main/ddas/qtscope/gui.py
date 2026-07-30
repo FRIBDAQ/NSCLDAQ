@@ -18,6 +18,7 @@ from plot import Plot
 from run_type import RunType
 from trace_analyzer import TraceAnalyzer
 from thread_pool_manager import ThreadPoolManager
+from pixie_error improt PixieError
 
 _logger = logging.getLogger("qtscope_logger")
 
@@ -274,7 +275,7 @@ class MainWindow(QMainWindow):
             self.dsp_mgr.initialize_dsp(num_modules, channel_map, msps_list)
             self.chan_gui.configure(self.dsp_mgr, num_modules, msps_list, channel_map)
             self.mod_gui.configure(self.dsp_mgr, num_modules, channel_map)
-        except RuntimeError as e:
+        except PixieError as e:
             print(f"Post-boot configuration failed: {e}")
             self.sys_toolbar.b_boot.setEnabled(True)
             return
@@ -313,7 +314,7 @@ class MainWindow(QMainWindow):
 
         try:
             self.sys_utils.save_set_file(fname)
-        except RuntimeError as e:
+        except PixieError as e:
             print(f"Failed to save settings file: {e}")
         else:
             print(f"DSP parameter file saved to: {fname}")
@@ -329,14 +330,14 @@ class MainWindow(QMainWindow):
 
         try:
             self.sys_utils.load_set_file(fname)
-        except RuntimeError as e:
+        except PixieError as e:
             print(f"Failed to load settings file: {e}")
         else:
             print(f"DSP parameter file loaded from: {fname}")
             if self.sys_utils.get_boot_status() == True:
                 try:
                     self.dsp_mgr.load_new_dsp()
-                except RuntimeError as e:
+                except PixieError as e:
                     print(f"Failed to load new DSP: {e}")
                 else:
                     # Spawn workers with their own signal paths:
@@ -392,13 +393,16 @@ class MainWindow(QMainWindow):
             try:
                 module = self.acq_toolbar.current_mod.value()
                 self.run_utils.end_run(module, self.active_type)
-            except RuntimeError as e:
+            except PixieError as e:
                 _logger.error(f"Failed to end run during exit: {e}")
         try:
             self.sys_utils.exit_system()
-        except RuntimeError as e:
+        except PixieError as e:
             _logger.exception(f"Failed to exit system cleanly: {e}")
             print(e)
+        finally:
+            for u in (self.trace_utils, self.run_utils, self.dsp_mgr, self.sys_utils):
+            u.close()
         self.pool_mgr.exit()
         app = QApplication.instance()
         _logger.info("System exiting")

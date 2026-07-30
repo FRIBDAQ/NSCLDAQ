@@ -1,13 +1,9 @@
-import logging
-
 import numpy as np
 
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QVBoxLayout
 
 from extensions import MyGridLayout
-
-# @todo Some visual indication settings are changed but not applied.
 
 
 class ChanDSPWidget(QWidget):
@@ -32,8 +28,6 @@ class ChanDSPWidget(QWidget):
         Extra parameter flag.
     param_grid : MyGridLayout
         Grid of QWidgets to display DSP parameters.
-    logger : Logger
-        QtScope Logging instance.
 
     Methods
     -------
@@ -67,9 +61,6 @@ class ChanDSPWidget(QWidget):
             Number of channels per module.
         """
         super().__init__(*args, **kwargs)
-
-        self.logger = logging.getLogger("qtscope_logger")
-
         self.param_names = param_names
         self.param_labels = param_labels
         self.nchannels = nchannels

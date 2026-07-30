@@ -104,6 +104,8 @@ class SystemUtilities:
         Get the module channel count.
     get_last_error_message()
         Get the last error message from the system (DDAS, XIA, ctypes shim...).
+    close()
+        Free the C++ object, protects against double-frees.
     """
 
     def __init__(self):
@@ -341,9 +343,16 @@ class SystemUtilities:
         """
         return _lib.CPixieSystemUtilities_GetLastErrorMessage(self.obj).decode("utf-8")
 
+    def close(self):
+        """Free the C++ object. Idempotent; the freed handle is nulled so a
+        later __del__ (or a second close) does not double-free it."""
+        if self.obj is not None:
+            _lib.CPixieSystemUtilities_delete(self.obj)
+            self.obj = None
+
     def __del__(self):
         """SystemUtilities class destructor."""
-        _lib.CPixieSystemUtilities_delete(self.obj)
+        self.close()
 
 
 ##########################################################################
@@ -375,6 +384,8 @@ class DSPUtilities:
         Read a module parameter.
     get_last_error_message()
         Get the last error message from the system (DDAS, XIA, ctypes shim...).
+    close()
+        Free the C++ object, protects against double-frees.
     """
 
     def __init__(self):
@@ -593,9 +604,16 @@ class DSPUtilities:
         """
         return _lib.CPixieDSPUtilities_GetLastErrorMessage(self.obj).decode("utf-8")
 
+    def close(self):
+        """Free the C++ object. Idempotent; the freed handle is nulled so a
+        later __del__ (or a second close) does not double-free it."""
+        if self.obj is not None:
+            _lib.CPixieDSPUtilities_delete(self.obj)
+            self.obj = None
+
     def __del__(self):
-        """DSPUtilities destructor."""
-        return _lib.CPixieDSPUtilities_delete(self.obj)
+        """DSPUtilities class destructor."""
+        self.close()
 
 
 ##########################################################################
@@ -633,6 +651,8 @@ class RunUtilities:
         Get the maximum number of baselines for a single module.
     get_last_error_message()
         Get the last error message from the system (DDAS, XIA, ctypes shim...).
+    close()
+        Free the C++ object, protects against double-frees.
     """
 
     def __init__(self):
@@ -949,9 +969,16 @@ class RunUtilities:
         """
         return _lib.CPixieRunUtilities_GetLastErrorMessage(self.obj).decode("utf-8")
 
+    def close(self):
+        """Free the C++ object. Idempotent; the freed handle is nulled so a
+        later __del__ (or a second close) does not double-free it."""
+        if self.obj is not None:
+            _lib.CPixieRunUtilities_delete(self.obj)
+            self.obj = None
+
     def __del__(self):
         """RunUtilities class destructor."""
-        return _lib.CPixieRunUtilities_delete(self.obj)
+        self.close()
 
 
 ##########################################################################
@@ -981,6 +1008,8 @@ class TraceUtilities:
         Get the trace length for a single channel on a module.
     get_last_error_message()
         Get the last error message from the system (DDAS, XIA, ctypes shim...).
+    close()
+        Free the C++ object, protects against double-frees.
     """
 
     def __init__(self):
@@ -1122,6 +1151,13 @@ class TraceUtilities:
         """
         return _lib.CPixieTraceUtilities_GetLastErrorMessage(self.obj).decode("utf-8")
 
+    def close(self):
+        """Free the C++ object. Idempotent; the freed handle is nulled so a
+        later __del__ (or a second close) does not double-free it."""
+        if self.obj is not None:
+            _lib.CPixieTraceUtilities_delete(self.obj)
+            self.obj = None
+
     def __del__(self):
-        """TraceUtilities destructor. Deletes itself."""
-        return _lib.CPixieTraceUtilities_delete(self.obj)
+        """TraceUtilities class destructor."""
+        self.close()

@@ -5,6 +5,8 @@ import math
 
 import numpy as np
 
+_logger = logging.getLogger("qtscope_logger")
+
 
 @dataclass
 class FilterParameters:
@@ -26,8 +28,6 @@ class TraceAnalyzer:
 
     Attributes
     ----------
-    logger : Logger
-        QtScope Logger object.
     dsp_mgr : DSPManager
         Manager for internal DSP and interface for XIA API read/write
         operations.
@@ -51,8 +51,6 @@ class TraceAnalyzer:
             operations. Stored as self.dsp_mgr.
         """
         self.dsp_mgr = mgr
-        self.logger = logging.getLogger("qtscope_logger")
-
         self.trace = None
         self.fast_filter = None
         self.cfd = None
@@ -103,21 +101,21 @@ class TraceAnalyzer:
             raise ValueError("Trace is empty, cannot compute filters")
 
         filter_params = self._get_filter_parameters(mod, chan)
-        self.logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: {filter_params.__repr__()}"
         )
 
-        self.logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Calculating fast filter output for trace from Mod. {mod} Ch. {chan}"
         )
         self._compute_fast_filter(filter_params)
 
-        self.logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Calculating CFD output for fast filter output from Mod. {mod} Ch. {chan}"
         )
         self._compute_cfd(filter_params)
 
-        self.logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Calculating slow filter output for trace from Mod. {mod} Ch. {chan}"
         )
         self._compute_slow_filter(filter_params)
@@ -228,7 +226,7 @@ class TraceAnalyzer:
             self.slow_filter[i] = a0 * s0 + ag * sg + a1 * s1
 
             if i == len(self.trace) / 2:
-                self.logger.debug(
+                _logger.debug(
                     f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Sums {s0:.1f} {sg:.1f} {s1:.1f} filter {self.slow_filter[i]:.1f}"
                 )
 

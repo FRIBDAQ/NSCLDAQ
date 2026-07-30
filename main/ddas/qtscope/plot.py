@@ -58,8 +58,6 @@ class Plot(QWidget):
         Draw single- or multiple-channel energy histogram or baseline data.
     on_begin_run(module, run_type)
         Draw a blank histogram-style canvas when starting a histogram run.
-    update_canvas()
-        Redraw the entire canvas and all its subplots.
     get_subplot_data(chan)
         Scrape data from a subplot (e.g., if 'Read all' is checked).
     draw_test_data()
@@ -289,10 +287,6 @@ class Plot(QWidget):
             ax.set_ylabel("Counts/bin")
             self._set_yscale(ax)
             self.canvas.draw_idle()
-
-    def update_canvas(self):
-        """Redraw the whole canvas."""
-        self.canvas.draw()
 
     def get_subplot_data(self, chan):
         """Get data from a subplot (channel).

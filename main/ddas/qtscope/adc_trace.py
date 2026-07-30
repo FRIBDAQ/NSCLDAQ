@@ -8,6 +8,8 @@ from PyQt5.QtWidgets import QCheckBox, QWidget, QHBoxLayout
 from chan_dsp_widget import ChanDSPWidget
 import xia_constants as xia
 
+_logger = logging.getLogger("qtscope_logger")
+
 
 class Trace(ChanDSPWidget):
     """Trace DSP tab (ChanDSPWidget).
@@ -97,7 +99,7 @@ class Trace(ChanDSPWidget):
                     f"Inconsistent trace enable CSRA bits read on Mod. {mod}"
                 )
         except ValueError as e:
-            self.logger.exception(
+            _logger.exception(
                 f"Inconsistent trace enable CSRA bits Mod. {mod}: {enb_list}"
             )
             print(f"{e}:\n\tCheck your settings file, it may be corrupt.")

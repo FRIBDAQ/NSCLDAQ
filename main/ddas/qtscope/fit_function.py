@@ -1,9 +1,5 @@
-import logging
-
 import numpy as np
 from scipy.optimize import minimize
-
-np.seterr(all="ignore")
 
 
 class FitFunction:
@@ -17,8 +13,6 @@ class FitFunction:
         Function formula string.
     count_data : bool
         True if data represent counts (optional, default=True).
-    logger : Logger
-        QtScope Logger instance.
 
     Methods
     -------
@@ -55,7 +49,6 @@ class FitFunction:
         self.p_init = params  # Initial guesses
         self.form = form
         self.count_data = count_data
-        self.logger = logging.getLogger("qtscope_logger")
 
     def model(self, x, params):
         """The fit function over a range of x values.
@@ -174,25 +167,23 @@ class FitFunction:
         y = np.float64(y)  # Make sure y data is floating point
         self.set_initial_parameters(x, y, params)
         # If the data represents counts, use Poisson MLE, otherwise Gaussian:
-        if self.count_data:
-            result = minimize(
-                self.neg_log_likelihood_p,
-                x0=self.p_init,
-                args=(x, y),
-                method="bfgs",
-                jac="3-point",
-            )
-        else:
-            result = minimize(
-                self.neg_log_likelihood_g,
-                x0=self.p_init,
-                args=(x, y),
-                method="bfgs",
-                jac="3-point",
-            )
-        ## Most often an issue with final precision on error estimates:
-        # if not result.success:
-        #    print(f"WARNING: fit did not terminate successfully:\n{result}")
+        with np.errstate(all="ignore"):
+            if self.count_data:
+                result = minimize(
+                    self.neg_log_likelihood_p,
+                    x0=self.p_init,
+                    args=(x, y),
+                    method="bfgs",
+                    jac="3-point",
+                )
+            else:
+                result = minimize(
+                    self.neg_log_likelihood_g,
+                    x0=self.p_init,
+                    args=(x, y),
+                    method="bfgs",
+                    jac="3-point",
+                )
 
         return result
 
