@@ -87,7 +87,7 @@ def main():
     try:
         offline = int(os.getenv("QTSCOPE_OFFLINE", 0))
     except Exception as e:
-        logger.exception("Failed to read QTSCOPE_OFFLINE from env")
+        _logger.exception("Failed to read QTSCOPE_OFFLINE from env")
         sys.exit(f"QtScope main caught an exception:\n\t{e}.")
     else:
         if offline:

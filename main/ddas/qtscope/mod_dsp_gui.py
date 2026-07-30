@@ -142,7 +142,7 @@ class ModDSPGUI(QMainWindow):
         for w in self.mod_params.param_widgets:
             w.update_dsp(self.dsp_mgr)
 
-        self.toolbar.disable
+        self.toolbar.disable()
         self.pool_mgr.start_thread(
             fcn=self._write_mod_dsp,
             results=[self._display_mod_dsp],
@@ -155,7 +155,7 @@ class ModDSPGUI(QMainWindow):
         Reads values from module into the internal DSP, then updates the GUI
         from the internal DSP.
         """
-        self.toolbar.disable
+        self.toolbar.disable()
         self.pool_mgr.start_thread(
             fcn=self._read_mod_dsp,
             results=[self._display_mod_dsp],

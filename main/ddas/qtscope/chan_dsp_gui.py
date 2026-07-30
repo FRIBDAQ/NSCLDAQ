@@ -216,7 +216,7 @@ class ChanDSPGUI(QMainWindow):
 
         self.tab.update_dsp(self.dsp_mgr, self.mod_idx)
 
-        self.toolbar.disable
+        self.toolbar.disable()
         _finished = [self.toolbar.enable]
 
         if self.tab_name == "AnalogSignal":
@@ -242,11 +242,11 @@ class ChanDSPGUI(QMainWindow):
             print(f"{self.tab_name}: {reason}. Nothing was read.")
             return
 
-        self.toolbar.disable
+        self.toolbar.disable()
         _finished = [self.toolbar.enable]
 
         if self.tab_name == "AnalogSignal":
-            lambda: self.tab.b_adjust_offsets.setEnabled(False)
+            self.tab.b_adjust_offsets.setEnabled(False)
             _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
 
         self.pool_mgr.start_thread(
