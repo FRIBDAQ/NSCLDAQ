@@ -18,7 +18,7 @@ class DSPManager:
     nchannel x nChanDSP dataframe of channel DSP parameters and the dataframe
     mod_par is a 1 x nModDSP dataframe of module DSP parameters. Channel and
     module DSP parameters are defined by XIA.The rest of the system uses this
-    management class to modify the internal DSP parameter values stroed in the
+    management class to modify the internal DSP parameter values stored in the
     dataframe as well as to read/write values to/from the modules via
     getters/setters and the  DSPUtilities class.
 
@@ -32,17 +32,19 @@ class DSPManager:
     _dsp_deps : dict
         Dictionary of parameter values which depend on the value of other
         parameters. Key is the i.d. parameter name and the value a list of
-        dependant parameter names.
+        dependent parameter names.
     _nmodules : int
         Number of modules installed in the crate.
     _channel_map : list
         List of number of channels per module (zero-)indexed by module number.
+    _msps_list : list
+        ADC sampling rate in MSPS for each module, indexed by module number.
     _logger : Logger
         QtScope Logger object.
 
     Methods
     -------
-    initialize_dsp(nmod, channel_map):
+    initialize_dsp(nmod, channel_map, msps_list):
         Create and fill the DSP dictionary.
     get_chan_par(mod, chan, pname):
         Get a channel parameter value from the dataframe.
@@ -68,7 +70,7 @@ class DSPManager:
         """DSPManager class constructor."""
         self._utils = DSPUtilities()
 
-        # Set dependent paramters e.g. TRIGGER_THRESHOLD is automatically
+        # Set dependent parameters e.g. TRIGGER_THRESHOLD is automatically
         # adjusted by the API when TRIGGER_RISETIME is. Prevents Principle
         # of Least Astonishment violations.
         self._dsp_deps = {
@@ -87,6 +89,8 @@ class DSPManager:
             Number of modules installed in the system.
         channel_map : list
             Map of channels per module.
+        msps_list : list
+            ADC sampling rate in MSPS for each module.
         """
         self._dsp = {}
         self._nmodules = nmod
@@ -126,8 +130,6 @@ class DSPManager:
         -------
         float
             Channel parameter value.
-        None
-            Channel parameter name is unknown.
 
         Raises
         ------
@@ -160,13 +162,13 @@ class DSPManager:
         ValueError
             Channel parameter name is unknown.
         """
+        if pname not in xia.CHAN_PARS:
+            raise ValueError(f"{pname} is not a channel parameter name")
         if not isinstance(value, float):
             _logger.warning(
                 f"{pname} value {value} is type {type(value)}, converting to float"
             )
             value = float(value)
-        if pname not in xia.CHAN_PARS:
-            raise ValueError(f"{pname} is not a channel paramter name")
         self._dsp[mod]["chan_par"].at[chan, pname] = value
 
     def get_mod_par(self, mod, pname):
@@ -183,8 +185,6 @@ class DSPManager:
         -------
         int
             Module parameter value.
-        None
-            Module parameter name is unknown.
 
         Raises
         ------
@@ -192,7 +192,7 @@ class DSPManager:
             Module parameter name is unknown.
         """
         if pname not in xia.MOD_PARS:
-            raise ValueError(f"{pname} is not a module paramter name")
+            raise ValueError(f"{pname} is not a module parameter name")
 
         return self._dsp[mod]["mod_par"].at[0, pname]
 
@@ -213,13 +213,13 @@ class DSPManager:
         ValueError
             Module parameter name is unknown.
         """
+        if pname not in xia.MOD_PARS:
+            raise ValueError(f"{pname} is not a module parameter name")
         if not isinstance(value, int):
             _logger.warning(
                 f"{pname} value {value} is type {type(value)}, converting to int"
             )
             value = int(value)
-        if pname not in xia.MOD_PARS:
-            raise ValueError(f"{pname} is not a module paramter name")
         self._dsp[mod]["mod_par"].at[0, pname] = value
 
     def get_module_msps(self, mod):
@@ -419,7 +419,7 @@ class DSPManager:
         mod : int
             Module number.
         pname : str
-            Channel parameter name.
+            Module parameter name.
         """
         val = self.get_mod_par(mod, pname)
         if pname == "SLOW_FILTER_RANGE" and self._utils.read_mod_par(mod, pname) != val:

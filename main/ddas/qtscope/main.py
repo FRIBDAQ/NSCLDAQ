@@ -70,7 +70,7 @@ def main():
             allowed = logging._levelToName.values()
             raise ValueError(f"QTSCOPE_LOG_LEVEL={log_level} not in {allowed}")
     except Exception as e:
-        logging.exception("Error occured while configuring logger")
+        logging.exception("Error occurred while configuring logger")
         print(f"Failed to configure logger. See qtscope.log for details.")
         sys.exit()
     else:

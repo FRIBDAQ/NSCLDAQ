@@ -109,8 +109,8 @@ int CPixieTraceUtilities::ReadFastTrace(int module, int channel) {
 
 /**
  * @details
- * Boundry translation only. Get the trace length and return it as an integer.
- * The caller assumes responsibilty for making sure the module number is valid.
+ * Boundary translation only. Get the trace length and return it as an integer.
+ * The caller assumes responsibility for making sure the module number is valid.
  */
 int CPixieTraceUtilities::GetTraceLength(int module, int channel) {
   try {

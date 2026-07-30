@@ -5,11 +5,6 @@ import math
 
 import numpy as np
 
-# @todo This class needs to know the module MSPS so it can set the fixed values
-# for the CFD parameters. Probably the easiest way is to have some module
-# configuration information known by the DSP manager which can be accessed by
-# this class.
-
 
 @dataclass
 class FilterParameters:
@@ -39,7 +34,7 @@ class TraceAnalyzer:
     trace : array
         Single channel ADC trace.
     fast_filter : list
-        Fast filter output calcualted from the trace.
+        Fast filter output calculated from the trace.
     cfd : list
         CFD output calculated from the fast filter.
     slow_filter  : list
@@ -51,9 +46,9 @@ class TraceAnalyzer:
 
         Parameters
         ----------
-        dsp_mgr : DSPManager
+        mgr : DSPManager
             Manager for internal DSP and interface for XIA API read/write
-            operations.
+            operations. Stored as self.dsp_mgr.
         """
         self.dsp_mgr = mgr
         self.logger = logging.getLogger("qtscope_logger")
@@ -181,7 +176,7 @@ class TraceAnalyzer:
         Notes
         -----
         Slow (energy) filter calculation for a single-channel ADC trace. For
-        more information on the slow filter calcualtion, see [1]_.
+        more information on the slow filter calculation, see [1]_.
 
         References
         ----------
@@ -238,7 +233,24 @@ class TraceAnalyzer:
                 )
 
     def _get_filter_parameters(self, mod, chan):
-        """Read the filter parameters from the module, convert them to the nearest integer value in samples, pack them into a FilterParameters class object and return it."""
+        """Read the filter parameters, convert to samples, and pack them.
+
+        Reads the channel DSP filter parameters from the manager, converts
+        each to the nearest integer number of samples, and packs them into a
+        FilterParameters object.
+
+        Parameters
+        ----------
+        mod : int
+            Module number.
+        chan : int
+            Channel number.
+
+        Returns
+        -------
+        FilterParameters
+            The filter parameters for the module/channel, in samples.
+        """
         # Load DSP needed to calculate filters:
 
         xdt = self.dsp_mgr.get_chan_par(mod, chan, "XDT")
@@ -264,7 +276,7 @@ class TraceAnalyzer:
 
         # Since we're stuck with XDT binning, round the filter parameters to
         # the nearest integer multiple of the XDT value to convert to length
-        # in samples. Because channel DSP paramters are double we must convert
+        # in samples. Because channel DSP parameters are double we must convert
         # explicitly to integers. Minimum of 1 sample for filter risetimes and
         # CFD delay. Triangular fast filters (gap = 0 samples) are allowed.
 

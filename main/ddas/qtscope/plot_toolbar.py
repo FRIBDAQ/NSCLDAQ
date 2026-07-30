@@ -8,8 +8,8 @@ import colors
 class PlotToolBar(NavigationToolbar2QT):
     """ToolBar for matplotlib plotting widget.
 
-    Defualt feautres support basic plot manipulation (zoom region, pan, etc.).
-    Extra plotting featrues are enabled using additional widgets. Unwanted
+    Default features support basic plot manipulation (zoom region, pan, etc.).
+    Extra plotting features are enabled using additional widgets. Unwanted
     default plot configuration options can be removed via their associated
     action.
 

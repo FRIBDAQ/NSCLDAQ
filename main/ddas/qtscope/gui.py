@@ -43,6 +43,8 @@ class MainWindow(QMainWindow):
     dsp_mgr : DSPManager
         Manager for internal DSP and interface for XIA API read/write
         operations.
+    trace_analyzer : TraceAnalyzer
+        Computes fast/CFD/slow filter output for an acquired trace.
     sys_utils : SystemUtilities
         Interface to XIA API for system-level tasks.
     trace_utils : TraceUtilities
@@ -63,7 +65,9 @@ class MainWindow(QMainWindow):
          True when an energy histogram or baseline run is active, False
          otherwise.
     active_type : Enum member
-         The run type set at run start, INACTIVE if when no run is active.
+         The run type set at run start, INACTIVE when no run is active.
+    channel_map : list
+        Number of channels in each module, indexed by module number.
     trace_info : dict
         Single channel ADC trace information from last single channel
         acquisition.
@@ -89,13 +93,13 @@ class MainWindow(QMainWindow):
 
         Arguments
         ---------
-        chan_dsp_factroy : WidgetFactory
+        chan_dsp_factory : WidgetFactory
             Factory for implemented channel DSP widgets.
-        mod_dsp_factroy :WidgetFactory
+        mod_dsp_factory : WidgetFactory
             Factory for implemented module DSP widgets.
         toolbar_factory : WidgetFactory
             Factory for implemented toolbar widgets.
-        fit_factory :FitFactory
+        fit_factory : FitFactory
             Factory for implemented fitting methods.
         version : int
             XIA API major version number.
@@ -120,7 +124,7 @@ class MainWindow(QMainWindow):
 
         self.xia_api_version = version
 
-        # Access to global thread pool for this applicaition:
+        # Access to global thread pool for this application:
 
         self.pool_mgr = ThreadPoolManager()
 
@@ -220,7 +224,7 @@ class MainWindow(QMainWindow):
     def _boot(self):
         """Boot the system using the SystemUtilities.
 
-        SystemUtilities is a C++ interface tp call the relavent XIA API
+        SystemUtilities is a C++ interface to call the relevant XIA API
         functions. If the boot is successful, configure the DSP and DSP
         GUIs. Only attempt to boot if the system has not been booted
         already. The 'Boot system' button is disabled during the boot
@@ -345,9 +349,9 @@ class MainWindow(QMainWindow):
         Returns
         -------
         fname : str
-            The file name from QFileDialog.getSaveFileName.
+            The selected file name, or "" if the dialog was cancelled.
         opt : str
-            The file extension option from QFileDialog.getSaveFileName.
+            The selected name filter, or "" if the dialog was cancelled.
         """
         dialog = QFileDialog(self, "Save file")
         dialog.setAcceptMode(QFileDialog.AcceptSave)
@@ -364,9 +368,9 @@ class MainWindow(QMainWindow):
         Returns
         -------
         fname : str
-            The file name from QFileDialog.getOpenFileName.
+            The selected file name, or "" if the dialog was cancelled.
         opt : str
-            The file extension option from QFileDialog.getOpenFileName.
+            The selected name filter, or "" if the dialog was cancelled.
         """
         dialog = QFileDialog(self, "Load file")
         dialog.setAcceptMode(QFileDialog.AcceptOpen)

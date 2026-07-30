@@ -60,7 +60,7 @@ public:
   int GetHistogramData(unsigned int *data, int dataSize);
   /**
    * @brief Generate randomly distributed test baseline data.
-   * @param[in,out] data Pointer to the start of the baseline data storarge.
+   * @param[in,out] data Pointer to the start of the baseline data storage.
    * @param[in] dataSize How many data points to store.
    * @return int
    * @retval 0 Success.
@@ -71,12 +71,13 @@ private:
   /**
    * @brief Analytical function for a single pulse with exponential rise and
    * decay constants.
-   * @param C      Constant baseline.
-   * @param A      Pulse amplitude.
-   * @param t0     Start of the pulse.
-   * @param rise   Pulse risetime in ns.
-   * @param decay  Pulse exponential decay time in ns.
-   * @param sample Sample number where we compute the pulse.
+   * @param C        Constant baseline.
+   * @param A        Pulse amplitude.
+   * @param t0       Start of the pulse, in samples.
+   * @param rise     Pulse risetime in microseconds.
+   * @param decay    Pulse exponential decay time in microseconds.
+   * @param sample   Sample number where we compute the pulse.
+   * @param binWidth Sample width in microseconds (the XDT bin width).
    * @return Pulse value at input sample number.
    */
   unsigned short SinglePulse(double C, double A, double t0, double rise,

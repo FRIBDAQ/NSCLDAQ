@@ -33,6 +33,8 @@ class FitFunction:
         Gaussian negative log likelihood. Used if count_data == False.
     start(x, y, params, axis)
         Implementation of the fitting algorithm.
+    get_parameter_errors(result, x)
+        Get the parameter errors for the fit.
 
     """
 
@@ -193,3 +195,32 @@ class FitFunction:
         #    print(f"WARNING: fit did not terminate successfully:\n{result}")
 
         return result
+
+    def get_parameter_errors(self, result, x):
+        """Get the parabolic parameter uncertainties from the optimizer.
+
+        The BFGS inverse Hessian approximates the parameter covariance when
+        the objective is a negative log-likelihood, which is the case for
+        count data. The unweighted least-squares objective is 2*sigma^2
+        times a Gaussian NLL, so its covariance is 2*sigma^2 times the
+        inverse Hessian, with sigma^2 estimated from the fit residuals.
+
+        Parameters
+        ----------
+        result : OptimizeResult
+            Result returned by start().
+        x : ndarray
+            x data values the fit was performed over.
+
+        Returns
+        -------
+        ndarray
+            Standard error for each fit parameter.
+        """
+        scale = 1.0
+        if not self.count_data:
+            ndf = max(len(x) - len(result.x), 1)
+            # Note for Gaussian fits result.fun is RSS:
+            scale = 2.0 * result.fun / ndf
+
+        return np.sqrt(scale * np.diag(result.hess_inv))

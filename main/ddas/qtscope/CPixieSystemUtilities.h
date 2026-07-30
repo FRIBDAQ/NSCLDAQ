@@ -116,6 +116,7 @@ public:
   /**
    * @brief Get the number of channels on the module.
    * @param module Module number (zero-indexed).
+   * @returns The number of channels on the module.
    * @retval CPIXIEERROR_NOT_BOOTED if the system is not booted.
    * @retval CPIXIEERROR_INVALID_MODULE if the module number is invalid.
    */

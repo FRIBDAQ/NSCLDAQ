@@ -66,7 +66,9 @@ public:
    * synchronization is OFF __but__ only stops a run in a single module.
    * @param module Module number.
    * @return int
-   * @retval 0 Always, even if the run ended improperly.
+   * @retval 0   Run end attempted; may return 0 even if the run did not stop
+   * within the retry limit.
+   * @retval !=0 XIA API error code on failure.
    */
   int EndHistogramRun(int module);
   /**
@@ -98,9 +100,8 @@ public:
    * @param module  Module number.
    * @param channel Channel number on the module.
    * @return int
-   * @retval  0 Success.
-   * @retval -1 If baseline memory cannot be allocated.
-   * @retval -2 If updating the baseline histograms fails.
+   * @retval 0   Success.
+   * @retval !=0 XIA API error code on failure.
    */
   int ReadBaseline(int module, int channel);
   /**
@@ -162,7 +163,7 @@ private:
   /**
    * @brief Update baseline histograms for all channels on a single module.
    * @param module Module number.
-   * @throw CXIAExeption If the baseline read fails.
+   * @throw CXIAException If reading the module info or the baseline fails.
    */
   void UpdateBaselineHistograms(int module);
   /**
@@ -282,7 +283,7 @@ const char *CPixieRunUtilities_GetLastErrorMessage(CPixieRunUtilities *utils) {
   return utils->GetLastErrorMessage();
 }
 
-/** @brief Wrapper for the class constructor. */
+/** @brief Wrapper for the class destructor. */
 void CPixieRunUtilities_delete(CPixieRunUtilities *utils) {
   try {
     delete utils;

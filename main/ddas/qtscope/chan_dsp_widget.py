@@ -15,8 +15,9 @@ class ChanDSPWidget(QWidget):
 
     Generic channel DSP tab widget intended to be subclassed for particular
     families of DSP parameters. This class interacts only with the internal
-    DSP settings and its own display. Note that the actual DSP parameters are
-    1-indexed while the DSP grid is 0-indexed. Provides template methods for
+    DSP settings and its own display. Note that the channels are 0-indexed
+    while the DSP grid is 1-indexed (grid row 0 holds the column headers, so
+    channel i occupies grid row i + 1). Provides template methods for
     subclasses which are called in the appropriate class methods.
 
     Attributes
@@ -42,8 +43,8 @@ class ChanDSPWidget(QWidget):
         Update DSP from GUI.
     display_dsp(mgr, mod)
         Display current DSP in GUI.
-    copy_chan_dsp(mgr, mod)
-        Copy DSP from channel idx in GUI.
+    copy_chan_dsp(idx)
+        Copy DSP from channel idx to all channels in GUI.
     """
 
     def __init__(

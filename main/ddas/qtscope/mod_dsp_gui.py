@@ -24,16 +24,15 @@ class ModDSPGUI(QMainWindow):
         Toolbar for manipulating DSP settings.
     nmodules : int
         Number of installed modules in the crate.
-    dsp : DSPParameters
-        DSP parameter dictionary.
+    dsp_mgr : DSPManager
+        Manager for internal DSP and interface for XIA API read/write
+        operations.
     mod_params : ModDSPLayout
         Layout of module DSP GUI and constituent parts.
-    debug : bool
-        True to enable debugging output.
 
     Methods
     -------
-    configure(mgr, nmodules)
+    configure(mgr, nmodules, channel_map)
         Initialize module DSP layout.
     apply_dsp()
         Apply DSP settings for all modules and module parameters.
@@ -42,7 +41,7 @@ class ModDSPGUI(QMainWindow):
     cancel()
         Close the manager window.
     closeEvent(event)
-        Overridden QWidget closeEvent called by cancel().
+        Overridden QWidget closeEvent.
     """
 
     def __init__(self, mod_dsp_factory, toolbar_factory, pool_mgr, *args, **kwargs):
@@ -50,9 +49,9 @@ class ModDSPGUI(QMainWindow):
 
         Parameters
         ----------
-        mod_dsp_factroy (WidgetFactory):
+        mod_dsp_factory : WidgetFactory
             Factory for implemented module DSP parameters.
-        toolbar_factory (ToolBarFactory):
+        toolbar_factory : ToolBarFactory
             Factory for implemented toolbars.
         pool_mgr : ThreadPoolManager
             Management for global thread pool.
@@ -61,7 +60,7 @@ class ModDSPGUI(QMainWindow):
 
         self.setWindowTitle("Module DSP configuration")
 
-        # Access to global thread pool for this applicaition:
+        # Access to global thread pool for this application:
 
         self.pool_mgr = pool_mgr
 
@@ -143,9 +142,9 @@ class ModDSPGUI(QMainWindow):
         for w in self.mod_params.param_widgets:
             w.update_dsp(self.dsp_mgr)
 
+        self.toolbar.disable
         self.pool_mgr.start_thread(
             fcn=self._write_mod_dsp,
-            running=[self.toolbar.disable],
             results=[self._display_mod_dsp],
             finished=[self.toolbar.enable_mod_dsp],
         )
@@ -156,9 +155,9 @@ class ModDSPGUI(QMainWindow):
         Reads values from module into the internal DSP, then updates the GUI
         from the internal DSP.
         """
+        self.toolbar.disable
         self.pool_mgr.start_thread(
             fcn=self._read_mod_dsp,
-            running=[self.toolbar.disable],
             results=[self._display_mod_dsp],
             finished=[self.toolbar.enable_mod_dsp],
         )
@@ -166,17 +165,17 @@ class ModDSPGUI(QMainWindow):
     def cancel(self):
         """Close the ModDSPGUI window.
 
-        Ensure other opened windows are closed when the manager is closed
-        whether the cancel button or the window [X] button is used by passing
-        a QCloseEvent to an overridden QWidget closeEvent function.
+        Requests a close through Qt, which delivers a QCloseEvent to
+        closeEvent() -- the same path taken by the window [X] button -- so
+        child windows are closed either way.
         """
         self.close()
 
     def closeEvent(self, event):
         """Override default QWidget closeEvent to handle closing child windows.
 
-        Checks to see if the CSRB or TrigConfig0 windows are open, if so closes
-        them and closes itself. Accepts the QCloseEvent.
+        Closes any open CSRB, TrigConfig0, or TrigConfigExtra grid popups,
+        then accepts the QCloseEvent.
 
         Parameters
         ----------

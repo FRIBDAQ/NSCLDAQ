@@ -1,3 +1,5 @@
+import inspect
+
 from PyQt5.QtWidgets import QTabWidget, QGridLayout
 from PyQt5.QtGui import QValidator
 
@@ -100,7 +102,7 @@ class UInt32Validator(QValidator):
             return (QValidator.Invalid, input_str, pos)
 
 
-def callMe(self):
+def call_me(self):
     """A dummy function which can be hooked up to signals for testing."""
     print(
         f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Hey I just wrote you, and this is crazy\nBut here's my purpose, you should call me, maybe"

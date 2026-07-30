@@ -15,9 +15,9 @@ class SystemToolBar(QToolBar):
         Button to open channel DSP GUI.
     b_mod_gui : QPushButton
         Button to open module DSP GUI.
-    b_load_set : QPushButton
+    b_load : QPushButton
         Button to load a settings file.
-    b_save_set : QPushButton
+    b_save : QPushButton
         Button to save a settings file.
     b_about : QPushButton
         Button to display program information and Qt acknowledgments

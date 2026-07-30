@@ -198,7 +198,7 @@ int CPixieSystemUtilities::ExitSystem() {
 
 /**
  * @details
- * Perfoms bounds checking on the module number. The various
+ * Performs bounds checking on the module number. The various
  * DAQ::DDAS::Configuration accessor methods throw but ctypes does not handle
  * C++ exceptions so we catch them here and print the error message to stderr.
  * The return value is an error code that can be checked by the caller.
@@ -230,7 +230,7 @@ int CPixieSystemUtilities::GetModuleMSPS(int module) {
 
 /**
  * @details
- * Perfoms bounds checking on the module number. The various
+ * Performs bounds checking on the module number. The various
  * DAQ::DDAS::Configuration accessor methods throw but ctypes does not handle
  * C++ exceptions so we catch them here and print the error message to stderr.
  * The return value is an error code that can be checked by the caller.

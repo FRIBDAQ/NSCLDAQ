@@ -1,3 +1,25 @@
+"""pixie_utilities.py
+
+The libPixieUtilities.so library contains a set of utilities to read and write
+DSP parameters, start and stop data runs, acquire traces, etc. on the modules
+using the XIA API. This module defines a set of Python classes which interact
+with elements of the XIA Pixie-16 API via the provided shared library using the
+Python ctypes interface.
+
+Classes
+-------
+SystemUtilities
+    Python wrapper for running a 'system' of modules: boot, load/save settings,
+    exit, etc. and reading system configuration information.
+DSPUtilities
+    Python wrapper for reading and writing DSP settings to modules.
+RunUtilities
+    Python wrapper for managing run states and getting run data from modules.
+TraceUtilities
+    Python wrapper for reading and analyzing trace data.
+
+"""
+
 from ctypes import *
 import logging
 
@@ -9,28 +31,6 @@ from pixie_error import PixieError
 
 _lib = CDLL("libPixieUtilities.so")  # Must be in LD_LIBRARY_PATH.
 _logger = logging.getLogger("qtscope_logger")
-
-"""pixie_utilities.py
-
-The libPixieUtilities.so library contains a set of utilities to read and write 
-DSP parameters, start and stop data runs, acquire traces, etc. on the modules 
-using the XIA API. This module defines a set of Python classes which interact 
-with elements of the XIA Pixie-16 API via the provided shared library using the
-Python ctypes interface.
-
-Classes
--------
-SystemUtilities 
-    Python wrapper for running a 'system' of modules: boot, load/save settings,
-    exit, etc. and reading system configuration information.
-DSPUtilities
-    Python wrapper for reading and writing DSP settings to modules.
-RunUtilities
-    Python wrapper for managing run states and getting run data from modules.
-TraceUtilities
-    Python wrapper for reading and analyzing trace data.
-
-"""
 
 
 def _check_retval(retval, operation, last_error):
@@ -244,7 +244,7 @@ class SystemUtilities:
 
         Boot modules in offline mode with no attached hardware or online
         mode with hardware. Offline boot mode is configured by reading the
-        value of the envoironment variable QTSCOPE_OFFLINE at execution.
+        value of the environment variable QTSCOPE_OFFLINE at execution.
 
         Parameters
         ----------
@@ -296,6 +296,11 @@ class SystemUtilities:
     def get_module_msps(self, module):
         """Wrapper to read ADC sampling rate in MSPS from a module.
 
+        Parameters
+        ----------
+        module : int
+            Module number.
+
         Returns
         -------
         int
@@ -310,9 +315,14 @@ class SystemUtilities:
     def get_module_channel_count(self, module):
         """Wrapper to read the module channel count.
 
+        Parameters
+        ----------
+        module : int
+            Module number.
+
         Returns
         -------
-        unsigned
+        int
             Channels on the module.
         """
         return _check_retval(
@@ -611,7 +621,7 @@ class RunUtilities:
         Read data histograms for a single module.
     read_stats(module)
         Read run statistics from the specified module.
-    get_data(run_type)
+    get_data(module, run_type)
         Get single channel histogram or baseline data.
     get_run_active()
         Get the active run status of the system.
@@ -622,7 +632,7 @@ class RunUtilities:
     get_max_baselines(module)
         Get the maximum number of baselines for a single module.
     get_last_error_message()
-        Get
+        Get the last error message from the system (DDAS, XIA, ctypes shim...).
     """
 
     def __init__(self):
@@ -700,7 +710,9 @@ class RunUtilities:
             raise PixieError("Failed to create CPixieRunUtilities object")
 
     def begin_run(self, module, channels, run_type):
-        """Wrapper to begin a histogram run in a single module. All exceptions are raised to the caller.
+        """Wrapper to begin a histogram or baseline run in a single module.
+
+        An unrecognized run type is logged and ignored (no run is started).
 
         Parameters
         ----------
@@ -710,6 +722,11 @@ class RunUtilities:
             Channels on this module.
         run_type : Enum member
             Type of run to begin.
+
+        Raises
+        ------
+        PixieError
+            If the underlying begin-run call fails.
         """
         if run_type == RunType.HISTOGRAM:
             _check_retval(
@@ -731,19 +748,21 @@ class RunUtilities:
         _logger.info(f"Started run type {run_type} in Mod. {module}")
 
     def end_run(self, module, run_type):
-        """Wrapper to end a histogram run in a single module. All exceptions are raised to the caller.
+        """Wrapper to end a histogram or baseline run in a single module.
+
+        An unrecognized run type is logged and ignored.
 
         Parameters
         ----------
         module : int
             Module number.
         run_type : Enum member
-            Type of run to begin.
+            Type of run to end.
 
         Raises
         ------
         PixieError
-            Failed to end run.
+            If the underlying end-run call fails.
         """
         if run_type == RunType.HISTOGRAM:
             _check_retval(
@@ -765,7 +784,9 @@ class RunUtilities:
         _logger.info(f"Ended run type {run_type} in Mod. {module}")
 
     def read_data(self, module, channel, run_type):
-        """Wrapper to read run data from a single channel. All exceptions are raised to the caller.
+        """Wrapper to read run data from a single channel.
+
+        An unrecognized run type is logged and ignored.
 
         Parameters
         ----------
@@ -775,6 +796,11 @@ class RunUtilities:
             Channel number.
         run_type : Enum member
             Type of run data to read.
+
+        Raises
+        ------
+        PixieError
+            If the underlying read call fails.
         """
         if run_type == RunType.HISTOGRAM:
             _check_retval(
@@ -827,13 +853,16 @@ class RunUtilities:
 
         Returns
         -------
-        list
-            Python list containing the list-mode run histogram or baseline
+        ndarray
+            NumPy array containing the list-mode run histogram or baseline
             histogram data with default 1 ADC unit/channel binning.
 
         Raises
         ------
-        ValueError if the run type is unknown.
+        ValueError
+            If the run type is unknown.
+        PixieError
+            If reading the histogram length fails.
         """
         # Assume all channels on the module have the same histogram length:
         size = self.get_histogram_length(module)
@@ -874,6 +903,11 @@ class RunUtilities:
 
     def get_histogram_length(self, module):
         """Wrapper to read the histogram length for a single module.
+
+        Parameters
+        ----------
+        module : int
+            Module number.
 
         Returns
         -------
@@ -1004,7 +1038,7 @@ class TraceUtilities:
 
         Raises
         ------
-        RuntimeError
+        PixieError
             If the trace cannot be read.
         """
         _check_retval(
@@ -1014,7 +1048,7 @@ class TraceUtilities:
         )
 
     def read_fast_trace(self, module, channel):
-        """Wrapper to read an unvalidated trace from an single channel.
+        """Wrapper to read an unvalidated trace from a single channel.
 
         Parameters
         ----------
@@ -1025,7 +1059,7 @@ class TraceUtilities:
 
         Raises
         ------
-        RuntimeError
+        PixieError
             If the trace cannot be read.
         """
         _check_retval(

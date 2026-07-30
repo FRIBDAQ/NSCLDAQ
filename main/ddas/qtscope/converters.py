@@ -1,28 +1,27 @@
-from ctypes import create_string_buffer
-import sys
+"""converters.py
 
-from bitarray import bitarray, bits2bytes
-
-_is_py2 = bool(sys.version_info[0] == 2)
-
-"""
-converters.py
-
-Utilities for converting between data types and bitarray utilities 
-needed by QtScope which may not be present in the bitarray module 
+Utilities for converting between data types and bitarray utilities
+needed by QtScope which may not be present in the bitarray module
 provided in the OS repos.
 
 Methods
 -------
 str2char(pystr)
     Convert a Python string to C-type char*.
-zeros(length, endian="big") 
+zeros(length, endian="big")
     Create a bitarray of given length and endianness filled with all zeroes.
-ba2int(a, signed=False) 
+ba2int(a, signed=False)
     Convert a bitarray to an integer.
-int2ba(i, length=None, endian="big", signed=False) 
+int2ba(i, length=None, endian="big", signed=False)
     Convert an integer to a bitarray.
 """
+
+from ctypes import create_string_buffer
+import sys
+
+from bitarray import bitarray, bits2bytes
+
+_is_py2 = bool(sys.version_info[0] == 2)
 
 
 def str2char(pystr):
@@ -59,8 +58,8 @@ def zeros(length, endian="big"):
 
     Older bitarray module versions which require us to define this function
     do not necessarily support a gettable/settable  default endianness, so
-    here we assume a defualt value of "big" (as is done in 1.6.3) and instead
-    pass it as a defualt parameter value to the function.
+    here we assume a default value of "big" (as is done in 1.6.3) and instead
+    pass it as a default parameter value to the function.
 
     See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
     Copied from tag 1.6.3, which is the version of the bitarray module
@@ -163,8 +162,8 @@ def int2ba(i, length=None, endian="big", signed=False):
 
     Older bitarray module versions which require us to define this function
     do not necessarily support a gettable/settable  default endianness, so
-    here we assume a defualt value of "big" (as is done in 1.6.3) and instead
-    pass it as a defualt parameter value to the function.
+    here we assume a default value of "big" (as is done in 1.6.3) and instead
+    pass it as a default parameter value to the function.
 
     See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
     Copied largely from tag 1.6.3, which is the version of the bitarray module
@@ -183,7 +182,7 @@ def int2ba(i, length=None, endian="big", signed=False):
 
     Returns
     -------
-    int
+    bitarray
         bitarray representation of the integer.
 
     Raises

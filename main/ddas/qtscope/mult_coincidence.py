@@ -36,7 +36,8 @@ class MultCoincidence(QWidget):
     because the coincidence channel masking, multiplicity threshold, and
     coincidence width are set on the same page as the on/off. Note there is no
     copy_chan_dsp method for this class because settings are applied to all
-    channels. There is, however, still a copy_mod_dsp method.
+    channels; module-level copying is still handled externally through the
+    standard display mechanism.
 
     Attributes
     ----------
@@ -50,9 +51,9 @@ class MultCoincidence(QWidget):
         Radio button group for channel coincidence mode.
     mode_dict : dict
         Dictionary of coincidence mode settings selectable using rbgroup.
-    cb_enabled : QCheckBox
-        Checkbox for setting all channel validation CSRA bits to enable
-        coincidences on the selected module.
+    status : QLabel
+        Label displaying whether channel validation is Enabled, Disabled, or
+        Custom for the selected module.
     coinc_width : QLineEdit
         Channel coincidence width in microseconds set for all channels on the
         selected module.
@@ -60,7 +61,7 @@ class MultCoincidence(QWidget):
         Minimum multiplicity required to trigger for the selected channel
         coincidence mode set for all channels on the selected module.
     supported : bool
-        Multiplicity and Concidence masking is only supported on 16-channel
+        Multiplicity and coincidence masking is only supported on 16-channel
         modules for the time being. We do not know how these settings work
         on the Rev. H or 32-channel boards. This parameter is True iff
         nchannels == 16 and False otherwise.
@@ -234,6 +235,10 @@ class MultCoincidence(QWidget):
         and multiplicity threshold are the same for all channels on the module.
         Warns the user that inconsistent or custom values are detected.
 
+        Inconsistent channel validation CSRA bits, coincidence window widths,
+        or multiplicity thresholds across the module are detected and reported
+        to the user (logged and printed); they are not raised to the caller.
+
         Parameters
         ----------
         mgr : DSPManager
@@ -241,13 +246,6 @@ class MultCoincidence(QWidget):
             read/write operations.
         mod : int
             Module number.
-
-        Raises
-        ------
-        ValueError
-            If the channel validation CSRA bits are inconsistent, if the
-            channel trigger stretch (coincidence window width) values are
-            inconsistent, or if the multiplicity thresholds are inconsistent.
         """
         if not self.supported:
             self._disable_settings()
@@ -616,14 +614,9 @@ class MultCoincidence(QWidget):
 
         The maximum threshold is based on the currently selected channel
         coincidence group. If the old threshold is greater than the new maximum
-        threshold for the selected channel grouping, raise an exception with a
-        warning and set the new threshold to the maximum allowed value.
-
-        Raises
-        ------
-        ValueError
-            If the multiplicity threshold is greater than the maxmimum
-            multiplicity threshold for the selected channel grouping.
+        threshold for the selected channel grouping, the user is warned and the
+        threshold is clamped to the maximum allowed value. The warning is
+        handled internally; nothing is raised to the caller.
         """
         mode = self.mode_dict[self.rbgroup.checkedId()]["name"]
         mult = self.multiplicity_threshold.value()

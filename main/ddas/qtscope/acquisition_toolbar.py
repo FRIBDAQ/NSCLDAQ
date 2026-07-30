@@ -133,7 +133,6 @@ class AcquisitionToolBar(QToolBar):
             for gc in c.children():
                 if gc.isWidgetType():
                     gc.setEnabled(False)
-                    gc.repaint()
 
     def enable(self):
         """Enable widgets for system idle state."""
@@ -141,7 +140,6 @@ class AcquisitionToolBar(QToolBar):
             for gc in c.children():
                 if gc.isWidgetType():
                     gc.setEnabled(True)
-                    gc.repaint()
         self.b_read_data.setEnabled(False)
 
     def enable_run_active(self):

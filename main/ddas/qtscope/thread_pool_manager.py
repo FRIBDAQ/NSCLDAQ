@@ -42,8 +42,6 @@ class Worker(QRunnable):
         Keyword arguments to pass to the callback function.
     signals : WorkerSignals
         Signals emitted by the worker.
-    logger : Logger
-        QtScope Logger instance.
 
     Methods
     -------
@@ -117,12 +115,13 @@ class ThreadPoolManager:
 
     The main way to interact with this class is through the `start_thread()`
     method, specifying the function to be executed within the thread and the
-    functions connected to the thread's `running` and `finished` signals.
-    The `start_thread()` method will create and configure and run an object
-    encapsulating a worker thread in a QRunnable. Note that QThreadPool takes
-    ownership of the runnable and will delete it if it returns true; otherwise
-    ownership remains with the caller. Error handling and message logging is
-    the caller/runnable's responsibility.
+    functions connected to the thread's `running`, `finished`, `result`, and
+    `error` signals. The `start_thread()` method will create and configure and
+    run an object encapsulating a worker thread in a QRunnable. Note that
+    QThreadPool takes ownership of the runnable and will delete it if it
+    returns true; otherwise ownership remains with the caller. Worker failures
+    are always reported by `_report_worker_error`; the `errors` list adds
+    recovery handlers on top of that reporting.
 
     Attributes
     ----------
@@ -131,8 +130,8 @@ class ThreadPoolManager:
 
     Methods
     -------
-    start_thread(QRunnable, list, list)
-        Reserve a thread and run it's callback.
+    start_thread(fcn, running, finished, results, errors)
+        Reserve a thread and run its callback, wiring the signal handlers.
     get_active_thread_count()
         Return the number of active threads.
     wait(int)
@@ -169,23 +168,29 @@ class ThreadPoolManager:
 
         Though you can in principle pass parameters to `fcn` using args and
         kwargs, this feature is not used within QtScope and is untested.
-        In any event, all signals are expected to take no arguments. If no
-        error-handler is provided, a default handler is used. If they require
-        arguments this can be circumvented via some via a locally-defined
-        lambda function. The same can be done with `fcn`, for the time being.
+        In any event, `running`, `finished`, and `results` handlers are
+        expected to take no arguments (a `results` handler may accept the
+        returned object). Worker failures are always reported by
+        `_report_worker_error`; any handlers in `errors` are connected in
+        addition to that reporting, for recovery, not to replace it. If a
+        handler requires arguments this can be circumvented via a
+        locally-defined lambda function; the same can be done with `fcn`.
 
         Parameters
         ----------
         fcn : function
             Function to run in the thread.
-        running : list of QObjects
-            List of functions called when fcn runs.
-        finished : list of QObjects
-            List of functions called when fcn finishes.
-        results : list of QObjects
-            List of functions called when fcn produces results.
-        errors : list of QObjects
-            List of functions called when fcn produces errors.
+        running : list of callables
+            Functions connected to the `running` signal (fcn started).
+        finished : list of callables
+            Functions connected to the `finished` signal (fcn finished, on
+            both success and failure).
+        results : list of callables
+            Functions connected to the `result` signal (fcn returned
+            successfully); receive the returned object.
+        errors : list of callables
+            Recovery functions connected to the `error` signal, in addition
+            to the always-connected reporter.
         args : tuple
             Arguments to pass to the callback function.
         kwargs : dict

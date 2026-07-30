@@ -4,18 +4,21 @@ from fit_function import FitFunction
 
 
 class GaussP2Fit(FitFunction):
-    """Gaussian fitting function class used by QtScope.
+    """Gaussian-plus-quadratic-background fitting function class used by QtScope.
 
-    Implements function-specific model and set_initial_parameters methods from
-    the base class. See the documentation for the FitFunction base class in
-    fit_function.py for details.
+    Fits an un-normalized Gaussian plus a quadratic (second-order polynomial)
+    background. Implements function-specific model and set_initial_parameters
+    methods from the base class. See the documentation for the FitFunction
+    base class in fit_function.py for details.
 
     """
 
     def model(self, x, params):
         """Evaluate the fit function over x.
 
-        Implement an un-normalized Gaussian fitting function.
+        Implement an un-normalized Gaussian plus a quadratic background:
+        params[0:3] are the Gaussian amplitude, mean, and stddev; params[3:6]
+        are the quadratic background constant, linear, and quadratic terms.
 
         Parameters
         ----------
@@ -41,8 +44,10 @@ class GaussP2Fit(FitFunction):
     def set_initial_parameters(self, x, y, params):
         """Set initial parameter values.
 
-        Guess at the amplitude, mean, and stddev using the defined fit range
-        if no parameters are provided on the fit panel.
+        Guess at the Gaussian amplitude, mean, and stddev, and at the constant
+        and linear terms of the quadratic background, using the defined fit
+        range if no parameters are provided on the fit panel. The quadratic
+        term is always taken from the fit panel.
 
         Parameters
         ----------
@@ -71,7 +76,7 @@ class GaussP2FitBuilder:
     """Builder method for factory creation."""
 
     def __init__(self):
-        """GaussFitBuilder class constructor."""
+        """GaussP2FitBuilder class constructor."""
         self._instance = None
 
     def __call__(self, params=[], form="", count_data=True):
@@ -89,6 +94,9 @@ class GaussP2FitBuilder:
             starting guesses.
         form : str
             Function formula.
+        count_data : bool, default=True
+            True if the data represent counts (Poisson statistics), False for
+            unweighted least-squares. Passed through to the fit function.
 
         Returns
         -------

@@ -59,7 +59,7 @@ public:
    */
   int ReadTrace(int module, int channel);
   /**
-   * @brief Read a validated ADC trace from single channel.
+   * @brief Read an unvalidated ADC trace from single channel.
    * @param module  Module number.
    * @param channel Channel number on module for trace read.
    * @return int
@@ -181,7 +181,7 @@ CPixieTraceUtilities_GetLastErrorMessage(CPixieTraceUtilities *utils) {
   return utils->GetLastErrorMessage();
 }
 
-/** @brief Wrapper for the class constructor. */
+/** @brief Wrapper for the class destructor. */
 void CPixieTraceUtilities_delete(CPixieTraceUtilities *utils) {
   try {
     delete utils;

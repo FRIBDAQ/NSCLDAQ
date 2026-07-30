@@ -15,7 +15,7 @@
  * @{
  */
 
-/** Returned by int shims when on unexpected errors. QtScope */
+/** Sentinel returned by int shims on an unexpected (unhandled) exception. */
 constexpr int SHIM_UNEXPECTED_ERROR = -1999;
 
 /**

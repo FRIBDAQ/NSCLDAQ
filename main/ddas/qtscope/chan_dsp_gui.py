@@ -45,22 +45,22 @@ class ChanDSPGUI(QMainWindow):
 
     Methods
     -------
-    configure(dsp_manager, msps_list)
+    configure(dsp_manager, num_modules, msps_list, channel_map)
         Initialize tabbed layout.
     apply_dsp()
         Apply DSP settings for a given module and DSP settings.
     load_dsp()
         Load DSP settings for a given module and DSP settings.
-    copy_mod_par()
+    copy_mod_dsp()
         Copy DSP settings from another module.
-    copy_chan_par()
+    copy_chan_dsp()
         Copy DSP settings from another channel on this module.
     adjust_offsets()
         Adjust DC offsets for a single module.
     print_masks()
         Print channel multiplicity masks and coincidence settings.
     show_diagram()
-        Show coincidence timing help diagram descibing the settings.
+        Show coincidence timing help diagram describing the settings.
     cancel()
         Close the manager window.
     closeEvent(event)
@@ -71,8 +71,8 @@ class ChanDSPGUI(QMainWindow):
         """ChanDSPGUI class constructor.
 
         Parameters
-        ---------
-        chan_dsp_factroy : WidgetFactory
+        ----------
+        chan_dsp_factory : WidgetFactory
             Factory for implemented channel DSP widgets.
         toolbar_factory : WidgetFactory
             Factory for implemented toolbar widgets.
@@ -83,7 +83,7 @@ class ChanDSPGUI(QMainWindow):
 
         self.setWindowTitle("Channel DSP manager")
 
-        # Access to global thread pool for this applicaition:
+        # Access to global thread pool for this application:
 
         self.pool_mgr = pool_mgr
 
@@ -216,21 +216,17 @@ class ChanDSPGUI(QMainWindow):
 
         self.tab.update_dsp(self.dsp_mgr, self.mod_idx)
 
-        _fcn = lambda: self._write_chan_dsp(self.mod_idx, self.tab)
-        _running = [self.toolbar.disable]
-        _results = [
-            lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx),
-        ]
-        _finished = [
-            self.toolbar.enable,
-        ]
+        self.toolbar.disable
+        _finished = [self.toolbar.enable]
 
         if self.tab_name == "AnalogSignal":
-            _running.append(lambda: self.tab.b_adjust_offsets.setEnabled(False))
+            self.tab.b_adjust_offsets.setEnabled(False)
             _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
 
         self.pool_mgr.start_thread(
-            fcn=_fcn, running=_running, results=_results, finished=_finished
+            fcn=lambda: self._write_chan_dsp(self.mod_idx, self.tab),
+            results=[lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx)],
+            finished=_finished,
         )
 
     def load_dsp(self):
@@ -246,21 +242,17 @@ class ChanDSPGUI(QMainWindow):
             print(f"{self.tab_name}: {reason}. Nothing was applied.")
             return
 
-        _fcn = lambda: self._read_chan_dsp(self.mod_idx, self.tab)
-        _running = [self.toolbar.disable]
-        _results = [
-            lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx),
-        ]
-        _finished = [
-            self.toolbar.enable,
-        ]
+        self.toolbar.disable
+        _finished = [self.toolbar.enable]
 
         if self.tab_name == "AnalogSignal":
-            _running.append(lambda: self.tab.b_adjust_offsets.setEnabled(False))
+            lambda: self.tab.b_adjust_offsets.setEnabled(False)
             _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
 
         self.pool_mgr.start_thread(
-            fcn=_fcn, running=_running, results=_results, finished=_finished
+            fcn=lambda: self._read_chan_dsp(self.mod_idx, self.tab),
+            results=[lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx)],
+            finished=_finished,
         )
 
     def copy_mod_dsp(self):
@@ -287,14 +279,12 @@ class ChanDSPGUI(QMainWindow):
         Calls API function to automatically set DC offsets then updates GUI.
         """
         self._set_current_tab_info()
+        self.tab.b_adjust_offsets.setEnabled(False)
         self.pool_mgr.start_thread(
             fcn=lambda: self.dsp_mgr.adjust_offsets(self.mod_idx),
-            running=[
-                lambda: self.tab.b_adjust_offsets.setEnabled(False),
-                self.toolbar.disable,
-            ],
+            running=[self.toolbar.disable],
+            results=[self.load_dsp],
             finished=[
-                self.load_dsp,
                 lambda: self.tab.b_adjust_offsets.setEnabled(True),
                 self.toolbar.enable,
             ],

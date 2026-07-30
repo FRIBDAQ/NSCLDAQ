@@ -33,20 +33,16 @@ CPixieRunUtilities::~CPixieRunUtilities() {}
  * @todo Disable multiple modules from running in non-sync mode.
  */
 int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
-  SetHistogramLength(module);
-
-  m_genHistograms.assign(nChannels,
-                         std::vector<unsigned int>(m_histogramLength, 0));
-  if (m_histogram.size() != m_histogramLength) {
-    m_histogram.resize(m_histogramLength);
-  }
-  std::fill(m_histogram.begin(), m_histogram.end(), 0);
-
-  ///
-  // Begin the run:
-  //
-
   try {
+    SetHistogramLength(module);
+
+    m_genHistograms.assign(nChannels,
+                           std::vector<unsigned int>(m_histogramLength, 0));
+    if (m_histogram.size() != m_histogramLength) {
+      m_histogram.resize(m_histogramLength);
+    }
+    std::fill(m_histogram.begin(), m_histogram.end(), 0);
+
     // Set the "infinite" run time of 99999 seconds:
     std::string paramName = "HOST_RT_PRESET";
     int retval = Pixie16WriteSglModPar(paramName.c_str(),
@@ -326,7 +322,7 @@ int CPixieRunUtilities::ReadModuleStats(int module) {
  * @details
  * It is assumed that all channels on a module have the same histogram length.
  * Since this function cannot be called until after the system is booted, there
- * is no need to check for that condition here. The caller assumes responsibilty
+ * is no need to check for that condition here. The caller assumes responsibility
  * for making sure the module number is valid.
  */
 int CPixieRunUtilities::GetHistogramLength(int module) {
@@ -353,7 +349,7 @@ int CPixieRunUtilities::GetHistogramLength(int module) {
  * @details
  * It is assumed that all channels on a module have the same max baseline size.
  * Since this function cannot be called until after the system is booted, there
- * is no need to check for that condition here. The caller assumes responsibilty
+ * is no need to check for that condition here. The caller assumes responsibility
  * for making sure the module number is valid.
  */
 int CPixieRunUtilities::GetMaxBaselines(int module) {
@@ -385,7 +381,7 @@ int CPixieRunUtilities::GetMaxBaselines(int module) {
  * Update baseline histograms using data read from the module or the data
  * generator. Note that the internal histogram maintained by this class is the
  * max allowed histogram length for the module type, [0, nbins), 1 ADC unit/bin.
- * Values outside this range are dropped and not dispayed. This may result in
+ * Values outside this range are dropped and not displayed. This may result in
  * partial or no data being displayed for a baseline run depending on how the
  * baseline looks.
  * @todo (ASC 7/14/23): Handle out of range values better, at least warning

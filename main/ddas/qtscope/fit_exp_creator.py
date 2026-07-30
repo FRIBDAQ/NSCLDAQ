@@ -2,6 +2,9 @@ import numpy as np
 
 from fit_function import FitFunction
 
+# Fallback value for exponential decay constant if no parameter guess is provided:
+DECAY_FALLBACK = -0.003  # 20 us in 60 ns samples
+
 
 class ExpFit(FitFunction):
     """Exponential fitting function class used by QtScope.
@@ -34,8 +37,9 @@ class ExpFit(FitFunction):
     def set_initial_parameters(self, x, y, params):
         """Set initial parameter values.
 
-        Guess at the amplitude, mean, and stddev using the defined fit range
-        if no parameters are provided on the fit panel.
+        Guess at the amplitude, decay constant, and offset using the defined
+        fit range if no parameters are provided on the fit panel. The decay
+        constant falls back to DECAY_FALLBACK when not supplied.
 
         Parameters
         ----------
@@ -46,12 +50,11 @@ class ExpFit(FitFunction):
         params : list
             Array of fit parameters.
         """
-        k_fallback = self.p_init[1]
         super().set_initial_parameters(x, y, params)
         if self.p_init[0] == 0.0:
             self.p_init[0] = max(y) - min(y)
         if self.p_init[1] == 0.0:
-            self.p_init[1] = k_fallback
+            self.p_init[1] = DECAY_FALLBACK
         if self.p_init[2] == 0.0:
             self.p_init[2] = min(y)
 
@@ -78,6 +81,9 @@ class ExpFitBuilder:
             starting guesses.
         form : str
             Function formula.
+        count_data : bool, default=False
+            True if the data represent counts (Poisson statistics), False for
+            unweighted least-squares. Passed through to the fit function.
 
         Returns
         -------
