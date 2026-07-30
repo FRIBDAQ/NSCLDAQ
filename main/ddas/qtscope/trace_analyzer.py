@@ -73,10 +73,7 @@ class TraceAnalyzer:
             Every exception back to the caller.
         """
         self.trace = trace
-        try:
-            self._compute_filters(mod, chan)
-        except:
-            raise
+        self._compute_filters(mod, chan)
 
     ##
     # Private methods
@@ -104,17 +101,14 @@ class TraceAnalyzer:
         _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: {filter_params.__repr__()}"
         )
-
         _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Calculating fast filter output for trace from Mod. {mod} Ch. {chan}"
         )
         self._compute_fast_filter(filter_params)
-
         _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Calculating CFD output for fast filter output from Mod. {mod} Ch. {chan}"
         )
         self._compute_cfd(filter_params)
-
         _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Calculating slow filter output for trace from Mod. {mod} Ch. {chan}"
         )
