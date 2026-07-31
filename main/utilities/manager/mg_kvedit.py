@@ -21,12 +21,12 @@ import sqlite3
 import sys
 
 from nscldaq.mg_database import KvStore
+from nscldaq.mg_configutils import SaveDialog
+
 from PyQt6.QtCore import QModelIndex, QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QStandardItem, QStandardItemModel
 from PyQt6.QtWidgets import (
     QApplication,
-    QDialog,
-    QDialogButtonBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -283,32 +283,14 @@ class KvEdit(QWidget):
         self._editor.setValue('')
         
 
-class KvEditDialog(QDialog):    
+class KvEditDialog(SaveDialog):    
     '''
         Wraps KvEdit in a dialog with Save/Cancel buttons.
         
     '''
     def __init__(self, parent : QObject | None = None):
-        super().__init__(parent)
-        self._layout = QVBoxLayout()
-        self.setLayout(self._layout)
+        super().__init__(KvEdit(), parent)
         
-        self._editor = KvEdit(self)
-        self._layout.addWidget(self._editor)
-        
-        self._buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel, 
-            self
-        )
-        self._layout.addWidget(self._buttons)
-        
-        # Make the buttons actually work:
-        
-        self._buttons.accepted.connect(self.accept)
-        self._buttons.rejected.connect(self.reject)
-    
-    def workarea(self) -> KvEdit:
-        return self._editor
     
 
 class KvEditController(QObject):
