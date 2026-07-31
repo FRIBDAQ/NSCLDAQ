@@ -35,10 +35,17 @@ wizard for a simpler way to get started.
 
 from PyQt6.QtWidgets import (
     QTableView, QPushButton, QWidget, QLabel, QLineEdit,  QComboBox, QCheckBox, QFileDialog,
-    QHBoxLayout, QVBoxLayout, QStyle
+    QHBoxLayout, QVBoxLayout, QApplication, QStyle
 )
 from PyQt6.QtGui     import QStandardItemModel, QStandardItem
 from PyQt6.QtCore    import pyqtSignal, QObject, QModelIndex, Qt
+
+from nscldaq.mg_configutils import SaveDialog
+from nscldaq.mg_database import Container, EventLog
+
+
+import sqlite3
+import sys
 class EventLogTable(QTableView):
     '''
         This is a table view with integrated model for listing
@@ -308,7 +315,7 @@ class EventLogDefiner(QWidget):
         
         #  Well there's also a button to Add/Modify:
         
-        self._commit = QPushButton('Save', self)
+        self._commit = QPushButton('Add/Modify', self)
         self._commit.setIcon(
              self.style().standardIcon(getattr(QStyle.StandardPixmap, 'SP_DialogApplyButton'))
         )
@@ -474,38 +481,60 @@ class EventLogEditor(QWidget):
         return self._list.table()
     def editor(self) -> EventLogDefiner:
         return self._editor
+
+
+class EventLogEditorDialog(SaveDialog):
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(EventLogEditor(), parent)     
+    
+    
+class EventLogEditController(QObject):
+    '''
+        Controller that links the eventlogeditor dialog
+        to the database so that it is a fully functional editor
+        for the FRIB/NSCLDAQ managed environment.
+    '''
+    def __init__(self, view : EventLogEditorDialog, config: str, parent : QObject | None = None):
+        '''
+        @param view -the dialog widget that is our user interface.
+        @param config - The  configuration database file system path.
+        @parma parent - a parent object, if any.
+        '''
+        super().__init__(parent)
+        
+        self._view = view
+        self._config = config
+        self._db     = sqlite3.connect(self._config)
+        
+        self._loadview()
+    
+    
+    # Internal(private) utiltity methods:
+    
+    def _loadview(self) -> None:
+        # Load the view from the database:
+        
+        workarea = self._view.workarea()
+        # The editor container list:
+        
+        container_api = Container(self._db)
+        workarea.editor().setContainers([x['name'] for x in container_api.list()])
+        
+        # The logger definitions:
+        
+        logger_api = EventLog(self._db)
+        workarea.table().setLoggers(logger_api.list())
+    
 # Test code for now:
 
 if __name__ == "__main__":
-    from PyQt6.QtWidgets import QApplication
-    import sys
-
     
     
-    def done() -> None:
-        print(editor.definition())
-        
     app = QApplication(sys.argv)
-    someloggers = [
-        {
-            'root' : '/usr/opt/daq/12.2-009', 'ring' : 'tcp://localhost/ron', 
-            'host' : 'localhost', 'partial' : True, 
-            'destination' : '/home/ron/stagearea/partial', 'critical' : False, 'enabled' : True,
-            'container' : 'bookworm'
-        },
-        {
-            'root' : '/usr/opt/daq/12.2-009', 'ring' : 'tcp://localhost/built', 
-            'host' : 'localhost', 'partial' : False, 
-            'destination' : '/home/ron/stagearea/built', 'critical' : True, 'enabled' : True,
-            'container' : 'bookworm'
-        }
-    ]
-    win = EventLogEditor()
-    table = win.table()
-    table.setLoggers(someloggers)
-    editor = win.editor()
-    editor.setContainers(['bookworm', 'bullseye', 'jessie'])
-    editor.done.connect(done)
+    win = EventLogEditorDialog() 
+    _controller = EventLogEditController(win, 'testing.db')
+    
     
     win.show()
+   
     sys.exit(app.exec())
