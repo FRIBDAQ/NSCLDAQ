@@ -33,9 +33,12 @@ wizard for a simpler way to get started.
 * container - Container in which the logger runs.
 '''
 
-from PyQt6.QtWidgets import QTableView, QPushButton, QWidget, QHBoxLayout, QStyle
+from PyQt6.QtWidgets import (
+    QTableView, QPushButton, QWidget, QLabel, QLineEdit,  QComboBox, QCheckBox, QFileDialog,
+    QHBoxLayout, QVBoxLayout, QStyle
+)
 from PyQt6.QtGui     import QStandardItemModel, QStandardItem
-from PyQt6.QtCore    import pyqtSignal, QObject, QModelIndex
+from PyQt6.QtCore    import pyqtSignal, QObject, QModelIndex, Qt
 class EventLogTable(QTableView):
     '''
         This is a table view with integrated model for listing
@@ -221,6 +224,224 @@ class DeleteableEventlogTable(QWidget) :
             dest =  item['destination']
             t.deleteRow(dest)
         
+
+class EventLogDefiner(QWidget):
+    ''' This is a widget that provides for editing the definition of an
+        event logger.
+        
+        Attributes:
+        root - get/set daqroot
+        source - get set ringbuffer URI
+        destination - get/set destination directory.
+        host  - Get set host the logger runs in.
+        containrs - Get/set the valid containers (combobox).
+        container - Get/set the container to use
+        partial - Get/set the partial flag.
+        critical - get/set the criticality flag.
+        enabled - get/set the enabled flag
+        
+        definition - Get/set the entire form from/to a dict.
+        
+        The form supplies autonomous directory browsing for the 'root' and 'destiniation'
+        line edits.
+        
+        Signals:
+           done - user is done editing.
+        
+    '''
+    done = pyqtSignal()
+      
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        # The layout is a bunch of stacked strips
+        self._layout = QVBoxLayout(self)
+        self.setLayout(self._layout)
+        
+        # The top strip has the source and destination:
+        
+        srcdestlayout = QHBoxLayout()
+        srcdestlayout.addWidget(QLabel('Source URI:', self))
+        self._source  = QLineEdit(self)
+        srcdestlayout.addWidget(self._source)
+        
+        srcdestlayout.addWidget(QLabel('Destination:', self))
+        self._dest   = QLineEdit(self)
+        srcdestlayout.addWidget(self._dest)
+        self._browsedest = QPushButton('Browse...', self)
+        srcdestlayout.addWidget(self._browsedest)
+        
+        self._layout.addLayout(srcdestlayout)
+        
+        #  The second strip is environment in which the logger runs:
+        
+        envlayout = QHBoxLayout()
+        envlayout.addWidget(QLabel('Host: ', self))
+        self._host = QLineEdit(self)
+        envlayout.addWidget(self._host)
+        
+        envlayout.addWidget(QLabel('Container:', self))
+        self._container = QComboBox(self)
+        envlayout.addWidget(self._container)
+        
+        envlayout.addWidget(QLabel('DAQ Root:', self))
+        self._root = QLineEdit(self)
+        envlayout.addWidget(self._root)
+        self._browseroot = QPushButton('Browse...', self)
+        envlayout.addWidget(self._browseroot)
+        
+        self._layout.addLayout(envlayout)
+        
+        #  THe bottom strip are the checkboxes that the flags
+        
+        flaglayout = QHBoxLayout()
+        self._partial = QCheckBox('Partial', self)
+        flaglayout.addWidget(self._partial)
+        
+        self._critical = QCheckBox('Critical', self)
+        flaglayout.addWidget(self._critical)
+        
+        self._enabled = QCheckBox('Enable', self)
+        flaglayout.addWidget(self._enabled)
+        
+        self._layout.addLayout(flaglayout)
+        
+        #  Well there's also a button to Add/Modify:
+        
+        self._commit = QPushButton('Save', self)
+        self._commit.setIcon(
+             self.style().standardIcon(getattr(QStyle.StandardPixmap, 'SP_DialogApplyButton'))
+        )
+        self._layout.addWidget(self._commit)
+    
+        # Connect to signals
+        
+        self._commit.clicked.connect(self.done)
+        self._browseroot.clicked.connect(self._getroot)
+        self._browsedest.clicked.connect(self._getdest)
+    
+    # Implement the attributes:
+    
+    def root(self) -> str:
+        ''' @return str - The contents of the root line entry'''
+        return self._root.text()
+    def setRoot(self, root: str) -> None:
+        ''' @param root : str - new value of the root line entry'''
+        self._root.setText(root)
+        
+    def source(self) -> str:
+        ''' @return str - the contents of the sourcde line edit'''   
+        return self._source.text()
+    def setSource(self, uri : str) -> None:
+        ''' @param uri - the URI of the ringbuffer data source: '''
+        self._source.setText(uri)
+    
+    def destination(self) -> str:
+        ''' @return str - the contents of the destination line edit'''
+        return self._dest.text()
+    def setDestiniation(self, dir : str) -> None:
+        ''' @param dir : str - directory in which to record data'''
+        self._dest.setText(dir)
+        
+    def host(self) -> str:
+        ''' @return str - the host field value'''
+        return self._host.text()
+    def setHost(self, host : str) -> None:
+        ''' @param host - the ne value for the host field'''
+        self._host.setText(host)
+    
+    def containers(self) -> list[str]:
+        ''' @return list[str] - list of containers in the containeres pulldown'''
+        
+        result = list()
+        for i in range(self._container.count()):
+            result.append(self._container.itemText(i))
+        return result  
+    def setContainers(self, containers: list[str]) -> None:
+        ''' @param containers - the  list of containers to load in the combobox.'''
+        self._container.clear()
+        for c in containers:
+            self._container.addItem(c)
+    
+    def container(self) -> str:
+        ''' @return str - the currently selected container'''
+        return self._container.currentText()
+    def setContainer(self, container: str) -> None:
+        ''' @param container  - container to select.
+            @throws ValueError if container is not in the containers list.
+        '''
+        if container not in self.containers():
+            raise ValueError(f'{container} is not in the list of valid containers')
+        self._container.setCurrentText(container)
+        
+    def partial(self) -> bool:
+        ''' @return bool  - state of the partial checkbutton.'''
+        return self._checkstate(self._partial)
+    def setPartial(self, isPartial: bool) -> None:
+        ''' @param isPartial : bool - True if is a partial logger.'''
+        self._setCheckstate(self._partial, isPartial)
+    
+    def critical(self) -> bool:
+        '''' @return bool - state of the critical check button'''
+        return self._checkstate(self._critical)
+    def setCritical(self, isCritical : bool) -> None:
+        ''' @param isCritical - criticality flag.'''
+        self._setCheckstate(self._critical, isCritical)
+        
+    def enabled(self) -> bool:
+        ''' @return bool - state of the enabled checkbox'''
+        return self._checkstate(self._enabled)
+    def setEnabled(self, isEnabled : bool) -> None:
+        ''' @param isEnabled : bool - desired state of enabled checkbox'''
+        self._setCheckstate(self._enabled, isEnabled)
+        
+    # Mega attribute:
+    
+    def definition(self) -> dict:
+        ''' @return dict - the dictionary describing the logger 
+            @note it is perfectly possible some fields will be empty.
+        '''
+        return {
+            'root': self.root(), 'ring': self.source(), 'host' : self.host(),
+            'partial' : self.partial(), 'destination' : self.destination(),
+            'critical' : self.critical(), 'enabled': self.enabled(),
+            'container' : self.container()
+        }
+    def setDefinition(self, logger: dict) -> None:
+        ''' @param logger - logger definition dict.
+            @note the ['container'] dict entry must be inthe
+              valid container list else a ValueError will be raised.
+              
+        '''
+        self.setRoot(logger['root'])
+        self.setSource(logger['ring'])
+        self.setHost(logger['host'])
+        self.setPartial(logger['partial'])
+        self.setDestiniation(logger['destination'])
+        self.setCritical(logger['critical'])
+        self.setEnabled(logger['enabled'])
+        self.setContainer(logger['container'])
+        
+    # internal/private slots:
+    
+    def _getroot(self) -> None:
+        #  Browser for and set a root directory:
+        
+        dir = QFileDialog.getExistingDirectory(self, 'DAQROOT directory')
+        if dir.strip():
+            self.setRoot(dir)
+    
+    def _getdest(self) -> None:
+        dir = QFileDialog.getExistingDirectory(self, 'Log in:')
+        if dir.strip():
+            self.setDestiniation(dir)
+    
+    # Utilities:
+    
+    def _checkstate(self, widget : QCheckBox) -> bool:
+        return True if widget.checkState() == Qt.CheckState.Checked else False
+    def _setCheckstate(self, widget : QCheckBox, value : bool) -> None:
+        widget.setCheckState(Qt.CheckState.Checked if value else Qt.CheckState.Unchecked)
     
 # Test code for now:
 
@@ -232,8 +453,9 @@ if __name__ == "__main__":
     wid = DeleteableEventlogTable()
     win = wid.table()
     def sel(logger: dict) -> None:
-        print(logger)
-    
+        editor.setDefinition(logger)
+    def done() -> None:
+        print(editor.definition())
     someloggers = [
         {
             'root' : '/usr/opt/daq/12.2-009', 'ring' : 'tcp://localhost/ron', 
@@ -251,4 +473,10 @@ if __name__ == "__main__":
     win.setLoggers(someloggers)
     win.selected.connect(sel)
     wid.show()
+    
+    editor = EventLogDefiner()
+    editor.setContainers(['bookworm', 'bullseye', 'jessie'])
+    editor.setDefinition(someloggers[1])
+    editor.show()
+    editor.done.connect(done)
     sys.exit(app.exec())
