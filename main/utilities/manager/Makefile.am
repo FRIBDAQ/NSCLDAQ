@@ -6,7 +6,7 @@ program_scripts=startServer.tcl \
 
 PY_PACKAGES=mg_database.py manager_client.py editablelist.py editablelist6.py \
 	mg_clientutils.py \
-	mg_kvclient.py OutputMonitorQt.py
+	mg_kvclient.py OutputMonitorQt.py mg_configutils.py
 PYPROGRAMS=mg_logwizard.py mg_program_wizard.py mg_import.py \
 	mg_monitorOutput.py mg_mkconfig.py mg_container_wizard.py \
 	mg_cfgcontainers.py mg_cfgprogram.py mg_stateedit.py \
