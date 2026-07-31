@@ -33,7 +33,7 @@ wizard for a simpler way to get started.
 * container - Container in which the logger runs.
 '''
 
-from PyQt6.QtWidgets import QTableView
+from PyQt6.QtWidgets import QTableView, QPushButton, QWidget, QHBoxLayout, QStyle
 from PyQt6.QtGui     import QStandardItemModel, QStandardItem
 from PyQt6.QtCore    import pyqtSignal, QObject, QModelIndex
 class EventLogTable(QTableView):
@@ -47,6 +47,7 @@ class EventLogTable(QTableView):
         Methods:
             updateRow - Update a row to the new dict.
             deleteRow - Delete a row in the model.
+            rowToDIct - Get logger dict  from row.
         Signals:
             selected(dict) - A logger was double clicked somewhere.  The 
                     dict describing the logger is passed to the slot.
@@ -111,7 +112,9 @@ class EventLogTable(QTableView):
         '''
         row = self._findDestination(destination)
         self.model().takeRow(row)
-        
+    
+    def getRow(self, row: int) -> dict:
+        return self._rowToDict(row)   
     # Internal/private slots:
     
     def _doubleClickRelay(self, index :QModelIndex) -> None:
@@ -152,7 +155,7 @@ class EventLogTable(QTableView):
         return {
             'root': root, 'ring': source, 
             'host': host, 'partial': partial, 'destination' : destination,
-            'critical' : critical, 'enabled': enabled
+            'critical' : critical, 'enabled': enabled, 'container' : container
         }
         
     def _clear(self) -> None:
@@ -169,12 +172,55 @@ class EventLogTable(QTableView):
         #  Return the row that has the specified destination or IndexError if no such row.
         
         m = self.model()
-        matches = m.findItems(dest, 3)  # Detination column.
+        matches = m.findItems(dest, column=3)  # Destination column.
         if len(matches) == 0:
-            raise IndexError(f'There is no row with the destination {oddest}')
+            raise IndexError(f'There is no row with the destination {dest}')
         
         row = matches[0].row()
         return row
+
+class DeleteableEventlogTable(QWidget) :
+    '''
+        This is an event log table that allows the selected table item to be
+        deleted by clicking a delete button to the right of the table.
+        The deletion is fully autonomous. 
+        
+        Attributes:
+        table -  accesses to the EventLogTable
+        
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        self._layout = QHBoxLayout(self)
+        self.setLayout(self._layout)
+        
+        self._table = EventLogTable(self)
+        self._layout.addWidget(self._table)
+        
+        self._delete = QPushButton(self)
+        self._delete.setIcon(
+            self.style().standardIcon(getattr(QStyle.StandardPixmap, 'SP_DialogDiscardButton'))
+        )
+        self._layout.addWidget(self._delete)
+        
+        self._delete.clicked.connect(self._deleteRow)
+    
+    def table(self) -> EventLogTable:
+        return self._table
+
+    # Private internal slots:
+    
+    def _deleteRow(self) :
+        # Delete button was clicked figure out the selected row's dest and delete it:
+        t = self.table()
+        selection = t.selectedIndexes()
+        if len(selection) > 0:
+            row = selection[0].row()
+            item = t.getRow(row)
+            dest =  item['destination']
+            t.deleteRow(dest)
+        
     
 # Test code for now:
 
@@ -183,8 +229,8 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    win = EventLogTable()
-    
+    wid = DeleteableEventlogTable()
+    win = wid.table()
     def sel(logger: dict) -> None:
         print(logger)
     
@@ -204,5 +250,5 @@ if __name__ == "__main__":
     ]
     win.setLoggers(someloggers)
     win.selected.connect(sel)
-    win.show()
+    wid.show()
     sys.exit(app.exec())
