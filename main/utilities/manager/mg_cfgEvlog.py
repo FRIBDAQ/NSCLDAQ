@@ -444,6 +444,16 @@ class EventLogDefiner(QWidget):
         self.setCritical(logger['critical'])
         self.setEnabled(logger['enabled'])
         self.setContainer(logger['container'])
+    
+    def clearDefinition(self) -> None:
+        self.setRoot('')
+        self.setSource('')
+        self.setHost('')
+        self.setPartial(False)
+        self.setDestiniation('')
+        self.setCritical(False)
+        self.setEnabled(False)
+        
         
     # internal/private slots:
     
@@ -534,7 +544,7 @@ class EventLogEditController(QObject):
         # We need to handle the done signals of the editor so we can modify the table.
         
         self._view.workarea().editor().add.connect(self._addLogger)
-        
+        self._view.workarea().editor().replace.connect(self._replaceLogger)
         # Finally, we need to handle the accepted signal of the dialog.
     
     
@@ -546,10 +556,9 @@ class EventLogEditController(QObject):
     def _addLogger(self) -> None:
         # Need to be sure the editor logger is unique, then add it to the table:
         
-        table = self._view.workarea().table()
-        editor = self._view.workarea().editor()
+        table = self._table()
         
-        definition = editor.definition()
+        definition = self._editor().definition()
         # Require a complete definition
         
         if not self._definitionComplete(definition):
@@ -569,8 +578,37 @@ class EventLogEditController(QObject):
             return
         
         table.addRow(definition)
+        self._editor().clearDefinition()
+        self._priorDest = None
         
-            
+    def _replaceLogger(self) -> None:
+        # User wants to replace an existin glogger:
+        
+        table = self._table()
+        
+        definition = self._editor().definition()
+        
+        # Require a complete definition:
+        
+        if not self._definitionComplete(definition):
+            QMessageBox.warning(
+                    self._view, 'Incomplete definition',
+                    'Please complete the definition of your logger. All fields must be filled in.'
+                )
+            return
+
+        #  The original dest must exist:
+        
+        if not self._priorDest or self._priorDest not in [x['destination'] for x in table.loggers()]:
+            QMessageBox.warning(
+                            self._view, 'No such destination',
+                            f'There no logger sending data to {self._priorDest} or you have been editing a new logger.')
+            return
+        
+        table.updateRow(self._priorDest, definition)
+        
+        self._priorDest = None
+        self._editor().clearDefinition()
         
     # Internal(private) utiltity methods:
     def _definitionComplete(self, logger: dict) -> bool:
@@ -580,20 +618,26 @@ class EventLogEditController(QObject):
            and logger['host'].strip() and logger['destination'].strip() \
            and logger['container'].strip()
         
+    def _table(self) -> EventLogTable:
+        # Because I'm lazy at typing.
+        return self._view.workarea().table()
+    
+    def _editor(self) -> EventLogDefiner:
+        return self._view.workarea().editor()
     
     def _loadview(self) -> None:
         # Load the view from the database:
         
-        workarea = self._view.workarea()
+        
         # The editor container list:
         
         container_api = Container(self._db)
-        workarea.editor().setContainers([x['name'] for x in container_api.list()])
+        self._editor().setContainers([x['name'] for x in container_api.list()])
         
         # The logger definitions:
         
         logger_api = EventLog(self._db)
-        workarea.table().setLoggers(logger_api.list())
+        self._table().setLoggers(logger_api.list())
     
 
 def usage() -> None:
