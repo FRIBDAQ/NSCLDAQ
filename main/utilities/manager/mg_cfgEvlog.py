@@ -442,20 +442,50 @@ class EventLogDefiner(QWidget):
         return True if widget.checkState() == Qt.CheckState.Checked else False
     def _setCheckstate(self, widget : QCheckBox, value : bool) -> None:
         widget.setCheckState(Qt.CheckState.Checked if value else Qt.CheckState.Unchecked)
+
+class EventLogEditor(QWidget):
+    '''
+        This megawidget combines a DeletableEventlogTable with an
+        EventlogDefiner to make a complete editor.  EventLogTable
+        and the EventLogDefiner are gettable, so they can be loaded and
+        read out.  Doubleclicking the table autonomously loads the 
+        selected table line into the definer.
+    '''   
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        # Stack the two widgets:
+        
+        self._layout = QVBoxLayout(self)
+        self.setLayout(self._layout)
+        
+        self._list = DeleteableEventlogTable(self)
+        self._layout.addWidget(self._list)
+        
+        self._editor = EventLogDefiner(self)
+        self._layout.addWidget(self._editor)
+      
+        # Handle the double clicks in the table:
+        
+        self.table().selected.connect(self._editor.setDefinition)  
+    # Fetch the bits and pieces:
     
+    def table(self) -> EventLogTable:
+        return self._list.table()
+    def editor(self) -> EventLogDefiner:
+        return self._editor
 # Test code for now:
 
 if __name__ == "__main__":
     from PyQt6.QtWidgets import QApplication
     import sys
 
-    app = QApplication(sys.argv)
-    wid = DeleteableEventlogTable()
-    win = wid.table()
-    def sel(logger: dict) -> None:
-        editor.setDefinition(logger)
+    
+    
     def done() -> None:
         print(editor.definition())
+        
+    app = QApplication(sys.argv)
     someloggers = [
         {
             'root' : '/usr/opt/daq/12.2-009', 'ring' : 'tcp://localhost/ron', 
@@ -470,13 +500,12 @@ if __name__ == "__main__":
             'container' : 'bookworm'
         }
     ]
-    win.setLoggers(someloggers)
-    win.selected.connect(sel)
-    wid.show()
-    
-    editor = EventLogDefiner()
+    win = EventLogEditor()
+    table = win.table()
+    table.setLoggers(someloggers)
+    editor = win.editor()
     editor.setContainers(['bookworm', 'bullseye', 'jessie'])
-    editor.setDefinition(someloggers[1])
-    editor.show()
     editor.done.connect(done)
+    
+    win.show()
     sys.exit(app.exec())
