@@ -24,7 +24,7 @@
 
 from PyQt6.QtWidgets import (QApplication, QWidget, QListWidget, QListWidgetItem,
         QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox,
-        QFrame, QLabel, QLineEdit, QFileDialog, QDialog, QDialogButtonBox)
+        QFrame, QLabel, QLineEdit, QFileDialog, QDialog)
 from PyQt6.QtCore import QObject, pyqtSignal
 from nscldaq.mg_database import Container
 from nscldaq.mg_configutils import SaveDialog
