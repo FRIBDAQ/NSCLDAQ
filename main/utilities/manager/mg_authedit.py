@@ -38,42 +38,10 @@ from PyQt6.QtCore    import (QObject, QModelIndex, pyqtSignal)
 from nscldaq.editablelist6 import ListToListEditor
 
 from nscldaq.mg_database import Auth
+from nscldaq.mg_configutils import SaveDialog
 import sqlite3
 import sys
 
-class SaveDialog(QDialog):
-    '''
-        This is a dialog with a button box that has save and cancel buttons.
-        with a workarea widget that's passed in at construction time.
-
-    '''
-    def __init__(self, work_area: QWidget, parent: QObject | None = None):
-        super().__init__(parent)
-        
-        self._layout = QVBoxLayout()
-        self.setLayout(self._layout)
-        
-        self._workarea = work_area
-        self._layout.addWidget(self._workarea)
-        
-        self._buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
-            self
-        )
-        self._layout.addWidget(self._buttons)
-    
-        self._buttons.accepted.connect(self.accept)
-        self._buttons.rejected.connect(self.reject)
-        
-        
-    def workarea(self) -> QWidget:
-        return self._workarea
-    
-    # Turn off key handling:
-    
-    def keyPressEvent(self, event) -> None:
-        pass
-    
 class ItemDefiner(QWidget):
     '''
         This is a ListView and mechanisms for adding and removing items from the list.
