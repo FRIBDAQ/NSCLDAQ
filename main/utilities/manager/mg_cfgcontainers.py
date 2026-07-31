@@ -27,6 +27,7 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QListWidget, QListWidgetItem
         QFrame, QLabel, QLineEdit, QFileDialog, QDialog, QDialogButtonBox)
 from PyQt6.QtCore import QObject, pyqtSignal
 from nscldaq.mg_database import Container
+from nscldaq.mg_configutils import SaveDialog
 import sqlite3
 import sys
 import os
@@ -419,7 +420,7 @@ class ContainerEdit(QWidget):
         
         return self._initscript
  
-class ContainerEditDialog(QDialog):
+class ContainerEditDialog(SaveDialog):
     '''
         This will be a modal dialog with a ContainerEdit in the
         work area.  Rather than delegating all of the attributes of that
@@ -433,21 +434,8 @@ class ContainerEditDialog(QDialog):
         QDialog.Accepted.  
     '''     
     def  __init__(self, parent=None):
-        super().__init__(parent)
+        super().__init__(ContainerEdit(), parent)
         
-        self._layout = QVBoxLayout(self)
-        self._workarea = ContainerEdit(self)
-        self._layout.addWidget(self._workarea)
-        
-        self._buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel, self)
-        self._layout.addWidget(self._buttons)
-        
-        self._buttons.accepted.connect(self.accept)
-        self._buttons.rejected.connect(self.reject)
-        
-        self.setLayout(self._layout)
-    
     def workArea(self) -> ContainerEdit:
         return self._workarea
     
