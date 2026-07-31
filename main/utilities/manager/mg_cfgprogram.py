@@ -29,11 +29,12 @@ the user to define all of the characteristics of a program.
 from PyQt6.QtWidgets import (
     QWidget,  QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,
     QTableView, QAbstractItemView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton,
-    QFileDialog, QDialog, QDialogButtonBox, QMessageBox, QApplication)
+    QFileDialog, QDialog,  QMessageBox, QApplication)
 from PyQt6.QtGui import (QStandardItemModel, QStandardItem)
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject
 
 from mg_database import Program, Container
+from mg_configutils import SaveDialog
 
 import sys
 import os
@@ -629,7 +630,7 @@ class ProgramEditor(QWidget):
         self._envframe = frame
         return frame
 
-class ProgramEditorDialog(QDialog):
+class ProgramEditorDialog(SaveDialog):
     '''
         This is a dialog that contains a ProgramEditor 
         and Save/Cancel buttons.
@@ -639,23 +640,11 @@ class ProgramEditorDialog(QDialog):
     
     '''        
     def __init__(self, parent=None):
-        super().__init__(parent)
-        self._layout = QVBoxLayout()
-        self.setLayout(self._layout)
-        
-        self._editor = ProgramEditor(self)
-        self._layout.addWidget(self._editor)
-        
-        self._buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel, self)
-        self._layout.addWidget(self._buttons)
-        
-        self._buttons.accepted.connect(self.accept)
-        self._buttons.rejected.connect(self.reject)
+        super().__init__(ProgramEditor(), parent)
         
     def editor(self) -> ProgramEditor:
         ''' @return ProgramEditor - the editor the dialog is presenting. '''
-        return self._editor
+        return self.workarea()
         
 
 class ProgramEditController(QObject):
