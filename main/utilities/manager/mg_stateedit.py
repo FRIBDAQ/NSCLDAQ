@@ -25,15 +25,24 @@ legals state transitions.  Legal state transitions are defined
 
 '''
 
-from PyQt6.QtWidgets import (QListWidget, QListWidgetItem, 
-            QLabel, QLineEdit, QPushButton, QComboBox, QApplication,
-            QVBoxLayout, QHBoxLayout, QWidget, QDialog, QDialogButtonBox)
-from PyQt6.QtCore import QObject, pyqtSignal
-
-from nscldaq import mg_database
-
 import sqlite3
 import sys
+
+from nscldaq import mg_database
+from nscldaq.mg_configutils import SaveDialog
+from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class StateEditor(QWidget):
@@ -497,33 +506,13 @@ class StateEditor(QWidget):
     def _enumerateStates(self) -> list[str]:
         return   [x['name'] for x in self._stateModel]      
 
-class StateEditorDialog(QDialog):
+class StateEditorDialog(SaveDialog):
     '''
         This is a dialog that has the state editor as the
         work area.  
     '''
     def __init__(self, parent : QWidget | None = None):
-        super().__init__(parent)
-        
-        self._workarea = StateEditor(self)
-        self._buttons  = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,  
-            self)
-        
-        # Now stack them vertically:
-        
-        self._layout = QVBoxLayout()
-        self.setLayout(self._layout)
-        self._layout.addWidget(self._workarea)
-        self._layout.addWidget(self._buttons)
-        
-        # Hook the buttons in:
-        
-        self._buttons.accepted.connect(self.accept)
-        self._buttons.rejected.connect(self.reject)
-    
-    def workarea(self) -> StateEditor:
-        return self._workarea
+        super().__init__(StateEditor(), parent)
 
 
 class StateEditorController(QObject):
