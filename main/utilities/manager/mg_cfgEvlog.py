@@ -1,4 +1,4 @@
-#/usr/bin/env python3
+#!/usr/bin/env python3
 
 #    This software is Copyright by the Board of Trustees of Michigan
 #    State University (c) Copyright 2014, 2026
@@ -545,10 +545,35 @@ class EventLogEditController(QObject):
         
         self._view.workarea().editor().add.connect(self._addLogger)
         self._view.workarea().editor().replace.connect(self._replaceLogger)
+        
         # Finally, we need to handle the accepted signal of the dialog.
-    
+
+        self._view.accepted.connect(self._updateLoggers)
     
     # Internal slot handlers:
+    
+    def _updateLoggers(self):
+        # Dialog accepted changes.
+        
+        api     = EventLog(self._db)
+        
+        loggers = self._table().loggers()
+    
+        existing= api.list()
+
+        # Simplest is to delete the databse loggers and make my
+        # New ones:
+        
+        for logger in existing:
+            api.delete(logger['id'])
+        
+        for logger in loggers:
+            api.add(logger['root'], logger['ring'], logger['destination'], logger['container'], logger['host'], {
+                'partial' : logger['partial'],
+                'critical' : logger['critical'],
+                'enabled'  : logger['enabled']
+            })     
+        
     
     def _savePriorDest(self, selected_logger: dict) -> None:
         self._priorDest = selected_logger['destination']
