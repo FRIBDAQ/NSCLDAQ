@@ -33,8 +33,8 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import (QStandardItemModel, QStandardItem)
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject
 
-from mg_database import Program, Container
-from mg_configutils import SaveDialog
+from nscldaq.mg_database import Program, Container
+from nscldaq.mg_configutils import SaveDialog
 
 import sys
 import os
