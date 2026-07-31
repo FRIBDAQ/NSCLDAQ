@@ -27,7 +27,7 @@ actions that trigger as a result of a state transition.
 
 from PyQt6.QtWidgets import (QListView, QLabel, QLineEdit, QComboBox, QPushButton, 
         QWidget, QHBoxLayout, QVBoxLayout, QTableView, QAbstractItemView, QStyle, QSpinBox,
-        QDialog, QDialogButtonBox, QApplication, QMessageBox)
+        QApplication, QMessageBox)
 
 from PyQt6.QtGui import  QStandardItemModel, QStandardItem
 from PyQt6.QtCore import QModelIndex, QObject, pyqtSignal
@@ -35,6 +35,7 @@ from PyQt6.QtCore import QModelIndex, QObject, pyqtSignal
 import sys
 import sqlite3
 import pathlib
+from nscldaq.mg_configutils import SaveDialog
 from nscldaq.mg_database import Sequence, Program
 
 class SequenceSelector(QWidget):
@@ -586,35 +587,14 @@ class SequenceEditor(QWidget):
         }
         self._sequence.append(step)
 
-class SequenceEditorDialog(QDialog): 
+class SequenceEditorDialog(SaveDialog): 
     '''
         This is a dialog with a work area that consists of a SequenceEditor
         the workarea method returns the SequencdeEditor object it contains.
     '''
     def __init__(self, parent : QObject | None = None):
-        super().__init__(parent)
+        super().__init__(SequenceEditor(), parent)
         
-        self._layout = QVBoxLayout()
-        self.setLayout(self._layout)
-        
-        self._workarea = SequenceEditor(self)
-        self._layout.addWidget(self._workarea)
-        
-        self._buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
-            self
-        )
-        self._layout.addWidget(self._buttons)
-        
-        # Hook in the buttons.
-        
-        self._buttons.accepted.connect(self.accept)
-        self._buttons.rejected.connect(self.reject)
-    
-    def workarea(self) -> SequenceEditor:
-        ''' @return the SequenceEditor widget that is the workarea: '''
-        
-        return self._workarea
 
 class SequenceEditController(QObject):
     ''''
