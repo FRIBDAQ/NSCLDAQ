@@ -35,7 +35,7 @@ wizard for a simpler way to get started.
 
 from PyQt6.QtWidgets import (
     QTableView, QPushButton, QWidget, QLabel, QLineEdit,  QComboBox, QCheckBox, QFileDialog,
-    QHBoxLayout, QVBoxLayout, QApplication, QStyle
+    QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QStyle
 )
 from PyQt6.QtGui     import QStandardItemModel, QStandardItem
 from PyQt6.QtCore    import pyqtSignal, QObject, QModelIndex, Qt
@@ -55,6 +55,7 @@ class EventLogTable(QTableView):
             loggers - see the module docstrings for informationa bout
                      the format these are in.
         Methods:
+            addRow    - Add a new row.
             updateRow - Update a row to the new dict.
             deleteRow - Delete a row in the model.
             rowToDIct - Get logger dict  from row.
@@ -100,6 +101,14 @@ class EventLogTable(QTableView):
         self.verticalHeader().hide()
     # Public methods:
     
+    def addRow(self, logger : dict) -> None:
+        ''' Add a new row to the logger table.
+            @param logger -new logger row to add:
+        
+        '''
+        self.model().appendRow(self._dictToRow(logger))
+        self.resizeColumnsToContents()
+        
     def updateRow(self, olddest: str, logger: dict) -> None:
         '''
             Given a row with the specified destination, update it
@@ -115,6 +124,7 @@ class EventLogTable(QTableView):
         
         for col, item in enumerate(rowValues):
             m.setItem(row, col, item)
+        self.resizeColumnsToContents()
     
     def deleteRow(self, destination: str) -> None:
         '''
@@ -125,6 +135,7 @@ class EventLogTable(QTableView):
     
     def getRow(self, row: int) -> dict:
         return self._rowToDict(row)   
+    
     # Internal/private slots:
     
     def _doubleClickRelay(self, index :QModelIndex) -> None:
@@ -253,11 +264,11 @@ class EventLogDefiner(QWidget):
         line edits.
         
         Signals:
-           done - user is done editing.
-        
+           add - user is done editing add it.
+           replace - user is done editing, replace it... if possible else add.
     '''
-    done = pyqtSignal()
-      
+    add = pyqtSignal()
+    replace = pyqtSignal()
     def __init__(self, parent : QObject | None = None):
         super().__init__(parent)
         
@@ -313,17 +324,22 @@ class EventLogDefiner(QWidget):
         
         self._layout.addLayout(flaglayout)
         
-        #  Well there's also a button to Add/Modify:
+        #  Well there are also add/modify buttons:
         
-        self._commit = QPushButton('Add/Modify', self)
-        self._commit.setIcon(
-             self.style().standardIcon(getattr(QStyle.StandardPixmap, 'SP_DialogApplyButton'))
-        )
-        self._layout.addWidget(self._commit)
+        buttonlayout = QHBoxLayout()
+        
+        self._add = QPushButton('Add', self)
+        buttonlayout.addWidget(self._add)
+        
+        self._replace = QPushButton('Replace', self)
+        buttonlayout.addWidget(self._replace)
+        
+        self._layout.addLayout(buttonlayout)
     
         # Connect to signals
         
-        self._commit.clicked.connect(self.done)
+        self._add.clicked.connect(self.add)
+        self._replace.clicked.connect(self.replace)
         self._browseroot.clicked.connect(self._getroot)
         self._browsedest.clicked.connect(self._getdest)
     
@@ -505,11 +521,65 @@ class EventLogEditController(QObject):
         self._view = view
         self._config = config
         self._db     = sqlite3.connect(self._config)
+        self._priorDest = None 
         
         self._loadview()
+        
+        # We need to handle several signals
+        # We need to save the original destiniation when the editor is loaded
+        # so we know what to replace.
+        
+        self._view.workarea().table().selected.connect(self._savePriorDest)
+        
+        # We need to handle the done signals of the editor so we can modify the table.
+        
+        self._view.workarea().editor().add.connect(self._addLogger)
+        
+        # Finally, we need to handle the accepted signal of the dialog.
     
     
+    # Internal slot handlers:
+    
+    def _savePriorDest(self, selected_logger: dict) -> None:
+        self._priorDest = selected_logger['destination']
+    
+    def _addLogger(self) -> None:
+        # Need to be sure the editor logger is unique, then add it to the table:
+        
+        table = self._view.workarea().table()
+        editor = self._view.workarea().editor()
+        
+        definition = editor.definition()
+        # Require a complete definition
+        
+        if not self._definitionComplete(definition):
+            QMessageBox.warning(
+                            self._view, 'Incomplete definition',
+                            'Please complete the definition of your logger. All fields must be filled in.'
+                        )
+            return
+        proposed_dest = definition['destination']
+        existing   = table.loggers()
+    
+        if proposed_dest in [x['destination'] for x in existing]:
+            # Can't have double definitions:
+            QMessageBox.warning(
+                self._view, 'Duplicate destination',
+                f'There is already a logger sending data to {proposed_dest} duplicate log destination are not allowed.')
+            return
+        
+        table.addRow(definition)
+        
+            
+        
     # Internal(private) utiltity methods:
+    def _definitionComplete(self, logger: dict) -> bool:
+        # Return true if all logger fields are defined:
+        
+        return logger['root'].strip() and logger['ring'].strip() \
+           and logger['host'].strip() and logger['destination'].strip() \
+           and logger['container'].strip()
+        
     
     def _loadview(self) -> None:
         # Load the view from the database:
@@ -525,10 +595,38 @@ class EventLogEditController(QObject):
         logger_api = EventLog(self._db)
         workarea.table().setLoggers(logger_api.list())
     
-# Test code for now:
+
+def usage() -> None:
+    ''' Output the program usage to stderr: '''
+    
+    print('''
+Usage:
+    $DAQBIN/mg_cfgEventLog config_path
+    
+Configure the evenloggers for the FRIB/NSCLDAQ managed environment.
+Where:
+    config_path - is the path to the FRIB/NSCLDAQ managed environment configuration
+                  file database.
+        ''', file=sys.stderr)
+
+def main() -> int:
+    ''' Program entry point'''
+    
+    # Ensure we have a database file:
+    if len(sys.argv) !=2:
+        usage()
+        return -1
+    
+    config = sys.argv[1]
+    app = QApplication(sys.argv)
+    view = EventLogEditorDialog()
+    _controller = EventLogEditController(view, config, view)
+    
+    view.show()
+    return app.exec()
 
 if __name__ == "__main__":
-    
+    sys.exit(main())    
     
     app = QApplication(sys.argv)
     win = EventLogEditorDialog() 
