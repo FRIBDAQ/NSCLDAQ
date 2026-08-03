@@ -24,8 +24,9 @@ have to run.
 
 
 from PyQt6.QtWidgets import (QWizard, QWizardPage, QTextEdit, QVBoxLayout, QLineEdit, 
-    QComboBox, QPushButton, QLabel, QHBoxLayout, QFileDialog
+    QComboBox, QSpinBox, QCheckBox, QPushButton, QLabel, QHBoxLayout, QFileDialog
 )
+from PyQt6.QtGui import QIntValidator
 from PyQt6.QtCore    import QObject, pyqtSignal
 import getpass
 
@@ -75,7 +76,7 @@ Click the next button when you are ready to continue.
 </p>
 ''')
         self.setTitle("Introduction:")
-    def nextid(self) -> int:
+    def nextId(self) -> int:
         ''' stub for now:'''
         return 2
     
@@ -87,7 +88,7 @@ class CommonReadoutInfo(QWizardPage):
     ''' 
         There's a lot of common information that does not
         change from Readout type to readout type.  This is prompted
-        for on this page, along with the Readout type. Our nextid will
+        for on this page, along with the Readout type. Our nextId will
         wind up depending on the value of the ReadoutType combobox.
         Fields:
             Name      - name of the readout program.
@@ -136,13 +137,11 @@ class CommonReadoutInfo(QWizardPage):
         
         environLayout.addWidget(QLabel('Host', self))
         self._host = QLineEdit(self)
-        self._host.setText('            ')
         self.registerField('Host', self._host)
         environLayout.addWidget(self._host)
         
         environLayout.addWidget(QLabel('Working Dir', self))
         self._wd = QLineEdit(self)
-        self._wd.setText('            ')
         self.registerField('Directory', self._wd)
         environLayout.addWidget(self._wd)
         self._browseWd = QPushButton('Browse...', self)
@@ -210,14 +209,15 @@ class CommonReadoutInfo(QWizardPage):
     
     # Page navigation:
     
-    def nextid(self) -> int:
+    def nextId(self) -> int:
         # The next page id depends on the value of the 'ReadoutType field.
         match self.wizard().field('ReadoutType'):
             case 'XIA/DDAS':
+                print('xia')
                 return 100
             case _:
                 return -1
-            
+    
     def pageId(self) -> int:
         return 2
     
@@ -229,6 +229,95 @@ class CommonReadoutInfo(QWizardPage):
         dir = QFileDialog.getExistingDirectory(self, 'Choose Working Directory')
         if dir.strip():
             self._wd.setText(dir)
+
+class XIAParameters(QWizardPage):
+    '''
+        The parameters associated with the XIA/DDAS readout. 
+        This defines the fields:
+        
+        XIA_SortHost - Host running the sorter.
+        XIA_SortWindow - The sort window in seconds.
+        XIA_SortRingBuffer - Where the sorter puts sorted hits.
+        XIA_ReadoutBuffersize - Size of the readout buffer.
+        XIA_ReadoutFIFOTHreshold - FIFO THreshold Readout uses.
+        XIA_ReadoutScalerPeriod - Seconds between scaler readouts.
+        XIA_InFinityClock  - True if infinity is checked.
+        XIA_ClockMultiplier - Clock multiplier if infinity.
+        
+    '''
+    def __init__(self, parent : QObject | None = None) :
+        super().__init__(parent)
+    
+    def initializePage(self) -> None:
+        # The usual vertical stack of strips:
+        
+        self.setTitle('XIA/DDAS Readout parameters')
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        # Sort parameters:
+        
+        sortLayout = QHBoxLayout()
+        sortLayout.addWidget(QLabel('Sort Host', self))
+        self._sorthost = QLineEdit(self)
+        self.registerField('XIA_SortHost', self._sorthost)
+        sortLayout.addWidget(self._sorthost)
+        
+        sortLayout.addWidget(QLabel('Sort Output Ring', self))
+        self._sortring = QLineEdit(self)
+        self.registerField('XIA_SortRingBuffer', self)
+        sortLayout.addWidget(self._sortring)
+        
+        sortLayout.addWidget(QLabel('SortWindow', self))
+        self._sortwindow = QSpinBox(self)
+        self._sortwindow.setRange(1, 20)
+        self.registerField('XIA_SortWindow', self._sortwindow)
+        self._sortwindow.setValue(2)
+        sortLayout.addWidget(self._sortwindow)
+        
+        self._layout.addLayout(sortLayout)
+        
+        # Clock parameters:
+        
+        clockLayout = QHBoxLayout()
+        self._infinity = QCheckBox('Infinity Clock')
+        self.registerField('XIA_InFinityClock', self._infinity)
+        clockLayout.addWidget(self._infinity)
+        
+        clockLayout.addWidget(QLabel('Clock Mutipler', self))
+        self._multiplier = QLineEdit(self)
+        self._multiplier.setText('1')
+        self._multValidator = QIntValidator()
+        self._multValidator.setBottom(1)
+        self._multiplier.setValidator(self._multValidator)
+        self.registerField('XIA_ClockMultiplier', self._multiplier)
+        clockLayout.addWidget(self._multiplier)
+        
+        self._layout.addLayout(clockLayout)
+        
+        
+        # Additional readout parameters:
+        
+        readoutLayout = QHBoxLayout()
+        readoutLayout.addWidget(QLabel('Rdo Buffer Size'))
+        self._readoutBuffer = QLineEdit(self)
+        self._bufferValidator = QIntValidator()
+        self._bufferValidator.setBottom(8192)
+        self._bufferValidator.setTop(1024*1024*2) 
+        self._readoutBuffer.setValidator(self._bufferValidator)
+        self.registerField('XIA_ReadoutBuffersize', self._readoutBuffer)
+        self._readoutBuffer.setText('16384')
+        readoutLayout.addWidget(self._readoutBuffer)
+        
+        self._layout.addLayout(readoutLayout)
+        
+        
+    def nextId(self) -> int:
+        return -1       # No more pages.
+    
+    def pageId(self) -> int:
+        return 100     # first and only XIA page.
+        
+    
 class ReadoutWizard(QWizard):
     '''
         Readout configuration wizard.  Note that this wizard
@@ -257,12 +346,17 @@ class ReadoutWizard(QWizard):
         self._commonInfo = CommonReadoutInfo(self)
         self.setPage(self._commonInfo.pageId(), self._commonInfo)
         
+        self._xiainfo = XIAParameters(self)
+        self.setPage(self._xiainfo.pageId(), self._xiainfo)
+        
     def containers(self) -> list[str]:
         ''' @return list[str] - list of containers that are available.'''
         return self._commonInfo.containers()
     def setContainers(self, containers : list[str]) -> None:
         self._commonInfo.setContainers(containers)
     
+
+
 
 ##  Test code for now:
 
