@@ -1,5 +1,4 @@
 program_scripts=startServer.tcl \
-	mg_startloggers.tcl  \
 	mg_readout_wizard.tcl
 
 
@@ -11,7 +10,7 @@ PYPROGRAMS=mg_logwizard.py mg_program_wizard.py mg_import.py \
 	mg_cfgcontainers.py mg_cfgprogram.py mg_stateedit.py \
 	mg_seqedit.py mg_loggeredit.py mg_kvedit.py mg_authedit.py \
 	mg_config.py mg_startManager.py mg_kvget.py mg_shutdown.py \
-	mg_cfgEvlog.py
+	mg_cfgEvlog.py mg_startloggers.py
 server_scripts=mg_statusserver.tcl  mg_programserver.tcl \
 	mg_kvserver.tcl mg_evlogserver.tcl
 library_scripts=mg_containerpackage.tcl mg_containeredit.tcl \
