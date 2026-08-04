@@ -630,6 +630,16 @@ if __name__ == "__main__":
                 print('FIFO Threshold', wiz.field('XIA_ReadoutFIFOThreshold'))
             case 'VMUSB' | 'CCUSB':
                 print('XXUSB parameters')
+                print('Connect by serial:', wiz.field('XXUSB_BySerial'))
+                print('Serial string', wiz.field('XXUSB_Serial'))
+                print('DAQCONFIG', wiz.field('XXUSB_DAQConfig'))
+                print('Use timestamp extractor', wiz.field('XXUSB_UseTsExtractor'))
+                print('Ts Extract library: ', wiz.field('XXUSB_TSExtractor'))
+                print('Use CTlserver', wiz.field('XXUSB_UseControlServer'))
+                print('CTLConfigFile: ', wiz.field('XXUSB_CTLConfig'))
+                print('Port', wiz.field('XXUSB_CTLServerPort'))
+                print('Enable logging', wiz.field('XXUSB_EnableLogging'))
+                print('XXUSB_LogFile', wiz.field('XXUSB_LogFile'))
         
     app = QApplication(sys.argv)
     wiz = ReadoutWizard()
