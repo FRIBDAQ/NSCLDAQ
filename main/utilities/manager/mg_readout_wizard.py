@@ -29,6 +29,7 @@ from PyQt6.QtWidgets import (QWizard, QWizardPage, QTextEdit, QVBoxLayout, QLine
 from PyQt6.QtGui import QIntValidator
 from PyQt6.QtCore    import QObject, pyqtSignal, Qt
 import getpass
+from nscldaq.mg_configutils import EditableTable
 
 class IntroPage(QWizardPage):
     '''
@@ -220,6 +221,8 @@ class CommonReadoutInfo(QWizardPage):
                 return 100
             case 'CCUSB' | 'VMUSB':
                 return 200
+            case 'Custom':
+                return 400
             case _:
                 return -1
     
@@ -549,7 +552,79 @@ class XXUSBParameters(QWizardPage):
         file, _ = QFileDialog.getSaveFileName(self, 'Log file', '.', 'Log (*.log);;All (*)', 'Log(*.log)')
         if file.strip():
             self._logfile.setText(file)
+      
+class CustomParameters1(QWizardPage):
+    ''' 
+        First page of prompts for custom readout parameters.
+        This page gets the Readout executable. Subsequent pages
+        collect program command line parameters, and options
+        as well as environment variables.  We have the single field
         
+        CUSTOM_Executable - the program to run for the _Readout program.
+    '''  
+    def __init__(self, parent : QObject | None = None) :
+        super().__init__(parent)
+        
+    def initializePage(self) -> None:
+        self.setTitle('Custom Parameters 1:')
+        
+        self._layout = QHBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._layout.addWidget(QLabel('Readout Program:', self))
+        self._executable = QLineEdit(self)
+        self.registerField('CUSTOM_Executable', self._executable)
+        self._layout.addWidget(self._executable)
+        
+        self._browse = QPushButton('Browse...', self)
+        self._browse.clicked.connect(self._browseExecutable)
+        self._layout.addWidget(self._browse)
+        
+    
+    def nextId(self) -> int:
+        
+        return 401         # Prompt for parameters and options.
+    def pageId(self) -> int:
+        return 400
+    
+    # Internal (private) slots:
+    
+    def _browseExecutable(self) -> None:
+        #  Browse for an executable file to load into self._executable:
+        
+        file, _ = QFileDialog.getOpenFileName(self, 'Readout Program', '.', 'All Files (*)')
+        if file.strip():
+            self._executable.setText(file)
+
+class CustomParameters2(QWizardPage):
+    '''
+    Define the program options for a custom program.  This is page 401.
+    Because I'm too dumb to understand how to make custom fields.
+    We provide:  getOptions which must by somehow exported by the wizard itself.
+    That returns a list of pairs that are the program options entered by the user.
+    
+    '''
+    def __init__(self, parent  : QObject | None = None):
+        super().__init__(parent)
+    
+    def initializePage(self):
+        self.setTitle('Set Readout program options')
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._options = EditableTable()
+        self._options.table().setColumnCount(2)
+        
+        self._layout.addWidget(self._options)
+        
+    def getOptions(self) -> list[tuple[str,str]]:
+        return self._options.getPairs()
+
+    def nextId(self) -> int:
+        return -1
+    def pageId(self) -> int:
+        return 401
 class ReadoutWizard(QWizard):
     '''
         Readout configuration wizard.  Note that this wizard
@@ -589,6 +664,13 @@ class ReadoutWizard(QWizard):
         self.setPage(self._xxusbinfo.pageId(), self._xxusbinfo)
         
         
+        # Custom parameter pages:
+        
+        self._custom1 = CustomParameters1(self)
+        self.setPage(self._custom1.pageId(), self._custom1)
+        
+        self._custom2 = CustomParameters2(self)
+        self.setPage(self._custom2.pageId(), self._custom2)
         
     def containers(self) -> list[str]:
         ''' @return list[str] - list of containers that are available.'''
@@ -596,7 +678,8 @@ class ReadoutWizard(QWizard):
     def setContainers(self, containers : list[str]) -> None:
         self._commonInfo.setContainers(containers)
     
-
+    def getCustomProgramOptions(self) -> list[tuple[str,str]]:
+        return self._custom2.getOptions()
 
 
 ##  Test code for now:
@@ -640,7 +723,10 @@ if __name__ == "__main__":
                 print('Port', wiz.field('XXUSB_CTLServerPort'))
                 print('Enable logging', wiz.field('XXUSB_EnableLogging'))
                 print('XXUSB_LogFile', wiz.field('XXUSB_LogFile'))
-        
+            case 'Custom':
+                print("Custom program parameters:")
+                print(' Executable', wiz.field('CUSTOM_Executable'))
+                print('options: ', wiz.getCustomProgramOptions())
     app = QApplication(sys.argv)
     wiz = ReadoutWizard()
     wiz.accepted.connect(done)
