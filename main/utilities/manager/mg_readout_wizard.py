@@ -27,7 +27,7 @@ from PyQt6.QtWidgets import (QWizard, QWizardPage, QTextEdit, QVBoxLayout, QLine
     QComboBox, QSpinBox, QCheckBox, QPushButton, QLabel, QHBoxLayout, QFileDialog
 )
 from PyQt6.QtGui import QIntValidator
-from PyQt6.QtCore    import QObject, pyqtSignal
+from PyQt6.QtCore    import QObject, pyqtSignal, Qt
 import getpass
 
 class IntroPage(QWizardPage):
@@ -160,9 +160,13 @@ class CommonReadoutInfo(QWizardPage):
         
         outputLayout.addWidget(QLabel('Source ID', self))
         self._sourceid = QLineEdit(self)
+        self._sidValidator = QIntValidator()
+        self._sidValidator.setBottom(0)
+        self._sourceid.setValidator(self._sidValidator)
         self.registerField('SourceId', self._sourceid)
+        self._sourceid.setText('0')
         outputLayout.addWidget(self._sourceid)
-        
+    
         self._layout.addLayout(outputLayout)
         
         # ReST service information:
@@ -213,8 +217,9 @@ class CommonReadoutInfo(QWizardPage):
         # The next page id depends on the value of the 'ReadoutType field.
         match self.wizard().field('ReadoutType'):
             case 'XIA/DDAS':
-                print('xia')
                 return 100
+            case 'CCUSB' | 'VMUSB':
+                return 200
             case _:
                 return -1
     
@@ -238,11 +243,12 @@ class XIAParameters(QWizardPage):
         XIA_SortHost - Host running the sorter.
         XIA_SortWindow - The sort window in seconds.
         XIA_SortRingBuffer - Where the sorter puts sorted hits.
-        XIA_ReadoutBuffersize - Size of the readout buffer.
-        XIA_ReadoutFIFOTHreshold - FIFO THreshold Readout uses.
-        XIA_ReadoutScalerPeriod - Seconds between scaler readouts.
-        XIA_InFinityClock  - True if infinity is checked.
+        XIA_InfinityClock  - True if infinity is checked.
         XIA_ClockMultiplier - Clock multiplier if infinity.
+        XIA_ReadoutBufferSize - Size of the readout buffer.
+        XIA_ScalerPeriod      - Scaler Readout period in seconds.
+        XIA_ReadoutFIFOTHreshold - FIFO THreshold Readout uses.
+        
         
     '''
     def __init__(self, parent : QObject | None = None) :
@@ -260,11 +266,13 @@ class XIAParameters(QWizardPage):
         sortLayout.addWidget(QLabel('Sort Host', self))
         self._sorthost = QLineEdit(self)
         self.registerField('XIA_SortHost', self._sorthost)
+        self._sorthost.setText('localhost')
         sortLayout.addWidget(self._sorthost)
         
         sortLayout.addWidget(QLabel('Sort Output Ring', self))
         self._sortring = QLineEdit(self)
         self.registerField('XIA_SortRingBuffer', self)
+        self._sortring.setText(getpass.getuser() + "_sorted")
         sortLayout.addWidget(self._sortring)
         
         sortLayout.addWidget(QLabel('SortWindow', self))
@@ -280,16 +288,16 @@ class XIAParameters(QWizardPage):
         
         clockLayout = QHBoxLayout()
         self._infinity = QCheckBox('Infinity Clock')
-        self.registerField('XIA_InFinityClock', self._infinity)
+        self.registerField('XIA_InfinityClock', self._infinity)
         clockLayout.addWidget(self._infinity)
         
         clockLayout.addWidget(QLabel('Clock Mutipler', self))
         self._multiplier = QLineEdit(self)
-        self._multiplier.setText('1')
         self._multValidator = QIntValidator()
         self._multValidator.setBottom(1)
         self._multiplier.setValidator(self._multValidator)
         self.registerField('XIA_ClockMultiplier', self._multiplier)
+        self._multiplier.setText('1')
         clockLayout.addWidget(self._multiplier)
         
         self._layout.addLayout(clockLayout)
@@ -304,9 +312,26 @@ class XIAParameters(QWizardPage):
         self._bufferValidator.setBottom(8192)
         self._bufferValidator.setTop(1024*1024*2) 
         self._readoutBuffer.setValidator(self._bufferValidator)
-        self.registerField('XIA_ReadoutBuffersize', self._readoutBuffer)
+        self.registerField('XIA_ReadoutBufferSize', self._readoutBuffer)
         self._readoutBuffer.setText('16384')
         readoutLayout.addWidget(self._readoutBuffer)
+        
+        readoutLayout.addWidget(QLabel('FIFO Threshold (bytes)', self))
+        self._fifothreshold = QLineEdit(self)
+        self._fifoValidator = QIntValidator()
+        self._fifoValidator.setBottom(128)
+        self._fifoValidator.setTop(1024*1024)
+        self.registerField('XIA_ReadoutFIFOThreshold', self._fifothreshold)
+        self._fifothreshold.setText('81920')
+        readoutLayout.addWidget(self._fifothreshold)
+        
+        readoutLayout.addWidget(QLabel('Scaler Period (sec)', self))
+        self._scalersecs = QSpinBox(self)
+        self.registerField('XIA_ScalerPeriod', self._scalersecs)
+        self._scalersecs.setRange(1,100)
+        self._scalersecs.setValue(2)
+        readoutLayout.addWidget(self._scalersecs)
+        
         
         self._layout.addLayout(readoutLayout)
         
@@ -316,8 +341,215 @@ class XIAParameters(QWizardPage):
     
     def pageId(self) -> int:
         return 100     # first and only XIA page.
-        
     
+
+class XXUSBParameters(QWizardPage):
+    '''
+        Collects the parameters for the CCUSB or VMUSB readout.
+        The only difference between them is the program run
+        which is implied by the type.  We define the fields:
+        
+        * XXUSB_BySerial - True if the device is to be looked up by serial number.
+        * XXUSB_Serial   - The serial number string of the module to look up.
+        * XXUSB_DAQConfig- Path to the DAQConfig file.
+        * XXUSB_UseTsExtractor - True if a timestamp extractor is supplied.
+        * XXUSB_TSExtractor - Path to time stamp extractor shared library.
+        * XXUSB_UseControlServer - True if the control server is  enabled.
+        * XXUSB_CTLConfig  - Path to the control server configuration file.
+        * XXUSB_CTLServerPort - Control server port number
+        * XXUSB_EnableLogging - True if logging is turned on.
+        * XXUSB_LogFile     - Path to log file.
+        
+        Note that as the form is filled in, some controls will be disabled/enabled
+        depending on the state of the flags.
+        
+        
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        self._initialized = False
+        
+    def initializePage(self) -> None:
+        self.setTitle('XXUSB Readout parameters')
+        if not self._initialized:
+            self._initialized = True
+            
+            
+            self._layout = QVBoxLayout()
+            self.setLayout(self._layout)
+            
+            # How to connect to the XXUSB:
+            
+            connectLayout = QHBoxLayout()
+            self._byserial = QCheckBox('Connect By serial', self)
+            self.registerField('XXUSB_BySerial', self._byserial)
+            self._byserial.clicked.connect(self._toggleSerialString)
+            connectLayout.addWidget(self._byserial)
+            
+            connectLayout.addWidget(QLabel('Serial String', self))
+            self._serialstring = QLineEdit(self)
+            self._serialstring.setDisabled(True)
+            self.registerField('XXUSB_Serial', self._serialstring)
+            connectLayout.addWidget(self._serialstring)
+            
+            
+            self._layout.addLayout(connectLayout)
+    
+            
+            # DAQ Configuration stuff:
+            
+            daqconfigLayout = QHBoxLayout()
+            daqconfigLayout.addWidget(QLabel('DAQ Config file:', self))
+            self._daqconfigfile = QLineEdit(self)
+            self.registerField('XXUSB_DAQConfig', self._daqconfigfile)
+            daqconfigLayout.addWidget(self._daqconfigfile)
+
+            self._browsedaqconfig = QPushButton('Browse...', self)
+            daqconfigLayout.addWidget(self._browsedaqconfig)
+            self._browsedaqconfig.clicked.connect(self._browseDaqConfig)        
+            
+            self._layout.addLayout(daqconfigLayout)
+            
+            
+            
+            # Timestamp stuff:
+            
+            tsLayout = QHBoxLayout()
+            self._extractts = QCheckBox('Extract Timestamps')
+            self.registerField('XXUSB_UseTsExtractor', self._extractts)
+            tsLayout.addWidget(self._extractts)
+            self._extractts.clicked.connect(self._toggleTsFields)
+            
+            tsLayout.addWidget(QLabel('Extractor library', self))
+            self._tsextractor = QLineEdit(self)
+            self.registerField('XXUSB_TSExtractor', self._tsextractor)
+            self._tsextractor.setDisabled(True)
+            tsLayout.addWidget(self._tsextractor)
+            
+            self._browsextractor = QPushButton('Browse...')
+            self._browsextractor.clicked.connect(self._browseExtractor)
+            self._browsextractor.setDisabled(True)
+            tsLayout.addWidget(self._browsextractor)
+            
+            self._layout.addLayout(tsLayout)
+            
+            # Control server:
+            
+            self._usectlserver = QCheckBox('Run Control server', self)
+            self.registerField('XXUSB_UseControlServer', self._usectlserver)
+            self._layout.addWidget(self._usectlserver)
+            self._usectlserver.clicked.connect(self._toggleControlServer)
+            
+            ctlLayout = QHBoxLayout()
+            ctlLayout.addWidget(QLabel('CTL Config file', self))
+            self._ctlconfig = QLineEdit(self)
+            self.registerField('XXUSB_CTLConfig', self._ctlconfig)
+            self._ctlconfig.setDisabled(True)
+            ctlLayout.addWidget(self._ctlconfig)
+            
+            self._browsectlconfig = QPushButton('Browse...', self)
+            self._browsectlconfig.clicked.connect(self._browseCtlConfig)
+            ctlLayout.addWidget(self._browsectlconfig)
+            
+            ctlLayout.addWidget(QLabel('Port', self))
+            self._ctlport = QSpinBox(self)
+            ctlLayout.addWidget(self._ctlport)
+            self.registerField('XXUSB_CTLServerPort', self._ctlport)
+            self._ctlport.setMinimum(1024)     # Non privileged port.
+            self._ctlport.setMaximum(29999)    # Below the managed ports.
+            self._ctlport.setDisabled(True)
+            
+            self._layout.addLayout(ctlLayout)
+        
+        
+            # Log configuration.    
+        
+            logLayout = QHBoxLayout()
+            
+            self._logging = QCheckBox('Enable Logging', self)
+            self.registerField('XXUSB_EnableLogging', self._logging)
+            logLayout.addWidget(self._logging)
+            self._logging.clicked.connect(self._toggleLogging)
+            
+            self._logfile = QLineEdit(self)
+            self.registerField('XXUSB_LogFile', self._logfile)
+            self._logfile.setDisabled(True)
+            logLayout.addWidget(self._logfile)
+            
+            self._browselog = QPushButton('Browse...')
+            self._browselog.setDisabled(True)
+            self._browselog.clicked.connect(self._browseLogFile)
+            logLayout.addWidget(self._browselog)
+            
+            self._layout.addLayout(logLayout)
+        
+    def nextId(self) -> int:
+        return -1
+    def pageId(self) -> int:
+        return 200
+    
+    # Private slots:
+    
+    def _toggleSerialString(self) -> None:
+        # Called to enable/disable the self._serialstring field
+        # depending on the state of the _byserial checkbutton.
+        
+        disabled = False if self._byserial.checkState() == Qt.CheckState.Checked else True
+        self._serialstring.setDisabled(disabled)
+        
+    def _browseDaqConfig(self) -> None:
+        # Browse button clicked for daq confi8g:
+        
+        file_path, _  = QFileDialog.getOpenFileName(self, 'DAQConfig script', '.', 'Tcl (*.tcl);;All Files (*)', '*.tcl')
+        if file_path.strip():
+            self._daqconfigfile.setText(file_path)
+    def _toggleTsFields(self) -> None:
+        ## The tmestamp extract enable checkbutton was tolggled. This affects
+        # the line edit and button states:
+        
+        disabled = False if self._extractts.checkState() == Qt.CheckState.Checked else True        
+        self._tsextractor.setDisabled(disabled)
+        self._browsextractor.setDisabled(disabled)
+        
+    def _browseExtractor(self) -> None:
+        # Browse for a file to put in the ts extractor line edit.
+        
+        file, _ = QFileDialog.getOpenFileName(
+            self, 'Timestamp extraction library', '.', 'Shared Libs (*.so);;All Files (*)', '*.so'
+        )
+        if file.strip():
+            self._tsextractor.setText(file)
+           
+    def _toggleControlServer(self) -> None:
+        # Toggle the enables on the control server 
+        
+        disabled = False if self._usectlserver.checkState() == Qt.CheckState.Checked else True
+        
+        self._ctlconfig.setDisabled(disabled)
+        self._browsectlconfig.setDisabled(disabled)
+        self._ctlport.setDisabled(disabled)
+    
+    def _browseCtlConfig(self) -> None:
+        # Browse for a control configuration script:
+        
+        file_path, _  = QFileDialog.getOpenFileName(self, 'CTLConfig script', '.', 'Tcl (*.tcl);;All Files (*)', '*.tcl')
+        if file_path.strip():
+            self._ctlconfig.setText(file_path)
+    
+    def _toggleLogging(self) -> None:
+        # Toggle the enables on the widgets for logging:
+        
+        disabled = False if self._logging.checkState() == Qt.CheckState.Checked else True
+        self._logfile.setDisabled(disabled)
+        self._browselog.setDisabled(disabled)
+        
+    def _browseLogFile(self) -> None:
+        # Browse for a log file.  This can be a new file:
+        
+        file, _ = QFileDialog.getSaveFileName(self, 'Log file', '.', 'Log (*.log);;All (*)', 'Log(*.log)')
+        if file.strip():
+            self._logfile.setText(file)
+        
 class ReadoutWizard(QWizard):
     '''
         Readout configuration wizard.  Note that this wizard
@@ -346,8 +578,17 @@ class ReadoutWizard(QWizard):
         self._commonInfo = CommonReadoutInfo(self)
         self.setPage(self._commonInfo.pageId(), self._commonInfo)
         
+        # XIA Parameter page(s)
+        
         self._xiainfo = XIAParameters(self)
         self.setPage(self._xiainfo.pageId(), self._xiainfo)
+        
+        # XXUSB parameter page(s)
+        
+        self._xxusbinfo = XXUSBParameters(self)
+        self.setPage(self._xxusbinfo.pageId(), self._xxusbinfo)
+        
+        
         
     def containers(self) -> list[str]:
         ''' @return list[str] - list of containers that are available.'''
@@ -375,6 +616,20 @@ if __name__ == "__main__":
         print('SrcId', wiz.field('SourceId'))
         print('User', wiz.field('User'))
         print('Type: ', wiz.field('ReadoutType'))
+        
+        match wiz.field('ReadoutType'):
+            case 'XIA/DDAS':
+                print('XIA parameters')
+                print('sorting at ', wiz.field('XIA_SortHost'))
+                print('Sort window', wiz.field('XIA_SortWindow'))
+                print('Sortoutput ring', wiz.field('XIA_SortRingBuffer'))
+                print('Infinity clock', wiz.field('XIA_InfinityClock'))
+                print("Clock Mult"), wiz.field('XIA_ClockMultiplier')
+                print('Readout  Buffer', wiz.field('XIA_ReadoutBufferSize'))
+                print('Scaler  Period', wiz.field('XIA_ScalerPeriod'))
+                print('FIFO Threshold', wiz.field('XIA_ReadoutFIFOThreshold'))
+            case 'VMUSB' | 'CCUSB':
+                print('XXUSB parameters')
         
     app = QApplication(sys.argv)
     wiz = ReadoutWizard()
