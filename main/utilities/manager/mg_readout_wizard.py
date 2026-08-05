@@ -24,7 +24,8 @@ have to run.
 
 
 from PyQt6.QtWidgets import (QWizard, QWizardPage, QTextEdit, QVBoxLayout, QLineEdit, 
-    QComboBox, QSpinBox, QCheckBox, QPushButton, QLabel, QHBoxLayout, QFileDialog
+    QComboBox, QSpinBox, QCheckBox, QPushButton, QLabel, QHBoxLayout, QFileDialog,
+    QRadioButton
 )
 from PyQt6.QtGui import QIntValidator
 from PyQt6.QtCore    import QObject, pyqtSignal, Qt
@@ -219,10 +220,13 @@ class CommonReadoutInfo(QWizardPage):
         match self.wizard().field('ReadoutType'):
             case 'XIA/DDAS':
                 return 100
-            case 'CCUSB' | 'VMUSB':
+            case 'CCUSB' | 'VMUSB':   # These have the same parameter sets.
                 return 200
+            case 'MVLC':
+                            return 300
             case 'Custom':
                 return 400
+            
             case _:
                 return -1
     
@@ -338,7 +342,7 @@ class XIAParameters(QWizardPage):
         
         self._layout.addLayout(readoutLayout)
         
-        
+            
     def nextId(self) -> int:
         return -1       # No more pages.
     
@@ -688,7 +692,74 @@ class CustomParameters4(QWizardPage):
     def pageId(self) -> int:
         return 403
 
+class MVLCProgram(QWizardPage):
+    '''
+        In order to use the MVLCReadout the user must find the
+        fribdaq-readout program in the file system.
+        This is usually somewhere in /usr/opt/mesytec-mvlc/x.y.z/bin
+        
+        This page prompts for that.  It sets the field:
+        
+        MVLC_Readout - to the program path.
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+    def initializePage(self) -> None:
+            self.setTitle('Select MVLC FRIB readout program.')
+            
+            # Some explanatory text followed by a label, entry and browse button.
+            
+            self._layout = QVBoxLayout()
+            self.setLayout(self._layout)
+            
+            # explanatory text:
+            
+            self._intro = QTextEdit(self)
+            self._intro.setReadOnly(True)
+            self._intro.setHtml('''
+    <p>
+        The Readout program for the MVLC is not atually part of FRIB/NSCLDAQ
+        it is, instead, a program named <tt>fribdaq-readout</tt>. That
+        is part of the mesytec MVLC driver software, when built with support
+        for FRIB/NSCLDAQ.
+    </p>
+    <p>
+        At the FRIB, this is installed in <br/>
+        <tt>/usr/opt/mesytec-mvlc/&lt;version&gt;/bin/fribdaq-readout</tt>.
+        where &lt;version&gt; is a version of the mesytec-mvlc driver software.
+        In this page, you are prompted to specify the specific fribdaq-readout program.
+    </p>
+            ''')
+            self._layout.addWidget(self._intro)
+            
+            promptLayout = QHBoxLayout()
+            promptLayout.addWidget(QLabel('fribdaq-readout program:', self))
+            
+            self._program = QLineEdit(self)
+            promptLayout.addWidget(self._program)
+            self.registerField('MVLC_Readout', self._program)
+            
+            self._browse = QPushButton('Browse...', self)
+            promptLayout.addWidget(self._browse)
+            self._browse.clicked.connect(self._browseProgram)
+            
+            self._layout.addLayout(promptLayout)
     
+    def nextId(self) -> int:
+        return -1     # For now.
+    def pageId(self) -> int:
+        return 300
+    def _browseProgram(self) -> None:
+        # Browse in /usr/opt/mesytec-mvlc for fribdaq-readout.
+        
+        path, _ = QFileDialog.getOpenFileName(
+            self, 'fribdaq-readout path', '/usr/opt/mesytec-mvlc',
+            'FRIB readout (fribdaq-readout);;All Files (*)',
+            'fribdaq-readout'
+        )
+        if path.strip():
+            self._program.setText(path)
 class ReadoutWizard(QWizard):
     '''
         Readout configuration wizard.  Note that this wizard
@@ -727,6 +798,10 @@ class ReadoutWizard(QWizard):
         self._xxusbinfo = XXUSBParameters(self)
         self.setPage(self._xxusbinfo.pageId(), self._xxusbinfo)
         
+        # MVLC parameter pages
+        
+        self._mvlcprogram = MVLCProgram(self)
+        self.setPage(self._mvlcprogram.pageId(), self._mvlcprogram)
         
         # Custom parameter pages:
         
@@ -804,6 +879,8 @@ if __name__ == "__main__":
                 print('options: ', wiz.getCustomProgramOptions())
                 print('parametrs:', wiz.getCustomProgramParameters())
                 print('environment', wiz.getCustomProgramEnvironment())
+            case 'MVLC':
+                print('MVLC Readout is:', wiz.field('MVLC_Readout'))
     app = QApplication(sys.argv)
     wiz = ReadoutWizard()
     wiz.accepted.connect(done)
