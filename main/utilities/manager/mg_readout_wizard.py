@@ -747,7 +747,7 @@ class MVLCProgram(QWizardPage):
             self._layout.addLayout(promptLayout)
     
     def nextId(self) -> int:
-        return -1     # For now.
+        return 301         # Connection parameters.
     def pageId(self) -> int:
         return 300
     def _browseProgram(self) -> None:
@@ -760,6 +760,153 @@ class MVLCProgram(QWizardPage):
         )
         if path.strip():
             self._program.setText(path)
+class MVLCConnection(QWizardPage):
+    '''
+        The fribdaq-readout has several connection option, these set
+        various fields though:
+        
+        MVLC_ConnectionType  - one of: ethernet, firstusb, usbbyindex, usbbyserial
+        MVLC_Host            - Ethernet host to connect to.
+        MVLC_UsbIndex        - Index of USB to connect to.
+        MVLC_UsbSerial       - USB Serial string to connect to.
+        
+        Note that we use/maintain a hidden LineEdit field that is set
+        by clicking the radio buttons ...and initialized to firstusb
+    '''
+    def __init__(self, parent : QObject | None = None) :
+        super().__init__(parent)
+        
+        
+    def initializePage(self) -> None:
+        self.setTitle('Set MVLC Connection method')
+        
+        # There will be several lines with radio buttons on ech line:
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        # Hidden connection type entry:
+        
+        self._connectionType = QLineEdit()
+        
+        self.registerField('MVLC_ConnectionType', self._connectionType)
+        self._connectionType.hide()
+        self.setField('MVLC_ConnectionType', 'firstusb')
+        
+        # Ethernet Not initially selected, has a host label/line edit/
+        
+        ethernetLayout = QHBoxLayout()
+        self._selectethernet = QRadioButton('Ethernet', self)
+        self._selectethernet.setChecked(False)
+        ethernetLayout.addWidget(self._selectethernet)
+        
+        ethernetLayout.addWidget(QLabel('Host:', self))
+        self._host = QLineEdit(self)
+        self.registerField('MVLC_Host', self._host)
+        ethernetLayout.addWidget(self._host)
+        self._host.setDisabled(True)
+        
+        self._selectethernet.toggled.connect(self._selectEthernet)
+        
+        self._layout.addLayout(ethernetLayout)
+        
+        # First usb is a standalone radio button:
+        # It's initially selected.
+        
+        self._firstusb = QRadioButton('First Usb', self)
+        self._firstusb.setChecked(True)
+        self._layout.addWidget(self._firstusb)
+        self._firstusb.toggled.connect(self._selectFirstUsb)
+        
+        
+        # USB Index is a radio button with a spinbox for the index.
+        # Spinbox goes 0-256 which ought to be enough:
+        
+        usbindexLayout = QHBoxLayout()
+        self._usbindexselect = QRadioButton('USB By index', self)
+        self._usbindexselect.setChecked(False)
+        usbindexLayout.addWidget(self._usbindexselect)
+        
+        usbindexLayout.addWidget(QLabel('Index:', self))
+        
+        self._usbindex = QSpinBox(self)
+        self._usbindex.setMinimum(0)
+        self._usbindex.setMaximum(255)
+        self._usbindex.setDisabled(True)
+        self.registerField('MVLC_UsbIndex', self._usbindex)
+        
+        self._usbindexselect.toggled.connect(self._selectUsbIndex)
+        usbindexLayout.addWidget(self._usbindex)
+        
+        
+        self._layout.addLayout(usbindexLayout)
+        
+        # USB By serial string:
+        
+        usbserialLayout = QHBoxLayout()
+        self._usbbyserial = QRadioButton('USB By Serial', self)
+        self._usbbyserial.setChecked(False)
+        self._usbbyserial.toggled.connect(self._selectUsbSerial)
+        usbserialLayout.addWidget(self._usbbyserial)
+        
+        usbserialLayout.addWidget(QLabel('Serial String', self))
+        
+        self._usbserial = QLineEdit(self)
+        self.registerField('MVLC_UsbSerial', self._usbserial)
+        self._usbserial.setDisabled(True)
+        usbserialLayout.addWidget(self._usbserial)
+        
+        self._layout.addLayout(usbserialLayout)
+        
+        
+    def nextId(self) -> int:
+        return -1   # For now.
+    def pageId(self) -> int:
+        return 301
+    
+    # Internal slots:
+    #   These respond to toggles of the radio buttons
+    #   setting the connection type if they are selected
+    #   enabling/dsabling any associated wigets as appropriate.
+    
+    def _selectEthernet(self, state : bool) -> None:
+        # Ethenet selected update MVCL_ConnectionType and
+        # The enables:
+        
+        if state:
+            self.setField('MVLC_ConnectionType', 'ethernet')
+            disabled = False
+        else:
+            disabled = True
+        self._host.setDisabled(disabled)     # Enable the host field.
+    
+    
+    def _selectFirstUsb(self, state : bool) -> None:
+        # First usb connection selected:
+        
+        if state:
+            self.setField('MVLC_ConnectionType', 'firstusb')
+        
+        
+    def _selectUsbIndex(self, state: bool) -> None:
+        if state:
+            self.setField('MVLC_ConnectionType', 'usbbyindex')
+            disabled = False
+        else:
+            disabled = True
+        
+        self._usbindex.setDisabled(disabled)
+    
+    def _selectUsbSerial(self, state: bool) -> None:
+        if state:
+            self.setField('MVLC_ConnectionType', 'usbbyserial')
+            disabled = False
+        else:
+            disabled = True
+        
+        self._usbserial.setDisabled(disabled)
+        
+    
 class ReadoutWizard(QWizard):
     '''
         Readout configuration wizard.  Note that this wizard
@@ -802,6 +949,9 @@ class ReadoutWizard(QWizard):
         
         self._mvlcprogram = MVLCProgram(self)
         self.setPage(self._mvlcprogram.pageId(), self._mvlcprogram)
+        
+        self._mvlcconnection = MVLCConnection(self)
+        self.setPage(self._mvlcconnection.pageId(), self._mvlcconnection)
         
         # Custom parameter pages:
         
@@ -881,6 +1031,10 @@ if __name__ == "__main__":
                 print('environment', wiz.getCustomProgramEnvironment())
             case 'MVLC':
                 print('MVLC Readout is:', wiz.field('MVLC_Readout'))
+                print('Connection type: ', wiz.field('MVLC_ConnectionType'))
+                print('host: ', wiz.field('MVLC_Host'))
+                print('usbindex: ', wiz.field('MVLC_UsbIndex'))
+                print('usb serial', wiz.field('MVLC_UsbSerial'))
     app = QApplication(sys.argv)
     wiz = ReadoutWizard()
     wiz.accepted.connect(done)
