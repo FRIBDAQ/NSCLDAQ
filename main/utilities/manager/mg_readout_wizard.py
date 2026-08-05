@@ -615,6 +615,7 @@ class CustomParameters2(QWizardPage):
         
         self._options = EditableTable()
         self._options.table().setColumnCount(2)
+        self._options.table().setVerticalHeaderLabels(['Option', 'Value'])
         
         self._layout.addWidget(self._options)
         
@@ -622,9 +623,37 @@ class CustomParameters2(QWizardPage):
         return self._options.getPairs()
 
     def nextId(self) -> int:
-        return -1
+        return 402
     def pageId(self) -> int:
         return 401
+class CustomParameters3(QWizardPage):
+    '''
+    Define the program parameters for a custom program.
+    These are exported via getParameters which must be exposed
+     in some way in the wizard.
+    '''
+    def __init__(self, parent: QObject | None = None):
+        super().__init__(parent)
+        
+    def initializePage(self):
+        self.setTitle('Set Readout Program Parameters')
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._parameters = EditableTable()
+        self._parameters.table().setColumnCount(1)
+        self._parameters.table().setVerticalHeaderLabels(['Parameter',])
+        
+        self._layout.addWidget(self._parameters)
+        
+    def getParameters(self) -> list[str]:
+        return self._parameters.col0List()
+    
+    def nextId(self) -> int:
+        return -1
+    def pageId(self) -> int:
+        return 402
 class ReadoutWizard(QWizard):
     '''
         Readout configuration wizard.  Note that this wizard
@@ -672,6 +701,9 @@ class ReadoutWizard(QWizard):
         self._custom2 = CustomParameters2(self)
         self.setPage(self._custom2.pageId(), self._custom2)
         
+        self._custom3 = CustomParameters3(self)
+        self.setPage(self._custom3.pageId(), self._custom3)
+        
     def containers(self) -> list[str]:
         ''' @return list[str] - list of containers that are available.'''
         return self._commonInfo.containers()
@@ -681,7 +713,8 @@ class ReadoutWizard(QWizard):
     def getCustomProgramOptions(self) -> list[tuple[str,str]]:
         return self._custom2.getOptions()
 
-
+    def getCustomProgramParameters(self) -> list[str]:
+        return self._custom3.getParameters()
 ##  Test code for now:
 
 if __name__ == "__main__":
@@ -727,6 +760,7 @@ if __name__ == "__main__":
                 print("Custom program parameters:")
                 print(' Executable', wiz.field('CUSTOM_Executable'))
                 print('options: ', wiz.getCustomProgramOptions())
+                print('parametrs:', wiz.getCustomProgramParameters())
     app = QApplication(sys.argv)
     wiz = ReadoutWizard()
     wiz.accepted.connect(done)
