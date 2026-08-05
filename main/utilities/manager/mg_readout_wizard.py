@@ -860,7 +860,7 @@ class MVLCConnection(QWizardPage):
         
         
     def nextId(self) -> int:
-        return -1   # For now.
+        return 302   # For now.
     def pageId(self) -> int:
         return 301
     
@@ -906,6 +906,96 @@ class MVLCConnection(QWizardPage):
         
         self._usbserial.setDisabled(disabled)
         
+class MVLCDAQParameters(QWizardPage):
+    '''
+        Provide the FRIB/NSCLDAQ parameters for the fribdaq-readout program.
+        The following fields are defined:
+        
+        MVLC_Ring - Ringbuffer to which data will be put.
+        MVLC_SourceId - The sourced the data will be tagged with.
+        MVLC_HaveTsLibrary - True if a timestamp extraction library should be supplied.
+        MVLC_TimestampSo  - Shared object that will be loaded to extract timestamps.
+        
+    '''
+    def __init__(self, parent : QObject | None = None) :
+        super().__init__(parent)
+        
+    def initializePage(self) -> None:
+        self.setTitle('FRIB/NSCLDAQ Data Acquisition system parameters')
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        # The ring buffer
+        
+        ringLayout  = QHBoxLayout()
+        ringLayout.addWidget(QLabel('Output ringbuffer [not URI]', self))
+        
+        self._ring = QLineEdit(self)
+        self.registerField('MVLC_Ring', self._ring)
+        ringLayout.addWidget(self._ring)
+        
+        self._layout.addLayout(ringLayout)
+        
+        #  The source id.
+        
+        sidLayout = QHBoxLayout()
+        sidLayout.addWidget(QLabel('Source id:', self))
+        
+        self._sid = QSpinBox(self)
+        self._sid.setMinimum(0)
+        self._sid.setMaximum(0x7fffffff)
+        self.registerField('MVLC_SourceId', self._sid)
+        sidLayout.addWidget(self._sid)
+        
+        self._layout.addLayout(sidLayout)
+        
+        # Optional timestamp library:
+        
+        tslibLayout = QHBoxLayout()
+        self._havetslib = QCheckBox('Extract Timestamps', self)
+        self.registerField('MVLC_HaveTsLibrary', self._havetslib)
+        self._havetslib.clicked.connect(self._toggleHaveTsLib)
+        tslibLayout.addWidget(self._havetslib)
+        
+        self._tslib = QLineEdit(self)
+        self.registerField('MVLC_TimestampSo', self._tslib)
+        self._tslib.setDisabled(True)
+        tslibLayout.addWidget(self._tslib)
+        
+        self._browsetslib = QPushButton('Browse...', self)
+        self._browsetslib.setDisabled(True)
+        self._browsetslib.clicked.connect(self._browseTslib)
+        tslibLayout.addWidget(self._browsetslib)
+        
+        self._layout.addLayout(tslibLayout)
+        
+    
+    def nextId(self) -> int:
+        return -1
+    def pageId(self) -> int:
+        return 302
+    
+    # Slots (private);
+    def _toggleHaveTsLib(self) -> None:
+        # Toggle the state of the enable for the timestamplib and
+        # it's browser.
+        
+        if self.field('MVLC_HaveTsLibrary'):
+            disabled = False
+        else:
+            disabled = True
+            
+        self._tslib.setDisabled(disabled)
+        self._browsetslib.setDisabled(disabled)
+        
+    def _browseTslib(self) -> None:
+        file, _ = QFileDialog.getOpenFileName(
+            self, '.', 'Timestamp shared object',
+            'Shared Objects (*.so);; All Files (*)'
+        )
+        if file.strip():
+            self._tslib.setText(file)
     
 class ReadoutWizard(QWizard):
     '''
@@ -952,6 +1042,9 @@ class ReadoutWizard(QWizard):
         
         self._mvlcconnection = MVLCConnection(self)
         self.setPage(self._mvlcconnection.pageId(), self._mvlcconnection)
+        
+        self._mvlcdaqparams = MVLCDAQParameters(self)
+        self.setPage(self._mvlcdaqparams.pageId(), self._mvlcdaqparams)
         
         # Custom parameter pages:
         
@@ -1035,6 +1128,11 @@ if __name__ == "__main__":
                 print('host: ', wiz.field('MVLC_Host'))
                 print('usbindex: ', wiz.field('MVLC_UsbIndex'))
                 print('usb serial', wiz.field('MVLC_UsbSerial'))
+                print('Ring: ', wiz.field('MVLC_Ringbuffer'))
+                print('Source id', wiz.field('MVLC_SourceId'))
+                print('Extract ts:', wiz.field('MVLC_HaveTsLibrary'))
+                print('Ts  LIbrary', wiz.field('MVLC_TimestampSo'))
+                
     app = QApplication(sys.argv)
     wiz = ReadoutWizard()
     wiz.accepted.connect(done)
