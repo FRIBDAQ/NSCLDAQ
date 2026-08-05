@@ -615,7 +615,7 @@ class CustomParameters2(QWizardPage):
         
         self._options = EditableTable()
         self._options.table().setColumnCount(2)
-        self._options.table().setVerticalHeaderLabels(['Option', 'Value'])
+        self._options.table().setHorizontalHeaderLabels(['Option', 'Value'])
         
         self._layout.addWidget(self._options)
         
@@ -643,7 +643,7 @@ class CustomParameters3(QWizardPage):
         
         self._parameters = EditableTable()
         self._parameters.table().setColumnCount(1)
-        self._parameters.table().setVerticalHeaderLabels(['Parameter',])
+        self._parameters.table().setHorizontalHeaderLabels(['Parameter',])
         
         self._layout.addWidget(self._parameters)
         
@@ -651,9 +651,44 @@ class CustomParameters3(QWizardPage):
         return self._parameters.col0List()
     
     def nextId(self) -> int:
-        return -1
+        return 403
     def pageId(self) -> int:
         return 402
+
+class CustomParameters4(QWizardPage):
+    '''
+        Provides a wizard page to set the custom program parameters for the
+        Readout.  These can be fetched via getEnvironmentwhich must be
+        exposed by the wizard somehow.
+        
+        Note that as these are executed ina shell, the parameter
+        values can specify other environment variables e.g. 
+        TCLLIBPATH=$DAQTCLLIBS.
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+    def initializePage(self):
+        self.setTitle('Set Readout environment variables')
+        
+        self._layout= QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._environ = EditableTable()
+        self._environ.table().setColumnCount(2)
+        self._environ.table().setHorizontalHeaderLabels(['Variable', 'Value'])
+        
+        self._layout.addWidget(self._environ)
+        
+    def getEnvironment(self) -> list[tuple[str,str]]:
+        return self._environ.getPairs()
+    
+    def nextId(self) -> int:
+        return -1                          #last page.
+    def pageId(self) -> int:
+        return 403
+
+    
 class ReadoutWizard(QWizard):
     '''
         Readout configuration wizard.  Note that this wizard
@@ -704,6 +739,10 @@ class ReadoutWizard(QWizard):
         self._custom3 = CustomParameters3(self)
         self.setPage(self._custom3.pageId(), self._custom3)
         
+        self._custom4 = CustomParameters4(self)
+        self.setPage(self._custom4.pageId(), self._custom4)
+        
+        
     def containers(self) -> list[str]:
         ''' @return list[str] - list of containers that are available.'''
         return self._commonInfo.containers()
@@ -715,6 +754,9 @@ class ReadoutWizard(QWizard):
 
     def getCustomProgramParameters(self) -> list[str]:
         return self._custom3.getParameters()
+
+    def getCustomProgramEnvironment(self) -> list[tuple[str, str]]:
+        return self._custom4.getEnvironment()
 ##  Test code for now:
 
 if __name__ == "__main__":
@@ -761,6 +803,7 @@ if __name__ == "__main__":
                 print(' Executable', wiz.field('CUSTOM_Executable'))
                 print('options: ', wiz.getCustomProgramOptions())
                 print('parametrs:', wiz.getCustomProgramParameters())
+                print('environment', wiz.getCustomProgramEnvironment())
     app = QApplication(sys.argv)
     wiz = ReadoutWizard()
     wiz.accepted.connect(done)
