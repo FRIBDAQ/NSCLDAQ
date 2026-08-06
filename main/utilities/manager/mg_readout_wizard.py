@@ -972,7 +972,7 @@ class MVLCDAQParameters(QWizardPage):
         
     
     def nextId(self) -> int:
-        return -1
+        return 303
     def pageId(self) -> int:
         return 302
     
@@ -996,7 +996,216 @@ class MVLCDAQParameters(QWizardPage):
         )
         if file.strip():
             self._tslib.setText(file)
+class MVLCReadoutConfig(QWizardPage):
+    '''
+    Prompt for the readout configuration.
+    MVLC_Config        - Configuration file.
+    MVLC_ConvertFromTcl - True to convert the config file from tcl -> Yaml.
     
+    MVLC_OverrideTemplate  - True to override the yaml template fie.
+    MVLC_YamlTemplate  - YAML template file to sactually use.
+    
+    MVLC_UseInitScript - True if an init script is specified.
+    MVLC_InitScript    - Path to the initscript.
+    
+    MVLC_RunCtlServer  - True if the control server shoul be used.
+    MVLC_CtlServerPort - Port on which the control server listens.
+    MVLC_CtlScript     - Control server script.
+    
+    
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+    
+    def initializePage(self) -> None:
+        self.setTitle('Readout configuration:')
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        # The readout configuration file and how to interpret it:
+        # We support browsing for it:
+        
+        rdocfgLayout = QHBoxLayout()
+        self._cvttcltoyaml = QCheckBox('Convert .tcl -> .yaml', self)
+        self.registerField('MVLC_ConvertFromTcl', self._cvttcltoyaml)
+        self._cvttcltoyaml.setCheckState(Qt.CheckState.Checked)    # That's the most common use.
+        rdocfgLayout.addWidget(self._cvttcltoyaml)
+        
+        rdocfgLayout.addWidget(QLabel('Readout Config File', self))
+        self._rdoconfig = QLineEdit(self)
+        self.registerField('MVLC_Config', self._rdoconfig)
+        rdocfgLayout.addWidget(self._rdoconfig)
+        
+        self._browserdoconfig = QPushButton('Browse...', self)
+        self._browserdoconfig.clicked.connect(self._BrowseReadoutFile)
+        rdocfgLayout.addWidget(self._browserdoconfig)
+        
+        self._layout.addLayout(rdocfgLayout)
+        
+        # Allow the user to override the default .yaml template file:
+        
+        templateLayout = QHBoxLayout()
+        self._overrideTemplate = QCheckBox('Use Custom Yaml Template', self)
+        self.registerField('MVLC_OverrideTemplate', self._overrideTemplate)
+        templateLayout.addWidget(self._overrideTemplate)
+        self._overrideTemplate.clicked.connect(self._toggleTemplateOverride)
+        
+        templateLayout.addWidget(QLabel('YAML Template file: '))
+        self._yamltemplate = QLineEdit(self)
+        self._yamltemplate.setDisabled(True)
+        self.registerField('MVLC_YamlTemplate', self._yamltemplate)
+        templateLayout.addWidget(self._yamltemplate)
+        
+        self._browsetemplate = QPushButton('Browse...', self)
+        self._browsetemplate.setDisabled(True)
+        self._browsetemplate.clicked.connect(self._browseTemplate)
+        templateLayout.addWidget(self._browsetemplate)
+        
+        
+        self._layout.addLayout(templateLayout)
+        
+        # Control server configuration.
+        
+        ctlserverLayout = QHBoxLayout()
+        
+        self._enableserver = QCheckBox('Use slow control server')
+        self.registerField('MVLC_RunCtlServer', self._enableserver)
+        ctlserverLayout.addWidget(self._enableserver)
+        
+        ctlserverLayout.addWidget(QLabel('Configuration script:', self))
+        self._ctlserverscript =QLineEdit(self)
+        self.registerField('MVLC_CtlScript', self._ctlserverscript)
+        ctlserverLayout.addWidget(self._ctlserverscript)
+        
+        self._browseCtlConfig = QPushButton('Browse...', self)
+        self._browseCtlConfig.setDisabled(True)
+        self._browseCtlConfig.clicked.connect(self._BrowseControlConfig)
+        ctlserverLayout.addWidget(self._browseCtlConfig)
+        
+        ctlserverLayout.addWidget(QLabel('Port', self))
+        self._ctlserverPort= QSpinBox(self)
+        self._ctlserverPort.setMinimum(1024)
+        self._ctlserverPort.setMaximum(29999)
+        self.registerField('MVLC_CtlServerPort', self._ctlserverPort)
+        self._ctlserverPort.setValue(1024)
+        ctlserverLayout.addWidget(self._ctlserverPort)
+        
+        self._ctlserverscript.setDisabled(True)
+        self._ctlserverPort.setDisabled(True)
+        
+        self._enableserver.clicked.connect(self._toggleControlServer)
+        
+        self._layout.addLayout(ctlserverLayout)
+        
+        # Initialization script:
+        
+        initscriptLayout = QHBoxLayout()
+        
+        self._enableinitscript = QCheckBox('Use Init script', self)
+        self.registerField('MVLC_UseInitScript', self._enableinitscript)
+        initscriptLayout.addWidget(self._enableinitscript)
+        
+        self._initscript = QLineEdit(self)
+        self.registerField('MVLC_InitScript', self._initscript)
+        self._initscript.setDisabled(True)
+        initscriptLayout.addWidget(self._initscript)
+        
+        self._browseinitscript = QPushButton('Browse...', self)
+        self._browseinitscript.setDisabled(True)
+        self._browseinitscript.clicked.connect(self._BrowseInitScript)
+        initscriptLayout.addWidget(self._browseinitscript)
+        
+        self._enableinitscript.clicked.connect(self._toggleInitScript)
+                                           
+        
+        self._layout.addLayout(initscriptLayout)
+    
+    def nextId(self) -> int:
+        return -1   # For now.
+    def pageId(self) -> int:
+        return 303    
+    
+    # Internal, private slots:
+    def _BrowseReadoutFile(self) -> None:
+        # The Browse... button was clicked on for the readout config.
+        # One complication is that the filters are determined by
+        # the MVLC_ConvertFromTcl Field:
+        
+        if self.field('MVLC_ConvertFromTcl'):
+            # Prefer tcl.
+            filters = 'Tcl Files (*.tcl);;Yaml Files (*.yaml);;All Files (*)'
+            selected_filter = '*.tcl'
+        else:   
+            # Prefer Yaml.
+            filters = 'Yaml Files (*.yaml);;Tcl Files (*.tcl);;All Files (*)'
+            selected_filter = '*.tcl'
+        
+        file, _ = QFileDialog.getOpenFileName(
+            self, 'Readout config', '.', filters, selected_filter
+        )
+        if file.strip():
+            self.setField('MVLC_Config', file)
+     
+    def _toggleTemplateOverride(self) -> None:
+        if self.field('MVLC_OverrideTemplate'):
+            disabled = False
+        else:
+            disabled = True
+        
+        self._yamltemplate.setDisabled(disabled)
+        self._browsetemplate.setDisabled(disabled) 
+    
+    def _browseTemplate(self) -> None:
+        file, _  = QFileDialog.getOpenFileName(
+            self, 'YAML Template', '.', 
+            'Yaml Files (*.yaml);;All Files (*)', '*.yaml'
+        )  
+        if file.strip():
+            self._yamltemplate.setText(file)       
+            
+    def _toggleControlServer(self) -> None:    
+        # The control server enable has changed.
+        
+        if self.field('MVLC_RunCtlServer'):
+            disabled = False
+        else:
+            disabled = True
+
+        self._ctlserverscript.setDisabled(disabled)
+        self._ctlserverPort.setDisabled(disabled)
+        self._browseCtlConfig.setDisabled(disabled)
+    
+    def _BrowseControlConfig(self) -> None:
+        # Browse for a Tcl config file for the control server:
+        
+        file, _ = QFileDialog.getOpenFileName(
+            self, 'Control config file', '.', 'Tcl Files (*.tcl);;All Files (*)', '*.tcl'
+        )
+        if file.strip():
+            self._ctlserverscript.setText(file)
+        
+    
+    def _toggleInitScript(self) -> None:
+        # The init script enable changed:
+        
+        if self.field('MVLC_UseInitScript'):
+            disabled = False
+        else:
+            disabled = True
+            
+        self._initscript.setDisabled(disabled)
+        self._browseinitscript.setDisabled(disabled)
+    
+    def _BrowseInitScript(self) -> None:
+        # Browse for hte init script:
+        
+        file, _  = QFileDialog.getOpenFileName(
+            self, 'Init script', '.', 'Tcl Files (*.tcl);;All Files (*)', '*.tcl'
+        )
+        if file.strip():
+            self._initscript.setText(file)
+        
 class ReadoutWizard(QWizard):
     '''
         Readout configuration wizard.  Note that this wizard
@@ -1045,6 +1254,9 @@ class ReadoutWizard(QWizard):
         
         self._mvlcdaqparams = MVLCDAQParameters(self)
         self.setPage(self._mvlcdaqparams.pageId(), self._mvlcdaqparams)
+        
+        self._mvlcreadoutconfig = MVLCReadoutConfig(self)
+        self.setPage(self._mvlcreadoutconfig.pageId(), self._mvlcreadoutconfig)
         
         # Custom parameter pages:
         
@@ -1132,6 +1344,15 @@ if __name__ == "__main__":
                 print('Source id', wiz.field('MVLC_SourceId'))
                 print('Extract ts:', wiz.field('MVLC_HaveTsLibrary'))
                 print('Ts  LIbrary', wiz.field('MVLC_TimestampSo'))
+                print('Readout config', wiz.field('MVLC_Config'))
+                print('auto convert', wiz.field('MVLC_ConvertFromTcl'))
+                print('Use initscript', wiz.field('MVLC_UseInitScript'))
+                print('initscript', wiz.field('MVLC_InitScript'))
+                print('Run control server', wiz.field('MVLC_RunCtlServer'))
+                print('control server config', wiz.field('MVLC_CtlScript'))
+                print('control server port', wiz.field('MVLC_CtlServerPort'))
+                print("Override tempalte", wiz.field('MVLC_OverrideTemplate'))
+                print('User template file', wiz.field('MVLC_YamlTemplate'))
                 
     app = QApplication(sys.argv)
     wiz = ReadoutWizard()
