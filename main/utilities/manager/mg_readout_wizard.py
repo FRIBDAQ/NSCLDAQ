@@ -141,7 +141,7 @@ class CommonReadoutInfo(QWizardPage):
         nameLayout = QHBoxLayout()
         nameLayout.addWidget(QLabel('Readout Name:', self))
         self._name = QLineEdit(self)
-        self.registerField('Name', self._name)
+        self.registerField('Name*', self._name)
         nameLayout.addWidget(self._name)
         
         self._layout.addLayout(nameLayout)
@@ -157,12 +157,12 @@ class CommonReadoutInfo(QWizardPage):
         
         environLayout.addWidget(QLabel('Host', self))
         self._host = QLineEdit(self)
-        self.registerField('Host', self._host)
+        self.registerField('Host*', self._host)
         environLayout.addWidget(self._host)
         
         environLayout.addWidget(QLabel('Working Dir', self))
         self._wd = QLineEdit(self)
-        self.registerField('Directory', self._wd)
+        self.registerField('Directory*', self._wd)
         environLayout.addWidget(self._wd)
         self._browseWd = QPushButton('Browse...', self)
         environLayout.addWidget(self._browseWd)
@@ -174,7 +174,7 @@ class CommonReadoutInfo(QWizardPage):
         outputLayout = QHBoxLayout()
         outputLayout.addWidget(QLabel('Output Ring', self))
         self._ring = QLineEdit(self)
-        self.registerField('RingBufer', self._ring)
+        self.registerField('RingBufer*', self._ring)
         self._ring.setText(getpass.getuser())
         outputLayout.addWidget(self._ring)
         
@@ -1375,7 +1375,7 @@ class Controller(QObject):
         self._view.setContainers(container_names)
         
     def _generate(self) -> None:
-        self._ensureSequences()       #
+        self._ensureSequences() 
 
     def _ensureSequences(self) -> None:
         #
