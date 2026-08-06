@@ -1375,8 +1375,32 @@ class Controller(QObject):
         self._view.setContainers(container_names)
         
     def _generate(self) -> None:
-        ...       #
+        self._ensureSequences()       #
 
+    def _ensureSequences(self) -> None:
+        #
+        #    We insert programs we generate into a specific set of sequences.
+        #    this method creates any missing sequences:
+        #    We assume if the right sequence name exists it also has the right trigger:
+        
+        # Sequences, if they need to be generated, have no steps. Those are added later.
+        
+        api = mg_database.Sequence(self._db)
+        # We need:
+        
+        sequences = [
+            ('bootreadouts', 'BOOT'),
+            ('initreadouts', 'HWINIT'),
+            ('beginreadouts', 'BEGIN'),
+            ('endreadouts',   'END'),
+            ('shutdownreadouts', 'SHUTDOWN')
+        ]
+        
+        for name, trigger in sequences:
+            if not api.exists(name):
+                api.add(name, trigger, [])            # We'll add steps later.
+        
+        
 def usage() -> None:
     '''
     Print the program usage to stderr.
