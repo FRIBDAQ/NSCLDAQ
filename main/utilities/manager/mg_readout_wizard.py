@@ -25,7 +25,7 @@ have to run.
 
 from PyQt6.QtWidgets import (QWizard, QWizardPage, QTextEdit, QVBoxLayout, QLineEdit, 
     QComboBox, QSpinBox, QCheckBox, QPushButton, QLabel, QHBoxLayout, QFileDialog,
-    QRadioButton
+    QRadioButton, QGridLayout
 )
 from PyQt6.QtGui import QIntValidator
 from PyQt6.QtCore    import QObject, pyqtSignal, Qt
@@ -1122,7 +1122,7 @@ class MVLCReadoutConfig(QWizardPage):
         self._layout.addLayout(initscriptLayout)
     
     def nextId(self) -> int:
-        return -1   # For now.
+        return 304   # For now.
     def pageId(self) -> int:
         return 303    
     
@@ -1205,6 +1205,47 @@ class MVLCReadoutConfig(QWizardPage):
         )
         if file.strip():
             self._initscript.setText(file)
+
+class MVLCDebugOptions(QWizardPage):
+    '''
+    Provides access to the minidaq debug options (fribdaq_reaodut is based on
+    minidaq):
+    MVLC_InitOnly - Just run intialization and exit (off by default)
+    MVLC_IgoreInitErrors - Ignore VME errors on initialization (on by default)
+    MVLC_Debug   - Debug logging on (off by default)
+    MVLC_Trace   - Trace debugging.
+    '''
+    
+    def __init__(self, parent : QObject | None):
+        super().__init__(parent)    
+    
+    def initializePage(self) -> None:
+        self.setTitle('Debuging options') 
+        
+        self._layout = QGridLayout()
+        self.setLayout(self._layout)
+        
+        self._ignoreInitErrors = QCheckBox('Ignore init Errors', self)
+        self.registerField('MVLC_IgnoreInitErrors', self._ignoreInitErrors)
+        self.setField('MVLC_IgnoreInitErrors', True)
+        self._layout.addWidget(self._ignoreInitErrors, 0,0)
+        
+        self._initOnly = QCheckBox('Only Initialize', self)
+        self.registerField('MVLC_InitOnly', self._initOnly)
+        self._layout.addWidget(self._initOnly, 0,1)
+        
+        self._debug = QCheckBox('Debug logging', self)
+        self.registerField('MVLC_Debug', self._debug)
+        self._layout.addWidget(self._debug, 1,0)
+        
+        self._trace = QCheckBox('Trace logging', self)
+        self.registerField('MVLC_Trace', self._trace)
+        self._layout.addWidget(self._trace, 1,1)
+        
+    def nextId(self) -> int:
+        return -1                        #end of the MVLC line.
+    def pageId(self) -> int:
+        return 304
         
 class ReadoutWizard(QWizard):
     '''
@@ -1257,6 +1298,9 @@ class ReadoutWizard(QWizard):
         
         self._mvlcreadoutconfig = MVLCReadoutConfig(self)
         self.setPage(self._mvlcreadoutconfig.pageId(), self._mvlcreadoutconfig)
+        
+        self._mvlcdebug = MVLCDebugOptions(self)
+        self.setPage(self._mvlcdebug.pageId(), self._mvlcdebug)
         
         # Custom parameter pages:
         
@@ -1353,7 +1397,10 @@ if __name__ == "__main__":
                 print('control server port', wiz.field('MVLC_CtlServerPort'))
                 print("Override tempalte", wiz.field('MVLC_OverrideTemplate'))
                 print('User template file', wiz.field('MVLC_YamlTemplate'))
-                
+                print('Initialize only', wiz.field('MVLC_InitOnly'))
+                print('ignore init errors', wiz.field('MVLC_IgnoreInitErrors'))
+                print('debug logging', wiz.field('MVLC_Debug'))
+                print('trace logging', wiz.field('MVLC_Trace'))
     app = QApplication(sys.argv)
     wiz = ReadoutWizard()
     wiz.accepted.connect(done)
