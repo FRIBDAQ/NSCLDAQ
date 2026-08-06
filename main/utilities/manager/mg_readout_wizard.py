@@ -23,14 +23,32 @@ have to run.
 '''
 
 
-from PyQt6.QtWidgets import (QWizard, QWizardPage, QTextEdit, QVBoxLayout, QLineEdit, 
-    QComboBox, QSpinBox, QCheckBox, QPushButton, QLabel, QHBoxLayout, QFileDialog,
-    QRadioButton, QGridLayout
-)
-from PyQt6.QtGui import QIntValidator
-from PyQt6.QtCore    import QObject, pyqtSignal, Qt
 import getpass
+import sqlite3
+import sys
+
+from nscldaq import mg_database
 from nscldaq.mg_configutils import EditableTable
+from PyQt6.QtCore import QObject, Qt, pyqtSignal
+from PyQt6.QtGui import QIntValidator
+from PyQt6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QFileDialog,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QRadioButton,
+    QSpinBox,
+    QTextEdit,
+    QVBoxLayout,
+    QWizard,
+    QWizardPage,
+)
+
 
 class IntroPage(QWizardPage):
     '''
@@ -1331,82 +1349,66 @@ class ReadoutWizard(QWizard):
 
     def getCustomProgramEnvironment(self) -> list[tuple[str, str]]:
         return self._custom4.getEnvironment()
-##  Test code for now:
+
+
+
+class Controller(QObject):
+    '''
+        Controller for the wizard.  Note that all we actually do is 
+        stock the wizard with containers, and, on the accepted signal
+        do some common stuff and farm the bulk of the work off to a
+         type specific creator.
+    '''
+    def __init__(self, wizard : ReadoutWizard, config : str, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        self._view = wizard
+        self._config = config
+        self._db     = sqlite3.connect(self._config)
+        
+        self._view.accepted.connect(self._generate)
+        
+        # Load the view with containers:
+        
+        api = mg_database.Container(self._db)
+        container_names = [x['name'] for x in api.list()]
+        self._view.setContainers(container_names)
+        
+    def _generate(self) -> None:
+        ...       #
+
+def usage() -> None:
+    '''
+    Print the program usage to stderr.
+    '''
+    print('''
+Wizard to help you define readout programs.
+
+Usage:
+    $DAQBIN/mg_readout_wizard config_path
+Where:
+    config_path - is the path to the configuration database file.
+
+        ''', file = sys.stderr)
+
+def main() -> int:
+    ''' Main entry point '''
+    
+    if len(sys.argv) != 2:
+        usage()
+        return -1
+
+    config_file = sys.argv[1]
+    
+    # setup the GUI and the controller to handle it:
+    
+    app = QApplication(sys.argv)
+    dialog = ReadoutWizard()
+    
+    _controller = Controller(dialog, config_file, dialog)
+    
+    dialog.show()
+    return(app.exec())
 
 if __name__ == "__main__":
-    from PyQt6.QtWidgets import QApplication
-    import sys
-
-    def done():
-        print("accepted:")
-        print('Name', wiz.field('Name'))
-        print('Container', wiz.field('Container'))
-        print('Host', wiz.field('Host'))
-        print('Directory', wiz.field('Directory'))
-        print('Service', wiz.field('RestService'))
-        print('Ring', wiz.field('User'))
-        print('SrcId', wiz.field('SourceId'))
-        print('User', wiz.field('User'))
-        print('Type: ', wiz.field('ReadoutType'))
-        
-        match wiz.field('ReadoutType'):
-            case 'XIA/DDAS':
-                print('XIA parameters')
-                print('sorting at ', wiz.field('XIA_SortHost'))
-                print('Sort window', wiz.field('XIA_SortWindow'))
-                print('Sortoutput ring', wiz.field('XIA_SortRingBuffer'))
-                print('Infinity clock', wiz.field('XIA_InfinityClock'))
-                print("Clock Mult"), wiz.field('XIA_ClockMultiplier')
-                print('Readout  Buffer', wiz.field('XIA_ReadoutBufferSize'))
-                print('Scaler  Period', wiz.field('XIA_ScalerPeriod'))
-                print('FIFO Threshold', wiz.field('XIA_ReadoutFIFOThreshold'))
-            case 'VMUSB' | 'CCUSB':
-                print('XXUSB parameters')
-                print('Connect by serial:', wiz.field('XXUSB_BySerial'))
-                print('Serial string', wiz.field('XXUSB_Serial'))
-                print('DAQCONFIG', wiz.field('XXUSB_DAQConfig'))
-                print('Use timestamp extractor', wiz.field('XXUSB_UseTsExtractor'))
-                print('Ts Extract library: ', wiz.field('XXUSB_TSExtractor'))
-                print('Use CTlserver', wiz.field('XXUSB_UseControlServer'))
-                print('CTLConfigFile: ', wiz.field('XXUSB_CTLConfig'))
-                print('Port', wiz.field('XXUSB_CTLServerPort'))
-                print('Enable logging', wiz.field('XXUSB_EnableLogging'))
-                print('XXUSB_LogFile', wiz.field('XXUSB_LogFile'))
-            case 'Custom':
-                print("Custom program parameters:")
-                print(' Executable', wiz.field('CUSTOM_Executable'))
-                print('options: ', wiz.getCustomProgramOptions())
-                print('parametrs:', wiz.getCustomProgramParameters())
-                print('environment', wiz.getCustomProgramEnvironment())
-            case 'MVLC':
-                print('MVLC Readout is:', wiz.field('MVLC_Readout'))
-                print('Connection type: ', wiz.field('MVLC_ConnectionType'))
-                print('host: ', wiz.field('MVLC_Host'))
-                print('usbindex: ', wiz.field('MVLC_UsbIndex'))
-                print('usb serial', wiz.field('MVLC_UsbSerial'))
-                print('Ring: ', wiz.field('MVLC_Ringbuffer'))
-                print('Source id', wiz.field('MVLC_SourceId'))
-                print('Extract ts:', wiz.field('MVLC_HaveTsLibrary'))
-                print('Ts  LIbrary', wiz.field('MVLC_TimestampSo'))
-                print('Readout config', wiz.field('MVLC_Config'))
-                print('auto convert', wiz.field('MVLC_ConvertFromTcl'))
-                print('Use initscript', wiz.field('MVLC_UseInitScript'))
-                print('initscript', wiz.field('MVLC_InitScript'))
-                print('Run control server', wiz.field('MVLC_RunCtlServer'))
-                print('control server config', wiz.field('MVLC_CtlScript'))
-                print('control server port', wiz.field('MVLC_CtlServerPort'))
-                print("Override tempalte", wiz.field('MVLC_OverrideTemplate'))
-                print('User template file', wiz.field('MVLC_YamlTemplate'))
-                print('Initialize only', wiz.field('MVLC_InitOnly'))
-                print('ignore init errors', wiz.field('MVLC_IgnoreInitErrors'))
-                print('debug logging', wiz.field('MVLC_Debug'))
-                print('trace logging', wiz.field('MVLC_Trace'))
-    app = QApplication(sys.argv)
-    wiz = ReadoutWizard()
-    wiz.accepted.connect(done)
-    wiz.setContainers(['bookworm', 'bullseye', 'buster', 'jessie'])
-    wiz.show()
-    
-    sys.exit(app.exec())
-        
-        
+    sys.exit(main())
