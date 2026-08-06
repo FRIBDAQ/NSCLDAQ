@@ -1152,6 +1152,9 @@ class Sequence:
             raise ValueError(f'There is no transition named {trigger_name}')
         
         return result[0]
+    def _sequenceId(self, name : str) -> int | None:
+        matches = [x['id'] for x in  self.list() if x['name'] == name]
+        return matches[0] if len(matches) > 0 else None
     
     def exists (self, name):
         '''
@@ -1222,6 +1225,46 @@ class Sequence:
         self._db.commit()
         return seq_id
     
+    def addStep(self, seq_name : str, program_name :str, predelay: int = 0, postdelay : int= 0) -> None:
+        '''
+            Add a step to an existing sequence:
+            @param seq_naem - name of the sequence
+            @param program_name - Name of the program to add.
+            @param predelay - predelay, defaults to 0
+            @param postdelay - postdelay, defaults to 0.
+            
+            @throws
+                IndexError - seq_name or program_name don't exist.
+            @note
+                We find the number of the largest step and get the step number by adding self.step_increment to that.
+                
+        '''
+        seqid = self._sequenceId(seq_name)
+        if seqid is None:
+            raise IndexError(f'There is no squence named {seq_name}')
+        progid = self._program.id(program_name)
+        if progid is None:
+            raise IndexError(f'There is no program named {program_name}')
+        
+        # Figure out the step number.. if there are no steps, we use self.step_increment so:
+        
+        step_num = self.step_increment
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT step FROM stepWHERE sequence_id = ?  ORDER BY step DESC LIMIT = 1
+            ''', (seqid,))
+        row = cursor.fetchone()
+        if row is not None:
+            step_num = row[0] + self.step_increment
+        
+        # Now we can insert:
+        
+        self._db.execute('''
+            INSERT INTO step (sequence_id, step, program_id, predelay, postdelay)
+            VALUES(?, ?, ?, ?, ?)
+            ''', (seqid, step_num, progid, predelay, postdelay))
+        
+        self._db.commit()
     def list(self):
         
         '''
