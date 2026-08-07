@@ -22,24 +22,26 @@ the system to operate correctly. In this tutorial, we will cover:
 If you are new to using DDAS and have not setup a system before, it is highly 
 recommended that you begin with the @ref single_crate.
 
-@attention This multi-crate system setup guide is specific to DDAS systems running 
-FRIBDAQ 12 and later, which has a handful of major features which were not part of 
-previous releases:
+@attention This single-crate system setup guide is specific to DDAS systems 
+running FRIBDAQ 12 and later, which has a handful of major features which were 
+not part of previous releases:
 1. The module data readout and sorting processes are decoupled. As a consequence, 
-   creadout program data sources must be configured in a slightly different manner.
+   readout program data sources must be configured in a slightly different manner.
 2. The DDAS codebase has been refactored into FRIBDAQ, there is no need to source 
-   a DDAS setup script in e.g., /usr/opt/ddas.
-3. External clock readout has been absorbed into the main readout program. There 
-   is no longer a separate version of the DDAS readout for this purpose.
-4. As of XIA API major version 3, settings files are saved in JSON format. Files 
-   with names like crate_1.json are the JSON version of the binary settings files generally 
-   named crate_1.set for previous XIA API releases. Note that there is no strict enforcement 
-   of file extensions: a JSON settings file can be saved with a .set extension. The .json 
-   extension is used here to remind the reader familiar with older versions of the FRIBDAQ 
-   that these settings files are not the binary settings files they are familiar with. 
-   Further it should be noted that JSON settings file are not back-compatible with older 
-   FRIBDAQ versions using XIA API 2, and that there is no supported way to convert a JSON 
-   settings file into binary format.
+   a DDAS setup script in e.g., `/usr/opt/ddas/6.1-004`.
+3. External clock readout has been absorbed into the main readout program. 
+   There is no longer a separate version of the DDAS readout for this purpose.
+4. As of XIA API major version 3, settings files are saved in JSON format. 
+   Files with names like `crate_1.json` are the JSON equivalent of the binary settings 
+   files generally named `crate_1.set` for previous XIA API releases. The QtScope 
+   program enforces some naming conventions when saving/loading settings files, 
+   but in general there is no strict enforcement of file extensions: a JSON settings 
+   file can be re-named with a `.set` extension. The `.json` extension is used here 
+   to remind the reader familiar with older versions of the FRIBDAQ that these 
+   settings files are not the binary settings files they are familiar with. 
+   Further it should be noted that JSON settings file are not back-compatible 
+   with older FRIBDAQ versions using XIA API 2, and that there is no supported
+   way to convert a JSON settings file into binary format.
 
 @section sec_multicrate_components Components of a DDAS System
 @par
@@ -119,7 +121,7 @@ home-directory
 @endverbatim
 
 @par
-The example crate_1 directory located at `$DAQSHARE`/ddasreadout/crate_1 containing 
+The example crate_1 directory located at `$DAQSHARE/ddasreadout/crate_1` containing 
 the necessary configuration files can be copied for each crate in your system. 
 It is recommended that you edit the names of the settings files within each 
 directory to reflect the crate of modules using those settings. The configuration 
@@ -251,21 +253,15 @@ scheme looks like this:
 @image html clock_distribution_mc.png  [Left] The front panel of a Pixie trigger distribution board with the outputs (o1, o2, ...) and inputs (iA, iB) labeled. [Right] Wiring scheme for a two-crate system. The 2-meter Cat 6 cables used to connect the trigger boards are shown in blue (not to scale). height=400px
 
 @note On the above figure, the Cat 6 cables connecting the trigger boards are not 
-shown to scale. The two cables should be the same length to minimize clock jitter.
-
-@subsection sec_multicrate_testsignal Configuring an Input Signal
-@par
-A test signal from a pulser is used for this tutorial. Setup the pulser to output 
-pulses that rise quickly but have an approximately 50 μs decay time. The test pulse 
-should be negative (-) polarity, have an input voltage of less than 1 V and a frequency 
-less than 5 kHz. Connect the test signal to channel 0 of the digitizer.
+shown to scale. The two cables should be the same length to minimize clock phase
+differences.
 
 @subsection sec_multicrate_configfiles Example Configuration Files
 @par
 The setup described in this tutorial contains two crates with one digitizer in 
 each. Crate 1 is the system master crate and crate 2 is the chassis. In our 
-crate_1 directory under the top-level readout directory, we have DSP settings 
-stored in crate_1.json. The cfgPixie16.txt file for the first crate looks like:
+`crate_1` directory under the top-level readout directory, we have DSP settings 
+stored in `crate_1.json`. The `cfgPixie16.txt` file for the first crate looks like:
 
 @verbatim
 1  # crateID
@@ -285,10 +281,10 @@ Similarly, for crate 2:
 @endverbatim
 
 @par
-Note that the `crateID` is different in crate 2's cfgPixie16.txt file. This ID 
+Note that the `crateID` is different in crate 2's `cfgPixie16.txt` file. This ID 
 value is used by the <a href="https://docs.nscl.msu.edu/daq/newsite/nscldaq-12.0/c5861.html">ScalerDisplay</a> 
- program to identify each crate in the system. The ID value should be different 
- for each crate in your system to ensure that scaler data are displayed correctly.
+program to identify each crate in the system. The ID value should be different 
+for each crate in your system to ensure that scaler data are displayed correctly.
 
 @subsection sec_multicrate_setdpp Configuring DSP Settings Using QtScope
 @par
@@ -301,13 +297,13 @@ the crate in which that data collection computer is installed.
 In addition to the channel DSP settings, the module DSP parameters must be 
 set to enable the distribution of the clock and synchronization signals. 
 The clock and synchronization signals are controlled by the Module Control 
-Register B or ModCSRB parameter. ModCSRB is a 32-bit parameter where each 
+Register B or `ModCSRB` parameter. `ModCSRB` is a 32-bit parameter where each 
 bit controls an operation mode of the digitizer module. Some pre-configured 
-ModCSRB settings are available in QtScope that handle the majority of use 
+`ModCSRB` settings are available in QtScope that handle the majority of use 
 cases. In the QtScope GUI, click the **[Module DSP]** button on the system 
 toolbar which will bring up the following window:
 
-@image html module_dsp.PNG "The module DSP popup window displayed when clicking the [Module DSP] button."
+@image html mod_dsp.png "The module DSP popup window displayed when clicking the [Module DSP] button."
 
 @par
 Crate configurations are selected by clicking on the radio button to the left 
@@ -322,7 +318,7 @@ system must have a unique crate ID.
 @par
 This section describes how to configure data sources, setup an event builder 
 and run the readout driver for DDAS in a "production-like" mode using the 
-ReadoutGUI. For users familiar with previous versions of FRIBDAQ software, 
+`ReadoutGUI`. For users familiar with previous versions of FRIBDAQ software, 
 the data-source configuration is done slightly differently in FRIBDAQ 12, 
 reflecting the fact that the module readout and timestamp ordering processes 
 are separated. The `ddasReadout` program allows us to run the module readout 

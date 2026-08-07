@@ -37,7 +37,7 @@ rather than `DAQ::DDAS::DDASBuiltUnpacker`. Everything else should remain the sa
 The source code for the example discussed in this tutorial can be found at 
 `PREFIX/VERSION/DDASSkel/` where `PREFIX` is the installation prefix path 
 and `VERSION` is some SpecTcl version 7.1 or later. On FRIB computer systems 
-the PREFIX path is most likely `/usr/opt/spectcl`. The user does not have deal 
+the `PREFIX` path is most likely `/usr/opt/spectcl`. The user does not have deal 
 with the low-level raw data when building a SpecTcl. Rather, they just need to 
 implement a class that uses the unpacked DDAS data to set tree parameters for 
 histogramming. In this way, the user is isolated from the details of the DDAS 
@@ -83,10 +83,9 @@ Ideally your parameters should be structured in a way that reflects the organiza
 of detector parameters.
 
 @par
-SpecTcl TreeParameters are a useful mechanism that we will use to represent our 
-parameters. Refer to the 
+SpecTcl's tree parameters are used to store our event data. Refer to the 
 <a href="https://docs.nscl.msu.edu/daq/spectcl/index.htm">SpecTcl documentation</a> 
-for more information. What we need to know for now is that a TreeParameter wraps a 
+for more information. What we need to know for now is that a tree parameter wraps a 
 SpecTcl raw parameter. Tree parameters also provide metadata that guide the user in 
 creating spectra that are defined on those parameters.
 
@@ -216,9 +215,8 @@ struct ModuleInfo {
  */
 class MyParameterMapper : public DAQ::DDAS::CParameterMapper {
 private:
-  MyParameters &m_params; //<! Reference to the tree parameter structure.
-  std::map<std::pair<int, int>, int>
-      m_chanMap; //<! Map of crate and slot IDs to base channel index.
+  MyParameters &m_params; //!< Reference to the tree parameter structure.
+  std::map<std::pair<int, int>, int> m_chanMap; //!< Map of crate and slot IDs to base channel index.
 
 public:
   /**
@@ -262,14 +260,14 @@ this is simply one of many vaild approaches.
 
 @par
 The `MyParameterMapper` class maintains a reference to our parameters and an 
-m_chanMap data member, which we will talk about a little later. This class 
+`m_chanMap` data member, which we will talk about a little later. This class 
 is derived from the `DAQ::DDAS::CParameterMapper` base class. Concrete 
-`DAQ::DDAS::CParameterMapper` classes are expected to provide a mapToParameters
+`DAQ::DDAS::CParameterMapper` classes are expected to provide a `mapToParameters()`
 method that takes the hits and  fills the parameters.
 
 @par
 In our case: We fill tree parameters so we don't need to refer directly to the 
-rEvent parameter. We add a method `computeGlobalIndex()` and an associated helper 
+`rEvent` parameter. We add a method `computeGlobalIndex()` and an associated helper 
 function `buildChannelMap()` to which computes the index into the `CTreeParameterArray`
 objects. Remember that the the parameter arrays store the energy and timestamp 
 for each channel in the system. This method does no range checking. If you use 
@@ -318,7 +316,7 @@ Let's think a little about the `computeGlobalIndex()` method. The responsibility
 of this method in this example is to map the hit to a global channel index in the 
 range [0, 15] using the crate, slot, and channel information from the `ddasfmt::DDASHit` 
 object encapsulating a single hit. To do this, we need to input some information 
-concerning the layout of the modules in the crates. The m_chanMap variable stores 
+concerning the layout of the modules in the crates. The `m_chanMap` variable stores 
 the information about how many channels each module contains.
 
 @code{.cpp}
@@ -581,69 +579,93 @@ end of the `OBJECTS` variable. Once the program has been built, execute the comm
 @subsection sec_spectcl_createspectra Creating Spectra
 @par
 The simplest way to create spectra is to run your tailored SpecTcl application and use 
-the treegui to create spectra for your parameters. Here's the SpecTcl treegui user 
-interface:
-
-@image html treegui.PNG "The SpecTcl treegui window on startup."
-
-@par
-To create a spectrum use the Parameter pull-down menu on the left side of the treegui. 
-Clicking on the menu will open a list of parameters which you can use to construct spectra.
-- Select `raw0->energy` from the list and give the spectrum a name. I chose: raw0.energy.
-- Click the Create/Replace button. The created spectrum will be added to the list.
+the treegui to create spectra for your parameters. To create a spectrum use the Parameter 
+pull-down menu on the left side of the treegui. Clicking on the menu will open a list 
+of parameters which you can use to construct spectra. 
+- Select `raw->energy->00` from the list and give the spectrum a name. I chose: 
+  `raw.energy.00`. 
+- Click the Create/Replace button. 
+The created spectrum will be added to the list.
 
 @par
 You can also quickly create many spectra from array parameters. Again, start by 
 clicking the Parameter pull-down menu.
-- Click the Array checkbox beneath the Create/Replace button to tell the GUI we are creating an array of spectra.
+- Click the Array checkbox beneath the Create/Replace button to tell the GUI we 
+  are creating an array of spectra.
 - Select `cal->00`.
-- Type "cal" (without the quotes!) in the SpectrumName box to set the base name of the spectra.
-- Click the Create/Replace button. The created spectra will again populate the spectrum list. This time you should see spectra cal.00, cal.01, ..., cal.15: one for each element in the parameter array.
-- To save your spectra, click the Save button in Definition file box on the right side of the treegui. Choose a name for your spectrum file and click Save. You can load the spectra from this file using the Load dialog in the same box.
+- Type "cal" (without the quotes!) in the SpectrumName box to set the base name 
+  of the spectra.
+- Click the Create/Replace button. The created spectra will again populate the 
+  spectrum list. This time you should see spectra cal.00, cal.01, ..., cal.15: one 
+  for each element in the parameter array.
+- To save your spectra, click the Save button in Definition file box on the right 
+  side of the treegui. Choose a name for your spectrum file and click Save. You can 
+  load the spectra from this file using the Load dialog in the same box.
 
-@image html treegui_after_creation.PNG "The SpecTcl treegui window after creating some example spectra."
+@image html treegui_after_creation.png "The SpecTcl treegui window after creating some example spectra."
 
 @subsection sec_spectcl_cutiepie Displaying Spectra in the CutiePie GUI
 @par
-You can view created spectra using the CutiePie GUI. CutiePie is a PyQt-based replacement for the venerable Xamine-based viewer many readers will be familiar with. We cover only some basics here. For a more complete discussion of the CutiePie GUI and its capabilities, refer to the <a href="https://docs.nscl.msu.edu/daq/newsite/qtpy/index.html documentation.">CutiePie documentation</a>.
+You can view created spectra using the CutiePie GUI. CutiePie is a PyQt-based 
+replacement for the venerable Xamine-based viewer many readers will be familiar 
+with. We cover only some basics here. For a more complete discussion of the 
+CutiePie GUI and its capabilities, refer to the 
+<a href="https://docs.nscl.msu.edu/daq/newsite/qtpy/index.html documentation.">CutiePie documentation</a>.
 
 @par
-Click the Connect button to connect CutiePie to your SpecTcl application.
+On older versions of CutiePie, you need to click the Connect button to connect 
+CutiePie to your SpecTcl application.
 - The Server field should contain the name of the system on which your SpecTcl application is running.
 - The User should be you (or whatever account you are using).
 - The REST and Mirror port can be left at default values.
 - Click OK.
+The Connect button should change color from blue to green and read Connected if 
+successful. Newer versions of CutiePie will handle the connection automatically. 
+The CutiePie GUI should now be aware of the created spectra. On the top menu, 
+use the Geometry combo boxes to display one row and two columns of spectra. 
+Select the first spectrum by clicking on the canvas inside the axes. The selected 
+display will be highlighted in red.
 
 @par
-The Connect button should change color from blue to green and read Connected if successful:
+With the first spectrum canvas selected, choose the `raw.energy.00` spectrum from 
+the Spectrum combo box on the top menu and click Add. That canvas will now display 
+the contents of the `raw.energy.00` spectrum. If you hover your mouse over the canvas, 
+you will see the name of the displayed parameter on the canvas tab. Select the 
+second tab and add the `cal.00` spectrum. 
 
-@image html connected_cutiepie.PNG "The CutiePie GUI after establishing a connection to a SpecTcl app." width=1200px
-
-The CutiePie GUI should now be aware of the created spectra. On the top menu, use the Geometry combo boxes to display one row and two columns of spectra. Select the first spectrum by clicking on the canvas inside the axes. The selected display will be highlighted in red:
-
-@image html cutiepie_select1.PNG "The CutiePie GUI with the first spectrum selected (red box)." width=1200px
-
-@par
-With the first spectrum canvas selected, choose the raw00.energy spectrum from the Spectrum combo box on the top menu and click Add. That canvas will now display the contents of the raw00.energy spectrum. If you hover your mouse over the canvas, you will see the name of the displayed parameter on the canvas tab. Select the second tab and add the cal.00 spectrum. 
+@image html cutiepie_with_spectra.png "The CutiePie GUI displaying two empty spectra: raw.energy.00 on the left and cal.00 on the right" width=1200px
 
 @subsection sec_spectcl_attach Attaching SpecTcl to a Data Source
 @par
-We can now attach SpecTcl to a data source. The data source can be either a file or an online ringbuffer. We will discuss how to attach to a ringbuffer to do real-time processing of DDAS data. Select `Data Source->Online...` from the treegui top-level menu. In the resulting dialog:
-- Set the Host to the system where your ReadoutGUI is running and your event-built ring resides.
-- Select the appropriate ring format. The format corresponds to the major version of the FRIBDAQ software being used to take data.
-- Check that the ring name in the Ring field matches the event-builder ring name. If not, change it to the event-builder ring (the tutorial assumes event-built data).
-- Click OK to attach SpecTcl to the online system. The SpecTcl control panel, shown below, can also be used to attach to a data source.
+We can now attach SpecTcl to a data source. The data source can be either a file 
+or an online ringbuffer. We will discuss how to attach to a ringbuffer to do 
+real-time processing of DDAS data. Select `Data Source->Online...` from the 
+treegui top-level menu. In the resulting dialog:
+- Set the Host to the system where your ReadoutGUI is running and your event-built 
+  ring resides.
+- Select the appropriate ring format. The format corresponds to the major version 
+  of the FRIBDAQ software being used to take data.
+- Check that the ring name in the Ring field matches the event-builder ring name. 
+  If not, change it to the event-builder ring (the tutorial assumes event-built data).
+- Click OK to attach SpecTcl to the online system. The SpecTcl control panel, 
+  shown below, can also be used to attach to a data source.
 
 @image html control_panel.PNG "The SpecTcl control panel can be used to perform many common actions."
 
 @par
-You can also select an event file as a data source. To do so use the `Data Source->File...` option from the treegui menu or the SpecTcl control panel and select a file using the file dialog. When you start a run on the ReadoutGUI and data starts making its way out of the event builder, you will see counts in the histograms that have valid inputs:
+You can also select an event file as a data source. To do so use the 
+`Data Source->File...` option from the treegui menu or the SpecTcl control panel 
+and select a file using the file dialog. When you start a run on the ReadoutGUI and 
+data starts making its way out of the event builder, you will see counts in the 
+histograms that have valid inputs:
 
-@image html cutiepie_data.PNG "Spectra displayed on the CutiePie GUI" width=1200px
+@image html cutiepie_with_data.png "Spectra displayed on the CutiePie GUI" width=1200px
 
 @section sec_spectcl_root Creating ROOT Trees Using SpecTcl
 @par
-A powerful but little-used feature of SpecTcl is the automatic creation of ROOT trees from SpecTcl parameters. To use this feature the following lines must be added to your SpecTclRC.tcl file:
+A powerful but little-used feature of SpecTcl is the automatic creation of ROOT trees 
+from SpecTcl parameters. To use this feature the following lines must be added to your 
+SpecTclRC.tcl file:
 
 @code{.tcl}
 load $SpecTclHome/lib/libRootInterface.so
@@ -651,12 +673,16 @@ package require rootinterface
 @endcode
 
 @par
-Once SpecTcl is running, type `roottree create TREENAME *` in the SpecTcl console to create a ROOT file containing a TTree with the specified TREENAME (I chose: mytree). The created tree has branches of all parameters. 
+Once SpecTcl is running, type `roottree create TREENAME *` in the SpecTcl console to 
+create a ROOT file containing a TTree with the specified TREENAME (I chose: mytree). 
+The created tree has branches of all parameters. 
 
 @image html console.PNG "The SpecTcl console."
 
 @par
-The created ROOT file has the name run-X.root where X is the run number e.g., run-55.root for run 55. The run number is read directly from the data. Opening this ROOT file and looking at its contents shows that it contains mytree:
+The created ROOT file has the name run-X.root where X is the run number e.g., `run-55.root` 
+for run 55. The run number is read directly from the data. Opening this ROOT file and 
+looking at its contents shows that it contains mytree:
 
 @verbatim
 <genesis:mySpecTcl >root run-55.root
@@ -669,7 +695,9 @@ TFile**         run-55.root
 root [3]
 @endverbatim
 
-We can look at the contents of mytree and see that it contains branches for all of our parameters:
+@par
+We can look at the contents of mytree and see that it contains branches for all of 
+our parameters:
 
 @verbatim
 root [3] mytree->Print()
@@ -696,7 +724,8 @@ root [3] mytree->Print()
 
 @section sec_spectcl_conclusion Conclusion
 @par
-This concludes the DDAS SpecTcl tutorial. You should understand some of the basic steps needed to tailor SpecTcl for your use including:
+This concludes the DDAS SpecTcl tutorial. You should understand some of the basic 
+steps needed to tailor SpecTcl for your use including:
 1. How to use the DDAS unpackers and SpecTcl event processors,
 2. How to create spectra,
 3. How to attach to a data source,
