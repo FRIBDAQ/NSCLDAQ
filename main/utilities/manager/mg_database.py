@@ -1251,7 +1251,7 @@ class Sequence:
         step_num = self.step_increment
         cursor = self._db.cursor()
         cursor.execute('''
-            SELECT step FROM stepWHERE sequence_id = ?  ORDER BY step DESC LIMIT = 1
+            SELECT step FROM step WHERE sequence_id = ?  ORDER BY step DESC LIMIT 1
             ''', (seqid,))
         row = cursor.fetchone()
         if row is not None:

@@ -114,6 +114,7 @@ class CommonReadoutInfo(QWizardPage):
             Name      - name of the readout program.
             Container - The Container to use.
             Host      - Host in which to run the programs.
+            ManagerHost - Where the manager will be running.
             Directory - The CWD for the programs.
             RestService - The ReST service advertised by the Readout.
             RingBuffer - Name of the ring buffer Readout writes data to.
@@ -155,9 +156,9 @@ class CommonReadoutInfo(QWizardPage):
         self.registerField('Container', self._container, 'currentText', QComboBox.currentTextChanged)
         environLayout.addWidget(self._container)
         
-        environLayout.addWidget(QLabel('Host', self))
+        environLayout.addWidget(QLabel('Readout Host', self))
         self._host = QLineEdit(self)
-        self.registerField('Host*', self._host)
+        self.registerField('ReadoutHost*', self._host)
         environLayout.addWidget(self._host)
         
         environLayout.addWidget(QLabel('Working Dir', self))
@@ -195,7 +196,7 @@ class CommonReadoutInfo(QWizardPage):
         restLayout.addWidget(QLabel('ReST service', self))
         self._service = QLineEdit(self)
         self.registerField('RestService', self._service)
-        self._service.setText('RedoutREST')
+        self._service.setText('ReadoutREST')
         restLayout.addWidget(self._service)
         
         restLayout.addWidget(QLabel('Manager username', self))
@@ -203,6 +204,11 @@ class CommonReadoutInfo(QWizardPage):
         self.registerField('User', self._user)
         self._user.setText(getpass.getuser())
         restLayout.addWidget(self._user)
+        
+        restLayout.addWidget(QLabel('Manager host', self))
+        self._mgrHost = QLineEdit(self)
+        self.registerField('ManagerHost*', self._mgrHost)
+        restLayout.addWidget(self._mgrHost)
         
         self._layout.addLayout(restLayout)
         
@@ -1376,6 +1382,8 @@ class Controller(QObject):
         
     def _generate(self) -> None:
         self._ensureSequences() 
+        self._makeControlPrograms()
+        self._makeInitialSequenceSteps()
 
     def _ensureSequences(self) -> None:
         #
@@ -1399,6 +1407,102 @@ class Controller(QObject):
         for name, trigger in sequences:
             if not api.exists(name):
                 api.add(name, trigger, [])            # We'll add steps later.
+    
+    
+    def _makeKvProgram(self, image :str, suffix :str, params : dict) -> None:
+        # Make a program that sets something from the keyvalue store.
+        # image the name of the program in $DAQBIN, suffix. the suffix to append
+        #    to the program name.
+        # params the parameter dictionary from _makeControlPrograms below.
+        
+        api = mg_database.Program(self._db)
+        
+        full_image = f'$DAQBIN/{image}'
+        full_name  = f'{params["name"]}_{suffix}'
+        readout_name = f'{params["name"]}_readout'
+    
+        program_parameters = [
+            params['mgr_host'],
+            params['mgr_user'],
+            readout_name,
+        ]
+        environment = [('SERVICE_NAME', params['service']),]
+        
+        api.add(full_name, full_image, params['rdo_host'], params['container'], params['dir'],
+                {'parameters': program_parameters, 'environment': environment})
+    
+    def _makeControlProgram(self, image :str, suffix: str, command : str, params : dict) -> None:
+        # Make a program that sends a control param to a Readout program.
+        # image - the image of the program in $DAQBIN
+        # suffix - the suffix the program gets in constructing its name.
+        # command - the command to give the readout.
+        # params - the parameter dict constructedin _makeControlPrograms.
+        api = mg_database.Program(self._db)
+        
+        full_image = f'$DAQBIN/{image}'
+        full_name  = f'{params["name"]}_{suffix}'
+        
+        program_params = [
+            params['rdo_host'], params['mgr_user'], command 
+        ]
+        environment = [('SERVICE_NAME', params['service']),]
+        
+        api.add(full_name, full_image, params['rdo_host'], params['container'], params['dir'],
+        {'parameters': program_params, 'environment': environment}
+        )
+    
+    def _makeControlPrograms(self) -> None:
+        # Make the control programs that we'll eventually insert
+        # Into the sequences.  The Readout program will be created by the
+        # type specific generators.
+        # We'll run these in the same host as the manager itself.
+        
+        params = {
+            'name': self._view.field('Name'),
+            'container' : self._view.field('Container'),
+            'mgr_host'  : self._view.field('ManagerHost'),
+            'rdo_host'  : self._view.field('ReadoutHost'),
+            'dir'       : self._view.field('Directory'),
+            'mgr_user'  : self._view.field('User'),
+            'service'   : self._view.field('RestService')
+            
+        }
+        
+        self._makeKvProgram('rdo_titleFromKv', 'settitle', params)
+        self._makeKvProgram('rdo_runFromKv', 'setrun', params)
+        
+        self._makeControlProgram('rdo_control', 'beginrun', 'begin', params)
+        self._makeControlProgram('rdo_control', 'init', 'init', params)
+        self._makeControlProgram('rdo_control', 'endrun', 'end', params)
+        self._makeControlProgram('rdo_control', 'shutdown', 'shutdown', params)
+    
+    def _makeInitialSequenceSteps(self) -> None:
+        # The control programs provide common sequence steps for the state transitions:
+        
+        name = self._view.field('Name')  # Name prefix.
+        api  = mg_database.Sequence(self._db)
+        
+        # BOOT gets nothing - it will be filled in by the appropriate type
+        # handler with the stuff needed to run the readout.
+        
+        # initreadouts gets {name}_init:
+        
+        api.addStep('initreadouts', f'{name}_init', 0, 0)
+        
+        # beginreadouts gets settitle, setrun and beginrun
+        
+        api.addStep('beginreadouts', f'{name}_settitle', 0,0)
+        api.addStep('beginreadouts', f'{name}_setrun', 0,0)
+        api.addStep('beginreadouts', f'{name}_beginrun', 0,0)
+        
+        # endreadouts getwss end:
+        
+        api.addStep('endreadouts', f'{name}_endrun', 0,0)
+        
+        # shutdownreadouts gets shutdown:
+        
+        api.addStep('shutdownreadouts', f'{name}_shutdown', 0,0)
+        
         
         
 def usage() -> None:
