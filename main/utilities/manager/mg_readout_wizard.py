@@ -26,6 +26,7 @@ have to run.
 import getpass
 import sqlite3
 import sys
+from abc import ABC, abstractmethod
 from typing import Protocol
 
 from nscldaq import mg_database
@@ -466,7 +467,7 @@ class XXUSBParameters(QWizardPage):
             daqconfigLayout = QHBoxLayout()
             daqconfigLayout.addWidget(QLabel('DAQ Config file:', self))
             self._daqconfigfile = QLineEdit(self)
-            self.registerField('XXUSB_DAQConfig', self._daqconfigfile)
+            self.registerField('XXUSB_DAQConfig*', self._daqconfigfile)
             daqconfigLayout.addWidget(self._daqconfigfile)
 
             self._browsedaqconfig = QPushButton('Browse...', self)
@@ -1491,6 +1492,43 @@ class XIAGenerator:
         
         api.addStep('bootreadouts', full_name, 0,0)
         
+class XXUSBGenerator(ABC):
+    '''
+    This is a base class for generating readouts for the VMUSB and CCUSB.
+    The specialized classes must implement the imageName method which is
+    abstract in this class.  We implement the generate method
+    so that we satisfy the ReadoutGenerator protocol and our concrete subclasses
+    can be returned from makeGenerator.
+    '''
+    
+    def __init__(self, db : sqlite3.Connection):
+        self._db = db
+        
+    def generate(self, wiz : ReadoutWizard):
+        print('generating for', self.imageName())
+    
+    @abstractmethod
+    def imageName(self) -> str:
+        '''
+        Should return the image name without the directory e.g.
+        'VMUSBReadout' or 'CCUSBReadout' depending on the concrete class.
+        '''
+        
+        ...
+
+class VMUSBGenerator(XXUSBGenerator):
+    def __init__(self, db : sqlite3.Connection):
+        super().__init__(db)
+    
+    def imageName(self) -> str:
+        return 'VMUSBReadout'
+    
+class CCUSBGenerator(XXUSBGenerator):
+    def __init__(self, db : sqlite3.Connection):
+        super().__init__(db)
+        
+    def imageName(self) -> str:
+        return 'CCUSBReadout'
 
 def makeGenerator(db : sqlite3.Connection, rdoType : str) -> ReadoutGenerator:
     '''
@@ -1503,6 +1541,10 @@ def makeGenerator(db : sqlite3.Connection, rdoType : str) -> ReadoutGenerator:
     match rdoType:
         case 'XIA/DDAS':
             return XIAGenerator(db)
+        case 'VMUSB':
+            return VMUSBGenerator(db)
+        case 'CCUSB':
+            return CCUSBGenerator(db)
         case _:
             raise NotImplementedError(f'{rdoType} is not a supported readout type')
     
