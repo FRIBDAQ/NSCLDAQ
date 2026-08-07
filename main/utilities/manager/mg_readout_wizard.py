@@ -160,15 +160,19 @@ class CommonReadoutInfo(QWizardPage):
         self._host = QLineEdit(self)
         self.registerField('ReadoutHost*', self._host)
         environLayout.addWidget(self._host)
+        self._layout.addLayout(environLayout)
         
-        environLayout.addWidget(QLabel('Working Dir', self))
+        workdirLayout= QHBoxLayout()
+        workdirLayout.addWidget(QLabel('Working Dir', self))
         self._wd = QLineEdit(self)
         self.registerField('Directory*', self._wd)
-        environLayout.addWidget(self._wd)
+        workdirLayout.addWidget(self._wd)
         self._browseWd = QPushButton('Browse...', self)
-        environLayout.addWidget(self._browseWd)
+        workdirLayout.addWidget(self._browseWd)
         
-        self._layout.addLayout(environLayout)
+        self._layout.addLayout(workdirLayout)
+        
+        
         
         #  How the Readout outputs data:
         
@@ -199,18 +203,24 @@ class CommonReadoutInfo(QWizardPage):
         self._service.setText('ReadoutREST')
         restLayout.addWidget(self._service)
         
-        restLayout.addWidget(QLabel('Manager username', self))
+        self._layout.addLayout(restLayout)
+        
+        managerLayout = QHBoxLayout()
+        
+        managerLayout.addWidget(QLabel('Manager username', self))
         self._user = QLineEdit(self)
         self.registerField('User', self._user)
         self._user.setText(getpass.getuser())
-        restLayout.addWidget(self._user)
+        managerLayout.addWidget(self._user)
         
-        restLayout.addWidget(QLabel('Manager host', self))
+        
+        
+        managerLayout.addWidget(QLabel('Manager host', self))
         self._mgrHost = QLineEdit(self)
         self.registerField('ManagerHost*', self._mgrHost)
-        restLayout.addWidget(self._mgrHost)
+        managerLayout.addWidget(self._mgrHost)
+        self._layout.addLayout(managerLayout)
         
-        self._layout.addLayout(restLayout)
         
         #  Finally the combobox with the Readout types:
         
