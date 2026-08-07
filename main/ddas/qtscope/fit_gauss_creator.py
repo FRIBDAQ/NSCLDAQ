@@ -77,6 +77,9 @@ class GaussFitBuilder:
             starting guesses.
         form : str
             Function formula.
+        count_data : bool, default=True
+            True if the data represent counts (Poisson statistics), False for
+            unweighted least-squares. Passed through to the fit function.
 
         Returns
         -------

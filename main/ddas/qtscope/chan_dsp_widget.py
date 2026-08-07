@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 
 from PyQt5.QtGui import QDoubleValidator
@@ -7,16 +5,15 @@ from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QVBoxLayout
 
 from extensions import MyGridLayout
 
-# @todo Some visual indication settings are changed but not applied.
-
 
 class ChanDSPWidget(QWidget):
     """Channel DSP tab widget.
 
     Generic channel DSP tab widget intended to be subclassed for particular
     families of DSP parameters. This class interacts only with the internal
-    DSP settings and its own display. Note that the actual DSP parameters are
-    1-indexed while the DSP grid is 0-indexed. Provides template methods for
+    DSP settings and its own display. Note that the channels are 0-indexed
+    while the DSP grid is 1-indexed (grid row 0 holds the column headers, so
+    channel i occupies grid row i + 1). Provides template methods for
     subclasses which are called in the appropriate class methods.
 
     Attributes
@@ -31,8 +28,6 @@ class ChanDSPWidget(QWidget):
         Extra parameter flag.
     param_grid : MyGridLayout
         Grid of QWidgets to display DSP parameters.
-    logger : Logger
-        QtScope Logging instance.
 
     Methods
     -------
@@ -42,8 +37,8 @@ class ChanDSPWidget(QWidget):
         Update DSP from GUI.
     display_dsp(mgr, mod)
         Display current DSP in GUI.
-    copy_chan_dsp(mgr, mod)
-        Copy DSP from channel idx in GUI.
+    copy_chan_dsp(idx)
+        Copy DSP from channel idx to all channels in GUI.
     """
 
     def __init__(
@@ -66,9 +61,6 @@ class ChanDSPWidget(QWidget):
             Number of channels per module.
         """
         super().__init__(*args, **kwargs)
-
-        self.logger = logging.getLogger("qtscope_logger")
-
         self.param_names = param_names
         self.param_labels = param_labels
         self.nchannels = nchannels

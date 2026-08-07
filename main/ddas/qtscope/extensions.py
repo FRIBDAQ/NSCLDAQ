@@ -1,3 +1,5 @@
+import inspect
+
 from PyQt5.QtWidgets import QTabWidget, QGridLayout
 from PyQt5.QtGui import QValidator
 
@@ -13,7 +15,13 @@ class MyTabWidget(QTabWidget):
 
 
 class MyGridLayout(QGridLayout):
-    """Extended QGridLayout with position-based widget access."""
+    """Extended QGridLayout with position-based widget access.
+
+    Methods
+    -------
+    widget_at(row, col)
+        Get the widget at the specified row, col of the grid layout.
+    """
 
     class _GridRow:
         """Helper class to enable layout[row][col] indexing."""
@@ -26,8 +34,21 @@ class MyGridLayout(QGridLayout):
             """Get widget at (row, col)."""
             return self.layout.widget_at(self.row, col)
 
-    def _widget_at(self, row, col):
-        """Get widget at (row, col) or None if empty."""
+    def widget_at(self, row, col):
+        """Get widget at (row, col) or None if empty. It is the responsibility
+        of the caller to ensure that the row and column index are sensible.
+
+        Parameters
+        ----------
+        row : int
+            Row index.
+        col : int
+            Column index.
+
+        Returns
+        -------
+        The widget located at row, col or None if no widget exists.
+        """
         item = self.itemAtPosition(row, col)
         return item.widget() if item else None
 
@@ -37,11 +58,11 @@ class MyGridLayout(QGridLayout):
             # Handle layout[row, col]
             if len(key) == 2:
                 row, col = key
-                return self._widget_at(row, col)
+                return self.widget_at(row, col)
             raise IndexError("Grid index must be (row, col)")
         else:
             # Handle layout[row][col] by returning a row proxy
-            return _GridRow(self, key)
+            return self._GridRow(layout=self, row=key)
 
 
 class UInt32Validator(QValidator):
@@ -64,6 +85,10 @@ class UInt32Validator(QValidator):
             Input string to validate.
         pos : int
             Current cursor position.
+
+        Returns
+        -------
+        Tuple of (QValidator::State, input string, position)
         """
         if input_str == "":
             return (QValidator.Intermediate, input_str, pos)
@@ -77,7 +102,7 @@ class UInt32Validator(QValidator):
             return (QValidator.Invalid, input_str, pos)
 
 
-def callMe(self):
+def call_me(self):
     """A dummy function which can be hooked up to signals for testing."""
     print(
         f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Hey I just wrote you, and this is crazy\nBut here's my purpose, you should call me, maybe"

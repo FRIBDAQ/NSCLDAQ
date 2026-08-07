@@ -7,6 +7,8 @@
 #ifndef CPIXIETRACEUTILITIES_H
 #define CPIXIETRACEUTILITIES_H
 
+#include <memory>
+#include <string>
 #include <vector>
 
 class CDataGenerator;
@@ -31,10 +33,11 @@ class CDataGenerator;
 
 class CPixieTraceUtilities {
 private:
-  CDataGenerator *m_pGenerator; //!< The offline data generator.
-  bool m_useGenerator; //!< True if using generated data, else online data.
-  std::vector<unsigned short> m_trace; //!< Single channel trace data.
+  bool m_useGenerator;     //!< True if using generated data, else online data.
   double m_validAmplitude; //!< Minimum amplitude for a validated trace.
+  std::unique_ptr<CDataGenerator> m_pGenerator; //!< The offline data generator.
+  std::vector<unsigned short> m_trace;          //!< Single channel trace data.
+  std::string m_lastErrorMessage; //!< Last error message from the system.
 
 public:
   /** @brief Constructor. */
@@ -47,20 +50,31 @@ public:
    * @param module  Module number.
    * @param channel Channel number on module for trace read.
    * @return int
-   * @retval  0 Success.
-   * @retval -1 XIA API call fails.
-   * @retval -2 Acquired trace is empty (median undefined).
+   * @retval 0 Success.
+   * @retval < 0 XIA API error code.
+   * @retval CPIXIEERROR_TRACE_ACQUIRE Other acquisition errors (trace empty,
+   * offline generator failures).
    */
   int ReadTrace(int module, int channel);
   /**
-   * @brief Read a validated ADC trace from single channel.
+   * @brief Read an unvalidated ADC trace from single channel.
    * @param module  Module number.
    * @param channel Channel number on module for trace read.
    * @return int
-   * @retval  0 Success.
-   * @retval -1 XIA API call fails.
+   * @retval 0 Success.
+   * @retval < 0 XIA API error code.
+   * @retval CPIXIEERROR_TRACE_ACQUIRE Other acquisition errors (trace empty,
+   * offline generator failures).
    */
   int ReadFastTrace(int module, int channel);
+  /**
+   * @brief Get the trace length for a given module/channel.
+   * @param module Module number.
+   * @param channel Channel number.
+   * @return Trace length in samples.
+   * @retval < 0 XIA error code, could not read trace length.
+   */
+  int GetTraceLength(int module, int channel);
   /**
    * @brief Return the trace data.
    * @return Pointer to the underlying trace storage.
@@ -71,12 +85,18 @@ public:
    * @param mode The generator flag is set to this input value.
    */
   void SetUseGenerator(bool mode) { m_useGenerator = mode; }
+
   /**
-   * @brief Get the trace length for a module.
-   * @param module Module number.
-   * @return Trace length in samples or XIA error code if failed.
+   * @brief Set the last error message. Used by the extern "C" shims when
+   * their catch-all fires.
+   * @param msg Message to store.
    */
-  int GetTraceLength(int module);
+  void SetLastErrorMessage(const char *msg) { m_lastErrorMessage = msg; };
+  /**
+   * @brief Get the reason text from the most recent failed operation.
+   * @return Pointer to the stored message; empty string if none.
+   */
+  const char *GetLastErrorMessage() { return m_lastErrorMessage.c_str(); };
 
 private:
   /**
@@ -84,11 +104,22 @@ private:
    * channel.
    * @param module  Module number.
    * @param channel Channel number on module for trace read.
-   * @throw std::runtime_error If ADC traces cannot be acquired (internal
-   *   DSP memory fails to fill).
-   * @throws CXIAException If trace allocation or read fails.
+   * @throw CXIAException If trace allocation or read fails.
+   * @throw CXIAException Failed to read module XDT (offline generator mode).
+   * @throw std::runtime_error Failed to get trace data (offline generator
+   * mode).
    */
   void AcquireADCTrace(int module, int channel);
+  /**
+   * @brief Call Pixie-16 API to acquire the trace length from a module. It is
+   * assumed all channels on a single module have the same maximum trace length.
+   * @param module Module number.
+   * @param channel Channel number.
+   * @return Maximum trace length in samples.
+   * @throw CXIAException If the trace length cannot be read. It is the
+   * responsibility of the caller to handle this exception.
+   */
+  unsigned int AcquireTraceLength(int module, int channel);
   /**
    * @brief Calculate the median value from a trace.
    * @param v Input vector of type T.
@@ -107,39 +138,26 @@ private:
 
 extern "C" {
 /** @brief Wrapper for the class constructor. */
-CPixieTraceUtilities *CPixieTraceUtilities_new() {
-  return new CPixieTraceUtilities();
-}
+CPixieTraceUtilities *CPixieTraceUtilities_new();
 /** @brief Wrapper for reading a validated trace. */
 int CPixieTraceUtilities_ReadTrace(CPixieTraceUtilities *utils, int mod,
-                                   int chan) {
-  return utils->ReadTrace(mod, chan);
-}
+                                   int chan);
 /** @brief Wrapper for reading an unvalidated trace. */
 int CPixieTraceUtilities_ReadFastTrace(CPixieTraceUtilities *utils, int mod,
-                                       int chan) {
-  return utils->ReadFastTrace(mod, chan);
-}
+                                       int chan);
 /** @brief Wrapper to get trace length. */
-int CPixieTraceUtilities_GetTraceLength(CPixieTraceUtilities *utils, int mod) {
-  return utils->GetTraceLength(mod);
-}
-/** @brief Wrapper to get trace data. */
-unsigned short *CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities *utils) {
-  return utils->GetTraceData();
-}
+int CPixieTraceUtilities_GetTraceLength(CPixieTraceUtilities *utils, int mod,
+                                        int chan);
+/** @brief Wrapper to get trace data; cannot throw, unguarded. */
+unsigned short *CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities *utils);
 /** @brief Wrapper to set generator use. */
 void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities *utils,
-                                          bool mode) {
-  return utils->SetUseGenerator(mode);
-}
+                                          bool mode);
+/** @brief Wrapper to get the last error message. Cannot throw, unguarded. */
+const char *
+CPixieTraceUtilities_GetLastErrorMessage(CPixieTraceUtilities *utils);
 /** @brief Wrapper for the class destructor. */
-void CPixieTraceUtilities_delete(CPixieTraceUtilities *utils) {
-  if (utils) {
-    delete utils;
-    utils = nullptr;
-  }
-}
+void CPixieTraceUtilities_delete(CPixieTraceUtilities *utils);
 }
 
 #endif

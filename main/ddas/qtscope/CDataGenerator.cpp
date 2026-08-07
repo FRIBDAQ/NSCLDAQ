@@ -51,8 +51,10 @@ int CDataGenerator::GetHistogramData(unsigned int *data, int dataSize) {
   int ene = 0;                                              // Event energy.
 
   for (int i = 0; i < 10000; i++) {
-    ene = static_cast<unsigned int>(dgaus(m_engine));
-    data[ene]++;
+    ene = static_cast<int>(dgaus(m_engine));
+    if (ene >= 0 && ene < dataSize) {
+      data[ene]++;
+    }
   }
 
   return 0;

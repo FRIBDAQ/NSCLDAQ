@@ -1,5 +1,7 @@
 import logging
 
+_logger = logging.getLogger("qtscope_logger")
+
 
 class WidgetFactory:
     """Factory for creating GUI widgets.
@@ -21,7 +23,7 @@ class WidgetFactory:
 
     def __init__(self):
         """WidgetFactory class constructor."""
-        self.logger = logging.getLogger("qtscope_logger")
+
         self.builders = {}
 
     def register_builder(self, key, builder):
@@ -35,7 +37,7 @@ class WidgetFactory:
             Builder method for the concrete class.
         """
         self.builders[key] = builder
-        self.logger.debug(f"\tRegistered: {key}")
+        _logger.debug(f"\tRegistered: {key}")
 
     def create(self, key, *args, **kwargs):
         """Create an instance of a widget from its key.

@@ -1,28 +1,25 @@
-from ctypes import create_string_buffer
-import sys
+"""converters.py
 
-from bitarray import bitarray, bits2bytes
-
-"""
-converters.py
-
-Utilities for converting between data types and bitarray utilities 
-needed by QtScope which may not be present in the bitarray module 
+Utilities for converting between data types and bitarray utilities
+needed by QtScope which may not be present in the bitarray module
 provided in the OS repos.
 
 Methods
 -------
 str2char(pystr)
     Convert a Python string to C-type char*.
-zeros(length, endian="big") 
+zeros(length, endian="big")
     Create a bitarray of given length and endianness filled with all zeroes.
-strip(a, mode='right') 
-    Strip zeroes off the end(s) of a bitarray.
-ba2int(a, signed=False) 
+ba2int(a, signed=False)
     Convert a bitarray to an integer.
-int2ba(i, length=None, endian="big", signed=False) 
+int2ba(i, length=None, endian="big", signed=False)
     Convert an integer to a bitarray.
 """
+
+from ctypes import create_string_buffer
+import sys
+
+from bitarray import bitarray, bits2bytes
 
 _is_py2 = bool(sys.version_info[0] == 2)
 
@@ -54,15 +51,15 @@ def str2char(pystr):
 
 
 def zeros(length, endian="big"):
-    """Create a bitarray of zeroes.
+    """Create a bitarray of zeros.
 
     Create a bitarray of length, with all values 0, and optional
     endianness, which may be 'big', 'little'.
 
     Older bitarray module versions which require us to define this function
     do not necessarily support a gettable/settable  default endianness, so
-    here we assume a defualt value of "big" (as is done in 1.6.3) and instead
-    pass it as a defualt parameter value to the function.
+    here we assume a default value of "big" (as is done in 1.6.3) and instead
+    pass it as a default parameter value to the function.
 
     See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
     Copied from tag 1.6.3, which is the version of the bitarray module
@@ -91,59 +88,6 @@ def zeros(length, endian="big"):
     a = bitarray(length, endian)
     a.setall(0)
     return a
-
-
-def strip(a, mode="right"):
-    """Strip zeros from left, right or both ends.
-
-    Allowed values for mode are the strings: `left`, `right`, `both`.
-
-    See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
-    Copied from tag 1.6.3, which is the version of the bitarray module
-    available in the Debian 11 repo.
-
-    Parameters
-    ----------
-    a : bitarray
-        A bitarray object.
-    mode : str, optional, default='right'
-        End of the bitarray to strip zeroes from.
-
-    Returns
-    -------
-    bitarray
-        bitarray with zeroes stripped of the end(s).
-
-    Raises
-    ------
-    TypeError
-        If the argument to strip is not a bitarray.
-        If mode argument is not a string.
-    ValueError
-        If the mode string is not "left," "right," or "both."
-    """
-    if not isinstance(a, bitarray):
-        raise TypeError("bitarray expected")
-    if not isinstance(mode, str):
-        raise TypeError("String expected for mode")
-    if mode not in ("left", "right", "both"):
-        raise ValueError("Allowed values 'left', 'right', 'both', got: %r" % mode)
-
-    first = 0
-    if mode in ("left", "both"):
-        try:
-            first = a.index(1)
-        except ValueError:
-            return bitarray(0, a.endian())
-
-    last = len(a) - 1
-    if mode in ("right", "both"):
-        try:
-            last = rindex(a)
-        except ValueError:
-            return bitarray(0, a.endian())
-
-    return a[first : last + 1]
 
 
 def ba2int(a, signed=False):
@@ -218,8 +162,8 @@ def int2ba(i, length=None, endian="big", signed=False):
 
     Older bitarray module versions which require us to define this function
     do not necessarily support a gettable/settable  default endianness, so
-    here we assume a defualt value of "big" (as is done in 1.6.3) and instead
-    pass it as a defualt parameter value to the function.
+    here we assume a default value of "big" (as is done in 1.6.3) and instead
+    pass it as a default parameter value to the function.
 
     See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
     Copied largely from tag 1.6.3, which is the version of the bitarray module
@@ -238,7 +182,7 @@ def int2ba(i, length=None, endian="big", signed=False):
 
     Returns
     -------
-    int
+    bitarray
         bitarray representation of the integer.
 
     Raises
@@ -291,7 +235,7 @@ def int2ba(i, length=None, endian="big", signed=False):
 
     a.frombytes(b)
     if length is None:
-        return strip(a, "left" if big_endian else "right")
+        return _strip(a, "left" if big_endian else "right")
 
     la = len(a)
     if la > length:
@@ -301,3 +245,103 @@ def int2ba(i, length=None, endian="big", signed=False):
         a = pad + a if big_endian else a + pad
     assert len(a) == length
     return a
+
+
+##
+# Private methods
+#
+
+
+def _strip(a, mode="right"):
+    """Strip zeros from left, right or both ends.
+
+    Allowed values for mode are the strings: `left`, `right`, `both`.
+
+    See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
+    Copied from tag 1.6.3, which is the version of the bitarray module
+    available in the Debian 11 repo.
+
+    Parameters
+    ----------
+    a : bitarray
+        A bitarray object.
+    mode : str, optional, default='right'
+        End of the bitarray to strip zeroes from.
+
+    Returns
+    -------
+    bitarray
+        bitarray with zeroes stripped of the end(s).
+
+    Raises
+    ------
+    TypeError
+        If the argument to strip is not a bitarray.
+        If mode argument is not a string.
+    ValueError
+        If the mode string is not "left," "right," or "both."
+    """
+    if not isinstance(a, bitarray):
+        raise TypeError("bitarray expected")
+    if not isinstance(mode, str):
+        raise TypeError("String expected for mode")
+    if mode not in ("left", "right", "both"):
+        raise ValueError("Allowed values 'left', 'right', 'both', got: %r" % mode)
+
+    first = 0
+    if mode in ("left", "both"):
+        try:
+            first = a.index(1)
+        except ValueError:
+            return bitarray(0, a.endian())
+
+    last = len(a) - 1
+    if mode in ("right", "both"):
+        try:
+            last = _rindex(a)
+        except ValueError:
+            return bitarray(0, a.endian())
+
+    return a[first : last + 1]
+
+
+def _rindex(a, value=True):
+    """Return the rightmost index of `value` in a bitarray.
+
+    Replicates bitarray.util.rindex for hosts whose bitarray version
+    predates the util module. Upstream implements this in C; this is a
+    pure Python equivalent which scans the bitarray in reverse and returns
+    on the first match.
+
+    See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
+    Required by strip(), which relies on the ValueError to detect a
+    bitarray containing no set bits.
+
+    Parameters
+    ----------
+    a : bitarray
+        A bitarray object.
+    value : bool, optional, default=True
+        Bit value to search for.
+
+    Returns
+    -------
+    int
+        Index of the rightmost occurrence of `value` in the bitarray.
+
+    Raises
+    ------
+    TypeError
+        If the argument to rindex is not a bitarray.
+    ValueError
+        If `value` does not occur in the bitarray.
+    """
+    if not isinstance(a, bitarray):
+        raise TypeError("bitarray expected")
+
+    # Backwards scan: range(start, stop, step)
+    for i in range(len(a) - 1, -1, -1):
+        if a[i] == value:
+            return i
+
+    raise ValueError("rindex(x): x not in bitarray")

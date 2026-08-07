@@ -6,6 +6,8 @@ import pandas as pd
 from pixie_utilities import DSPUtilities
 import xia_constants as xia
 
+_logger = logging.getLogger("qtscope_logger")
+
 
 class DSPManager:
     """Internal DSP parameter management class.
@@ -16,7 +18,7 @@ class DSPManager:
     nchannel x nChanDSP dataframe of channel DSP parameters and the dataframe
     mod_par is a 1 x nModDSP dataframe of module DSP parameters. Channel and
     module DSP parameters are defined by XIA.The rest of the system uses this
-    management class to modify the internal DSP parameter values stroed in the
+    management class to modify the internal DSP parameter values stored in the
     dataframe as well as to read/write values to/from the modules via
     getters/setters and the  DSPUtilities class.
 
@@ -30,17 +32,17 @@ class DSPManager:
     _dsp_deps : dict
         Dictionary of parameter values which depend on the value of other
         parameters. Key is the i.d. parameter name and the value a list of
-        dependant parameter names.
+        dependent parameter names.
     _nmodules : int
         Number of modules installed in the crate.
     _channel_map : list
         List of number of channels per module (zero-)indexed by module number.
-    _logger : Logger
-        QtScope Logger object.
+    _msps_list : list
+        ADC sampling rate in MSPS for each module, indexed by module number.
 
     Methods
     -------
-    initialize_dsp(nmod, channel_map):
+    initialize_dsp(nmod, channel_map, msps_list):
         Create and fill the DSP dictionary.
     get_chan_par(mod, chan, pname):
         Get a channel parameter value from the dataframe.
@@ -50,6 +52,8 @@ class DSPManager:
         Get a module parameter value from the dataframe.
     set_mod_par(mod, pname, value):
         Set a module parameter value in the dataframe.
+    get_module_msps(mod):
+        Get the module MSPS value.
     read(mod, pnames):
         Read DSP parameter(s) into the dataframe.
     write(mod, pnames):
@@ -58,13 +62,15 @@ class DSPManager:
         Adjust the DC offset of all channels on a single module.
     load_new_dsp():
         Load new DSP settings into the dataframe.
+    close()
+        Release resources the manager owns.
     """
 
     def __init__(self):
         """DSPManager class constructor."""
         self._utils = DSPUtilities()
 
-        # Set dependent paramters e.g. TRIGGER_THRESHOLD is automatically
+        # Set dependent parameters e.g. TRIGGER_THRESHOLD is automatically
         # adjusted by the API when TRIGGER_RISETIME is. Prevents Principle
         # of Least Astonishment violations.
         self._dsp_deps = {
@@ -72,7 +78,7 @@ class DSPManager:
             "SLOW_FILTER_RANGE": ["ENERGY_RISETIME", "ENERGY_FLATTOP"],
         }
 
-    def initialize_dsp(self, nmod, channel_map):
+    def initialize_dsp(self, nmod, channel_map, msps_list):
         """Initialize the DSP dataframe.
 
         Read DSP parameters from the modules into the dataframe storage.
@@ -83,13 +89,13 @@ class DSPManager:
             Number of modules installed in the system.
         channel_map : list
             Map of channels per module.
+        msps_list : list
+            ADC sampling rate in MSPS for each module.
         """
         self._dsp = {}
-
-        self._logger = logging.getLogger("qtscope_logger")
-
         self._nmodules = nmod
         self._channel_map = channel_map
+        self._msps_list = msps_list
 
         for i in range(self._nmodules):
             self._dsp[i] = {}  # dict of dicts. Key is module number.
@@ -124,25 +130,16 @@ class DSPManager:
         -------
         float
             Channel parameter value.
-        None
-            Channel parameter name is unknown.
 
         Raises
         ------
         ValueError
             Channel parameter name is unknown.
         """
-        try:
-            if pname not in xia.CHAN_PARS:
-                raise ValueError(f"{pname} is not a channel paramter name")
-        except ValueError as e:
-            self._logger.exception(
-                f"Unrecognized channel parameter name {pname}: {xia.CHAN_PARS}"
-            )
-            print(e)
-            return None
-        else:
-            return self._dsp[mod]["chan_par"].at[chan, pname]
+        if pname not in xia.CHAN_PARS:
+            raise ValueError(f"{pname} is not a channel parameter name")
+
+        return self._dsp[mod]["chan_par"].at[chan, pname]
 
     def set_chan_par(self, mod, chan, pname, value):
         """Set a channel parameter value in the dataframe.
@@ -165,22 +162,14 @@ class DSPManager:
         ValueError
             Channel parameter name is unknown.
         """
-        if type(value) is not float:
-            self._logger.warning(
+        if pname not in xia.CHAN_PARS:
+            raise ValueError(f"{pname} is not a channel parameter name")
+        if not isinstance(value, float):
+            _logger.warning(
                 f"{pname} value {value} is type {type(value)}, converting to float"
             )
             value = float(value)
-
-        try:
-            if pname not in xia.CHAN_PARS:
-                raise ValueError(f"{pname} is not a channel paramter name")
-        except ValueError as e:
-            self._logger.exception(
-                f"Unrecognized channel parameter name {pname}: {xia.CHAN_PARS}"
-            )
-            print(e)
-        else:
-            self._dsp[mod]["chan_par"].at[chan, pname] = value
+        self._dsp[mod]["chan_par"].at[chan, pname] = value
 
     def get_mod_par(self, mod, pname):
         """Get a module parameter value from the dataframe.
@@ -196,25 +185,16 @@ class DSPManager:
         -------
         int
             Module parameter value.
-        None
-            Module parameter name is unknown.
 
         Raises
         ------
         ValueError
             Module parameter name is unknown.
         """
-        try:
-            if pname not in xia.MOD_PARS:
-                raise ValueError(f"{pname} is not a module paramter name")
-        except ValueError as e:
-            self._logger.exception(
-                f"Unrecognized module parameter name {pname}: {xia.MOD_PARS}"
-            )
-            print(e)
-            return None
-        else:
-            return self._dsp[mod]["mod_par"].at[0, pname]
+        if pname not in xia.MOD_PARS:
+            raise ValueError(f"{pname} is not a module parameter name")
+
+        return self._dsp[mod]["mod_par"].at[0, pname]
 
     def set_mod_par(self, mod, pname, value):
         """Set a module parameter value in the dataframe.
@@ -233,22 +213,28 @@ class DSPManager:
         ValueError
             Module parameter name is unknown.
         """
-        if type(value) is not int:
-            self._logger.warning(
+        if pname not in xia.MOD_PARS:
+            raise ValueError(f"{pname} is not a module parameter name")
+        if not isinstance(value, int):
+            _logger.warning(
                 f"{pname} value {value} is type {type(value)}, converting to int"
             )
             value = int(value)
+        self._dsp[mod]["mod_par"].at[0, pname] = value
 
-        try:
-            if pname not in xia.MOD_PARS:
-                raise ValueError(f"{pname} is not a module parameter name")
-        except ValueError as e:
-            self._logger.exception(
-                f"Unrecognized module parameter name {pname}: {xia.MOD_PARS}"
-            )
-            print(e)
-        else:
-            self._dsp[mod]["mod_par"].at[0, pname] = value
+    def get_module_msps(self, mod):
+        """Get the ADC sampling rate in MSPS for a module.
+
+        Parameters
+        ----------
+        mod : int
+            Module number.
+
+        Returns
+        -------
+        The module MSPS
+        """
+        return self._msps_list[mod]
 
     def read(self, mod, pnames):
         """Read DSP settings into internal storage.
@@ -259,12 +245,16 @@ class DSPManager:
             Module number.
         pnames : list
             List of XIA DSP parameter names.
+
+        Raises
+        ------
+        PixieError
+            If a hardware read fails. Already logged at origin.
+        ValueError
+            If a name is not a known module or channel parameter.
         """
-        try:
-            for p in pnames:
-                self._read_and_set_par(mod, p)
-        except ValueError as e:
-            self._logger.exception("Failed to read and set DSP parameter(s)")
+        for p in pnames:
+            self._read_and_set_par(mod, p)
 
     def write(self, mod, pnames):
         """Write DSP settings from internal storage.
@@ -275,12 +265,16 @@ class DSPManager:
             Module number.
         pnames : list
             List of XIA DSP parameter names.
+
+        Raises
+        ------
+        PixieError
+            If a hardware write fails. Already logged at origin.
+        ValueError
+            If a name is not a known module or channel parameter.
         """
-        try:
-            for p in pnames:
-                self._get_and_write_par(mod, p)
-        except ValueError as e:
-            self._logger.exception("Failed to get and write DSP parameter(s)")
+        for p in pnames:
+            self._get_and_write_par(mod, p)
 
     def adjust_offsets(self, mod):
         """Adjust DC offsets for all channels on a single module.
@@ -303,6 +297,10 @@ class DSPManager:
         """
         for mod in range(self._nmodules):
             self.read(mod, [*xia.CHAN_PARS, *xia.MOD_PARS])
+
+    def close(self):
+        """Release the native resources this manager owns."""
+        self._utils.close()
 
     ##
     # Private methods
@@ -346,7 +344,7 @@ class DSPManager:
             Channel parameter name.
         """
         val = self._utils.read_chan_par(mod, chan, pname)
-        self._logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Read Mod. {mod} Chan. {chan} {pname} {val}"
         )
         self.set_chan_par(mod, chan, pname, val)
@@ -362,7 +360,7 @@ class DSPManager:
             Module parameter name.
         """
         val = self._utils.read_mod_par(mod, pname)
-        self._logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Read Mod. {mod} {pname} {val}"
         )
         self.set_mod_par(mod, pname, val)
@@ -410,7 +408,7 @@ class DSPManager:
         """
         val = self.get_chan_par(mod, chan, pname)
         self._utils.write_chan_par(mod, chan, pname, val)
-        self._logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Write Mod. {mod} Chan. {chan} {pname} {val}"
         )
         # Read back and set parameters:
@@ -425,7 +423,7 @@ class DSPManager:
         mod : int
             Module number.
         pname : str
-            Channel parameter name.
+            Module parameter name.
         """
         val = self.get_mod_par(mod, pname)
         if pname == "SLOW_FILTER_RANGE" and self._utils.read_mod_par(mod, pname) != val:
@@ -433,7 +431,7 @@ class DSPManager:
                 f"Module {mod}: New energy filter range = {val} -- filter parameters may have changed!"
             )
         self._utils.write_mod_par(mod, pname, val)
-        self._logger.debug(
+        _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Write Mod. {mod} {pname} {val}"
         )
         self._read_and_set_mod_par(mod, pname)
@@ -454,7 +452,7 @@ class DSPManager:
         """
         if pname in self._dsp_deps:
             for dep_par in self._dsp_deps[pname]:
-                self._logger.debug(
+                _logger.debug(
                     f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Get and write dependent {dep_par} for {pname}"
                 )
                 self._get_and_write_chan_par(mod, chan, dep_par)

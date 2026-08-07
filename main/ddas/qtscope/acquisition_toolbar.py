@@ -133,7 +133,6 @@ class AcquisitionToolBar(QToolBar):
             for gc in c.children():
                 if gc.isWidgetType():
                     gc.setEnabled(False)
-                    gc.repaint()
 
     def enable(self):
         """Enable widgets for system idle state."""
@@ -141,18 +140,22 @@ class AcquisitionToolBar(QToolBar):
             for gc in c.children():
                 if gc.isWidgetType():
                     gc.setEnabled(True)
-                    gc.repaint()
         self.b_read_data.setEnabled(False)
 
     def enable_run_active(self):
         """Enable widgets for system running state."""
-        self.enable()
-        self.b_read_data.setEnabled(True)
+        # Trace acquisition: all disabled
         self.b_read_trace.setEnabled(False)
         self.b_analyze_trace.setEnabled(False)
         self.fast_acq.setEnabled(False)
+        # Run control: read, control enabled, type disabled
+        self.b_read_data.setEnabled(True)
+        self.b_run_control.setEnabled(True)
         self.run_type.setEnabled(False)
+        # Channel selection: module disabled, channel, read all enabled
         self.current_mod.setEnabled(False)
+        self.current_chan.setEnabled(True)
+        self.read_all.setEnabled(True)
 
     def set_module_spinbox_range(self, nmodules):
         """Set the range of the module spinbox.

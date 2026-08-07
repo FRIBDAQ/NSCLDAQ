@@ -1,3 +1,4 @@
+from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -12,6 +13,9 @@ from PyQt5.QtWidgets import (
 )
 
 import colors
+
+## Number of fit parameters
+NPARAMS = 6
 
 
 class FitPanel(QWidget):
@@ -31,18 +35,8 @@ class FitPanel(QWidget):
         Fitting range lower limit.
     range_max : QLineEdit
         Fitting range upper limit.
-    p0 : QLineEdit
-        Fitting parameter 0.
-    p1 : QLineEdit
-        Fitting parameter 1.
-    p2 : QLineEdit
-        Fitting parameter 2.
-    p3 : QLineEdit
-        Fitting parameter 3.
-    p4 : QLineEdit
-        Fitting parameter 4.
-    p5 : QLineEdit
-        Fitting parameter 5.
+    params : list of QLineEdit objects
+        The fitting parameter widgets.
     results : QTextEdit
         Display widget for the fit results.
 
@@ -69,19 +63,13 @@ class FitPanel(QWidget):
         self._range_label_max = QLabel("Max x")
         self.range_min = QLineEdit()
         self.range_max = QLineEdit()
+        for field in (self.range_min, self.range_max):
+            field.setValidator(QIntValidator(0, 2**31 - 1))
 
-        self._p0_label = QLabel("p0")
-        self.p0 = QLineEdit()
-        self._p1_label = QLabel("p1")
-        self.p1 = QLineEdit()
-        self._p2_label = QLabel("p2")
-        self.p2 = QLineEdit()
-        self._p3_label = QLabel("p3")
-        self.p3 = QLineEdit()
-        self._p4_label = QLabel("p4")
-        self.p4 = QLineEdit()
-        self._p5_label = QLabel("p5")
-        self.p5 = QLineEdit()
+        self.params = [QLineEdit() for _ in range(NPARAMS)]
+        for field in self.params:
+            field.setValidator(QDoubleValidator())
+        param_labels = [QLabel(f"p{i}") for i in range(NPARAMS)]
 
         self._results_box = QGroupBox("Fit output")
         self.results = QTextEdit()
@@ -108,18 +96,10 @@ class FitPanel(QWidget):
         range_value_layout.addWidget(self.range_max)
 
         param_grid_layout = QGridLayout()
-        param_grid_layout.addWidget(self._p0_label, 0, 0)
-        param_grid_layout.addWidget(self.p0, 0, 1)
-        param_grid_layout.addWidget(self._p1_label, 0, 2)
-        param_grid_layout.addWidget(self.p1, 0, 3)
-        param_grid_layout.addWidget(self._p2_label, 1, 0)
-        param_grid_layout.addWidget(self.p2, 1, 1)
-        param_grid_layout.addWidget(self._p3_label, 1, 2)
-        param_grid_layout.addWidget(self.p3, 1, 3)
-        param_grid_layout.addWidget(self._p4_label, 2, 0)
-        param_grid_layout.addWidget(self.p4, 2, 1)
-        param_grid_layout.addWidget(self._p5_label, 2, 2)
-        param_grid_layout.addWidget(self.p5, 2, 3)
+        for i, (label, field) in enumerate(zip(param_labels, self.params)):
+            row, pair = divmod(i, 2)  # Two per row
+            param_grid_layout.addWidget(label, row, pair * 2)
+            param_grid_layout.addWidget(field, row, pair * 2 + 1)
 
         function_layout = QVBoxLayout()
         function_layout.addWidget(self.function_list)
@@ -157,12 +137,6 @@ class FitPanel(QWidget):
         """
         self.range_min.clear()
         self.range_max.clear()
-
-        self.p0.setText("0")
-        self.p1.setText("0")
-        self.p2.setText("0")
-        self.p3.setText("0")
-        self.p4.setText("0")
-        self.p5.setText("0")
-
+        for field in self.params:
+            field.setText("0")
         self.results.clear()

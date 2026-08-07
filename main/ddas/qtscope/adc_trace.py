@@ -1,16 +1,15 @@
-import bitarray as ba
-
-ver = [int(i) for i in ba.__version__.split(".")]
-if bool(ver[0] >= 1 or (ver[0] == 1 and ver[1] >= 6)):
+try:
     from bitarray.util import ba2int, int2ba
-else:
+except ImportError:
     from converters import ba2int, int2ba
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QCheckBox, QWidget, QHBoxLayout
+import logging
 
 from chan_dsp_widget import ChanDSPWidget
 import xia_constants as xia
+
+_logger = logging.getLogger("qtscope_logger")
 
 
 class Trace(ChanDSPWidget):
@@ -101,7 +100,7 @@ class Trace(ChanDSPWidget):
                     f"Inconsistent trace enable CSRA bits read on Mod. {mod}"
                 )
         except ValueError as e:
-            self.logger.exception(
+            _logger.exception(
                 f"Inconsistent trace enable CSRA bits Mod. {mod}: {enb_list}"
             )
             print(f"{e}:\n\tCheck your settings file, it may be corrupt.")

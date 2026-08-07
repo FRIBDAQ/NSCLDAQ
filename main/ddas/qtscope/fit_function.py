@@ -1,9 +1,5 @@
-import logging
-
 import numpy as np
 from scipy.optimize import minimize
-
-np.seterr(all="ignore")
 
 
 class FitFunction:
@@ -17,8 +13,6 @@ class FitFunction:
         Function formula string.
     count_data : bool
         True if data represent counts (optional, default=True).
-    logger : Logger
-        QtScope Logger instance.
 
     Methods
     -------
@@ -33,6 +27,8 @@ class FitFunction:
         Gaussian negative log likelihood. Used if count_data == False.
     start(x, y, params, axis)
         Implementation of the fitting algorithm.
+    get_parameter_errors(result, x)
+        Get the parameter errors for the fit.
 
     """
 
@@ -53,7 +49,6 @@ class FitFunction:
         self.p_init = params  # Initial guesses
         self.form = form
         self.count_data = count_data
-        self.logger = logging.getLogger("qtscope_logger")
 
     def model(self, x, params):
         """The fit function over a range of x values.
@@ -172,24 +167,51 @@ class FitFunction:
         y = np.float64(y)  # Make sure y data is floating point
         self.set_initial_parameters(x, y, params)
         # If the data represents counts, use Poisson MLE, otherwise Gaussian:
-        if self.count_data:
-            result = minimize(
-                self.neg_log_likelihood_p,
-                x0=self.p_init,
-                args=(x, y),
-                method="bfgs",
-                jac="3-point",
-            )
-        else:
-            result = minimize(
-                self.neg_log_likelihood_g,
-                x0=self.p_init,
-                args=(x, y),
-                method="bfgs",
-                jac="3-point",
-            )
-        ## Most often an issue with final precision on error estimates:
-        # if not result.success:
-        #    print(f"WARNING: fit did not terminate successfully:\n{result}")
+        with np.errstate(all="ignore"):
+            if self.count_data:
+                result = minimize(
+                    self.neg_log_likelihood_p,
+                    x0=self.p_init,
+                    args=(x, y),
+                    method="bfgs",
+                    jac="3-point",
+                )
+            else:
+                result = minimize(
+                    self.neg_log_likelihood_g,
+                    x0=self.p_init,
+                    args=(x, y),
+                    method="bfgs",
+                    jac="3-point",
+                )
 
         return result
+
+    def get_parameter_errors(self, result, x):
+        """Get the parabolic parameter uncertainties from the optimizer.
+
+        The BFGS inverse Hessian approximates the parameter covariance when
+        the objective is a negative log-likelihood, which is the case for
+        count data. The unweighted least-squares objective is 2*sigma^2
+        times a Gaussian NLL, so its covariance is 2*sigma^2 times the
+        inverse Hessian, with sigma^2 estimated from the fit residuals.
+
+        Parameters
+        ----------
+        result : OptimizeResult
+            Result returned by start().
+        x : ndarray
+            x data values the fit was performed over.
+
+        Returns
+        -------
+        ndarray
+            Standard error for each fit parameter.
+        """
+        scale = 1.0
+        if not self.count_data:
+            ndf = max(len(x) - len(result.x), 1)
+            # Note for Gaussian fits result.fun is RSS:
+            scale = 2.0 * result.fun / ndf
+
+        return np.sqrt(scale * np.diag(result.hess_inv))

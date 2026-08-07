@@ -92,14 +92,12 @@ class DSPToolBar(QToolBar):
         for c in self.children():
             if c.isWidgetType():
                 c.setEnabled(False)
-                c.repaint()
 
     def enable(self):
         """Enable every child widget in the toolbar."""
         for c in self.children():
             if c.isWidgetType():
                 c.setEnabled(True)
-                c.repaint()
 
     def enable_mod_dsp(self):
         """Enable module-DSP-specific actions."""

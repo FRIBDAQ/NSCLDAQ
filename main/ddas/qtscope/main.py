@@ -1,14 +1,29 @@
 #!/usr/bin/env python3
 import logging
 import os
+import signal
 import sys
 
-sys.path.append(str(os.environ.get("DAQROOT")) + "/ddas/qtscope")
+daqroot = os.getenv("DAQROOT")
+if not daqroot:
+    sys.exit(
+        "ERROR: DAQROOT is undefined, source appropriate daqsetup.bash and run QtScope as $DAQBIN/qtscope"
+    )
+qtscope_path = os.path.join(daqroot, "ddas", "qtscope")
+if not os.path.isdir(qtscope_path):
+    sys.exit(
+        f"ERROR: {qtscope_path} does not exist. Check that DAQROOT ({daqroot}) points at a valid NSCLDAQ installation"
+    )
+sys.path.append(qtscope_path)
 os.environ["NO_PROXY"] = ""
-os.environ["XDG_RUNTIME_DIR"] = os.environ.get("PWD")
-logging.basicConfig(
-    filename="qtscope.log", format="%(levelname)s - %(asctime)s: %(message)s"
-)
+os.environ["XDG_RUNTIME_DIR"] = os.getcwd()
+
+_logger = logging.getLogger("qtscope_logger")
+_logger.setLevel(logging.INFO)  # Default; overridden from env in main()
+_logger.propagate = False  # Own our logging; never touch the root logger
+_handler = logging.FileHandler("qtscope.log")
+_handler.setFormatter(logging.Formatter("%(levelname)s - %(asctime)s: %(message)s"))
+_logger.addHandler(_handler)
 
 from PyQt5 import QtWidgets, QtCore
 
@@ -59,22 +74,21 @@ def main():
         if log_level not in logging._levelToName.values():
             allowed = logging._levelToName.values()
             raise ValueError(f"QTSCOPE_LOG_LEVEL={log_level} not in {allowed}")
-    except Exception as e:
-        logging.exception("Error occured while configuring logger")
-        print(f"Failed to configure logger. See qtscope.log for details.")
+    except Exception:
+        _logger.exception("Error occurred while configuring logger")
+        print("Failed to configure logger. See qtscope.log for details.")
         sys.exit()
     else:
-        logger = logging.getLogger("qtscope_logger")
-        logger.setLevel(log_level)
-        logger.info(f"PATH: {sys.path}")
-        logger.debug(f"Environ: {os.environ}")
+        _logger.setLevel(log_level)
+        _logger.info(f"PATH: {sys.path}")
+        _logger.debug(f"Environ: {os.environ}")
+        sys.excepthook = _log_uncaught  # Any uncaught errors are logged
 
     try:
         offline = int(os.getenv("QTSCOPE_OFFLINE", 0))
     except Exception as e:
-        print(f"QtScope main caught an exception:\n\t{e}.")
-        logger.exception("Failed to read QTSCOPE_OFFLINE from env")
-        sys.exit()
+        _logger.exception("Failed to read QTSCOPE_OFFLINE from env")
+        sys.exit(f"QtScope main caught an exception:\n\t{e}.")
     else:
         if offline:
             print("\n-----------------------------------")
@@ -83,7 +97,7 @@ def main():
 
     # Create the factories:
 
-    logger.info("Creating factory methods and registering builders")
+    _logger.info("Creating factory methods and registering builders")
     cdf = create_chan_dsp_factory()
     mdf = create_mod_dsp_factory()
     tbf = create_toolbar_factory()
@@ -91,11 +105,24 @@ def main():
 
     # Start application and open the main GUI window:
 
-    logger.info("Factory creation complete, starting GUI")
+    _logger.info("Factory creation complete, starting GUI")
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
     QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
     app = QtWidgets.QApplication(sys.argv)
     gui = MainWindow(cdf, mdf, tbf, ftf, 4, offline)
+
+    # Ensure safe shutdown on Ctrl-C. signal always passes two args: the signum
+    # and frame. The *_ business says to collect all positional args and ignore
+    # them, since gui.close() takes no arguments.
+    signal.signal(
+        signal.SIGINT, lambda *_: gui.close()
+    )  # close() -> closeEvent -> _system_exit
+    # Wake the interpreter periodically so a pending Ctrl-C can be delivered
+    # while the C++ event loop is running (otherwise the handler never runs):
+    sigint_timer = QtCore.QTimer()
+    sigint_timer.timeout.connect(lambda: None)
+    sigint_timer.start(200)  # ms
+
     gui.show()
     sys.exit(app.exec_())
 
@@ -108,8 +135,8 @@ def create_chan_dsp_factory():
     WidgetFactory
         Factory with registered channel DSP widgets.
     """
+    _logger.debug("Registering channel DSP")
     factory = WidgetFactory()
-    logging.getLogger("qtscope_logger").debug("Registering channel DSP")
     factory.register_builder("AnalogSignal", AnalogSignalBuilder())
     factory.register_builder("TriggerFilter", TriggerFilterBuilder())
     factory.register_builder("EnergyFilter", EnergyFilterBuilder())
@@ -134,8 +161,8 @@ def create_mod_dsp_factory():
     WidgetFactory
         Factory with registered module DSP widgets.
     """
+    _logger.debug("Registering module DSP")
     factory = WidgetFactory()
-    logging.getLogger("qtscope_logger").debug("Registering module DSP")
     factory.register_builder("CrateID", CrateIDBuilder())
     factory.register_builder("CSRB", CSRBBuilder())
     factory.register_builder("TrigConfig0", TrigConfig0Builder())
@@ -152,8 +179,8 @@ def create_toolbar_factory():
     WidgetFactory
         Factory with registered toolbar widgets.
     """
+    _logger.debug("Registering toolbars")
     factory = WidgetFactory()
-    logging.getLogger("qtscope_logger").debug("Registering toolbars")
     factory.register_builder("sys", SystemToolBarBuilder())
     factory.register_builder("acq", AcquisitionToolBarBuilder())
     factory.register_builder("dsp", DSPToolBarBuilder())
@@ -201,8 +228,8 @@ def create_fit_factory():
 
     # Register fit factory classes:
 
+    _logger.debug("Registering fit functions")
     factory = FitFactory()
-    logging.getLogger("qtscope_logger").debug("Registering fit functions")
     factory.register_builder("Exponential", ExpFitBuilder(), config_fit_exp)
     factory.register_builder("Gaussian", GaussFitBuilder(), config_fit_gauss)
     factory.register_builder(
@@ -213,6 +240,17 @@ def create_fit_factory():
     )
 
     return factory
+
+
+def _log_uncaught(exc_type, exc_value, exc_tb):
+    """Last-resort backstop: log any uncaught exception before exiting."""
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(
+            exc_type, exc_value, exc_tb
+        )  # Ctrl-C is normal; don't log it
+        return
+    _logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_tb))
+    sys.__excepthook__(exc_type, exc_value, exc_tb)  # Keep the normal behavior too
 
 
 # Run main when executed as a script, the way we intend to do this:

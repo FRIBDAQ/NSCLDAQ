@@ -1,14 +1,11 @@
 import inspect
 import logging
-
-import bitarray
-
-ver = [int(i) for i in bitarray.__version__.split(".")]
-if bool(ver[0] >= 1 or (ver[0] == 1 and ver[1] >= 6)):
-    from bitarray.util import ba2int, int2ba, zeros
-else:
-    from converters import ba2int, int2ba, zeros
 import numpy as np
+
+try:
+    from bitarray.util import ba2int, int2ba, zeros
+except ImportError:
+    from converters import ba2int, int2ba, zeros
 
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import (
@@ -27,6 +24,8 @@ from PyQt5.QtWidgets import (
 import colors
 import xia_constants as xia
 
+_logger = logging.getLogger("qtscope_logger")
+
 
 class MultCoincidence(QWidget):
     """Multiplicity and coincidence tab widget.
@@ -37,7 +36,8 @@ class MultCoincidence(QWidget):
     because the coincidence channel masking, multiplicity threshold, and
     coincidence width are set on the same page as the on/off. Note there is no
     copy_chan_dsp method for this class because settings are applied to all
-    channels. There is, however, still a copy_mod_dsp method.
+    channels; module-level copying is still handled externally through the
+    standard display mechanism.
 
     Attributes
     ----------
@@ -51,17 +51,21 @@ class MultCoincidence(QWidget):
         Radio button group for channel coincidence mode.
     mode_dict : dict
         Dictionary of coincidence mode settings selectable using rbgroup.
-    cb_enabled : QCheckBox
-        Checkbox for setting all channel validation CSRA bits to enable
-        coincidences on the selected module.
+    status : QLabel
+        Label displaying whether channel validation is Enabled, Disabled, or
+        Custom for the selected module.
     coinc_width : QLineEdit
         Channel coincidence width in microseconds set for all channels on the
         selected module.
     multiplicity_threshold : QSpinBox
         Minimum multiplicity required to trigger for the selected channel
         coincidence mode set for all channels on the selected module.
-    logger : Logger
-        QtScope Logging instance.
+    supported : bool
+        Multiplicity and coincidence masking is only supported on 16-channel
+        modules for the time being. We do not know how these settings work
+        on the Rev. H or 32-channel boards. This parameter is True iff
+        nchannels == 16 and False otherwise.
+
 
     Methods
     -------
@@ -73,6 +77,10 @@ class MultCoincidence(QWidget):
         Display current DSP in GUI.
     print_masks(mgr, mod)
         Print the multiplicity mask and channel coincidence information.
+    unsupported_reason
+        If the tab cannot be configured (unsupported module), return a
+        the reason as a string. This is decorated with @property, and
+        can be called as if it is an attribute without the ().
     """
 
     def __init__(self, *args, nchannels=16, **kwargs):
@@ -93,8 +101,6 @@ class MultCoincidence(QWidget):
         """
         super().__init__(*args, **kwargs)
 
-        self.logger = logging.getLogger("qtscope_logger")
-
         self.param_names = [
             "MultiplicityMaskL",
             "MultiplicityMaskH",
@@ -102,6 +108,7 @@ class MultCoincidence(QWidget):
             "CHANNEL_CSRA",
         ]
         self.nchannels = nchannels
+        self.supported = nchannels == 16
         self.has_extra_params = False
 
         ##
@@ -228,6 +235,10 @@ class MultCoincidence(QWidget):
         and multiplicity threshold are the same for all channels on the module.
         Warns the user that inconsistent or custom values are detected.
 
+        Inconsistent channel validation CSRA bits, coincidence window widths,
+        or multiplicity thresholds across the module are detected and reported
+        to the user (logged and printed); they are not raised to the caller.
+
         Parameters
         ----------
         mgr : DSPManager
@@ -235,14 +246,11 @@ class MultCoincidence(QWidget):
             read/write operations.
         mod : int
             Module number.
-
-        Raises
-        ------
-        ValueError
-            If the channel validation CSRA bits are inconsistent, if the
-            channel trigger stretch (coincidence window width) values are
-            inconsistent, or if the multiplicity thresholds are inconsistent.
         """
+        if not self.supported:
+            self._disable_settings()
+            return
+
         # Read in channel validation, coincidence window, and multiplicity
         # threshold values to check:
         enb_list = []
@@ -272,10 +280,10 @@ class MultCoincidence(QWidget):
                 self.status.setText("<b>Enabled</b>")
                 self.status.setStyleSheet(colors.GREEN_TEXT)
         except ValueError as e:
-            self.logger.warning(f"Custom CSRA settings on Mod. {mod}: {enb_list}")
+            _logger.warning(f"Custom CSRA settings on Mod. {mod}: {enb_list}")
             print(
                 f"{e}:\n\tThis may be intended, verify your CSRA and "
-                "MultCoincidence settings."
+                f"MultCoincidence settings."
             )
             self.status.setText("<b>Custom</b>")
             self.status.setStyleSheet(colors.ORANGE_TEXT)
@@ -289,12 +297,10 @@ class MultCoincidence(QWidget):
                     f"on Mod. {mod}"
                 )
         except ValueError as e:
-            self.logger.exception(
-                f"Channel coincidence widths on Mod. {mod}: {win_list}"
-            )
+            _logger.exception(f"Channel coincidence widths on Mod. {mod}: {win_list}")
             print(
                 f"{e}:\n\tVerify MultCoincidence settings and re-apply."
-                "\n\tCheck your settings file, it may be corrupt."
+                f"\n\tCheck your settings file, it may be corrupt."
             )
 
         # Check the threshold. Thresholds _have_ to be the same as well:
@@ -304,10 +310,10 @@ class MultCoincidence(QWidget):
                     f"Inconsistent multiplicity threshold values on Mod. {mod}"
                 )
         except ValueError as e:
-            self.logger.exception(f"Multiplicity thresholds on Mod. {mod}: {mult_list}")
+            _logger.exception(f"Multiplicity thresholds on Mod. {mod}: {mult_list}")
             print(
                 f"{e}:\n\tVerify MultCoincidence settings and re-apply."
-                "\n\tCheck your settings file, it may be corrupt."
+                f"\n\tCheck your settings file, it may be corrupt."
             )
 
         # Whatever happens, display the DSP:
@@ -327,6 +333,9 @@ class MultCoincidence(QWidget):
         mod : int
             Module number.
         """
+        if not self.supported:
+            return
+
         # Coincidence width is the same for all channels of the module
         # based on what is set on this tab.
         width = float(self.coinc_width.text())
@@ -369,6 +378,9 @@ class MultCoincidence(QWidget):
         mod : int
             Module number.
         """
+        if not self.supported:
+            return
+
         # Channel trigger validation and coincidence width are the same for
         # all channels of the module based on what is set on this tab.
         # Setup channel validation checkbox from channel 0 CSRA.
@@ -442,6 +454,21 @@ class MultCoincidence(QWidget):
             print(f"Coincidence width: {width} [us]")
             print(f"Mult. to trigger: {mult}")
             print(f"Mode: {name}")
+
+    @property
+    def unsupported_reason(self):
+        """Why this tab cannot be configured, or None if it can.
+
+        The channel groupings in mode_dict, and the 5 x 3 special case,
+        assume 16 channels per module. Correct masks for other channel
+        counts are not known.
+        """
+        if self.nchannels != 16:
+            return (
+                f"channel groupings are only defined for 16-channel modules "
+                f"(this module has {self.nchannels} channels)"
+            )
+        return None
 
     ##
     # Private methods
@@ -546,15 +573,15 @@ class MultCoincidence(QWidget):
             if mode["name"] == "Unknown":
                 raise ValueError(
                     f"Attempting to set multiplicity mask on Mod. {mod} for "
-                    "unknown channel multiplicity group"
+                    f"unknown channel multiplicity group"
                 )
         except ValueError as e:
-            self.logger.warning(
+            _logger.warning(
                 f"Attempting to set unknown multiplicity mode on Mod. {mod}"
             )
             print(
                 f"{e}:\n\tPlease select a known multiplicty group and click "
-                "'Apply' to update your settings."
+                f"'Apply' to update your settings."
             )
         else:
             # Multiplicity mask slice indices:
@@ -587,14 +614,9 @@ class MultCoincidence(QWidget):
 
         The maximum threshold is based on the currently selected channel
         coincidence group. If the old threshold is greater than the new maximum
-        threshold for the selected channel grouping, raise an exception with a
-        warning and set the new threshold to the maximum allowed value.
-
-        Raises
-        ------
-        ValueError
-            If the multiplicity threshold is greater than the maxmimum
-            multiplicity threshold for the selected channel grouping.
+        threshold for the selected channel grouping, the user is warned and the
+        threshold is clamped to the maximum allowed value. The warning is
+        handled internally; nothing is raised to the caller.
         """
         mode = self.mode_dict[self.rbgroup.checkedId()]["name"]
         mult = self.multiplicity_threshold.value()
@@ -605,19 +627,33 @@ class MultCoincidence(QWidget):
             if mult > max_mult:
                 raise ValueError(
                     f"Old multiplicity threshold value {mult} is greater "
-                    "than maximum allowed multiplicity threshold {max_mult} "
-                    "for mode {mode}"
+                    f"than maximum allowed multiplicity threshold {max_mult} "
+                    f"for mode {mode}"
                 )
         except ValueError as e:
-            self.logger.info(
+            _logger.info(
                 f"Resetting displayed mult {mult} to allowed max mult "
-                "{max_mult} for mode {mode}. Settings have not been applied."
+                f"{max_mult} for mode {mode}. Settings have not been applied."
             )
             print(
                 f"{e}:\n\tSetting maximum multiplicity to {max_mult}. "
-                "Click 'Apply' to update your settings."
+                f"Click 'Apply' to update your settings."
             )
             self.multiplicity_threshold.setValue(max_mult)
+
+    def _disable_settings(self):
+        """Disable coincidence settings for unsupported channel counts.
+
+        The channel groupings in mode_dict assume 16 channels per module;
+        the correct masks for other channel counts are not known.
+        """
+        for b in self.rbgroup.buttons():
+            b.setEnabled(False)
+        self.coinc_width.setEnabled(False)
+        self.multiplicity_threshold.setEnabled(False)
+        self.b_print.setEnabled(False)
+        self.status.setText("<b>Unsupported for this module</b>")
+        self.status.setStyleSheet(colors.ORANGE_TEXT)
 
 
 class MultCoincidenceBuilder:

@@ -29,6 +29,7 @@
 class CPixieSystemUtilities {
 private:
   DAQ::DDAS::Configuration m_config; //!< Hardware configuration information.
+  std::string m_lastErrorMessage;    //!< Last error message from the system.
   int m_bootMode;                    //!< Offline (1) or online (0) boot mode.
   bool m_booted;     //!< True when the system is booted, false otherwise.
   bool m_ovrSetFile; //!< True if loading a settings file after booting.
@@ -40,7 +41,9 @@ public:
   /**
    * @brief Boot the entire system.
    * @return int
-   * @retval  0 On successful boot.
+   * @retval 0 On successful boot.
+   * @retval CPIXIEERROR_INVALID_CONFIG Failed to generate the system
+   * configuration.
    * @retval !=0 XIA API error code on failure.
    */
   int Boot();
@@ -67,12 +70,19 @@ public:
    * @retval !=0 XIA API error code on failure.
    */
   int ExitSystem();
+
   /**
    * @brief Set the boot mode.
-   * @warning Offline boot mode is currently only allowed for XIA API 2!
-   * @param mode  Set the boot mode to this value.
+   * @param mode Set the boot mode to this value.
    */
   void SetBootMode(int mode) { m_bootMode = mode; };
+  /**
+   * @brief Set the last error message. Used by the extern "C" shims when
+   * their catch-all fires.
+   * @param msg Message to store.
+   */
+  void SetLastErrorMessage(const char *msg) { m_lastErrorMessage = msg; };
+
   /**
    * @brief Get the boot mode.
    * @warning Offline boot mode is currently only allowed for XIA API 2!
@@ -84,7 +94,7 @@ public:
   /**
    * @brief Get the crate boot status.
    * @return bool
-   * @retval true  If the system has been booted.
+   * @retval true If the system has been booted.
    * @retval false Otherwise.
    */
   bool GetBootStatus() { return m_booted; };
@@ -97,80 +107,58 @@ public:
    * @brief Get the module ADC sampling rate in MSPS.
    * @param module Module number (zero-indexed).
    * @returns The module ADC sampling rate in MSPS.
-   * @retval -1 if the system is not booted.
-   * @retval -2 if the module number is invalid.
+   * @retval CPIXIEERROR_NOT_BOOTED if the system is not booted.
+   * @retval CPIXIEERROR_INVALID_MODULE if the module number is invalid.
    */
   int GetModuleMSPS(int module);
   /**
    * @brief Get the number of channels on the module.
    * @param module Module number (zero-indexed).
-   * @retval -1 if the system is not booted.
-   * @retval -2 if the module number is invalid.
+   * @returns The number of channels on the module.
+   * @retval CPIXIEERROR_NOT_BOOTED if the system is not booted.
+   * @retval CPIXIEERROR_INVALID_MODULE if the module number is invalid.
    */
   int GetModuleChannelCount(int module);
+  /**
+   * @brief Get the reason text from the most recent failed operation.
+   * @return Pointer to the stored message; empty string if none.
+   */
+  const char *GetLastErrorMessage() { return m_lastErrorMessage.c_str(); };
 };
 
 /** @} */
 
 extern "C" {
 /** @brief Wrapper for the class constructor. */
-CPixieSystemUtilities *CPixieSystemUtilities_new() {
-  return new CPixieSystemUtilities();
-}
-
+CPixieSystemUtilities *CPixieSystemUtilities_new();
 /** @brief Wrapper to boot the crate. */
-int CPixieSystemUtilities_Boot(CPixieSystemUtilities *utils) {
-  return utils->Boot();
-}
+int CPixieSystemUtilities_Boot(CPixieSystemUtilities *utils);
 /** @brief Wrapper to save a settings file. */
 int CPixieSystemUtilities_SaveSetFile(CPixieSystemUtilities *utils,
-                                      char *fName) {
-  return utils->SaveSetFile(fName);
-}
+                                      char *fName);
 /** @brief Wrapper to load a settings file. */
 int CPixieSystemUtilities_LoadSetFile(CPixieSystemUtilities *utils,
-                                      char *fName) {
-  return utils->LoadSetFile(fName);
-}
+                                      char *fName);
 /** @brief Wrapper to exit the system file. */
-int CPixieSystemUtilities_ExitSystem(CPixieSystemUtilities *utils) {
-  return utils->ExitSystem();
-}
-
+int CPixieSystemUtilities_ExitSystem(CPixieSystemUtilities *utils);
 /** @brief Wrapper to set the boot mode. */
-void CPixieSystemUtilities_SetBootMode(CPixieSystemUtilities *utils, int mode) {
-  return utils->SetBootMode(mode);
-}
+void CPixieSystemUtilities_SetBootMode(CPixieSystemUtilities *utils, int mode);
 /** @brief Wrapper to get the boot mode. */
-int CPixieSystemUtilities_GetBootMode(CPixieSystemUtilities *utils) {
-  return utils->GetBootMode();
-}
+int CPixieSystemUtilities_GetBootMode(CPixieSystemUtilities *utils);
 /** @brief Wrapper to get the boot status. */
-bool CPixieSystemUtilities_GetBootStatus(CPixieSystemUtilities *utils) {
-  return utils->GetBootStatus();
-}
+bool CPixieSystemUtilities_GetBootStatus(CPixieSystemUtilities *utils);
 /** @brief Wrapper to get the number of modules. */
-unsigned short
-CPixieSystemUtilities_GetNumModules(CPixieSystemUtilities *utils) {
-  return utils->GetNumModules();
-}
+int CPixieSystemUtilities_GetNumModules(CPixieSystemUtilities *utils);
 /** @brief Wrapper to get a single module ADC MSPS from the HW map. */
-int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities *utils, int mod) {
-  return utils->GetModuleMSPS(mod);
-}
+int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities *utils, int mod);
 /** @brief Wrapper to get the channel count for a single module. */
 int CPixieSystemUtilities_GetModuleChannelCount(CPixieSystemUtilities *utils,
-                                                int mod) {
-  return utils->GetModuleChannelCount(mod);
-}
-
+                                                int mod);
+/** @brief Wrapper to get the last error message. Cannot throw; unguarded. */
+const char *
+CPixieSystemUtilities_GetLastErrorMessage(CPixieSystemUtilities *utils);
 /** @brief Wrapper for the class destructor. */
-void CPixieSystemUtilities_delete(CPixieSystemUtilities *utils) {
-  if (utils) {
-    delete utils;
-    utils = nullptr;
-  }
-};
+void CPixieSystemUtilities_delete(CPixieSystemUtilities *utils);
 }
 
 #endif

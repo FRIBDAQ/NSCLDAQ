@@ -15,13 +15,16 @@
 #include <SystemBooter.h>
 #include <string>
 
+#include "CPixieErrors.h"
+#include "CPixieShimGuard.h"
+
 using namespace DAQ::DDAS;
 namespace HR = DAQ::DDAS::HardwareRegistry;
 
 /**
  * @details
  * Default: boot in online mode and read the settings file specified in
- * cfgPixie16.txt.
+ * cfgPixie16.txt. The last error message is initialized to an empty string.
  */
 CPixieSystemUtilities::CPixieSystemUtilities()
     : m_bootMode(0), m_booted(false), m_ovrSetFile(false) {}
@@ -44,12 +47,19 @@ int CPixieSystemUtilities::Boot() {
   // If a FW file is specified, use it, otherwise use managed FW:
 
   const char *fwFile = getenv("FIRMWARE_FILE");
-  if (fwFile) {
-    m_config =
-        *(Configuration::generate(fwFile, "cfgPixie16.txt", "modevtlen.txt"));
-  } else {
-    m_config =
-        *(Configuration::generateManagedFW("cfgPixie16.txt", "modevtlen.txt"));
+  try {
+    if (fwFile) {
+      m_config =
+          *(Configuration::generate(fwFile, "cfgPixie16.txt", "modevtlen.txt"));
+    } else {
+      m_config = *(
+          Configuration::generateManagedFW("cfgPixie16.txt", "modevtlen.txt"));
+    }
+  } catch (const std::exception &e) {
+    m_lastErrorMessage = e.what();
+    std::cerr << "CPixieSystemUtilities::Boot() failed: " << m_lastErrorMessage
+              << std::endl;
+    return CPIXIEERROR_INVALID_CONFIG;
   }
 
   // (Re)set the custom settings file path here if used:
@@ -72,14 +82,16 @@ int CPixieSystemUtilities::Boot() {
    */
 
   SystemBooter::BootType type = SystemBooter::FullBoot;
-  if (getenv("DDAS_BOOT_WHEN_REQUESTED"))
+  if (getenv("DDAS_BOOT_WHEN_REQUESTED")) {
     type = SystemBooter::SettingsOnly;
+  }
   SystemBooter booter;
   booter.setOfflineMode(m_bootMode); // 1: offline, 0: online
   try {
     booter.boot(m_config, type);
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -105,7 +117,8 @@ int CPixieSystemUtilities::SaveSetFile(char *fileName) {
                           retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -142,7 +155,8 @@ int CPixieSystemUtilities::LoadSetFile(char *fileName) {
                 << std::endl;
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -174,7 +188,8 @@ int CPixieSystemUtilities::ExitSystem() {
     }
     m_booted = false;
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     m_booted = false;
     return e.ReasonCode();
   }
@@ -184,16 +199,17 @@ int CPixieSystemUtilities::ExitSystem() {
 
 /**
  * @details
- * Perfoms bounds checking on the module number. The various
+ * Performs bounds checking on the module number. The various
  * DAQ::DDAS::Configuration accessor methods throw but ctypes does not handle
  * C++ exceptions so we catch them here and print the error message to stderr.
  * The return value is an error code that can be checked by the caller.
  */
 int CPixieSystemUtilities::GetModuleMSPS(int module) {
   if (!m_booted) {
-    std::cerr << "CPixieSystemUtilities::GetModuleMSPS() system not booted."
-              << std::endl;
-    return -1;
+    m_lastErrorMessage =
+        "CPixieSystemUtilities::GetModuleMSPS() system not booted.";
+    std::cerr << m_lastErrorMessage << std::endl;
+    return CPIXIEERROR_NOT_BOOTED;
   }
 
   auto numModules = m_config.getNumberOfModules();
@@ -202,8 +218,9 @@ int CPixieSystemUtilities::GetModuleMSPS(int module) {
     msg << "CPixieSystemUtilities::GetModuleMSPS()";
     msg << " invalid module number " << module << " for " << numModules
         << " module system.";
-    std::cerr << msg.str() << std::endl;
-    return -2;
+    m_lastErrorMessage = msg.str();
+    std::cerr << m_lastErrorMessage << std::endl;
+    return CPIXIEERROR_INVALID_MODULE;
   }
 
   const auto &hdwrMap = m_config.getHardwareMap();
@@ -214,17 +231,17 @@ int CPixieSystemUtilities::GetModuleMSPS(int module) {
 
 /**
  * @details
- * Perfoms bounds checking on the module number. The various
+ * Performs bounds checking on the module number. The various
  * DAQ::DDAS::Configuration accessor methods throw but ctypes does not handle
  * C++ exceptions so we catch them here and print the error message to stderr.
  * The return value is an error code that can be checked by the caller.
  */
 int CPixieSystemUtilities::GetModuleChannelCount(int module) {
   if (!m_booted) {
-    std::string msg(
-        "CPixieSystemUtilities::GetModuleChannelCount() system not booted.");
-    std::cerr << msg << std::endl;
-    return -1;
+    m_lastErrorMessage =
+        "CPixieSystemUtilities::GetModuleChannelCount() system not booted.";
+    std::cerr << m_lastErrorMessage << std::endl;
+    return CPIXIEERROR_NOT_BOOTED;
   }
 
   auto numModules = m_config.getNumberOfModules();
@@ -233,9 +250,90 @@ int CPixieSystemUtilities::GetModuleChannelCount(int module) {
     msg << "CPixieSystemUtilities::GetModuleChannelCount()";
     msg << " invalid module number " << module << " for " << numModules
         << " module system.";
-    std::cerr << msg.str() << std::endl;
-    return -2;
+    m_lastErrorMessage = msg.str();
+    std::cerr << m_lastErrorMessage << std::endl;
+    return CPIXIEERROR_INVALID_MODULE;
   }
 
   return static_cast<int>(m_config.getModuleChannelCount(module));
+}
+
+extern "C" {
+CPixieSystemUtilities *CPixieSystemUtilities_new() {
+  return shimGuardNew("CPixieSystemUtilities_new",
+                      []() { return new CPixieSystemUtilities(); });
+}
+
+int CPixieSystemUtilities_Boot(CPixieSystemUtilities *utils) {
+  return shimGuard(utils, "CPixieSystemUtilities_Boot", SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->Boot(); });
+}
+
+int CPixieSystemUtilities_SaveSetFile(CPixieSystemUtilities *utils,
+                                      char *fName) {
+  return shimGuard(utils, "CPixieSystemUtilities_SaveSetFile",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->SaveSetFile(fName); });
+}
+
+int CPixieSystemUtilities_LoadSetFile(CPixieSystemUtilities *utils,
+                                      char *fName) {
+  return shimGuard(utils, "CPixieSystemUtilities_LoadSetFile",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->LoadSetFile(fName); });
+}
+
+int CPixieSystemUtilities_ExitSystem(CPixieSystemUtilities *utils) {
+  return shimGuard(utils, "CPixieSystemUtilities_ExitSystem",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ExitSystem(); });
+}
+
+void CPixieSystemUtilities_SetBootMode(CPixieSystemUtilities *utils, int mode) {
+  return shimGuardVoid(utils, "CPixieSystemUtilities_SetBootMode",
+                       [=]() { return utils->SetBootMode(mode); });
+}
+
+int CPixieSystemUtilities_GetBootMode(CPixieSystemUtilities *utils) {
+  return shimGuard(utils, "CPixieSystemUtilities_GetBootMode",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetBootMode(); });
+}
+
+bool CPixieSystemUtilities_GetBootStatus(CPixieSystemUtilities *utils) {
+  return shimGuard(utils, "CPixieSystemUtilities_GetBootStatus", false,
+                   [=]() { return utils->GetBootStatus(); });
+}
+
+int CPixieSystemUtilities_GetNumModules(CPixieSystemUtilities *utils) {
+  return shimGuard(utils, "CPixieSystemUtilities_GetNumModules",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetNumModules(); });
+}
+
+int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieSystemUtilities_GetModuleMSPS",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetModuleMSPS(mod); });
+}
+
+int CPixieSystemUtilities_GetModuleChannelCount(CPixieSystemUtilities *utils,
+                                                int mod) {
+  return shimGuard(utils, "CPixieSystemUtilities_GetModuleChannelCount",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetModuleChannelCount(mod); });
+}
+
+const char *
+CPixieSystemUtilities_GetLastErrorMessage(CPixieSystemUtilities *utils) {
+  return utils->GetLastErrorMessage();
+}
+
+void CPixieSystemUtilities_delete(CPixieSystemUtilities *utils) {
+  try {
+    delete utils;
+  } catch (...) {
+    std::cerr << "CPixieSystemUtilities_delete unknown exception" << std::endl;
+  }
+};
 }

@@ -17,6 +17,7 @@
 #include <config_pixie16api.h>
 
 #include "CDataGenerator.h"
+#include "CPixieShimGuard.h"
 
 /**
  * @details
@@ -25,32 +26,24 @@
  */
 CPixieRunUtilities::CPixieRunUtilities()
     : m_histogramLength(0), m_maxBaselines(0), m_runActive(false),
-      m_useGenerator(false), m_pGenerator(new CDataGenerator) {}
+      m_useGenerator(false), m_pGenerator(std::make_unique<CDataGenerator>()) {}
 
-/**
- * @details
- * Destroy the data generator object we're managing.
- */
-CPixieRunUtilities::~CPixieRunUtilities() { delete m_pGenerator; }
+CPixieRunUtilities::~CPixieRunUtilities() {}
 
 /**
  * @todo Disable multiple modules from running in non-sync mode.
  */
 int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
-  SetHistogramLength(module);
-
-  m_genHistograms.assign(nChannels,
-                         std::vector<unsigned int>(m_histogramLength, 0));
-  if (m_histogram.size() != m_histogramLength) {
-    m_histogram.resize(m_histogramLength);
-  }
-  std::fill(m_histogram.begin(), m_histogram.end(), 0);
-
-  ///
-  // Begin the run:
-  //
-
   try {
+    SetHistogramLength(module);
+
+    m_genHistograms.assign(nChannels,
+                           std::vector<unsigned int>(m_histogramLength, 0));
+    if (m_histogram.size() != m_histogramLength) {
+      m_histogram.resize(m_histogramLength);
+    }
+    std::fill(m_histogram.begin(), m_histogram.end(), 0);
+
     // Set the "infinite" run time of 99999 seconds:
     std::string paramName = "HOST_RT_PRESET";
     int retval = Pixie16WriteSglModPar(paramName.c_str(),
@@ -87,7 +80,8 @@ int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
       m_runActive = true;
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -110,7 +104,8 @@ int CPixieRunUtilities::EndHistogramRun(int module) {
       throw CXIAException(msg.str(), "Pixie16EndRun()", retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -128,7 +123,8 @@ int CPixieRunUtilities::EndHistogramRun(int module) {
         throw CXIAException(msg.str(), "Pixie16CheckRunStatus()", retval);
       }
     } catch (const CXIAException &e) {
-      std::cerr << e.ReasonText() << std::endl;
+      m_lastErrorMessage = e.ReasonText();
+      std::cerr << m_lastErrorMessage << std::endl;
       return e.ReasonCode();
     }
     runEnded = (retval == 0); // True if run ended.
@@ -178,7 +174,8 @@ int CPixieRunUtilities::ReadHistogram(int module, int channel) {
                           retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -255,13 +252,15 @@ int CPixieRunUtilities::ReadBaseline(int module, int channel) {
     // To treat this like a run, make cumulative histogram of read values:
 
     UpdateBaselineHistograms(module);
+
     // Copy the single channel baseline data to m_baseline for getter access:
     std::copy(m_baselineHistograms[channel].begin(),
               m_baselineHistograms[channel].end(), m_baseline.begin());
   } catch (const CXIAException &e) {
     // Reset baseline data on failure:
     std::fill(m_baseline.begin(), m_baseline.end(), 0);
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -270,12 +269,10 @@ int CPixieRunUtilities::ReadBaseline(int module, int channel) {
 
 /**
  * @details
- * Statistics size is different between XIA API version 2 and 3. 3.x provides
- * a Pixie16GetStatisticsSize() so we don't have to worry about calculating
- * the statistics size ourselves or use a hardcoded value. Accessing the run
- * statistics using the wrong method results in a segfault.
- *
- * @todo (ASC 9/27/23): Confirm end of run and handle if not ended properly.
+ * XIA API major verson > 3 does not guarantee a fixed-size statistics block. We
+ * must use the API function `Pixie16GetStatisticsSize()` to determine the stats
+ * block size and dynamically allocate memory for the statistics prior to
+ * reading them.
  */
 int CPixieRunUtilities::ReadModuleStats(int module) {
   try {
@@ -293,7 +290,14 @@ int CPixieRunUtilities::ReadModuleStats(int module) {
                           retval);
     } else {
       module_config cfg;
-      PixieGetModuleInfo(module, &cfg);
+      retval = PixieGetModuleInfo(module, &cfg);
+      if (retval < 0) {
+        std::stringstream msg;
+        msg << "CPixieRunUtilities::ReadModuleStats() failed to read "
+               "configuration info from module "
+            << module;
+        throw CXIAException(msg.str(), "PixieGetModuleInfo", retval);
+      }
       double realTime = Pixie16ComputeRealTime(statistics.data(), module);
       for (int i = 0; i < cfg.number_of_channels; i++) {
         double inpRate =
@@ -307,7 +311,8 @@ int CPixieRunUtilities::ReadModuleStats(int module) {
       }
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -318,8 +323,8 @@ int CPixieRunUtilities::ReadModuleStats(int module) {
  * @details
  * It is assumed that all channels on a module have the same histogram length.
  * Since this function cannot be called until after the system is booted, there
- * is no need to check for that condition here. The caller assumes responsibilty
- * for making sure the module number is valid.
+ * is no need to check for that condition here. The caller assumes
+ * responsibility for making sure the module number is valid.
  */
 int CPixieRunUtilities::GetHistogramLength(int module) {
   unsigned int histLength = 0;
@@ -333,7 +338,8 @@ int CPixieRunUtilities::GetHistogramLength(int module) {
       throw CXIAException(msg.str(), "PixieGetHistogramLength()", retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -344,8 +350,8 @@ int CPixieRunUtilities::GetHistogramLength(int module) {
  * @details
  * It is assumed that all channels on a module have the same max baseline size.
  * Since this function cannot be called until after the system is booted, there
- * is no need to check for that condition here. The caller assumes responsibilty
- * for making sure the module number is valid.
+ * is no need to check for that condition here. The caller assumes
+ * responsibility for making sure the module number is valid.
  */
 int CPixieRunUtilities::GetMaxBaselines(int module) {
   unsigned int maxBaselines = 0;
@@ -359,7 +365,8 @@ int CPixieRunUtilities::GetMaxBaselines(int module) {
       throw CXIAException(msg.str(), "PixieGetMaxNumBaselines()", retval);
     }
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
 
@@ -375,7 +382,7 @@ int CPixieRunUtilities::GetMaxBaselines(int module) {
  * Update baseline histograms using data read from the module or the data
  * generator. Note that the internal histogram maintained by this class is the
  * max allowed histogram length for the module type, [0, nbins), 1 ADC unit/bin.
- * Values outside this range are dropped and not dispayed. This may result in
+ * Values outside this range are dropped and not displayed. This may result in
  * partial or no data being displayed for a baseline run depending on how the
  * baseline looks.
  * @todo (ASC 7/14/23): Handle out of range values better, at least warning
@@ -386,10 +393,10 @@ void CPixieRunUtilities::UpdateBaselineHistograms(int module) {
   int retval = PixieGetModuleInfo(module, &cfg);
   if (retval < 0) {
     std::stringstream msg;
-    msg << "CPixieRunUtilities::UpdateBaselineHistograms() failed to get "
-           "module info for module "
+    msg << "CPixieRunUtilities::UpdateBaselineHistograms() failed to read "
+           "configuration info from module "
         << module;
-    throw CXIAException(msg.str(), "PixieGetModuleInfo()", retval);
+    throw CXIAException(msg.str(), "PixieGetModuleInfo", retval);
   }
 
   for (int i = 0; i < cfg.number_of_channels; i++) {
@@ -419,4 +426,99 @@ void CPixieRunUtilities::UpdateBaselineHistograms(int module) {
       }
     }
   }
+}
+
+extern "C" {
+CPixieRunUtilities *CPixieRunUtilities_new() {
+  return shimGuardNew("CPixieRunUtilities_new",
+                      []() { return new CPixieRunUtilities(); });
+}
+
+int CPixieRunUtilities_BeginHistogramRun(CPixieRunUtilities *utils, int mod,
+                                         unsigned nchan) {
+  return shimGuard(utils, "CPixieRunUtilities_BeginHistogramRun",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->BeginHistogramRun(mod, nchan); });
+}
+
+int CPixieRunUtilities_EndHistogramRun(CPixieRunUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieRunUtilities_EndHistogramRun",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->EndHistogramRun(mod); });
+}
+
+int CPixieRunUtilities_ReadHistogram(CPixieRunUtilities *utils, int mod,
+                                     int chan) {
+  return shimGuard(utils, "CPixieRunUtilities_ReadHistogram",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ReadHistogram(mod, chan); });
+}
+
+int CPixieRunUtilities_BeginBaselineRun(CPixieRunUtilities *utils, int mod,
+                                        unsigned nchan) {
+  return shimGuard(utils, "CPixieRunUtilities_BeginBaselineRun",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->BeginBaselineRun(mod, nchan); });
+}
+
+int CPixieRunUtilities_EndBaselineRun(CPixieRunUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieRunUtilities_EndBaselineRun",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->EndBaselineRun(mod); });
+}
+
+int CPixieRunUtilities_ReadBaseline(CPixieRunUtilities *utils, int mod,
+                                    int chan) {
+  return shimGuard(utils, "CPixieRunUtilities_ReadBaseline",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ReadBaseline(mod, chan); });
+}
+
+int CPixieRunUtilities_ReadModuleStats(CPixieRunUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieRunUtilities_ReadModuleStats",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ReadModuleStats(mod); });
+}
+
+unsigned int *CPixieRunUtilities_GetHistogramData(CPixieRunUtilities *utils) {
+  return utils->GetHistogramData();
+}
+
+unsigned int *CPixieRunUtilities_GetBaselineData(CPixieRunUtilities *utils) {
+  return utils->GetBaselineData();
+}
+
+bool CPixieRunUtilities_GetRunActive(CPixieRunUtilities *utils) {
+  return shimGuard(utils, "CPixieRunUtilities_GetRunActive", false,
+                   [=]() { return utils->GetRunActive(); });
+}
+
+void CPixieRunUtilities_SetUseGenerator(CPixieRunUtilities *utils, bool mode) {
+  return shimGuardVoid(utils, "CPixieRunUtilities_SetUseGenerator",
+                       [=]() { return utils->SetUseGenerator(mode); });
+}
+
+int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieRunUtilities_GetHistogramLength",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetHistogramLength(mod); });
+}
+
+int CPixieRunUtilities_GetMaxBaselines(CPixieRunUtilities *utils, int mod) {
+  return shimGuard(utils, "CPixieRunUtilities_GetMaxBaselines",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetMaxBaselines(mod); });
+}
+
+const char *CPixieRunUtilities_GetLastErrorMessage(CPixieRunUtilities *utils) {
+  return utils->GetLastErrorMessage();
+}
+
+void CPixieRunUtilities_delete(CPixieRunUtilities *utils) {
+  try {
+    delete utils;
+  } catch (...) {
+    std::cerr << "CPixieRunUtilities_delete unknown exception" << std::endl;
+  }
+};
 }

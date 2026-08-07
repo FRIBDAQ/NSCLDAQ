@@ -4,6 +4,10 @@ import traceback
 
 from PyQt5.QtCore import QObject, QThreadPool, QRunnable, pyqtSignal, pyqtSlot
 
+from pixie_error import PixieError
+
+_logger = logging.getLogger("qtscope_logger")
+
 
 class WorkerSignals(QObject):
     """Defines the signals available from a running worker thread. Encapsulates
@@ -11,10 +15,10 @@ class WorkerSignals(QObject):
     into classes derived from QRunnable for signals/slots in threads.
 
     Supported signals are:
+        running: No data.
         finished: No data.
         error: Tuple (exctype, value, traceback.format_exc()).
         result: Object data returned from processing, anything.
-        progress: int indicating % progress.
     """
 
     running = pyqtSignal()
@@ -38,8 +42,6 @@ class Worker(QRunnable):
         Keyword arguments to pass to the callback function.
     signals : WorkerSignals
         Signals emitted by the worker.
-    logger : Logger
-        QtScope Logger instance.
 
     Methods
     -------
@@ -67,8 +69,6 @@ class Worker(QRunnable):
         """
         super().__init__()
 
-        self.logger = logging.getLogger("qtscope_logger")
-
         # Store constructor arguments (re-used for processing):
 
         self.fn = fn
@@ -78,14 +78,12 @@ class Worker(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        """Initialise the runner function with passed args, kwargs."""
+        """Initialize the runner function with passed args, kwargs."""
         try:
             self.signals.running.emit()
             result = self.fn(*self.args, **self.kwargs)
-        except:
-            traceback.print_exc()
+        except Exception:
             exctype, value = sys.exc_info()[:2]
-            self.logger.exception(f"Error running worker thread: {exctype} {value}")
             self.signals.error.emit((exctype, value, traceback.format_exc()))
         else:
             self.signals.result.emit(result)
@@ -117,12 +115,13 @@ class ThreadPoolManager:
 
     The main way to interact with this class is through the `start_thread()`
     method, specifying the function to be executed within the thread and the
-    functions connected to the thread's `running` and `finished` signals.
-    The `start_thread()` method will create and configure and run an object
-    encapsulating a worker thread in a QRunnable. Note that QThreadPool takes
-    ownership of the runnable and will delete it if it returns true; otherwise
-    ownership remains with the caller. Error handling and message logging is
-    the caller/runnable's responsibility.
+    functions connected to the thread's `running`, `finished`, `results`, and
+    `error` signals. The `start_thread()` method will create, configure, and
+    run an object encapsulating a worker thread in a QRunnable. Note that
+    QThreadPool takes ownership of the runnable and will delete it if it
+    returns true; otherwise ownership remains with the caller. Worker failures
+    are always reported by `_report_worker_error`; the `errors` list adds
+    recovery handlers on top of that reporting.
 
     Attributes
     ----------
@@ -131,8 +130,8 @@ class ThreadPoolManager:
 
     Methods
     -------
-    start_thread(QRunnable, list, list)
-        Reserve a thread and run it's callback.
+    start_thread(fcn, running, finished, results, errors)
+        Reserve a thread and run its callback, wiring the signal handlers.
     get_active_thread_count()
         Return the number of active threads.
     wait(int)
@@ -155,39 +154,64 @@ class ThreadPoolManager:
         super().__init__(*args, **kwargs)
         self.pool = QThreadPool.globalInstance()
 
-    def start_thread(self, fcn=None, running=[], finished=[], *args, **kwargs):
+    def start_thread(
+        self,
+        fcn=None,
+        running=None,
+        finished=None,
+        results=None,
+        errors=None,
+        *args,
+        **kwargs,
+    ):
         """Configure and run a thread given the passed parameters.
 
         Though you can in principle pass parameters to `fcn` using args and
         kwargs, this feature is not used within QtScope and is untested.
-        In any event, all `running` and `finished` functions are expected to
-        take no arguments. If they require arguments this can be circumvented
-        via some via a locally-defined lambda function. The same can be done
-        with `fcn`, for the time being.
+        In any event, `running`, `finished`, and `results` handlers are
+        expected to take no arguments (a `results` handler may accept the
+        returned object). Worker failures are always reported by
+        `_report_worker_error`; any handlers in `errors` are connected in
+        addition to that reporting, for recovery, not to replace it. If a
+        handler requires arguments this can be circumvented via a
+        locally-defined lambda function; the same can be done with `fcn`.
 
         Parameters
         ----------
         fcn : function
             Function to run in the thread.
-        running : list of QObjects
-            List of functions called when fcn runs.
-        finished : list of QObjects
-            List of functions called when fcn finishes.
+        running : list of callables
+            Functions connected to the `running` signal (fcn started).
+        finished : list of callables
+            Functions connected to the `finished` signal (fcn finished, on
+            both success and failure).
+        results : list of callables
+            Functions connected to the `result` signal (fcn returned
+            successfully); receive the returned object.
+        errors : list of callables
+            Recovery functions connected to the `error` signal, in addition
+            to the always-connected reporter.
         args : tuple
             Arguments to pass to the callback function.
         kwargs : dict
             Keyword arguments to pass to the callback function.
         """
         worker = Worker(fcn, *args, **kwargs)
-        for f in running:
+        for f in running or []:
             worker.signals.running.connect(f)
-        for f in finished:
+        for f in finished or []:
             worker.signals.finished.connect(f)
+        for f in results or []:
+            worker.signals.result.connect(f)
+        # Reporting is always connected; errors= adds recovery handlers,
+        # it does not replace reporting:
+        worker.signals.error.connect(self._report_worker_error)
+        for f in errors or []:
+            worker.signals.error.connect(f)
         self.pool.start(worker)
 
     def get_active_thread_count(self):
-        """Return the number of threads from
-        QThreadPool.getActiveThreadCount().
+        """Return the number of threads from QThreadPool.getActiveThreadCount().
 
         Returns
         -------
@@ -213,3 +237,24 @@ class ThreadPoolManager:
         """
         self.pool.clear()
         self.wait()
+
+    ##
+    # Private functions
+    #
+
+    def _report_worker_error(self, err):
+        """Report a worker failure. Connected to every worker.
+
+        PixieError was already logged at origin with its reason, so only
+        the user-facing line is emitted. Anything else is a bug and gets a
+        full traceback in the log.
+
+        Parameters
+        ----------
+        err : tuple
+            (exctype, value, traceback) emitted by the worker.
+        """
+        exctype, value, tb = err
+        if not isinstance(value, PixieError):
+            _logger.error(f"Unexpected worker error:\n{tb}")
+        print(f"Operation failed: {value}")

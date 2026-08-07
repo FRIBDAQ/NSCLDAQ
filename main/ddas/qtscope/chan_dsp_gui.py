@@ -3,7 +3,7 @@ import logging
 import os
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QCloseEvent, QPixmap
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QMainWindow, QLabel
 
 from chan_dsp_layout import ChanDSPLayout
@@ -45,22 +45,22 @@ class ChanDSPGUI(QMainWindow):
 
     Methods
     -------
-    configure(dsp_manager, msps_list)
+    configure(dsp_manager, num_modules, msps_list, channel_map)
         Initialize tabbed layout.
     apply_dsp()
         Apply DSP settings for a given module and DSP settings.
     load_dsp()
         Load DSP settings for a given module and DSP settings.
-    copy_mod_par()
+    copy_mod_dsp()
         Copy DSP settings from another module.
-    copy_chan_par()
+    copy_chan_dsp()
         Copy DSP settings from another channel on this module.
     adjust_offsets()
         Adjust DC offsets for a single module.
     print_masks()
         Print channel multiplicity masks and coincidence settings.
     show_diagram()
-        Show coincidence timing help diagram descibing the settings.
+        Show coincidence timing help diagram describing the settings.
     cancel()
         Close the manager window.
     closeEvent(event)
@@ -71,8 +71,8 @@ class ChanDSPGUI(QMainWindow):
         """ChanDSPGUI class constructor.
 
         Parameters
-        ---------
-        chan_dsp_factroy : WidgetFactory
+        ----------
+        chan_dsp_factory : WidgetFactory
             Factory for implemented channel DSP widgets.
         toolbar_factory : WidgetFactory
             Factory for implemented toolbar widgets.
@@ -83,7 +83,7 @@ class ChanDSPGUI(QMainWindow):
 
         self.setWindowTitle("Channel DSP manager")
 
-        # Access to global thread pool for this applicaition:
+        # Access to global thread pool for this application:
 
         self.pool_mgr = pool_mgr
 
@@ -104,8 +104,7 @@ class ChanDSPGUI(QMainWindow):
         # the diagram and add some padding to the edges of the image because
         # its very tightly cropped:
 
-        daqroot = str(os.environ.get("DAQROOT"))
-        fig_path = daqroot + "/ddas/qtscope/figures/timing_diagram.png"
+        fig_path = os.environ["DAQROOT"] + "/ddas/qtscope/figures/timing_diagram.png"
         fig = QPixmap(fig_path)
         self.timing_diagram = QLabel()
         self.timing_diagram.setWindowTitle("Timing diagram")
@@ -124,12 +123,6 @@ class ChanDSPGUI(QMainWindow):
         self.toolbar.copy_mod.valueChanged.connect(
             lambda m: self.toolbar.set_channel_spinbox_range(self.channel_map[m])
         )
-
-        ##
-        # @todo (ASC 1/9/25): This appears to load twice. Really want to
-        # reload parameters on _currently displayed_ widget when we switch
-        # _any_ widget, module or not. Try to do with a single function or
-        # in a way that doesn't load multiple times. Resolved???
 
         self.chan_params.currentChanged.connect(self._display_new_tab)
 
@@ -156,12 +149,7 @@ class ChanDSPGUI(QMainWindow):
         self.channel_map = channel_map
 
         logging.getLogger("qtscope_logger").debug(
-            "{}.{}: Configuring GUI for {} modules using {}".format(
-                self.__class__.__name__,
-                inspect.currentframe().f_code.co_name,
-                num_modules,
-                self.dsp_mgr,
-            )
+            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Configuring GUI for {num_modules} modules using {self.dsp_mgr}"
         )
 
         # Initialize tab indices and widget:
@@ -206,8 +194,6 @@ class ChanDSPGUI(QMainWindow):
                 # signals e.g. adjust offsets:
 
                 tab_name = self.chan_params[i].tabText(j)
-                if tab_name == "CFD" and msps_list[i] == 500:
-                    tab.disable_settings()
                 if tab_name == "AnalogSignal":
                     tab.b_adjust_offsets.clicked.connect(self.adjust_offsets)
                 if tab_name == "MultCoincidence":
@@ -222,20 +208,26 @@ class ChanDSPGUI(QMainWindow):
         to the module.
         """
         self._set_current_tab_info()
+
+        reason = getattr(self.tab, "unsupported_reason", None)
+        if reason:
+            print(f"{self.tab_name}: {reason}. Nothing was applied.")
+            return
+
         self.tab.update_dsp(self.dsp_mgr, self.mod_idx)
 
-        _fcn = lambda: self._write_chan_dsp(self.mod_idx, self.tab)
-        _running = [self.toolbar.disable]
-        _finished = [
-            lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx),
-            self.toolbar.enable,
-        ]
+        self.toolbar.disable()
+        _finished = [self.toolbar.enable]
 
         if self.tab_name == "AnalogSignal":
-            _running.append(lambda: self.tab.b_adjust_offsets.setEnabled(False))
+            self.tab.b_adjust_offsets.setEnabled(False)
             _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
 
-        self.pool_mgr.start_thread(fcn=_fcn, running=_running, finished=_finished)
+        self.pool_mgr.start_thread(
+            fcn=lambda: self._write_chan_dsp(self.mod_idx, self.tab),
+            results=[lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx)],
+            finished=_finished,
+        )
 
     def load_dsp(self):
         """Load the channel DSP settings for the selected tab.
@@ -245,18 +237,23 @@ class ChanDSPGUI(QMainWindow):
         """
         self._set_current_tab_info()
 
-        _fcn = lambda: self._read_chan_dsp(self.mod_idx, self.tab)
-        _running = [self.toolbar.disable]
-        _finished = [
-            lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx),
-            self.toolbar.enable,
-        ]
+        reason = getattr(self.tab, "unsupported_reason", None)
+        if reason:
+            print(f"{self.tab_name}: {reason}. Nothing was read.")
+            return
+
+        self.toolbar.disable()
+        _finished = [self.toolbar.enable]
 
         if self.tab_name == "AnalogSignal":
-            _running.append(lambda: self.tab.b_adjust_offsets.setEnabled(False))
+            self.tab.b_adjust_offsets.setEnabled(False)
             _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
 
-        self.pool_mgr.start_thread(fcn=_fcn, running=_running, finished=_finished)
+        self.pool_mgr.start_thread(
+            fcn=lambda: self._read_chan_dsp(self.mod_idx, self.tab),
+            results=[lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx)],
+            finished=_finished,
+        )
 
     def copy_mod_dsp(self):
         """Copy DSP from one module to another."""
@@ -282,14 +279,12 @@ class ChanDSPGUI(QMainWindow):
         Calls API function to automatically set DC offsets then updates GUI.
         """
         self._set_current_tab_info()
+        self.tab.b_adjust_offsets.setEnabled(False)
         self.pool_mgr.start_thread(
             fcn=lambda: self.dsp_mgr.adjust_offsets(self.mod_idx),
-            running=[
-                lambda: self.tab.b_adjust_offsets.setEnabled(False),
-                self.toolbar.disable,
-            ],
+            running=[self.toolbar.disable],
+            results=[self.load_dsp],
             finished=[
-                self.load_dsp,
                 lambda: self.tab.b_adjust_offsets.setEnabled(True),
                 self.toolbar.enable,
             ],
@@ -311,11 +306,10 @@ class ChanDSPGUI(QMainWindow):
     def cancel(self):
         """Close the ChanDSPGUI window.
 
-        Ensure other opened windows are closed when the manager is closed
-        whether the cancel button or the window [X] button is used by passing
-        a QCloseEvent to an overridden QWidget closeEvent function.
+        Requests a close through Qt, which delivers a QCloseEvent to
+        closeEvent() -- the same path the window [X] button takes.
         """
-        self.closeEvent(QCloseEvent())
+        self.close()
 
     def closeEvent(self, event):
         """Override default QWidget closeEvent to handle closing child windows.
@@ -328,10 +322,8 @@ class ChanDSPGUI(QMainWindow):
         event : QCloseEvent
             Signal to intercept, always accepted.
         """
-        self.pool_mgr.wait()
         if self.timing_diagram.isVisible():
             self.timing_diagram.close()
-        self.close()
         event.accept()
 
     ##

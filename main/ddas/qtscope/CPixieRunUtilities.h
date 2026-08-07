@@ -7,6 +7,8 @@
 #ifndef CPIXIERUNUTILITIES_H
 #define CPIXIERUNUTILITIES_H
 
+#include <memory>
+#include <string>
 #include <vector>
 
 class CDataGenerator;
@@ -27,18 +29,19 @@ class CDataGenerator;
 
 class CPixieRunUtilities {
 private:
-  std::vector<unsigned int> m_histogram; //!< Single channel histo.
-  std::vector<unsigned int> m_baseline;  //!< Single channel baseline histo.
+  unsigned int m_histogramLength; //!< Length of histogram for current module
+  /** Max number of baselines which can be read out. */
+  unsigned int m_maxBaselines;
+  bool m_runActive;    //!< True when running.
+  bool m_useGenerator; //!< True to use generator test data.
+  std::unique_ptr<CDataGenerator> m_pGenerator; //!< The offline data generator.
+  std::vector<unsigned int> m_histogram;        //!< Single channel histo.
+  std::vector<unsigned int> m_baseline; //!< Single channel baseline histo.
   /** Baseline histograms for all channels. */
   std::vector<std::vector<unsigned int>> m_baselineHistograms;
   /** Generated run data histograms for all channels. */
   std::vector<std::vector<unsigned int>> m_genHistograms;
-  unsigned int m_histogramLength; //!< Length of histogram for current module
-  unsigned int
-      m_maxBaselines;  //!< Max number of baselines which can be read out
-  bool m_runActive;    //!< True when running.
-  bool m_useGenerator; //!< True to use generator test data.
-  CDataGenerator *m_pGenerator; //!< Generator for synthetic data.
+  std::string m_lastErrorMessage; //!< Last error message from the system.
 
 public:
   /** @brief Constructor. */
@@ -61,7 +64,9 @@ public:
    * synchronization is OFF __but__ only stops a run in a single module.
    * @param module Module number.
    * @return int
-   * @retval 0 Always, even if the run ended improperly.
+   * @retval 0   Run end attempted; may return 0 even if the run did not stop
+   * within the retry limit.
+   * @retval !=0 XIA API error code on failure.
    */
   int EndHistogramRun(int module);
   /**
@@ -73,7 +78,6 @@ public:
    * @retval !=0 XIA API error code.
    */
   int ReadHistogram(int module, int channel);
-
   /**
    * @brief Begin a baseline run.
    * @param module Module number.
@@ -94,9 +98,8 @@ public:
    * @param module  Module number.
    * @param channel Channel number on the module.
    * @return int
-   * @retval  0 Success.
-   * @retval -1 If baseline memory cannot be allocated.
-   * @retval -2 If updating the baseline histograms fails.
+   * @retval 0   Success.
+   * @retval !=0 XIA API error code on failure.
    */
   int ReadBaseline(int module, int channel);
   /**
@@ -107,6 +110,19 @@ public:
    * @retval !=0 XIA API error code.
    */
   int ReadModuleStats(int module);
+
+  /**
+   * @brief Set the use of the generator for offline data.
+   * @param mode Set the generator use flag to this value.
+   */
+  void SetUseGenerator(bool mode) { m_useGenerator = mode; };
+  /**
+   * @brief Set the last error message. Used by the extern "C" shims when
+   * their catch-all fires.
+   * @param msg Message to store.
+   */
+  void SetLastErrorMessage(const char *msg) { m_lastErrorMessage = msg; };
+
   /**
    * @brief Get the histogram data from a list-mode run.
    * @return Pointer to the underlying histogram storage.
@@ -123,11 +139,6 @@ public:
    */
   bool GetRunActive() { return m_runActive; };
   /**
-   * @brief Set the use of the generator for offline data.
-   * @param mode Set the generator use flag to this value.
-   */
-  void SetUseGenerator(bool mode) { m_useGenerator = mode; };
-  /**
    * @brief Get the histogram length for a module.
    * @param module Module number (zero-indexed).
    * @returns The histogram length for the module or XIA error code if failed.
@@ -140,12 +151,17 @@ public:
    * once for this module or XIA error code if failed.
    */
   int GetMaxBaselines(int module);
+  /**
+   * @brief Get the reason text from the most recent failed operation.
+   * @return Pointer to the stored message; empty string if none.
+   */
+  const char *GetLastErrorMessage() { return m_lastErrorMessage.c_str(); };
 
 private:
   /**
    * @brief Update baseline histograms for all channels on a single module.
    * @param module Module number.
-   * @throw CXIAExeption If the baseline read fails.
+   * @throw CXIAException If reading the module info or the baseline fails.
    */
   void UpdateBaselineHistograms(int module);
   /**
@@ -175,78 +191,43 @@ private:
 
 extern "C" {
 /** @brief Wrapper for the class constructor. */
-CPixieRunUtilities *CPixieRunUtilities_new() {
-  return new CPixieRunUtilities();
-}
-
+CPixieRunUtilities *CPixieRunUtilities_new();
 /** @brief Wrapper to begin a list-mode histogram data run. */
 int CPixieRunUtilities_BeginHistogramRun(CPixieRunUtilities *utils, int mod,
-                                         unsigned nchan) {
-  return utils->BeginHistogramRun(mod, nchan);
-}
+                                         unsigned nchan);
 /** @brief Wrapper to end a list-mode histogram data run. */
-int CPixieRunUtilities_EndHistogramRun(CPixieRunUtilities *utils, int mod) {
-  return utils->EndHistogramRun(mod);
-}
+int CPixieRunUtilities_EndHistogramRun(CPixieRunUtilities *utils, int mod);
 /** @brief Wrapper to read histogram data. */
 int CPixieRunUtilities_ReadHistogram(CPixieRunUtilities *utils, int mod,
-                                     int chan) {
-  return utils->ReadHistogram(mod, chan);
-}
-
+                                     int chan);
 /** @brief Wrapper to begin a baseline data run. */
 int CPixieRunUtilities_BeginBaselineRun(CPixieRunUtilities *utils, int mod,
-                                        unsigned nchan) {
-  return utils->BeginBaselineRun(mod, nchan);
-}
+                                        unsigned nchan);
 /** @brief Wrapper to end a baseline data run. */
-int CPixieRunUtilities_EndBaselineRun(CPixieRunUtilities *utils, int mod) {
-  return utils->EndBaselineRun(mod);
-}
+int CPixieRunUtilities_EndBaselineRun(CPixieRunUtilities *utils, int mod);
 /** @brief Wrapper to read the baseline data. */
 int CPixieRunUtilities_ReadBaseline(CPixieRunUtilities *utils, int mod,
-                                    int chan) {
-  return utils->ReadBaseline(mod, chan);
-}
-
+                                    int chan);
 /** @brief Wrapper to read run statistics from the module. */
-int CPixieRunUtilities_ReadModuleStats(CPixieRunUtilities *utils, int mod) {
-  return utils->ReadModuleStats(mod);
-}
-/** @brief Wrapper to marshall the histogram data. */
-unsigned int *CPixieRunUtilities_GetHistogramData(CPixieRunUtilities *utils) {
-  return utils->GetHistogramData();
-}
-/** @brief Wrapper to marshall the baseline data. */
-unsigned int *CPixieRunUtilities_GetBaselineData(CPixieRunUtilities *utils) {
-  return utils->GetBaselineData();
-}
+int CPixieRunUtilities_ReadModuleStats(CPixieRunUtilities *utils, int mod);
+/** @brief Wrapper to marshall the histogram data; cannot throw, unguarded. */
+unsigned int *CPixieRunUtilities_GetHistogramData(CPixieRunUtilities *utils);
+/** @brief Wrapper to marshall the baseline data; cannot throw, unguarded. */
+unsigned int *CPixieRunUtilities_GetBaselineData(CPixieRunUtilities *utils);
 /** @brief Wrapper to get the run active status. */
-bool CPixieRunUtilities_GetRunActive(CPixieRunUtilities *utils) {
-  return utils->GetRunActive();
-}
-/** @brief Wrapper to setup the offline data generator. */
-void CPixieRunUtilities_SetUseGenerator(CPixieRunUtilities *utils, bool mode) {
-  return utils->SetUseGenerator(mode);
-}
+bool CPixieRunUtilities_GetRunActive(CPixieRunUtilities *utils);
+/** @brief Wrapper to setup the offline data generator; no return value,
+ * unguarded. */
+void CPixieRunUtilities_SetUseGenerator(CPixieRunUtilities *utils, bool mode);
 /** @brief Wrapper to get histogram length for a single module. */
-int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities *utils, int mod) {
-  return utils->GetHistogramLength(mod);
-}
-/**
- * @brief Wrapper to get the maximum number of baselines for a single module.
+int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities *utils, int mod);
+/** @brief Wrapper to get the maximum number of baselines for a single module.
  */
-int CPixieRunUtilities_GetMaxBaselines(CPixieRunUtilities *utils, int mod) {
-  return utils->GetMaxBaselines(mod);
-}
-
-/** @brief Wrapper for the class constructor. */
-void CPixieRunUtilities_delete(CPixieRunUtilities *utils) {
-  if (utils) {
-    delete utils;
-    utils = nullptr;
-  }
-};
+int CPixieRunUtilities_GetMaxBaselines(CPixieRunUtilities *utils, int mod);
+/** @brief Wrapper to get the last error message. Cannot throw; unguarded. */
+const char *CPixieRunUtilities_GetLastErrorMessage(CPixieRunUtilities *utils);
+/** @brief Wrapper for the class destructor. */
+void CPixieRunUtilities_delete(CPixieRunUtilities *utils);
 }
 
 #endif

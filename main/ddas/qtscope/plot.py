@@ -1,7 +1,6 @@
 import logging
 from math import ceil, floor
 import sys
-from time import sleep
 
 import matplotlib
 
@@ -14,6 +13,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QMessageBox
 
 from fit_panel import FitPanel
 from run_type import RunType
+
+_logger = logging.getLogger("qtscope_logger")
 
 
 class Plot(QWidget):
@@ -35,8 +36,6 @@ class Plot(QWidget):
         Factory method for fitting plot data.
     toolbar : PlotToolBar
         Figure navigation toolbar imported from Qt5 NavigationToolbar2QT.
-    logger : Logger
-        QtScope Logger object.
     raw_data : dict
         Dictionary of raw data from the digitizers keyed by the subplot index
         on which it is displayed.
@@ -51,17 +50,17 @@ class Plot(QWidget):
 
     Methods
     -------
-    draw_trace_data(data, nrows=1, ncols=1, idx=1)
-        Draw single- or multuple-channel ADC trace data.
+    draw_trace_data(data, mod, chan, nrows=1, ncols=1, idx=1)
+        Draw single- or multiple-channel ADC trace data.
     draw_analyzed_trace(trace, fast_filter, cfd, slow_filter)
         Draw a single-channel ADC trace and its filter outputs.
     draw_run_data(data, run_type, nrows=1, ncols=1, idx=1)
-        Draw single- or multuple-channel energy histogram or baseline data.
-    on_begin_run(run_type)
+        Draw single- or multiple-channel energy histogram or baseline data.
+    on_begin_run(module, run_type)
         Draw a blank histogram-style canvas when starting a histogram run.
-    update_canvas()
-        Redraw the entire canvas and all its subplots.
-    draw_test_data(idx)
+    get_subplot_data(chan)
+        Scrape data from a subplot (e.g., if 'Read all' is checked).
+    draw_test_data()
         Draw a test figure with a random number of subplots.
     set_histogram_length(lengths)
         Set the histogram lengths for each module.
@@ -82,10 +81,6 @@ class Plot(QWidget):
 
         """
         super().__init__(*args, **kwargs)
-
-        # Get the logger instance:
-
-        self.logger = logging.getLogger("qtscope_logger")
 
         # We need the manager to read the XDT value which sets the
         # default trace bin width:
@@ -281,7 +276,7 @@ class Plot(QWidget):
                     f"Encountered unexpected run type {run_type}, select a valid run type and begin a new run"
                 )
         except ValueError as e:
-            self.logger.exception("Encountered unknown run type")
+            _logger.error("Encountered unknown run type")
             print(e)
         else:
             ax = self.figure.add_subplot(1, 1, 1)
@@ -293,29 +288,25 @@ class Plot(QWidget):
             self._set_yscale(ax)
             self.canvas.draw_idle()
 
-    def update_canvas(self):
-        """Wait and redraw the whole canvas.
-
-        draw_idle() occasionally does not render the last ~few plots on
-        the main canvas. Introduce a short wait to ensure all draw_idle()
-        operations have completed and redraw the entire canvas one time.
-        """
-        sleep(0.5)
-        self.canvas.draw()
-
     def get_subplot_data(self, chan):
         """Get data from a subplot (channel).
+
+        Intended to be called to scrape data from a single subplot if the
+        'Read all' checkbox is selected. Note that this uses
+        `axs[chan].lines[0].get_ydata()` to scrape data from the subplot,
+        which we assume is our data. It should be impossible for any other
+        data to populate the subplot at this stage.
+
         Arguments
         ---------
         chan : int
-            Channel number.
+            Subplot/channel number.
+
         Returns
         -------
         NumPy array
             Data on the subplot or empty if none.
         """
-        # If there are more than one set of data on the plot this probably
-        # does not work as intended, but that should be impossible (hopefully)
         axs = self.figure.get_axes()
         if axs[chan].get_lines():
             return np.array(axs[chan].lines[0].get_ydata())
@@ -357,7 +348,7 @@ class Plot(QWidget):
 
         Parameters
         ----------
-        lengthd : list
+        lengths : list
             List of trace lengths for each module.
 
         """
@@ -368,10 +359,10 @@ class Plot(QWidget):
     #
 
     def _set_yscale(self, ax, pad=0.05):
-        """Configurs the axes display on the canvas.
+        """Configures the axes display on the canvas.
 
         If the log scale checkbox is selected while displaying data,
-        immidiately redraw all subplots.
+        immediately redraw all subplots.
 
         Parameters
         ----------
@@ -445,11 +436,6 @@ class Plot(QWidget):
         idx : int
             Raw data index containing the weights.
 
-        Raises
-        ------
-        ValueError
-            If the data type argument is an invalid value.
-
         """
         data = self.raw_data[idx]
         bins = np.arange(self.histogram_length[self.current_module] + 1)
@@ -500,32 +486,37 @@ class Plot(QWidget):
         if self.raw_data and len(self.figure.get_axes()) == 1:
             ax = plt.gca()
             fit = self.fit_factory.create(self.fit_panel.function_list.currentText())
-            limits = self._get_fit_limits(ax)
-            params = [
-                float(self.fit_panel.p0.text()),
-                float(self.fit_panel.p1.text()),
-                float(self.fit_panel.p2.text()),
-                float(self.fit_panel.p3.text()),
-                float(self.fit_panel.p4.text()),
-                float(self.fit_panel.p5.text()),
-            ]
+            try:
+                limits = self._get_fit_limits(ax)
+                params = [float(field.text()) for field in self.fit_panel.params]
+            except ValueError:
+                QMessageBox.about(
+                    self,
+                    "Warning",
+                    "Fit parameters and range limits must be numeric.",
+                )
+                return
 
             # Get the indices of the x-data array corresponding to the limits:
             idx_min = int(limits[0])
             idx_max = int(limits[1])
 
-            self.logger.debug(f"Fit limits: {limits[0]}, {limits[1]}")
-            self.logger.debug(f"Fit limit indices: {idx_min}, {idx_max}")
-            self.logger.debug(f"Fit panel guess params: {params}")
+            _logger.debug(f"Fit limits: {limits[0]}, {limits[1]}")
+            _logger.debug(f"Fit limit indices: {idx_min}, {idx_max}")
+            _logger.debug(f"Fit panel guess params: {params}")
 
             # If the current subplot has data, get the fit limits and call the
-            # fit function's start() rountine to perform the fit.
+            # fit function's start() routine to perform the fit.
             if ax.get_lines():
                 x = ax.lines[0].get_xdata()[idx_min:idx_max]
                 y = ax.lines[0].get_ydata()[idx_min:idx_max]
 
-                # x value is center of bin:
-                result = fit.start(x + 0.5, y, params, ax)
+                # Histogram x values are bin left edges, so fit at bin
+                # centers; trace samples are points and need no shift:
+                if len(x) == self.histogram_length[self.current_module]:
+                    x = x + 0.5
+
+                result = fit.start(x, y, params, ax)
 
                 # Update the canvas with the results:
                 x_fit = np.linspace(limits[0], limits[1], 10000)
@@ -533,10 +524,9 @@ class Plot(QWidget):
                 ax.plot(x_fit, y_fit, "r-")
 
                 # Print the fitted parameters and uncertainties:
+                errors = fit.get_parameter_errors(result, x)
                 for i in range(len(result.x)):
-                    s = "p[{}]: {:.6e} +/- {:.6e}".format(
-                        i, result.x[i], np.sqrt(result.hess_inv[i][i])
-                    )
+                    s = "p[{}]: {:.6e} +/- {:.6e}".format(i, result.x[i], errors[i])
                     self.fit_panel.results.append(s)
                     if i == (len(result.x) - 1):
                         self.fit_panel.results.append("\n")
@@ -619,7 +609,7 @@ class Plot(QWidget):
         zdir : str
             Direction to zoom ("in" or "out")
 
-        Throws
+        Raises
         ------
         ValueError
             If zdir is not one of "in" or "out."
@@ -637,7 +627,7 @@ class Plot(QWidget):
             ymax *= 2
         else:
             # Params set in ctor so this should be impossible, but:
-            raise ValueError(f"Zoom direction must be 'in' our 'out' but was '{zdir}'")
+            raise ValueError(f"Zoom direction must be 'in' or 'out' but was '{zdir}'")
 
         # We don't want to flip the axes on traces so we only zoom in as
         # far as ymin + 1 since the smallest increment is one unit:

@@ -15,6 +15,8 @@
 #include <config_pixie16api.h>
 
 #include "CDataGenerator.h"
+#include "CPixieErrors.h"
+#include "CPixieShimGuard.h"
 
 /**
  * @details
@@ -23,13 +25,9 @@
  */
 CPixieTraceUtilities::CPixieTraceUtilities()
     : m_useGenerator(false), m_validAmplitude(20),
-      m_pGenerator(new CDataGenerator) {}
+      m_pGenerator(std::make_unique<CDataGenerator>()) {}
 
-/**
- * @details
- * Destroy the data generator object we're managing.
- */
-CPixieTraceUtilities::~CPixieTraceUtilities() { delete m_pGenerator; }
+CPixieTraceUtilities::~CPixieTraceUtilities() {}
 
 /**
  * @details
@@ -61,14 +59,14 @@ int CPixieTraceUtilities::ReadTrace(int module, int channel) {
       double sigma = 1.4826 * GetMedianValue(traceMAD);
 
       // iterators
-      auto max = std::max_element(m_trace.begin(), m_trace.end());
-      auto min = std::min_element(m_trace.begin(), m_trace.end());
+      auto max = *std::max_element(m_trace.begin(), m_trace.end());
+      auto min = *std::min_element(m_trace.begin(), m_trace.end());
 
       // 10 standard deviations ought to do it for a good signal. Check
       // negative as well in case the signal polarity is wrong.
-      if ((*max > median + 10.0 * sigma) || (*min < median - 10.0 * sigma)) {
-        if (((*max - median) > m_validAmplitude) ||
-            (std::abs(*min - median) >
+      if ((max > median + 10.0 * sigma) || (min < median - 10.0 * sigma)) {
+        if (((max - median) > m_validAmplitude) ||
+            (std::abs(min - median) >
              m_validAmplitude)) { // Some (small) minimum amplitude.
           goodTrace = true;
         }
@@ -77,11 +75,13 @@ int CPixieTraceUtilities::ReadTrace(int module, int channel) {
       // Try again
       attempt++;
     } catch (const CXIAException &e) {
-      std::cerr << e.ReasonText() << std::endl;
-      return -1;
-    } catch (const std::invalid_argument &e) {
-      std::cerr << e.what() << std::endl;
-      return -2;
+      m_lastErrorMessage = e.ReasonText();
+      std::cerr << m_lastErrorMessage << std::endl;
+      return e.ReasonCode();
+    } catch (const std::exception &e) {
+      m_lastErrorMessage = e.what();
+      std::cerr << m_lastErrorMessage << std::endl;
+      return CPIXIEERROR_TRACE_ACQUIRE;
     }
   }
 
@@ -96,11 +96,31 @@ int CPixieTraceUtilities::ReadFastTrace(int module, int channel) {
   try {
     AcquireADCTrace(module, channel);
   } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
-    return -1;
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
+    return e.ReasonCode();
+  } catch (const std::exception &e) {
+    m_lastErrorMessage = e.what();
+    std::cerr << m_lastErrorMessage << std::endl;
+    return CPIXIEERROR_TRACE_ACQUIRE;
   }
 
   return 0;
+}
+
+/**
+ * @details
+ * Boundary translation only. Get the trace length and return it as an integer.
+ * The caller assumes responsibility for making sure the module number is valid.
+ */
+int CPixieTraceUtilities::GetTraceLength(int module, int channel) {
+  try {
+    return static_cast<int>(AcquireTraceLength(module, channel));
+  } catch (const CXIAException &e) {
+    m_lastErrorMessage = e.ReasonText();
+    std::cerr << m_lastErrorMessage << std::endl;
+    return e.ReasonCode();
+  }
 }
 
 ///
@@ -122,8 +142,8 @@ void CPixieTraceUtilities::AcquireADCTrace(int module, int channel) {
     throw CXIAException(msg.str(), "Pixie16AcquireADCTrace()", retval);
   }
 
-  unsigned int traceLength;
-  PixieGetTraceLength(module, channel, &traceLength);
+  // Can throw CXIAException:
+  unsigned int traceLength = AcquireTraceLength(module, channel);
   ResetTrace(traceLength);
 
   if (!m_useGenerator) {
@@ -140,22 +160,34 @@ void CPixieTraceUtilities::AcquireADCTrace(int module, int channel) {
     double xdt;
     retval = Pixie16ReadSglChanPar(pXDT, &xdt, module, channel);
     if (retval < 0) {
-      std::stringstream errmsg;
-      errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed";
-      errmsg << " to read parameter " << pXDT << " from module " << module
-             << " channel " << channel << " with retval " << retval;
-      throw std::runtime_error(errmsg.str());
+      std::stringstream msg;
+      msg << "Failed to read parameter " << pXDT << " for module " << module
+          << " channel " << channel;
+      throw CXIAException(msg.str(), "Pixie16ReadSglChanPar()", retval);
     }
-
     retval = m_pGenerator->GetTraceData(m_trace.data(), traceLength, xdt);
     if (retval < 0) {
-      std::stringstream errmsg;
-      errmsg << "CPixieTraceUtilities::AcquireADCTrace() failed";
-      errmsg << "to read trace from module " << module << " channel " << channel
-             << " with retval " << retval;
-      throw std::runtime_error(errmsg.str());
+      std::stringstream msg;
+      msg << "CPixieTraceUtilities::AcquireADCTrace() failed to read trace "
+             "from module "
+          << module << " channel " << channel << " with retval " << retval;
+      throw std::runtime_error(msg.str());
     }
   }
+}
+
+unsigned int CPixieTraceUtilities::AcquireTraceLength(int module, int channel) {
+  unsigned int traceLength = 0;
+  int retval = PixieGetTraceLength(module, channel, &traceLength);
+  if (retval < 0) {
+    std::stringstream msg;
+    msg << "CPixieTraceUtilities::AcquireTraceLength() failed to get trace "
+           "length for module "
+        << module << " channel " << channel;
+    throw CXIAException(msg.str(), "PixieGetTraceLength()", retval);
+  }
+
+  return traceLength;
 }
 
 /**
@@ -197,28 +229,53 @@ void CPixieTraceUtilities::ResetTrace(unsigned int len) {
   std::fill(m_trace.begin(), m_trace.end(), 0);
 }
 
-/**
- * @details
- * It is assumed that all channels on a module have the same trace length.
- * Since this function cannot be called until after the system is booted, there
- * is no need to check for that condition here. The caller assumes responsibilty
- * for making sure the module number is valid.
- */
-int CPixieTraceUtilities::GetTraceLength(int module) {
-  unsigned int traceLength = 0;
-  try {
-    int retval = PixieGetTraceLength(module, 0, &traceLength);
-    if (retval < 0) {
-      std::stringstream msg;
-      msg << "CPixieTraceUtilities::GetTraceLength() failed to get trace "
-             "length for module "
-          << module;
-      throw CXIAException(msg.str(), "PixieGetTraceLength()", retval);
-    }
-  } catch (const CXIAException &e) {
-    std::cerr << e.ReasonText() << std::endl;
-    return e.ReasonCode();
-  }
+extern "C" {
+CPixieTraceUtilities *CPixieTraceUtilities_new() {
+  return shimGuardNew("CPixieTraceUtilities_new",
+                      []() { return new CPixieTraceUtilities(); });
+}
 
-  return static_cast<int>(traceLength);
+int CPixieTraceUtilities_ReadTrace(CPixieTraceUtilities *utils, int mod,
+                                   int chan) {
+  return shimGuard(utils, "CPixieTraceUtilities_ReadTrace",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ReadTrace(mod, chan); });
+}
+
+int CPixieTraceUtilities_ReadFastTrace(CPixieTraceUtilities *utils, int mod,
+                                       int chan) {
+  return shimGuard(utils, "CPixieTraceUtilities_ReadFastTrace",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->ReadFastTrace(mod, chan); });
+}
+
+int CPixieTraceUtilities_GetTraceLength(CPixieTraceUtilities *utils, int mod,
+                                        int chan) {
+  return shimGuard(utils, "CPixieTraceUtilities_GetTraceLength",
+                   SHIM_UNEXPECTED_ERROR,
+                   [=]() { return utils->GetTraceLength(mod, chan); });
+}
+
+unsigned short *CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities *utils) {
+  return utils->GetTraceData();
+}
+
+void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities *utils,
+                                          bool mode) {
+  return shimGuardVoid(utils, "CPixieTraceUtilities_SetUseGenerator",
+                       [=]() { return utils->SetUseGenerator(mode); });
+}
+
+const char *
+CPixieTraceUtilities_GetLastErrorMessage(CPixieTraceUtilities *utils) {
+  return utils->GetLastErrorMessage();
+}
+
+void CPixieTraceUtilities_delete(CPixieTraceUtilities *utils) {
+  try {
+    delete utils;
+  } catch (...) {
+    std::cerr << "CPixieTraceUtilities_delete unknown exception" << std::endl;
+  }
+};
 }
