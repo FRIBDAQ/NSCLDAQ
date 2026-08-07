@@ -180,7 +180,7 @@ class CommonReadoutInfo(QWizardPage):
         outputLayout = QHBoxLayout()
         outputLayout.addWidget(QLabel('Output Ring', self))
         self._ring = QLineEdit(self)
-        self.registerField('RingBufer*', self._ring)
+        self.registerField('RingBuffer*', self._ring)
         self._ring.setText(getpass.getuser())
         outputLayout.addWidget(self._ring)
         
@@ -290,8 +290,8 @@ class XIAParameters(QWizardPage):
         XIA_ReadoutBufferSize - Size of the readout buffer.
         XIA_ScalerPeriod      - Scaler Readout period in seconds.
         XIA_ReadoutFIFOTHreshold - FIFO THreshold Readout uses.
-        
-        
+        XIA_CrateDirectory   - Where the XIA Crate files are.
+          
     '''
     def __init__(self, parent : QObject | None = None) :
         super().__init__(parent)
@@ -350,6 +350,17 @@ class XIAParameters(QWizardPage):
         
         # Additional readout parameters:
         
+        cratedirLayout = QHBoxLayout()
+        cratedirLayout.addWidget(QLabel('Crate file directory: ', self))
+        self._cratedir = QLineEdit(self)
+        self.registerField('XIA_CrateDirectory*', self._cratedir)
+        cratedirLayout.addWidget(self._cratedir)
+        self._browseCratedir = QPushButton("Browse...", self)
+        self._browseCratedir.clicked.connect(self._BrowseCrateDir)
+        cratedirLayout.addWidget(self._browseCratedir)
+        self._layout.addLayout(cratedirLayout)
+        
+        
         readoutLayout = QHBoxLayout()
         readoutLayout.addWidget(QLabel('Rdo Buffer Size'))
         self._readoutBuffer = QLineEdit(self)
@@ -388,7 +399,14 @@ class XIAParameters(QWizardPage):
     
     def pageId(self) -> int:
         return 100     # first and only XIA page.
+    # Internal slots
     
+    def _BrowseCrateDir(self) -> None:
+        # Browse for the crate directory:
+        
+        dir = QFileDialog.getExistingDirectory(self, 'Crate file directory', '.')
+        if dir.strip():
+            self._cratedir.setText(dir)
 
 class XXUSBParameters(QWizardPage):
     '''
@@ -1397,11 +1415,82 @@ class XIAGenerator:
             Generate the program and boot step:
             
             @param wiz - wizard, contains the parameters we care about as XIA_xxxx.
+            @note This is based loosely on the Tcl code
         '''
+        options = self._makeOptions(wiz)
+        environment = self._makeEnvironment(wiz)
         
-        print('Generating XIA readout')
+        self._makeReadoutProgram(options, environment, wiz)
+        self._addBootStep(wiz)
         
+        
+    def _makeOptions(self, wiz : ReadoutWizard) -> list[tuple[str,str]]:
+        # Given the wizard parameters, return the 
+        # command line options as a list of (name, value) pares e.g. ("-ring", "ron")
+        
+        # Build a list of field name, option name tuples which will drive this:
+        
+        optionlookup = [
+            ('ReadoutHost', "-readouthost"), ('SourceId', '-sourceid'), ('RingBuffer', '-readoutring'),
+            ('XIA_SortHost', '-sorthost'), ('XIA_SortRingBuffer', "-sortring"), ('XIA_SortWindow', '-window'),
+            ('XIA_ReadoutFIFOThreshold', '-fifothreshold'), ('XIA_ReadoutBufferSize', '-buffersize'),
+            ('XIA_ClockMultiplier', '-clockmultiplier'), ('XIA_ScalerPeriod', '-scalerseconds'),
+            ('XIA_CrateDirectory', '-cratedir')
+        ]
+        options = []
+        
+        for field,optname in optionlookup:
+            options.append((optname, wiz.field(field)))
 
+        # Infinity clock:
+        
+        if wiz.field('XIA_InfinityClock'):
+            options.append(('-infinity', 'on'))    
+
+        # We also need to add an initscript for the ReSt server:
+        
+        options.append(('-initscript','$DAQSHARE/scripts/rest_init_script.tcl'))
+        
+        return options
+    
+    def _makeEnvironment(self, wiz: ReadoutWizard) -> list[tuple[str,str]]:
+        #  Make the environment list of name/value pairs:
+        
+        # The RDOREST_KEEPSTDIN  one is needed to make the stdin stay open so the script that runs REadout
+        # Does not think it's exited.
+        
+        return [
+            ('RDOREST_KEEPSTDIN', '1'),
+            ('SERVICE_NAME', wiz.field('RestService'))
+        ]
+        
+    def _makeReadoutProgram(
+        self, options : list[tuple[str,str]], env : list[tuple[str,str]], 
+        wiz : ReadoutWizard
+    ) -> None:
+        # Make the program in the database.  
+        
+        api = mg_database.Program(self._db)
+        
+        full_name = wiz.field('Name') + "_readout"
+        path      = '$DAQBIN/ddasReadout'
+        host      = wiz.field('ReadoutHost')    # Where the controlling script runs.
+        container = wiz.field('Container')
+        wd        = wiz.field('Directory')
+        
+        api.add(full_name, path, host, container, wd, {
+            'options': options,
+            'environment' : env
+        })
+    
+    def _addBootStep(self, wiz: ReadoutWizard) -> None:
+        # Add a boot step to run the readout program.
+        
+        api = mg_database.Sequence(self._db)
+        full_name = wiz.field('Name') + "_readout"
+        
+        api.addStep('bootreadouts', full_name, 0,0)
+        
 
 def makeGenerator(db : sqlite3.Connection, rdoType : str) -> ReadoutGenerator:
     '''
