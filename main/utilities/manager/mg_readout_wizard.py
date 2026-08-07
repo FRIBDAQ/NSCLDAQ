@@ -26,6 +26,7 @@ have to run.
 import getpass
 import sqlite3
 import sys
+from typing import Protocol
 
 from nscldaq import mg_database
 from nscldaq.mg_configutils import EditableTable
@@ -301,13 +302,13 @@ class XIAParameters(QWizardPage):
         self.setTitle('XIA/DDAS Readout parameters')
         self._layout = QVBoxLayout()
         self.setLayout(self._layout)
+        
         # Sort parameters:
         
         sortLayout = QHBoxLayout()
         sortLayout.addWidget(QLabel('Sort Host', self))
         self._sorthost = QLineEdit(self)
-        self.registerField('XIA_SortHost', self._sorthost)
-        self._sorthost.setText('localhost')
+        self.registerField('XIA_SortHost*', self._sorthost)
         sortLayout.addWidget(self._sorthost)
         
         sortLayout.addWidget(QLabel('Sort Output Ring', self))
@@ -315,15 +316,18 @@ class XIAParameters(QWizardPage):
         self.registerField('XIA_SortRingBuffer', self)
         self._sortring.setText(getpass.getuser() + "_sorted")
         sortLayout.addWidget(self._sortring)
+        self._layout.addLayout(sortLayout)
         
-        sortLayout.addWidget(QLabel('SortWindow', self))
+        sortwindowLayout = QHBoxLayout()
+        sortwindowLayout.addWidget(QLabel('SortWindow', self))
         self._sortwindow = QSpinBox(self)
         self._sortwindow.setRange(1, 20)
         self.registerField('XIA_SortWindow', self._sortwindow)
         self._sortwindow.setValue(2)
-        sortLayout.addWidget(self._sortwindow)
+        sortwindowLayout.addWidget(self._sortwindow)
+        self._layout.addLayout(sortwindowLayout)
         
-        self._layout.addLayout(sortLayout)
+        
         
         # Clock parameters:
         
@@ -365,16 +369,18 @@ class XIAParameters(QWizardPage):
         self.registerField('XIA_ReadoutFIFOThreshold', self._fifothreshold)
         self._fifothreshold.setText('81920')
         readoutLayout.addWidget(self._fifothreshold)
+        self._layout.addLayout(readoutLayout)
         
-        readoutLayout.addWidget(QLabel('Scaler Period (sec)', self))
+        scalerLayout = QHBoxLayout()
+        scalerLayout.addWidget(QLabel('Scaler Period (sec)', self))
         self._scalersecs = QSpinBox(self)
         self.registerField('XIA_ScalerPeriod', self._scalersecs)
         self._scalersecs.setRange(1,100)
         self._scalersecs.setValue(2)
-        readoutLayout.addWidget(self._scalersecs)
+        scalerLayout.addWidget(self._scalersecs)
         
         
-        self._layout.addLayout(readoutLayout)
+        self._layout.addLayout(scalerLayout)
         
             
     def nextId(self) -> int:
@@ -1366,7 +1372,53 @@ class ReadoutWizard(QWizard):
     def getCustomProgramEnvironment(self) -> list[tuple[str, str]]:
         return self._custom4.getEnvironment()
 
+# All Readout generators must support the generate method described below:
 
+class ReadoutGenerator(Protocol):
+    def generate(self, wiz : ReadoutWizard) -> None:
+        ...
+
+class XIAGenerator:
+    '''
+        Class to generate the Readout program and the BOOT bootreadouts sequence
+        step to start the XIA readout and sorter.  This is bundled as  a single program
+        because what we start is the script that starts both, appropriately parameterized.
+    '''
+    def __init__(self, db : sqlite3.Connection):
+        '''
+        @param db - the datbase connection to the configuration sqlite3 database.
+        '''
+        
+        self._db = db
+    
+
+    def generate(self, wiz : ReadoutWizard) -> None:
+        '''
+            Generate the program and boot step:
+            
+            @param wiz - wizard, contains the parameters we care about as XIA_xxxx.
+        '''
+        
+        print('Generating XIA readout')
+        
+
+
+def makeGenerator(db : sqlite3.Connection, rdoType : str) -> ReadoutGenerator:
+    '''
+        Factory that  creates and returns the appropriate readout generator.
+        
+        @param db - the sqlite database connection to the configuration database.
+        @param rdoType - the readout type to make a generator for.
+        @return An object that fulfils the ReadoutGenerator protoco
+    '''
+    match rdoType:
+        case 'XIA/DDAS':
+            return XIAGenerator(db)
+        case _:
+            raise NotImplementedError(f'{rdoType} is not a supported readout type')
+    
+    
+    
 
 class Controller(QObject):
     '''
@@ -1394,6 +1446,11 @@ class Controller(QObject):
         self._ensureSequences() 
         self._makeControlPrograms()
         self._makeInitialSequenceSteps()
+        
+        # Select the appropriate type specific generator and run it.
+        
+        generator = makeGenerator(self._db, self._view.field('ReadoutType'))
+        generator.generate(self._view)
 
     def _ensureSequences(self) -> None:
         #
