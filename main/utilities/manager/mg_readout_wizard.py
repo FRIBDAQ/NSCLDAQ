@@ -631,17 +631,26 @@ class CustomParameters1(QWizardPage):
     def initializePage(self) -> None:
         self.setTitle('Custom Parameters 1:')
         
-        self._layout = QHBoxLayout()
+        self._layout = QVBoxLayout()
         self.setLayout(self._layout)
         
-        self._layout.addWidget(QLabel('Readout Program:', self))
+        
+        self._layout.addWidget(QLabel('Note in the pages that follow, you are responsible for options <br />:needed to start a ReST server in the program if needed', self))
+        
+        imageLayout = QHBoxLayout()
+        
+        imageLayout.addWidget(QLabel('Readout Program:', self))
         self._executable = QLineEdit(self)
         self.registerField('CUSTOM_Executable', self._executable)
-        self._layout.addWidget(self._executable)
+        imageLayout.addWidget(self._executable)
         
         self._browse = QPushButton('Browse...', self)
         self._browse.clicked.connect(self._browseExecutable)
-        self._layout.addWidget(self._browse)
+        imageLayout.addWidget(self._browse)
+        
+        self._layout.addLayout(imageLayout)
+        
+        
         
     
     def nextId(self) -> int:
@@ -1397,7 +1406,55 @@ class ReadoutGenerator(Protocol):
     def generate(self, wiz : ReadoutWizard) -> None:
         ...
 
-class XIAGenerator:
+class Generator:
+    '''  Common generator code.'''
+    
+    def __init__(self, db : sqlite3.Connection) :
+        self._db = db
+
+    def makeProgram(
+        self, image: str, 
+        options : list[tuple[str, str]], env : list[tuple[str,str]], 
+        wiz :ReadoutWizard, parameters : list[str] | None = None) -> None:
+        ''' Make the program from the options, enviromenmt and other wizard settings.'''
+    
+        
+        path      = '$DAQBIN/' + image
+        self.addCustomProgram(path, options, env, wiz, parameters)
+    
+    def addCustomProgram(
+        self,
+        image: str, 
+        options : list[tuple[str, str]], env : list[tuple[str,str]], 
+        wiz :ReadoutWizard, parameters : list[str] | None = None) -> None:
+    
+        # Same as makeProgram but the image is full path:
+        
+        api = mg_database.Program(self._db)
+                
+        full_name = wiz.field('Name') + "_readout"
+        
+        host      = wiz.field('ReadoutHost')    # Where the controlling script runs.
+        container = wiz.field('Container')
+        wd        = wiz.field('Directory')
+        
+        more = {
+            'options': options,
+            'environment' : env
+        }
+        if parameters:
+            more ['parameters'] = parameters
+
+        api.add(full_name, image, host, container, wd, more)
+        
+    def addBootStep(self, wiz : ReadoutWizard) -> None:
+        ''' add the program as  a step to the boot sequence:'''
+        api = mg_database.Sequence(self._db)
+        full_name = wiz.field('Name') + "_readout"
+        
+        api.addStep('bootreadouts', full_name, 0,0)
+        
+class XIAGenerator(Generator):
     '''
         Class to generate the Readout program and the BOOT bootreadouts sequence
         step to start the XIA readout and sorter.  This is bundled as  a single program
@@ -1407,8 +1464,7 @@ class XIAGenerator:
         '''
         @param db - the datbase connection to the configuration sqlite3 database.
         '''
-        
-        self._db = db
+        super().__init__(db)
     
 
     def generate(self, wiz : ReadoutWizard) -> None:
@@ -1421,8 +1477,8 @@ class XIAGenerator:
         options = self._makeOptions(wiz)
         environment = self._makeEnvironment(wiz)
         
-        self._makeReadoutProgram(options, environment, wiz)
-        self._addBootStep(wiz)
+        self.makeProgram('ddasReadout', options, environment, wiz)
+        self.addBootStep(wiz)
         
         
     def _makeOptions(self, wiz : ReadoutWizard) -> list[tuple[str,str]]:
@@ -1465,34 +1521,8 @@ class XIAGenerator:
             ('SERVICE_NAME', wiz.field('RestService'))
         ]
         
-    def _makeReadoutProgram(
-        self, options : list[tuple[str,str]], env : list[tuple[str,str]], 
-        wiz : ReadoutWizard
-    ) -> None:
-        # Make the program in the database.  
         
-        api = mg_database.Program(self._db)
-        
-        full_name = wiz.field('Name') + "_readout"
-        path      = '$DAQBIN/ddasReadout'
-        host      = wiz.field('ReadoutHost')    # Where the controlling script runs.
-        container = wiz.field('Container')
-        wd        = wiz.field('Directory')
-        
-        api.add(full_name, path, host, container, wd, {
-            'options': options,
-            'environment' : env
-        })
-    
-    def _addBootStep(self, wiz: ReadoutWizard) -> None:
-        # Add a boot step to run the readout program.
-        
-        api = mg_database.Sequence(self._db)
-        full_name = wiz.field('Name') + "_readout"
-        
-        api.addStep('bootreadouts', full_name, 0,0)
-        
-class XXUSBGenerator(ABC):
+class XXUSBGenerator(Generator, ABC):
     '''
     This is a base class for generating readouts for the VMUSB and CCUSB.
     The specialized classes must implement the imageName method which is
@@ -1502,10 +1532,16 @@ class XXUSBGenerator(ABC):
     '''
     
     def __init__(self, db : sqlite3.Connection):
-        self._db = db
+        Generator.__init__(self, db)  
+        ABC.__init__(self)             # Doubt there actually is one but...
         
-    def generate(self, wiz : ReadoutWizard):
-        print('generating for', self.imageName())
+    def generate(self, wiz : ReadoutWizard) -> None:
+        options = self._makeOptions(wiz)
+        env     = self._makeEnvironment(wiz)
+        
+        self.makeProgram(imageName(), options, env, wiz)
+        self.addBootStep(wiz)
+        
     
     @abstractmethod
     def imageName(self) -> str:
@@ -1513,13 +1549,57 @@ class XXUSBGenerator(ABC):
         Should return the image name without the directory e.g.
         'VMUSBReadout' or 'CCUSBReadout' depending on the concrete class.
         '''
-        
         ...
-
+    
+    def _makeOptions(self, wiz : ReadoutWizard) -> list[tuple[str, str]]:
+        # Generate the options for the XXUSBReadout.  Some of this is
+        # mechanical but other bits need special attention.
+        # We'll do the special stuff first:
+        
+        options =[]
+        if wiz.field('XXUSB_BySerial'):
+            options.append(('--serial', wiz.field('XXUSB_Serial')))
+        
+        if wiz.field('XXUSB_UseTsExtractor'):
+            options.append(('--timestamplib', wiz.field('XXUSB_TSExtractor')))
+            
+        if wiz.field('XXUSB_UseControlServer'):
+            options.append(('--ctlconfig', wiz.field('XXUSB_CTLConfig')))
+            options.append(('--port', wiz.field('XXUSB_CTLServerPort'))) 
+        else:
+            # Not sure I still need this but....
+            options.append(('--ctlconfig', '/dev/null'))
+        
+        if wiz.field('XXUSB_EnableLogging'):
+            options.append(('--log', wiz.field('XXUSB_LogFile')))
+        
+        # The rest we can get mechanically via this option name/field name mapping list
+        
+        optmap = [
+            ('--ring', 'RingBuffer'),
+            ('--daqconfig', 'XXUSB_DAQConfig'),
+            ('--sourceid', 'SourceId')
+        ]
+        for option,fieldname in optmap:
+            options.append((option, wiz.field(fieldname)))
+        
+        # We unconditionally  have to start the ReST server:
+        
+        options.append(('--init-script', '$DAQSHARE/scripts/rest_init_script5.tcl'))
+        
+        return options
+    
+    def _makeEnvironment(self, wiz :ReadoutWizard) -> [list[tuple[str, str]]]:
+        # Create any environment variables that are needed.
+        # In this case we just need the SERVICE_NAME environment to set the advertised service:
+        
+        return [
+            ('SERVICE_NAME', wiz.field('RestService')),
+        ]
 class VMUSBGenerator(XXUSBGenerator):
     def __init__(self, db : sqlite3.Connection):
         super().__init__(db)
-    
+
     def imageName(self) -> str:
         return 'VMUSBReadout'
     
@@ -1529,6 +1609,27 @@ class CCUSBGenerator(XXUSBGenerator):
         
     def imageName(self) -> str:
         return 'CCUSBReadout'
+    
+class CustomGenerator(Generator):
+    '''
+    Generator for custom readout programs.  That is anything that isn't
+    installed in DAQBIN or covered by the other choices.
+    Do we want to add the --init-script option? If someone has a _real_ custom 
+    readout, that might fail!!!
+    '''
+    def __init__(self, db : sqlite3.Connection):
+        super().__init__(db)
+    
+    def generate(self, wiz : ReadoutWizard) -> None:
+        image = wiz.field('CUSTOM_Executable')
+        options = wiz.getCustomProgramOptions()
+        env     = wiz.getCustomProgramEnvironment()
+        params  = wiz.getCustomProgramParameters()
+        
+        self.addCustomProgram(image, options, env, wiz, params)
+        self.addBootStep(wiz)
+        
+        
 
 def makeGenerator(db : sqlite3.Connection, rdoType : str) -> ReadoutGenerator:
     '''
@@ -1545,6 +1646,8 @@ def makeGenerator(db : sqlite3.Connection, rdoType : str) -> ReadoutGenerator:
             return VMUSBGenerator(db)
         case 'CCUSB':
             return CCUSBGenerator(db)
+        case 'Custom':
+            return CustomGenerator(db)
         case _:
             raise NotImplementedError(f'{rdoType} is not a supported readout type')
     
