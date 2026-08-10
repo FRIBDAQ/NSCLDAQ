@@ -979,7 +979,6 @@ class MVLCDAQParameters(QWizardPage):
         Provide the FRIB/NSCLDAQ parameters for the fribdaq-readout program.
         The following fields are defined:
         
-        MVLC_Ring - Ringbuffer to which data will be put.
         MVLC_SourceId - The sourced the data will be tagged with.
         MVLC_HaveTsLibrary - True if a timestamp extraction library should be supplied.
         MVLC_TimestampSo  - Shared object that will be loaded to extract timestamps.
@@ -993,30 +992,6 @@ class MVLCDAQParameters(QWizardPage):
         
         self._layout = QVBoxLayout()
         self.setLayout(self._layout)
-        
-        # The ring buffer
-        
-        ringLayout  = QHBoxLayout()
-        ringLayout.addWidget(QLabel('Output ringbuffer [not URI]', self))
-        
-        self._ring = QLineEdit(self)
-        self.registerField('MVLC_Ring', self._ring)
-        ringLayout.addWidget(self._ring)
-        
-        self._layout.addLayout(ringLayout)
-        
-        #  The source id.
-        
-        sidLayout = QHBoxLayout()
-        sidLayout.addWidget(QLabel('Source id:', self))
-        
-        self._sid = QSpinBox(self)
-        self._sid.setMinimum(0)
-        self._sid.setMaximum(0x7fffffff)
-        self.registerField('MVLC_SourceId', self._sid)
-        sidLayout.addWidget(self._sid)
-        
-        self._layout.addLayout(sidLayout)
         
         # Optional timestamp library:
         
@@ -1100,7 +1075,7 @@ class MVLCReadoutConfig(QWizardPage):
         self._cvttcltoyaml.setCheckState(Qt.CheckState.Checked)    # That's the most common use.
         rdocfgLayout.addWidget(self._cvttcltoyaml)
         
-        rdocfgLayout.addWidget(QLabel('Readout Config File', self))
+        rdocfgLayout.addWidget(QLabel('Readout Config', self))
         self._rdoconfig = QLineEdit(self)
         self.registerField('MVLC_Config', self._rdoconfig)
         rdocfgLayout.addWidget(self._rdoconfig)
@@ -1137,11 +1112,11 @@ class MVLCReadoutConfig(QWizardPage):
         
         ctlserverLayout = QHBoxLayout()
         
-        self._enableserver = QCheckBox('Use slow control server')
+        self._enableserver = QCheckBox('Slow Controls:')
         self.registerField('MVLC_RunCtlServer', self._enableserver)
         ctlserverLayout.addWidget(self._enableserver)
         
-        ctlserverLayout.addWidget(QLabel('Configuration script:', self))
+        ctlserverLayout.addWidget(QLabel('Configuration:', self))
         self._ctlserverscript =QLineEdit(self)
         self.registerField('MVLC_CtlScript', self._ctlserverscript)
         ctlserverLayout.addWidget(self._ctlserverscript)
@@ -1150,44 +1125,25 @@ class MVLCReadoutConfig(QWizardPage):
         self._browseCtlConfig.setDisabled(True)
         self._browseCtlConfig.clicked.connect(self._BrowseControlConfig)
         ctlserverLayout.addWidget(self._browseCtlConfig)
+        self._layout.addLayout(ctlserverLayout)
         
-        ctlserverLayout.addWidget(QLabel('Port', self))
+        portLayout = QHBoxLayout()
+        portLayout.addWidget(QLabel('Port', self))
         self._ctlserverPort= QSpinBox(self)
         self._ctlserverPort.setMinimum(1024)
         self._ctlserverPort.setMaximum(29999)
         self.registerField('MVLC_CtlServerPort', self._ctlserverPort)
         self._ctlserverPort.setValue(1024)
-        ctlserverLayout.addWidget(self._ctlserverPort)
+        portLayout.addWidget(self._ctlserverPort)
         
         self._ctlserverscript.setDisabled(True)
         self._ctlserverPort.setDisabled(True)
         
         self._enableserver.clicked.connect(self._toggleControlServer)
+        self._layout.addLayout(portLayout)
         
-        self._layout.addLayout(ctlserverLayout)
         
-        # Initialization script:
-        
-        initscriptLayout = QHBoxLayout()
-        
-        self._enableinitscript = QCheckBox('Use Init script', self)
-        self.registerField('MVLC_UseInitScript', self._enableinitscript)
-        initscriptLayout.addWidget(self._enableinitscript)
-        
-        self._initscript = QLineEdit(self)
-        self.registerField('MVLC_InitScript', self._initscript)
-        self._initscript.setDisabled(True)
-        initscriptLayout.addWidget(self._initscript)
-        
-        self._browseinitscript = QPushButton('Browse...', self)
-        self._browseinitscript.setDisabled(True)
-        self._browseinitscript.clicked.connect(self._BrowseInitScript)
-        initscriptLayout.addWidget(self._browseinitscript)
-        
-        self._enableinitscript.clicked.connect(self._toggleInitScript)
-                                           
-        
-        self._layout.addLayout(initscriptLayout)
+
     
     def nextId(self) -> int:
         return 304   # For now.
@@ -1216,7 +1172,7 @@ class MVLCReadoutConfig(QWizardPage):
             self.setField('MVLC_Config', file)
      
     def _toggleTemplateOverride(self) -> None:
-        if self.field('MVLC_OverrideTemplate'):
+        if self._overrideTemplate.checkState() == Qt.CheckState.Checked:
             disabled = False
         else:
             disabled = True
@@ -1235,7 +1191,7 @@ class MVLCReadoutConfig(QWizardPage):
     def _toggleControlServer(self) -> None:    
         # The control server enable has changed.
         
-        if self.field('MVLC_RunCtlServer'):
+        if self._enableserver.checkState() == Qt.CheckState.Checked:
             disabled = False
         else:
             disabled = True
@@ -1254,25 +1210,7 @@ class MVLCReadoutConfig(QWizardPage):
             self._ctlserverscript.setText(file)
         
     
-    def _toggleInitScript(self) -> None:
-        # The init script enable changed:
-        
-        if self.field('MVLC_UseInitScript'):
-            disabled = False
-        else:
-            disabled = True
-            
-        self._initscript.setDisabled(disabled)
-        self._browseinitscript.setDisabled(disabled)
     
-    def _BrowseInitScript(self) -> None:
-        # Browse for hte init script:
-        
-        file, _  = QFileDialog.getOpenFileName(
-            self, 'Init script', '.', 'Tcl Files (*.tcl);;All Files (*)', '*.tcl'
-        )
-        if file.strip():
-            self._initscript.setText(file)
 
 class MVLCDebugOptions(QWizardPage):
     '''
@@ -1630,6 +1568,103 @@ class CustomGenerator(Generator):
         self.addBootStep(wiz)
         
         
+class MVLCGenerator(Generator):
+    '''
+        Generator for the MVLC Readout.
+    '''
+    def __init__(self, db :sqlite3.Connection):
+        super().__init__(db)
+        
+    def generate(self, wiz: ReadoutWizard) -> None:
+        
+        image = wiz.field('MVLC_Readout')
+        options = []
+        options.append(self._connection(wiz))
+        options.extend(self._nscldaqoptions(wiz))
+        options.extend(self._configurationOptions(wiz))
+        options.extend(self._debuggingOptions(wiz))
+        
+        #  Add in the ReST service startup:
+        
+        options.append(
+            ('--init-script', '$DAQSHARE/Scripts/rest_init_script.tcl')
+        )
+        
+        parameters = [wiz.field('MVLC_Config'), ]   # Configuration file is a parameter.
+        env        = [('SERVICE_NAME', wiz.field('RestService')), ]
+        
+        # Make the Readout and the boot step:
+        
+        self.addCustomProgram(image, options, env, wiz, parameters)
+        self.addBootStep(wiz)
+        
+        
+    # Utilities:
+    
+    def _connection(self, wiz: ReadoutWizard) -> tuple[str,  str] | tuple[str,]:
+        # Compute the connection option
+        
+        conntype = wiz.field('MVLC_ConnectionType')
+        match conntype:
+            case 'ethernet':
+                return ('--mvlc-eth', wiz.field('MVCL_Host'))
+            case 'firstusb':
+                return ('--mvlc-usb',)
+            case 'usbbyindex':
+                return ('--mvlc-usb-index', wiz.field('MVLC_UsbIndex'))
+            case 'usbbyserial':
+                return ('--mvlc-usb-serial', wiz.field('MVLC_UsbSerial'))
+            case _:
+                raise NotImplementedError(f'Connection to MVLC of {conntype} not supported.')
+    
+    def _nscldaqoptions(self, wiz : ReadoutWizard) -> list[tuple[str, str] | tuple[str]]:
+        
+        result = []
+        
+        # The ringbuffer comes from the standard option, as does the source id.
+        
+        result.append(('--ring', wiz.field('RingBuffer')))
+        result.append(('--sourceid', wiz.field('SourceId')))
+        
+        # Optional timestamp extraction library:
+        
+        if wiz.field('MVLC_HaveTsLibrary'):
+            result.append(('--timestamp-library', wiz.field('MVLC_TimestampSo')))
+        
+        return result
+        
+    def _configurationOptions(self, wiz : ReadoutWizard) -> list[tuple[str, str] | tuple[str]]:
+        # Options that describe how to handle the configuration file:
+        
+        result = []
+        
+        if wiz.field('MVLC_ConvertFromTcl'):
+            result.append(('--convert-tcl', ))
+        
+        if wiz.field('MVLC_OverrideTemplate'):
+            result.append(('--template', wiz.field('MVLC_YamlTemplate')))
+        
+        return result
+        
+    def _debuggingOptions(self, wiz: ReadoutWizard)-> list[tuple[str]]:
+        # Debugging options for the readout.
+        
+        result   = []
+        if wiz.field('MVLC_InitOnly'):
+            result.append(('--init-only',))
+        
+        if wiz.field('MVLC_IgnoreInitErrors'):
+            result.append(('--ingore-vme-init-errors',))
+            
+        if wiz.field('MVLC_Debug'):
+            result.append(('--debug',))
+        
+        if wiz.field('MVLC_Trace'):
+            result.append(('--trace',))
+        return result
+    
+    
+###---- end of generators.
 
 def makeGenerator(db : sqlite3.Connection, rdoType : str) -> ReadoutGenerator:
     '''
@@ -1648,6 +1683,8 @@ def makeGenerator(db : sqlite3.Connection, rdoType : str) -> ReadoutGenerator:
             return CCUSBGenerator(db)
         case 'Custom':
             return CustomGenerator(db)
+        case 'MVLC':
+            return MVLCGenerator(db)
         case _:
             raise NotImplementedError(f'{rdoType} is not a supported readout type')
     
