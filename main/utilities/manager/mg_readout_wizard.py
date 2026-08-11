@@ -1063,6 +1063,8 @@ class MVLCDAQParameters(QWizardPage):
             return self._tslib.text().strip() != ''
         else:
             return True
+
+            
     # Slots (private);
     def _toggleHaveTsLib(self) -> None:
         # Toggle the state of the enable for the timestamplib and
@@ -1128,6 +1130,7 @@ class MVLCReadoutConfig(QWizardPage):
         rdocfgLayout.addWidget(QLabel('Readout Config', self))
         self._rdoconfig = QLineEdit(self)
         self.registerField('MVLC_Config', self._rdoconfig)
+        self._rdoconfig.textChanged.connect(self._lineEditChanged)
         rdocfgLayout.addWidget(self._rdoconfig)
         
         self._browserdoconfig = QPushButton('Browse...', self)
@@ -1144,10 +1147,11 @@ class MVLCReadoutConfig(QWizardPage):
         templateLayout.addWidget(self._overrideTemplate)
         self._overrideTemplate.clicked.connect(self._toggleTemplateOverride)
         
-        templateLayout.addWidget(QLabel('YAML Template file: '))
+        templateLayout.addWidget(QLabel('YAML Template'))
         self._yamltemplate = QLineEdit(self)
         self._yamltemplate.setDisabled(True)
         self.registerField('MVLC_YamlTemplate', self._yamltemplate)
+        self._yamltemplate.textChanged.connect(self._lineEditChanged)
         templateLayout.addWidget(self._yamltemplate)
         
         self._browsetemplate = QPushButton('Browse...', self)
@@ -1169,6 +1173,7 @@ class MVLCReadoutConfig(QWizardPage):
         ctlserverLayout.addWidget(QLabel('Configuration:', self))
         self._ctlserverscript =QLineEdit(self)
         self.registerField('MVLC_CtlScript', self._ctlserverscript)
+        self._ctlserverscript.textChanged.connect(self._lineEditChanged)
         ctlserverLayout.addWidget(self._ctlserverscript)
         
         self._browseCtlConfig = QPushButton('Browse...', self)
@@ -1200,6 +1205,24 @@ class MVLCReadoutConfig(QWizardPage):
     def pageId(self) -> int:
         return 303    
     
+    def isComplete(self) -> bool:
+        # Return true if it's allowed to click next.
+        
+        result = self.field('MVLC_Config').strip() != ''
+        
+        # IF the template is overriden we also need a template file:
+        
+        if self.field('MVLC_OverrideTemplate'):
+            result &= (self.field('MVLC_YamlTemplate').strip() != '')
+        
+        # If the control server is enabled, we need a control server
+        # config script:
+        
+        if self.field('MVLC_RunCtlServer'):
+            result &= (self.field('MVLC_CtlScript').strip() != '')
+        
+        return result
+    
     # Internal, private slots:
     def _BrowseReadoutFile(self) -> None:
         # The Browse... button was clicked on for the readout config.
@@ -1229,7 +1252,8 @@ class MVLCReadoutConfig(QWizardPage):
         
         self._yamltemplate.setDisabled(disabled)
         self._browsetemplate.setDisabled(disabled) 
-    
+        self.completeChanged.emit()
+        
     def _browseTemplate(self) -> None:
         file, _  = QFileDialog.getOpenFileName(
             self, 'YAML Template', '.', 
@@ -1249,7 +1273,8 @@ class MVLCReadoutConfig(QWizardPage):
         self._ctlserverscript.setDisabled(disabled)
         self._ctlserverPort.setDisabled(disabled)
         self._browseCtlConfig.setDisabled(disabled)
-    
+        self.completeChanged.emit()
+        
     def _BrowseControlConfig(self) -> None:
         # Browse for a Tcl config file for the control server:
         
@@ -1260,7 +1285,10 @@ class MVLCReadoutConfig(QWizardPage):
             self._ctlserverscript.setText(file)
         
     
-    
+    def _lineEditChanged(self, _) -> None:
+        # Emit the complete changed signal if a line edit was modified:
+        
+        self.completeChanged.emit()
 
 class MVLCDebugOptions(QWizardPage):
     '''
@@ -1694,6 +1722,9 @@ class MVLCGenerator(Generator):
         if wiz.field('MVLC_OverrideTemplate'):
             result.append(('--template', wiz.field('MVLC_YamlTemplate')))
         
+        if wiz.field('MVLC_RunCtlServer'):
+            result.append(('--control-server', wiz.field('MVLC_CtlServerPort')))
+            result.append(('--ctlconfig', wiz.field('MVLC_CtlScript')))
         return result
         
     def _debuggingOptions(self, wiz: ReadoutWizard)-> list[tuple[str]]:
