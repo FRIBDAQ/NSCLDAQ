@@ -24,113 +24,30 @@ Usage:
    $DAQBIN/mg_program_wizard database-file
 
 '''
-import sys
 import sqlite3
-from nscldaq.mg_database import Program, Container
+import sys
 from pathlib import Path
 
-from PyQt5.QtWidgets import (
-    QWizard, QApplication, QWizardPage, QLineEdit, QPushButton, QFileDialog,
-    QComboBox, QLabel, QTableWidget, QMessageBox,
-    QHBoxLayout, QVBoxLayout
+from nscldaq.mg_configutils import EditableTable
+from nscldaq.mg_database import Container, Program
+from PyQt6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWizard,
+    QWizardPage,
 )
-
-from PyQt5.Qt import *
-
 
 #--------------------------------------------------------------------------------------------
 #  GUI code:
 
 
-class EditableTable(QWidget):
-    #  Megawidget that has a table that can be edited.
-    #  Editing consists of supported deletion of the current row,
-    #  Adding rows to the end, and editing the entries.
-    # 
-    #  Layout is:
-    #   
-    #    +--------------------------+
-    #    |    The table             | [+]
-    #    |                          | [x]
-    #    +--------------------------+
-    #
-    #   The table() method returns the table widget.
-    #   this allows for things like setting the headers, the # of colomns
-    #   loading it etc.
-    #
-    def __init__(self, *args):
-        super().__init__(*args)
-        layout = QHBoxLayout()
-        
-        self._table = QTableWidget(self)
-        defaultItem = QTableWidgetItem('')
-        self._table.setItemPrototype(defaultItem)
-        layout.addWidget(self._table)
-        
-        #  The buttons:
-        
-        buttonlayout = QVBoxLayout()
-        self._addrow = QPushButton('+', self)
-        buttonlayout.addWidget(self._addrow)
-        self._deleterow = QPushButton(self)
-        self._deleterow.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_DialogCancelButton')))
-        buttonlayout.addWidget(self._deleterow)
-        
-        
-        layout.addLayout(buttonlayout)
-        
-        self.setLayout(layout)    
-        self._addrow.clicked.connect(self._addRow)
-        self._deleterow.clicked.connect(self._deleteRow)
-        
-    def _addRow(self):
-        self._table.setRowCount(self._table.rowCount() + 1)
-        new_row = self._table.rowCount() - 1
-        cols = self._table.columnCount()
-        for c in range(cols):
-            self._table.setItem(new_row, c, self._table.itemPrototype().clone())
-    def _deleteRow(self):
-        row = self._table.currentRow()
-        self._table.removeRow(row)
-        
-    def table(self):
-        ''' Returns the table itself. '''
-        return self._table
-    def col0List(self):
-        ''' Returns a list of the values in column 0 with empties suppressed: '''
-        
-        table = self._table
-        rows  = table.rowCount()
-        return [table.item(r, 0).text()
-                for r in range(rows)
-                if len(table.item(r,0).text()) > 0 
-                and not table.item(r, 0).text().isspace()]
-
-    def getPairs(self):
-        '''
-           Return a list of col0, col1 pairs with
-           Elements that have no col0 value omitted.
-           The result is a list of two element lists for cases
-           when both columns are filled in and one element lists if the
-           col1 is not filled in.
-        '''
-        
-        table = self._table
-        rows = table.rowCount()
-        result = []
-        
-        rawoptions = [[table.item(r, 0).text(), table.item(r, 1).text()] 
-                      for r in range(rows)
-                      if len(table.item(r, 0).text()) > 0
-                      and not table.item(r, 0).text().isspace()
-                      ]
-        for (option, value) in rawoptions:
-            if len(value) == 0 or value.isspace():
-                result.append((option,))
-            else:
-                result.append((option, value))
-        return result
-        
         
 class IdentificationPage(QWizardPage):
     def __init__(self, db, *args):
@@ -208,14 +125,10 @@ once you become a bit more confident in the process.
     def _browse(self):
         #  Browse for a program executable.
         
-        dialog = QFileDialog(self)
-        dialog.setAcceptMode(QFileDialog.AcceptOpen)
-        dialog.setFileMode(QFileDialog.AnyFile)
-        dialog.exec()
+        program, _ = QFileDialog.getOpenFileName(self, 'Choose Executable')
+        if program.strip():
         
-        dest = dialog.selectedFiles()
-        if len(dest) != 0:
-            self._pgm.setText(dest[0])
+            self._pgm.setText(program)
     
     #  Accessors:
     
@@ -290,6 +203,7 @@ class TypeAndWdPage(QWizardPage):
         
         self._wdbrowse = QPushButton('Browse...', self)
         wdlayout.addWidget(self._wdbrowse)
+        self._wdbrowse.clicked.connect(self._browse)
         
         layout.addLayout(wdlayout)
         
@@ -311,7 +225,16 @@ class TypeAndWdPage(QWizardPage):
         return self._type.currentText()
     def wd(self):
         return self._wd.text()
+    
+    # Slots
+    
+    def _browse(self) -> None:
+        # Browse for the working directory:
         
+        dir = QFileDialog.getExistingDirectory(self, 'Working dir')
+        if dir.strip():
+            self._wd.setText(dir)
+              
 class IniScriptAndOptions(QWizardPage):
     def __init__(self, *args):
         super().__init__(*args)
@@ -380,14 +303,10 @@ class IniScriptAndOptions(QWizardPage):
         self._inibrowse.clicked.connect(self.browse)
         
     def browse(self):
-        dialog = QFileDialog(self)
-        dialog.setAcceptMode(QFileDialog.AcceptOpen)
-        dialog.setFileMode(QFileDialog.ExistingFile)
-        dialog.exec()
         
-        files = dialog.selectedFiles()
-        if len(files) > 0:
-            self._initscript.setText(files[0])
+        file, _  = QFileDialog.getOpenFileName(self, 'Init script', '.', 'Tcl Files (*.tcl);;All files (*)', '*.tcl')
+        if file.strip():
+            self._initscript.setText(file)
     
     # Accessors:
     
@@ -552,7 +471,7 @@ db = sqlite3.connect(config)
 
 app = QApplication(sys.argv)
 wizard = ProgramWizard(db)
-wizard.setWindowTitle("Managed experiment program creation wizard -- Powered by Qt5")
+wizard.setWindowTitle("Managed experiment program creation wizard -- Powered by Qt6")
 wizard.show()
 wizard.rejected.connect(abort)
 app.exec()

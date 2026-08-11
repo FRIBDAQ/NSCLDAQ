@@ -23,10 +23,11 @@
 #	     East Lansing, MI 48824-1321
 import sys
 import os
-from nscldaq.manager_client import  KVStore, CONSTANTS
+from nscldaq.manager_client import  KVStore
+from nscldaq.manager_client import CONSTANTS as MGR_CONSTS
 from nscldaq.readoutREST.readoutRestClient import ReadoutClient
 from nscldaq.readoutREST.rdo_utils import getReadoutHost
-from nscldaq.readoutREST.rdo_utils import CONSTANTS as MGR_CONSTS
+from nscldaq.readoutREST.rdo_utils import CONSTANTS 
 def usage() -> None:
     '''
         Print program usage on stderr.

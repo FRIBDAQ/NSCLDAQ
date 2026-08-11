@@ -1,0 +1,869 @@
+#!/usr/bin/env python3
+#    This software is Copyright by the Board of Trustees of Michigan
+#    State University (c) Copyright 2014, 2026
+#
+#    You may use this software under the terms of the GNU public license
+#    (GPL).  The terms of this license are described at:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+#
+#	     FRIB
+#	     Michigan State University
+#	     East Lansing, MI 48824-1321
+
+
+
+'''
+Contains code to configure programs in the managed
+experiment envirohnment.   The user interface
+constists of a list of the programs that are defined
+in a table and a New... button. Double clicking
+a program loads it into an editor dialog. 
+Clicking New... brings the program generation wizard
+the user to define all of the characteristics of a program.
+
+
+'''
+
+
+from PyQt6.QtWidgets import (
+    QWidget,  QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem,
+    QTableView, QAbstractItemView, QFrame, QLabel, QLineEdit, QComboBox, QGroupBox, QRadioButton,
+    QFileDialog, QDialog,  QMessageBox, QApplication)
+from PyQt6.QtGui import (QStandardItemModel, QStandardItem)
+from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject
+
+from nscldaq.mg_database import Program, Container
+from nscldaq.mg_configutils import SaveDialog
+
+import sys
+import os
+import subprocess
+import pathlib
+import tempfile
+import sqlite3
+
+class ProgramSelector(QWidget):
+    '''
+        This widget consists of a table of
+        program definitions followed by a New.. button.
+        
+        For simplicity, this widget includes the table model
+        and simple methods that allow its maniplation specifically:
+        
+    
+        Properties:
+        programs - The programs in the table.  These are a list of dicts with the
+              keys:
+              * 'name' - Name of the program.
+              * 'path' - Path to the file that's run for the program.
+              * 'host' - Host in which the program is run.
+              * 'container' name of the container in which the program is run.
+    
+    Signals:
+        edit(str) - An item in the table was double clicked, the string is the
+                    name of the program.
+        new      - new pushbutton was clicked.
+    '''
+    edit = pyqtSignal(str)
+    new = pyqtSignal()
+    
+    def __init__(self, parent : QObject = None):
+        super().__init__(parent)
+        
+        # Table of programs:
+        
+        self._model = QStandardItemModel(self)
+        
+        
+        self._list = QTableView(self)
+        self._list.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._list.setModel(self._model)
+        self.setPrograms(list())
+        
+        
+        
+        self._newButton = QPushButton('New...', self)
+        
+        # Layout in a vertical box:
+        
+        self._layout = QVBoxLayout(self)
+        self._layout.addWidget(self._list)
+        self._layout.addWidget(self._newButton)
+        
+        self.setLayout(self._layout)
+        
+        # Hook signals:
+        
+        self._newButton.clicked.connect(self.new)   # Just relay new.
+        self._list.doubleClicked.connect(self._editRequested)
+        
+        
+        
+    # Private slots.
+    
+    def _editRequested(self, index : QModelIndex) -> None:
+        # Figure ot the name of the program that was double clicked
+        # and emit edit:
+        row = index.row()
+        name = self._model.item(row, 0).text()
+        
+        self.edit.emit(name)
+        
+        
+    # Attributes:
+    #
+    
+    def programs(self) -> list[dict]:
+        '''
+            Return the programs that have been loaded into the
+            table's model.  See the class docstring for what the
+            contents of the dicts will look like:
+            
+        @return list[dict]  see above.
+        '''
+        result= list()
+        for row in range(self._model.rowCount()): 
+            name = self._model.item(row, 0).text()
+            image = self._model.item(row, 1).text()
+            host  = self._model.item(row, 2).text()
+            container = self._model.item(row, 3).text()
+            
+            result.append({
+                'name' : name, 'path' : image, 'host' : host,
+                'container': container
+            })
+        return result
+    
+    def setPrograms(self, programs : list[dict]) -> None:
+        '''
+            Replaces the contents of the model with the programs defined in
+            the programs parameter.
+            
+            @param programs - iterable of dicts that define the programs
+               to load. See the class docstring for a description of
+               these dicts.
+        '''
+        self._model.clear()
+        self._model.setHorizontalHeaderLabels([
+            'Name', 'Program File', 'Host', 'Container'
+        ])
+        for program in programs:
+            name = QStandardItem(program['name']) 
+            image = QStandardItem(program['path'])
+            host  = QStandardItem(program['host'])
+            container = QStandardItem(program['container'])
+            
+            self._model.appendRow([
+                name, image, host, container
+            ])
+        self._list.resizeColumnsToContents()
+        
+        
+        
+class ValueBox(QWidget):
+    '''
+     This widget is a list box that has names that can be edited.
+     It provides a listbox for the items and an entry for
+     adding new items.  A pushbutton adds the text in the
+     line edit to the list. double clicking an item
+     loads it into the line edit and removes it from the list.
+     All this is done autonomously providing only the 
+     attributes:
+     
+     title - A title label displayed above the listbox.
+     items - The items in the list box.
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        self._layout = QVBoxLayout(self)
+        self.setLayout(self._layout)
+        
+        self._title = QLabel(self)
+        self._layout.addWidget(self._title)
+        
+        self._list = QListWidget(self)
+        self._layout.addWidget(self._list)
+        
+        valuelayout = QHBoxLayout()
+        valuelayout.addWidget(QLabel('Value:', self))
+        self._value = QLineEdit(self)
+        valuelayout.addWidget(self._value)
+        self._layout.addLayout(valuelayout)
+        
+        self._new = QPushButton('Add', self)
+        self._layout.addWidget(self._new)
+        
+        # Hook the signals to our internal slots:
+        
+        self._new.clicked.connect(self._add)
+        self._list.itemDoubleClicked.connect(self._edit)
+        
+    # Attributes:
+    
+    def title(self) -> str:
+        ''''
+            @return str - title value.
+        '''
+        return self._title.text()
+    def setTitle(self, title : str) -> None:
+        '''
+            @param title - new title string.
+        '''
+        self._title.setText(title)
+    
+    def items(self) -> list[str]:
+        '''
+        @return list[str] - the names in the list.
+        '''
+        result = list()
+        for row in range(self._list.count()):
+            result.append(self._list.item(row).text())
+        return result
+
+    def setItems(self, items : list[str]) -> None:
+        '''
+        @param items - new strings to put in the list box.
+        '''
+        self._list.clear()
+        for item in items:
+            self._list.addItem(item)
+        
+    # internal slots:
+    
+    def _add(self) -> None:
+        # Add was clicked add the text and clear the entry:
+        
+        self._list.addItem(self._value.text())
+        self._value.setText('')
+    
+    def _edit(self, item : QListWidgetItem) -> None:
+        # Load the item into the edit and remove it from the
+        # list:
+        
+        self._value.setText(item.text())
+        
+        row = self._list.row(item)
+        self._list.takeItem(row)
+        
+        
+        
+class NameValueBox(QWidget):
+    '''
+        This widget is a listbox that has name=value stuff
+        in it. It includes line edits for names and values
+        and a push button that autonomousle adds a 
+        value to the list.  Double clicking a value in the
+        list, loads it into the editor and removes it from
+        the list.  This also allows you to remove items
+        from the list completely.
+        
+        Attributes:
+            title - A title label displayed above the list.
+            items - list of name value pairs in the listbox.
+    
+        Intended for use as the program options and 
+        environment editors in the program editor below
+        but could be used for other stuff too.
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        self._layout = QVBoxLayout(self)
+        self.setLayout(self._layout)
+        
+        self._title = QLabel(self)
+        self._layout.addWidget(self._title)
+        
+        self._list   = QListWidget(self)
+        self._layout.addWidget(self._list)
+        
+        namelayout = QHBoxLayout()
+        namelayout.addWidget(QLabel('Name:', self))
+        self._name  = QLineEdit(self)
+        namelayout.addWidget(self._name)
+        self._layout.addLayout(namelayout)
+        
+        valuelayout = QHBoxLayout()
+        valuelayout.addWidget(QLabel('Value', self))
+        self._value = QLineEdit(self)
+        valuelayout.addWidget(self._value)
+        self._layout.addLayout(valuelayout)
+        
+        self._new = QPushButton('Add', self)
+        self._layout.addWidget(self._new)
+        
+        self._new.clicked.connect(self._addItem)
+        self._list.itemDoubleClicked.connect(self._editItem)
+        
+
+    # Attribute implementations.
+    
+    def title(self) -> str:
+        '''
+        @return str the title attribute
+        '''
+        return self._title.text()
+    def setTitle(self, title : str) -> None:
+        ''''
+        @param title - the new value of the title attribute/widget text.
+        '''
+        self._title.setText(title)
+    def items(self) -> list[tuple[str, str] |tuple[str]]:
+        '''
+            Return the name/value pairs currently  in the
+            list box.
+            
+            @return list of name value pairs (tuples).
+        '''
+        result = list()
+        for row in range(self._list.count()):
+            item = self._list.item(row)
+            optval = item.text().split('=')
+            name = optval[0]
+            if len(optval) == 1:
+                result.append((name,))
+            else:
+                result.append((name, optval[1]))
+            
+        return result
+    
+    def setItems(self, nameValuePairs : list[tuple[str,str] | tuple[str]]) -> None:
+        '''
+            @param nameValuePairs - an iterable of name value pairs. to load
+                 into the listbox.
+        '''
+        self._list.clear()
+        for item in nameValuePairs:
+            if len(item) == 2:
+                self._list.addItem(f'{item[0]}={item[1]}')
+            else:
+                self._list.addItem(item[0])
+    
+    #internal slots.
+    
+    def _addItem(self) -> None:
+        # To operate we need at least a name:
+        
+        name = self._name.text().strip()
+        value = self._value.text().strip()
+        
+        if name:
+            item  = name
+            if value:
+                item += '=' + value
+
+            self._list.addItem(item)
+            # Clear the text entries to make adding another simpler
+            
+            self._name.setText('')
+            self._value.setText('')
+        
+            
+    def _editItem(self, item : QListWidgetItem) -> None:
+        # Load the double clicked item into the editor
+        # and remove it from the list.
+        
+        (name, value) = item.text().split('=')
+        row = self._list.row(item)
+        self._list.takeItem(row)
+        
+        self._name.setText(name)
+        self._value.setText(value)
+        
+        
+        
+class ProgramEditor(QWidget):
+    '''
+        This is a form that can be used to edit a program
+        definition.  Normally it is the widget that is displayed
+        in the ProgramEditorDialog but is separate here to
+        * Make that dialog easier to build 
+        * Allow it to be used outside of the dialog if later desired.
+        
+    Attributes:
+        name - the program name.
+        path - what's run when the program is run.,
+        host - where the program is run.
+        container - Container in which the program is run.
+        containers - THe containers the user can select from.
+        wd   - Working directory in which the program is run.
+        programType - program type, one of 'Transitory', 'Critical' or 'Persistent'
+        options - list of option/value pairs e.g. [['--ring', 'ringname'], ['--id', '2'],...]
+        parameters - List of program parameters that don't have values
+        environment - List of name/value pairs in the environment e.g. 
+            [['TCLLIBPATH', '/usr/opt/daq/12.2-009'], ...]
+        initscript   - A file that contains the initialization script.
+    Slots
+        addOption(name: str, value: str) - add a new option to the options list.
+        addParameter(param: str)         - add a new program parameter to the parameter list.
+        addToEnvironment(name: str, value : str) - add a new environment variable to the listbox.
+    '''
+    def __init__(self, parent : QObject | None = None) :
+        super().__init__(parent)
+        
+        # The layout is a vertical stack of frames:
+        
+        self._layout = QVBoxLayout(self)
+        self.setLayout(self._layout)
+        
+        self._layout.addWidget(self._createIdFrame())
+        self._layout.addWidget(self._createHowFrame())
+        self._layout.addWidget(self._createWdFrame())
+        self._layout.addWidget(self._createProgramTypeFrame())
+        self._layout.addWidget(self._createEnvironmentFrame())
+        
+        # Connect signals to interna slots.
+        
+        self._browseprogram.clicked.connect(self._browseProgram)
+        self._wdbrowse.clicked.connect(self._browseWd)
+        self._initscriptbrowse.clicked.connect(self._browseIscript)
+    # Implement attributes:
+    
+    def name(self) -> str:
+        ''' @return str - name of the program. '''
+        return self._name.text()
+    def setName(self, name : str) -> None:
+        '''@param name - new name to set in the widget:'''
+        self._name.setText(name)
+        
+    def path(self) -> str:
+        '''@return str - the value of the path entry'''
+        return self._path.text()
+    def setPath(self, path : str) -> None:
+        '''@param path - the new value to load in the path text edit.'''
+        self._path.setText(path)
+        
+    def host(self) -> str:
+        ''' @return str - the host in which the program should run. '''
+        return self._host.text()
+    def setHost(self, host : str) -> None:
+        ''' @param host - new value for the host line edit '''
+        self._host.setText(host)
+    
+    def container(self) -> str:
+        ''' @return str - value selected in the containers combobox. '''
+        return self._container.currentText()
+    def setContainer(self, container: str) -> None:
+        ''' @param container - name of selected container. '''
+        self._container.setCurrentText(container)
+    
+    def containers(self) -> list[str] :
+        ''' @return list[str] - names of the containers user can select fromn '''
+        result = [list]
+        for index in range(self._container.count()):
+            index.append(self._container.itemText(index))
+
+        return result
+    
+    def setContainers(self, containers : list[str]) -> None:
+        ''' @param containers - list of valid containers in the combobox. '''
+        self._container.clear()
+        self._container.addItems(containers)
+    
+    def wd(self) -> str:
+        ''' @return str - working directory value: '''
+        return self._wd.text()
+    
+    def setWd(self, wd : str) -> None:
+        ''' @param wd - the new working directory string. '''
+        self._wd.setText(wd)
+        
+    def programType(self) -> str:
+        ''' @return the label of the program type radio button that's checked'''
+        
+        for widget in [self._critical, self._persistent, self._transitory]:
+            if widget.isChecked():
+                return widget.text()
+            
+        # It's a bug for one not to be set:
+        
+        raise AssertionError('The program type is not set but shoulid be!')
+        
+    def setProgramType(self, ptype : str) -> None:
+        
+        for widget in [self._critical, self._persistent, self._transitory]:
+            if ptype == widget.text():
+                widget.setChecked(True)
+                return
+        
+        raise ValueError(f'Invalid program type {ptype}')
+    
+    def options(self) -> list[tuple[str,str]]:
+        ''' @return list[tuple[str,str]] list of name value pairs of program options.'''
+        return self._options.items()
+    def setOptions(self, options : list[tuple[str,str]]) -> None:
+        '''@param options the name value pairs to set in the program options list'''
+        self._options.setItems(options)
+        
+    def parameters(self) -> list[str]:
+        ''' @return list[str] - list of program parameters.'''
+        return self._parameters.items()
+    def setParameters(self, params  : list[str]) -> None:
+        ''' @praam params - list of program parameters'''
+        self._parameters.setItems(params)
+        
+    def environment(self) -> list[tuple[str,str]]:
+        ''' @return list[tuple[str, str]] - the list of name value pairs for the environment'''
+        return self._environment.items()
+    def setEnvironment(self, env : list[tuple[str, str]]) -> None:
+        ''' @param env - name value pairs that make up the environment'''
+        self._environment.setItems(env)
+        
+    def initscript(self) -> str:
+        ''' @return str - path to init script file that gets sucked into the db.'''
+        return self._initscript.text()
+    def setInitScript(self, path : str) -> None:
+        ''' @param path  - path to the initscript file to suck into the database '''
+        self._initscript.setText(path)
+
+    # Internal slots for autonomous operation:
+    
+    def _browseProgram(self) -> None:
+        # The Browse... button was clicked next to the Program File
+        # line edit... browse for a new file and load it into the
+        # path.
+        (name, flt)  = QFileDialog.getOpenFileName(self, 'Choose Program file')
+        if name.strip():
+            self.setPath(name)
+        
+    def _browseWd(self) -> None:
+        #  The browse.. button was clicked for the working directory.
+        # Use a QFileDialog.getExistingDirectory to browse for one:
+        
+        name = QFileDialog.getExistingDirectory(self, 'Choose working directory', self.wd())
+        if name.strip():
+            self.setWd(name)
+    def _browseIscript(self) -> None:
+        # Browse.. button was clicked for the init script.
+        (path, flt) = QFileDialog.getOpenFileName(self, 'Choose program initialization script')
+        if path.strip():
+            self.setInitScript(path)
+          
+    # Gui segment creating utilitty methods:
+    
+    def _createIdFrame(self) -> QFrame:
+        #  Create's a frame with the labels and controls to
+        # identify the program.
+        
+        self._idframe = QFrame(self)
+        idlayout = QHBoxLayout(self._idframe)
+        self._idframe.setLayout(idlayout)
+        
+        idlayout.addWidget(QLabel('Name:', self._idframe))
+        self._name = QLineEdit(self._idframe)
+        idlayout.addWidget(self._name)
+        
+        idlayout.addWidget(QLabel('Program File:', self._idframe))
+        self._path = QLineEdit(self._idframe)
+        idlayout.addWidget(self._path)
+        
+        self._browseprogram = QPushButton('Browse...', self._idframe)
+        idlayout.addWidget(self._browseprogram)
+        
+        return self._idframe
+
+    def _createHowFrame(self) -> QFrame:
+        #  Create a frame that contains the controls
+        # for how the program is run (host and container name.)
+        
+        frame = QFrame(self)
+        layout = QHBoxLayout(frame)
+        frame.setLayout(layout)
+        
+        layout.addWidget(QLabel('Host: ', frame))
+        self._host = QLineEdit(frame)
+        layout.addWidget(self._host)
+        
+        layout.addWidget(QLabel('Container', frame))
+        self._container = QComboBox(frame)
+        layout.addWidget(self._container)
+        
+        self._howframe = frame
+        return frame
+    def _createWdFrame(self) -> QFrame:
+        # Create the controls to seleect the working directory:
+        
+        frame = QFrame(self)
+        layout = QHBoxLayout(frame)
+        frame.setLayout(layout)
+        
+        layout.addWidget(QLabel('Working Directory:', frame))
+        self._wd = QLineEdit(frame)
+        layout.addWidget(self._wd)
+        self._wdbrowse = QPushButton('Browse...', frame)
+        layout.addWidget(self._wdbrowse)
+        
+        layout.addWidget(QLabel('Init Script'))
+        self._initscript = QLineEdit(frame)
+        layout.addWidget(self._initscript)
+        self._initscriptbrowse = QPushButton('Browse...')
+        layout.addWidget(self._initscriptbrowse)
+                
+        self._wdframe  = frame
+        return frame
+
+    def _createProgramTypeFrame(self) -> QGroupBox:
+        # create controls to select the program type:
+        
+        frame = QGroupBox(self)
+        frame.setTitle('Program Type')
+        frame.setFlat(False)    # Let's see what that looks like
+        layout = QHBoxLayout(frame)
+        frame.setLayout(layout)
+        
+        self._critical = QRadioButton('Critical', frame)
+        self._critical.setChecked(True)                 # The default until overiden.
+        self._persistent= QRadioButton('Persistent', frame)
+        self._transitory= QRadioButton('Transitory', frame)
+        for widget in (self._critical, self._persistent, self._transitory):
+            layout.addWidget(widget)
+        
+        self._pgmtypeframe = frame
+        return frame
+    
+    def _createEnvironmentFrame(self) -> QFrame:
+        frame  = QFrame(self)
+        layout = QHBoxLayout(frame)
+        
+        self._options = NameValueBox(frame)
+        self._options.setTitle('Program Options')
+        layout.addWidget(self._options)
+        
+        
+        self._parameters = ValueBox(frame)
+        self._parameters.setTitle('Program Parameters')
+        layout.addWidget(self._parameters)
+        
+        self._environment = NameValueBox(frame)
+        self._environment.setTitle('Program Environment')
+        layout.addWidget(self._environment)
+        
+        self._envframe = frame
+        return frame
+
+class ProgramEditorDialog(SaveDialog):
+    '''
+        This is a dialog that contains a ProgramEditor 
+        and Save/Cancel buttons.
+        
+        Attributes:
+        editor - readonly - gets a reference to the ProgramEditor widget.
+    
+    '''        
+    def __init__(self, parent=None):
+        super().__init__(ProgramEditor(), parent)
+        
+    def editor(self) -> ProgramEditor:
+        ''' @return ProgramEditor - the editor the dialog is presenting. '''
+        return self.workarea()
+        
+
+class ProgramEditController(QObject):
+    '''
+        This class provides a controller that
+        - Stocks the view (ProgramSelector widget) with the data on the known programs.
+        - Responds to signals in the view:
+          *  new - Spawns off the program creation wizard ($DAQBIN/mg_program_wizard) then
+                 refreshes the program list.
+          *  edit - pops up and stocks a ProgramEditorDialog and, if the use accepts
+                 the changes modifies the program.  Since the edit can
+                 change the name of the program (e.g. create a modified program with a different name),
+                 again the selector widget is restocked.
+    ''' 
+    def __init__(
+        self, view : ProgramSelector, config_file : str, 
+        parent : QObject | None = None):
+        '''
+        @param view - the ProgramSelector widget that is the main view
+                      controlled.
+        @param config_file - the configuration file database we are editing.
+                     THe caller must have verified existence.
+                     
+        '''
+        
+        super().__init__(parent)
+        self._file = config_file
+        self._db = sqlite3.connect(config_file)
+        self._view = view
+        
+        self._loadView()
+        
+        # Handle the view signals:
+        
+        self._view.new.connect(self._newProgram)
+        self._view.edit.connect(self._editProgram)
+        
+    #  Internal slots:
+    
+    def _newProgram(self) -> None:
+        #   Spin up a program wizards with our database file:
+        
+        if 'DAQBIN' not in os.environ:
+            raise RuntimeError('A DAQ version must have been setup to create a new program.')
+        program = pathlib.Path(os.environ['DAQBIN'])
+        program = program / 'mg_program_wizard'
+        
+        status = subprocess.run(
+            [ str(program), self._file,]
+        )
+        
+       
+        
+        
+        if status.returncode != 0:
+            # Failed for some reason:
+        
+            _ = QMessageBox.information(
+                self._view, 'Wizard error.', 
+                'Program creation wizard returned a non-zero exit code'
+            )
+        
+        
+        self._loadView()   
+    
+    def _editProgram(self, name : str) -> None:
+        # We need both a container and program api:
+        
+        container_api = Container(self._db)
+        program_api  =  Program(self._db)
+    
+        # Find our program:
+        
+        program_def = [x for x in program_api.list() if x['name'] == name]
+        
+        # If it doesn't exist (e.g. some outside agent removed it)
+        # pop a dialog, reload the view and return:
+        
+        if len(program_def) != 1:
+            _ = QMessageBox.warning(
+                self._view, 'No such program', 
+                f'The program named {name} no longer exists.  When you dismiss this dialog the list will update'
+            )
+            self._loadView()
+            return
+
+        program_def = program_def[0]
+        
+        # Edit the program 'name'. 
+        #
+        dialog = ProgramEditorDialog(self._view) 
+        form   = dialog.editor()
+        
+        # Stock the dialog, better start with the container names first:
+        
+        container_names = [x['name'] for x in container_api.list()]
+        form.setContainers(container_names)
+        form.setName(program_def['name'])
+        form.setPath(program_def['path'])
+        form.setHost(program_def['host'])
+        form.setContainer(program_def['container'])
+        form.setWd(program_def['directory'])
+        
+        more_info = program_def['more']
+        form.setProgramType(more_info['type'])
+        form.setOptions(more_info['options'])
+        form.setParameters(more_info['parameters'])
+        form.setEnvironment(more_info['environment'])
+        
+        # The initscript has to be written to a temp, named file:
+        
+        initscript_file = self._makeInitscriptFile(more_info['initscript_contents'])
+        form.setInitScript(initscript_file.name)
+                                                   
+        while dialog.exec() == QDialog.DialogCode.Accepted:
+            
+            #name, image, host  
+            
+            pgm_name = form.name().strip()
+            image = form.path().strip()
+            host = form.host().strip()
+            
+            
+            if not pgm_name or not image or not host:
+                _ = QMessageBox.warning(
+                    dialog, 'Missing input', 'The program name, image and host must be non-empty'
+                )
+            else:
+                # Got a valid definition..;.. buld the definition.
+                container = form.container()
+                wd        = form.wd()
+             
+                options = {
+                    'type' : form.programType(),
+                }
+                # We only need to include others if they're non-empty:
+                
+                pgm_opts = form.options()
+                if len(pgm_opts) > 0:
+                    options['options'] = pgm_opts
+                params = form.parameters()
+                if len(params) > 0:
+                    options['parameters'] = params
+                env = form.environment()
+                if len(env) > 0:
+                    options['environment'] = env
+                initscript = form.initscript().strip()
+                if initscript:
+                    options['initscript'] = initscript
+
+                # If the new name already exists, we need to kill it off first.
+                
+                if program_api.exists(pgm_name):
+                    program_api.delete(pgm_name)
+
+                program_api.add(pgm_name, image, host, container, wd, options)
+                    
+                break                   # Can go on to re-load the view.
+            
+
+        self._loadView()     # Update the view.
+        
+    # Utilities:
+    
+    def _makeInitscriptFile(self, script : str) -> tempfile.NamedTemporaryFile:
+        # Make a named temp file  containing script and return it
+        # so it's still alive.
+        
+        file = tempfile.NamedTemporaryFile(mode='w', encoding='utf8')
+        print(script, file=file.file)
+        file.file.flush()
+        return file
+        
+    def _loadView(self) -> None:
+        #  Load the view with the existing programs.
+        program_api = Program(self._db)
+        programs    = program_api.list()
+        self._view.setPrograms(programs)
+        
+
+def Usage() -> None:
+    #  output the program usage to stderr:
+    
+    print('''
+Usage:
+   $DAQBIN/mg_cfgprogram config-path
+Where:
+    config-path - is the path to the configuration database file.
+                  this should have been created with $DAQBIN/mg_mkconfig
+          ''', file = sys.stderr
+    )
+
+#  Program entry:
+
+def main() -> int:
+    if len(sys.argv) != 2:
+        Usage()
+        return -1
+
+    app = QApplication(sys.argv)
+    win = ProgramSelector()
+    controller = ProgramEditController(win, sys.argv[1])
+    
+    win.resize(win.size())    # For some reason this sets the size properly.
+    
+    win.show()
+    return app.exec()
+
+if __name__ == '__main__':
+    sys.exit(main())

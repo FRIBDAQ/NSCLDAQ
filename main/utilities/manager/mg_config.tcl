@@ -37,12 +37,12 @@ set daqbin [file normalize [file dirname [info script]]];  # Where programs live
 # order and we want control over the order of 'menu' entries.
 #
 set ApplicationMenu [dict create                                 \
-    "Container wizrd"   [file join $daqbin mg_container_wizard] \
+    "Container Wizard"   [file join $daqbin mg_container_wizard] \
     "Containers"        [file join $daqbin mg_cfgcontainers]    \
     "Readout Wizard"    [file join $daqbin mg_readout_wizard]   \
     "Program Wizard"    [file  join $daqbin mg_program_wizard]  \
     "Programs"          [file join $daqbin mg_cfgprogram]       \
-    "Event log wizard"   [file join $daqbin mg_logwizard]        \
+    "Event log Wizard"   [file join $daqbin mg_logwizard]        \
     "Event logging"     [file join $daqbin mg_cfgEvlog]        \
     "Sequence Definition" [file join $daqbin mg_seqedit]        \
     "State Machine"     [file join $daqbin mg_stateedit]        \
