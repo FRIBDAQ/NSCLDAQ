@@ -1,4 +1,0 @@
-#!/bin/bash
-
-prefix=@prefix@
-$prefix/bin/tclserver  $prefix/bin/ScalerDisplay.tcl $1 -pManaged -aScalerDisplay

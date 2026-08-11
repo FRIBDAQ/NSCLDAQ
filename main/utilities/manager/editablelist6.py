@@ -25,9 +25,11 @@ Attributes:
 Notable public functions:
     appendItem - appends a new item to the list box.
     insertItem - inserts an item at a specific position in the list box.
+    
+PyQt6 port
 '''
 
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QApplication, QMainWindow,
     QStyle,
     QWidget, QListWidget, QLabel, QPushButton,
@@ -35,8 +37,8 @@ from PyQt5.QtWidgets import (
     QAbstractItemView
 )
 
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.Qt import *
+from PyQt6.QtCore import pyqtSignal
+
 
 class EditableList(QWidget):
     add = pyqtSignal()
@@ -56,7 +58,7 @@ class EditableList(QWidget):
         # The list box is in 1,1 and spans 6 rows:
 
         self._list = QListWidget(self)
-        self._list.setSelectionMode(QAbstractItemView.ContiguousSelection)
+        self._list.setSelectionMode(QAbstractItemView.SelectionMode.ContiguousSelection)
         layout.addWidget(self._list, 1,1, 6,1)
 
         # In 4,0 is a vboxlayout that contains the
@@ -64,10 +66,10 @@ class EditableList(QWidget):
 
         adddel_layout = QVBoxLayout()
         self._add = QPushButton(self)
-        self._add.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_MediaPlay')))
+        self._add.setIcon(self.style().standardIcon(getattr(QStyle.StandardPixmap, 'SP_MediaPlay')))
         self._add.setMaximumWidth(25)
         self._delete = QPushButton(self)
-        self._delete.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_DialogDiscardButton')))
+        self._delete.setIcon(self.style().standardIcon(getattr(QStyle.StandardPixmap, 'SP_DialogDiscardButton')))
         self._delete.setMaximumWidth(25)
         adddel_layout.addWidget(self._add)
         adddel_layout.addWidget(self._delete)
@@ -78,10 +80,10 @@ class EditableList(QWidget):
 
         edit_layout = QHBoxLayout()
         self._up = QPushButton(self)
-        self._up.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_TitleBarShadeButton')))
+        self._up.setIcon(self.style().standardIcon(getattr(QStyle.StandardPixmap, 'SP_TitleBarShadeButton')))
         self._up.setMaximumWidth(25)
         self._down = QPushButton(self)
-        self._down.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_TitleBarUnshadeButton')))
+        self._down.setIcon(self.style().standardIcon(getattr(QStyle.StandardPixmap, 'SP_TitleBarUnshadeButton')))
         self._down.setMaximumWidth(25)
         self._clear = QPushButton('Clear', self)
 
@@ -218,7 +220,7 @@ class ListToListEditor(QWidget):
         self.setLayout(layout)
         
         self._sourcelist = QListWidget(self)
-        self._sourcelist.setSelectionMode(QAbstractItemView.MultiSelection)
+        self._sourcelist.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
         layout.addWidget(self._sourcelist)    
         
         self._destinationlist = EditableList("")    # no label.

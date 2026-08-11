@@ -7,6 +7,307 @@ and so on.
 '''
 
 import sqlite3
+
+def _is_empty_table(handle: sqlite3.Connection, table_name : str) -> bool:
+    cursor = handle.execute(
+        f'''
+            SELECT COUNT(*) as count FROM {table_name}
+        '''
+    )
+    row = cursor.fetchone()
+    if row is None:
+        raise RuntimeError(f'Failed to get count of table {table_name}')
+    
+    return row[0] == 0
+
+def _state_id(handle : sqlite3.Connection, state_name: str) -> int:
+    # Get the state id for a state that's in the table... 
+    # It's a bugcheck for there not to be a state by that name.
+    
+    cursor = handle.execute(
+        '''
+        SELECT id FROM transition_name WHERE name=?
+        ''',
+        (state_name,)
+    )
+    row = cursor.fetchone()
+    if row is None:
+        raise RuntimeError(f'There is no state named {state_name} in transition_name')
+    return row[0]
+    
+def _make_Container_schema(handle : sqlite3.Connection) -> None:
+    # Make the tables associated with defining containers:
+    # The caller must commit this transaction.
+    
+    handle.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS container  (
+            id         INTEGER PRIMARY KEY,
+            container  TEXT,
+            image_path TEXT,
+            init_script TEXT
+        )
+        '''
+        
+    )
+    handle.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS bindpoint (
+            id            INTEGER PRIMARY KEY,
+            container_id  INTEGER,    -- FK to container
+            path          TEXT,
+            mountpoint    TEXT DEFAULT NULL
+        )
+        '''
+        
+    )
+def _make_Programs_schema(handle : sqlite3.Connection) -> None:
+    # Create the tables that define programs.  Note that
+    # The caller must commit this transaction.  The program type table
+    # is populated.
+    
+    handle.execute('''
+            CREATE TABLE IF NOT EXISTS program_type (
+            id                INTEGER PRIMARY KEY,
+            type              TEXT
+        )
+    ''')
+    # If the program type table has not been populated, we must populate it.
+    if _is_empty_table(handle, 'program_type'):
+        handle.execute('''
+            INSERT INTO program_type (type)
+                VALUES ('Transitory'), ('Critical'), ('Persistent')
+        ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS program (
+            id           INTEGER PRIMARY KEY,
+            name         TEXT,      -- Name used to refer to the program.
+            path         TEXT,
+            type_id      INTEGER, -- FK to program_type
+            host         TEXT,
+            directory    TEXT,
+            container_id INTEGER, -- FK to container
+            initscript   TEXT,
+            service      TEXT
+        )
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS program_option (
+                id          INTEGER PRIMARY KEY,
+                program_id  INTEGER,  -- FK to program
+                option      TEXT,
+                value       TEXT
+            )
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS program_parameter (
+            id             INTEGER PRIMARY KEY,
+            program_id     INTEGER,   -- FK to program.
+            parameter      TEXT
+        )          
+    ''')
+    handle.execute('''
+       CREATE TABLE IF NOT EXISTS program_environment (
+                id         INTEGER PRIMARY KEY,
+                program_id INTEGER,
+                name       TEXT,
+                value      TEXT
+            ) 
+    ''')
+    
+def _make_StateMachine_schema(handle : sqlite3.Connection) -> None:
+    # Create/populate the schema for the state machine.
+    
+    #  Initial valid state transition table keyed by initial state name
+    # contents are tuples of legal subsequent states.
+    
+    legalTransitions = {
+        'BOOT'     : ('SHUTDOWN', 'HWINIT'),
+        'SHUTDOWN' : ('SHUTDOWN', 'BOOT'),
+        'HWINIT'   : ('SHUTDOWN', 'BEGIN'),
+        'BEGIN'    : ('SHUTDOWN', 'END'),
+        'END'      : ('SHUTDOWN', 'BEGIN', 'HWINIT')
+    }
+    
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS sequence (
+            id                INTEGER PRIMARY KEY,
+            name              TEXT,
+            transition_id     INTEGER -- FK to transition triggering seq.
+        )           
+    ''')
+    handle.execute('''
+         CREATE TABLE IF NOT EXISTS transition_name (
+            id        INTEGER PRIMARY KEY,
+            name      TEXT
+        )           
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS legal_transition (
+            id              INTEGER PRIMARY KEY,
+            from_id         INTEGER,   -- FK in to transition_name
+            to_id           INTEGER    -- Also FK into transition_name
+        )
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS last_transition (
+            state           INTEGER     -- FK to transition_name
+        )
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS step (
+            id                       INTEGER PRIMARY KEY,
+            sequence_id              INTEGER, -- fk to sequence
+            step                     REAL,
+            program_id               INTEGER, -- fk to program table.
+            predelay                 INTEGER DEFAULT 0,
+            postdelay                INTEGER DEFAULT 0
+        )
+    ''')
+    #  If there's no entries in the transition_name table, stock it:
+       
+    if _is_empty_table(handle, 'transition_name'):
+        for state in legalTransitions.keys():
+            handle.execute('''
+                INSERT INTO transition_name (name)
+                VALUES (?)
+            ''', [state,])
+    
+    # If there are no sequences, one named 'run_state'.
+    
+    if _is_empty_table(handle, 'sequence'):
+        handle.execute('''
+            INSERT INTO sequence (name) VALUES ('run_state')
+        ''')
+    
+    if _is_empty_table(handle, 'legal_transition'):
+        for from_name, to_names in legalTransitions.items():
+            from_id = _state_id(handle, from_name)
+            for to_name in to_names:
+                to_id = _state_id(handle, to_name)
+                handle.execute('''
+                INSERT INTO legal_transition
+                    ( from_id, to_id)
+                    VALUES (?,?)
+                ''', (from_id, to_id))
+   
+    # If there is no last state, set it to 'SHUTDOWN'.
+    
+    if _is_empty_table(handle, 'last_transition'):
+        shutdown_id = _state_id(handle, 'SHUTDOWN')
+        handle.execute('''
+            INSERT INTO last_transition (state) VALUES (?)
+        ''', (shutdown_id,))
+
+def _make_transitionLog_schema(handle: sqlite3.Connection) -> None:
+    # Make the transition log table.
+    
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS transition_log  (
+            id            INTEGER PRIMARY KEY,
+            transition_id INTEGER,  -- FK to transition_name
+            timestamp     INTEGER,
+            success       INTEGER
+        )
+    ''')
+
+def _make_eventLog_schema(handle : sqlite3.Connection) -> None:
+    # Make the schema needed to describve event logging.  
+    # Caller needs to commit:
+    
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS logger (
+            id                 INTEGER PRIMARY KEY,
+            daqroot            TEXT,
+            ring               TEXT,
+            host               TEXT,
+            partial            INTEGER DEFAULT 0,
+            destination        TEXT,
+            critical           INTEGER DEFAULT 1,
+            enabled            INTEGER DEFAULT 1,
+            container_id       INTEGER DEFAULT NULL -- FK to container tbl.
+        )
+    ''') 
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS recording (
+            state     INTEGER
+        )
+    ''') 
+    if _is_empty_table(handle, 'recording'):
+        # Set initial recording state to off.:
+        
+        handle.execute('''
+            INSERT INTO recording (state) VALUES (0)
+        ''') 
+def _make_kvStore_schema(handle : sqlite3.Connection) -> None:
+    # Make the kv store and stock it with the run number and
+    # title.
+    
+    initial_kvStore = {   # Initial store contents.
+        'run': '0',
+        'title' : 'Set a new title'
+    }
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS kvstore (
+            id        INTEGER PRIMARY KEY,
+            keyname   TEXT,
+            value     TEXT
+        )
+    ''')
+    # If needed, stock the kv store for the first time:
+    
+    if _is_empty_table(handle, 'kvstore'):
+        for key, value in initial_kvStore.items():
+            handle.execute(
+                '''INSERT INTO kvstore (keyname, value) VALUES (?,?)''',
+                (key, value)
+            )
+def _make_userAndRoles_schema(handle : sqlite3.Connection) -> None:
+    #  the user and roles are not yet used but are there for
+    #  future applications where the things a particular user is allowed
+    #  to do might be limited.
+
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id        INTEGER PRIMARY KEY,
+            username  TEXT
+        )
+    ''')
+    handle.execute('''
+        CREATE TABLE IF NOT EXISTS roles (
+            id       INTEGER PRIMARY KEY,
+            role     TEXT
+        )
+    ''')
+    handle.execute('''
+         CREATE TABLE IF NOT EXISTS user_roles (
+            user_id    INTEGER,
+            role_id    INTEGER
+        )
+    ''')
+
+def make_schema(handle : sqlite3.Connection) -> None:
+    '''
+        Creates the manager schema
+        @param handle - a writable connection to an sqlit3 database
+        @note  If there are already tables in the database referred to by
+        'handle', the new tables are simple added to it.  
+        @note since CREATE TABLE IF NOT EXISTS is used to create
+             all of the tables,  if this is already a manager configuration
+             database the function is a no-op.
+    '''
+    _make_Container_schema(handle)
+    _make_Programs_schema(handle)
+    _make_StateMachine_schema(handle)
+    _make_transitionLog_schema(handle)
+    _make_eventLog_schema(handle)
+    _make_kvStore_schema(handle)
+    _make_userAndRoles_schema(handle)
+    
+    #  None of the above actually commit their changes so:
+    
+    handle.commit()
+
 def boolToInt(b):
     return  1 if b else 0
 def boolToInt(b):
@@ -102,7 +403,7 @@ class Container:
                     (container_id, source, dest)
                 )
             self._db.commit()
-        except:
+        except Exception:
             self._db.rollback()
             raise
         
@@ -623,8 +924,8 @@ class Program:
             
             for env in cmd_environment:
                 name = env[0]
-                if len(opt) > 1:
-                    value = opt[1]
+                if len(env) > 1:
+                    value = env[1]
                 else: 
                     value = ''
                 cursor.execute(
@@ -633,7 +934,7 @@ class Program:
                     VALUES (?, ?, ?)
                     ''', (program_id, name, value)
                 )
-        except:
+        except Exception:
             self._db.rollback()
             raise
             
@@ -687,7 +988,7 @@ class Program:
                 DELETE FROM program_environment WHERE program_id = ?
                 ''', (program_id,)
             )
-        except:
+        except Exception:
             self._db.rollback()
         
         
@@ -704,7 +1005,7 @@ class Program:
         *  host - Host the program will run in .
         *  directory  -directory in the container that will be the cwd of the program when started.
         *  container - name of the container the program runs in.
-        *  more     - Dict of additionalal stuff.  This can be fed back to the 'options'
+        *  more     - Dict of additional stuff.  This can be fed back to the 'options'
         *       parameter on the 'add' method with the exception that 'initscript'
         *       will be 'initscript_contents' and will contain the text of the initialization
         *       script.
@@ -827,6 +1128,14 @@ class Sequence:
         self._db = db
         self._program = Program(self._db)
 
+    def _raiseIfNoState(self, name : str) -> int:
+        # Raise a value error the state 'name' does not exist:
+        # Return the state id if it does.
+        result = self.stateExists(name)
+        if result is None:
+            raise ValueError(f'There is no state named {name}')
+    
+        return result
     def _trigger_id(self, trigger_name):
         # Convert a trigger state/transition name into a trigger/transition id:
         
@@ -843,6 +1152,9 @@ class Sequence:
             raise ValueError(f'There is no transition named {trigger_name}')
         
         return result[0]
+    def _sequenceId(self, name : str) -> int | None:
+        matches = [x['id'] for x in  self.list() if x['name'] == name]
+        return matches[0] if len(matches) > 0 else None
     
     def exists (self, name):
         '''
@@ -856,7 +1168,7 @@ class Sequence:
             ''', (name,)
         )
         return cursor.fetchone()[0] > 0
-    def add(self, name, trigger, steps):
+    def add(self, name : str, trigger: str, steps : list):
         '''
            Adds a new sequence.
            
@@ -913,11 +1225,51 @@ class Sequence:
         self._db.commit()
         return seq_id
     
+    def addStep(self, seq_name : str, program_name :str, predelay: int = 0, postdelay : int= 0) -> None:
+        '''
+            Add a step to an existing sequence:
+            @param seq_naem - name of the sequence
+            @param program_name - Name of the program to add.
+            @param predelay - predelay, defaults to 0
+            @param postdelay - postdelay, defaults to 0.
+            
+            @throws
+                IndexError - seq_name or program_name don't exist.
+            @note
+                We find the number of the largest step and get the step number by adding self.step_increment to that.
+                
+        '''
+        seqid = self._sequenceId(seq_name)
+        if seqid is None:
+            raise IndexError(f'There is no squence named {seq_name}')
+        progid = self._program.id(program_name)
+        if progid is None:
+            raise IndexError(f'There is no program named {program_name}')
+        
+        # Figure out the step number.. if there are no steps, we use self.step_increment so:
+        
+        step_num = self.step_increment
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT step FROM step WHERE sequence_id = ?  ORDER BY step DESC LIMIT 1
+            ''', (seqid,))
+        row = cursor.fetchone()
+        if row is not None:
+            step_num = row[0] + self.step_increment
+        
+        # Now we can insert:
+        
+        self._db.execute('''
+            INSERT INTO step (sequence_id, step, program_id, predelay, postdelay)
+            VALUES(?, ?, ?, ?, ?)
+            ''', (seqid, step_num, progid, predelay, postdelay))
+        
+        self._db.commit()
     def list(self):
         
         '''
             List all of the sequences that have been deefined and their steps.  This returns a list of dicts.  Each dict
-            describes a sequence and hast the keys:
+            describes a sequence and has the keys:
             
             id     - id of the sequence.
             name  - Name ofthe sequnce
@@ -962,7 +1314,541 @@ class Sequence:
             seq_dict['steps'] = cursor.fetchall()
             result.append(seq_dict)
         
-        return result#    This software is Copyright by the Board of Trustees of Michigan
+        return result
+    
+    def deleteSequence(self, name: str) -> None:
+        '''
+            @param name -name of the sequence to delete.
+            @throw ValueError if name is not a sequence.
+        '''
+        seq_def = [x for x in self.list() if x['name'] == name]
+        if len(seq_def) == 0:
+            raise ValueError(f'There is no sequence named {name}')
+        
+        seq_def = seq_def[0]
+        # Remove the steps and then
+        # the sequence itself:
+        
+        self._db.execute('''
+            DELETE FROM step WHERE sequence_id = ?
+        ''',(seq_def['id'],))
+        self._db.execute('''
+             DELETE FROM SEQUENCE WHERE id = ?            
+        ''', (seq_def['id'],))
+        self._db.commit()
+        
+    def stateExists(self, name : str) -> int | None:
+        '''
+            @param name - name of the state to look for.
+            @return id of the state if it exists or None if it does not.
+        '''
+        cursor = self._db.cursor()
+        
+        cursor.execute('''
+            SELECT id FROM transition_name WHERE name = ?
+        ''', (name,))
+        ids = cursor.fetchall()
+        if len(ids) == 0:
+            return None
+        else:
+            return ids[0][0]              # Assume we're not allowing dupllicates.
+    def addState(self, name: str) -> None:
+        '''
+            Add a new state to the state machine.
+            
+            @param name - name of the new state.
+            @throws ValueError - if the state already exists.
+        '''
+        if self.stateExists(name):
+            raise ValueError(f'There is already a state named {name}')
+        
+        self._db.execute(
+            '''
+                INSERT INTO transition_name (name) VALUES(?)
+            ''',
+            (name,)
+        )
+        self._db.commit()
+    def addTransition(self, initial :str, final: str) -> None:
+        '''
+            Add a legal transition:
+            @param initial - initial state name.
+            @param final   - final state name.
+            @throw ValueError if either initial or final don't exist or
+                    the transition is already defined.
+        '''
+        
+        from_id = self._raiseIfNoState(initial)
+        to_id = self._raiseIfNoState(final)
+        
+        # Does the transition already exist?
+        
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT COUNT(*) FROM legal_transition WHERE from_id = ? AND to_id =?
+        ''', (from_id, to_id))
+        result = cursor.fetchone()  
+        if result[0] != 0:
+            raise ValueError(f'The state transition {initial} -> {final} is already defined')
+        
+        # Insert the new transition:
+        
+        self._db.execute('''
+            INSERT INTO legal_transition (from_id, to_id) VALUES(?,?)                         
+        ''', (from_id, to_id))
+        self._db.commit()
+        
+    def removeTransition(self, initial: str, final: str) -> None:
+        '''
+            Remove the legal transition descsribed by:
+            @param initial - the name of the initial state.
+            @param final   - the final state name.
+            @throw ValueError if either initial or final are not defined.  
+            @note it is a no-op to delete a transition that is not legal.
+        '''
+        
+        from_id = self._raiseIfNoState(initial)
+        to_id   = self._raiseIfNoState(final)
+        
+        self._db.execute('''
+            DELETE from legal_transition WHERE from_id = ? AND to_id = ?
+        ''', (from_id, to_id))
+        self._db.commit()
+        
+    def listStates(self) ->list:
+    
+        '''
+            @return list[str] - lits of known state names.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT name FROM transition_name
+        ''', tuple())
+        
+        # Marshall the results:
+        
+        result =list()
+        for row in cursor.fetchall():
+            result.append(row[0])
+        return result
+    
+    def legalFromStates(self, name : str) -> list:
+        ''''
+            List the names of the legal predecessor states
+            to the named state.
+            @param name - the successor state we're asking about.
+            @return list[str] - list or state names that can transition  to 'name'
+            @throw ValueError - if name is not a state:
+        '''
+        to_id = self._raiseIfNoState(name)
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT name FROM legal_transition INNER JOIN
+                transition_name ON legal_transition.from_id = transition_name.id
+                WHERE legal_transition.to_id = ?
+        ''', (to_id,))
+        
+        result = list()
+        for row in cursor.fetchall():
+            result.append(row[0])
+        
+        return result
+    def legalSuccessorStates(self, name : str) -> list:
+        '''
+            Determine the successor states for the named state:
+            @param name - name of the state whose successor states we want.
+            @return list[str] -state names we can transition to.
+            @throw ValueError if name is not a valid state.
+        '''
+        from_id = self._raiseIfNoState(name)
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT name FROM legal_transition INNER JOIN
+                transition_name ON legal_transition.to_id = transition_name.id
+                WHERE legal_transition.from_id = ?''',
+            (from_id,))
+        
+        result = list()
+        for row in cursor.fetchall():
+            result.append(row[0])
+        return result            
+    
+    def deleteState(self, name):
+        '''
+            Remove a state from the database.  Note this also removes transitions
+            from and to the state.
+            
+            @param name - the name of the state to remove.
+            @throw ValueError - if the state is not defined.
+        '''
+        # do the entire operation  in a save point. in case there are errors.
+        self._db.execute('SAVEPOINT deleting_state', tuple())
+        try:
+            self._raiseIfNoState(name)
+            
+            # Delete predecessors:
+            
+            predecessors = self.legalFromStates(name)
+            for from_state in predecessors:
+                self.removeTransition(from_state, name)
+                
+            # Delete successors:
+            
+            successors = self.legalSuccessorStates(name)
+            for to_state in successors:
+                self.removeTransition(name, to_state)
+            self._db.execute('DELETE FROM transition_name WHERE name = ?', (name,))
+        except Exception as e:
+            self._db.execute('ROLLBACK TO SAVEPOINT deleting_state')
+            raise       # Propagate the exception
+         
+        # Some inner calls do commits.:
+        try:
+            self._db.execute('RELEASE SAVEPOINT deleting_state', tuple())   
+        except Exception:
+            pass
+        try:
+            self._db.commit()       # May need to commit the outer xaction.
+        except Exception:
+            pass
+      
+class KvStore:
+    ''' Implement access to the key value store: '''  
+    
+    def __init__(self, db : sqlite3.Connection):
+        self._db = db
+    
+    def exists(self, key : str) -> bool:
+        '''
+        @return bool - True if 'key' exists in the database
+        
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT COUNT(*) FROM kvstore WHERE keyname = ?
+                       ''', (key,))
+        result = cursor.fetchone()
+        assert result is not None, f'Unable to determine if {key} is in the KvStore'
+        return result[0] != 0
+    
+    def create(self, key: str, value: str) -> None:
+        '''
+            @param key -  a new key to create, must be new.
+            @param value - the value to give that key.
+            @throws If the key already exists, ValueError is thrown
+            
+        '''
+        if self.exists(key):
+            raise ValueError(f'{key} already exists')
+        
+        self._db.execute('''
+            INSERT INTO kvstore (keyname, value) VALUES (?,?)
+            ''', (key, value))
+        self._db.commit()
+    
+    def modify(self, key : str, value : str) -> None:
+        '''
+            @param key - key to modify.
+            @param value - New value for th key.
+            @throws ValueError if the key does not exist.
+        '''
+        if not self.exists(key):
+            raise ValueError(f'{key} has not been defined, use the "create" method to do  so.')
+        
+        self._db.execute('''
+                UPDATE kvstore SET value = ? WHERE keyname = ?
+            ''', (value, key))
+        self._db.commit()
+        
+    def remove(self, key : str) -> None:
+        '''
+           @param key - the key to delete.
+           @throws ValueError if the key does not exist.
+        '''
+        if not self.exists(key):
+            raise ValueError(f'{key} does not exist.')
+        
+        self._db.execute('''
+            DELETE FROM kvstore WHERE keyname = ?
+            ''', (key,))
+        self._db.commit()
+    
+    def get(self, key : str) -> str:
+        '''
+          @param key - key whose value must be retrieved.
+          @return str - the value of the key.
+          @raise ValueError if there is no such key.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+               SELECT value FROM kvstore WHERE keyname = ?                            
+            ''', (key,))
+        
+        row = cursor.fetchone()
+        if row is None:
+            raise ValueError(f'{key} does not exist.')
+        
+        return row[0]
+
+    def listKeys(self) -> list[str]:
+        '''
+            @return list[str] - list of the defined keys.
+        '''
+        
+        cursor = self._db.cursor()
+        cursor.execute('''SELECT keyname FROM kvstore''', tuple[str]())
+        rows = cursor.fetchall()
+        if rows is None:
+            return list()
+        
+        return [r[0] for r in rows]
+        
+    def listAll(self) -> list[tuple[str,str]]:
+        '''
+            @return list[tuple[str,str]]  list of all key value pairs in the store.
+                The first element of each tuple is the key, the second, its value.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT keyname, value FROM kvstore
+                       ''', tuple[str]())
+        
+        result = cursor.fetchall()
+        if result is None:
+            return []
+        return result
+        
+class Auth:
+    ''' 
+    Note that while user/and role restrictions are not yet implemented/enforced,
+    the mechanisms for defining them are.
+    There are three tables we're concerned with:
+    1. roles which defines the set of roles in the system.
+    2. users which defines the users in the experiment
+    3. user_roles which defines the set of roles a user has.
+    
+    We support:
+    - Defining and removing roles.
+    - Adding and removing users.
+    - Granting and revoking roles to a user.
+    
+    Getting this information.
+    '''
+    def __init__(self, db: sqlite3.Connection):
+        self._db = db
+    
+    def role_id(self, role : str) -> int | None:
+        '''
+        @param role : str - the name of a role to query for.
+        @return int | None- If the role exists, returns its id. 
+        @retval None  no such role.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT id FROM roles WHERE role = ?
+        ''', (role, ))
+        row = cursor.fetchone()                   # We will enforce uniqueness.
+        return row[0] if row else None
+    
+    def addRole(self, role : str) -> None:
+        '''
+            @param role : str- The new role to add.
+            @throws ValueError if there's already sucha a row.
+            
+        '''
+        if self.role_id(role):
+            raise ValueError(f'{role} is an existing role.  Refusing to make a duplicate')
+    
+        self._db.execute('''
+            INSERT INTO roles (role) VALUES(?)
+        ''', (role,))
+        
+        self._db.commit()
+    
+    def removeRole(self, role : str) -> None:
+        '''
+            @param role : str - the role to remove.
+            @note all user_roles table entries with that role are also removed.
+            @throws KeyError if the role does not exist.
+        '''
+        
+        role_id = self.role_id(role)
+        if not role_id:
+            raise KeyError(f'There is no role named {role}')
+        
+        # This is already a transaction so just commit at the end.
+        
+        self._db.execute('''
+            DELETE FROM user_roles WHERE role_id = ?
+        ''',  (role_id,))
+        
+        self._db.execute('''
+            DELETE FROM roles WHERE id = ?
+                         ''', (role_id,))
+        
+        self._db.commit()
+        
+    def user_id(self, username : str) -> int | None:
+        '''
+        @param username : str - a username to hunt for.
+        @return int | None - the user id of the user.
+        @retval None - there is no such user.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT id FROM users WHERE username = ?
+            ''', (username, ))
+        row = cursor.fetchone()
+        return row[0] if row else None
+    
+    def addUser(self, username: str) -> None:
+        '''
+        @param username : str - name of new user to add.
+        @throws ValueError if the user already exists.
+        '''
+        if self.user_id(username):
+            raise ValueError(f'{username} is already a user. Not going to make a duplicate')
+
+        self._db.execute('''
+            INSERT INTO USERS (username) VALUES (?)
+        ''', (username,))
+        
+        self._db.commit()
+        
+    def removeUser(self, username : str) -> None:
+        '''
+            @param username : str - Name of the user to remove.
+            @note The entries in the user_roles table that pertain to this user are also removed.
+            @throws KeyError if the username does not exist.
+        '''
+        id = self.user_id(username)
+        if not id:
+            raise KeyError(f'There is no user named {username}')
+        
+        self._db.execute('''
+            DELETE FROM user_roles WHERE user_id = ?
+            ''', (id,))
+        self._db.execute('''
+            DELETE FROM users WHERE id=?
+            ''', (id, ))
+        
+        self._db.commit()
+        
+    def grant(self, role_name : str, username: str) -> None:
+        '''
+            @parm role_name : str - name of the role to grant to
+            @param username  :str - the username getting the role.
+            @throws KeyError if either rol_name or username don't exist.
+            @throws ValuError If the user already has the role.
+            
+        '''
+        uid = self.user_id(username)
+        if not uid:
+            raise KeyError(f'There is no user named {username}')
+        role = self.role_id(role_name)
+        if not role:
+            raise KeyError(f'There is no role named {role_name}')
+        
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT COUNT(*) FROM user_roles WHERE user_id = ? AND role_id = ?
+            ''', (uid, role))
+        row = cursor.fetchone()
+        if row[0] != 0:
+            raise ValueError(f'{username} has already been granted {role_name}')        
+        
+        # Now finally we can grant the role:
+        
+        self._db.execute('''
+              INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)      
+        ''',(uid, role))
+        
+        self._db.commit()
+        
+    def revoke(self, role_name : str, username : str) -> None:
+        '''
+            @param role_name : str - name of the role to revoke.
+            @param username  : str - name of the user from whom it is revoked.
+            @raise KeyError - if either the user or the role is not defined.
+            @raise ValueError - If the user doesn't have the role to begin with.
+        '''
+        
+        uid = self.user_id(username)
+        if not uid:
+            raise KeyError(f'There is no user named {username}')
+        rid = self.role_id(role_name)
+        if not rid:
+            raise KeyError(f'There is no role named {role_name}')
+        
+        # Does the user have the rol to begin with:
+        
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT COUNT(*) FROM user_roles WHERE user_id = ? AND role_id = ?
+            ''', (uid, rid))
+        row = cursor.fetchone()
+        if row[0] == 0:
+            raise ValueError(f'{username} was never granted {role_name}')        
+        
+        # Finally, Revoke the role:
+        
+        self._db.execute('''
+            DELETE FROM user_roles WHERE user_id = ? AND role_id = ?
+            ''', (uid, rid))
+    
+    # Queries:
+    
+    def listUsers(self) -> list[str]:
+        '''
+            @return list[str] - list of valid usernames.
+        '''
+        cursor = self._db.cursor()
+        cursor.execute(
+            '''
+            SELECT username FROM users
+            ''')
+        rows = cursor.fetchall()
+
+        return [row[0] for row in rows]
+    
+    def listRoles(self) -> list[str]:
+        '''
+            @return list[str] - list of all the defined roles.
+        '''
+        
+        cursor = self._db.cursor()
+        cursor.execute(
+            '''
+                SELECT role FROM roles
+            '''
+        )
+        rows = cursor.fetchall()
+        return [row[0] for row in rows]
+    
+    def grantedRoles(self, user : str) -> list[str]:
+        '''
+        @param user : str - username to check
+        @return list[str] - A list of the roles this user has been granted.
+        @raises KeyError if the user is not valiid.
+        '''
+        
+        userid = self.user_id(user)
+        if not userid:
+            raise KeyError(f'{user} is not a defined username.')
+        
+        cursor = self._db.cursor()
+        cursor.execute('''
+            SELECT roles.role FROM user_roles
+            INNER JOIN roles ON roles.id = user_roles.role_id
+            WHERE user_roles.user_id = ?
+            ''', (userid,))
+        rows = cursor.fetchall()
+        
+        return [row[0] for row in rows]
+        
+        
+#    This software is Copyright by the Board of Trustees of Michigan
+    
 #    State University (c) Copyright 2014, 2026
 #
 #    You may use this software under the terms of the GNU public license

@@ -1,17 +1,18 @@
-program_scripts=startServer.tcl mg_mkconfig.tcl mg_cfgcontainers.tcl \
-	mg_cfgprogram.tcl mg_stateedit.tcl mg_seqedit.tcl mg_loggeredit.tcl \
-	mg_kvedit.tcl mg_authedit.tcl mg_config.tcl mg_startManager.tcl \
-	mg_kvget.tcl mg_monitorOutput.tcl mg_shutdown.tcl mg_cfgEvlog.tcl \
-	mg_startloggers.tcl mg_container_wizard.tcl \
-	mg_readout_wizard.tcl
+program_scripts=startServer.tcl
 
 
-PY_PACKAGES=mg_database.py manager_client.py editablelist.py mg_clientutils.py \
-	mg_kvclient.py OutputMonitorQt.py
-PYPROGRAMS=mg_logwizard.py mg_program_wizard.py mg_import.py
+PY_PACKAGES=mg_database.py manager_client.py editablelist.py editablelist6.py \
+	mg_clientutils.py \
+	mg_kvclient.py OutputMonitorQt.py mg_configutils.py
+PYPROGRAMS=mg_logwizard.py mg_program_wizard.py mg_import.py \
+	mg_monitorOutput.py mg_mkconfig.py mg_container_wizard.py \
+	mg_cfgcontainers.py mg_cfgprogram.py mg_stateedit.py \
+	mg_seqedit.py mg_loggeredit.py mg_kvedit.py mg_authedit.py \
+	mg_config.py mg_startManager.py mg_kvget.py mg_shutdown.py \
+	mg_cfgEvlog.py mg_startloggers.py mg_readout_wizard.py
 server_scripts=mg_statusserver.tcl  mg_programserver.tcl \
 	mg_kvserver.tcl mg_evlogserver.tcl
-ibrary_scripts=mg_containerpackage.tcl mg_containeredit.tcl \
+library_scripts=mg_containerpackage.tcl mg_containeredit.tcl \
 	mg_programpackage.tcl mg_programedit.tcl mg_sequencepackage.tcl  \
 	mg_kvstorepackage.tcl  mg_auth.tcl \
 	mg_stateclient.tcl mg_stateclientui.tcl mg_clientutils.tcl \
