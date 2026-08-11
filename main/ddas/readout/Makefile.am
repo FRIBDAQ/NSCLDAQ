@@ -87,8 +87,9 @@ unittests_LDADD=@CPPUNIT_LIBS@
 TESTS=./unittests
 
 #
-# *  Install the firmware versions file in @prefix@/share/readout
-# *  Install the crate_1 dir in @prefix@/share/readout/crate_1
+# Install pixieserver in @prefix@/share/readout
+# Install the crate_1 dir in @prefix@/share/readout/crate_1
+# Install ddasReadout driver in @bindir@
 #
 
 install-exec-hook:
