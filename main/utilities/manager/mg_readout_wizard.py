@@ -1639,7 +1639,7 @@ class MVLCGenerator(Generator):
         result = []
         
         if wiz.field('MVLC_ConvertFromTcl'):
-            result.append(('--convert-tcl', ))
+            result.append(('--convert-tcl',))
         
         if wiz.field('MVLC_OverrideTemplate'):
             result.append(('--template', wiz.field('MVLC_YamlTemplate')))
@@ -1651,7 +1651,7 @@ class MVLCGenerator(Generator):
         
         result   = []
         if wiz.field('MVLC_InitOnly'):
-            result.append(('--init-only',))
+            result.append(('--init-only', ))
         
         if wiz.field('MVLC_IgnoreInitErrors'):
             result.append(('--ingore-vme-init-errors',))
