@@ -852,6 +852,7 @@ AC_CONFIG_FILES([
     utilities/format/V11/Makefile
     utilities/FormattedIO/Makefile
     utilities/newscaler/Makefile
+    utilities/newscaler/ScalerDisplay.tcl
     utilities/pyscaler/Makefile
     utilities/scalersum/Makefile
     utilities/reglom/Makefile
