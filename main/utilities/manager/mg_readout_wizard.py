@@ -806,7 +806,7 @@ class MVLCProgram(QWizardPage):
             
             self._program = QLineEdit(self)
             promptLayout.addWidget(self._program)
-            self.registerField('MVLC_Readout', self._program)
+            self.registerField('MVLC_Readout*', self._program)
             
             self._browse = QPushButton('Browse...', self)
             promptLayout.addWidget(self._browse)
@@ -872,6 +872,7 @@ class MVLCConnection(QWizardPage):
         self._host = QLineEdit(self)
         self.registerField('MVLC_Host', self._host)
         ethernetLayout.addWidget(self._host)
+        self._host.textChanged.connect(self._lineditChanged)
         self._host.setDisabled(True)
         
         self._selectethernet.toggled.connect(self._selectEthernet)
@@ -922,6 +923,7 @@ class MVLCConnection(QWizardPage):
         self._usbserial = QLineEdit(self)
         self.registerField('MVLC_UsbSerial', self._usbserial)
         self._usbserial.setDisabled(True)
+        self._usbserial.textChanged.connect(self._lineditChanged)
         usbserialLayout.addWidget(self._usbserial)
         
         self._layout.addLayout(usbserialLayout)
@@ -931,6 +933,30 @@ class MVLCConnection(QWizardPage):
         return 302   # For now.
     def pageId(self) -> int:
         return 301
+    
+    def isComplete(self) -> bool:
+        # Determines if the Next button is lit.
+        # We implement this because some fields are conditionally
+        # Mandatory depending on the connection type
+        
+        contype = self.field('MVLC_ConnectionType')
+        
+        match contype:
+            case 'ethernet':
+                # Must have a non blank host field:
+                return self._host.text().strip() != ''  # QT is strict about boolness.
+            case 'firstusb':
+                return True        # Nothing else needed.
+            case 'usbbyindex':
+                # Spin boxes always have a value:
+                return True
+            case 'usbbyserial':
+                #  Non blank serial string:
+                
+                return self._usbserial.text().strip() != ''
+    
+            # if we get here must be ok.
+        return True
     
     # Internal slots:
     #   These respond to toggles of the radio buttons
@@ -947,14 +973,14 @@ class MVLCConnection(QWizardPage):
         else:
             disabled = True
         self._host.setDisabled(disabled)     # Enable the host field.
-    
+        self.completeChanged.emit()
     
     def _selectFirstUsb(self, state : bool) -> None:
         # First usb connection selected:
         
         if state:
             self.setField('MVLC_ConnectionType', 'firstusb')
-        
+        self.completeChanged.emit()
         
     def _selectUsbIndex(self, state: bool) -> None:
         if state:
@@ -964,7 +990,8 @@ class MVLCConnection(QWizardPage):
             disabled = True
         
         self._usbindex.setDisabled(disabled)
-    
+        self.completeChanged.emit()
+        
     def _selectUsbSerial(self, state: bool) -> None:
         if state:
             self.setField('MVLC_ConnectionType', 'usbbyserial')
@@ -973,13 +1000,20 @@ class MVLCConnection(QWizardPage):
             disabled = True
         
         self._usbserial.setDisabled(disabled)
+        self.completeChanged.emit()
+    
+    def _lineditChanged(self, newValue):
+        # Needed to get the isComplete method called when
+        # these fields are edited since they are not mandatory:
         
+        self.completeChanged.emit()
+        
+            
 class MVLCDAQParameters(QWizardPage):
     '''
         Provide the FRIB/NSCLDAQ parameters for the fribdaq-readout program.
         The following fields are defined:
         
-        MVLC_SourceId - The sourced the data will be tagged with.
         MVLC_HaveTsLibrary - True if a timestamp extraction library should be supplied.
         MVLC_TimestampSo  - Shared object that will be loaded to extract timestamps.
         
@@ -998,12 +1032,14 @@ class MVLCDAQParameters(QWizardPage):
         tslibLayout = QHBoxLayout()
         self._havetslib = QCheckBox('Extract Timestamps', self)
         self.registerField('MVLC_HaveTsLibrary', self._havetslib)
+        
         self._havetslib.clicked.connect(self._toggleHaveTsLib)
         tslibLayout.addWidget(self._havetslib)
         
         self._tslib = QLineEdit(self)
         self.registerField('MVLC_TimestampSo', self._tslib)
         self._tslib.setDisabled(True)
+        self._tslib.textChanged.connect(self._lineEdited)
         tslibLayout.addWidget(self._tslib)
         
         self._browsetslib = QPushButton('Browse...', self)
@@ -1019,6 +1055,14 @@ class MVLCDAQParameters(QWizardPage):
     def pageId(self) -> int:
         return 302
     
+    def isComplete(self) -> bool:
+        # if the extract timestamp checkbutton is lit, then
+        # The line edit must be nonempty:
+        
+        if self.field('MVLC_HaveTsLibrary'):
+            return self._tslib.text().strip() != ''
+        else:
+            return True
     # Slots (private);
     def _toggleHaveTsLib(self) -> None:
         # Toggle the state of the enable for the timestamplib and
@@ -1031,6 +1075,7 @@ class MVLCDAQParameters(QWizardPage):
             
         self._tslib.setDisabled(disabled)
         self._browsetslib.setDisabled(disabled)
+        self.completeChanged.emit()
         
     def _browseTslib(self) -> None:
         file, _ = QFileDialog.getOpenFileName(
@@ -1039,6 +1084,11 @@ class MVLCDAQParameters(QWizardPage):
         )
         if file.strip():
             self._tslib.setText(file)
+    
+    def _lineEdited(self, _) -> None:
+        self.completeChanged.emit()
+        
+        
 class MVLCReadoutConfig(QWizardPage):
     '''
     Prompt for the readout configuration.
