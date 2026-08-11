@@ -830,7 +830,6 @@ AC_CONFIG_FILES([
     utilities/Buffer/Makefile
     utilities/daqstart/Makefile
     utilities/dvdburn/Makefile
-    utilities/scalerdisplay/ScalerDisplay
     utilities/sequencer/Makefile
     utilities/ringselector/Makefile
     utilities/bufdump/Makefile
