@@ -309,7 +309,7 @@ class NameValueBox(QWidget):
         @param title - the new value of the title attribute/widget text.
         '''
         self._title.setText(title)
-    def items(self) -> list[tuple[str, str]]:
+    def items(self) -> list[tuple[str, str] |tuple[str]]:
         '''
             Return the name/value pairs currently  in the
             list box.
@@ -319,34 +319,46 @@ class NameValueBox(QWidget):
         result = list()
         for row in range(self._list.count()):
             item = self._list.item(row)
-            (name,value) = item.text().split('=')
-            result.append((name, value))
-        
+            optval = item.text().split('=')
+            name = optval[0]
+            if len(optval) == 1:
+                result.append((name,))
+            else:
+                result.append((name, optval[1]))
+            
         return result
     
-    def setItems(self, nameValuePairs : list[tuple[str,str]]) -> None:
+    def setItems(self, nameValuePairs : list[tuple[str,str] | tuple[str]]) -> None:
         '''
             @param nameValuePairs - an iterable of name value pairs. to load
                  into the listbox.
         '''
         self._list.clear()
         for item in nameValuePairs:
-            self._list.addItem(f'{item[0]}={item[1]}')
+            if len(item) == 2:
+                self._list.addItem(f'{item[0]}={item[1]}')
+            else:
+                self._list.addItem(item[0])
     
     #internal slots.
     
     def _addItem(self) -> None:
-        # To operate both the name and values must be nonempty.
+        # To operate we need at least a name:
         
         name = self._name.text().strip()
         value = self._value.text().strip()
         
-        if name and value:
-            self._list.addItem(f'{name}={value}')
+        if name:
+            item  = name
+            if value:
+                item += '=' + value
+
+            self._list.addItem(item)
             # Clear the text entries to make adding another simpler
             
             self._name.setText('')
             self._value.setText('')
+        
             
     def _editItem(self, item : QListWidgetItem) -> None:
         # Load the double clicked item into the editor
