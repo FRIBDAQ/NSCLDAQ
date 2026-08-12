@@ -18,10 +18,23 @@
 '''
 
 
-from PyQt6.QtWidgets import QApplication, QLabel, QSpinBox, QRadioButton, QPushButton, QWidget, QHBoxLayout, QVBoxLayout
-from PyQt6.QtCore    import pyqtSignal, QObject, Qt
 import sys
 from enum import Enum
+
+from PyQt6.QtCore import QObject, Qt, pyqtSignal
+from PyQt6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QFileDialog,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QRadioButton,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
+
 
 class TimestampPolicy(Enum):
     earliest = 1
@@ -85,7 +98,92 @@ class TsPolicySelector(QWidget):
                 widget = self._average
         
         widget.setChecked(True)
+    
+class ReGlomControls(QWidget):
+    '''
+    The actual full reglom controls.
+    
+    Attributes:
+      dt   - Glom assembly window.
+      sourceid - Output Source ID.
+      tspolicy - Timestamp policy.
+      infile   - Input file template (segment e.g)
+      outfile  - Output file.
+      
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
         
+        # The widget is a bunch of horizontal strips:
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        #  The Glom timee window and sid:
+        
+        glomlayout = QHBoxLayout()
+        
+        glomlayout.addWidget(QLabel('Glom interval (dt)', self))
+        self._dt = QSpinBox(self)
+        self._dt.setMinimum(1)
+        self._dt.setMaximum(0x7fffffff)    # Maxint for i32
+        glomlayout.addWidget(self._dt)
+        
+        glomlayout.addWidget(QLabel('Ouput SID', self))
+        self._sid = QSpinBox(self)
+        self._sid.setMinimum(0)
+        self._sid.setMaximum(0x7fffffff)
+        glomlayout.addWidget(self._sid)
+        
+        self._layout.addLayout(glomlayout)
+        
+        # Timestamp policy:
+        
+        self._tsPolicy = TsPolicySelector(self)
+        self._layout.addWidget(self._tsPolicy)
+        
+        # Input file:
+        
+        infile = QHBoxLayout()
+        infile.addWidget(QLabel('Input File:', self))
+        self._infile = QLineEdit(self)
+        infile.addWidget(self._infile)
+        self._browseinfile = QPushButton('Browse...')
+        self._browseinfile.clicked.connect(self._browseInputFile)
+        infile.addWidget(self._browseinfile)
+        
+        self._layout.addLayout(infile)
+        self._layout.addWidget(QLabel('For multisegment event file choose any segment', self))
+    
+        # Outfile:
+        
+        outfile = QHBoxLayout()
+        outfile.addWidget(QLabel('Output File', self))
+        self._outfile = QLineEdit(self)
+        outfile.addWidget(self._outfile)
+        self._browseoutfile = QPushButton('Browse...', self)
+        self._browseoutfile.clicked.connect(self._browseOutputFile)
+        outfile.addWidget(self._browseoutfile)
+        
+        self._layout.addLayout(outfile)
+        self._layout.addWidget(QLabel('Output files are not segmented', self))
+        
+    #  Internal slots: 
+    
+    def _browseInputFile(self) -> None:
+        file, _ = QFileDialog.getOpenFileName(
+            self, 'Input File (segment)', '.', 'Event Files (*.evt);; All Files (*)', '*.evt'
+        )
+        if file.strip():
+            self._infile.setText(file)
+    
+    def _browseOutputFile(self) -> None:
+        file, _ = QFileDialog.getSaveFileName(
+                    self, 'Reglommed File', '.', 'Event Files (*.evt);; All Files (*)', '*.evt'
+                )
+        if file.strip():
+            self._outfile.setText(file)
+    
  # tests for now:
  
 if __name__ == "__main__":
@@ -94,8 +192,7 @@ if __name__ == "__main__":
         print('Selected', w.policy().name)    
     
     app = QApplication(sys.argv)
-    w   = TsPolicySelector()
-    w.setPolicy(TimestampPolicy.earliest)
-    w.changed.connect(lambda : changed(w))
+    w   = ReGlomControls()
+   
     w.show()
     sys.exit(app.exec())
