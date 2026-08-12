@@ -179,7 +179,7 @@ class ReGlomControls(QWidget):
         ''' @param dt : int - the new value for the glom dt.'''    
         self._dt.setValue(dt)
         
-    def sourcdeid(self) -> int:
+    def sourceid(self) -> int:
         ''' @return int - Current source id value'''
         return self._sid.value()
     def setSourceid(self, sid : int) -> None:
@@ -188,7 +188,7 @@ class ReGlomControls(QWidget):
     
     def tspolicy(self) -> TimestampPolicy:
         '''  @return TimestampPolicy - The currently selected timestamp policy.'''
-        return self.tsPolicy.policy()
+        return self._tsPolicy.policy()
     def setTsPolicy(self, policy : TimestampPolicy) -> None:
         self._tsPolicy.setPolicy(policy)
         
@@ -234,4 +234,12 @@ if __name__ == "__main__":
    
     w.show()
     w.exec()
+    
+    # Dump the configuration to stdout:
+    wa = w.workarea()
+    print('Dt: ', wa.dt())
+    print('sourceid ', wa.sourceid())
+    print('policy', wa.tspolicy().name)
+    print('infile', wa.infile())
+    print('outfile', wa.outfile())
     
