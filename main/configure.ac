@@ -855,7 +855,7 @@ AC_CONFIG_FILES([
     utilities/newscaler/ScalerDisplay.tcl
     utilities/pyscaler/Makefile
     utilities/scalersum/Makefile
-   * utilities/reglom/Makefile
+    utilities/reglom/Makefile
     utilities/scalerReader/Makefile
     utilities/swtrigger/Makefile
     utilities/logbook/Makefile
