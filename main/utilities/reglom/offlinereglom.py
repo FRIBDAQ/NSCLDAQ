@@ -21,11 +21,13 @@
 import sys
 from enum import Enum
 
+from nscldaq.mg_configutils import OkDialog
+
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication,
-    QHBoxLayout,
     QFileDialog,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -218,16 +220,18 @@ class ReGlomControls(QWidget):
                 )
         if file.strip():
             self._outfile.setText(file)
-    
+
+class ReGlomConfiguration(OkDialog):
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(ReGlomControls(), parent)    
  # tests for now:
  
 if __name__ == "__main__":
-    
-    def changed(w :TsPolicySelector) -> None:
-        print('Selected', w.policy().name)    
+
     
     app = QApplication(sys.argv)
-    w   = ReGlomControls()
+    w   = ReGlomConfiguration()
    
     w.show()
-    sys.exit(app.exec())
+    w.exec()
+    
