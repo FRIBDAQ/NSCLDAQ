@@ -167,7 +167,42 @@ class ReGlomControls(QWidget):
         
         self._layout.addLayout(outfile)
         self._layout.addWidget(QLabel('Output files are not segmented', self))
+   
+    # Implement attributes:
+    
+    def dt(self) -> int:
+        ''' @return int - the ticks in the Glom build interval'''
+        return self._dt.value()
+    def setDt(self, dt : int) -> None:
+        ''' @param dt : int - the new value for the glom dt.'''    
+        self._dt.setValue(dt)
         
+    def sourcdeid(self) -> int:
+        ''' @return int - Current source id value'''
+        return self._sid.value()
+    def setSourceid(self, sid : int) -> None:
+        ''' @param sid : int - new value of the sourcde id.'''
+        self._sid.setValue(sid)
+    
+    def tspolicy(self) -> TimestampPolicy:
+        '''  @return TimestampPolicy - The currently selected timestamp policy.'''
+        return self.tsPolicy.policy()
+    def setTsPolicy(self, policy : TimestampPolicy) -> None:
+        self._tsPolicy.setPolicy(policy)
+        
+    def infile(self) -> str:
+        ''' @return str - the input file selected. '''
+        return self._infile.text()
+    def setInfile(self, file : str) -> None:
+        ''' @param file : str - new input file.'''
+        self._infile.setText(file)
+        
+    def outfile(self) -> str:
+        ''' @return str: Output file selected. '''
+        return self._outfile.text()
+    def setOutfile(self, file : str) -> None:
+        ''' @param file : str - New output file path.'''
+        self._outfile.setText(file)
     #  Internal slots: 
     
     def _browseInputFile(self) -> None:
