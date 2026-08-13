@@ -319,7 +319,52 @@ class UnglomFiles(QWidget):
             if name not in names:
                 self._table.removeRow(row)
         
+class OutputProgress(QWidget):
+    '''
+    Widget to show the progress of generating the output file.
+    Attributes:
+     name - filename.
+     size - size in bytes. Note that it will be displayed as  mbytes.
+    '''
+    
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        self._layout = QHBoxLayout()     # Side by side labels.
+        self.setLayout(self._layout)
         
+        self._layout.addWidget(QLabel('Output progress', self))
+        self._filename = QLabel('                ', self)
+        self._layout.addWidget(self._filename)
+        
+        self._size = QLabel('0.0 MB', self)
+        self._layout.addWidget(self._size)
+    
+    # Implement the attributes:
+    
+    def name(self) -> str:
+        ''' @return str - the name of the file displayed'''
+        
+        return self._filename.text()
+
+    def setName(self, name : str) -> None:
+        ''' @param name : str - name of the file to set in the label'''
+        
+        self._filename.setText(name)
+        
+    def size(self) -> int:
+        ''' @return int # bytes equivalent to the MB displayed'''
+        
+        mb = float(self._sizes.text())
+        bytes = mb * Constants.MEGABYTE
+        return int(bytes)
+    
+    def setSize(self, size : int) -> None:
+        ''' @param size : int - size of the file in bytes, 
+            converted to MB and displayed'''    
+            
+        mb = float(size)/Constants.MEGABYTE
+        self._size.setText(f'{mb:.2f}')   # Two digits of precision.
+                   
 if __name__ == "__main__":
 
     files = [['sid_1', 100* Constants.MEGABYTE], 
@@ -342,7 +387,9 @@ if __name__ == "__main__":
         for t in files:
             t[1] += Constants.MEGABYTE
         
-        print(progress.files())
+        
+        op.setName('final.evt')
+        op.setSize(findex * Constants.MEGABYTE)
     
     app = QApplication(sys.argv)
     w   = ReGlomConfiguration()
@@ -360,6 +407,9 @@ if __name__ == "__main__":
     
     progress = UnglomFiles()
     progress.show()
+    
+    op = OutputProgress()
+    op.show()
     
     # Set up a timer to run the update of the table:
     
