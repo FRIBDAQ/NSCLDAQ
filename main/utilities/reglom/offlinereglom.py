@@ -20,10 +20,9 @@
 
 import sys
 from enum import Enum
-
+from collections import namedtuple
 from nscldaq.mg_configutils import OkDialog
-
-from PyQt6.QtCore import QObject, Qt, pyqtSignal
+from PyQt6.QtCore import QObject, QTimer, pyqtSignal, Qt
 from PyQt6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -33,11 +32,15 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QRadioButton,
     QSpinBox,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
 
+constants = namedtuple('constants', ['MEGABYTE',])
+Constants = constants(MEGABYTE = 1024*1024)
 class TimestampPolicy(Enum):
     earliest = 1
     latest   = 2
@@ -226,8 +229,120 @@ class ReGlomConfiguration(OkDialog):
         super().__init__(ReGlomControls(), parent)    
  # tests for now:
  
+class UnglomFiles(QWidget):
+    '''
+        This is a widget that will display the status of the unglom
+        part of the reglom operation.  The top of this
+        widget is a QTableWidget which is a two column table containing
+        the names of the unglom files and their sizes in MB.
+        
+        The bottom contains a total size of the unglom files in MB.
+        
+        Attributes:
+        
+        files  - Contains a list of 2 item tuples containing the filenames and sizes
+                e.g.:  [(sid_1, 1234), (sid_2, 5555)]  where sizes are in bytes to make thing
+                simpler for the caller.
+                calling setFiles also updates the total field which cannot be retrieved or set.
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        self._layout = QVBoxLayout()  # Stack the table on top of the labels:
+        self.setLayout(self._layout)
+        
+        
+        self._table = QTableWidget(self)
+        self._table.setColumnCount(2)
+        self._table.setHorizontalHeaderLabels(['File', 'Size (MB)'])
+        self._table.setShowGrid(True)
+        self._layout.addWidget(self._table)
+        
+        # Below the table the total size is just a pair of labels:
+        
+        totalLayout = QHBoxLayout()
+        totalLayout.addWidget(QLabel('Total Size (MB):', self))
+        self._totalSize = QLabel('0.0', self)
+        totalLayout.addWidget(self._totalSize)
+        
+        self._layout.addLayout(totalLayout)
+        
+    # Implement attributes:
+    
+    def files(self) -> list[tuple[str, int]]:
+        '''
+            @return list[tuple[str, int]] - 
+        '''
+        result = []
+        for row in range(self._table.rowCount()):
+            filename = self._table.item(row, 0).text()
+            size     = int(float(self._table.item(row, 1).text()) * Constants.MEGABYTE)
+            result.append((filename, size))
+        return result
+
+    def setFiles(self, fileInfo : list[tuple[str, int]]) -> None:
+        '''
+        @param fileInfo a list of tuples where:
+            [0]  - is a filename.
+            [1]  - is its size in integer bytes.
+        '''
+        total = 0.0
+        names = []
+        for (name, size ) in fileInfo:
+            names.append(name)        # So we know if we need to delete rows.
+            # If the file is in the table, just update its size otherwise
+            # add a row:
+            matches = self._table.findItems(name, Qt.MatchFlag.MatchExactly)
+            if matches:
+                row = matches[0].row()
+            else:
+                self._table.setRowCount(self._table.rowCount() + 1)   # Add a row:
+                row = self._table.rowCount() - 1   # Rows number from 0.
+                self._table.setItem(row, 0, QTableWidgetItem(name))
+            # Common code to set the count:
+            
+            mb = float(size)/Constants.MEGABYTE
+            total += mb
+            self._table.setItem(row, 1, QTableWidgetItem(str(mb)))
+        
+        # Update the total:
+        
+        self._totalSize.setText(str(total))
+        
+        
+        # Now we need to remove rows whose files are gone (not in names).
+        # We work from the back so we don't need to worry about adjusting
+        # row numbers:
+        
+        for row in reversed(range(self._table.rowCount())):
+            name = self._table.item(row, 0).text()
+            if name not in names:
+                self._table.removeRow(row)
+        
+        
 if __name__ == "__main__":
 
+    files = [['sid_1', 100* Constants.MEGABYTE], 
+             ['sid_2', 50*Constants.MEGABYTE],
+             ['sid_3', 25*Constants.MEGABYTE]
+        ]    
+    findex = 1
+    
+    def tick():
+        global files
+        global findex
+        
+        filesToSet = files[0:findex]
+        progress.setFiles(filesToSet)
+        
+        findex += 1
+
+        # So it's dynamically changing.
+        
+        for t in files:
+            t[1] += Constants.MEGABYTE
+        
+        print(progress.files())
     
     app = QApplication(sys.argv)
     w   = ReGlomConfiguration()
@@ -242,4 +357,18 @@ if __name__ == "__main__":
     print('policy', wa.tspolicy().name)
     print('infile', wa.infile())
     print('outfile', wa.outfile())
+    
+    progress = UnglomFiles()
+    progress.show()
+    
+    # Set up a timer to run the update of the table:
+    
+    t = QTimer()
+    t.setInterval(2000)    # Couple of seconds...
+    t.setSingleShot(False)
+    
+    t.timeout.connect(tick)
+    t.start()
+    
+    sys.exit(app.exec())
     
