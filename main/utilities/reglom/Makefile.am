@@ -24,6 +24,8 @@ reglom_LDFLAGS=$(common_ldflags) @UFMT_LDFLAGS@
 BUILT_SOURCES=reglomopts.c 
 EXTRA_DIST=reglomopts.ggo offlinereglom.tcl reglom_ref.xml
 
+PY_PACKAGES=OutputWindow.py
+
 
 reglomopts.c: reglomopts.h
 
@@ -31,4 +33,9 @@ reglomopts.h: reglomopts.ggo
 	@GENGETOPT@ -i @srcdir@/reglomopts.ggo -F reglomopts -u
 
 install-exec-local:
+	$(mkinstalldirs) @prefix/pythonLibs/nscldaq
 	$(INSTALL_PROGRAM) @srcdir@/offlinereglom.tcl @bindir@/offlinereglom
+	(cd @srcdir@; $(INSTALL_SCRIPT) $(PY_PACKAGES) @prefix@/pythonLibs/nscldaq)
+	for f in $(PYPROGRAMS); do \
+		$(INSTALL_PROGRAM) @srcdir@/$$f @bindir@/`basename $$f .py` ; \
+	done
