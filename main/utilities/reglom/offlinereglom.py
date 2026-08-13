@@ -27,10 +27,13 @@ from nscldaq.OutputWindow import OutputWindow
 from PyQt6.QtCore import QObject, Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication,
+    QDialog,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QRadioButton,
     QSpinBox,
@@ -366,64 +369,96 @@ class OutputProgress(QWidget):
         mb = float(size)/Constants.MEGABYTE
         self._size.setText(f'{mb:.2f}')   # Two digits of precision.
 
-                  
+
+
+class MonitorReglom(QWidget):
+    '''
+      Thisi s just a megawidget with the UnglomFiles and
+      OutputProgress widget along with an OutputWindow to show the stdout/stderr 
+      of programs.
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        # Put the progress widgets side by side and the
+        # output window below both.
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._layout.addWidget(QLabel('Progress', self))
+        
+        # Progress widgets:
+        
+        progressLayout = QHBoxLayout()
+        self._unglom = UnglomFiles(self)
+        progressLayout.addWidget(self._unglom)
+        vline = QFrame(self)
+        vline.setFrameShape(QFrame.Shape.VLine)
+        vline.setFrameShadow(QFrame.Shadow.Sunken)
+        progressLayout.addWidget(vline)
+        self._glom   = OutputProgress(self)
+        progressLayout.addWidget(self._glom)
+        
+        self._layout.addLayout(progressLayout)
+        
+        line = QFrame(self)
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        
+        self._layout.addWidget(line)
+        
+        self._layout.addWidget(QLabel('Program Output', self))
+        
+        self._output = OutputWindow(self)
+        self._layout.addWidget(self._output)
+        
+        # @todo decide how to expose interfaces...
+        
+
+#
+#  Entry point:
+#  pop up the ReGlomConfiguration dialog, the do the unglom/reglom
+#  With the status stuff following. End with a message box to prompt the
+# exit.
+def main() -> int:
+    app = QApplication(sys.argv)
+    
+    #  Prompt for the reglom parameters:
+    
+    prompt = ReGlomConfiguration()
+    prompt.show()
+    while True:
+        status = prompt.exec()
+        if status == QDialog.DialogCode.Rejected:
+            return 0                 # They don't want to go on
+    
+        # Get the parameters.. note that we need an input and output file.
+        params = prompt.workarea()
+        infile = params.infile()
+        outfile = params.outfile()
+        if not infile.strip() or not outfile.strip():
+            QMessageBox.warning(
+                prompt, 'Missing files', 
+                'Both the input and output files must be specified!', 
+                QMessageBox.StandardButton.Ok)
+            continue                            # Try again.
+        dt = params.dt()
+        sid = params.sourceid()
+        tsPolicy = params.tspolicy()
+        break
+    
+    del prompt
+    print('Ready to contnue')
+    
+    # Pop up our progress thingy and fire off the programs.
+    
+    monitor = MonitorReglom()
+    monitor.show()
+    
+    return app.exec()
+
+
 if __name__ == "__main__":
 
-    files = [['sid_1', 100* Constants.MEGABYTE], 
-             ['sid_2', 50*Constants.MEGABYTE],
-             ['sid_3', 25*Constants.MEGABYTE]
-        ]    
-    findex = 1
-    
-    def added(text : str) -> None:
-        print('Added: ', text)
-    def tick():
-        global files
-        global findex
-        
-        filesToSet = files[0:findex]
-        progress.setFiles(filesToSet)
-        
-        findex += 1
-
-        # So it's dynamically changing.
-        
-        for t in files:
-            t[1] += Constants.MEGABYTE
-        
-        
-        op.append("Some more text\n")
-    
-    app = QApplication(sys.argv)
-    w   = ReGlomConfiguration()
-   
-    w.show()
-    w.exec()
-    
-    # Dump the configuration to stdout:
-    wa = w.workarea()
-    print('Dt: ', wa.dt())
-    print('sourceid ', wa.sourceid())
-    print('policy', wa.tspolicy().name)
-    print('infile', wa.infile())
-    print('outfile', wa.outfile())
-    
-    progress = UnglomFiles()
-    progress.show()
-    
-    op = OutputWindow()
-    op.setLimit(10)
-    op.show()
-    op.newText.connect(added)
-    
-    # Set up a timer to run the update of the table:
-    
-    t = QTimer()
-    t.setInterval(2000)    # Couple of seconds...
-    t.setSingleShot(False)
-    
-    t.timeout.connect(tick)
-    t.start()
-    
-    sys.exit(app.exec())
-    
+    sys.exit(main())
