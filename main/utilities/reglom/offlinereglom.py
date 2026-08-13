@@ -34,6 +34,7 @@ from PyQt6.QtWidgets import (
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -364,7 +365,45 @@ class OutputProgress(QWidget):
             
         mb = float(size)/Constants.MEGABYTE
         self._size.setText(f'{mb:.2f}')   # Two digits of precision.
-                   
+
+class OutputWidget(QTextEdit):
+    '''
+        This is just a readonlyh text edit. With limited
+        lines of text.  The intent is to provide a widget in which
+        the output/errors of programs can be captured.
+        The number of blocks (paragraphs) can be limited.
+        
+        Methods:
+            append  - This is overriden fromt the QTextEdit to support the 
+                      newText signal.
+            setLimit   - Set paragraph limits on the display.
+            
+        Signals:
+            newText(str) - New text was added (passed to the slot).
+        
+    '''
+    newText = pyqtSignal(str)
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        self.setReadOnly(True)       # Can't edit.
+    
+    def append(self, text: str) -> None:
+        ''' Appends the text and fires the newText signal
+            @Param text : str - string to append to the output.
+        '''
+        super().append(text)             # Actually add the text to the widget.
+        self.newText.emit(text)
+    
+    def setLimit(self, paras : int) -> None:
+        '''
+            sets the limit on the numb er of paragraphs that can be added to the widget.
+            @param paras : int - New limit. 
+        '''
+        self.document().setMaximumBlockCount(paras)
+        
+        
+                  
 if __name__ == "__main__":
 
     files = [['sid_1', 100* Constants.MEGABYTE], 
@@ -373,6 +412,8 @@ if __name__ == "__main__":
         ]    
     findex = 1
     
+    def added(text : str) -> None:
+        print('Added: ', text)
     def tick():
         global files
         global findex
@@ -388,8 +429,7 @@ if __name__ == "__main__":
             t[1] += Constants.MEGABYTE
         
         
-        op.setName('final.evt')
-        op.setSize(findex * Constants.MEGABYTE)
+        op.append("Some more text\n")
     
     app = QApplication(sys.argv)
     w   = ReGlomConfiguration()
@@ -408,8 +448,10 @@ if __name__ == "__main__":
     progress = UnglomFiles()
     progress.show()
     
-    op = OutputProgress()
+    op = OutputWidget()
+    op.setLimit(10)
     op.show()
+    op.newText.connect(added)
     
     # Set up a timer to run the update of the table:
     
