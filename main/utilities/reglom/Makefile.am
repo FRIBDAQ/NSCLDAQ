@@ -20,11 +20,12 @@ reglom_SOURCES=reglomMain.cpp CMerge.cpp CMerge.h reglomopts.c reglomopts.h
 reglom_CPPFLAGS=$(common_cxxflags) -I@top_srcdir@/base/uri @UFMT_CPPFLAGS@
 reglom_LDFLAGS=$(common_ldflags) @UFMT_LDFLAGS@
 
+PY_PACKAGES=OutputWindow.py
 
 BUILT_SOURCES=reglomopts.c 
-EXTRA_DIST=reglomopts.ggo offlinereglom.tcl reglom_ref.xml
+EXTRA_DIST=reglomopts.ggo offlinereglom.tcl reglom_ref.xml $(PY_PACKAGES) \
+	offlinereglom.py
 
-PY_PACKAGES=OutputWindow.py
 
 
 reglomopts.c: reglomopts.h
@@ -34,7 +35,7 @@ reglomopts.h: reglomopts.ggo
 
 install-exec-local:
 	$(mkinstalldirs) @prefix/pythonLibs/nscldaq
-	$(INSTALL_PROGRAM) @srcdir@/offlinereglom.tcl @bindir@/offlinereglom
+	$(INSTALL_PROGRAM) @srcdir@/offlinereglom.py @bindir@/offlinereglom
 	(cd @srcdir@; $(INSTALL_SCRIPT) $(PY_PACKAGES) @prefix@/pythonLibs/nscldaq)
 	for f in $(PYPROGRAMS); do \
 		$(INSTALL_PROGRAM) @srcdir@/$$f @bindir@/`basename $$f .py` ; \
