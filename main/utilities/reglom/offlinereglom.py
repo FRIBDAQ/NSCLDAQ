@@ -28,7 +28,7 @@ from enum import Enum
 import parse
 from nscldaq.mg_configutils import OkDialog
 from nscldaq.OutputWindow import OutputWindow
-from PyQt6.QtCore import QObject, QProcess, Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import QObject, QProcess, Qt, QTimer, QUrl, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication,
     QDialog,
@@ -318,7 +318,7 @@ class UnglomFiles(QWidget):
         
         # Update the total:
         
-        self._totalSize.setText(f'{total:.2f}')
+        self._totalSize.setText(f'{total:.2f} MB')
         
         
         # Now we need to remove rows whose files are gone (not in names).
@@ -465,23 +465,51 @@ def getFileList(eventFile : str) -> list[str]:
 #--------------------------------------------------------------------------------------------------------
 # Regloming methods:
 
+def  reportDone(code : int, status : QProcess.ExitStatus, monitor: MonitorReglom) -> None:
+    monitor.addOutput(f"reglom completed with code {code} status {status}")
+    monitor.addOutput("Removing temporary files:\n")
+    
+    for f in glob.glob('sid-*'):
+        os.remove(f)
+        monitor.addOutput(f"Removed {f}")
+    # Just returning leaves the UI up.
+
 def conditionallyStartReglom(
     code : int, status : QProcess.ExitStatus,
     monitor : MonitorReglom, dt : int, sid: int, tsPolicy: TimestampPolicy, outfile: str) -> None:
     
-    monitor.addOutput(f"Unglom exited with code {code}, status {status}\n")
-   
-    # Leave the UI up....
+    monitor.addOutput(f"Unglom exited with code {code}, status {status}")
+    
+    # For this we don't need the bash trick, and we already know $DAQBIN is defined.
+    
+    program = pathlib.Path(os.environ['DAQBIN']) / 'reglom'
+    
+    options = [
+        f'--dt={dt}',
+        f'--timestamp-policy={tsPolicy.name}',
+        f'--sourceid={sid}',
+        f'--output={outfile}'
+    ]
+    for infile in glob.glob('sid-*'):
+        full_path = pathlib.Path(pathlib.Path.cwd())/infile
+        options.append(QUrl.fromLocalFile(str(full_path)).toString())
+    
+    process = QProcess(monitor)      #  Making mnonitor the parent prevent del (I hope).
+    process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)    # Both stdout and stderr are the process.
+    process.readyReadStandardError.connect(lambda : readProcess(process, monitor))    # Not sure I need this....
+    process.readyReadStandardOutput.connect(lambda : readProcess(process, monitor))
+    process.finished.connect(lambda code, status: reportDone(code, status, monitor))
+    
+    
+    process.start(str(program), options)
     
 #-------------------------------------------------------------------------------------------------------
 # Unglomging methods.
 
 def readProcess(process :QProcess, monitor : MonitorReglom) -> None:
-    print('Readprocess')
     while process.canReadLine():
         lineBytes = process.readLine()
-        print('got', lineBytes.decode('utf-8'))
-        monitor.addOutput(lineBytes.decode('utf-8'))
+        monitor.addOutput(lineBytes.data().decode('utf-8'))
 
 def monitorFiles(monitor : MonitorReglom, outfile :str):
     # Monitor the sid_* files in the wd and 
@@ -550,8 +578,9 @@ def startUnGlom(monitor : MonitorReglom, files : list[str], dt : int, sid : int,
     cargs.append(str(program))  # Unglom.
     cargs.append('-')
     args.append(' '.join(cargs))
-    print("Starting uglom:", args)                
+                  
     process.start("/bin/bash", args)
+    return process
     
 #
 #  Entry point:
@@ -586,9 +615,6 @@ def main() -> int:
         break
     
     del prompt
-    print('Ready to contnue')
-    
-    
     
     
     
@@ -599,7 +625,7 @@ def main() -> int:
     
     files = getFileList(infile)     # Get the list of inputs...could be multiseg file.
         
-    _process = startUnGlom(monitor, files, dt, sid, tsPolicy, outfile)   # Don't let the process get dropped.
+    _unglom = startUnGlom(monitor, files, dt, sid, tsPolicy, outfile)   # Don't let the process get dropped.
     
     return app.exec()
 
