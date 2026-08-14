@@ -18,13 +18,17 @@
 '''
 
 
+import glob
+import os
+import pathlib
 import sys
 from collections import namedtuple
 from enum import Enum
 
+import parse
 from nscldaq.mg_configutils import OkDialog
 from nscldaq.OutputWindow import OutputWindow
-from PyQt6.QtCore import QObject, Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import QObject, QProcess, Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication,
     QDialog,
@@ -43,8 +47,11 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-constants = namedtuple('constants', ['MEGABYTE',])
-Constants = constants(MEGABYTE = 1024*1024)
+constants = namedtuple('constants', ['MEGABYTE', 'POLL_INTERVAL'])
+Constants = constants(
+    MEGABYTE = 1024*1024, 
+    POLL_INTERVAL = 2000
+)
 class TimestampPolicy(Enum):
     earliest = 1
     latest   = 2
@@ -307,11 +314,11 @@ class UnglomFiles(QWidget):
             
             mb = float(size)/Constants.MEGABYTE
             total += mb
-            self._table.setItem(row, 1, QTableWidgetItem(str(mb)))
+            self._table.setItem(row, 1, QTableWidgetItem(f'{mb:.2f}'))
         
         # Update the total:
         
-        self._totalSize.setText(str(total))
+        self._totalSize.setText(f'{total:.2f}')
         
         
         # Now we need to remove rows whose files are gone (not in names).
@@ -413,9 +420,139 @@ class MonitorReglom(QWidget):
         self._output = OutputWindow(self)
         self._layout.addWidget(self._output)
         
-        # @todo decide how to expose interfaces...
+    
+    def addOutput(self, output : str) -> None:
+        '''
+            Add output to the output window.
+            @param output : str - the outut to add to the window.
+        '''
+        self._output.append(output)
+    
+    def updateSidFiles(self, info : list[tuple[str, int]])  -> None:
+        '''
+            Update the unglom files status part of the widget.
+            @param info - List of file informatino suitable for its
+                    setFiles method
+        '''
+        self._unglom.setFiles(info)
+        
+    def setOutFileInfo(self, name: str, size: int) -> None:
+        '''
+        Update the output file information.
+        @param name - name of the output file.
+        @param size - file size.
+        
+        '''
+        self._glom.setName(name)
+        self._glom.setSize(size)
         
 
+def getFileList(eventFile : str) -> list[str]:
+    # Return the actual file list.  If the name of the file
+    # is of the form run-nnnn-mm.evt then this could be a segment
+    # of a multisegment event file and we need to get all segments.
+    
+    result = parse.parse("run-{}-{}.{}", eventFile)
+    if not result :
+        # Just a single file not in that format:
+        return [eventFile,]
+    else:
+        pattern = 'run-' + result[0] + '-*.'+result[2]  # Replace segment# with *
+        files = glob.glob(pattern)
+    
+        return files.sort()        # To preserve segment order.
+
+#--------------------------------------------------------------------------------------------------------
+# Regloming methods:
+
+def conditionallyStartReglom(
+    code : int, status : QProcess.ExitStatus,
+    monitor : MonitorReglom, dt : int, sid: int, tsPolicy: TimestampPolicy, outfile: str) -> None:
+    
+    monitor.addOutput(f"Unglom exited with code {code}, status {status}\n")
+   
+    # Leave the UI up....
+    
+#-------------------------------------------------------------------------------------------------------
+# Unglomging methods.
+
+def readProcess(process :QProcess, monitor : MonitorReglom) -> None:
+    print('Readprocess')
+    while process.canReadLine():
+        lineBytes = process.readLine()
+        print('got', lineBytes.decode('utf-8'))
+        monitor.addOutput(lineBytes.decode('utf-8'))
+
+def monitorFiles(monitor : MonitorReglom, outfile :str):
+    # Monitor the sid_* files in the wd and 
+    # outfile as well:  This is called periodically from a timer.
+    #
+    source_files = glob.glob('sid-*')
+    fileinfo = []
+    for file in source_files:
+        fpath = pathlib.Path(file)
+        size  = fpath.stat().st_size
+        fileinfo.append((file, size))
+    
+    monitor.updateSidFiles(fileinfo)
+    
+    outPath = pathlib.Path(outfile)
+    if outPath.is_file():
+        # It exists:
+        
+        monitor.setOutFileInfo(str(outPath), outPath.stat().st_size)
+    
+    
+
+#
+#  Start the Unglom and monitor it:
+#  monitor - the status monitor object.
+#  files   - The list of input files.
+#  dt      - The dt for glom.
+#  sid     - output sourceid.
+#  tsPolicy- The policy to assign timestamps to the output items.
+#  outfile - The output file for the reglommed data:
+#
+# Note that we start the unglom and monitor of the output sid files.
+# but we setup a handler for that process exit that can start the glom itself.
+#
+def startUnGlom(monitor : MonitorReglom, files : list[str], dt : int, sid : int, tsPolicy : TimestampPolicy, outfile : str) -> None:
+    
+    if 'DAQBIN' not in os.environ:
+        print('A Version of NSCLDAQ must be setup to run this (daqsetup.bash script sourced)', file=sys.stderr)
+        exit(-1)
+    dir = os.environ['DAQBIN']
+    program = pathlib.Path(dir) / 'Unglom'
+    
+    
+    process = QProcess(monitor)
+    process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)    # Both stdout and stderr are the process.
+    process.readyReadStandardError.connect(lambda : readProcess(process, monitor))    # Not sure I need this....
+    process.readyReadStandardOutput.connect(lambda : readProcess(process, monitor))
+    
+    # Also need a timer to monitor the sizes of the sid_* files
+    
+    timer = QTimer(monitor)                 # Making it owned by monitor I think prevents deletion.
+    timer.setSingleShot(False)
+    timer.setInterval(Constants.POLL_INTERVAL)
+    timer.timeout.connect(lambda : monitorFiles(monitor, outfile))
+    timer.start()
+    
+    # Set up on completion to start the next step:
+    process.finished.connect(lambda code, status: conditionallyStartReglom(code, status, monitor, dt, sid, tsPolicy, outfile))
+    
+    # We want to start up bash so we have piping..so construct the args. 
+    
+    args = ["-c",]    # Cat the files to 
+    cargs = ['cat']
+    cargs.extend(files)
+    cargs.append('|')
+    cargs.append(str(program))  # Unglom.
+    cargs.append('-')
+    args.append(' '.join(cargs))
+    print("Starting uglom:", args)                
+    process.start("/bin/bash", args)
+    
 #
 #  Entry point:
 #  pop up the ReGlomConfiguration dialog, the do the unglom/reglom
@@ -451,10 +588,18 @@ def main() -> int:
     del prompt
     print('Ready to contnue')
     
+    
+    
+    
+    
     # Pop up our progress thingy and fire off the programs.
     
     monitor = MonitorReglom()
     monitor.show()
+    
+    files = getFileList(infile)     # Get the list of inputs...could be multiseg file.
+        
+    _process = startUnGlom(monitor, files, dt, sid, tsPolicy, outfile)   # Don't let the process get dropped.
     
     return app.exec()
 
