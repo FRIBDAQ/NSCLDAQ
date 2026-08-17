@@ -992,7 +992,6 @@ AC_CONFIG_FILES([
     ddas/ddasdumper/Makefile
     ddas/ddasdumper/ddasdumper
     ddas/readout/Makefile
-    ddas/readout/DDASFirmwareVersions.txt
     ddas/readout/pixieserver.tcl
     ddas/pixieplugin/Makefile
     ddas/pixieplugin/definitions.tcl
