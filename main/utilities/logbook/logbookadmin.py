@@ -39,20 +39,18 @@ def setCurrentLogBook(path: str) -> None:
         
     '''
     absolute_path = pathlib.Path(path).expanduser().absolute()
-    
-    with CURRENT_LOGBOOK_PATH.open(mode='w', encoding='utf-8') as f:
-        f.write_text(str(absolute_path))
+    CURRENT_LOGBOOK_PATH.write_text(str(absolute_path), encoding='utf-8')
         
-def currentLogBook() -> LogBook:
+def currentLogBook() -> LogBook.LogBook | None:
     '''
       @return LogBook - If a current logbook is set, it is returned, else None is returned.
       
     '''
     if CURRENT_LOGBOOK_PATH.is_file():
-        with CURRENT_LOGBOOK_PATH.open(encoding='utf8') as f:
-            current_path = f.read_text()
+        
+        current_path = CURRENT_LOGBOOK_PATH.read_text(encoding='utf-8')
             
-            return LogBook(current_path)
+        return LogBook.LogBook(current_path)
     else:
         return None
     
@@ -396,4 +394,42 @@ def kvCreate(key : str, value : str) -> None:
     book = _currentLogBookOrError()
     book.kv_create(key, value)
     
-    
+
+# Self contained unit tests.
+
+if __name__ == '__main__':
+    import unittest
+    import tempfile
+
+    class AdminCreateOpenTests(unittest.TestCase):
+        def setUp(self):
+            # Delete the current logbook file.
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.
+            
+            
+            # This is a bit odd... we're just making
+            # a tempfile to get a nice
+        
+            self._tempfile = tempfile.NamedTemporaryFile().name  # noqa: SIM115
+        def tearDown(self):
+            try:
+                pathlib.Path(self._tempfile).unlink()
+            except FileNotFoundError:
+                pass
+        
+        def test_noCurrentLogbook(self):
+            self.assertIsNone(currentLogBook())
+        
+        def test_create_notCurrent(self):
+            
+            createLogBook(self._tempfile, 'e0400x', 'Ron Fox', 'Test experiment' ) 
+            self.assertIsNone(currentLogBook())
+        
+        def test_create_Current(self):
+            createLogBook(self._tempfile, 'e0400x', 'Ron Fox', 'Test Experiment', True)
+            self.assertIsNotNone(currentLogBook())
+    unittest.main()
