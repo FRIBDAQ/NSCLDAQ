@@ -160,6 +160,7 @@ def listShifts() -> list[str]:
         result.append(shift.name)
         return result
     
+    return result
 
 def currentShift() -> LogBook.Shift:
     '''
@@ -168,9 +169,21 @@ def currentShift() -> LogBook.Shift:
         @return LogBook.Shift - current shift object.
     '''
     book = _currentLogBookOrError()
-    return book.currentShift()
+    return book.current_shift()
     
-
+def getShift(name : str) -> LogBook.Shift | None:
+    '''
+      Return the named shift object.
+      @param name - shift name.
+      @return LogBook.Shift | None - The named shift.
+      @retval None -there is no matching shift.
+    '''
+    book = _currentLogBookOrError()
+    try:
+        return book.find_shift(name)
+    except LogBook.error:
+        return None
+    
 def beginRun(run : int, title : str, remark :str | None = None) -> LogBook.Run:
     '''
         Creates a new run, logging a begin.
@@ -432,4 +445,192 @@ if __name__ == '__main__':
         def test_create_Current(self):
             createLogBook(self._tempfile, 'e0400x', 'Ron Fox', 'Test Experiment', True)
             self.assertIsNotNone(currentLogBook())
+    
+    class PersonTests(unittest.TestCase):
+        def setUp(self):
+            # Delete the current logbook file.
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.
+            
+            
+            # This is a bit odd... we're just making
+            # a tempfile to get a nice
+        
+            self._tempfile = tempfile.NamedTemporaryFile().name  # noqa: SIM115
+            
+            # Make that a logbook and make it the current logbook:
+            
+            createLogBook(self._tempfile, 'e0400x', 'Ron Fox', 'Test Experiment', True)
+        def tearDown(self):
+            try:
+                pathlib.Path(self._tempfile).unlink()
+            except FileNotFoundError:
+                pass
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.
+
+        def test_listNoPeople(self):
+            people = listPeople()   #SB empty list.
+            self.assertEqual(0, len(people))
+            
+        def test_createPerson(self):
+            addPerson('Fox', 'Ron', 'Mr.')    
+            people = listPeople()
+            self.assertEqual(1, len(people))
+            fox = people[0]
+            self.assertEqual('Fox', fox.lastname)
+            self.assertEqual('Ron', fox.firstname)
+            self.assertEqual('Mr.', fox.salutation)
+        
+        def test_createPeple(self):
+            addPerson('Fox', 'Ron', 'Mr.')    
+            addPerson('Mouse', 'Minnie', 'Ms.')
+            people = listPeople();
+            self.assertEqual(2, len(people))  # just check the size.
+        
+    class ShiftTests(unittest.TestCase):
+        def setUp(self):
+            # Delete the current logbook file.
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.
+            
+            
+            # This is a bit odd... we're just making
+            # a tempfile to get a nice
+        
+            self._tempfile = tempfile.NamedTemporaryFile().name  # noqa: SIM115
+            
+            # Make that a logbook and make it the current logbook:
+            
+            createLogBook(self._tempfile, 'e0400x', 'Ron Fox', 'Test Experiment', True)
+            
+            # Any semblance to people living or dead is coincidental.
+            
+            addPerson('Mouse', 'Mickey', 'Mr.')
+            addPerson('Duck', 'Daffy', 'Mr.')
+            addPerson('Oil', 'Olive', 'Ms.')
+            addPerson('Stooge', 'Larry', 'Mr.')
+            addPerson('DuMont', 'Margaret', 'Ms.')
+            self._people = listPeople()     # I'll probably be doing this no matter what.
+        def tearDown(self):
+            try:
+                pathlib.Path(self._tempfile).unlink()
+            except FileNotFoundError:
+                pass
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.  
+            
+        def test_listNoShifts(self):
+            shifts = listShifts()
+            self.assertEqual(0, len(shifts))
+        def test_createShift(self):
+            # select the members: Mickey Mouse, Olive Oil and Larry Stooge.
+            
+            members = [p for p in self._people if p.lastname in ['Mouse', 'Oil', 'Stooge']]
+            createShift('ashift', members)
+            
+            # The shift is in the list:
+            
+            shifts = listShifts()
+            self.assertEqual(1, len(shifts))
+            sname = shifts[0]
+            self.assertEqual('ashift', sname)
+            
+            # It has the right people in it:
+            
+            shift_members = listShiftMembers(sname)
+            self.assertEqual(3, len(shift_members))
+            
+            # I don't know the order of the members....
+            
+            shift_lastnames = [p.lastname for p in shift_members]
+            self.assertIn('Mouse', shift_lastnames)
+            self.assertIn('Oil', shift_lastnames)
+            self.assertIn('Stooge', shift_lastnames)
+
+        def test_noCurrentShift(self):
+            self.assertIsNone(currentShift())
+        
+        def test_haveCurrentShift(self):
+            createShift('ashift', self._people)    #  just shove everyone in.
+            setCurrentShift('ashift')
+            
+            shift = currentShift()
+            self.assertIsNotNone(shift)
+            self.assertEqual('ashift', shift.name)
+            self.assertEqual(5, len(shift.members))
+            member_names = [p.lastname for p in shift.members]
+            for lname in ['Mouse', 'Duck', 'Oil', 'Stooge', 'DuMont']:
+                self.assertIn(lname, member_names)
+        
+        def test_removeMember(self):
+            createShift('ashift', self._people)
+            setCurrentShift('ashift')    # Makes it easier to get.
+            # Now remove micky mouse:
+            
+            mickey = next(p for p in listPeople() if p.lastname == 'Mouse')
+            removeMemberFromShift('ashift', mickey)
+            
+            self.assertNotIn('Mouse', [p.lastname for p in currentShift().members])
+        
+        def test_fineNone(self):
+            sbnone = getShift('ashift')
+            self.assertIsNone(sbnone)
+        
+        def test_addMember(self):
+            createShift('ashift', [])   # No people in the shift (I think that's ok).
+            people = listPeople()
+            mickey = next(p for p in people if p.lastname == 'Mouse')
+            dumont = next(p for p in people if p.lastname == 'DuMont')
+            
+            addMembersToShift('ashift', [mickey, dumont])
+            
+            shift = getShift('ashift')
+            self.assertIn('Mouse', [p.lastname for p in shift.members])
+            self.assertIn('DuMont', [p.lastname for p in shift.members])
+            
+            
+    class TransitionTests(unittest.TestCase):
+        def setUp(self):
+            # Delete the current logbook file.
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.
+            
+            
+            # This is a bit odd... we're just making
+            # a tempfile to get a nice
+        
+            self._tempfile = tempfile.NamedTemporaryFile().name  # noqa: SIM115
+            
+            # Make that a logbook and make it the current logbook:
+            
+            createLogBook(self._tempfile, 'e0400x', 'Ron Fox', 'Test Experiment', True)
+
+        def tearDown(self):
+            try:
+                pathlib.Path(self._tempfile).unlink()
+            except FileNotFoundError:
+                pass
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.  
+        
+        
     unittest.main()
