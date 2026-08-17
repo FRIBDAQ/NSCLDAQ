@@ -123,6 +123,7 @@ check-TESTS:
 	TCLLIBPATH=@prefix@/TclLibs @TCLSH_CMD@ @srcdir@/noteinstance.test
 	TCLLIBPATH=@prefix@/TclLibs @TCLSH_CMD@ @srcdir@/admin.test
 	TCLLIBPATH=@prefix@/TclLibs @TCLSH_CMD@ @srcdir@/noteutil.test
+	PYTHONPATH=@prefix@/pythonLibs @PYTHON@ @srcdir@/logbookadmin.py
 	@builddir@/unittests
 
 
