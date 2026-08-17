@@ -59,7 +59,7 @@ public:
     linesOfFile.push_back("2 # slot for mod 0");
     linesOfFile.push_back("3");
     linesOfFile.push_back("4");
-    linesOfFile.push_back("/path/to/my/settings/file.set");
+    linesOfFile.push_back("/path/to/my/settings/file.json");
     linesOfFile.push_back(""); // Whitespace is OK
 
     return linesOfFile;
@@ -114,7 +114,7 @@ public:
     Configuration config;
     parser.parse(stream, config);
     EQMSG("Path to set file is parsed correctly",
-          string("/path/to/my/settings/file.set"),
+          string("/path/to/my/settings/file.json"),
           config.getSettingsFilePath());
   }
 
@@ -139,7 +139,7 @@ public:
     ASSERTMSG("Failure should occur if insufficient slot mapping data exists",
               threwException);
     std::string errmsg = "Unable to parse a slot number from: "
-                         "/path/to/my/settings/file.set";
+                         "/path/to/my/settings/file.json";
     EQMSG("Error message should be informative", message, errmsg);
   }
 

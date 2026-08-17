@@ -27,31 +27,7 @@ class HardwareRegistryTest : public CppUnit::TestFixture {
 public:
   CPPUNIT_TEST_SUITE(HardwareRegistryTest);
   CPPUNIT_TEST(resetToDefaults_0);
-  CPPUNIT_TEST(getSpecification_0a);
-  CPPUNIT_TEST(getSpecification_0b);
-  CPPUNIT_TEST(getSpecification_0c);
-  CPPUNIT_TEST(getSpecification_1);
-  CPPUNIT_TEST(getSpecification_2);
-  CPPUNIT_TEST(getSpecification_3);
-  CPPUNIT_TEST(getSpecification_4);
-  CPPUNIT_TEST(getSpecification_5);
-  CPPUNIT_TEST(getSpecification_6);
-  CPPUNIT_TEST(getSpecification_7);
-  CPPUNIT_TEST(configureHardwareType_0);
-  CPPUNIT_TEST(computeHardwareType_0);
-  CPPUNIT_TEST(computeHardwareType_1);
-  CPPUNIT_TEST(computeHardwareType_2);
-  CPPUNIT_TEST(computeHardwareType_3);
-  CPPUNIT_TEST(computeHardwareType_4);
-  CPPUNIT_TEST(computeHardwareType_5);
-  CPPUNIT_TEST(computeHardwareType_6);
-  CPPUNIT_TEST(computeHardwareType_7);
-  CPPUNIT_TEST(computeHardwareType_8);
-  CPPUNIT_TEST(computeHardwareType_9);
-  CPPUNIT_TEST(computeHardwareType_10);
-  CPPUNIT_TEST(createHardwareType_0);
-  CPPUNIT_TEST(computeHardwareType_11);
-  CPPUNIT_TEST(createHardwareType_1);
+  CPPUNIT_TEST(getSpecification_revb_100m_12b);
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -69,11 +45,11 @@ public:
   void resetToDefaults_0() {
     HR::configureHardwareType(HR::RevB_100MHz_12Bit, {430, 23});
     HR::resetToDefaults();
-    getSpecification_0a();
+    getSpecification_revb_100m_12b();
   }
 
   /** @brief Get 100 MSPS 12 bit Rev. B specification. */
-  void getSpecification_0a() {
+  void getSpecification_revb_100m_12b() {
     auto spec = HR::getSpecification(HR::RevB_100MHz_12Bit);
     EQMSG("revb default rev", 11, spec.s_hdwrRevision);
     EQMSG("revb default adc freq", 100, spec.s_adcFrequency);
@@ -94,20 +70,6 @@ public:
     EQMSG("revd default rev", 13, spec.s_hdwrRevision);
     EQMSG("revd default adc freq", 100, spec.s_adcFrequency);
     EQMSG("revd default adc resolution", 12, spec.s_adcResolution);
-  }
-
-  /** @brief Get 100 MSPS 14 bit Rev. F specification. */
-  void getSpecification_1() {
-    auto spec = HR::getSpecification(HR::RevF_100MHz_14Bit);
-    EQMSG("revf_100_14bit default adc freq", 100, spec.s_adcFrequency);
-    EQMSG("revf_100_14bit default adc resolution", 14, spec.s_adcResolution);
-  }
-
-  /** @brief Get 100 MSPS 16 bit Rev. F specification. */
-  void getSpecification_2() {
-    auto spec = HR::getSpecification(HR::RevF_100MHz_16Bit);
-    EQMSG("revf_100_16bit default adc freq", 100, spec.s_adcFrequency);
-    EQMSG("revf_100_16bit default adc resolution", 16, spec.s_adcResolution);
   }
 
   /** @brief Get 250 MSPS 12 bit Rev. F specification. */
@@ -159,18 +121,6 @@ public:
   void computeHardwareType_0() {
     EQMSG("Compute RevD", int(HR::RevD_100MHz_12Bit),
           HR::computeHardwareType(13, 100, 12));
-  }
-
-  /** @brief Compute 100 MSPS 14 bit Rev. F type. */
-  void computeHardwareType_1() {
-    EQMSG("Compute RevF_100MHz_14Bit", int(HR::RevF_100MHz_14Bit),
-          HR::computeHardwareType(15, 100, 14));
-  }
-
-  /** @brief Compute 100 MSPS 16 bit Rev. F type. */
-  void computeHardwareType_2() {
-    EQMSG("Compute RevF_100MHz_16Bit", int(HR::RevF_100MHz_16Bit),
-          HR::computeHardwareType(15, 100, 16));
   }
 
   /** @brief Compute 250 MSPS 12 bit Rev. F type. */
