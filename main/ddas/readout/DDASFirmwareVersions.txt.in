@@ -5,3 +5,11 @@
 ##                                                                             ##
 ## Modified 8/17/26 by ASC for XIA API 5+ "Managed firmware".                  ##
 #################################################################################
+
+
+[Rev0xB-12Bit-100MSPS]
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/sys.bin
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/fippi.bin
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.ldr
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.var
+10

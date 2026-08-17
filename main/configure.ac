@@ -993,6 +993,7 @@ AC_CONFIG_FILES([
     ddas/ddasdumper/ddasdumper
     ddas/readout/Makefile
     ddas/readout/pixieserver.tcl
+	ddas/readout/DDASFirmwareVersions.txt
     ddas/pixieplugin/Makefile
     ddas/pixieplugin/definitions.tcl
     ddas/qtscope/Makefile
