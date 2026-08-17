@@ -193,9 +193,9 @@ def beginRun(run : int, title : str, remark :str | None = None) -> LogBook.Run:
     '''
     book = _currentLogBookOrError()
     if remark:
-        return book.beginRun(run, title, remark)
+        return book.begin_run(run, title, remark)
     else:
-        return book.beginRun(run, title)
+        return book.begin_run(run, title)
     
     
 def endRun(remark : str | None = None)  -> None:
@@ -620,7 +620,16 @@ if __name__ == '__main__':
             # Make that a logbook and make it the current logbook:
             
             createLogBook(self._tempfile, 'e0400x', 'Ron Fox', 'Test Experiment', True)
-
+            
+            # Need to establish a current shift.
+            addPerson('Mouse', 'Mickey', 'Mr.')
+            addPerson('Duck', 'Daffy', 'Mr.')
+            addPerson('Oil', 'Olive', 'Ms.')
+            addPerson('Stooge', 'Larry', 'Mr.')
+            addPerson('DuMont', 'Margaret', 'Ms.')
+            people = listPeople()     # I'll probably be doing this no matter what.
+            createShift('ashift', people)
+            setCurrentShift('ashift')
         def tearDown(self):
             try:
                 pathlib.Path(self._tempfile).unlink()
@@ -632,5 +641,104 @@ if __name__ == '__main__':
             except FileNotFoundError:
                 pass                # Might not exist.  
         
+        def test_emptyList(self):
+            self.assertEqual(0, len(listRuns()))  # no runs have been created.
+            self.assertIsNone(currentRun())       # There is no current run.
+            
+        def test_beginRunNoRemark(self):
+            beginRun(124, 'A title')  
+            #there should now be a run and a current run and they should be the same:
+            
+            runs    = listRuns()
+            self.assertEqual(1, len(runs))
+            therun  = runs[0]
+            current = currentRun()
+            self.assertIsNotNone(current)
+            
+            # 'both' runs are active
+            
+            self.assertTrue(therun.is_current())
+            self.assertTrue(current.is_current())
+            
+            # Each has only one transition:
+            
+            self.assertEqual(1, therun.transition_count())
+            self.assertEqual(1, current.transition_count())
+            
+            # Check the title and number
+            
+            self.assertEqual(124, therun.number)
+            self.assertEqual(124, current.number)
+            self.assertEqual('A title', therun.title)
+            self.assertEqual(current.title, current.title)
+            
+            # by now I believe they're the same so :
+            
+            t = current.get_transition(0)   # transition to begin run:
+            self.assertEqual('', t.comment)
+            self.assertEqual('BEGIN', t.transition_name)
         
+        def test_beginRunRemark(self):
+            beginRun(1234, 'A title', 'A remark')
+            
+            # Assuming the test_beginRunNoRemark works....
+            
+            current = currentRun()
+            transition = current.get_transition(0)
+            self.assertEqual('A remark', transition.comment)
+         
+        def test_endrunInactive(self):
+            with self.assertRaises(LogBook.error):
+                endRun()
+        def test_endRunNoRemark(self):
+            beginRun(1234, 'A title')
+            endRun()
+            # Not current so:
+            
+            run = findRun(1234)
+            self.assertIsNotNone(run)
+            
+            self.assertEqual(2, run.transition_count())
+            
+            end = run.get_transition(1)    # End run transition.
+            self.assertEqual('', end.comment)
+            self.assertEqual('END', end.transition_name)
+            
+        def test_endWithRemark(self):
+            beginRun(1234, 'A title')
+            endRun('A remark')
+            
+            run = findRun(1234)
+            self.assertIsNotNone(run)
+            
+            end = run.get_transition(1)
+            self.assertEqual('A remark', end.comment)
+        
+        def test_pauseNotActive(self):
+            with self.assertRaises(LogBook.error):
+                pauseRun()
+        
+        def test_pause_noRemark(self):
+            beginRun(1234, 'a title')
+            pauseRun()
+            
+            # There's still a current run:
+            
+            self.assertIsNotNone(currentRun())
+            
+            run = findRun(1234)
+            pause = run.get_transition(1)
+            self.assertEqual('PAUSE', pause.transition_name)
+            self.assertEqual('', pause.comment)
+            
+        def test_pause_Remark(self):
+            beginRun(1234, 'a title')
+            pauseRun('a comment')
+            
+            run = findRun(1234)
+            pause = run.get_transition(1)
+            self.assertEqual('a comment', pause.comment)
+            
+            
+            
     unittest.main()
