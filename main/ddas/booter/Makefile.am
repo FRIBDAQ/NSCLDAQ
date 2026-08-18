@@ -33,17 +33,17 @@ boot_extcl_LDADD = @builddir@/libSystemBooter.la \
 	@PIXIE_LDFLAGS@ \
 	-ldl
 
-# unit tests are disabled until they can be updated for the API transition
+##
+# unittests
+#
 
-#check_PROGRAMS = unittests
-#unittests_SOURCES = TestRunner.cpp SystemBooterTest.cpp
-#unittests_CPPFLAGS = -I@top_builddir@/ddas \
+check_PROGRAMS = unittests
+unittests_SOURCES = TestRunner.cpp SystemBooterTest.cpp
+unittests_CPPFLAGS = -I@top_builddir@/ddas \
 	-I@top_srcdir@/ddas/configuration \
-	-I@top_srcdir@/ddas/xiatest  \
-	@CPPUNIT_CFLAGS@ 
-#unittests_LDADD = @builddir@/libSystemBooter.la \
+	@PIXIE_CPPFLAGS@ @CPPUNIT_CFLAGS@ 
+unittests_LDADD = @builddir@/libSystemBooter.la \
 	@top_builddir@/ddas/configuration/libConfiguration.la \
-	@top_builddir@/ddas/xiatest/libTestPixie16.la \
-	@CPPUNIT_LIBS@
+	@PIXIE_LDFLAGS@ @CPPUNIT_LIBS@
 
-#TESTS = unittests
+TESTS = unittests

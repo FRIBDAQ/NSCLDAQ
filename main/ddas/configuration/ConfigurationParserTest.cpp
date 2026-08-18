@@ -35,13 +35,16 @@ namespace HR = ::DAQ::DDAS::HardwareRegistry;
 class ConfigurationParserTest : public CppUnit::TestFixture {
 public:
   CPPUNIT_TEST_SUITE(ConfigurationParserTest);
+
   CPPUNIT_TEST(parse_crate_id);
   CPPUNIT_TEST(parse_num_modules);
   CPPUNIT_TEST(parse_slot_map);
   CPPUNIT_TEST(parse_settings_path);
+
   CPPUNIT_TEST(parse_bad_slot_map);
   CPPUNIT_TEST(parse_bad_settings_file_no_ext);
   CPPUNIT_TEST(parse_bad_config_line);
+
   CPPUNIT_TEST_SUITE_END();
 
   vector<string> m_cfgFileContent;
@@ -79,6 +82,8 @@ public:
   string create_sample_stream() {
     return merge_lines(create_sample_file_content());
   }
+
+  ////////////////////////////////////////////////////////////////////////////
 
   /** @brief Verify reading correct crate ID value. */
   void parse_crate_id() {
@@ -119,6 +124,8 @@ public:
           string("/path/to/my/settings/file.json"),
           config.getSettingsFilePath());
   }
+
+  ////////////////////////////////////////////////////////////////////////////
 
   /** @brief Bad slot map results in an error. */
   void parse_bad_slot_map() {
