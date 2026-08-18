@@ -23,8 +23,8 @@ LIBRARY_DIR=@prefix@/TclLibs/readoutREST
 SERVER_DIR=$(LIBRARY_DIR)/server
 
 
-EXTRA_DIST=$(program_scripts) $(library_scripts) $(test_scripts) \
-	$(server_scripts) $(share_scripts) rdoManager.xml $(PythonModules)
+EXTRA_DIST=$(python_programs) $(library_scripts) $(test_scripts) \
+	$(server_scripts) $(share_scripts) rdoManager.xml $(PythonModules) \
 
 
 
