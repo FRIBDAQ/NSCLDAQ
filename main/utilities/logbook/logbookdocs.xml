@@ -9014,7 +9014,7 @@ run  = book.begin_run(number, title[, comment])
 
 note = get_note(id)
 notes = list_all_notes();
-notes = list_all_notes_for_run_number(number)
+notes = list_notes_for_run_number(number)
 notes = list_all_notes_for_run_id(id)
 notes = list_all_notes_for_run(run)
 notes = list_nonrun_notes()
