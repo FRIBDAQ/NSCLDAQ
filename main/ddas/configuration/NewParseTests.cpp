@@ -32,34 +32,34 @@
 static const char *FirmwareFileTemplate = "FirmwareFileXXXXXX";
 static const char *DSPParameterFileTemplate = "DSPParametersFileXXXXXX";
 static const char *fwOverrideFileContents = "\
-[Rev0xD-12Bit-100MSPS]                    \n\
-a                            \n\
-b                            \n\
-c                           \n\
-d                           \n\
-2.1 \n\
-[Rev0xF-16Bit-250MSPS] \n\
-e   \n\
-f   \n\
-g \n\
-h \n\
-23.1 \n\
-[Rev0xF-14Bit-500MSPS] \n\
-i \n\
-j  \n\
-k  \n\
-l   \n\
-232.1  \n\
+[Rev0xD-12Bit-100MSPS]\n\
+a\n\
+b\n\
+c\n\
+d\n\
+2.1\n\
+[Rev0xF-16Bit-250MSPS]\n\
+e\n\
+f\n\
+g\n\
+h\n\
+23.1\n\
+[Rev0xF-14Bit-500MSPS]\n\
+i\n\
+j\n\
+k\n\
+l\n\
+232.1\n\
 \n\
-[Rev24-145Bit-23234MSPS]   \n\
- m  \n\
-     n  \n\
-o   \n\
-p   \n\
+[Rev24-145Bit-23234MSPS]\n\
+m\n\
+n\n\
+o\n\
+p\n\
 2323.1";
 
 /** @brief Create the firmware override file and return its filename. */
-static std::string makeFirmwareFile() {
+static std::string make_firmware_file() {
   char filename[100];
   strncpy(filename, FirmwareFileTemplate, sizeof(filename));
   int fd = mkstemp(filename);
@@ -77,8 +77,8 @@ static std::string makeFirmwareFile() {
   return filename;
 }
 
-/** @brief Like makeFirmwareFile but make an empty .set file. */
-static std::string makeDSPParametersFile() {
+/** @brief Like make_firmware_file but make an empty .set file. */
+static std::string make_dsp_parameters_file() {
   char filename[100];
   strncpy(filename, DSPParameterFileTemplate, sizeof(filename));
   int fd = mkstemp(filename);
@@ -90,24 +90,26 @@ static std::string makeDSPParametersFile() {
 class NewParseTest : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(NewParseTest);
 
-  // Tests of the ability to parse extended slot lines.
+  // Tests of the ability to parse extended slot lines:
 
-  CPPUNIT_TEST(good_1);
-  CPPUNIT_TEST(good_2);
-  CPPUNIT_TEST(good_3);
-  CPPUNIT_TEST(good_4);
-  CPPUNIT_TEST(good_5);
-  CPPUNIT_TEST(good_6);
+  CPPUNIT_TEST(slot_only);
+  CPPUNIT_TEST(slot_and_comment);
+  CPPUNIT_TEST(slot_and_fw_map);
+  CPPUNIT_TEST(slot_fw_map_and_comment);
+  CPPUNIT_TEST(slot_and_fw_map_and_set_file);
+  CPPUNIT_TEST(slot_and_fw_map_and_set_file_and_comment);
 
-  CPPUNIT_TEST(bad_1);
-  CPPUNIT_TEST(bad_2);
+  // Stuff that will fail for one reason or another:
 
-  // Tests of extended capabilities of ConfigurationParser::Parse
-  // To provide per module firmware maps and DSPparameter files
+  CPPUNIT_TEST(fail_bad_settings_file);
+  CPPUNIT_TEST(fail_bad_firmware_file);
 
-  CPPUNIT_TEST(permodule_1);
-  CPPUNIT_TEST(permodule_2);
-  CPPUNIT_TEST(permodule_3);
+  // Tests of extended capabilities of ConfigurationParser::parse
+  // To provide per module firmware maps and DSPparameter files:
+
+  CPPUNIT_TEST(no_overrides);
+  CPPUNIT_TEST(permodule_firmware_override);
+  CPPUNIT_TEST(permodule_firmware_and_set_file_override);
 
   CPPUNIT_TEST_SUITE_END();
 
@@ -118,10 +120,11 @@ private:
 
 public:
   void setUp() {
-    m_FwFile = makeFirmwareFile();
-    m_setfile = makeDSPParametersFile();
+    m_FwFile = make_firmware_file();
+    m_setfile = make_dsp_parameters_file();
     m_parser = new DAQ::DDAS::ConfigurationParser;
   }
+
   void tearDown() {
     unlink(m_FwFile.c_str());
     unlink(m_setfile.c_str());
@@ -129,25 +132,27 @@ public:
   }
 
 protected:
-  void good_1();
-  void good_2();
-  void good_3();
-  void good_4();
-  void good_5();
-  void good_6();
+  void slot_only();
+  void slot_and_comment();
+  void slot_and_fw_map();
+  void slot_fw_map_and_comment();
+  void slot_and_fw_map_and_set_file();
+  void slot_and_fw_map_and_set_file_and_comment();
 
-  void bad_1();
-  void bad_2();
+  void fail_bad_settings_file();
+  void fail_bad_firmware_file();
 
-  void permodule_1();
-  void permodule_2();
-  void permodule_3();
+  void no_overrides();
+  void permodule_firmware_override();
+  void permodule_firmware_and_set_file_override();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(NewParseTest);
 
+//////////////////////////////////////////////////////////////////////////////
+
 /** @brief Success with a line that's only the slot. */
-void NewParseTest::good_1() {
+void NewParseTest::slot_only() {
   std::stringstream line("2\n");
   auto result = m_parser->parseSlotLine(line);
   EQ(2, std::get<0>(result));
@@ -156,7 +161,7 @@ void NewParseTest::good_1() {
 }
 
 /** @brief Slot + comment. */
-void NewParseTest::good_2() {
+void NewParseTest::slot_and_comment() {
   std::stringstream line("2 # this is a comment.\n");
   auto result = m_parser->parseSlotLine(line);
   EQ(2, std::get<0>(result));
@@ -165,7 +170,7 @@ void NewParseTest::good_2() {
 }
 
 /** @brief Slot + firmware map file. */
-void NewParseTest::good_3() {
+void NewParseTest::slot_and_fw_map() {
   std::string l("2 ");
   l += m_FwFile;
   l += "\n";
@@ -178,7 +183,7 @@ void NewParseTest::good_3() {
 }
 
 /** @brief Slot + firmware map file + comment. */
-void NewParseTest::good_4() {
+void NewParseTest::slot_fw_map_and_comment() {
   std::string l("2 ");
   l += m_FwFile;
   l += " # some comment\n";
@@ -191,7 +196,7 @@ void NewParseTest::good_4() {
 }
 
 /** @brief Slot + firmware map file + set file. */
-void NewParseTest::good_5() {
+void NewParseTest::slot_and_fw_map_and_set_file() {
   std::string l("2 ");
   l += m_FwFile;
   l += "  ";
@@ -207,7 +212,7 @@ void NewParseTest::good_5() {
 }
 
 /** @brief Slot + firmware map file + set file + comment. */
-void NewParseTest::good_6() {
+void NewParseTest::slot_and_fw_map_and_set_file_and_comment() {
   std::string l("2 ");
   l += m_FwFile;
   l += "  ";
@@ -222,36 +227,34 @@ void NewParseTest::good_6() {
   EQ(m_setfile, std::get<2>(result));
 }
 
-/** @brief Bad parameters file. */
-void NewParseTest::bad_1() {
+//////////////////////////////////////////////////////////////////////////////
+
+/** @brief Bad settings file. */
+void NewParseTest::fail_bad_settings_file() {
   std::string l("2 ");
   l += m_FwFile;
   l += "  ";
   l += "/this/file/does/not/exist";
   l += " # This is a comment.\n";
-
   std::stringstream line(l);
-
   CPPUNIT_ASSERT_THROW(m_parser->parseSlotLine(line), std::runtime_error);
 }
 
 /** @brief Bad firmware override file */
-void NewParseTest::bad_2() {
+void NewParseTest::fail_bad_firmware_file() {
   std::string l("2 ");
   l += "/some/file/that/does/not/exist/";
   l += "  ";
   l += m_setfile;
   l += " # This is a comment.\n";
-
   std::stringstream line(l);
-
   CPPUNIT_ASSERT_THROW(m_parser->parseSlotLine(line), std::runtime_error);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-/** @brief String file for cfgPixie  with no overrides. */
-void NewParseTest::permodule_1() {
+/** @brief String file for cfgPixie with no overrides. */
+void NewParseTest::no_overrides() {
   std::string cfgPixie = "\
 1\n\
 3\n\
@@ -260,8 +263,8 @@ void NewParseTest::permodule_1() {
 4\n\
 ";
   cfgPixie += m_setfile;           // Add the set file...
-  cfgPixie += ".set\n";            // ...with a proper extension
-  DAQ::DDAS::Configuration config; // empty.
+  cfgPixie += ".json\n";           // ...with a proper extension
+  DAQ::DDAS::Configuration config; // Empty.
   std::stringstream configStream(cfgPixie);
   m_parser->parse(configStream, config);
 
@@ -271,8 +274,8 @@ void NewParseTest::permodule_1() {
   ASSERT(config.m_moduleSetFileMap.empty());
 }
 
-/** @brief string file where module 3 has a firmware override. */
-void NewParseTest::permodule_2() {
+/** @brief String file where module 3 has a firmware override. */
+void NewParseTest::permodule_firmware_override() {
   std::string cfgPixie = "\
 1\n\
 3\n\
@@ -283,8 +286,8 @@ void NewParseTest::permodule_2() {
 4\n\
 ";
   cfgPixie += m_setfile;           // Add the set file...
-  cfgPixie += ".set\n";            // ...with a proper extension
-  DAQ::DDAS::Configuration config; // empty.
+  cfgPixie += ".json\n";           // ...with a proper extension
+  DAQ::DDAS::Configuration config; // Empty.
   std::stringstream configStream(cfgPixie);
   m_parser->parse(configStream, config);
 
@@ -294,7 +297,7 @@ void NewParseTest::permodule_2() {
 }
 
 /** @brief Add a per-module set file for slot 3. */
-void NewParseTest::permodule_3() {
+void NewParseTest::permodule_firmware_and_set_file_override() {
   std::string cfgPixie = "\
 1\n\
 3\n\
@@ -307,8 +310,8 @@ void NewParseTest::permodule_3() {
 4\n\
 ";
   cfgPixie += m_setfile;           // Add the set file...
-  cfgPixie += ".set\n";            // ...with a proper extension
-  DAQ::DDAS::Configuration config; // empty.
+  cfgPixie += ".json\n";           // ...with a proper extension
+  DAQ::DDAS::Configuration config; // Empty.
   std::stringstream configStream(cfgPixie);
   m_parser->parse(configStream, config);
 
