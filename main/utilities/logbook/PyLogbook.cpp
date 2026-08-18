@@ -841,6 +841,7 @@ createNote(PyObject* self, PyObject* args, PyObject* kwargs)
     )) {
         return nullptr;             // Exception already raised.
     }
+    
     // Must have an author:
     
     if (!pAuthor) {
@@ -860,7 +861,25 @@ createNote(PyObject* self, PyObject* args, PyObject* kwargs)
         return nullptr;
     }
     
+    // Things that are None, or missing. map to appropriate python types.
+
+    bool decrefImages = false;
+    bool decrefOffsets = false;
+    if (!pImageFiles || (pImageFiles == Py_None)) {
+        pImageFiles = PyTuple_New(0);
+        decrefImages = true;
+    }
+    if (!pImageOffsets || (pImageOffsets == Py_None)) {
+        pImageOffsets = PyTuple_New(0);
+        decrefOffsets = true;
+    }
+    if (pRun == Py_None) {
+        pRun = nullptr;
+    }
+
+
     // Marshall the run if it's present.
+    
     
     if (pRun) {
         if (PyRun_isRun(pRun)) {
@@ -887,9 +906,16 @@ createNote(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (pImageFiles) {
         if (!StringVecFromIterable(imageFilenames, pImageFiles)) return nullptr;
+        if (decrefImages) {
+            Py_DECREF(pImageFiles);
+        }
+
     }
     if (pImageOffsets) {
         if (!SizeVecFromIterable(imageOffsets, pImageOffsets)) return nullptr;
+        if (decrefOffsets) {
+            Py_DECREF(pImageOffsets);
+        }
     }
     if (imageFilenames.size() != imageOffsets.size()) {
         PyErr_SetString(
