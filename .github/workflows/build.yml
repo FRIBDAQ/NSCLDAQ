@@ -95,11 +95,6 @@ jobs:
         shell: bash
         run: |
           make -j2 clean && make -j2 all && make -j2 install
-      - name: Make check
-        id: make-check
-        working-directory: ./main/oot
-        shell: bash
-        run : |
           source /usr/cargo/env
           rustup default stable
           cargo install portman
@@ -110,13 +105,13 @@ jobs:
           sleep 2
           nohup nscldaq_ringmaster -l /tmp/ringmaster.log >> /tmp/ringmaster.log 2>&1 &
           VERBOSE=1 xvfb-run -a make check
-      - name: Show portman and ringmaster logs on unittest failure
-        if: always() && steps.make-check.outcome == 'failure'
+      - name: Show portman and ringmaster logs on failure
+        if: failure()
         run: |
           echo "=== Portman log: ==="
-          [ -f /tmp/portman.log ] && cat /tmp/portman.log || echo "(not created)"
+          cat /tmp/portman.log
           echo "=== Ringmaster log: ==="
-          [ -f /tmp/ringmaster.log ] && cat /tmp/ringmaster.log || echo "(not created)"
+          cat /tmp/ringmaster.log
       - name: Checking disk space
         working-directory: ./main/oot
         run: |

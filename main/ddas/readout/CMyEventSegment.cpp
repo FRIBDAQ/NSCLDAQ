@@ -73,6 +73,12 @@ CMyEventSegment::CMyEventSegment(CMyTrigger *trig, CExperiment &exp)
         *(Configuration::generateManagedFW("cfgPixie16.txt", "modevtlen.txt"));
   }
   m_config.print(std::cout);
+  std::cout << std::endl;
+
+  for (const auto &len : m_config.getModuleEventLengths()) {
+    std::cout << "Module event length: " << len << std::endl;
+  }
+  std::cout << std::endl;
   std::cout.flush();
 
   // Conditionally load firmware and boot modules. The modules are only
