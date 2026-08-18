@@ -76,15 +76,12 @@ enum HardwareType {
   RevB_100MHz_12Bit = 1,
   RevC_100MHz_12Bit = 2,
   RevD_100MHz_12Bit = 3,
-  RevF_100MHz_14Bit = 4,
-  RevF_100MHz_16Bit = 5,
-  RevF_250MHz_12Bit = 6,
-  RevF_250MHz_14Bit = 7,
-  RevF_250MHz_16Bit = 8,
-  RevF_500MHz_12Bit = 9,
-  RevF_500MHz_14Bit = 10,
-  RevF_500MHz_16Bit = 11,
-  RevH_250MHz_14Bit = 12,
+  RevF_250MHz_12Bit = 4,
+  RevF_250MHz_14Bit = 5,
+  RevF_250MHz_16Bit = 6,
+  RevF_500MHz_12Bit = 7,
+  RevF_500MHz_14Bit = 8,
+  RevH_250MHz_14Bit = 9,
   Unknown = 0
 };
 

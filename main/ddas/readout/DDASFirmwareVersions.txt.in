@@ -1,84 +1,70 @@
-####################################################
-## Only modify the sections below when there is a ##
-## need to update firmware file names. But please ##
-## keep all line spacing intact, i.e. do not add  ##
-## or delete any lines below or add any spaces.   ##
-##  Just modify certain lines if needed.          ##
-####################################################
+#################################################################################
+## Only modify the sections below when there is a need to update firmware file ##
+## names. But please keep all line spacing intact, i.e. do not add or delete   ##
+## any lines below or add any spaces. Modify certain lines if needed.          ##
+##                                                                             ##
+## Modified 8/17/26 by ASC for XIA API 5+ "Managed firmware".                  ##
+#################################################################################
 
 [Rev0xB-12Bit-100MSPS]
-@firmwaredir@/syspixie16_current_12b100m.bin
-@firmwaredir@/fippixie16_current_12b100m.bin
-@dspdir@/Pixie16_current_12b100m.ldr
-@dspdir@/Pixie16_current_12b100m.var
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/sys.bin
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/fippi.bin
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.ldr
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.var
 10
 
 [Rev0xC-12Bit-100MSPS]
-@firmwaredir@/syspixie16_current_12b100m.bin
-@firmwaredir@/fippixie16_current_12b100m.bin
-@dspdir@/Pixie16_current_12b100m.ldr
-@dspdir@/Pixie16_current_12b100m.var
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/sys.bin
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/fippi.bin
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.ldr
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.var
 10
 
 [Rev0xD-12Bit-100MSPS]
-@firmwaredir@/syspixie16_current_12b100m.bin
-@firmwaredir@/fippixie16_current_12b100m.bin
-@dspdir@/Pixie16_current_12b100m.ldr
-@dspdir@/Pixie16_current_12b100m.var
-10
-
-[Rev0xF-12Bit-100MSPS]
-@firmwaredir@/syspixie16_current_12b100m.bin
-@firmwaredir@/fippixie16_current_12b100m.bin
-@dspdir@/Pixie16_current_12b100m.ldr
-@dspdir@/Pixie16_current_12b100m.var
-10
-
-[Rev0xF-14Bit-100MSPS]
-@firmwaredir@/syspixie16_current_14b100m.bin
-@firmwaredir@/fippixie16_current_14b100m.bin
-@dspdir@/Pixie16_current_14b100m.ldr
-@dspdir@/Pixie16_current_14b100m.var
-10
-
-[Rev0xF-16Bit-100MSPS]
-@firmwaredir@/syspixie16_current_16b100m.bin
-@firmwaredir@/fippixie16_current_16b100m.bin
-@dspdir@/Pixie16_current_16b100m.ldr
-@dspdir@/Pixie16_current_16b100m.var
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/sys.bin
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/fippi.bin
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.ldr
+@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.var
 10
 
 [Rev0xF-12Bit-250MSPS]
-@firmwaredir@/syspixie16_current_12b250m.bin
-@firmwaredir@/fippixie16_current_12b250m.bin
-@dspdir@/Pixie16_current_12b250m.ldr
-@dspdir@/Pixie16_current_12b250m.var
+@firmwaredir@/xia_pixie-16_15-250-12_general_1.0.2/sys.bin
+@firmwaredir@/xia_pixie-16_15-250-12_general_1.0.2/fippi.bin
+@firmwaredir@/xia_pixie-16_15-250-12_general_1.0.2/dsp.ldr
+@firmwaredir@/xia_pixie-16_15-250-12_general_1.0.2/dsp.var
 8
 
 [Rev0xF-14Bit-250MSPS]
-@firmwaredir@/syspixie16_current_14b250m.bin
-@firmwaredir@/fippixie16_current_14b250m.bin
-@dspdir@/Pixie16_current_14b250m.ldr
-@dspdir@/Pixie16_current_14b250m.var
+@firmwaredir@/xia_pixie-16_15-250-14_general_1.0.1/sys.bin
+@firmwaredir@/xia_pixie-16_15-250-14_general_1.0.1/fippi.bin
+@firmwaredir@/xia_pixie-16_15-250-14_general_1.0.1/dsp.ldr
+@firmwaredir@/xia_pixie-16_15-250-14_general_1.0.1/dsp.var
 8
 
 [Rev0xF-16Bit-250MSPS]
-@firmwaredir@/syspixie16_current_16b250m.bin
-@firmwaredir@/fippixie16_current_16b250m.bin
-@dspdir@/Pixie16_current_16b250m.ldr
-@dspdir@/Pixie16_current_16b250m.var
+@firmwaredir@/xia_pixie-16_15-250-16_general_1.1.0/sys.bin
+@firmwaredir@/xia_pixie-16_15-250-16_general_1.1.0/fippi.bin
+@firmwaredir@/xia_pixie-16_15-250-16_general_1.1.0/dsp.ldr
+@firmwaredir@/xia_pixie-16_15-250-16_general_1.1.0/dsp.var
 8
 
 [Rev0xF-12Bit-500MSPS]
-@firmwaredir@/syspixie16_current_12b500m.bin
-@firmwaredir@/fippixie16_current_12b500m.bin
-@dspdir@/Pixie16_current_12b500m.ldr
-@dspdir@/Pixie16_current_12b500m.var
+@firmwaredir@/xia_pixie-16_15-500-12_general_1.2.0/sys.bin
+@firmwaredir@/xia_pixie-16_15-500-12_general_1.2.0/fippi.bin
+@firmwaredir@/xia_pixie-16_15-500-12_general_1.2.0/dsp.ldr
+@firmwaredir@/xia_pixie-16_15-500-12_general_1.2.0/dsp.var
 10
 
 [Rev0xF-14Bit-500MSPS]
-@firmwaredir@/syspixie16_current_14b500m.bin
-@firmwaredir@/fippixie16_current_14b500m.bin
-@dspdir@/Pixie16_current_14b500m.ldr
-@dspdir@/Pixie16_current_14b500m.var
+@firmwaredir@/xia_pixie-16_15-500-14_general_1.0.1/sys.bin
+@firmwaredir@/xia_pixie-16_15-500-14_general_1.0.1/fippi.bin
+@firmwaredir@/xia_pixie-16_15-500-14_general_1.0.1/dsp.ldr
+@firmwaredir@/xia_pixie-16_15-500-14_general_1.0.1/dsp.var
+10
+
+[Rev0x11-14Bit-250MSPS]
+@firmwaredir@/xia_pixie-16_17-250-14_general_1.0.1/sys.bin
+@firmwaredir@/xia_pixie-16_17-250-14_general_1.0.1/fippi.bin
+@firmwaredir@/xia_pixie-16_17-250-14_general_1.0.1/dsp.ldr
+@firmwaredir@/xia_pixie-16_17-250-14_general_1.0.1/dsp.var
 10

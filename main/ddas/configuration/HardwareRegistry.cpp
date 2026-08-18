@@ -34,14 +34,11 @@ static void setUpRegistry(Registry &registry) {
   registry[HR::RevB_100MHz_12Bit] = {100, 12, 11, 10.};
   registry[HR::RevC_100MHz_12Bit] = {100, 12, 12, 10.};
   registry[HR::RevD_100MHz_12Bit] = {100, 12, 13, 10.};
-  registry[HR::RevF_100MHz_14Bit] = {100, 14, 15, 10.};
-  registry[HR::RevF_100MHz_16Bit] = {100, 16, 15, 10.};
   registry[HR::RevF_250MHz_12Bit] = {250, 12, 15, 8.};
   registry[HR::RevF_250MHz_14Bit] = {250, 14, 15, 8.};
   registry[HR::RevF_250MHz_16Bit] = {250, 16, 15, 8.};
   registry[HR::RevF_500MHz_12Bit] = {500, 12, 15, 10.};
   registry[HR::RevF_500MHz_14Bit] = {500, 14, 15, 10.};
-  registry[HR::RevF_500MHz_16Bit] = {500, 16, 15, 10.};
   registry[HR::RevH_250MHz_14Bit] = {250, 14, 17, 8.};
 }
 

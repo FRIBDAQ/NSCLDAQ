@@ -31,19 +31,7 @@ class ConfigurationTest : public CppUnit::TestFixture {
 
 public:
   CPPUNIT_TEST_SUITE(ConfigurationTest);
-  CPPUNIT_TEST(print_0);
-  CPPUNIT_TEST(setModEvtLength_0);
-  CPPUNIT_TEST(setModEvtLength_1);
-  CPPUNIT_TEST(setSlotMap_0);
-  CPPUNIT_TEST(setSlotMap_1);
-  CPPUNIT_TEST(setHardwareMap_0);
-  CPPUNIT_TEST(setHardwareMap_1);
-  CPPUNIT_TEST(setHardwareMap_2);
-  CPPUNIT_TEST(setChannelMap_0);
-  CPPUNIT_TEST(setChannelMap_1);
-  CPPUNIT_TEST(setChannelMap_2);
-  CPPUNIT_TEST(getModuleChannelCount_0);
-  CPPUNIT_TEST(getModuleChannelCount_1);
+  CPPUNIT_TEST(print);
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -51,7 +39,7 @@ public:
   void tearDown() {}
 
   /** @brief Print out crate configuration. */
-  void print_0() {
+  void print() {
     Configuration config;
     config.setNumberOfModules(2);
     config.setChannelMap({16, 32});
@@ -62,8 +50,11 @@ public:
 
     std::stringstream stream;
     config.print(stream);
-    std::string msg("Crate number 123: 2 modules, in slots: 2 3 "
-                    "Channel map: 16 32 DSPParFile: /path/to/settings.file");
+    /** @note (ASC 8/17/26): The spaces and trialing new line are important for
+     * the test to pass. */
+    std::string msg("Crate number 123: 2 modules, in slots: 2 3 DSPParFile: "
+                    "/path/to/settings.file\n"
+                    "Module event lengths: 123 345 \n");
     EQMSG("Print output", msg, stream.str());
   }
 

@@ -32,11 +32,14 @@ class ModEvtFileParserTest : public CppUnit::TestFixture {
 
 public:
   CPPUNIT_TEST_SUITE(ModEvtFileParserTest);
-  CPPUNIT_TEST(parse_0);
-  CPPUNIT_TEST(parse_1);
-  CPPUNIT_TEST(parse_2);
-  CPPUNIT_TEST(parse_3);
-  CPPUNIT_TEST(parse_4);
+
+  CPPUNIT_TEST(check_sufficient_data_ok);
+  CPPUNIT_TEST(check_excess_data_ok);
+  CPPUNIT_TEST(check_modevt_config_ok);
+
+  CPPUNIT_TEST(check_insufficient_data_fail);
+  CPPUNIT_TEST(check_modevtlen_less_than_4_fail);
+
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -44,7 +47,7 @@ public:
   void tearDown() {}
 
   /** @brief Create a sample settings file. */
-  vector<string> createSampleFileContent() {
+  vector<string> create_sample_file_content() {
     vector<string> linesOfFile;
     linesOfFile.push_back("10");
     linesOfFile.push_back("123");
@@ -54,7 +57,7 @@ public:
   }
 
   /** @brief Merge lines of settings file into a single string. */
-  string mergeLines(const vector<string> &content) {
+  string merge_lines(const vector<string> &content) {
     string mergedContent;
     for (auto &line : content) {
       mergedContent += line + '\n';
@@ -64,23 +67,14 @@ public:
   }
 
   /** @brief Create the stream from the sample settings file. */
-  string createSampleStream() { return mergeLines(createSampleFileContent()); }
-
-  /** @brief Check modevtfile length error if insufficient data. */
-  void parse_0() {
-    ModEvtFileParser parser;
-    std::stringstream stream(createSampleStream());
-    Configuration config;
-    config.setNumberOfModules(5);
-    CPPUNIT_ASSERT_THROW_MESSAGE(
-        "Insufficient data in modevtlen.txt produces error",
-        parser.parse(stream, config), std::runtime_error);
+  string create_sample_stream() {
+    return merge_lines(create_sample_file_content());
   }
 
   /** @brief modevtlen file with enough data gives no error. */
-  void parse_1() {
+  void check_sufficient_data_ok() {
     ModEvtFileParser parser;
-    std::stringstream stream(createSampleStream());
+    std::stringstream stream(create_sample_stream());
     Configuration config;
     config.setNumberOfModules(3);
     CPPUNIT_ASSERT_NO_THROW_MESSAGE(
@@ -89,9 +83,9 @@ public:
   }
 
   /** @brief modevtlen file with more than enough data gives no error. */
-  void parse_2() {
+  void check_excess_data_ok() {
     ModEvtFileParser parser;
-    std::stringstream stream(createSampleStream());
+    std::stringstream stream(create_sample_stream());
     Configuration config;
     config.setNumberOfModules(2);
     CPPUNIT_ASSERT_NO_THROW_MESSAGE(
@@ -100,9 +94,9 @@ public:
   }
 
   /** @brief Verify that event lengths are stored in the configuration. */
-  void parse_3() {
+  void check_modevt_config_ok() {
     ModEvtFileParser parser;
-    std::stringstream stream(createSampleStream());
+    std::stringstream stream(create_sample_stream());
     Configuration config;
     config.setNumberOfModules(2);
     parser.parse(stream, config);
@@ -115,11 +109,22 @@ public:
           modEvtLen.at(1));
   }
 
+  /** @brief Check modevtfile length error if insufficient data. */
+  void check_insufficient_data_fail() {
+    ModEvtFileParser parser;
+    std::stringstream stream(create_sample_stream());
+    Configuration config;
+    config.setNumberOfModules(5);
+    CPPUNIT_ASSERT_THROW_MESSAGE(
+        "Insufficient data in modevtlen.txt produces error",
+        parser.parse(stream, config), std::runtime_error);
+  }
+
   /**
    * @brief Throw an error if the modevtlen is < 4 (default Pixie list-mode
    * event size in 32-bit words).
    */
-  void parse_4() {
+  void check_modevtlen_less_than_4_fail() {
     ModEvtFileParser parser;
     std::string content("3"); // content of file is a single number
     std::stringstream stream(content);

@@ -24,14 +24,14 @@ class ExceptionTests : public CppUnit::TestFixture {
 
 public:
   CPPUNIT_TEST_SUITE(ExceptionTests);
-  CPPUNIT_TEST(xiaException);
+  CPPUNIT_TEST(xia_success);
   CPPUNIT_TEST_SUITE_END();
 
 public:
   void setUp() {};
   void tearDown() {};
 
-  void xiaException();
+  void xia_success();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(ExceptionTests);
@@ -41,7 +41,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(ExceptionTests);
  * @note (ASC 3/12/24): XIA exception tests assume that a return code of 0
  * will result in a context message 'success.'
  */
-void ExceptionTests::xiaException() {
+void ExceptionTests::xia_success() {
   CXIAException e("This is a test", "myFunction", 0);
   EQ(0, e.ReasonCode());
   std::string msg("This is a test XIA API Error: myFunction returned 0 with "
