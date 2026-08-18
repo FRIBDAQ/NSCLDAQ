@@ -31,18 +31,15 @@ using namespace ::DAQ::DDAS;
 class FirmwareVersionFileParserTest : public CppUnit::TestFixture {
 public:
   CPPUNIT_TEST_SUITE(FirmwareVersionFileParserTest);
-  CPPUNIT_TEST(parse_revb_100m_12b_sys);
-  CPPUNIT_TEST(parse_revc_100m_12b_sys);
-  CPPUNIT_TEST(parse_revd_100m_12b_sys);
-  CPPUNIT_TEST(parse_revb_100m_12b_fippi);
-  CPPUNIT_TEST(parse_revc_100m_12b_fippi);
-  CPPUNIT_TEST(parse_revd_100m_12b_fippi);
-  CPPUNIT_TEST(parse_revb_100m_12b_ldr);
-  CPPUNIT_TEST(parse_revc_100m_12b_ldr);
-  CPPUNIT_TEST(parse_revd_100m_12b_ldr);
-  CPPUNIT_TEST(parse_revb_100m_12b_var);
-  CPPUNIT_TEST(parse_revc_100m_12b_var);
-  CPPUNIT_TEST(parse_revd_100m_12b_var);
+
+  // Rev. B/C/D 100 MHz 12 bit:
+
+  CPPUNIT_TEST(parse_revbcd_100m_12b_sys);
+  CPPUNIT_TEST(parse_revbcd_100m_12b_fippi);
+  CPPUNIT_TEST(parse_revbcd_100m_12b_ldr);
+  CPPUNIT_TEST(parse_revbcd_100m_12b_var);
+
+  // Rev. F 250 MHz 12/14/16 bit:
 
   CPPUNIT_TEST(parse_revf_250m_12b_sys);
   CPPUNIT_TEST(parse_revf_250m_12b_fippi);
@@ -59,6 +56,8 @@ public:
   CPPUNIT_TEST(parse_revf_250m_16b_dsp);
   CPPUNIT_TEST(parse_revf_250m_16b_var);
 
+  // Rev. F 500 MHz 12/14 bit:
+
   CPPUNIT_TEST(parse_revf_500m_12b_sys);
   CPPUNIT_TEST(parse_revf_500m_12b_fippi);
   CPPUNIT_TEST(parse_revf_500m_12b_dsp);
@@ -68,6 +67,8 @@ public:
   CPPUNIT_TEST(parse_revf_500m_14b_fippi);
   CPPUNIT_TEST(parse_revf_500m_14b_dsp);
   CPPUNIT_TEST(parse_revf_500m_14b_var);
+
+  // Rev. H 250 MHz 14 bit:
 
   CPPUNIT_TEST(parse_revh_250m_14b_sys);
   CPPUNIT_TEST(parse_revh_250m_14b_fippi);
@@ -83,13 +84,13 @@ public:
   void setUp() {
     FirmwareVersionFileParser parser;
     m_config = Configuration();
-    stringstream stream(mergeLines(createSampleFileContent()));
+    stringstream stream(merge_lines(create_sample_file_content()));
     parser.parse(stream, m_config.m_fwMap);
   }
   void tearDown() {}
 
   /** @brief Create the sample file from the FW file for this install. */
-  vector<string> createSampleFileContent() {
+  vector<string> create_sample_file_content() {
     vector<string> linesOfFile;
     string line;
 
@@ -108,7 +109,7 @@ public:
   }
 
   /** @brief Create merged lines from sample firmware file. */
-  string mergeLines(const vector<string> &content) {
+  string merge_lines(const vector<string> &content) {
     string mergedContent;
     for (auto &line : content) {
       mergedContent += line + '\n';
@@ -118,123 +119,93 @@ public:
   }
 
   /** @brief Create the sample stream. */
-  string createSampleStream() { return mergeLines(createSampleFileContent()); }
+  string create_sample_stream() {
+    return merge_lines(create_sample_file_content());
+  }
 
-  /// @name RevBCDChecks
-  ///@{
-  /**
-   * @brief Checks that the Rev. B/C/D firmware configurations are read
-   * properly. All 100 MSPS 12 bit.
-   */
-  void parse_revb_100m_12b_sys() {
+  //////////////////////////////////////////////////////////////////////////////
+  // Rev. B/C/D 100 MSPS 12 bit:
+  //
+
+  void parse_revbcd_100m_12b_sys() {
     FirmwareConfiguration fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevB_100MHz_12Bit);
-    EQMSG("RevBCD common firmware is set up appropriately",
+    EQMSG("RevB common firmware is set up appropriately",
+          string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/sys.bin"),
+          fwConfig.s_ComFPGAConfigFile);
+    fwConfig =
+        m_config.getFirmwareConfiguration(HardwareRegistry::RevC_100MHz_12Bit);
+    EQMSG("RevC common firmware is set up appropriately",
+          string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/sys.bin"),
+          fwConfig.s_ComFPGAConfigFile);
+    fwConfig =
+        m_config.getFirmwareConfiguration(HardwareRegistry::RevD_100MHz_12Bit);
+    EQMSG("RevD common firmware is set up appropriately",
           string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/sys.bin"),
           fwConfig.s_ComFPGAConfigFile);
   }
 
-  void parse_revc_100m_12b_sys() {
-    FirmwareConfiguration fwConfig =
-        m_config.getFirmwareConfiguration(HardwareRegistry::RevC_100MHz_12Bit);
-    EQMSG("RevBCD common firmware is set up appropriately",
-          string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/sys.bin"),
-          fwConfig.s_ComFPGAConfigFile);
-  }
-
-  void parse_revd_100m_12b_sys() {
-    FirmwareConfiguration fwConfig =
-        m_config.getFirmwareConfiguration(HardwareRegistry::RevD_100MHz_12Bit);
-    EQMSG("RevBCD common firmware is set up appropriately",
-          string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/sys.bin"),
-          fwConfig.s_ComFPGAConfigFile);
-  }
-
-  void parse_revb_100m_12b_fippi() {
+  void parse_revbcd_100m_12b_fippi() {
     FirmwareConfiguration fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevB_100MHz_12Bit);
     EQMSG(
-        "RevBCD fippi firmware file is set up appropriately",
+        "RevB fippi firmware file is set up appropriately",
         string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/fippi.bin"),
         fwConfig.s_SPFPGAConfigFile);
-  }
-
-  void parse_revc_100m_12b_fippi() {
-    FirmwareConfiguration fwConfig =
+    fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevC_100MHz_12Bit);
     EQMSG(
-        "RevBCD fippi firmware file is set up appropriately",
+        "RevC fippi firmware file is set up appropriately",
         string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/fippi.bin"),
         fwConfig.s_SPFPGAConfigFile);
-  }
-
-  void parse_revd_100m_12b_fippi() {
-    FirmwareConfiguration fwConfig =
+    fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevD_100MHz_12Bit);
     EQMSG(
-        "RevBCD fippi firmware file is set up appropriately",
+        "RevD fippi firmware file is set up appropriately",
         string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/fippi.bin"),
         fwConfig.s_SPFPGAConfigFile);
   }
 
-  void parse_revb_100m_12b_ldr() {
+  void parse_revbcd_100m_12b_ldr() {
     FirmwareConfiguration fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevB_100MHz_12Bit);
-    EQMSG("RevBCD dsp code file is set up appropriately",
+    EQMSG("RevB dsp code file is set up appropriately",
           string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.ldr"),
           fwConfig.s_DSPCodeFile);
-  }
-
-  void parse_revc_100m_12b_ldr() {
-    FirmwareConfiguration fwConfig =
+    fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevC_100MHz_12Bit);
-    EQMSG("RevBCD dsp code file is set up appropriately",
+    EQMSG("RevC dsp code file is set up appropriately",
           string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.ldr"),
           fwConfig.s_DSPCodeFile);
-  }
-
-  void parse_revd_100m_12b_ldr() {
-    FirmwareConfiguration fwConfig =
+    fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevD_100MHz_12Bit);
-    EQMSG("RevBCD dsp code file is set up appropriately",
+    EQMSG("RevD dsp code file is set up appropriately",
           string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.ldr"),
           fwConfig.s_DSPCodeFile);
   }
 
-  void parse_revb_100m_12b_var() {
+  void parse_revbcd_100m_12b_var() {
     FirmwareConfiguration fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevB_100MHz_12Bit);
     EQMSG("RevBCD dsp var file is set up appropriately",
           string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.var"),
           fwConfig.s_DSPVarFile);
-  }
-
-  void parse_revc_100m_12b_var() {
-    FirmwareConfiguration fwConfig =
+    fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevC_100MHz_12Bit);
-    EQMSG("RevBCD dsp var file is set up appropriately",
+    EQMSG("RevC dsp var file is set up appropriately",
           string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.var"),
           fwConfig.s_DSPVarFile);
-  }
-
-  void parse_revd_100m_12b_var() {
-    FirmwareConfiguration fwConfig =
+    fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevD_100MHz_12Bit);
-    EQMSG("RevBCD dsp bar file is set up appropriately",
+    EQMSG("RevD dsp var file is set up appropriately",
           string("@firmwaredir@/xia_pixie-16_13-100-12_general_1.0.0/dsp.var"),
           fwConfig.s_DSPVarFile);
   }
-  ///@}
 
-  /// @name RevFChecks
-  ///@{
-  /** @brief Checks that the Rev. F firmware configurations are read
-   * properly.
-   */
+  //////////////////////////////////////////////////////////////////////////////
+  // Rev. F 250 MSPS 12 bit:
+  //
 
-  /// @name 250MSPS12Bit
-  ///@{
-  /** @brief 250 MSPS, 12 bit. */
   void parse_revf_250m_12b_sys() {
     FirmwareConfiguration fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevF_250MHz_12Bit);
@@ -267,11 +238,11 @@ public:
           string("@firmwaredir@/xia_pixie-16_15-250-12_general_1.0.2/dsp.var"),
           fwConfig.s_DSPVarFile);
   }
-  ///@}
 
-  /// @name 250MSPS14Bit
-  ///@{
-  /** @brief 250 MSPS, 14 bit. */
+  //////////////////////////////////////////////////////////////////////////////
+  // Rev. F 250 MSPS 14 bit:
+  //
+
   void parse_revf_250m_14b_sys() {
     FirmwareConfiguration fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevF_250MHz_14Bit);
@@ -304,11 +275,11 @@ public:
           string("@firmwaredir@/xia_pixie-16_15-250-14_general_1.0.1/dsp.var"),
           fwConfig.s_DSPVarFile);
   }
-  ///@}
 
-  /// @name 250MSPS16Bit
-  ///@{
-  /** @brief 250 MSPS, 16 bit. */
+  //////////////////////////////////////////////////////////////////////////////
+  // Rev. F 250 MSPS 16 bit:
+  //
+
   void parse_revf_250m_16b_sys() {
     FirmwareConfiguration fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevF_250MHz_16Bit);
@@ -341,11 +312,11 @@ public:
           string("@firmwaredir@/xia_pixie-16_15-250-16_general_1.1.0/dsp.var"),
           fwConfig.s_DSPVarFile);
   }
-  ///@}
 
-  /// @name 500MSPS12Bit
-  ///@{
-  /** @brief 500 MSPS, 12 bit. */
+  //////////////////////////////////////////////////////////////////////////////
+  // Rev. F 500 MSPS 12 bit:
+  //
+
   void parse_revf_500m_12b_sys() {
     FirmwareConfiguration fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevF_500MHz_12Bit);
@@ -378,11 +349,11 @@ public:
           string("@firmwaredir@/xia_pixie-16_15-500-12_general_1.2.0/dsp.var"),
           fwConfig.s_DSPVarFile);
   }
-  ///@}
 
-  /// @name 500MSPS14Bit
-  ///@{
-  /** @brief 500 MSPS, 14 bit. */
+  //////////////////////////////////////////////////////////////////////////////
+  // Rev. F 500 MSPS 14 bit:
+  //
+
   void parse_revf_500m_14b_sys() {
     FirmwareConfiguration fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevF_500MHz_14Bit);
@@ -415,19 +386,11 @@ public:
           string("@firmwaredir@/xia_pixie-16_15-500-14_general_1.0.1/dsp.var"),
           fwConfig.s_DSPVarFile);
   }
-  ///@}
 
-  ///@}
+  //////////////////////////////////////////////////////////////////////////////
+  // Rev. H 250 MSPS 14 bit:
+  //
 
-  /// @name RevHChecks
-  ///@{
-  /** @brief Checks that the Rev. H firmware configurations are read
-   * properly.
-   */
-
-  /// @name 250MSPS14Bit
-  ///@{
-  /** @brief 250 MSPS, 14 bit. */
   void parse_revh_250m_14b_sys() {
     FirmwareConfiguration fwConfig =
         m_config.getFirmwareConfiguration(HardwareRegistry::RevH_250MHz_14Bit);
@@ -460,9 +423,6 @@ public:
           string("@firmwaredir@/xia_pixie-16_17-250-14_general_1.0.1/dsp.var"),
           fwConfig.s_DSPVarFile);
   }
-  ///@}
-
-  ///@}
 };
 
 // Register it with the test factory
