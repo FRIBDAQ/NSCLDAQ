@@ -221,22 +221,30 @@ void DAQ::DDAS::Configuration::setHardwareMap(const std::vector<int> &map) {
   m_hardwareMap = map;
 }
 
-/*!
+/**
  * @details
  * Prints out a message similar to:
- * "Crate number 1: 2 modules, in slots:2 3 DSPParFile: /path/to/file.set"
+ *
+ * Crate number 1: 2 modules, in slots: 2 3 DSPParFile: /path/to/file.json
+ * Module event lengths: 4 4
+ *
+ * @note (ASC 8/11/26): We cannot print the channel map here since it is
+ * only set after PixieInitSystem() is called. The module information shown
+ * during the boot lists the number of channels on each module, so it is
+ * not necessary, at the end of the day, to print it at all.
  */
 void DAQ::DDAS::Configuration::print(std::ostream &stream) {
-  stream << "Crate number " << m_crateId;
-  stream << ": " << m_numModules << " modules, in slots: ";
+  stream << "Crate number " << m_crateId << ": " << m_numModules
+         << " modules, in slots: ";
   for (auto &slot : m_slotMap) {
     stream << slot << " ";
   }
-  stream << "Channel map: ";
-  for (auto c : m_channelMap) {
-    stream << c << " ";
+  stream << "DSPParFile: " << m_settingsFilePath << std::endl;
+  stream << "Module event lengths: ";
+  for (const auto &len : m_modEvtLengths) {
+    stream << len << " ";
   }
-  stream << "DSPParFile: " << m_settingsFilePath;
+  stream << std::endl;
 }
 
 std::unique_ptr<DAQ::DDAS::Configuration>
