@@ -24,7 +24,7 @@ SERVER_DIR=$(LIBRARY_DIR)/server
 
 
 EXTRA_DIST=$(python_programs) $(library_scripts) $(test_scripts) \
-	$(server_scripts) $(share_scripts) rdoManager.xml $(PythonModules) \
+	$(server_scripts) $(share_scripts) rdoManager.xml $(PythonModules)
 
 
 
