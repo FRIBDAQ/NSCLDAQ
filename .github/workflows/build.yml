@@ -104,6 +104,7 @@ jobs:
           rustup default stable
           cargo install portman
           sleep 2
+          nohup portman > /dev/null 2>&1 &
           nohup nscldaq_ringmaster -l /tmp/ringmaster.log >> /tmp/ringmaster.log 2>&1 &
           VERBOSE=1 xvfb-run -a make check
       - name: Show portman and ringmaster logs on unittest failure
