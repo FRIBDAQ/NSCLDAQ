@@ -738,7 +738,54 @@ if __name__ == '__main__':
             run = findRun(1234)
             pause = run.get_transition(1)
             self.assertEqual('a comment', pause.comment)
+        def test_resume_norun(self):
+            with self.assertRaises(LogBook.error):
+                resumeRun()
+        def test_resume_noRemark(self):
+            # Start the run first:
+            
+            beginRun(1234, 'a title')
+            pauseRun()
             
             
+            resumeRun()
+            self.assertIsNotNone(currentRun())    # There's still a current run.
+            run = findRun(1234)
+            resume = run.get_transition(2)
+            self.assertEqual('RESUME', resume.transition_name)
+            self.assertEqual('', resume.comment)
             
+            
+        def test_resume_remark(self):
+            
+            beginRun(1234, 'a title')
+            pauseRun()
+            resumeRun('A comment')
+            run = findRun(1234)
+            resume = run.get_transition(2)
+            self.assertEqual('RESUME', resume.transition_name)
+            self.assertEqual('A comment', resume.comment)
+            
+        def test_emergencyend_noRun(self):
+            with self.assertRaises(LogBook.error):
+                emergencyEndRun()
+        def test_emergencyend_NoComment(self):
+            beginRun(1234,' a title')    
+            emergencyEndRun()
+            
+            # Should not  be a current run:
+            
+            self.assertIsNone(currentRun())
+            
+            run = findRun(1234)
+            end = run.get_transition(1)
+            self.assertEqual('', end.comment)
+            self.assertEqual('EMERGENCY_END', end.transition_name)
+        def test_emergencyend_Comment(self):
+            beginRun(1234, 'a title')
+            emergencyEndRun('a comment')
+            run = findRun(1234)
+            end = run.get_transition(1)
+            self.assertEqual('a comment', end.comment)
+            self.assertEqual('EMERGENCY_END', end.transition_name)
     unittest.main()
