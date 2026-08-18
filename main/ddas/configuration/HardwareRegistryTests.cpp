@@ -37,6 +37,7 @@ public:
   CPPUNIT_TEST(get_specification_revf_250m_16b);
   CPPUNIT_TEST(get_specification_revf_500m_12b);
   CPPUNIT_TEST(get_specification_revf_500m_14b);
+  CPPUNIT_TEST(get_specification_revh_250m_14b);
 
   CPPUNIT_TEST(override_revb_100m_12b);
 
@@ -48,6 +49,7 @@ public:
   CPPUNIT_TEST(compute_revf_250m_16b);
   CPPUNIT_TEST(compute_revf_500m_12b);
   CPPUNIT_TEST(compute_revf_500m_14b);
+  CPPUNIT_TEST(compute_revh_250m_14b);
 
   CPPUNIT_TEST(create_new);
   CPPUNIT_TEST(compute_unknown);
@@ -101,6 +103,7 @@ public:
   /** @brief Get 250 MSPS 12 bit Rev. F specification. */
   void get_specification_revf_250m_12b() {
     auto spec = HR::getSpecification(HR::RevF_250MHz_12Bit);
+    EQMSG("RevF_250MHz_12Bit default rev", 15, spec.s_hdwrRevision);
     EQMSG("RevF_250MHz_12Bit default adc freq", 250, spec.s_adcFrequency);
     EQMSG("RevF_250MHz_12Bit default adc resolution", 12, spec.s_adcResolution);
   }
@@ -108,6 +111,7 @@ public:
   /** @brief Get 250 MSPS 14 bit Rev. F specification. */
   void get_specification_revf_250m_14b() {
     auto spec = HR::getSpecification(HR::RevF_250MHz_14Bit);
+    EQMSG("RevF_250MHz_14Bit default rev", 15, spec.s_hdwrRevision);
     EQMSG("RevF_250MHz_14Bit default adc freq", 250, spec.s_adcFrequency);
     EQMSG("RevF_250MHz_14Bit default adc resolution", 14, spec.s_adcResolution);
   }
@@ -115,6 +119,7 @@ public:
   /** @brief Get 250 MSPS 16 bit Rev. F specification. */
   void get_specification_revf_250m_16b() {
     auto spec = HR::getSpecification(HR::RevF_250MHz_16Bit);
+    EQMSG("RevF_250MHz_16Bit default rev", 15, spec.s_hdwrRevision);
     EQMSG("RevF_250MHz_16Bit default adc freq", 250, spec.s_adcFrequency);
     EQMSG("RevF_250MHz_16Bit default adc resolution", 16, spec.s_adcResolution);
   }
@@ -122,6 +127,7 @@ public:
   /** @brief Get 500 MSPS 12 bit Rev. F specification. */
   void get_specification_revf_500m_12b() {
     auto spec = HR::getSpecification(HR::RevF_500MHz_12Bit);
+    EQMSG("RevF_500MHz_12Bit default rev", 15, spec.s_hdwrRevision);
     EQMSG("RevF_500MHz_12Bit default adc freq", 500, spec.s_adcFrequency);
     EQMSG("RevF_500MHz_12Bit default adc resolution", 12, spec.s_adcResolution);
   }
@@ -129,8 +135,17 @@ public:
   /** @brief Get 500 MSPS 14 bit Rev. F specification. */
   void get_specification_revf_500m_14b() {
     auto spec = HR::getSpecification(HR::RevF_500MHz_14Bit);
+    EQMSG("RevF_500MHz_14Bit default rev", 15, spec.s_hdwrRevision);
     EQMSG("RevF_500MHz_14Bit default adc freq", 500, spec.s_adcFrequency);
     EQMSG("RevF_500MHz_14Bit default adc resolution", 14, spec.s_adcResolution);
+  }
+
+  /** @brief Get 250 MSPS 14 bit Rev. H speficifation */
+  void get_specification_revh_250m_14b() {
+    auto spec = HR::getSpecification(HR::RevH_250MHz_14Bit);
+    EQMSG("RevH_250MHz_14Bit default rev", 17, spec.s_hdwrRevision);
+    EQMSG("RevH_250MHz_14Bit default adc freq", 250, spec.s_adcFrequency);
+    EQMSG("RevH_250MHz_14Bit default adc resolution", 14, spec.s_adcResolution);
   }
 
   /** @brief Override and check registry configuration info. */
@@ -188,6 +203,12 @@ public:
   void compute_revf_500m_14b() {
     EQMSG("Compute RevF_500MHz_14Bit", int(HR::RevF_500MHz_14Bit),
           HR::computeHardwareType(15, 500, 14));
+  }
+
+  /** @brief Compute 250 MSPS 14 bit Rev. H type. */
+  void compute_revh_250m_14b() {
+    EQMSG("Compute RevH_250MHz_14Bit", int(HR::RevH_250MHz_14Bit),
+          HR::computeHardwareType(17, 250, 14));
   }
 
   /** @brief Compute unknown type. */
