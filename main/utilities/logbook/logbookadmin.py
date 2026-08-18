@@ -788,4 +788,39 @@ if __name__ == '__main__':
             end = run.get_transition(1)
             self.assertEqual('a comment', end.comment)
             self.assertEqual('EMERGENCY_END', end.transition_name)
+        
+        def list_none(self):
+            self.assertEqual(0, len(listRuns()))
+        def list_one(self):
+            beginRun(1, 'title for run 1')
+            endRun()
+            runs = listRuns()
+            self.assertEqual(1, len(runs))
+            
+            # The run has all the right attributes:
+            run = runs[0]
+            self.assertEqual(1, run.number)
+            self.asssertEqual('title for run 1', self.title)
+            self.assertFalse(run.is_current())
+            self.assertEqual('END', run.last_transition())
+            self.assertFalse(run.is_active())
+            self.assertEqual(2, run.transition_count())
+        
+        def list_some(self):
+            # Make three runs
+            
+            for run in range(1,4):
+                beginRun(run, f'title for run {run}')
+                endRun()
+                
+            runlist = listRuns()
+            
+            self.assertEqual(3, len(runlist))
+            
+            # get the run numbers:
+            run_numbers = [r.number for r in runlist]
+            run_numbers.sort()
+            self.assertEqual(3, len(run_numbers))
+            for i,r in enumerate(run_numbers):
+                self.assertEqual(i, r)
     unittest.main()
