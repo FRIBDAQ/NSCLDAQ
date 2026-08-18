@@ -51,9 +51,9 @@ k\n\
 l\n\
 232.1\n\
 \n\
-[Rev24-145Bit-23234MSPS]\n\
-m\n\
-n\n\
+[Rev24-145Bit-23234MSPS]  \n\
+  m\n\
+    n     \n\
 o\n\
 p\n\
 2323.1";
