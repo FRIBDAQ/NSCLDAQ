@@ -101,7 +101,9 @@ PyLogBook_TupleFromPeople(
     }
     try {
         for (int i =0; i < people.size(); i++) {
-            PyTuple_SET_ITEM(result, i, PyPerson_newPerson(book, people[i]->id()));
+            auto person = PyPerson_newPerson(book, people[i]->id());
+            Py_XINCREF(person);
+            PyTuple_SET_ITEM(result, i, person);
         }
     }
     catch (LogBook::Exception& e) {
@@ -119,7 +121,7 @@ PyLogBook_TupleFromPeople(
             "Unanticipated exception type in PyLogBook_TupleFromPeople"
         );
     }
-    
+    Py_XINCREF(result);
     return result;
 }
 /**
@@ -520,6 +522,18 @@ createShift(PyObject* self, PyObject* args, PyObject* kwargs)
         if(PyPerson_IterableToVector(memberVec, members)) {
             return nullptr;
         }
+        // Note that the destructor of the logbook
+        // Will also destroy the underlying member People.
+        // This is undersirable, therefore,
+        // We copy construct in... We do that here, rather than in
+        // PyPerson_iterableToVector because that would, otherwise3,
+        // be a policy decision about a function in another module:
+
+        std::vector<LogBookPerson*> copiedPeople;
+        for (auto p : memberVec) {
+            copiedPeople.push_back(new LogBookPerson(*p));
+        }
+        memberVec = copiedPeople;
     }
     LogBook* book = PyLogBook_getLogBook(self);
     PyObject* result(nullptr);
