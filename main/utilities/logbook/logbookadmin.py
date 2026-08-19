@@ -17,6 +17,8 @@
 '''
 from nscldaq.LogBook import LogBook
 import pathlib
+from collections.abc import Iterable
+
 
 CURRENT_LOGBOOK_PATH=pathlib.Path('~/.nscl-logbook-current').expanduser().absolute()
 
@@ -305,6 +307,27 @@ def findRun(number : int) -> LogBook.Run | None:
     return book.find_run(number)
 
 
+def addNote(
+    author : LogBook.Person, text : str, 
+    image_paths : Iterable[str] | None = None, image_offsets : Iterable[int] | None = None, 
+    run : LogBook.Run | None = None
+) -> LogBook.Note:
+    '''
+    Create a new note that is optionally bound to a run.
+    @param author        : LogBook.Person - Person who is contributing the note.
+    @param text          : str           - Text of the note (markdown).
+    @param image_paths   : Iterable[str] - Paths to any filenames of images included in the note.
+    @param image_offsets : Iterable[int] - Offsets in the text at which the images occur.
+    @param run           : LogBookRun    - Optional run the note should be associated with.
+    @return LogBook.Note - The note that was added.
+    
+    '''
+    book = _currentLogBookOrError()
+    return book.create_note(
+        author, text, 
+        image_paths,  image_offsets,
+        run)
+
 def getNote(id : int) -> LogBook.Note | None :
     '''
     @param id : int - a note id.
@@ -358,7 +381,7 @@ def listNotesForRun(num : int) -> tuple[LogBook.Note]:
     @throws LogBook.error if  there is no current logbook.
     '''
     book = _currentLogBookOrError()
-    return book.list_all_notes_for_run_number(num)
+    return book.list_notes_for_run_number(num)
 
 def listNonRunNotes() -> tuple[LogBook.Note]:
     '''
@@ -413,6 +436,7 @@ def kvCreate(key : str, value : str) -> None:
 if __name__ == '__main__':
     import unittest
     import tempfile
+    import sys
 
     class AdminCreateOpenTests(unittest.TestCase):
         def setUp(self):
@@ -789,9 +813,9 @@ if __name__ == '__main__':
             self.assertEqual('a comment', end.comment)
             self.assertEqual('EMERGENCY_END', end.transition_name)
         
-        def list_none(self):
+        def test_list_none(self):
             self.assertEqual(0, len(listRuns()))
-        def list_one(self):
+        def test_list_one(self):
             beginRun(1, 'title for run 1')
             endRun()
             runs = listRuns()
@@ -800,13 +824,13 @@ if __name__ == '__main__':
             # The run has all the right attributes:
             run = runs[0]
             self.assertEqual(1, run.number)
-            self.asssertEqual('title for run 1', self.title)
+            self.assertEqual('title for run 1', run.title)
             self.assertFalse(run.is_current())
             self.assertEqual('END', run.last_transition())
             self.assertFalse(run.is_active())
             self.assertEqual(2, run.transition_count())
         
-        def list_some(self):
+        def test_list_some(self):
             # Make three runs
             
             for run in range(1,4):
@@ -822,5 +846,85 @@ if __name__ == '__main__':
             run_numbers.sort()
             self.assertEqual(3, len(run_numbers))
             for i,r in enumerate(run_numbers):
-                self.assertEqual(i, r)
+                self.assertEqual(i+1, r)  # Runs start from 1.
+    class NotesTests(unittest.TestCase):
+        def setUp(self):
+            # Delete the current logbook file.
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.
+            
+            
+            # This is a bit odd... we're just making
+            # a tempfile to get a nice
+        
+            self._tempfile = tempfile.NamedTemporaryFile().name  # noqa: SIM115
+            
+            # Make that a logbook and make it the current logbook:
+            
+            createLogBook(self._tempfile, 'e0400x', 'Ron Fox', 'Test Experiment', True)
+            
+            # Need to establish a current shift.
+            addPerson('Mouse', 'Mickey', 'Mr.')
+            addPerson('Duck', 'Daffy', 'Mr.')
+            addPerson('Oil', 'Olive', 'Ms.')
+            addPerson('Stooge', 'Larry', 'Mr.')
+            addPerson('DuMont', 'Margaret', 'Ms.')
+            self._people = listPeople()     # I'll probably be doing this no matter what.
+            createShift('ashift', self._people)
+            setCurrentShift('ashift')
+            
+            # Make some runs we can hang notes off:
+            for run in range(1,11): 
+                beginRun(run , f'Title for run{run}')
+                endRun()
+        def tearDown(self):
+            try:
+                pathlib.Path(self._tempfile).unlink()
+            except FileNotFoundError:
+                pass
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.  
+
+        def  test_list_noNotes(self):
+            self.assertEqual(0, len(listAllNotes()))
+        def test_list_noRunNotes(self):
+            for run in range(1, 11):
+                self.assertEqual(0, len(listNotesForRun(run)))
+        def test_list_noNonRunNotes(self):
+            self.assertEqual(0, len(listNonRunNotes()))
+            
+        def test_addNote_norun(self):
+            actual_author = self._people[0]
+            
+            note = addNote(actual_author, 'This is a note')
+            self.assertIsNone(note.run)
+            self.assertEqual('This is a note', note.contents)
+            note_author = note.author   # LogBook.Person.
+            
+            self.assertEqual(actual_author.lastname, note_author.lastname)
+            self.assertEqual(actual_author.firstname, note_author.firstname)
+            self.assertEqual(actual_author.salutation, note_author.salutation)
+            
+        def test_addNote_run(self):
+            actual_author = self._people[2]  
+            run           = findRun(3)
+            self.assertIsNotNone(run)
+            note = addNote(actual_author, 'Some harmelss note text', run=run)
+            
+            # Assuming the other stuff is fine:
+            
+            note_run = note.run
+            self.assertIsNotNone(note_run)
+            
+            self.assertEqual(run.number, note_run.number)
+            self.assertEqual(run.title, note_run.title)
+        
+            
+            
     unittest.main()
