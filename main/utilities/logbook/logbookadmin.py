@@ -925,6 +925,51 @@ if __name__ == '__main__':
             self.assertEqual(run.number, note_run.number)
             self.assertEqual(run.title, note_run.title)
         
+        def test_getNote_error(self):
+            self.assertIsNone(getNote(1234))       # no such note.
             
+        def test_getNote(self):
+            note = addNote(self._people[0], 'Thisi s a note')
+            got_note = getNote(note.id)    # Shoulid get the same note.
+            self.assertIsNotNone(got_note)
+            
+            # Note should be properly filled out:
+            
+            self.assertEqual(note.id, got_note.id)
+            self.assertEqual(note.run, got_note.run)   # None actually in both cases.
+            self.assertEqual(note.time, got_note.time)
+            self.assertEqual(note.contents, got_note.contents)
+            self.assertEqual(self._people[0].lastname, note.author.lastname)
+        
+        def test_gettitle(self):
+            note = addNote(self._people[1], "This is the title\nAnother line")    
+            
+            self.assertEqual('This is the title', getNoteTitle(note))
+            
+        
+        def test_listall_one(self):
+            note = addNote(self._people[0], 'This is is the only note')
+            notes = listAllNotes()
+            self.assertEqual(1, len(notes))
+            
+            # and notes[0] is the same id as note meaning it is the same.
+            
+            self.assertEqual(note.id, notes[0].id)
+            
+        def test_listall_several(self):
+            added_notes = []
+            for i in range(0,10):
+                added_notes.append(addNote(self._people[0], f'Note number {i}'))
+            
+            # Added_notes is in id order but the listed notes may not be:
+            
+            listed_notes = list(listAllNotes())    #listAllNotes returns a tuple.
+            listed_notes.sort(key=lambda item: item.id)
+            
+            self.assertEqual(len(added_notes), len(listed_notes))
+            for i, note in enumerate(added_notes):
+                self.assertEqual(note.id, listed_notes[i].id)
+                             
             
     unittest.main()
+    
