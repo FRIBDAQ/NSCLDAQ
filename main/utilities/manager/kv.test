@@ -154,7 +154,7 @@ tcltest::test listkeys_1 {Initially predefined} \
 } \
 -body {
     kvstore::listKeys db
-} -result [list title run]
+} -result [list run title ]
 
 tcltest::test listkeys_2 {List a single one} \
 -setup {
@@ -166,7 +166,7 @@ tcltest::test listkeys_2 {List a single one} \
 } \
 -body {
     kvstore::listKeys db 
-} -result [list title run Key1]
+} -result [list run title Key1]
 
 tcltest::test listkeys_3 {List a few keys} \
 -setup {
@@ -180,7 +180,7 @@ tcltest::test listkeys_3 {List a few keys} \
 } \
 -body {
     kvstore::listKeys db
-} -result [list title run Key1 Key2 Key3]
+} -result [list run title Key1 Key2 Key3]
 
 tcltest::test listkeys_4 {List keys with white space.} \
 -setup {
@@ -194,7 +194,7 @@ tcltest::test listkeys_4 {List keys with white space.} \
 } \
 -body {
     kvstore::listKeys db
-} -result [list title run "Key 1" "Key 2" "Key 3"]
+} -result [list run title "Key 1" "Key 2" "Key 3"]
 
 #------------------------------------------------------------------------------
 # Tests of kvstore::listAll
@@ -208,7 +208,7 @@ tcltest::test listall_1 {Initially  there's } \
 } \
 -body {
     kvstore::listAll db
-} -result [dict create title {Set a new title} run 0]
+} -result [dict create run 0 title {Set a new title}]
 
 tcltest::test listall_2 {Single item.} \
 -setup {
@@ -220,7 +220,7 @@ tcltest::test listall_2 {Single item.} \
 } \
 -body {
     kvstore::listAll db
-} -result [dict create title {Set a new title} run 0 Key Value]
+} -result [dict create run 0 title {Set a new title} Key Value]
 
 tcltest::test listAll_3 {Several items - no fancies.} \
 -setup {
@@ -235,7 +235,7 @@ tcltest::test listAll_3 {Several items - no fancies.} \
 } \
 -body {
     kvstore::listAll db
-} -result [dict create title {Set a new title} run 0 Key1 value1 Key2 value2 Key3 value3 Key4 value4]
+} -result [dict create run 0 title {Set a new title} Key1 value1 Key2 value2 Key3 value3 Key4 value4]
 
 tcltest::test listall_4 {Funky keywords and values.} \
 -setup {
@@ -250,7 +250,7 @@ tcltest::test listall_4 {Funky keywords and values.} \
 } \
 -body {
     kvstore::listAll db
-} -result [dict create title {Set a new title} run 0 "Key 1" "value 1" "Key 2" "value 2" "Key 3" "value 3" \
+} -result [dict create run 0 title {Set a new title} "Key 1" "value 1" "Key 2" "value 2" "Key 3" "value 3" \
            "Key 4"  "value 4"]
 
 #----------------------------------------------------

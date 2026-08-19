@@ -52,7 +52,7 @@ check:
 	then \
 		$(INSTALL_DATA) @srcdir@/minimal.img ~ ;\
 		for script in $(test_scripts); do \
-		  DAQBIN=@bindir@ SRCDIR=@srcdir@ TCLLIBPATH=@prefix@/TclLibs\
+		  DAQBIN=@bindir@ SRCDIR=@srcdir@ TCLLIBPATH=@prefix@/TclLibs PYTHONPATH=@prefix@/pythonLibs \
  @TCLSH_CMD@ @srcdir@/$$script; \
 		 if test $$? -ne 0; \
 			then    \
