@@ -405,15 +405,9 @@ def kvGet(key :str) -> str:
     
 def kvSet(key : str, value: str) ->None:
     '''
-        Set a key's value.  Note the key must already exist, see
-        kvCreate below... so this means that if you don't
-         knwow that a key exists but you do know there's a current
-         logbook you should probably:
-         
-        try:
-            kvSet(key, value)
-        except LogBook.error:
-            kvCreate(key, value)
+        Set a key's value.  Note that if the
+        key does not exist, it is created.
+        
     @param key - the key to set.
     @param value - the new value to give it.
     '''
@@ -1020,7 +1014,60 @@ if __name__ == '__main__':
             
             for i,n  in enumerate(notes):
                 self.assertEqual(allNotes[i*2].id, n.id)
+        
+    class KvTests(unittest.TestCase):
+        def setUp(self):
+            # Delete the current logbook file.
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.
+            
+            
+            # This is a bit odd... we're just making
+            # a tempfile to get a nice
+        
+            self._tempfile = tempfile.NamedTemporaryFile().name  # noqa: SIM115
+            
+            # Make that a logbook and make it the current logbook:
+            
+            createLogBook(self._tempfile, 'e0400x', 'Ron Fox', 'Test Experiment', True)       
+        def tearDown(self):
+            try:
+                pathlib.Path(self._tempfile).unlink()
+            except FileNotFoundError:
+                pass
+            
+            try:
+                CURRENT_LOGBOOK_PATH.unlink()
+            except FileNotFoundError:
+                pass                # Might not exist.
+        
+        def test_kvCreateOk(self):
+            # This should not raise an exception so no assert is needed:
+            
+            kvCreate('a', 'b')
+        def test_kvCreateDup(self):
+            
+            kvCreate('a', 'b') # ok.
+            with self.assertRaises(LogBook.error):
+                kvCreate('a', 'c')    # Duplicate raises.
+        
+        def test_kvGetOk(self):
+            kvCreate('a', 'b') 
+            self.assertEqual('b', kvGet('a'))
+        def test_kvGetError(self):
+            with self.assertRaises(LogBook.error):
+                kvGet('a')
                 
-                
+        def test_kvSetOk(self):
+            kvCreate('a', 'b')
+            kvSet('a', 'c')
+            self.assertEqual('c', kvGet('a'))
+        def test_kvSetCreates(self):
+            kvSet('a', 'b')
+            self.assertEqual('b', kvGet('a'))
+        
     unittest.main()
     
