@@ -79,18 +79,17 @@ PyPerson_IterableToVector(
   while (item = PyIter_Next(iterator)) {
     if (!PyPerson_isPerson(item)) {
       result.clear();
-      Py_DECREF(item);
-      Py_DECREF(iterator);
       PyErr_SetString(
         logbookExceptionObject,
         "PyPerson_IterableToVector - an item is not a person"
       );
+      Py_XDECREF(iterator);
       return -1;            
     }
     result.push_back(PyPerson_getPerson(item));
-    Py_DECREF(item);
+
   }
-  Py_DECREF(iterator);
+  Py_XDECREF(iterator);
   return 0;
 }
 
