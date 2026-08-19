@@ -958,7 +958,7 @@ if __name__ == '__main__':
             
         def test_listall_several(self):
             added_notes = []
-            for i in range(0,10):
+            for i in range(10):
                 added_notes.append(addNote(self._people[0], f'Note number {i}'))
             
             # Added_notes is in id order but the listed notes may not be:
@@ -969,7 +969,32 @@ if __name__ == '__main__':
             self.assertEqual(len(added_notes), len(listed_notes))
             for i, note in enumerate(added_notes):
                 self.assertEqual(note.id, listed_notes[i].id)
-                             
+        
+        def test_listRunNotes_one(self):
+            run = findRun(1)      #We'll attache a note to this one.
             
+            note = addNote(self._people[2], 'Note text', run=run)
+            run_notes = listNotesForRun(1)
+            self.assertEqual(1, len(run_notes))            
+            
+            self.assertEqual(note.id, run_notes[0].id)   # Same note.
+            
+        def test_listRunNotes_serveral(self):
+            run = findRun(2)
+            allNotes = []
+            for i in range(10):
+                if i % 2:     # every other is a run note.
+                    note = addNote(self._people[1], f'Note number {i}')
+                else:
+                    note = addNote(self._people[1], f'Note number {i}', run = run)
+                allNotes.append(note)
+            
+            
+            run_notes = listNotesForRun(2)
+            
+            self.assertEqual(5, len(run_notes))
+            for i,rn in enumerate(run_notes):
+                self.assertEqual(allNotes[i*2].id, rn.id)
+    
     unittest.main()
     
