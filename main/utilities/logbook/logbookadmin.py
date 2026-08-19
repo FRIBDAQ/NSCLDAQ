@@ -995,6 +995,32 @@ if __name__ == '__main__':
             self.assertEqual(5, len(run_notes))
             for i,rn in enumerate(run_notes):
                 self.assertEqual(allNotes[i*2].id, rn.id)
-    
+                
+        def test_listNonRunNote_one(self):
+            note = addNote(self._people[1], 'A note')
+            notes = listNonRunNotes()
+            self.assertEqual(1, len(notes))
+            self.assertEqual(note.id, notes[0].id)
+            
+        def test_listNonRunNotes_several(self):
+            run = findRun(2)
+            allNotes = []
+            for i in range(10):
+                if i % 2:     # every other is a run note.
+                    note = addNote(self._people[1], f'Note number {i}', run = run)
+                else:
+                    note = addNote(self._people[1], f'Note number {i}')
+                    
+                allNotes.append(note)
+            # Even notes are non run:
+            
+            notes= listNonRunNotes()
+            
+            self.assertEqual(5, len(notes))
+            
+            for i,n  in enumerate(notes):
+                self.assertEqual(allNotes[i*2].id, n.id)
+                
+                
     unittest.main()
     
