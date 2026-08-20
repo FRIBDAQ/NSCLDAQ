@@ -17,6 +17,10 @@
   the user can either specify a logbook on the command line, in which case
   that one is used,  or not, in which case we popup a file selection dialog
   to choose it.
+  
+  @file lg_current.py
+  @brief  set the current logbook.
+  @author Ron Fox 
 '''
 import sys
 from   nscldaq import logbookadmin
