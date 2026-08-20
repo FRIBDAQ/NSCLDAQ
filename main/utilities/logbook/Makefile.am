@@ -84,7 +84,6 @@ install-exec-hook:
 		>> @prefix@/TclLibs/logbook/pkgIndex.tcl
 	echo package ifneeded logbookbundle  1.0 [list source [file join \$$dir logbookBundle.tcl]] \
 		>> @prefix@/TclLibs/logbook/pkgIndex.tcl
-		(cd @srcdir@; $(INSTALL_SCRIPT) $(PY_PACKAGES) @prefix@/pythonLibs/nscldaq)
 	(cd @srcdir@; $(INSTALL_SCRIPT) $(PY_PACKAGES) @prefix@/pythonLibs/nscldaq/LogBook)
 
 
