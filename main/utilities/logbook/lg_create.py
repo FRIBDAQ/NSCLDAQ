@@ -24,7 +24,9 @@
 '''
 import sys
 import argparse
-    
+from nscldaq import logbookadmin
+from nscldaq.LogBook import LogBook
+
 def define_arguments() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog = 'lg_create',
@@ -46,9 +48,22 @@ def main() -> int:
     
     filename     = parsed_args.filename
     current      = parsed_args.current
+    experiment   = parsed_args.experiment
     spokesperson = parsed_args.spokesperson
     purpose      = parsed_args.purpose
-    print(parsed_args)                   # I forget what this gives me.
+    
+    # If we have all we need, make the logbook:
+    
+    if experiment and spokesperson and purpose:
+        try :
+            logbookadmin.createLogBook(filename, experiment, spokesperson, purpose, current)
+        except LogBook.error as e:
+            print(f'Unable to create logbook: {e}')
+            return -1
+        return 0
+    else:
+        return 0
+    
     
     
 
