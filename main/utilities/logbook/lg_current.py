@@ -23,7 +23,7 @@
   @author Ron Fox 
 '''
 import sys
-from   nscldaq import logbookadmin
+from   nscldaq.LogBook import logbookadmin
 def usage() -> None:
     # Print the program usage to stderr
     

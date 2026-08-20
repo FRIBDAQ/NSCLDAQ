@@ -24,7 +24,7 @@
 '''
 import sys
 import argparse
-from nscldaq import logbookadmin
+from nscldaq.LogBook import logbookadmin
 from nscldaq.LogBook import LogBook
 
 def define_arguments() -> argparse.ArgumentParser:

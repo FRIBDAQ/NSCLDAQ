@@ -20,7 +20,7 @@
     @author Ron Fox.
 '''
 import sys
-from nscldaq import logbookadmin
+from nscldaq.LogBook import logbookadmin
 from nscldaq.LogBook import LogBook
 
 
