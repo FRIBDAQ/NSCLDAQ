@@ -44,6 +44,84 @@ def duplicate_person(lastname, firstname) -> bool:
             return True
     return False
 
+def prompt(lastname : str | None, firstname: str | None, salutation : str | None
+           ) -> tuple[str | None, str | None, str | None]:
+    # Prompt graphically for the missing parts of a name.
+    # Note the returned tuple is all Nones  if the user rejected the dialog.
+    # We only import these if we need to use them:
+    from PyQt6.QtWidgets import (QApplication, QDialog, QDialogButtonBox, 
+                                 QLabel, QLineEdit, 
+                                 QHBoxLayout, QVBoxLayout
+    )
+    class Prompter(QDialog):
+        def __init__(self):
+            super().__init__(None)
+            
+            # THe button box is stacked on the prompts:
+            
+            self._layout = QVBoxLayout()
+            self.setLayout(self._layout)
+            
+            inputLayout = QHBoxLayout()
+            
+            inputLayout.addWidget(QLabel('Salutation:', self))
+            self._salutation = QLineEdit(self)
+            inputLayout.addWidget(self._salutation)
+            
+            inputLayout.addWidget(QLabel('First Name', self))
+            self._firstname = QLineEdit(self)
+            inputLayout.addWidget(self._firstname)
+            
+            inputLayout.addWidget(QLabel('Last Name:', self))
+            self._lastname = QLineEdit(self)
+            inputLayout.addWidget(self._lastname)
+            
+            self._layout.addLayout(inputLayout)
+            
+            self._buttons = QDialogButtonBox(
+                QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+                self
+            )
+            self._layout.addWidget(self._buttons)
+            
+            self._buttons.accepted.connect(self.accept)
+            self._buttons.rejected.connect(self.reject)
+            
+        # Implement the attributes to load and query the dialog:
+        
+        def salutation(self) -> str:
+            return self._salutation.text()
+        def setSalutation(self, salutation : str) -> None:
+            self._salutation.setText(salutation)
+        
+        def firstName(self) -> str:
+            return self._firstname.text()
+        def setFirstName(self, fname : str) -> None:
+            self._firstname.setText(fname)
+            
+        def lastName(self) -> str:
+            return self._lastname.text()
+        def setLastName(self, lname : str) -> None:
+            self._lastname.setText(lname)   
+        
+    # Now we have our prompter we can fill it up and run it:
+    
+    app = QApplication(sys.argv)
+    prompt = Prompter()
+    if lastname:
+        prompt.setLastName(lastname)
+    if firstname:
+        prompt.setFirstName(firstname)
+    if salutation:
+        prompt.setSalutation(salutation)
+        
+    if prompt.exec() == QDialog.DialogCode.Accepted:
+        return (
+            prompt.lastName(), prompt.firstName(), prompt.salutation()
+        )
+    else:
+        return (None, None, None)
+
 def main() -> int:
     if logbookadmin.currentLogBook() is None:
         print('No current log book has been established, use $DAQBIN/lg_current to do that.')
@@ -57,7 +135,7 @@ def main() -> int:
     salutation = None if len(sys.argv) < 4 else sys.argv[3]
     
     if not (lastname and firstname and salutation):
-        return -1             # @todo gui prompt.
+       (lastname, firstname, salutation) = prompt(lastname, firstname, salutation)
     
     if lastname and firstname and salutation:
         try:
