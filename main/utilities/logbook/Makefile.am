@@ -59,7 +59,7 @@ install-exec-hook:
 	$(INSTALL_PROGRAM) @srcdir@/lg_ls.tcl @bindir@/lg_ls
 	$(INSTALL_PROGRAM) @srcdir@/lg_addperson.py @bindir@/lg_addperson
 	$(INSTALL_PROGRAM) @srcdir@/lg_lspeople.tcl @bindir@/lg_lspeople
-	$(INSTALL_PROGRAM) @srcdir@/lg_mkshift.tcl @bindir@/lg_mkshift
+	$(INSTALL_PROGRAM) @srcdir@/lg_mkshift.py @bindir@/lg_mkshift
 	$(INSTALL_PROGRAM) @srcdir@/lg_mgshift.tcl @bindir@/lg_mgshift
 	$(INSTALL_PROGRAM) @srcdir@/lg_wrnote.tcl @bindir@/lg_wrnote
 	$(INSTALL_PROGRAM) @srcdir@/lg_selshift.tcl @bindir@/lg_selshift
@@ -135,7 +135,7 @@ EXTRA_DIST=logbookstatictests.py pypersontests.py pyshifttests.py \
 	personinstance.test shiftinstance.test runinstance.test \
 	noteinstance.test logbookadmin.tcl admin.test lg_create.py \
 	lg_current.py lg_ls.tcl lg_addperson.py lg_lspeople.tcl \
-	lg_mkshift.tcl ShiftEditor.tcl lg_mgshift.tcl lg_utilities.tcl \
+	lg_mkshift.py ShiftEditor.tcl lg_mgshift.tcl lg_utilities.tcl \
 	lg_noteutilities.tcl noteutil.test lg_wrnote.tcl logbookBundle.tcl \
 	lg_selshift.tcl pykvtests.py lg_browse.tcl lg_kvstore.tcl lg_print.tcl \
 	logbookdocs.xml \
