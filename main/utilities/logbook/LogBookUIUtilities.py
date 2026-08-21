@@ -18,10 +18,17 @@
 '''
 
 
-from nscldaq.LogBook import LogBook
 from nscldaq.editablelist6 import ListToListEditor
+from nscldaq.LogBook import LogBook
+from PyQt6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
-from PyQt6.QtWidgets import QListWidget
 
 class ShiftMemberEditor(ListToListEditor):
     '''
@@ -127,6 +134,53 @@ class ShiftMemberEditor(ListToListEditor):
             (salutation, firstname, lastname) = rowtext.split(' ')
             result.append((lastname, firstname, salutation))
         return result
+
+class ShiftCreator(QWidget):
+    '''
+    Provides a work area for creating a shift:
+    
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        # Top bit is the prompt for the shiftname and line edit for it:
+        
+        namelayout = QHBoxLayout()
+        namelayout.addWidget(QLabel('Shift Name: ', self))
+        self._name = QLineEdit(self)
+        namelayout.addWidget(self._name)
+        
+        self._layout.addLayout(namelayout)
+        
+        #  Now the shift editor:
+        
+        self._memberEditor = ShiftMemberEditor(self)
+        self._layout.addWidget(self._memberEditor)
+       
+    def name(self) -> str:
+        '''
+            @return str - the shfit name.
+        '''
+        
+        return self._name.text()
+    
+    
+    
+    def setPeople(self, people : list[LogBook.Person]) -> None:
+        '''
+            @param people : list[LogBook.Person] - People known to the logbook.
+        '''
+        
+        self._memberEditor.setNonMembers(people)
+    def getMembers(self) -> list[LogBook.Person]:
+        '''
+        @return list[LogBook.Person] - List of the people on the shift.
+        '''
+        return self._memberEditor.members()                
+
 
 #   Test code:
 

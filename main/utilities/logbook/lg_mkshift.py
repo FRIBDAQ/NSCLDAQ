@@ -38,74 +38,27 @@ def prompt() -> tuple[str | None, list[LogBook.Person] | None]:
     
     from PyQt6.QtWidgets import (QApplication, QDialog, QDialogButtonBox, QLabel, QLineEdit,
                                  QHBoxLayout, QVBoxLayout, QMessageBox)
-    from nscldaq.LogBook.LogBookUIUtilities import ShiftMemberEditor
-    
-    class ShiftCreationDialog(QDialog):
+    from nscldaq.LogBook.LogBookUIUtilities import ShiftCreator
+    from nscldaq.mg_configutils  import OkDialog
+    class ShiftCreationDialog(OkDialog):
         def __init__(self):
-            super().__init__(parent = None)
+            super().__init__(ShiftCreator(), parent = None)
             
-            self._layout = QVBoxLayout()
-            self.setLayout(self._layout)
-            
-            # Top bit is the prompt for the shiftname and line edit for it:
-            
-            namelayout = QHBoxLayout()
-            namelayout.addWidget(QLabel('Shift Name: ', self))
-            self._name = QLineEdit(self)
-            namelayout.addWidget(self._name)
-            
-            self._layout.addLayout(namelayout)
-            
-            #  Now the shift editor:
-            
-            self._memberEditor = ShiftMemberEditor(self)
-            self._layout.addWidget(self._memberEditor)
-            
-            # The buttons and their connections:
-            
-            self._buttons = QDialogButtonBox(
-                QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
-                self
-            )
-            self._layout.addWidget(self._buttons)
-            self._buttons.accepted.connect(self.accept)
-            self._buttons.rejected.connect(self.reject)
-            
-        # Get the name:
-        
-        def name(self) -> str:
-            '''
-                @return str - the shfit name.
-            '''
-            
-            return self._name.text()
-        
-        
-        
-        def setPeople(self, people : list[LogBook.Person]) -> None:
-            '''
-                @param people : list[LogBook.Person] - People known to the logbook.
-            '''
-            
-            self._memberEditor.setNonMembers(people)
-        def getMembers(self) -> list[LogBook.Person]:
-            '''
-            @return list[LogBook.Person] - List of the people on the shift.
-            '''
-            return self._memberEditor.members()
+
+       
     
     # Now we have a prompter dialog, we can start it up.  Note that we
     # require a non-empty shift name:
     
     _app = QApplication(sys.argv)
     prompt = ShiftCreationDialog()
-    prompt.setPeople(logbookadmin.listPeople())
+    prompt.workarea().setPeople(logbookadmin.listPeople())
     
     while True:
         if prompt.exec() ==  QDialog.DialogCode.Accepted:
-            name = prompt.name()
+            name = prompt.workarea().name()
             if name.strip():  # Require a name.
-                return (name, prompt.getMembers()) 
+                return (name, prompt.workarea().getMembers()) 
             else:
                 QMessageBox.warning(prompt, 'Missing data', 'The shift must have a non blank name')
         else:
