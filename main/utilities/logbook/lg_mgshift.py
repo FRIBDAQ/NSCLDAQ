@@ -46,8 +46,34 @@ def usage() -> None:
 
 
 def main() -> int:
-    usage()
-    return 0
+    
+    # Get the parameters..
+    
+    verb = None
+    shiftname = None
+    
+    if len(sys.argv) >= 2:
+        verb = sys.argv[1]
+    if len(sys.argv) >=3:
+        shiftname = sys.argv[2]
+    if len (sys.argv) > 3:
+        usage()
+        return -1
+    
+    match verb:
+        case 'help':
+            usage()
+            return 0 
+        case None:
+            print('default action')
+            return 0
+        case _:
+            # Illegal/unsupported verb.
+            print("Invalid command verb:")
+            usage()
+            return 0
+                 
+    
 
 
 if __name__ == "__main__":
