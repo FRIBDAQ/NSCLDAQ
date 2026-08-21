@@ -18,7 +18,7 @@ libPyLogbook_la_SOURCES=PyLogbook.cpp PyLogbookPerson.cpp PyLogbook.h \
 	PyLogBookPerson.h PyLogBookShift.h PyLogBookShift.cpp	\
 	PyLogBookRun.h PyLogBookRun.cpp PyNote.h PyNote.cpp
 
-PY_PACKAGES=logbookadmin.py
+PY_PACKAGES=logbookadmin.py LogBookUIUtilities.py
 
 include_HEADERS=LogBook.h LogBookPerson.h LogBookShift.h LogBookRun.h \
 	LogBookNote.h
