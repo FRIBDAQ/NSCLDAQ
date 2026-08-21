@@ -43,10 +43,7 @@ def prompt() -> tuple[str | None, list[LogBook.Person] | None]:
     class ShiftCreationDialog(OkDialog):
         def __init__(self):
             super().__init__(ShiftCreator(), parent = None)
-            
-
-       
-    
+                
     # Now we have a prompter dialog, we can start it up.  Note that we
     # require a non-empty shift name:
     
