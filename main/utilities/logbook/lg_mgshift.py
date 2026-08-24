@@ -19,6 +19,15 @@
       as we did for e.g. lg_mkshift and similer.
 '''
 import sys
+import os
+import subprocess
+#from nscldaq.LogBook import logbookadmin
+import logbookadmin     # Debugging - use the local version.
+from nscldaq.LogBook import LogBook
+from nscldaq.LogBook.LogBookUIUtilities import ShiftEditor
+from nscldaq.mg_configutils import OkDialog
+
+from PyQt6.QtWidgets import QApplication, QDialog, QWidget
 
 def usage() -> None:
     # Print program usage to stderr:
@@ -44,6 +53,72 @@ def usage() -> None:
     print('you to either create a new shift or edit a selected shift.')
     
 
+class ShiftEditorDialog(OkDialog):
+    def __init__(self, parent : None | QWidget = None):
+        super().__init__(ShiftEditor(), parent = parent)
+    
+def editShiftGui(name : str) -> list[LogBook.Person] | None:
+    #  Pop up a dialog to edit the named shift with the 
+    #  left and right hand people properly loaded as well as the shiftname
+    # Note that its up to the caller to make actual database changes.
+     
+    _app = QApplication(sys.argv)
+    prompt = ShiftEditorDialog()
+    
+    # Load out the prompt:
+    
+    current_members = logbookadmin.listShiftMembers(name)
+    current_names    = [(p.lastname, p.firstname, p.salutation) for p in current_members]
+    all_people      = logbookadmin.listPeople()
+    current_nonmembers = [p for p in all_people if (p.lastname, p.firstname, p.salutation) not in current_names]
+    
+    wa = prompt.workarea()
+    wa.setName(name)
+    
+    wa.editor().setMembers(current_members)
+    wa.editor().setNonMembers(current_nonmembers)
+    
+    if prompt.exec() == QDialog.DialogCode.Accepted:
+        return prompt.workarea().editor().members()
+    else:
+        return None     # Rejected.
+    
+    
+
+def create_shift(shift : str | None) -> int:
+    # Handle the 'create' verb.  shift is the new shiftname or 
+    # None if not provided.
+    
+    if not shift:
+        # Run $DAQBIN/lg_mkshift
+        
+        if 'DAQBIN'  in os.environ:
+            command = f'{os.environ["DAQBIN"]}/lg_mkshift'
+            
+            return subprocess.call(command)
+        else:
+            print(
+                'The DAQBIN enviromment variable is not defined, use daqsetup.bash in a vesion of FRIB/NSCLDAQ to set it up',
+                file = sys.stderr
+            )
+            return -1
+    else:
+        # Make sure this is a new shift:
+        
+        if shift in logbookadmin.listShifts():
+            print(f'{shift} is already a shift, use "edit" to modify it.')
+            return -1
+        
+        # Make the empty shift and let the user edit it:
+        
+        logbookadmin.createShift(shift, [])
+        members = editShiftGui(shift)     # None if cancel. and
+        if members:                       # No point if the list is empty.
+            logbookadmin.addMembersToShift(shift,members)
+
+
+        
+
 
 def main() -> int:
     
@@ -64,6 +139,8 @@ def main() -> int:
         case 'help':
             usage()
             return 0 
+        case 'create':
+            return create_shift(shiftname)
         case None:
             print('default action')
             return 0
