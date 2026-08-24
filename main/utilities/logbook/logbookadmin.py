@@ -160,7 +160,7 @@ def listShifts() -> list[str]:
     result = []
     for shift in shifts:
         result.append(shift.name)
-        return result
+        
     
     return result
 
