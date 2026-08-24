@@ -172,6 +172,7 @@ def edit_shift(name : str | None) -> int:
     members = editShiftGui(name)
     if members is None:
         return 0                          # rejected. 
+    
     member_names = [(p.lastname, p.firstname, p.salutation) for p in members]
     prior_members = logbookadmin.listShiftMembers(name)
     
@@ -192,6 +193,20 @@ def edit_shift(name : str | None) -> int:
     logbookadmin.addMembersToShift(name, new_members)
     
     return 0
+
+def list_shift(name : str) -> int:
+    #   List the named shift:
+    
+    if name not in logbookadmin.listShifts():
+        print(f"There is no shift named {name}")
+        return -1
+    
+    members = logbookadmin.listShiftMembers(name)
+    print(f"{name} shift  members:")
+    for member in members:
+        print(f'{member.salutation} {member.firstname} {member.lastname}')
+    return 0
+
 def main() -> int:
     
     # Get the parameters..
@@ -215,6 +230,14 @@ def main() -> int:
             return create_shift(shiftname)
         case 'edit':
             return edit_shift(shiftname)
+        case 'list':
+            if shiftname:
+                return list_shift(shiftname)
+            else:
+                for name in logbookadmin.listShifts():
+                    list_shift(name)
+                    print('---------------------------------------------')
+            return 0
         case None:
             print('default action')
             return 0
