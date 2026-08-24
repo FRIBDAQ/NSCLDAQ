@@ -181,7 +181,49 @@ class ShiftCreator(QWidget):
         '''
         return self._memberEditor.members()                
 
-
+class ShiftEditor(QWidget):
+    '''
+        Edit the members of an existing shift.  This is very much like
+        ShiftCreator but 
+        1. The name of the shift is just a label and can't be changed.
+        2. We fully expose the ShiftMemberEditor subwidget.
+        
+    '''
+    def __init__(self, parent : QWidget | None = None) :
+        super().__init__(parent = parent)
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        namelayout = QHBoxLayout()
+        namelayout.addWidget(QLabel('Shift:', self))
+        self._name = QLabel(self)
+        namelayout.addWidget(self._name)
+        
+        self._layout.addLayout(namelayout)
+        
+        self._memberEditor = ShiftMemberEditor(self)
+        self._layout.addWidget(self._memberEditor)
+        
+    def editor(self) -> ShiftMemberEditor:
+        '''
+        @return ShiftMemberEditor - our editor widget.
+        '''
+        return self._memberEditor
+    def name(self) -> str:
+        '''
+        @return str - the shift name
+        '''
+        return self._name.text()
+    def setName(self, name :str) -> None:
+        '''
+        @param name : str - shift name string
+        '''
+        self._name.setText(name)
+        
+        
+        
+    
 #   Test code:
 
 if __name__  == "__main__":
