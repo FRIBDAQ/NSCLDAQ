@@ -608,7 +608,10 @@ findShift(PyObject* self, PyObject* args)
         if (!pShift.get()) {
             throw LogBook::Exception("Shift not found");
         }
-        return PyShift_newShift(self, pShift.get());
+        
+        PyObject* result =  PyShift_newShift(self, new LogBookShift(*pShift.get()));
+        Py_XINCREF(result);
+        return result;
     }
     catch (LogBook::Exception & e)
     {
@@ -638,6 +641,7 @@ currentShift(PyObject* self, PyObject* none)
         PyObject* result(nullptr);
         try {
             result = PyShift_newShift(self, shift.get());
+            Py_XINCREF(result);
         }
         catch (LogBook::Exception& e) {
             PyErr_SetString(logbookExceptionObject, e.what());
