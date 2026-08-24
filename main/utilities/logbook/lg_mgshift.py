@@ -21,15 +21,19 @@
 import sys
 import os
 import subprocess
-#from nscldaq.LogBook import logbookadmin
+from collections.abc import Iterable
+
 import logbookadmin
 from nscldaq.LogBook import LogBook
 from nscldaq.LogBook.LogBookUIUtilities import ShiftEditor
 from nscldaq.mg_configutils import OkDialog
 
 from PyQt6.QtWidgets import (
-    QApplication, QDialog, QWidget, QComboBox, QLabel, QVBoxLayout
+    QApplication, QDialog, QWidget, QComboBox, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit
 )
+
+from PyQt6.QtCore import Qt
+
 
 def usage() -> None:
     # Print program usage to stderr:
@@ -71,7 +75,7 @@ class ShiftChooser(QWidget):
         self._shifts = QComboBox(self)
         self._layout.addWidget(self._shifts)
     
-    def setShifts(self, shifts : list[str]) -> None:
+    def setShifts(self, shifts : Iterable[str]) -> None:
         for shift in shifts:
             self._shifts.addItem(shift)
     
@@ -82,14 +86,76 @@ class ShiftChooserDialog(OkDialog):
     def __init__(self, parent : None |QWidget = None):
         super().__init__(ShiftChooser(), parent = parent)
         
+
+class WhatToDo(QDialog):
+    # THis is the default prompter... What should the user do?
+    # edit an existing shift, chosen from a shift chooser or 
+    # create a new shift?  THis is a funky dialog.
+    # because it can be dual purpose.
+    
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
         
+        #  The selection part:
+        
+        selection = QHBoxLayout()
+        self._shift = ShiftChooser(self)
+        selection.addWidget(self._shift)
+        self._editbutton =QPushButton('Edit...', self)
+        selection.addWidget(self._editbutton, 0, Qt.AlignmentFlag.AlignBottom)
+        
+        self._layout.addLayout(selection)
+        
+        # The New... part:
+        
+        creation = QHBoxLayout()
+        creation.addWidget(QLabel('Shift Name:', self))
+        self._newname = QLineEdit(self)
+        creation.addWidget(self._newname)
+        self._newbutton = QPushButton('New...', self)
+        creation.addWidget(self._newbutton)
+        
+        self._layout.addLayout(creation)
+        
+        # Hook in the buttons:
+        
+        self._editbutton.clicked.connect(lambda: self._ok('edit'))
+        self._newbutton.clicked.connect(lambda: self._ok('new'))
+        
+    # Public methods:
+    
+    def setShifts(self, shifts : Iterable[str]) -> None:
+        self._shift.setShifts(shifts)
+    def editShift(self) -> str:
+        return self._shift.shift()
+    
+    def newShift(self) -> str:
+        return self._newname.text()
+    
+    def action(self) -> str:
+        return self._action
+    
+    # Private/internal slots:
+    
+    def _ok(self, action : str) -> None:
+        #  An ok action was clicked:
+        
+        self._action = action
+        self.accept()
+
+    
         
 def editShiftGui(name : str) -> list[LogBook.Person] | None:
     #  Pop up a dialog to edit the named shift with the 
     #  left and right hand people properly loaded as well as the shiftname
     # Note that its up to the caller to make actual database changes.
      
-    _app = QApplication(sys.argv)
+    _app = QApplication.instance()    # Culd come from default...
+    if not _app:
+        _app = QApplication(sys.argv)   
+        
     prompt = ShiftEditorDialog()
     
     # Load out the prompt:
@@ -207,6 +273,25 @@ def list_shift(name : str) -> int:
         print(f'{member.salutation} {member.firstname} {member.lastname}')
     return 0
 
+def gui() -> int:
+    # No verb so, prompt for new or shift to edit.
+    # then do it.
+    
+    _app = QApplication(sys.argv)
+    action_selection = WhatToDo()
+    action_selection.setShifts(logbookadmin.listShifts())
+    
+    if action_selection.exec() == QDialog.DialogCode.Accepted:
+        action = action_selection.action()
+        if action == 'edit':
+            edit_shift(action_selection.editShift())
+        elif action == 'new':
+            create_shift(action_selection.newShift())
+        else:
+            return 0       # Don't really know what else to do.
+    else:
+        return 0        # They killed the dialog 
+    
 def main() -> int:
     
     # Get the parameters..
@@ -239,8 +324,8 @@ def main() -> int:
                     print('---------------------------------------------')
             return 0
         case None:
-            print('default action')
-            return 0
+            return gui()
+            
         case _:
             # Illegal/unsupported verb.
             print("Invalid command verb:")
