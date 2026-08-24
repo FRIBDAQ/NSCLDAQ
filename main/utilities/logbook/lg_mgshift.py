@@ -22,12 +22,14 @@ import sys
 import os
 import subprocess
 #from nscldaq.LogBook import logbookadmin
-import logbookadmin     # Debugging - use the local version.
+import logbookadmin
 from nscldaq.LogBook import LogBook
 from nscldaq.LogBook.LogBookUIUtilities import ShiftEditor
 from nscldaq.mg_configutils import OkDialog
 
-from PyQt6.QtWidgets import QApplication, QDialog, QWidget
+from PyQt6.QtWidgets import (
+    QApplication, QDialog, QWidget, QComboBox, QLabel, QVBoxLayout
+)
 
 def usage() -> None:
     # Print program usage to stderr:
@@ -56,7 +58,32 @@ def usage() -> None:
 class ShiftEditorDialog(OkDialog):
     def __init__(self, parent : None | QWidget = None):
         super().__init__(ShiftEditor(), parent = parent)
+
+class ShiftChooser(QWidget):
+    # Widget that provides a choice of shifts
     
+    def __init__(self, parent : QWidget  | None = None):
+        super().__init__(parent)
+        self._layout = QVBoxLayout()
+        self._layout.addWidget(QLabel('Choose Shift: ', self))
+        self.setLayout(self._layout)
+        
+        self._shifts = QComboBox(self)
+        self._layout.addWidget(self._shifts)
+    
+    def setShifts(self, shifts : list[str]) -> None:
+        for shift in shifts:
+            self._shifts.addItem(shift)
+    
+    def shift(self) -> str:
+        return self._shifts.currentText()
+
+class ShiftChooserDialog(OkDialog):
+    def __init__(self, parent : None |QWidget = None):
+        super().__init__(ShiftChooser(), parent = parent)
+        
+        
+        
 def editShiftGui(name : str) -> list[LogBook.Person] | None:
     #  Pop up a dialog to edit the named shift with the 
     #  left and right hand people properly loaded as well as the shiftname
@@ -83,7 +110,18 @@ def editShiftGui(name : str) -> list[LogBook.Person] | None:
     else:
         return None     # Rejected.
     
+def promptForShift() -> str | None:
+    # Pop up a dialog with a list of shifts to choose from. We'll use a combobox.   
     
+    _app = QApplication(sys.argv)
+    widget = ShiftChooserDialog()
+    widget.workarea().setShifts(logbookadmin.listShifts())
+    
+    if widget.exec() == QDialog.DialogCode.Accepted:
+        return widget.workarea().shift()
+    else:
+        return None
+        
 
 def create_shift(shift : str | None) -> int:
     # Handle the 'create' verb.  shift is the new shiftname or 
@@ -116,10 +154,44 @@ def create_shift(shift : str | None) -> int:
         if members:                       # No point if the list is empty.
             logbookadmin.addMembersToShift(shift,members)
 
-
+    return 0
         
+def edit_shift(name : str | None) -> int:
+    if not name:
+        name = promptForShift()
+        if not name:
+            return 0                      # Cancelled.
 
-
+    # Since the shift could have been typed in we need to be sure it's real:
+    
+   
+    if name not in logbookadmin.listShifts():
+        print(f'{name} is is not a shift!', file=sys.stderr)
+        return -1
+    
+    members = editShiftGui(name)
+    if members is None:
+        return 0                          # rejected. 
+    member_names = [(p.lastname, p.firstname, p.salutation) for p in members]
+    prior_members = logbookadmin.listShiftMembers(name)
+    
+    # Remove prior members no longer in the shift:
+    
+    for p in prior_members:
+        if (p.lastname, p.firstname, p.salutation) not in member_names:
+            logbookadmin.removeMemberFromShift(name, p)
+    
+    # Add members that are not already in the shift:
+    
+    member_names = [(p.lastname, p.firstname, p.salutation) for p in prior_members]
+    new_members = []
+    for m in members:
+        if (m.lastname, m.firstname, m.salutation) not in member_names:
+            new_members.append(m)
+    
+    logbookadmin.addMembersToShift(name, new_members)
+    
+    return 0
 def main() -> int:
     
     # Get the parameters..
@@ -141,6 +213,8 @@ def main() -> int:
             return 0 
         case 'create':
             return create_shift(shiftname)
+        case 'edit':
+            return edit_shift(shiftname)
         case None:
             print('default action')
             return 0
