@@ -33,6 +33,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+UPDATE_SECONDS : int = 1
 
 def usage() -> None:
     print('Usage', file=sys.stderr)
@@ -121,10 +122,10 @@ class ShiftSelection(QWidget):
     def shift(self)  -> str:
         # Selected shift name:
         
-        self._selection.shift()
+        return self._selection.shift()
         
-    def setShifts(self, shifts : Iterable[LogBook.Shift]) -> None:
-        shiftnames = [s.name for s in shifts]
+    def setShifts(self, shiftnames : Iterable[str]) -> None:
+        
         self._selection.setShifts(shiftnames)
     
     def setShift(self, shift : LogBook.Shift) -> None:
@@ -133,7 +134,7 @@ class ShiftSelection(QWidget):
     # Local/private slots:
     
     def _apply(self) -> None:
-        self.shiftchosen.emit(self.shfit())
+        self.shiftchosen.emit(self.shift())
     
     
 class MainWidget(QWidget):
@@ -159,12 +160,47 @@ class MainWidget(QWidget):
     def selector(self) -> ShiftSelection:
         return self._selector
     
+
+def updateCurrentShift(currentWidget : CurrentShift) -> None:
+    # Uupdate the contents of the current shift widget from the
+    # actual logbook:
     
+   
+    shift  = logbookadmin.currentShift()    
+    currentWidget.setShift(shift)
+
+def updateSelection(selector : ShiftSelection, newshift : str) -> None:
+    # Update the selector's shift members as the combobox changes selection:
+    
+    selector.setShift(logbookadmin.getShift(newshift))
+
 def Gui() -> int:
     app = QApplication(sys.argv)
     widget = MainWidget()
     widget.show()
     
+    # Set up a timer to maintain the current shift:
+    
+    update = QTimer(widget)
+    update.setSingleShot(False)
+    update.setInterval(UPDATE_SECONDS * 1000)
+    update.timeout.connect(lambda: updateCurrentShift(widget.current()))
+    update.start()
+    
+    # Stock the known shifts:
+    # Set the members of the 'selected' shift.
+    selector = widget.selector()
+    shiftnames = logbookadmin.listShifts()
+    selector.setShifts(shiftnames)
+    selector.setShift(logbookadmin.getShift(shiftnames[0]))
+    
+    # Set up to track selection changes in the shift combobox:
+    
+    selector.shiftselected.connect(lambda newshift: updateSelection(selector, newshift))
+    
+    # Handle the user setting a new current shift:
+    
+    selector.shiftchosen.connect(logbookadmin.setCurrentShift)
     
     return app.exec()
         
