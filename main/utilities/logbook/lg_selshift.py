@@ -20,8 +20,8 @@
 import sys
 from collections.abc import Iterable
 
-from LogBookUIUtilities import ShiftChooser
 from nscldaq.LogBook import LogBook, logbookadmin
+from nscldaq.LogBook.LogBookUIUtilities import ShiftChooser
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication,
