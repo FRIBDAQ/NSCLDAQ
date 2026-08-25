@@ -18,21 +18,25 @@
 @note with the exception of list, this is inherently GUI so we won't conditionally import the Qt 
       as we did for e.g. lg_mkshift and similer.
 '''
-import sys
 import os
 import subprocess
+import sys
 from collections.abc import Iterable
 
-import logbookadmin
-from nscldaq.LogBook import LogBook
-from nscldaq.LogBook.LogBookUIUtilities import ShiftEditor
-from nscldaq.mg_configutils import OkDialog
-
-from PyQt6.QtWidgets import (
-    QApplication, QDialog, QWidget, QComboBox, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit
-)
-
+import nscldaq.LogBook.LogBookUIUtilities
+import nscldaq.mg_configutils
+from nscldaq.LogBook import LogBook, logbookadmin
 from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 def usage() -> None:
@@ -59,32 +63,11 @@ def usage() -> None:
     print('you to either create a new shift or edit a selected shift.')
     
 
-class ShiftEditorDialog(OkDialog):
+class ShiftEditorDialog(nscldaq.mg_configutils.OkDialog):
     def __init__(self, parent : None | QWidget = None):
-        super().__init__(ShiftEditor(), parent = parent)
+        super().__init__(nscldaq.LogBook.LogBookUIUtilities.ShiftEditor(), parent = parent)
 
-class ShiftChooser(QWidget):
-    # Widget that provides a choice of shifts
-    
-    def __init__(self, parent : QWidget  | None = None):
-        super().__init__(parent)
-        self._layout = QVBoxLayout()
-        self._layout.addWidget(QLabel('Choose Shift: ', self))
-        self.setLayout(self._layout)
-        
-        self._shifts = QComboBox(self)
-        self._layout.addWidget(self._shifts)
-    
-    def setShifts(self, shifts : Iterable[str]) -> None:
-        for shift in shifts:
-            self._shifts.addItem(shift)
-    
-    def shift(self) -> str:
-        return self._shifts.currentText()
 
-class ShiftChooserDialog(OkDialog):
-    def __init__(self, parent : None |QWidget = None):
-        super().__init__(ShiftChooser(), parent = parent)
         
 
 class WhatToDo(QDialog):
@@ -101,7 +84,7 @@ class WhatToDo(QDialog):
         #  The selection part:
         
         selection = QHBoxLayout()
-        self._shift = ShiftChooser(self)
+        self._shift = nscldaq.LogBook.LogBookUIUtilities.ShiftChooser(self)
         selection.addWidget(self._shift)
         self._editbutton =QPushButton('Edit...', self)
         selection.addWidget(self._editbutton, 0, Qt.AlignmentFlag.AlignBottom)
@@ -180,7 +163,7 @@ def promptForShift() -> str | None:
     # Pop up a dialog with a list of shifts to choose from. We'll use a combobox.   
     
     _app = QApplication(sys.argv)
-    widget = ShiftChooserDialog()
+    widget = nscldaq.LogBook.LogBookUIUtilities.ShiftChooserDialog()
     widget.workarea().setShifts(logbookadmin.listShifts())
     
     if widget.exec() == QDialog.DialogCode.Accepted:
