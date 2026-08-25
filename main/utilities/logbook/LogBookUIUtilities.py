@@ -23,6 +23,7 @@ from collections.abc import Iterable
 from nscldaq.editablelist6 import ListToListEditor
 from nscldaq.LogBook import LogBook
 from nscldaq.mg_configutils import OkDialog
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -227,7 +228,10 @@ class ShiftEditor(QWidget):
         
         
 class ShiftChooser(QWidget):
-    # Widget that provides a choice of shifts
+    '''
+        Provides a chooser for shifts.
+    '''
+    shiftselected = pyqtSignal(str)
     
     def __init__(self, parent : QWidget  | None = None):
         super().__init__(parent)
@@ -237,15 +241,28 @@ class ShiftChooser(QWidget):
         
         self._shifts = QComboBox(self)
         self._layout.addWidget(self._shifts)
-    
+        self._shifts.currentTextChanged.connect(self.shiftselected)
+        
     def setShifts(self, shifts : Iterable[str]) -> None:
+        '''
+        @param shifts :Iterable[str] - Available shifts to select from.
+        '''
+        self._shifts.clear()     # Clear any prior one.
         for shift in shifts:
             self._shifts.addItem(shift)
     
     def shift(self) -> str:
+        '''
+        @return str - the currently selected shift.
+        '''
+        
         return self._shifts.currentText()
 
 class ShiftChooserDialog(OkDialog):
+    '''
+    Ok dialog that wraps a ShiftChooser workarea
+    '''
+    
     def __init__(self, parent : None |QWidget = None):
         super().__init__(ShiftChooser(), parent = parent)        
     
