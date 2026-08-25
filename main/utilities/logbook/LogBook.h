@@ -24,6 +24,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <utility>
 
 class CSqlite;
 class CSqliteException;
@@ -143,6 +144,7 @@ public:
     std::string kvGet(const char* key);
     void kvSet(const char* key, const char* value);
     void kvCreate(const char* key, const char* value);
+    std::vector<std::pair<std::string,std::string>> kvList();
     
 private:
     static std::string computeTempDir();

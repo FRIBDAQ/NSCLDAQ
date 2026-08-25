@@ -1313,6 +1313,33 @@ kvCreate(PyObject* self, PyObject* args)
     PyErr_SetString(logbookExceptionObject, m.c_str());
     return nullptr;
 }
+
+/**
+ * kvList
+ *     Return a tuple of pairs where each pair is a key value pair,
+ *     listing the entire key value table.
+ * 
+ * @param self - pointer to this object.
+ * @param unused - Pointer to the positional arguments. - unused
+ * @return PyObject* tuple of key value pairs.
+ */
+static PyObject*
+kvList(PyObject* self, PyObject* Py_UNUSED(ignored)) {
+    LogBook* pBook = PyLogBook_getLogBook(self);
+
+    std::vector<std::pair<std::string, std::string>> vresult = pBook->kvList();
+    PyObject* result = PyTuple_New(vresult.size());
+    for (int i = 0; i < vresult.size(); i++) {
+        PyObject* key = PyUnicode_FromString(vresult[i].first.c_str());
+        PyObject* value = PyUnicode_FromString(vresult[i].second.c_str());
+        PyObject* item = PyTuple_New(2);
+        PyTuple_SetItem(item, 0, key);
+        PyTuple_SetItem(item, 1, value);
+
+        PyTuple_SetItem(result, i, item);
+    }
+    return result;
+}
 ///////////////////////////////////////////////////////////////
 // Table for the PyLogBook type (LogBook.LogBook)
 
@@ -1385,6 +1412,7 @@ static PyMethodDef PyLogBook_methods [] = {   // methods
     {"kv_get", kvGet, METH_VARARGS, "Return the value of a key"},
     {"kv_set", kvSet, METH_VARARGS, "Create or modify a key/value"},
     {"kv_create", kvCreate, METH_VARARGS, "Create a new key/value pair"},
+    {"kv_list", kvList, METH_NOARGS, "List all key value pairs."},
     
     
     // Ending sentinel:

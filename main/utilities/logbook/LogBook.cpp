@@ -37,6 +37,7 @@
 #include <string.h>
 #include <vector>
 #include <memory>
+#include <utility>
 
 static const char* DBVersion="1.0";
 
@@ -822,6 +823,30 @@ LogBook::kvCreate(const char* key, const char* value)
     query.bind(2, value, -1, SQLITE_STATIC);
     ++query;
 }
+/**
+ * kvList
+ *    List all of the key value pairs in the kv store.
+ * 
+ * @return std::vector<std::pair<std::string, std::string>> 
+ *     the first string in each pair is the key, the second,
+ *     the value.
+ */
+std::vector<std::pair<std::string, std::string>>
+LogBook::kvList() {
+    CSqliteStatement query(
+        *m_pConnection,
+        "SELECT key, value FROM kvstore"
+    );
+    std::vector<std::pair<std::string, std::string>> result;
+    while (!(++query).atEnd()) {
+        std::string key = query.getString(0);
+        std::string value = query.getString(1);
+
+        result.push_back(std::pair(key, value));
+    }
+    return result;
+}
+
 /////////////////////////////////////////////////////////
 // Private methods
 
