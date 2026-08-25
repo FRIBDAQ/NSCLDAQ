@@ -18,9 +18,13 @@
 '''
 
 
+from collections.abc import Iterable
+
 from nscldaq.editablelist6 import ListToListEditor
 from nscldaq.LogBook import LogBook
+from nscldaq.mg_configutils import OkDialog
 from PyQt6.QtWidgets import (
+    QComboBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -222,7 +226,28 @@ class ShiftEditor(QWidget):
         self._name.setText(name)
         
         
+class ShiftChooser(QWidget):
+    # Widget that provides a choice of shifts
+    
+    def __init__(self, parent : QWidget  | None = None):
+        super().__init__(parent)
+        self._layout = QVBoxLayout()
+        self._layout.addWidget(QLabel('Choose Shift: ', self))
+        self.setLayout(self._layout)
         
+        self._shifts = QComboBox(self)
+        self._layout.addWidget(self._shifts)
+    
+    def setShifts(self, shifts : Iterable[str]) -> None:
+        for shift in shifts:
+            self._shifts.addItem(shift)
+    
+    def shift(self) -> str:
+        return self._shifts.currentText()
+
+class ShiftChooserDialog(OkDialog):
+    def __init__(self, parent : None |QWidget = None):
+        super().__init__(ShiftChooser(), parent = parent)        
     
 #   Test code:
 
