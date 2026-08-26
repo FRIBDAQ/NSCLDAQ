@@ -70,6 +70,19 @@ def getValue() -> int:
         print(e)
         return -1
 
+def setValue() -> int:
+    # Process the 'set' verb.
+    
+    if len(sys.argv) != 4:
+        usage()
+        return -1
+    key = sys.argv[2]
+    value = sys.argv[3]
+    try:
+        logbookadmin.kvSet(key, value)
+    except LogBook.error:
+        logbookadmin.kvCreate(key, value)
+    return 0
 def main() -> int:
     
     if logbookadmin.currentLogBook() is None:
@@ -88,6 +101,8 @@ def main() -> int:
             return testExistence()
         case 'get':
             return getValue()
+        case 'set':
+            return setValue()
         case _:
             usage()
             return -1
