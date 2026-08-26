@@ -67,7 +67,7 @@ def getValue() -> int:
         print(value)
         return 0
     except LogBook.error as e:
-        print(e)
+        print(e, file=sys.stderr)
         return -1
 
 def setValue() -> int:
@@ -83,6 +83,25 @@ def setValue() -> int:
     except LogBook.error:
         logbookadmin.kvCreate(key, value)
     return 0
+
+def create() -> int:
+    # Process the 'create' verb.
+    
+    if len(sys.argv) != 4:
+        usage()
+        return -1
+    
+    key = sys.argv[2]
+    value = sys.argv[3]
+    
+    try:
+        logbookadmin.kvCreate(key, value)
+    except LogBook.error as e:
+        print(e, file = sys.stderr)
+        return -1
+    
+    return 0
+
 def main() -> int:
     
     if logbookadmin.currentLogBook() is None:
@@ -103,6 +122,8 @@ def main() -> int:
             return getValue()
         case 'set':
             return setValue()
+        case 'create':
+            return create()
         case _:
             usage()
             return -1
