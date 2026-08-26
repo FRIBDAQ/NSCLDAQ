@@ -19,8 +19,9 @@
 @author Ron Fox
 '''
 import sys
-from nscldaq.LogBook import logbookadmin
-from nscldaq.LogBook import LogBook
+import tabulate
+from nscldaq.LogBook import LogBook, logbookadmin
+
 
 def usage():
     # Print the program usage:
@@ -42,6 +43,7 @@ def usage():
     print('    "create" - Creates a new "key" assigning it "value".  It is an error for the', file=sys.stderr)
     print('               "key" to already exist', file=sys.stderr)
     print('     "list"  - Lists all keys and values in the key/value stores in tabular form', file=sys.stderr)
+    print('               they table is ordered alhpabetically by key.')
 
 def testExistence() -> int:
     # Handle the 'exists' verb:
@@ -102,6 +104,13 @@ def create() -> int:
     
     return 0
 
+
+def listKv() -> int:
+    data = [t for t in logbookadmin.kvList()]
+    data.sort(key=lambda item: item[0])
+    print(tabulate.tabulate(data, headers=['Key', 'Value'], tablefmt='grid'))
+    return 0
+
 def main() -> int:
     
     if logbookadmin.currentLogBook() is None:
@@ -124,6 +133,8 @@ def main() -> int:
             return setValue()
         case 'create':
             return create()
+        case 'list':
+            return listKv()
         case _:
             usage()
             return -1
