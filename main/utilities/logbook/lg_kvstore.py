@@ -23,7 +23,7 @@ import tabulate
 from nscldaq.LogBook import LogBook, logbookadmin
 
 
-def usage():
+def usage() -> None:
     # Print the program usage:
     print('Usage:', file=sys.stderr)
     print('    $DAQBIN/lg_kvstore exists key', file=sys.stderr)
