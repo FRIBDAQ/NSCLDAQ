@@ -424,7 +424,9 @@ def kvCreate(key : str, value : str) -> None:
     book = _currentLogBookOrError()
     book.kv_create(key, value)
     
-
+def kvList() -> tuple[tuple[str,str]]:
+    book = _currentLogBookOrError()
+    return book.kv_list()
 # Self contained unit tests.
 
 if __name__ == '__main__':
@@ -1068,6 +1070,13 @@ if __name__ == '__main__':
         def test_kvSetCreates(self):
             kvSet('a', 'b')
             self.assertEqual('b', kvGet('a'))
-        
+    
+        def test_kvList(self):
+            info = kvList()
+            self.assertEqual(
+                (('experiment', 'e0400x'), 
+                 ('spokesperson', 'Ron Fox'), 
+                 ('purpose', 'Test Experiment'), 
+                 ('version', '1.0')), info)
     unittest.main()
     
