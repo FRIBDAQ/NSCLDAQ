@@ -65,7 +65,7 @@ install-exec-hook:
 	$(INSTALL_PROGRAM) @srcdir@/lg_wrnote.tcl @bindir@/lg_wrnote
 	$(INSTALL_PROGRAM) @srcdir@/lg_selshift.py @bindir@/lg_selshift
 	$(INSTALL_PROGRAM) @srcdir@/lg_browse.tcl @bindir@/lg_browse
-	$(INSTALL_PROGRAM) @srcdir@/lg_kvstore.tcl @bindir@/lg_kvstore
+	$(INSTALL_PROGRAM) @srcdir@/lg_kvstore.py @bindir@/lg_kvstore
 	$(INSTALL_PROGRAM) @srcdir@/lg_print.tcl @bindir@/lg_print
 	for f in $(FIGURES); do $(INSTALL_DATA) @srcdir@/$$f \
 		@prefix@/share/html; done
@@ -138,6 +138,6 @@ EXTRA_DIST=logbookstatictests.py pypersontests.py pyshifttests.py \
 	lg_current.py lg_ls.tcl lg_addperson.py lg_lspeople.tcl \
 	lg_mkshift.py ShiftEditor.tcl lg_mgshift.py lg_utilities.tcl \
 	lg_noteutilities.tcl noteutil.test lg_wrnote.tcl logbookBundle.tcl \
-	lg_selshift.py pykvtests.py lg_browse.tcl lg_kvstore.tcl lg_print.tcl \
+	lg_selshift.py pykvtests.py lg_browse.tcl lg_kvstore.py lg_print.tcl \
 	logbookdocs.xml \
 	$(FIGURES) $(EXAMPLES)
