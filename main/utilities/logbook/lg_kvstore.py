@@ -55,6 +55,21 @@ def testExistence() -> int:
     except LogBook.error:
         return 0
 
+def getValue() -> int:
+    # Handle the 'get' verb:
+    if len(sys.argv) < 3:
+        usage()
+        return -1
+    
+    key = sys.argv[2]
+    try:
+        value = logbookadmin.kvGet(key)
+        print(value)
+        return 0
+    except LogBook.error as e:
+        print(e)
+        return -1
+
 def main() -> int:
     
     if logbookadmin.currentLogBook() is None:
@@ -71,6 +86,8 @@ def main() -> int:
     match verb:
         case 'exists':
             return testExistence()
+        case 'get':
+            return getValue()
         case _:
             usage()
             return -1
