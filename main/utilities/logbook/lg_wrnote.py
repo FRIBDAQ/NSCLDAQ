@@ -16,6 +16,7 @@
 @author Ron Fox
 '''
 import sys
+from collections.abc import Iterable
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QTextEdit, QDialog, QFileDialog, QHBoxLayout, 
     QVBoxLayout, QMenu, QApplication, QGridLayout, QLineEdit
@@ -68,6 +69,7 @@ class NoteEditor(QTextEdit):
     def __init__(self, parent : QWidget | None = None):
         super().__init__(parent)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.DefaultContextMenu)
+        self.setPlaceholderText('Edit note text here')
     
     def contextMenuEvent(self, event : QContextMenuEvent) -> None:
         '''
@@ -128,8 +130,8 @@ class NoteCreator(QWidget):
         chooserBar.addWidget(self._runChooser)
         
         chooserBar.addWidget(QLabel('Author: ', self))
-        self._author = LogBookUIUtilities.PersonChooser(self)
-        chooserBar.addWidget(self._author)
+        self._authorChooser = LogBookUIUtilities.PersonChooser(self)
+        chooserBar.addWidget(self._authorChooser)
 
         self._layout.addLayout(chooserBar)
         
@@ -156,15 +158,47 @@ class NoteCreator(QWidget):
         # Autonomous/internal signal handling:
         
         self._runChooser.textActivated.connect(self._setRun)  # Cook the run a bit.
+        self._authorChooser.textActivated.connect(self._author.setText)
         
     # Public methods:
     
-    def setRuns(self, runs : LogBook.Run) -> None:
+    def setRuns(self, runs : Iterable[LogBook.Run]) -> None:
         '''
             Set the available runs a note can be associated with.
-            
+            @param runs runs : Iterable[LogBook.Run] - the runs that can be selected.
         '''
         self._runChooser.setRuns(runs)
+    
+    def selectedRun(self) -> LogBook.Run | None:
+        '''
+        @return runs : LogBookRun | None - The run 
+        @retval  None - the user does not want the note associated with a run.
+        '''
+        
+        return self._runChooser.selectedRun()
+    
+    
+    def setPeople(self, people : Iterable[LogBook.Person]) -> None:
+        '''
+        @param people - the people that can be selected as authors.
+        
+        '''
+        self._authorChooser.setPeople(people)
+        self._author.setText(self._authorChooser.currentText())
+        
+    def author(self) -> LogBook.Person | None:
+        '''
+            @return LogBook.Person | None - the person selected as author.
+            @retval None - this can only happen if setPeople was never called with a non-empty list.
+        '''
+        return self._authorChooser.selected()
+    
+    
+    def noteText(self) -> str:
+        '''
+            @return str - the raw note text.
+        '''
+        return self._editor.plainText()      
             
     # Internal (private) slots:
     
@@ -186,5 +220,6 @@ if __name__ == '__main__':
     w.show()
     
     w.setRuns(logbookadmin.listRuns())
+    w.setPeople(logbookadmin.listPeople())
     
     sys.exit(app.exec())
