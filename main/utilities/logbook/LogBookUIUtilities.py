@@ -299,7 +299,7 @@ class PersonChooser(QComboBox):
         name = self.currentText()
         if not name:
             return None
-        for person in self._peope:
+        for person in self._people:
             if name == self._makeNameString(person):
                 return person
         
