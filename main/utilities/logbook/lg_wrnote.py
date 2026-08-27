@@ -199,7 +199,7 @@ class NoteCreator(QWidget):
         '''
             @return str - the raw note text.
         '''
-        return self._editor.plainText()      
+        return self._editor.toPlainText()      
     
     def noteImages(self) -> list[tuple[int, int, str]]:
         '''
@@ -239,7 +239,7 @@ class NoteCreator(QWidget):
         # Find the next image in the text or return -1,-1, '' if there isn't 
         # a next masge
         
-        startIndex = text.find('![', start=start)
+        startIndex = text.find('![', start)
         if startIndex == -1:
             return (-1, -1, '')     # No more image links.
         
@@ -263,11 +263,35 @@ class NoteDialog(SaveDialog):
         super().__init__(NoteCreator(), parent)
         self.resize(500,500)
     
-# Test code for now:
+
+
+# Entry point:
+
+def main() -> int:
+    app = QApplication(sys.argv)
+    dialog = NoteDialog()
+    
+    #  Populate the dialog selectors
+    
+    dialog.workarea().setPeople(logbookadmin.listPeople())
+    dialog.workarea().setRuns(logbookadmin.listRuns())
+    
+    # Run the dialog if the result is accepted, fish the stuff
+    # we need out of the dialog and add the note.
+    
+    if dialog.exec() == QDialog.DialogCode.Accepted:
+        author = dialog.workarea().author()
+        run    = dialog.workarea().selectedRun()
+        rawText = dialog.workarea().noteText()
+        image_info = dialog.workarea().noteImages()
+        imageOffsets = [i[0] for i in image_info]
+        imageFiles   = [i[2] for i in image_info]
+        
+        logbookadmin.addNote(author, rawText, imageFiles, imageOffsets, run)
+    
+    return 0
+    
+
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    
-    w = NoteDialog()
-    w.exec()
-    
+    sys.exit(main())
