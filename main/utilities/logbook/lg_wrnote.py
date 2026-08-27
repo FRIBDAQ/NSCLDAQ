@@ -16,12 +16,50 @@
 @author Ron Fox
 '''
 import sys
-from PyQt6.QtWidgets import QWidget, QLabel, QTextEdit, QDialog, QHBoxLayout, QVBoxLayout, QMenu, QApplication
+from PyQt6.QtWidgets import (
+    QWidget, QLabel, QTextEdit, QDialog, QFileDialog, QHBoxLayout, 
+    QVBoxLayout, QMenu, QApplication, QGridLayout, QLineEdit
+)
 from PyQt6.QtGui     import QContextMenuEvent, QAction
 from PyQt6.QtCore    import Qt
 from nscldaq.LogBook import LogBook, LogBookUIUtilities
 
+class ImagePromptDialog(QFileDialog):
+    ''' Extend the file dialog with a caption
+        prompt
+        To do this we must 
+        1. Turn off the OS file prompt dialog.
+        2. Get our layout and add our widgets to that layout.
+        
+    '''
+    def __init__(self, parent : QWidget | None):
+        super().__init__(parent)
+        
+        self.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+        
+        layout = self.layout()
+        rows   = layout.rowCount()
+        
+        extralayout = QHBoxLayout()
+        extralayout.addWidget(QLabel('Caption:', self))
+        self._caption = QLineEdit(self)
+        extralayout.addWidget(self._caption)
+        
+        layout.addLayout(extralayout, rows, 0, 1, -1)
 
+        # only allow one, existing file:
+        
+        self.setFileMode(QFileDialog.FileMode.ExistingFile)
+
+        # Let's set the filters to support some interesting image file
+        # types
+        
+        self.setNameFilters(['Image Files (*.png *.jpg *.bmp *.svg, *.gif)', 'All Files (*)'])
+        
+    def caption(self) -> str:
+        return self._caption.text()
+    
+    
 class NoteEditor(QTextEdit):
     '''
         A Textedit with an extended menu that can prompt for the
@@ -45,7 +83,14 @@ class NoteEditor(QTextEdit):
         menu.exec(event.globalPos())
     
     def _promptImage(self, _ : bool) -> None:
-        self.insertPlainText('---image---')
+        prompt = ImagePromptDialog(self)
+        if prompt.exec() == QDialog.DialogCode.Accepted:
+            file = prompt.selectedFiles()
+            if len(file) > 0:
+                file = file[0]
+                caption = prompt.caption()
+                self.insertPlainText(f'![{caption}]({file})')
+            
         
 
 class NoteCreator(QWidget):
@@ -106,6 +151,7 @@ class NoteCreator(QWidget):
         
         self._editor = NoteEditor(self)
         self._layout.addWidget(self._editor)
+        
         
         
         
