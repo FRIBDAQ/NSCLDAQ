@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui     import QContextMenuEvent, QAction
 from PyQt6.QtCore    import Qt
-from nscldaq.LogBook import LogBook, LogBookUIUtilities
+from nscldaq.LogBook import LogBook, LogBookUIUtilities, logbookadmin
 
 class ImagePromptDialog(QFileDialog):
     ''' Extend the file dialog with a caption
@@ -91,7 +91,7 @@ class NoteEditor(QTextEdit):
                 caption = prompt.caption()
                 self.insertPlainText(f'![{caption}]({file})')
             
-        
+       
 
 class NoteCreator(QWidget):
     '''
@@ -153,7 +153,28 @@ class NoteCreator(QWidget):
         self._layout.addWidget(self._editor)
         
         
+        # Autonomous/internal signal handling:
         
+        self._runChooser.textActivated.connect(self._setRun)  # Cook the run a bit.
+        
+    # Public methods:
+    
+    def setRuns(self, runs : LogBook.Run) -> None:
+        '''
+            Set the available runs a note can be associated with.
+            
+        '''
+        self._runChooser.setRuns(runs)
+            
+    # Internal (private) slots:
+    
+    def _setRun(self, runText) -> None:
+        #  If the run text is '' then set the value to <None>
+        
+        if not runText:
+            runText = '<None>'
+        
+        self._associatedRun.setText(runText)
         
         
 # Test code for now:
@@ -162,7 +183,8 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     
     w = NoteCreator()
-    
     w.show()
+    
+    w.setRuns(logbookadmin.listRuns())
     
     sys.exit(app.exec())
