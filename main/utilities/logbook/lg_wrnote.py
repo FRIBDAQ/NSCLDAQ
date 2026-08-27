@@ -1,0 +1,122 @@
+#    This software is Copyright by the Board of Trustees of Michigan
+#    State University (c) Copyright 2014, 2026
+#
+#    You may use this software under the terms of the GNU public license
+#    (GPL).  The terms of this license are described at:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+#
+#	     FRIB
+#	     Michigan State University
+#	     East Lansing, MI 48824-1321
+
+'''
+@file lg_wrnote.py
+@brief Write notes in the logbook, with rich text (markdown).
+@author Ron Fox
+'''
+import sys
+from PyQt6.QtWidgets import QWidget, QLabel, QTextEdit, QDialog, QHBoxLayout, QVBoxLayout, QMenu, QApplication
+from PyQt6.QtGui     import QContextMenuEvent, QAction
+from PyQt6.QtCore    import Qt
+from nscldaq.LogBook import LogBook, LogBookUIUtilities
+
+
+class NoteEditor(QTextEdit):
+    '''
+        A Textedit with an extended menu that can prompt for the
+        insertion of an image and caption at the current position
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.DefaultContextMenu)
+    
+    def contextMenuEvent(self, event : QContextMenuEvent) -> None:
+        '''
+            Called on the right click to bring up a context menu.
+            We get the standard context menu and add an 'insert image'
+            action.
+        '''
+
+        menu : QMenu = self.createStandardContextMenu(event.pos())
+        imgaction = QAction('Insert Image...', menu)
+        menu.addAction(imgaction)
+        imgaction.triggered.connect(self._promptImage)
+        menu.exec(event.globalPos())
+    
+    def _promptImage(self, _ : bool) -> None:
+        self.insertPlainText('---image---')
+        
+
+class NoteCreator(QWidget):
+    '''
+        Editor for notes includes PersonChooser for the author
+        and a run chooser for the associated runs,
+        a banner indicating the current author and associated run.
+        Below this banner is a QTextEdit for editing the note. The
+        QTextEdit has a context menu with the standard editor
+        context menu items as well as an 'Inser Image...' menu entry
+        that allows image files and links to them selected.
+        
+        Methods of interest:
+        
+        setRuns    - Set the runs that can be selected
+        setPeople  - Set the authors that can be selected.
+        selectedRun -Return the selected run (could be None)
+        author     - Return the seleced author.
+        noteText   - Return the raw note text.
+        noteImages - Return the images associated with the note and their offsets.
+        
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        # The choosers:
+        
+        chooserBar = QHBoxLayout()
+        
+        chooserBar.addWidget(QLabel('Run: ', self))
+        self._runChooser = LogBookUIUtilities.RunChooser(self)
+        chooserBar.addWidget(self._runChooser)
+        
+        chooserBar.addWidget(QLabel('Author: ', self))
+        self._author = LogBookUIUtilities.PersonChooser(self)
+        chooserBar.addWidget(self._author)
+
+        self._layout.addLayout(chooserBar)
+        
+        # The note information bar:
+    
+        infobar = QHBoxLayout();
+        
+        infobar.addWidget(QLabel('Author:', self))
+        self._author = QLabel('<Not Chosen>', self)
+        infobar.addWidget(self._author)
+        
+        infobar.addWidget(QLabel('Associated with run: ', self))
+        self._associatedRun = QLabel('<None>', self)
+        infobar.addWidget(self._associatedRun)
+        
+        self._layout.addLayout(infobar)
+        
+        # THe text editor:
+        
+        self._editor = NoteEditor(self)
+        self._layout.addWidget(self._editor)
+        
+        
+        
+        
+# Test code for now:
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    
+    w = NoteCreator()
+    
+    w.show()
+    
+    sys.exit(app.exec())

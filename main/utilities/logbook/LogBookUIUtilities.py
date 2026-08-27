@@ -266,3 +266,97 @@ class ShiftChooserDialog(OkDialog):
     def __init__(self, parent : None |QWidget = None):
         super().__init__(ShiftChooser(), parent = parent)        
     
+class PersonChooser(QComboBox):
+    '''
+        Select a person (e.g. note author)
+        
+        Attributes:
+        setPeople - Sets the people you can select from.
+        selected   - Returns the selected person.
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        self._people : Iterable[LogBook.Person] | None = None
+
+    def setPeople(self, people : Iterable[LogBook.Person]) -> None:
+        '''
+            Set the combobox to the possible people to select from:
+            @param people : Iterable[LogBook.Person] - The people to choose from.
+        '''
+        
+        self.clear()
+        self._people = people
+        for person in people:
+            name = self._makeNameString(person)
+            self.addItem(name)
+    
+    def selected(self) -> LogBook.Person | None:
+        '''
+        @return LogBook.Person | None - The selected person.  
+        @retval None - can only be returned if there are no peple to select as
+                       if QComboBox has choices, one will always be current.
+        '''
+        name = self.currentText()
+        if not name:
+            return None
+        for person in self._peope:
+            if name == self._makeNameString(person):
+                return person
+        
+        raise AssertionError('PersonChooser.selected - could not match the name!!')
+
+    # Utility private methods:
+    
+    def _makeNameString(self, person : LogBook.Person) -> str:
+        return f'{person.salutation} {person.firstname} {person.lastname}'
+        
+        
+class RunChooser(QComboBox):
+    '''
+        Select a run... This chooser also holds an empty slot to allow
+        no run to be selected. Note the runs are listed in reverse sort order
+        (large to small) because most likely a user will be selecting a recent
+        (large) run number.
+        
+        Methods:
+           setRuns  - Sets the possible runs.
+           selectedRun - Returns the selected run.
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        self._runs : Iterable[LogBook.Run] | None = None
+
+        
+    def setRuns(self, runs : Iterable[LogBook.Run]) -> None:
+        '''
+            Sets the combobox. with the runs that can be selected.
+            Note there's always an empty first element.
+            
+            @param runs Iterable[LogBook.Run] - the choosable runs.
+            @note the combobox will be ordered from large to small run numbers.
+        '''
+        
+        self._runs = runs
+        self.clear()
+        self.addItem('')    # No run selected.
+        sorted_runs = sorted(runs, key=lambda r: r.number, reverse=True)
+        for r in sorted_runs:
+            self.addItem(f'{r.number} {r.title}')
+            
+        
+    def selectedRun(self) -> LogBook.Run | None:
+        '''
+            @return LogBook.Run | None - The run that was selected or None if none was selected.
+        '''
+        run_text = self.currentText()
+        if not run_text:
+            return None
+        run_number = int(run_text.split(' ')[0])   # The number of the selected run.
+        for  r in self._runs:
+            if r.number == run_number:
+                return r
+        
+        raise AssertionError(f'RunChooser.selectedRun found no match for {run_text}')
+        
+        
+        
