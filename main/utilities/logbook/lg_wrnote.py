@@ -24,6 +24,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui     import QContextMenuEvent, QAction
 from PyQt6.QtCore    import Qt
 from nscldaq.LogBook import LogBook, LogBookUIUtilities, logbookadmin
+from nscldaq.mg_configutils import SaveDialog
 
 class ImagePromptDialog(QFileDialog):
     ''' Extend the file dialog with a caption
@@ -257,17 +258,16 @@ class NoteCreator(QWidget):
         filename = text[fstartIndex+1:fendIndex]
         return (startIndex, fendIndex+1, filename)
     
-    
+class NoteDialog(SaveDialog):
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(NoteCreator(), parent)
+        self.resize(500,500)
     
 # Test code for now:
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     
-    w = NoteCreator()
-    w.show()
+    w = NoteDialog()
+    w.exec()
     
-    w.setRuns(logbookadmin.listRuns())
-    w.setPeople(logbookadmin.listPeople())
-    
-    sys.exit(app.exec())
