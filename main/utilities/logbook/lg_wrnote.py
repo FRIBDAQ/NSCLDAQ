@@ -199,7 +199,31 @@ class NoteCreator(QWidget):
             @return str - the raw note text.
         '''
         return self._editor.plainText()      
-            
+    
+    def noteImages(self) -> list[tuple[int, int, str]]:
+        '''
+            @return list[tuple(int, str)] - List of image information. The first
+                item in each tuple is the offset into the note text of an image secification
+                (location of the !) The second item in each tuple is offset to the end of the
+                image specification (location of ')').  
+                The final item in tuple is the image filename.
+            @note Since we only allowed the display of readable files in our image selector
+                dialog    
+          
+        '''
+        text = self.noteText()
+        start= 0
+        result = []
+        while True:
+            nextimage = self._findNextImage(text, start)
+            if nextimage[0] == -1:  
+                break
+            else:
+                result.append(nextimage)
+                start = nextimage[1]    # Start next search at end of the link.
+        return result
+    
+    
     # Internal (private) slots:
     
     def _setRun(self, runText) -> None:
@@ -209,8 +233,32 @@ class NoteCreator(QWidget):
             runText = '<None>'
         
         self._associatedRun.setText(runText)
+    
+    def _findNextImage(self, text : str, start: int) -> tuple[int, int, str]:
+        # Find the next image in the text or return -1,-1, '' if there isn't 
+        # a next masge
         
+        startIndex = text.find('![', start=start)
+        if startIndex == -1:
+            return (-1, -1, '')     # No more image links.
         
+        # Locate the filename limits looking for (...)
+        
+        fstartIndex = text.find('(', startIndex)
+        if fstartIndex == -1:
+            return (-1, -1, '')
+        
+        fendIndex = text.find(')', fstartIndex)        
+        if fendIndex == -1:
+            return (-1, -1, '')
+        
+        # We have a valid filename construct, extract it:
+        
+        filename = text[fstartIndex+1:fendIndex]
+        return (startIndex, fendIndex+1, filename)
+    
+    
+    
 # Test code for now:
 
 if __name__ == '__main__':
