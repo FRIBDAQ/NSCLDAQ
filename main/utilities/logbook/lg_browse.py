@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 
 from PyQt6.QtWidgets import QTreeView, QWidget, QApplication
 from PyQt6.QtGui     import QStandardItemModel, QStandardItem 
-
+from PyQt6.QtCore    import QModelIndex, Qt
 from nscldaq.LogBook import LogBook, logbookadmin, LogBookUIUtilities
 
 
@@ -79,7 +79,7 @@ class LogBookModel(QStandardItemModel):
         # Create the none top level:
         
         self._noneItem = QStandardItem('None')
-        self.appendRow(self._noneItem)
+        self._setFlagsAndAppendRow(self, [self._noneItem,])
         self.setColumnCount(5)
     
         self.setHorizontalHeaderLabels(['Run', 'Title', 'Person/Shift', 'State/Time', 'Remark'])
@@ -137,7 +137,7 @@ class LogBookModel(QStandardItemModel):
             title  = QStandardItem(runInfo.title)
             shift  = QStandardItem('')
             state  = QStandardItem(runInfo.last_transition())
-            self.appendRow([number, title, shift, state])
+            self._setFlagsAndAppendRow(self, [number, title, shift, state])
             
             events = self._mergeTransitionsAndNotes(runInfo, notes)
             
@@ -169,13 +169,13 @@ class LogBookModel(QStandardItemModel):
         shiftName.setData(transition.shift)
         transitionTime = QStandardItem(_timestring(transition.time))
         
-        parent.appendRow([text, QStandardItem(''), shiftName, transitionTime])
+        self._setFlagsAndAppendRow(parent,[text, QStandardItem(''), shiftName, transitionTime])
                          
         # Add the shift members as children to 'text':
         
         for member in transition.shift.members:
             memberName = QStandardItem(LogBookUIUtilities.personName(member))
-            text.appendRow([QStandardItem(''), QStandardItem(''), memberName])
+            self._setFlagsAndAppendRow(text, [QStandardItem(''), QStandardItem(''), memberName])
         
     def _addNote(self, parent : QStandardItem, note: LogBook.Note) -> None:
         # Add a note child to a parent item:
@@ -192,7 +192,7 @@ class LogBookModel(QStandardItemModel):
         
         time   = QStandardItem(datestring)
         
-        parent.appendRow([placeholder, title, author, time])
+        self._setFlagsAndAppendRow(parent,[placeholder, title, author, time])
     def _mergeTransitionsAndNotes(
         self,
         run : LogBook.Run, notes : Iterable[LogBook.Note]) -> list[LogBook.Transition | LogBook.Note] :
@@ -212,10 +212,36 @@ class LogBookModel(QStandardItemModel):
         return merged_list
         
         
-       
+    def _setFlagsAndAppendRow(self, parent: QStandardItem | QStandardItemModel, row : list[QStandardItem]) -> None:
+        # Set item appropriate flags (mostly we want to turn off editing)
+        # Then append the row in the appropriate parent:
+        
+        for item in row:
+            flags = item.flags()
+            flags = flags & (~Qt.ItemFlag.ItemIsEditable)
+            item.setFlags(flags)
+        parent.appendRow(row)
 class LogBookView(QTreeView):
     def __init__(self, parent : QWidget | None = None):
         super().__init__(parent)
+        
+        # Double clicking a note will render it as a
+        # in a web browser as html:
+        
+        self.doubleClicked.connect(self._showNote)
+    
+    # internal/private signal handlers:
+    
+    def _showNote(self, index : QModelIndex) -> None:
+        # Get the first column as that has the assocviated data:
+        
+        col0Index = index.siblingAtColumn(0)
+        item = self.model().itemFromIndex(col0Index)
+        associatedData = item.data()
+        if type(associatedData) == LogBook.Note:
+            print("would render note here:")
+        else:
+            print("Would ignore")
         
 
 # Test code for now
