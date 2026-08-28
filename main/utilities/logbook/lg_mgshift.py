@@ -25,7 +25,7 @@ from collections.abc import Iterable
 
 import nscldaq.LogBook.LogBookUIUtilities
 import nscldaq.mg_configutils
-from nscldaq.LogBook import LogBook, logbookadmin
+from nscldaq.LogBook import LogBook, LogBookUIUtilities, logbookadmin
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QApplication,
@@ -253,7 +253,7 @@ def list_shift(name : str) -> int:
     members = logbookadmin.listShiftMembers(name)
     print(f"{name} shift  members:")
     for member in members:
-        print(f'{member.salutation} {member.firstname} {member.lastname}')
+        print(LogBookUIUtilities.personName(member))
     return 0
 
 def gui() -> int:

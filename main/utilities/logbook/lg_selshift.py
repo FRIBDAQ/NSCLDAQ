@@ -20,7 +20,7 @@
 import sys
 from collections.abc import Iterable
 
-from nscldaq.LogBook import LogBook, logbookadmin
+from nscldaq.LogBook import LogBook, LogBookUIUtilities, logbookadmin
 from nscldaq.LogBook.LogBookUIUtilities import ShiftChooser
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -52,7 +52,7 @@ class ShiftMemberList(QListWidget):
     def setShift(self, shift : LogBook.Shift | None) -> None:
         self.clear()
         for member in shift.members:
-            member_text = f'{member.salutation} {member.firstname} {member.lastname}'
+            member_text = LogBookUIUtilities.personName(member)
             self.addItem(member_text)
             
 
