@@ -57,7 +57,7 @@ install-exec-hook:
 		@prefix@/TclLibs/logbook
 	$(INSTALL_PROGRAM) @srcdir@/lg_create.py @bindir@/lg_create
 	$(INSTALL_PROGRAM) @srcdir@/lg_current.py @bindir@/lg_current
-	$(INSTALL_PROGRAM) @srcdir@/lg_ls.tcl @bindir@/lg_ls
+	$(INSTALL_PROGRAM) @srcdir@/lg_ls.py @bindir@/lg_ls
 	$(INSTALL_PROGRAM) @srcdir@/lg_addperson.py @bindir@/lg_addperson
 	$(INSTALL_PROGRAM) @srcdir@/lg_lspeople.py @bindir@/lg_lspeople
 	$(INSTALL_PROGRAM) @srcdir@/lg_mkshift.py @bindir@/lg_mkshift
@@ -135,7 +135,7 @@ EXTRA_DIST=logbookstatictests.py pypersontests.py pyshifttests.py \
 	pyruntests.py pynotetests.py logbook.test logbookinstance.test \
 	personinstance.test shiftinstance.test runinstance.test \
 	noteinstance.test logbookadmin.tcl admin.test lg_create.py \
-	lg_current.py lg_ls.tcl lg_addperson.py lg_lspeople.py \
+	lg_current.py lg_ls.py lg_addperson.py lg_lspeople.py \
 	lg_mkshift.py ShiftEditor.tcl lg_mgshift.py lg_utilities.tcl \
 	lg_noteutilities.tcl noteutil.test lg_wrnote.py logbookBundle.tcl \
 	lg_selshift.py pykvtests.py lg_browse.tcl lg_kvstore.py lg_print.tcl \
