@@ -34,6 +34,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+def personName(person : LogBook.Person) -> str:
+    '''
+        Creat the standard name 'salutation firstname lastname' from 
+        a person.
+    '''
+    return f'{person.salutation} {person.firstname} {person.lastname}'
 
 class ShiftMemberEditor(ListToListEditor):
     '''
@@ -94,7 +100,7 @@ class ShiftMemberEditor(ListToListEditor):
             salutation = person.salutation
             result[(lastname, firstname, salutation)] = person
             
-            item = f'{salutation} {firstname} {lastname}'
+            item = personName(person)
             listbox.addItem(item)
         
         return result
@@ -308,7 +314,7 @@ class PersonChooser(QComboBox):
     # Utility private methods:
     
     def _makeNameString(self, person : LogBook.Person) -> str:
-        return f'{person.salutation} {person.firstname} {person.lastname}'
+        return personName(person)      # Factored out.
         
         
 class RunChooser(QComboBox):
