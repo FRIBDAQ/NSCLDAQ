@@ -108,7 +108,21 @@ class LogBookModel(QStandardItemModel):
             time   = QStandardItem(datestring)
             
             self._noneItem.appendRow([placeholder, title, author, time])
+    def unassociatedNotes(self) -> list[LogBook.Note]:
+        '''
+            Return the unassociated logbook notes.
+        '''
+        result : list[LogBook.Note] = []
+        if self._noneItem.hasChildren():
+            childCount = self._noneItem.rowCount()
+            for row in range(childCount):
+                child = self._noneItem.child(row)   # The placeholder.
+                note = child.data()
+                result.append(note)
+            
+        return result
         
+       
 class LogBookView(QTreeView):
     def __init__(self, parent : QWidget | None = None):
         super().__init__(parent)
@@ -120,6 +134,10 @@ if __name__ == '__main__':
     w = LogBookView()
     model = LogBookModel()
     model.setUnassociatedNotes(logbookadmin.listNonRunNotes())
+    notes = model.unassociatedNotes()
+    print(len(notes))
+    for n in notes:
+        print('note written by', LogBookUIUtilities.personName(n.author))
     
     w.setModel(model)
     
