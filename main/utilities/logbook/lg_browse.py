@@ -121,7 +121,30 @@ class LogBookModel(QStandardItemModel):
                 result.append(note)
             
         return result
+    
+    def setRuns(self, runs :Iterable[tuple[LogBook.Run, list[LogBook.Note]]]):
+        # First we need to get rid of all but the 'None' placeholder and its children.
         
+        if self.rowCount() > 1:
+            self.removeRows(1, self.rowCOunt-1)
+            
+        for run in runs:
+            # We need a place holder with the run number that has, as data, the run:
+            
+            runInfo = run[0]
+            notes   = run[1]
+            
+            # The run line:
+            
+            number = QStandardItem(str(runInfo.number))
+            number.setData(runInfo)
+            
+            title  = QStandardItem(runInfo.title)
+            shift  = QStandardItem('')
+            state  = QStandardItem(runInfo.last_transition())
+            self.appendRow([number, title, shift, state])
+            
+            
        
 class LogBookView(QTreeView):
     def __init__(self, parent : QWidget | None = None):
@@ -138,6 +161,13 @@ if __name__ == '__main__':
     print(len(notes))
     for n in notes:
         print('note written by', LogBookUIUtilities.personName(n.author))
+    
+    runs = logbookadmin.listRuns()
+    runAndNotes = []
+    for run in runs:
+        runAndNotes.append((run, logbookadmin.listNotesForRun(run.number)))
+    
+    model.setRuns(runAndNotes)
     
     w.setModel(model)
     
