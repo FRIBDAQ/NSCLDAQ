@@ -29,6 +29,14 @@ from PyQt6.QtGui     import QStandardItemModel, QStandardItem
 
 from nscldaq.LogBook import LogBook, logbookadmin, LogBookUIUtilities
 
+
+def _timestring(stamp) -> str:
+    # Convert a unix timestamp into a standard times tring.
+    timestamp = datetime.fromtimestamp(  # noqa: DTZ006
+        stamp, tz=None
+    )                                                  # in local time.
+    return  timestamp.strftime('%c')
+    
 class LogBookModel(QStandardItemModel):
     '''
         This model provides a hierarchical view of the
@@ -93,21 +101,8 @@ class LogBookModel(QStandardItemModel):
         
         sortedNotes = sorted(notes, key=lambda n: n.time)
         for note in sortedNotes:
-            placeholder = QStandardItem('Note')
-            placeholder.setData(note)                        # Col 0 has note as associated data.
-            
-            titleText   = note.contents.split('\n')[0]
-            title       = QStandardItem(titleText)
-            
-            author = QStandardItem(LogBookUIUtilities.personName(note.author))
-            
-            timestamp = datetime.fromtimestamp(  # noqa: DTZ006
-                note.time, tz=None
-            )                                                  # in local time.
-            datestring = timestamp.strftime('%c')
-            time   = QStandardItem(datestring)
-            
-            self._noneItem.appendRow([placeholder, title, author, time])
+            self._addNote(self._noneItem, note)
+           
     def unassociatedNotes(self) -> list[LogBook.Note]:
         '''
             Return the unassociated logbook notes.
@@ -144,7 +139,79 @@ class LogBookModel(QStandardItemModel):
             state  = QStandardItem(runInfo.last_transition())
             self.appendRow([number, title, shift, state])
             
+            events = self._mergeTransitionsAndNotes(runInfo, notes)
             
+            for event in events:
+                # Event is either a LogBook.Transition or a LogBookNote.
+                
+                match type(event):
+                    case LogBook.Note:
+                        # Insert a note:
+                        self._addNote(number, event)
+                    case LogBook.Transition:
+                        # Insert a transition child:
+                        
+                        self._addTransition(number, event)
+                    case _:
+                        raise TypeError(
+                            f'BUG: LogBookModel.setRuns event list unexpected type:  {type(event).__name__} please report this'
+                        )
+    
+    # Utilities
+    def _addTransition(self, parent : QStandardItem, transition : LogBook.Transition) -> None:
+        # Add a transition to a parent:
+        
+        
+        
+        text = QStandardItem(transition.transition_name)
+        text.setData(transition)              # THe transition text has the full transition as data.
+        shiftName = QStandardItem(transition.shift.name)
+        shiftName.setData(transition.shift)
+        transitionTime = QStandardItem(_timestring(transition.time))
+        
+        parent.appendRow([text, QStandardItem(''), shiftName, transitionTime])
+                         
+        # Add the shift members as children to 'text':
+        
+        for member in transition.shift.members:
+            memberName = QStandardItem(LogBookUIUtilities.personName(member))
+            text.appendRow([QStandardItem(''), QStandardItem(''), memberName])
+        
+    def _addNote(self, parent : QStandardItem, note: LogBook.Note) -> None:
+        # Add a note child to a parent item:
+        
+        placeholder = QStandardItem('Note')
+        placeholder.setData(note)                        # Col 0 has note as associated data.
+        
+        titleText   = note.contents.split('\n')[0]
+        title       = QStandardItem(titleText)
+        
+        author = QStandardItem(LogBookUIUtilities.personName(note.author))
+        
+        datestring = _timestring(note.time)
+        
+        time   = QStandardItem(datestring)
+        
+        parent.appendRow([placeholder, title, author, time])
+    def _mergeTransitionsAndNotes(
+        self,
+        run : LogBook.Run, notes : Iterable[LogBook.Note]) -> list[LogBook.Transition | LogBook.Note] :
+        # make a time ordered merged list of transitions and notes.
+         
+        # first just make the merged list:
+        
+        merged_list = []
+        for tnum in range(run.transition_count()):
+            merged_list.append(run.get_transition(tnum))
+        merged_list.extend(notes)
+        
+        # now some fancy footwork to return the sorted one:
+        # both notes and transitions have time attributes so just:
+        
+        merged_list.sort(key=lambda item: item.time)
+        return merged_list
+        
+        
        
 class LogBookView(QTreeView):
     def __init__(self, parent : QWidget | None = None):
@@ -165,7 +232,8 @@ if __name__ == '__main__':
     runs = logbookadmin.listRuns()
     runAndNotes = []
     for run in runs:
-        runAndNotes.append((run, logbookadmin.listNotesForRun(run.number)))
+        notes = logbookadmin.listNotesForRun(run.number)
+        runAndNotes.append((run, notes))
     
     model.setRuns(runAndNotes)
     
