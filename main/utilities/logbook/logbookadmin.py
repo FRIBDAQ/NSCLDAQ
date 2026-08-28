@@ -42,16 +42,25 @@ def setCurrentLogBook(path: str) -> None:
     '''
     absolute_path = pathlib.Path(path).expanduser().absolute()
     CURRENT_LOGBOOK_PATH.write_text(str(absolute_path), encoding='utf-8')
-        
+
+def currentLogBookFile() -> str | None:
+    '''
+        @return str | None - Path to current logbook.
+        @retval None - if no logbook is set.
+    '''
+    if CURRENT_LOGBOOK_PATH.is_file():
+        return CURRENT_LOGBOOK_PATH.read_text(encoding='utf-8') 
+    else:
+        return None
+                
 def currentLogBook() -> LogBook.LogBook | None:
     '''
       @return LogBook - If a current logbook is set, it is returned, else None is returned.
       
     '''
-    if CURRENT_LOGBOOK_PATH.is_file():
-        
-        current_path = CURRENT_LOGBOOK_PATH.read_text(encoding='utf-8')
-            
+    current_path = currentLogBookFile()
+    
+    if current_path:        
         return LogBook.LogBook(current_path)
     else:
         return None
