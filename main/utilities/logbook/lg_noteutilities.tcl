@@ -192,7 +192,7 @@ proc _noteToFd {noteid fd} {
 proc _makeNoteFilename {id} {
     set dir [logbook::logbook tempdir]
     set pid [pid]
-    set idx [incr tpmfileIndex]
+    set idx [incr tmpfileIndex]
     set now [clock seconds]
     set result [file join $dir "note-$id-$now-$pid-$idx.html"]
     return $result

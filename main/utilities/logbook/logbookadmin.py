@@ -22,6 +22,8 @@ from collections.abc import Iterable
 
 CURRENT_LOGBOOK_PATH=pathlib.Path('~/.nscl-logbook-current').expanduser().absolute()
 
+
+
 def _currentLogBookOrError() -> LogBook:
     # Internal function to get the current  log book or aise
     # a LogBook.error if there isn't one.

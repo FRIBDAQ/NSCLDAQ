@@ -22,20 +22,17 @@
 '''
 import sys
 from collections.abc import Iterable
-from datetime import datetime, timezone
 
-from PyQt6.QtWidgets import QTreeView, QWidget, QApplication
-from PyQt6.QtGui     import QStandardItemModel, QStandardItem 
-from PyQt6.QtCore    import QModelIndex, Qt
-from nscldaq.LogBook import LogBook, logbookadmin, LogBookUIUtilities
+from nscldaq.LogBook import LogBook, LogBookUIUtilities, logbookadmin
+from PyQt6.QtCore import QModelIndex, Qt
+from PyQt6.QtGui import QStandardItem, QStandardItemModel
+from PyQt6.QtWidgets import QApplication, QTreeView, QWidget
+import subprocess
 
 
 def _timestring(stamp) -> str:
-    # Convert a unix timestamp into a standard times tring.
-    timestamp = datetime.fromtimestamp(  # noqa: DTZ006
-        stamp, tz=None
-    )                                                  # in local time.
-    return  timestamp.strftime('%c')
+    return LogBookUIUtilities.timestring(stamp)   # Factored out.
+    
     
 class LogBookModel(QStandardItemModel):
     '''
@@ -228,20 +225,28 @@ class LogBookView(QTreeView):
         # Double clicking a note will render it as a
         # in a web browser as html:
         
-        self.doubleClicked.connect(self._showNote)
+        self.doubleClicked.connect(self._onDoubleClick)
     
     # internal/private signal handlers:
     
-    def _showNote(self, index : QModelIndex) -> None:
+    def _onDoubleClick(self, index : QModelIndex) -> None:
         # Get the first column as that has the assocviated data:
         
         col0Index = index.siblingAtColumn(0)
         item = self.model().itemFromIndex(col0Index)
         associatedData = item.data()
         if type(associatedData) == LogBook.Note:
-            print("would render note here:")
-        else:
-            print("Would ignore")
+            self._renderNoteInBrowser(associatedData)
+    
+    def _renderNoteInBrowser(self, note : LogBook.Note) -> None:
+        # Create the markdown text:
+        
+        markdown = LogBookUIUtilities.genNoteMarkdown(note)
+        
+        noteFile = LogBookUIUtilities.makeNoteHtmlFilename(note.id)
+        LogBookUIUtilities.markdownToHtml(markdown, noteFile)
+        status = subprocess.call(['xdg-open', noteFile])
+        print('web browser open status: ', status)
         
 
 # Test code for now
@@ -251,9 +256,6 @@ if __name__ == '__main__':
     model = LogBookModel()
     model.setUnassociatedNotes(logbookadmin.listNonRunNotes())
     notes = model.unassociatedNotes()
-    print(len(notes))
-    for n in notes:
-        print('note written by', LogBookUIUtilities.personName(n.author))
     
     runs = logbookadmin.listRuns()
     runAndNotes = []
