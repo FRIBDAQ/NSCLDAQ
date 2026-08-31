@@ -231,12 +231,18 @@ class LogBookView(QTreeView):
         
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._contextMenu)
+    def _compose(self) -> None:
+        print('compose a note.')
+    def _itemToPdf(self, point : QPoint) -> None:
+        print('convert item to pdf')
+    def _bookToPdf(self) -> None:
+        print("Convert the whole book to pdf")    
     
     # internal/private signal handlers:
     
     def _onDoubleClick(self, index : QModelIndex) -> None:
-        # Get the first column as that has the assocviated data:
-        
+        # Get the first column as that has the assocviated data
+    
         col0Index = index.siblingAtColumn(0)
         item = self.model().itemFromIndex(col0Index)
         associatedData = item.data()
@@ -246,8 +252,11 @@ class LogBookView(QTreeView):
     def _contextMenu(self, where : QPoint) -> None:
         context_menu = QMenu(self)
         compose = QAction('Compose note...', context_menu)
+        compose.triggered.connect(self._compose)
         pdf_selected = QAction('Make PDF from selected...', context_menu)
+        pdf_selected.triggered.connect(lambda : self._itemToPdf(where))
         pdf_book     = QAction('Make PDF from entire book...', context_menu)
+        pdf_book.triggered.connect(self._bookToPdf)
         context_menu.addAction(compose)
         context_menu.addAction(pdf_selected)
         context_menu.addAction(pdf_book)
