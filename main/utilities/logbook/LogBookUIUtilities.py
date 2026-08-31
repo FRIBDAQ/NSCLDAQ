@@ -18,7 +18,14 @@
 '''
 
 
+import os
+import pathlib
+import subprocess
+import sys
 from collections.abc import Iterable
+from datetime import datetime
+from tempfile import NamedTemporaryFile
+import time
 
 from nscldaq.editablelist6 import ListToListEditor
 from nscldaq.LogBook import LogBook
@@ -33,6 +40,88 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+TEMPDIR = pathlib.Path('~/.nscl-logbook').expanduser().absolute()  
+
+tmpFileIndex : int = 0
+
+def timestring(stamp : int) -> str: 
+    '''
+     Convert a unix timestamp in to a time string in the current zone.
+    '''
+    
+    timestamp = datetime.fromtimestamp(  # noqa: DTZ006
+        stamp, tz=None
+    )                                                  # in local time.
+    return  timestamp.strftime('%c')
+
+def makeNoteHtmlFilename(id : int) -> str:
+    '''
+    Create the full path to the HTML filename for a note.  This is pretty well
+    ensured to be unique
+    '''
+    global tmpFileIndex
+    tmpFileIndex += 1
+    note_path = TEMPDIR / f'note-{id}-{int(time.time())}-{os.getpid()}-{tmpFileIndex}.html'
+    return str(note_path)
+
+def genNoteMarkdown(note : LogBook.Note) -> str:
+    '''
+        Given a note, generate the valid HTML for it with images exported
+        and fixed up.
+        
+        @param note - a logbook note object.
+        @return str - the full valid markdown.
+    '''
+    
+    note_contents = note.substitute_images()   # Images exported and links fixed up.
+    
+    # compute and prepend the header that the Tcl stuff used to add:
+    
+    whenWritten = timestring(note.time)
+    author      = personName(note.author)
+    
+    header_text = f'''
+|Item | Value |
+|-----|-------|
+|Author | {author} |
+| Written | {whenWritten} |'''
+    if note.run is not None:
+        run = note.run
+        header_text += f'''
+| For Run: | {run.number} |
+| Title:   | {run.title}  |
+| Started  | {timestring(run.get_transition(0).time)} |'''
+        if not run.is_active():
+            lastIndex = run.transition_count() - 1
+            header_text += f'''
+| Ended | {timestring(run.get_transition(lastIndex).time)} |'''
+        else:
+            header_text += '''| Still active | |'''
+    full_text = header_text + '\n\n' +note_contents
+    return full_text
+
+
+def markdownToHtml(markdown: str, outFile: str) -> None:
+    ''''
+        Puts the input text in a temporary file, and runs pandoc on it to 
+        produce html in the outputFile:
+        
+        @param inputText - The markdown to create.
+        @param outFile   - The name of the file into which the html shoulid be written.
+    
+        @note assumes pandoc is installed and in the path.
+    '''       
+    with NamedTemporaryFile(mode='w', encoding='utf8', suffix='.md', delete=False) as md:
+        print(markdown, file=md)
+        md.close()
+        status = subprocess.call(
+            ['pandoc', 
+             '-f', 'markdown+link_attributes',
+             '-o', outFile, md.name])  # Not sure if I need the shell but...
+    
+        print('pandoc conversion returned with status', status, file=sys.stderr)
+        pathlib.Path(md.name).unlink()
 
 def personName(person : LogBook.Person) -> str:
     '''
