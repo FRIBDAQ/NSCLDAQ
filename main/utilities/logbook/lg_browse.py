@@ -24,9 +24,9 @@ import sys
 from collections.abc import Iterable
 
 from nscldaq.LogBook import LogBook, LogBookUIUtilities, logbookadmin
-from PyQt6.QtCore import QModelIndex, Qt
-from PyQt6.QtGui import QStandardItem, QStandardItemModel
-from PyQt6.QtWidgets import QApplication, QTreeView, QWidget
+from PyQt6.QtCore import QModelIndex, Qt, QPoint
+from PyQt6.QtGui import QStandardItem, QStandardItemModel, QAction
+from PyQt6.QtWidgets import QApplication, QTreeView, QWidget, QMenu
 import subprocess
 
 
@@ -226,6 +226,11 @@ class LogBookView(QTreeView):
         # in a web browser as html:
         
         self.doubleClicked.connect(self._onDoubleClick)
+        
+        # We want to supply a context menu.
+        
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._contextMenu)
     
     # internal/private signal handlers:
     
@@ -237,6 +242,21 @@ class LogBookView(QTreeView):
         associatedData = item.data()
         if type(associatedData) == LogBook.Note:
             self._renderNoteInBrowser(associatedData)
+    
+    def _contextMenu(self, where : QPoint) -> None:
+        context_menu = QMenu(self)
+        compose = QAction('Compose note...', context_menu)
+        pdf_selected = QAction('Make PDF from selected...', context_menu)
+        pdf_book     = QAction('Make PDF from entire book...', context_menu)
+        context_menu.addAction(compose)
+        context_menu.addAction(pdf_selected)
+        context_menu.addAction(pdf_book)
+        pos = self.mapToGlobal(where)
+        context_menu.exec(pos)
+        
+        
+    
+    # Utility methods.
     
     def _renderNoteInBrowser(self, note : LogBook.Note) -> None:
         # Create the markdown text:
