@@ -21,12 +21,14 @@
 @author Ron Fox
 '''
 import sys
+import os
+import pathlib
 from collections.abc import Iterable
 
 from nscldaq.LogBook import LogBook, LogBookUIUtilities, logbookadmin
-from PyQt6.QtCore import QModelIndex, Qt, QPoint
+from PyQt6.QtCore import QModelIndex, Qt, QPoint, pyqtSignal
 from PyQt6.QtGui import QStandardItem, QStandardItemModel, QAction
-from PyQt6.QtWidgets import QApplication, QTreeView, QWidget, QMenu
+from PyQt6.QtWidgets import QApplication, QTreeView, QWidget, QMenu, QMessageBox
 import subprocess
 
 
@@ -219,6 +221,11 @@ class LogBookModel(QStandardItemModel):
             item.setFlags(flags)
         parent.appendRow(row)
 class LogBookView(QTreeView):
+    # The view for LogBookModel.
+    # Signals:
+    
+    noteWritten = pyqtSignal()      # A new note was written
+    refresh     = pyqtSignal()      # Refresh context menu item selected.
     def __init__(self, parent : QWidget | None = None):
         super().__init__(parent)
         
@@ -232,7 +239,19 @@ class LogBookView(QTreeView):
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._contextMenu)
     def _compose(self) -> None:
-        print('compose a note.')
+        # Just run $DAQBIN/lg_wrnote
+        # Note the edit is modal so that when done, the noteWritten signal can be emitted.
+        if 'DAQBIN' not in os.environ:
+            QMessageBox.warning(
+                self, 'DAQBIN undefined', 
+                'The DAQBIN environment variable is not defined, use a daqsetup.bash script to set it up'
+            )
+        else:
+            wrnote = pathlib.Path(os.environ['DAQBIN']) / 'lg_wrnote'
+            subprocess.call([wrnote,])     # edit as model.
+            self.noteWritten.emit()       # Probably the app wants to refresht the tree.
+            
+        
     def _itemToPdf(self, point : QPoint) -> None:
         print('convert item to pdf')
     def _bookToPdf(self) -> None:
@@ -251,15 +270,24 @@ class LogBookView(QTreeView):
     
     def _contextMenu(self, where : QPoint) -> None:
         context_menu = QMenu(self)
+        
         compose = QAction('Compose note...', context_menu)
         compose.triggered.connect(self._compose)
+        
         pdf_selected = QAction('Make PDF from selected...', context_menu)
         pdf_selected.triggered.connect(lambda : self._itemToPdf(where))
+        
         pdf_book     = QAction('Make PDF from entire book...', context_menu)
         pdf_book.triggered.connect(self._bookToPdf)
+        
+        refresh      = QAction('Refresh', context_menu)
+        refresh.triggered.connect(self.refresh.emit)
+        
         context_menu.addAction(compose)
         context_menu.addAction(pdf_selected)
         context_menu.addAction(pdf_book)
+        context_menu.addAction(refresh)
+        
         pos = self.mapToGlobal(where)
         context_menu.exec(pos)
         
@@ -268,14 +296,22 @@ class LogBookView(QTreeView):
     # Utility methods.
     
     def _renderNoteInBrowser(self, note : LogBook.Note) -> None:
+        # Render the note as html and pop up the system browser
+        # in the background to view it:
+        
         # Create the markdown text:
         
         markdown = LogBookUIUtilities.genNoteMarkdown(note)
         
+        # Write a file in our tempdir with the HTML rendering of the
+        # markdown.
+        
         noteFile = LogBookUIUtilities.makeNoteHtmlFilename(note.id)
         LogBookUIUtilities.markdownToHtml(markdown, noteFile)
-        status = subprocess.call(['xdg-open', noteFile])
-        print('web browser open status: ', status)
+        
+        
+        subprocess.Popen(['xdg-open', noteFile])
+        
         
 
 # Test code for now
