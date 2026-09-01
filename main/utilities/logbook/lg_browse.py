@@ -20,16 +20,24 @@
 @brief Logbook browser application (replaces lg_browse.tcl)
 @author Ron Fox
 '''
-import sys
 import os
 import pathlib
+import subprocess
+import sys
 from collections.abc import Iterable
 
-from nscldaq.LogBook import LogBook, LogBookUIUtilities, logbookadmin
-from PyQt6.QtCore import QModelIndex, Qt, QPoint, pyqtSignal
-from PyQt6.QtGui import QStandardItem, QStandardItemModel, QAction
-from PyQt6.QtWidgets import QApplication, QTreeView, QWidget, QMenu, QMessageBox
-import subprocess
+from nscldaq.LogBook import LogBook,  logbookadmin
+import LogBookUIUtilities
+from PyQt6.QtCore import QModelIndex, QPoint, Qt, pyqtSignal
+from PyQt6.QtGui import QAction, QStandardItem, QStandardItemModel
+from PyQt6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QMenu,
+    QMessageBox,
+    QTreeView,
+    QWidget,
+)
 
 
 def _timestring(stamp) -> str:
@@ -253,7 +261,33 @@ class LogBookView(QTreeView):
             
         
     def _itemToPdf(self, point : QPoint) -> None:
-        print('convert item to pdf')
+        items = self._pointToItems(point)
+        if len(items) == 0:
+            return
+        filename = self._getPdfFile()
+        if filename:
+            print('Writing to ', filename)
+            
+            markdown = LogBookUIUtilities.generateMarkdownFromItemList(items)
+            
+            # Now run pandoc directly to make PDF.. We'll use Popen and
+            # feed the document to its stdin.
+            
+            pandoc = subprocess.Popen([
+                'pandoc',
+                '-f', 'markdown+link_attributes', 
+                '-t', 'pdf',
+                '-o', filename], 
+                stdin = subprocess.PIPE, encoding='utf-8')
+            
+            out,err = pandoc.communicate(markdown)
+            if out is not None:
+                print('pandoc output', out)
+            if err is not None:
+                print('pandoc errors', err)
+            
+            
+            
     def _bookToPdf(self) -> None:
         print("Convert the whole book to pdf")    
     
@@ -290,11 +324,71 @@ class LogBookView(QTreeView):
         
         pos = self.mapToGlobal(where)
         context_menu.exec(pos)
-        
-        
+            
     
     # Utility methods.
     
+    def _getPdfFile(self) -> str | None:
+        # Prompt for and get a PDF filename:
+        # if the user cancels the prompting dialog, then returns None.
+        
+        file, _ = QFileDialog.getSaveFileName(
+            self, 'PDF file',
+            '.', 'PDF files (*.pdf) ;; All Files (*)'
+            '*.pdf'
+        )
+        if not file.strip():
+            return None
+        else:
+            return file
+        
+    
+    def _pointToItems(self, where : QPoint) -> list[LogBook.Run | LogBook.Transition | LogBook.Note]:
+        #  Given where a context menu was popped up get the item associated with it.
+        #  Note that if what we have is a transition, we return the run that the
+        #  transition is part of.
+        
+        point_index = self.indexAt(where)
+        
+        # But it's column 0's data that has the item as data:
+        
+        col0Index = point_index.siblingAtColumn(0)
+        col0Item = self.model().itemFromIndex(col0Index)
+        if col0Item is None:
+                return []
+        if col0Item.text() == 'None':
+            
+            # Return the list of unassociated notes:
+            
+            
+            return self._childData(col0Item)
+        
+        data     = col0Item.data()
+        if type(data) == LogBook.Note:
+            print('note')
+            return [data,]       # just return notes
+        elif type(data) == LogBook.Run:
+            result = [data,]
+            result.extend(self._childData(col0Item))
+            return result
+        elif type(data) == LogBook.Transition:
+            
+            runItem = col0Item.parent() 
+            result  = [runItem.data(),]
+            result.extend(self._childData(runItem))
+            return result
+            
+        return []
+    
+        
+    def _childData(self, item : QStandardItem) -> list[LogBook.Run | LogBook.Transition | LogBook.Note]:
+        # Get the data associated with the children of the specified item index:
+        
+        result = [list]
+        for row in range(item.rowCount()):
+            result.append(item.child(row).data())
+        
+        return result 
     def _renderNoteInBrowser(self, note : LogBook.Note) -> None:
         # Render the note as html and pop up the system browser
         # in the background to view it:
