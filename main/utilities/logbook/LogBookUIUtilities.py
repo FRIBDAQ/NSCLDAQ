@@ -176,17 +176,41 @@ def markdownToHtml(markdown: str, outFile: str) -> None:
         @param outFile   - The name of the file into which the html shoulid be written.
     
         @note assumes pandoc is installed and in the path.
-    '''       
-    with NamedTemporaryFile(mode='w', encoding='utf8', suffix='.md', delete=False) as md:
-        print(markdown, file=md)
-        md.close()
-        status = subprocess.call(
-            ['pandoc', 
-             '-f', 'markdown+link_attributes',
-             '-o', outFile, md.name])  # Not sure if I need the shell but...
+    '''  
     
-        print('pandoc conversion returned with status', status, file=sys.stderr)
-        pathlib.Path(md.name).unlink()
+    pandoc = subprocess.Popen([
+        'pandoc',
+        '-f', 'markdown+link_attributes', 
+        '-t', 'html',
+        '-o', outFile],
+        stdin = subprocess.PIPE, encoding='utf-8'
+    )     
+    out, err = pandoc.communicate(markdown)
+    if out is not None:
+        print('Pandoc output: ', out)
+    if err is not None:
+        print('Pandoc error:', err)
+
+def markdownToPdf(markdown : str, outFile : str) -> None:
+    ''''
+        Generate a PDF file from markdown:
+        @param markdown - the mardown text
+        @param outfile  - Path to the output file.
+    
+    '''
+    pandoc = subprocess.Popen([
+        'pandoc',
+        '-f', 'markdown+link_attributes', 
+        '-t', 'pdf',
+        '-o', outFile], 
+        stdin = subprocess.PIPE, encoding='utf-8')
+    
+    out,err = pandoc.communicate(markdown)
+    if out is not None:
+        print('pandoc output', out)
+    if err is not None:
+        print('pandoc errors', err)
+                
 
 def personName(person : LogBook.Person) -> str:
     '''
