@@ -26,9 +26,8 @@ import subprocess
 import sys
 from collections.abc import Iterable
 
-from nscldaq.LogBook import LogBook,  logbookadmin
-import LogBookUIUtilities
-from PyQt6.QtCore import QModelIndex, QPoint, Qt, pyqtSignal
+from nscldaq.LogBook import LogBook, LogBookUIUtilities, logbookadmin
+from PyQt6.QtCore import QFileInfo, QModelIndex, QPoint, Qt, pyqtSignal
 from PyQt6.QtGui import QAction, QStandardItem, QStandardItemModel
 from PyQt6.QtWidgets import (
     QApplication,
@@ -266,7 +265,6 @@ class LogBookView(QTreeView):
             return
         filename = self._getPdfFile()
         if filename:
-            print('Writing to ', filename)
             
             markdown = LogBookUIUtilities.generateMarkdownFromItemList(items)
             
@@ -332,7 +330,7 @@ class LogBookView(QTreeView):
         # Prompt for and get a PDF filename:
         # if the user cancels the prompting dialog, then returns None.
         
-        file, _ = QFileDialog.getSaveFileName(
+        file, filter = QFileDialog.getSaveFileName(
             self, 'PDF file',
             '.', 'PDF files (*.pdf) ;; All Files (*)'
             '*.pdf'
@@ -340,6 +338,10 @@ class LogBookView(QTreeView):
         if not file.strip():
             return None
         else:
+            # Enforce the filter if needed.
+            fileinfo = QFileInfo(file)
+            if (not fileinfo.suffix()) and ('*.pdf' in filter):
+                file += '.pdf'
             return file
         
     
