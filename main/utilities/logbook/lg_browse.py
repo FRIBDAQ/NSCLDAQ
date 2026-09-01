@@ -267,28 +267,19 @@ class LogBookView(QTreeView):
         if filename:
             
             markdown = LogBookUIUtilities.generateMarkdownFromItemList(items)
-            
-            # Now run pandoc directly to make PDF.. We'll use Popen and
-            # feed the document to its stdin.
-            
-            pandoc = subprocess.Popen([
-                'pandoc',
-                '-f', 'markdown+link_attributes', 
-                '-t', 'pdf',
-                '-o', filename], 
-                stdin = subprocess.PIPE, encoding='utf-8')
-            
-            out,err = pandoc.communicate(markdown)
-            if out is not None:
-                print('pandoc output', out)
-            if err is not None:
-                print('pandoc errors', err)
-            
+            LogBookUIUtilities.markdownToPdf(markdown, filename)
             
             
     def _bookToPdf(self) -> None:
-        print("Convert the whole book to pdf")    
-    
+        items = self._allData()
+        if len(items) == 0:
+            return    # Nothing to render.
+        filename = self._getPdfFile()
+        if filename:
+            markdown = LogBookUIUtilities.generateMarkdownFromItemList(items)
+            LogBookUIUtilities.markdownToPdf(markdown, filename)
+        
+        
     # internal/private signal handlers:
     
     def _onDoubleClick(self, index : QModelIndex) -> None:
@@ -358,6 +349,7 @@ class LogBookView(QTreeView):
         col0Item = self.model().itemFromIndex(col0Index)
         if col0Item is None:
                 return []
+        
         if col0Item.text() == 'None':
             
             # Return the list of unassociated notes:
@@ -382,7 +374,20 @@ class LogBookView(QTreeView):
             
         return []
     
+    def _allData(self) -> list[LogBook.Run | LogBook.Transition | LogBook.Note]:
+        # Return all of the renderable data from the model:
         
+        # Start with row 0 which are the unassociated notes:
+        result = self._childData(self.model().item(0))
+        
+        # Now the rest:
+        
+        for row in range(1, self.model().rowCount()):
+            item = self.model().item(row)
+            result.append(item.data())
+            result.extend(self._childData(item))
+        
+        return result
     def _childData(self, item : QStandardItem) -> list[LogBook.Run | LogBook.Transition | LogBook.Note]:
         # Get the data associated with the children of the specified item index:
         
