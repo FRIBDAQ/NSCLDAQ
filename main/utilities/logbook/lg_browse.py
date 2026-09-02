@@ -28,7 +28,14 @@ from collections.abc import Iterable
 
 from nscldaq.LogBook import LogBook, LogBookUIUtilities, logbookadmin
 from PyQt6.QtCore import QFileInfo, QModelIndex, QPoint, Qt, pyqtSignal
-from PyQt6.QtGui import QAction, QStandardItem, QStandardItemModel
+from PyQt6.QtGui import (
+    QAction,
+    QBrush,
+    QColor,
+    QPalette,
+    QStandardItem,
+    QStandardItemModel,
+)
 from PyQt6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -462,6 +469,8 @@ class ShiftModel(QStandardItemModel):
             sal   = QStandardItem(member.salutation)
             empty = QStandardItem('')
             self._setFlagsAndAppendRow(name, [empty, last, first, sal])
+
+    
     
     #  Utiltities:
     def _setFlagsAndAppendRow(self, parent: QStandardItem | QStandardItemModel, row : list[QStandardItem]) -> None:
@@ -498,7 +507,31 @@ class ShiftView(QTreeView):
         
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._contextMenu)
-    
+
+    def setCurrentShift(self, name : str) -> None:
+        '''
+            Visually indicate the current shift.
+            @param name -name of the shift.
+            
+            This has to be done in the view to get current colors.
+        '''
+        # Get the colors:
+        
+        defaultBg = self.palette().color(QPalette.ColorRole.Base)
+        currentBg = QColor('cyan')
+        
+        notCurrent = QBrush(defaultBg)
+        current    = QBrush(currentBg)
+        
+        for row in range(self.model().rowCount()):
+            item = self.model().item(row, 0)
+            if item.text() == name:
+                item.setData(current, Qt.ItemDataRole.BackgroundRole)
+            else:
+                item.setData(notCurrent, Qt.ItemDataRole.BackgroundRole)
+        
+        
+            
     
     # Context menu handling:
     
@@ -528,6 +561,7 @@ class ShiftView(QTreeView):
         
         setCurrent = QAction('Set Current', context_menu)
         context_menu.addAction(setCurrent)
+        setCurrent.triggered.connect(lambda : self.selectShift.emit(shiftName))
         
         refresh = QAction('Refresh', context_menu)
         context_menu.addAction(refresh)
@@ -626,6 +660,10 @@ def main() -> int:
     shiftview.refresh.connect(refreshShifts)
     shiftview.addShift.connect(lambda : addShift(shiftmodel))
     shiftview.editShift.connect(lambda name: editShift(name, shiftmodel) )
+    shiftview.selectShift.connect(logbookadmin.setCurrentShift)
+    shiftview.selectShift.connect(shiftview.setCurrentShift)
+    
+    shiftview.setCurrentShift(logbookadmin.currentShift().name)
     
     ##
     win.show()
