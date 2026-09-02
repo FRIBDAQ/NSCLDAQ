@@ -90,6 +90,14 @@ class LogBookModel(QStandardItemModel):
     
         self.setHorizontalHeaderLabels(['Run', 'Title', 'Person/Shift', 'State/Time', 'Remark'])
     
+    def clear(self) -> None:
+        super().clear()
+        self._noneItem = QStandardItem('None')
+        self._setFlagsAndAppendRow(self, [self._noneItem,])
+        self.setColumnCount(5)
+    
+        self.setHorizontalHeaderLabels(['Run', 'Title', 'Person/Shift', 'State/Time', 'Remark'])
+            
     def setUnassociatedNotes(self, notes : Iterable[LogBook.Note]):
         '''
             Set the notes that are below the None item....that is notes that are
@@ -413,13 +421,10 @@ class LogBookView(QTreeView):
         
         subprocess.Popen(['xdg-open', noteFile])
         
-        
 
-# Test code for now
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    w = LogBookView()
-    model = LogBookModel()
+def loadLogBookTab(model : LogBookModel) -> None:
+    model.clear()
+    
     model.setUnassociatedNotes(logbookadmin.listNonRunNotes())
     notes = model.unassociatedNotes()
     
@@ -428,14 +433,32 @@ if __name__ == '__main__':
     for run in runs:
         notes = logbookadmin.listNotesForRun(run.number)
         runAndNotes.append((run, notes))
-    
     model.setRuns(runAndNotes)
+        
+def main() -> int:
+    '''
+    Program entry point.
+    '''
     
-    w.setModel(model)
+    app = QApplication(sys.argv)
+    lbview = LogBookView()
+    model = LogBookModel()
+    loadLogBookTab(model)
     
-    w.show()
-    h = w.height()
-    w.resize(700, h)
+    # Bot the signals for notes written and update refresh go to loadLogBookTab
+    refresh = lambda: loadLogBookTab(model)
+    lbview.noteWritten.connect(refresh)
+    lbview.refresh.connect(refresh)
     
-    sys.exit(app.exec())
+    lbview.setModel(model)
+    
+    lbview.show()
+    h = lbview.height()
+    lbview.resize(700, h)
+    
+    return app.exec()    
 
+    
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -180,7 +180,7 @@ def markdownToHtml(markdown: str, outFile: str) -> None:
     
     pandoc = subprocess.Popen([
         'pandoc',
-        '-f', 'markdown+link_attributes', 
+        '-f', 'markdown+link_attributes+backtick_code_blocks', 
         '-t', 'html',
         '-o', outFile],
         stdin = subprocess.PIPE, encoding='utf-8'
@@ -200,7 +200,7 @@ def markdownToPdf(markdown : str, outFile : str) -> None:
     '''
     pandoc = subprocess.Popen([
         'pandoc',
-        '-f', 'markdown+link_attributes', 
+        '-f', 'markdown+link_attributes+backtick_code_blocks', 
         '-t', 'pdf',
         '-o', outFile], 
         stdin = subprocess.PIPE, encoding='utf-8')
