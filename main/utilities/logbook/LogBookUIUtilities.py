@@ -37,6 +37,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
+    QMessageBox,
     QVBoxLayout,
     QWidget,
 )
@@ -65,6 +66,30 @@ def makeNoteHtmlFilename(id : int) -> str:
     note_path = TEMPDIR / f'note-{id}-{int(time.time())}-{os.getpid()}-{tmpFileIndex}.html'
     return str(note_path)
 
+def programPath(name :str) -> str | None:
+    '''
+        Generate the full path to a program in DAQBIN.
+        @param name - name of the program.
+        @return str program path.
+        @retval None - DAQBIN is not defined or $DAQBIN/name does not exist.
+             in both of those cases a QMessageBox.Warningi s popped up.
+    '''
+    if 'DAQBIN' not in os.environ:
+        QMessageBox.warning(
+            None, 'DAQBIN undefined', 
+            'The "DAQBIN" environment variable is not defined, use a daqsetup.bash script to define it.'
+        )
+        return None
+    path = pathlib.Path(os.environ['DAQBIN']) / name
+    if not path.exists():
+        QMessageBox.warning(
+            None,'No Such executable', 
+            f'There is no executable named {name} in $DAQBIN'
+        )
+        return None
+    return str(path)
+    
+    
 def generateMarkdownFromItemList(items : list[LogBook.Run | LogBook.Transition | LogBook.Note]) -> str:
     '''
     Given a list of logbook items, returns the markdown rendering of all of them as a single string
