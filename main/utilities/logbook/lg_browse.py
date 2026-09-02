@@ -43,7 +43,7 @@ from PyQt6.QtWidgets import (
 def _timestring(stamp) -> str:
     return LogBookUIUtilities.timestring(stamp)   # Factored out.
     
-    
+#---------------------------------    LogBook tree browser -------------------------------------------    
 class LogBookModel(QStandardItemModel):
     '''
         This model provides a hierarchical view of the
@@ -84,12 +84,8 @@ class LogBookModel(QStandardItemModel):
         super().__init__(parent)
         
         # Create the none top level:
-        
-        self._noneItem = QStandardItem('None')
-        self._setFlagsAndAppendRow(self, [self._noneItem,])
-        self.setColumnCount(5)
-    
-        self.setHorizontalHeaderLabels(['Run', 'Title', 'Person/Shift', 'State/Time', 'Remark'])
+
+        self.clear()
     
     def clear(self) -> None:
         super().clear()
@@ -422,7 +418,84 @@ class LogBookView(QTreeView):
         
         subprocess.Popen(['xdg-open', noteFile])
         
+#-------------------------- Code for shift tab ----------------------------------------------------------
 
+class ShiftModel(QStandardItemModel):
+    '''
+        This model provides a container for the shifts which, in turn can be displayed in the
+        ShiftView widget.  The model is organized as a tree where top level nodes are
+        shift names and child nodes are the people inside the shift.
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__()
+        self.clear()
+    
+    def clear(self) -> None:
+        '''
+            Clear the model and setup the initial state of the widget, specifically
+            column count and header labels.
+        '''
+        super().clear()
+        
+        self.setColumnCount(4)
+        self.setHorizontalHeaderLabels(['Shift', 'Last Name', 'First Name', 'Salutation'])
+    
+    def addShifts(self, shifts : Iterable[LogBook.Shift]) -> None:
+        '''
+        Add a set of shifts to the model.
+        @param shifts: Iterable[LogBook.Shift] The shifts to add.
+        '''
+        
+        for shift in shifts:
+            self.addShift(shift)
+    def addShift(self, shift : LogBook.Shift) -> None:
+        '''
+        Add a single shift to the logbook.   
+        @param shift : LogBook.Shift - the shift to add.
+        '''
+        # Top level item is the shift name:
+        name = QStandardItem(shift.name)
+        self._setFlagsAndAppendRow(self, [name, ])
+        for member in shift.members:
+            last = QStandardItem(member.lastname)
+            first = QStandardItem(member.firstname)
+            sal   = QStandardItem(member.salutation)
+            empty = QStandardItem('')
+            self._setFlagsAndAppendRow(name, [empty, last, first, sal])
+    
+    #  Utiltities:
+    def _setFlagsAndAppendRow(self, parent: QStandardItem | QStandardItemModel, row : list[QStandardItem]) -> None:
+        # Set item appropriate flags (mostly we want to turn off editing)
+        # Then append the row in the appropriate parent:
+        
+        for item in row:
+            flags = item.flags()
+            flags = flags & (~Qt.ItemFlag.ItemIsEditable)
+            item.setFlags(flags)
+        parent.appendRow(row)    
+
+class ShiftView(QTreeView):
+    '''
+    Tree intended to view the shifts that are in a ShiftModel.  Note external 
+    forces must set the model.
+    
+    Signals:
+      shiftAdded - The context menu was used to add a shift.
+      shiftEdited - The context menu was used to add a shift
+      shiftSelected(str) - The named shift should be made current. The name
+                   of the shift is the clicked shift which should be made current.
+      refresh    - The refresh context menu was clicked.
+    '''
+    shiftAdded = pyqtSignal()
+    shiftEdited = pyqtSignal()
+    shiftSelected = pyqtSignal(str)
+    refresh    = pyqtSignal()
+    
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        
+        
+#--------------------------    Main program logic --------------------------------------------------------
 def loadLogBookTab(model : LogBookModel) -> None:
     model.clear()
     
@@ -435,7 +508,14 @@ def loadLogBookTab(model : LogBookModel) -> None:
         notes = logbookadmin.listNotesForRun(run.number)
         runAndNotes.append((run, notes))
     model.setRuns(runAndNotes)
-        
+
+def loadShiftTab(model : ShiftModel) -> None:
+    model.clear()
+    shifts = []
+    for name in logbookadmin.listShifts():
+        shifts.append(logbookadmin.getShift(name))  
+    model.addShifts(shifts)
+         
 def main() -> int:
     '''
     Program entry point.
@@ -447,17 +527,28 @@ def main() -> int:
     # The logbook tab:
     
     lbview = LogBookView(win)
-    model = LogBookModel()
-    loadLogBookTab(model)
+    lbmodel = LogBookModel()
+    loadLogBookTab(lbmodel)
     
     # Bot the signals for notes written and update refresh go to loadLogBookTab
-    refresh = lambda: loadLogBookTab(model)
-    lbview.noteWritten.connect(refresh)
-    lbview.refresh.connect(refresh)
+    refreshLb = lambda: loadLogBookTab(lbmodel)
+    lbview.noteWritten.connect(refreshLb)
+    lbview.refresh.connect(refreshLb)
     
-    lbview.setModel(model)
+    lbview.setModel(lbmodel)
     win.addTab(lbview, 'LogBook')
     
+    # The shifts tab:
+    
+    shiftview = ShiftView(win)
+    shiftmodel = ShiftModel(shiftview)
+    shiftview.setModel(shiftmodel)
+    win.addTab(shiftview, 'Shifts')
+    
+    refreshShifts = lambda: loadShiftTab(shiftmodel)
+    refreshShifts()
+    
+    ##
     win.show()
     h = win.height()
     win.resize(700, h)
