@@ -494,6 +494,35 @@ class ShiftView(QTreeView):
     def __init__(self, parent : QWidget | None = None):
         super().__init__(parent)
         
+        # Suport a custopm context menu:
+        
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._contextMenu)
+    
+    
+    # Context menu handling:
+    
+    def _contextMenu(self, where : QPoint) -> None:    
+        # Handles the right click.  The where parameter is where the
+        # click occured.  We'll use that to figure out a shift for the 
+        # set current and edit signals.
+        
+        context_menu = QMenu(self)
+        
+        add = QAction('Add Shift...', context_menu)
+        context_menu.addAction(add)
+        
+        edit = QAction('Edit...', context_menu)
+        context_menu.addAction(edit)
+        
+        setCurrent = QAction('Set Current', context_menu)
+        context_menu.addAction(setCurrent)
+        
+        refresh = QAction('Refresh', context_menu)
+        context_menu.addAction(refresh)
+        
+        pos = self.mapToGlobal(where)     # Wher we want the context menu posted.
+        context_menu.exec(pos)
         
 #--------------------------    Main program logic --------------------------------------------------------
 def loadLogBookTab(model : LogBookModel) -> None:
