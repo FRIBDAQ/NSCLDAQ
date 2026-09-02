@@ -480,15 +480,15 @@ class ShiftView(QTreeView):
     forces must set the model.
     
     Signals:
-      shiftAdded - The context menu was used to add a shift.
-      shiftEdited - The context menu was used to add a shift
-      shiftSelected(str) - The named shift should be made current. The name
+      addShift - The context menu was used to request an add a shift.
+      editShfit(str) - The context menu was used to request an edit of a shift.
+      selectShift(str) - The named shift should be made current. The name
                    of the shift is the clicked shift which should be made current.
       refresh    - The refresh context menu was clicked.
     '''
-    shiftAdded = pyqtSignal()
-    shiftEdited = pyqtSignal()
-    shiftSelected = pyqtSignal(str)
+    addShift = pyqtSignal()
+    editShift = pyqtSignal()
+    selectShift = pyqtSignal(str)
     refresh    = pyqtSignal()
     
     def __init__(self, parent : QWidget | None = None):
@@ -502,6 +502,13 @@ class ShiftView(QTreeView):
     
     # Context menu handling:
     
+    def _addShift(self) -> None:
+        # Add a new shift:  just signal and let the outside world
+        # deal with it:
+        
+        self.addShift.emit()
+            
+    
     def _contextMenu(self, where : QPoint) -> None:    
         # Handles the right click.  The where parameter is where the
         # click occured.  We'll use that to figure out a shift for the 
@@ -511,6 +518,7 @@ class ShiftView(QTreeView):
         
         add = QAction('Add Shift...', context_menu)
         context_menu.addAction(add)
+        add.triggered.connect(self._addShift)
         
         edit = QAction('Edit...', context_menu)
         context_menu.addAction(edit)
@@ -520,11 +528,15 @@ class ShiftView(QTreeView):
         
         refresh = QAction('Refresh', context_menu)
         context_menu.addAction(refresh)
+        refresh.triggered.connect(self.refresh.emit)
         
         pos = self.mapToGlobal(where)     # Wher we want the context menu posted.
         context_menu.exec(pos)
         
 #--------------------------    Main program logic --------------------------------------------------------
+
+# ---- Logbook logic.
+
 def loadLogBookTab(model : LogBookModel) -> None:
     model.clear()
     
@@ -538,13 +550,25 @@ def loadLogBookTab(model : LogBookModel) -> None:
         runAndNotes.append((run, notes))
     model.setRuns(runAndNotes)
 
+# ---- Shift logic.
+
 def loadShiftTab(model : ShiftModel) -> None:
     model.clear()
     shifts = []
     for name in logbookadmin.listShifts():
         shifts.append(logbookadmin.getShift(name))  
     model.addShifts(shifts)
-         
+
+def addShift(model : ShiftModel) -> None:
+    # Just run lg_mkShift and reload the model:
+    
+    program = LogBookUIUtilities.programPath('lg_mkshift')  
+    if program is None:
+        return
+    else:
+        subprocess.call([program,])
+        loadShiftTab(model)
+    
 def main() -> int:
     '''
     Program entry point.
@@ -576,6 +600,9 @@ def main() -> int:
     
     refreshShifts = lambda: loadShiftTab(shiftmodel)
     refreshShifts()
+    
+    shiftview.refresh.connect(refreshShifts)
+    shiftview.addShift.connect(lambda : addShift(shiftmodel))
     
     ##
     win.show()
