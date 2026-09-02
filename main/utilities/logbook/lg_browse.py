@@ -34,6 +34,7 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QMenu,
     QMessageBox,
+    QTabWidget,
     QTreeView,
     QWidget,
 )
@@ -441,7 +442,11 @@ def main() -> int:
     '''
     
     app = QApplication(sys.argv)
-    lbview = LogBookView()
+    win = QTabWidget()
+    
+    # The logbook tab:
+    
+    lbview = LogBookView(win)
     model = LogBookModel()
     loadLogBookTab(model)
     
@@ -451,10 +456,11 @@ def main() -> int:
     lbview.refresh.connect(refresh)
     
     lbview.setModel(model)
+    win.addTab(lbview, 'LogBook')
     
-    lbview.show()
-    h = lbview.height()
-    lbview.resize(700, h)
+    win.show()
+    h = win.height()
+    win.resize(700, h)
     
     return app.exec()    
 
