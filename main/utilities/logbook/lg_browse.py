@@ -487,7 +487,7 @@ class ShiftView(QTreeView):
       refresh    - The refresh context menu was clicked.
     '''
     addShift = pyqtSignal()
-    editShift = pyqtSignal()
+    editShift = pyqtSignal(str)
     selectShift = pyqtSignal(str)
     refresh    = pyqtSignal()
     
@@ -515,6 +515,8 @@ class ShiftView(QTreeView):
         # set current and edit signals.
         
         context_menu = QMenu(self)
+        shiftName = self._pointToShift(where)
+        
         
         add = QAction('Add Shift...', context_menu)
         context_menu.addAction(add)
@@ -522,6 +524,7 @@ class ShiftView(QTreeView):
         
         edit = QAction('Edit...', context_menu)
         context_menu.addAction(edit)
+        edit.triggered.connect(lambda: self.editShift.emit(shiftName))
         
         setCurrent = QAction('Set Current', context_menu)
         context_menu.addAction(setCurrent)
@@ -532,6 +535,17 @@ class ShiftView(QTreeView):
         
         pos = self.mapToGlobal(where)     # Wher we want the context menu posted.
         context_menu.exec(pos)
+        
+    def _pointToShift(self, where : QPoint) -> str :
+        # Map the where point to a shift name.
+        
+        point_index = self.indexAt(where)     # QItemIndex.
+        item        = self.model().itemFromIndex(point_index)
+        parent = item.parent()
+        if parent:
+            return parent.text()
+        else:
+            return item.text()
         
 #--------------------------    Main program logic --------------------------------------------------------
 
@@ -568,6 +582,14 @@ def addShift(model : ShiftModel) -> None:
     else:
         subprocess.call([program,])
         loadShiftTab(model)
+
+def editShift(name : str, model : ShiftModel) -> None:
+    # Edit the named shift.
+    
+    program = LogBookUIUtilities.programPath('lg_mgshift')
+    if not program is None:
+        subprocess.call([program, 'edit', name])
+        loadShiftTab(model)
     
 def main() -> int:
     '''
@@ -603,6 +625,7 @@ def main() -> int:
     
     shiftview.refresh.connect(refreshShifts)
     shiftview.addShift.connect(lambda : addShift(shiftmodel))
+    shiftview.editShift.connect(lambda name: editShift(name, shiftmodel) )
     
     ##
     win.show()
