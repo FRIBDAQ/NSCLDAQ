@@ -580,7 +580,30 @@ class ShiftView(QTreeView):
             return parent.text()
         else:
             return item.text()
+#--------------------------- Code for the person tab ----------------------------------------------------
+
+class PersonModel(QStandardItemModel):
+    '''
+        Model for people in a table.  THis is a flat model.
+    '''
+    def __init__(self, parent : QWidget | None):
+        super().__init__(parent)
+        self.clear()
         
+    def clear(self):
+        super().clear()
+        self.setHorizontalHeaderLabels(['Last Name', 'First Name', 'Salutation'])
+    
+    #  Utiltities:
+    def _setFlagsAndAppendRow(self,  row : list[QStandardItem]) -> None:
+        # Set item appropriate flags (mostly we want to turn off editing)
+        # Then append the row in the appropriate parent:
+        
+        for item in row:
+            flags = item.flags()
+            flags = flags & (~Qt.ItemFlag.ItemIsEditable)
+            item.setFlags(flags)
+        self.appendRow(row)            
 #--------------------------    Main program logic --------------------------------------------------------
 
 # ---- Logbook logic.
