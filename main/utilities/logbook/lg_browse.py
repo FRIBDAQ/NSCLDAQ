@@ -594,7 +594,7 @@ class PersonModel(QStandardItemModel):
         super().clear()
         self.setHorizontalHeaderLabels(['Last Name', 'First Name', 'Salutation'])
     
-    def setPeople(self, people : list[LogBook.Person]) -> None:
+    def setPeople(self, people : Iterable[LogBook.Person]) -> None:
         '''
             Clears the list and stocks it with the people provided.
             @param people - the people to put in the model.
@@ -611,7 +611,7 @@ class PersonModel(QStandardItemModel):
         '''
         lastname = QStandardItem(person.lastname)
         firstname = QStandardItem(person.firstname)
-        salutation = QStandardItem(person.salutatino)
+        salutation = QStandardItem(person.salutation)
         
         self._setFlagsAndAppendRow([lastname, firstname, salutation])
         
@@ -705,7 +705,16 @@ def editShift(name : str, model : ShiftModel) -> None:
     if not program is None:
         subprocess.call([program, 'edit', name])
         loadShiftTab(model)
+# ----- People logic:
+
+def refreshPeople(model : PersonModel) -> None: 
+    # Load the model with the people that are known
     
+    model.setPeople(logbookadmin.listPeople())
+    
+def addPerson() -> None:
+    # Add a new person
+    print(add)
 def main() -> int:
     '''
     Program entry point.
@@ -753,6 +762,12 @@ def main() -> int:
     personView.setModel(personModel)
     win.addTab(personView, 'People')
     
+    refresh = lambda: refreshPeople(personModel)
+    refresh()
+    
+    personView.refresh.connect(refresh)
+    personView.addPerson.connect(addPerson)
+    personView.addPerson.connect(refresh)
     
     ##
     win.show()
