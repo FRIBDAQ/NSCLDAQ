@@ -138,17 +138,17 @@ def genTransitionMarkdown(transition : LogBook.Transition) -> str:
         people assigned to that shift (as a table).
         
     '''
-    result = f"### Run Transition; {transition.transition_name} at: {timestring(transition.time)}\n"
+    result = f"\n\n### Run Transition; {transition.transition_name} at: {timestring(transition.time)}\n\n"
     result += transition.comment + "\n\n"
     
     shift = transition.shift
-    result += f"Shift: {shift.name}\n\n"
+    result += f"\n\nShift: {shift.name}\n\n"
     result += "| Shift Members|\n"
     result+=  "|--------------|\n"
     for member in shift.members:
         result += f"| {personName(member)} |\n"
     
-    result += "\n"    
+    result += "\n\n"    
     return result
     
     
@@ -170,6 +170,7 @@ def genNoteMarkdown(note : LogBook.Note) -> str:
     author      = personName(note.author)
     
     header_text = f'''
+    
 ### Note:
 
 |Item | Value |
@@ -181,14 +182,14 @@ def genNoteMarkdown(note : LogBook.Note) -> str:
         header_text += f'''
 | For Run: | {run.number} |
 | Title:   | {run.title}  |
-| Started  | {timestring(run.get_transition(0).time)} |'''
+| Started  | `{timestring(run.get_transition(0).time)}` |'''
         if not run.is_active():
             lastIndex = run.transition_count() - 1
             header_text += f'''
-| Ended | {timestring(run.get_transition(lastIndex).time)} |'''
+| Ended | `{timestring(run.get_transition(lastIndex).time)}` |'''
         else:
             header_text += '''| Still active | |'''
-    full_text = header_text + '\n\n' +note_contents
+    full_text = header_text + '\n\n' +note_contents + '\n\n'
     return full_text
 
 
