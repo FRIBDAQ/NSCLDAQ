@@ -136,9 +136,9 @@ def status(cmd):
     # turn our sizes into Kb.
     
     # If not all, then either filter on --users or 
-    # the current username:
+    # the current username, note if --host is specified, we can't filter.
     
-    if not cmd.all:
+    if not cmd.all and cmd.host == 'localhost':
         if cmd.users is None:
             users = [getpass.getuser(),]
         else:
