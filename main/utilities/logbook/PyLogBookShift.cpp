@@ -23,6 +23,7 @@
 #include "PyLogBookPerson.h"
 #include "LogBookShift.h"
 #include "LogBook.h"
+#include "LogBookPerson.h"
 
 
 ///////////////////////////////////////////////////////////////////
@@ -252,8 +253,15 @@ static PyObject*
 get_members(PyObject* self, void* closure)
 {
     pPyLogBookShift pThis = reinterpret_cast<pPyLogBookShift>(self);
+    // Need to copy the shift members to avoid premature deletion:
+
+    std::vector<LogBookPerson*> people = pThis->m_shift->members();
+    std::vector<LogBookPerson*> people_copy;
+    for (auto p : people) {
+      people_copy.push_back(new LogBookPerson(*p));
+    }
     return PyLogBook_TupleFromPeople(
-      pThis->m_book, pThis->m_shift->members()
+      pThis->m_book, people_copy
     );
 }
 ////////////////////////////////////////////////////////////////////
@@ -284,8 +292,9 @@ addMember(PyObject* self, PyObject* args)
   }
   pPyLogBookShift pThis = reinterpret_cast<pPyLogBookShift>(self);
   LogBook* book = PyLogBook_getLogBook(pThis->m_book);
-  try {
-    book->addShiftMember(pThis->m_shift, person);
+  LogBookPerson* personCopy = new LogBookPerson(*person);   // Need to feed a copy so the caller'rs
+  try {                                            // won't get deleted.
+    book->addShiftMember(pThis->m_shift, personCopy);      
   }
   catch (LogBook::Exception & e) {
     PyErr_SetString(logbookExceptionObject, e.what());

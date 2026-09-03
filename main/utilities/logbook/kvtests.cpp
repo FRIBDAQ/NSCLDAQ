@@ -27,6 +27,7 @@
 #include <CSqliteStatement.h>
 #include <unistd.h>
 #include <Asserts.h>
+#include <iostream>
 
 class kvtest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(kvtest);
@@ -41,6 +42,8 @@ class kvtest : public CppUnit::TestFixture {
     
     CPPUNIT_TEST(create_1);
     CPPUNIT_TEST(create_2);
+    
+    CPPUNIT_TEST(list_1);
     CPPUNIT_TEST_SUITE_END();
 protected:
     void exists_1();
@@ -55,6 +58,8 @@ protected:
     
     void create_1();
     void create_2();
+
+    void list_1();
 private:
     std::string m_database;
     LogBook*    m_pLogBook;
@@ -151,4 +156,24 @@ void kvtest::create_2()
     
     CPPUNIT_ASSERT_NO_THROW(m_pLogBook->kvCreate("newKey", "NewValue"));
     EQ(std::string("NewValue"), m_pLogBook->kvGet("newKey"));
+}
+
+void kvtest::list_1() {
+    // The initial dtabase shoulid have all the stuff in it.
+
+    std::vector<std::pair<std::string, std::string>> kv = m_pLogBook->kvList();
+
+    EQ(size_t(4), kv.size());
+    EQ(std::string("experiment"), kv[0].first);
+    EQ(std::string("Test"), kv[0].second);
+
+    EQ(std::string("spokesperson"), kv[1].first);
+    EQ(std::string("Ron Fox"), kv[1].second);
+
+    EQ(std::string("purpose"), kv[2].first);
+    EQ(std::string("Test kvstore"), kv[2].second);
+
+    EQ(std::string("version"), kv[3].first);
+    EQ(std::string("1.0"), kv[3].second);
+
 }

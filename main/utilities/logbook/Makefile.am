@@ -1,3 +1,4 @@
+
 # I Saw a dependency? issue make parallel make fail here so for now:
 
 .NOTPARALLEL:
@@ -18,6 +19,7 @@ libPyLogbook_la_SOURCES=PyLogbook.cpp PyLogbookPerson.cpp PyLogbook.h \
 	PyLogBookPerson.h PyLogBookShift.h PyLogBookShift.cpp	\
 	PyLogBookRun.h PyLogBookRun.cpp PyNote.h PyNote.cpp
 
+PY_PACKAGES=logbookadmin.py LogBookUIUtilities.py
 
 include_HEADERS=LogBook.h LogBookPerson.h LogBookShift.h LogBookRun.h \
 	LogBookNote.h
@@ -53,18 +55,18 @@ install-exec-hook:
 	$(INSTALL_PROGRAM) @srcdir@/logbookBundle.tcl @prefix@/TclLibs/logbook
 	$(INSTALL_PROGRAM) @srcdir@/lg_noteutilities.tcl \
 		@prefix@/TclLibs/logbook
-	$(INSTALL_PROGRAM) @srcdir@/lg_create.tcl @bindir@/lg_create
-	$(INSTALL_PROGRAM) @srcdir@/lg_current.tcl @bindir@/lg_current
-	$(INSTALL_PROGRAM) @srcdir@/lg_ls.tcl @bindir@/lg_ls
-	$(INSTALL_PROGRAM) @srcdir@/lg_addperson.tcl @bindir@/lg_addperson
-	$(INSTALL_PROGRAM) @srcdir@/lg_lspeople.tcl @bindir@/lg_lspeople
-	$(INSTALL_PROGRAM) @srcdir@/lg_mkshift.tcl @bindir@/lg_mkshift
-	$(INSTALL_PROGRAM) @srcdir@/lg_mgshift.tcl @bindir@/lg_mgshift
-	$(INSTALL_PROGRAM) @srcdir@/lg_wrnote.tcl @bindir@/lg_wrnote
-	$(INSTALL_PROGRAM) @srcdir@/lg_selshift.tcl @bindir@/lg_selshift
-	$(INSTALL_PROGRAM) @srcdir@/lg_browse.tcl @bindir@/lg_browse
-	$(INSTALL_PROGRAM) @srcdir@/lg_kvstore.tcl @bindir@/lg_kvstore
-	$(INSTALL_PROGRAM) @srcdir@/lg_print.tcl @bindir@/lg_print
+	$(INSTALL_PROGRAM) @srcdir@/lg_create.py @bindir@/lg_create
+	$(INSTALL_PROGRAM) @srcdir@/lg_current.py @bindir@/lg_current
+	$(INSTALL_PROGRAM) @srcdir@/lg_ls.py @bindir@/lg_ls
+	$(INSTALL_PROGRAM) @srcdir@/lg_addperson.py @bindir@/lg_addperson
+	$(INSTALL_PROGRAM) @srcdir@/lg_lspeople.py @bindir@/lg_lspeople
+	$(INSTALL_PROGRAM) @srcdir@/lg_mkshift.py @bindir@/lg_mkshift
+	$(INSTALL_PROGRAM) @srcdir@/lg_mgshift.py @bindir@/lg_mgshift
+	$(INSTALL_PROGRAM) @srcdir@/lg_wrnote.py @bindir@/lg_wrnote
+	$(INSTALL_PROGRAM) @srcdir@/lg_selshift.py @bindir@/lg_selshift
+	$(INSTALL_PROGRAM) @srcdir@/lg_browse.py @bindir@/lg_browse
+	$(INSTALL_PROGRAM) @srcdir@/lg_kvstore.py @bindir@/lg_kvstore
+	$(INSTALL_PROGRAM) @srcdir@/lg_print.py @bindir@/lg_print
 	for f in $(FIGURES); do $(INSTALL_DATA) @srcdir@/$$f \
 		@prefix@/share/html; done
 	for f in $(EXAMPLES); do $(INSTALL_DATA) @srcdir@/$$f \
@@ -83,6 +85,7 @@ install-exec-hook:
 		>> @prefix@/TclLibs/logbook/pkgIndex.tcl
 	echo package ifneeded logbookbundle  1.0 [list source [file join \$$dir logbookBundle.tcl]] \
 		>> @prefix@/TclLibs/logbook/pkgIndex.tcl
+	(cd @srcdir@; $(INSTALL_SCRIPT) $(PY_PACKAGES) @prefix@/pythonLibs/nscldaq/LogBook)
 
 
 
@@ -120,6 +123,7 @@ check-TESTS:
 	TCLLIBPATH=@prefix@/TclLibs @TCLSH_CMD@ @srcdir@/noteinstance.test
 	TCLLIBPATH=@prefix@/TclLibs @TCLSH_CMD@ @srcdir@/admin.test
 	TCLLIBPATH=@prefix@/TclLibs @TCLSH_CMD@ @srcdir@/noteutil.test
+	PYTHONPATH=@prefix@/pythonLibs @PYTHON@ @srcdir@/logbookadmin.py
 	@builddir@/unittests
 
 
@@ -130,10 +134,10 @@ check: check-TESTS
 EXTRA_DIST=logbookstatictests.py pypersontests.py pyshifttests.py \
 	pyruntests.py pynotetests.py logbook.test logbookinstance.test \
 	personinstance.test shiftinstance.test runinstance.test \
-	noteinstance.test logbookadmin.tcl admin.test lg_create.tcl \
-	lg_current.tcl lg_ls.tcl lg_addperson.tcl lg_lspeople.tcl \
-	lg_mkshift.tcl ShiftEditor.tcl lg_mgshift.tcl lg_utilities.tcl \
-	lg_noteutilities.tcl noteutil.test lg_wrnote.tcl logbookBundle.tcl \
-	lg_selshift.tcl pykvtests.py lg_browse.tcl lg_kvstore.tcl lg_print.tcl \
+	noteinstance.test logbookadmin.tcl admin.test lg_create.py \
+	lg_current.py lg_ls.py lg_addperson.py lg_lspeople.py \
+	lg_mkshift.py ShiftEditor.tcl lg_mgshift.py lg_utilities.tcl \
+	lg_noteutilities.tcl noteutil.test lg_wrnote.py logbookBundle.tcl \
+	lg_selshift.py pykvtests.py lg_browse.py lg_kvstore.py lg_print.py \
 	logbookdocs.xml \
 	$(FIGURES) $(EXAMPLES)

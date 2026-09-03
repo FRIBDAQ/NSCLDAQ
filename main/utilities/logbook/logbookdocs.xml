@@ -2672,6 +2672,11 @@ lg_kvstore set <replaceable>key value</replaceable>
 lg_kvstore create <replaceable>key value</replaceable>
          </command>
       </cmdsynopsis>
+      <cmdsynopsis>
+         <command>
+lg_kvstore list
+         </command>
+      </cmdsynopsis>
     </refsynopsisdiv>
     <refsect1>
              <title>DESCRIPTION</title>
@@ -2729,6 +2734,33 @@ lg_kvstore create <replaceable>key value</replaceable>
                      the specified value.
                    </para>
                 </listitem>
+            </varlistentry>
+            <varlistentry>
+                  <term><command>list</command>></term>
+                  <listitem>
+                     <para>
+                        Lists the contents of the key/value store in tabular form e.g.:
+                        <informalexample>
+                        <programlisting>
++--------------+-------------------+
+| Key          | Value             |
++==============+===================+
+| experiment   | 0400x             |
++--------------+-------------------+
+| new_key      | avalue            |
++--------------+-------------------+
+| purpose      | Just for testing. |
++--------------+-------------------+
+| something    | else              |
++--------------+-------------------+
+| spokesperson | Some Person       |
++--------------+-------------------+
+| version      | 1.0               |
++--------------+-------------------+
+                        </programlisting>
+                        </informalexample>
+                     </para>
+                  </listitem>
             </varlistentry>
           </variablelist>
     </refsect1>
@@ -9014,7 +9046,7 @@ run  = book.begin_run(number, title[, comment])
 
 note = get_note(id)
 notes = list_all_notes();
-notes = list_all_notes_for_run_number(number)
+notes = list_notes_for_run_number(number)
 notes = list_all_notes_for_run_id(id)
 notes = list_all_notes_for_run(run)
 notes = list_nonrun_notes()

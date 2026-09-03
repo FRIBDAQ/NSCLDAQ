@@ -101,7 +101,9 @@ PyLogBook_TupleFromPeople(
     }
     try {
         for (int i =0; i < people.size(); i++) {
-            PyTuple_SET_ITEM(result, i, PyPerson_newPerson(book, people[i]->id()));
+            auto person = PyPerson_newPerson(book, people[i]->id());
+            Py_XINCREF(person);
+            PyTuple_SET_ITEM(result, i, person);
         }
     }
     catch (LogBook::Exception& e) {
@@ -119,7 +121,7 @@ PyLogBook_TupleFromPeople(
             "Unanticipated exception type in PyLogBook_TupleFromPeople"
         );
     }
-    
+    Py_XINCREF(result);
     return result;
 }
 /**
@@ -520,6 +522,18 @@ createShift(PyObject* self, PyObject* args, PyObject* kwargs)
         if(PyPerson_IterableToVector(memberVec, members)) {
             return nullptr;
         }
+        // Note that the destructor of the logbook
+        // Will also destroy the underlying member People.
+        // This is undersirable, therefore,
+        // We copy construct in... We do that here, rather than in
+        // PyPerson_iterableToVector because that would, otherwise3,
+        // be a policy decision about a function in another module:
+
+        std::vector<LogBookPerson*> copiedPeople;
+        for (auto p : memberVec) {
+            copiedPeople.push_back(new LogBookPerson(*p));
+        }
+        memberVec = copiedPeople;
     }
     LogBook* book = PyLogBook_getLogBook(self);
     PyObject* result(nullptr);
@@ -594,7 +608,10 @@ findShift(PyObject* self, PyObject* args)
         if (!pShift.get()) {
             throw LogBook::Exception("Shift not found");
         }
-        return PyShift_newShift(self, pShift.get());
+        
+        PyObject* result =  PyShift_newShift(self, new LogBookShift(*pShift.get()));
+        Py_XINCREF(result);
+        return result;
     }
     catch (LogBook::Exception & e)
     {
@@ -624,6 +641,7 @@ currentShift(PyObject* self, PyObject* none)
         PyObject* result(nullptr);
         try {
             result = PyShift_newShift(self, shift.get());
+            Py_XINCREF(result);
         }
         catch (LogBook::Exception& e) {
             PyErr_SetString(logbookExceptionObject, e.what());
@@ -841,6 +859,7 @@ createNote(PyObject* self, PyObject* args, PyObject* kwargs)
     )) {
         return nullptr;             // Exception already raised.
     }
+    
     // Must have an author:
     
     if (!pAuthor) {
@@ -860,7 +879,25 @@ createNote(PyObject* self, PyObject* args, PyObject* kwargs)
         return nullptr;
     }
     
+    // Things that are None, or missing. map to appropriate python types.
+
+    bool decrefImages = false;
+    bool decrefOffsets = false;
+    if (!pImageFiles || (pImageFiles == Py_None)) {
+        pImageFiles = PyTuple_New(0);
+        decrefImages = true;
+    }
+    if (!pImageOffsets || (pImageOffsets == Py_None)) {
+        pImageOffsets = PyTuple_New(0);
+        decrefOffsets = true;
+    }
+    if (pRun == Py_None) {
+        pRun = nullptr;
+    }
+
+
     // Marshall the run if it's present.
+    
     
     if (pRun) {
         if (PyRun_isRun(pRun)) {
@@ -887,9 +924,16 @@ createNote(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (pImageFiles) {
         if (!StringVecFromIterable(imageFilenames, pImageFiles)) return nullptr;
+        if (decrefImages) {
+            Py_DECREF(pImageFiles);
+        }
+
     }
     if (pImageOffsets) {
         if (!SizeVecFromIterable(imageOffsets, pImageOffsets)) return nullptr;
+        if (decrefOffsets) {
+            Py_DECREF(pImageOffsets);
+        }
     }
     if (imageFilenames.size() != imageOffsets.size()) {
         PyErr_SetString(
@@ -1269,6 +1313,33 @@ kvCreate(PyObject* self, PyObject* args)
     PyErr_SetString(logbookExceptionObject, m.c_str());
     return nullptr;
 }
+
+/**
+ * kvList
+ *     Return a tuple of pairs where each pair is a key value pair,
+ *     listing the entire key value table.
+ * 
+ * @param self - pointer to this object.
+ * @param unused - Pointer to the positional arguments. - unused
+ * @return PyObject* tuple of key value pairs.
+ */
+static PyObject*
+kvList(PyObject* self, PyObject* Py_UNUSED(ignored)) {
+    LogBook* pBook = PyLogBook_getLogBook(self);
+
+    std::vector<std::pair<std::string, std::string>> vresult = pBook->kvList();
+    PyObject* result = PyTuple_New(vresult.size());
+    for (int i = 0; i < vresult.size(); i++) {
+        PyObject* key = PyUnicode_FromString(vresult[i].first.c_str());
+        PyObject* value = PyUnicode_FromString(vresult[i].second.c_str());
+        PyObject* item = PyTuple_New(2);
+        PyTuple_SetItem(item, 0, key);
+        PyTuple_SetItem(item, 1, value);
+
+        PyTuple_SetItem(result, i, item);
+    }
+    return result;
+}
 ///////////////////////////////////////////////////////////////
 // Table for the PyLogBook type (LogBook.LogBook)
 
@@ -1341,6 +1412,7 @@ static PyMethodDef PyLogBook_methods [] = {   // methods
     {"kv_get", kvGet, METH_VARARGS, "Return the value of a key"},
     {"kv_set", kvSet, METH_VARARGS, "Create or modify a key/value"},
     {"kv_create", kvCreate, METH_VARARGS, "Create a new key/value pair"},
+    {"kv_list", kvList, METH_NOARGS, "List all key value pairs."},
     
     
     // Ending sentinel:

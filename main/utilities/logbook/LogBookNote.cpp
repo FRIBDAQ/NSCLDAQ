@@ -178,7 +178,7 @@ LogBookNote::LogBookNote(CSqlite& db, int noteId)
     }
     catch (CSqliteException& e) {
         LogBook::Exception::rethrowSqliteException(
-            e, "Failed to lookupt note"
+            e, "Failed to lookup note"
         );
     }
     

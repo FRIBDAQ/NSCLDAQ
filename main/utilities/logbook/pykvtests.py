@@ -43,7 +43,14 @@ class aTest(unittest.TestCase) :
     def test_create2(self, ):
         self.assertRaises(LogBook.error, self.logbook.kv_create, 'experiment', 'illigal')
     
-    
+    def test_list(self):
+        info = self.logbook.kv_list()
+        self.assertEqual(4, len(info))
+        self.assertEqual(
+            (('experiment', '0400x'), ('spokesperson', 'Ron Fox'), ('purpose', 'Python tests'), ('version', '1.0')),
+            info
+        )
+        
     
 
 if __name__ == '__main__' :
