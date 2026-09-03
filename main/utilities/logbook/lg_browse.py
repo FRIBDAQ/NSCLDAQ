@@ -713,8 +713,12 @@ def refreshPeople(model : PersonModel) -> None:
     model.setPeople(logbookadmin.listPeople())
     
 def addPerson() -> None:
-    # Add a new person
-    print(add)
+    # Add a new person. Just run the $DAQBIN/lg_addperson program.
+    
+    program = LogBookUIUtilities.programPath('lg_addperson')
+    if program:
+        subprocess.call([program,])
+    
 def main() -> int:
     '''
     Program entry point.
