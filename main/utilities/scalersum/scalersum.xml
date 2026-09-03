@@ -1,3 +1,4 @@
+<!-- manpage 1daq -->
 <refentry>
    <refmeta>
       <refentrytitle>scalersum</refentrytitle>
@@ -46,7 +47,7 @@ scalersum <optional><option>--omit-labels</option></optional>
          The <option>--name-file</option> option allows you to supply a file
          containing scaler label information.  The format of this file is not
          the same as the scaler definition file that the scaler display requires.
-         See, however <program>makeNameFile</program> (next reference page).
+         See, however <command>makeNameFile</command> (next reference page).
       </para>
       <para>
          The name file format describes each scaler channel, one-per-line.  Each
@@ -59,7 +60,7 @@ scalersum <optional><option>--omit-labels</option></optional>
                 <para>
                   The original source id of the scaler channel.  Note that
                   prior to NSCLDAQ-12, the rewrites of the body header performed
-                  by <program>glom</program>, lost information about the original
+                  by <command>glom</command>, lost information about the original
                   source id.  This information is retained in the bodies of
                   NSCLDAQ-12 and later scaler ring items.  This value should
                   refer to this original source id.
@@ -133,9 +134,10 @@ makeNameFile <replaceable>def-file name-file</replaceable>
           <para>
             See the previous man page (<command>scalersum</command>).
             This utility script reads a scaler display definition
-            file (<replaceble>def-file</replaceble>) and writes
-            <program>scalersum</program> scaler name file
+            file (<replaceable>def-file</replaceable>) and writes
+            <command>scalersum</command> scaler name file
             (<replaceable>name-file</replaceable>).
           </para>
     </refsect1>
 </refentry>
+<!-- /manpage -->
