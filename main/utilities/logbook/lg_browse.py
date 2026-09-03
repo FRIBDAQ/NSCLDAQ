@@ -594,6 +594,27 @@ class PersonModel(QStandardItemModel):
         super().clear()
         self.setHorizontalHeaderLabels(['Last Name', 'First Name', 'Salutation'])
     
+    def setPeople(self, people : list[LogBook.Person]) -> None:
+        '''
+            Clears the list and stocks it with the people provided.
+            @param people - the people to put in the model.
+            
+        '''
+        self.clear()
+        for person in people:
+            self.addPerson(person)
+    
+    def addPerson(self, person : LogBook.Person) -> None:
+        '''  
+        Append the single person to the model.
+        @param person - the person to append.
+        '''
+        lastname = QStandardItem(person.lastname)
+        firstname = QStandardItem(person.firstname)
+        salutation = QStandardItem(person.salutatino)
+        
+        self._setFlagsAndAppendRow([lastname, firstname, salutation])
+        
     #  Utiltities:
     def _setFlagsAndAppendRow(self,  row : list[QStandardItem]) -> None:
         # Set item appropriate flags (mostly we want to turn off editing)
@@ -604,6 +625,43 @@ class PersonModel(QStandardItemModel):
             flags = flags & (~Qt.ItemFlag.ItemIsEditable)
             item.setFlags(flags)
         self.appendRow(row)            
+        
+    
+class PersonView(QTreeView):
+    '''
+    View for the PersonModel.  We provide a context menu
+    Wath and add... and refresh actions
+    
+    Signals:
+    addPerson Context menu asked to add a new person.
+    refresh   Context menu asked to refresh the model.
+    
+    '''
+    addPerson = pyqtSignal()
+    refresh   = pyqtSignal()
+    
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._contextMenu)
+        
+    
+    def _contextMenu(self, where : QPoint) -> None:
+        
+        ctx_menu = QMenu()
+        
+        add = QAction('Add...', ctx_menu)
+        add.triggered.connect(self.addPerson.emit)
+        ctx_menu.addAction(add)
+        
+        refresh = QAction('Refresh', ctx_menu)
+        add.triggered.connect(self.refresh.emit)
+        ctx_menu.addAction(refresh)
+        
+        pos = self.mapToGlobal(where)
+        ctx_menu.exec(pos)
+        
 #--------------------------    Main program logic --------------------------------------------------------
 
 # ---- Logbook logic.
@@ -687,6 +745,14 @@ def main() -> int:
     shiftview.selectShift.connect(shiftview.setCurrentShift)
     
     shiftview.setCurrentShift(logbookadmin.currentShift().name)
+    
+    # The persons tab:
+    
+    personView = PersonView(win)
+    personModel = PersonModel(personView)
+    personView.setModel(personModel)
+    win.addTab(personView, 'People')
+    
     
     ##
     win.show()
