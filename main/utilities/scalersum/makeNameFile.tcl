@@ -25,12 +25,16 @@ exec tclsh "$0" ${1+"$@"}
 # @brief Create a name file from a scaler definition file.
 # @author Ron Fox <fox@nscl.msu.edu>
 #
+# Stub packages
 package provide Tk 8.0;             # Stub to make X11 unecessary.
+package provide pagedisplay 1.0
+
 
 #  Add TclLibs to the library search path - assuming we're in DAQBIN
 
 set here [file dirname [info script]]
-set libdir [file normalize [file join $here .. TclLibs]]
+set libdir [file normalize $::env(DAQTCLLIBS)]; #[file normalize [file join $here .. TclLibs]]
+
 lappend auto_path $libdir
 
 #  This require pulls in the scaler program's configuration processing pkg.

@@ -1,3 +1,4 @@
+
 bin_PROGRAMS = sumscaler
 
 sumscaler_SOURCES=   main.cpp App.cpp App.h  CRun.h CRun.cpp \
@@ -22,6 +23,7 @@ options.h: options.ggo
 
 install-exec-hook:
 	$(INSTALL_SCRIPT) @srcdir@/makeNameFile.tcl @bindir@/makeNameFile
+	$(INSTALL_SCRIPT) @srcdir@/pyMakeNameFile.py @bindir@/pyMakeNameFile
 
 clean-local:
 	-rm -rf options.h options.c
@@ -36,4 +38,4 @@ unittests_LDFLAGS=$(sumscaler_LDFLAGS)   @CPPUNIT_LDFLAGS@
 
 TESTS = unittests
 
-EXTRA_DIST = makeNameFile.tcl options.ggo scalersum.xml
+EXTRA_DIST = pyMakeNameFile.py makeNameFile.tcl options.ggo scalersum.xml
