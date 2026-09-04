@@ -14,9 +14,13 @@
 This module provides graphical user interface elements for the
 pybufdump utility a graphical buffer dumper.
 '''
-from PyQt6.QtWidgets import QMainWindow,  QToolBar, QTextEdit, QWidget, QStyle
+from PyQt6.QtWidgets import (
+    QMainWindow,  QToolBar, QTextEdit, QWidget, QStyle, QFileDialog, QMessageBox
+)
 from PyQt6.QtGui     import QFont, QAction
 from PyQt6.QtCore    import pyqtSignal, Qt
+
+import importlib.machinery
 
 class DumpWidget(QTextEdit):
     '''
@@ -83,7 +87,7 @@ class MainWindow(QMainWindow):
         self._makeToolbars()
         
     
-    #  Utiltities:
+    # Construction Utiltities:
     
     def _makeMenus(self) -> None:
         menubar = self.menuBar()
@@ -93,11 +97,18 @@ class MainWindow(QMainWindow):
         file = menubar.addMenu('File')
         
         open = QAction('Open...', file)
+        open.triggered.connect(self._open)
         file.addAction(open)
+        
         plugin = QAction('Load Plugin...', file)
+        plugin.triggered.connect(self._load)
         file.addAction(plugin)
+        
+        
         file.addSeparator()
+        
         exit = QAction('Exit...', file)
+        exit.triggered.connect(self._exit)
         file.addAction(exit)
         
         # Filter menu:
@@ -120,6 +131,44 @@ class MainWindow(QMainWindow):
         toolbar.addAction(next)
         self.addToolBar(Qt.ToolBarArea.BottomToolBarArea, toolbar)
     
+    # Internal slots:
+    
+    def _open(self) -> None:
+        # Handle the File->Open by prompting for 
+        # an event file and emitting the
+        # open signal if one is chosen.
+        
+        file,_ = QFileDialog.getOpenFileName(
+            self, 'Choose Event File', '.', 
+            'Event Files (*.evt);;All Files (*)', "*.evt"
+        )
+        if file.strip():
+            self.open.emit(file)
+    
+    def _load(self) -> None:
+        # Handle the File->Load menu optino prompting for
+        # a python or so file and emitting plugin for the file
+        # specified.
+        compiled_suffixes =  importlib.machinery.EXTENSION_SUFFIXES
+        compiled_suffixepatterns = [f'*.{s}' for s in compiled_suffixes]
+        csuffixes = ', '.join(compiled_suffixepatterns)
+        file, _ = QFileDialog.getOpenFileName(
+            self, 'Choose plugin file', '.',
+            f'Python module (*.py);;Compiled Python Module ({csuffixes};;All Files (*))'
+            '*.py'
+        )
+        if file.strip():
+            self.plugin.emit(file)
+    
+    def _exit(self) -> None:
+        # if the user confirms the exit,
+        # emit the exit signal.
+        
+        response = QMessageBox.question(
+            self, 'Exit?', 'Do you really want to exti?'
+        )
+        if response == QMessageBox.StandardButton.Yes:
+            self.exit.emit()
         
 # Test code
 
@@ -127,11 +176,18 @@ if __name__ == '__main__':
     import sys
     from PyQt6.QtWidgets import QApplication
     
+    def open(path):
+        print('Open', path)
+    def load(path):
+        print('Load', path)
     app = QApplication(sys.argv)
     win = MainWindow()
     win.show()
     win.centralWidget().setText('line1\nline2\nanother line')
+    win.open.connect(open)
+    win.exit.connect(sys.exit)
     
+    win.plugin.connect(load)
     sys.exit(app.exec())
     
         
