@@ -14,13 +14,62 @@
 This module provides graphical user interface elements for the
 pybufdump utility a graphical buffer dumper.
 '''
+
+import sys
+import os
+# Ensure that our daqformat module is findable:
+
+
+sys.path.append(f"{os.environ['DAQROOT']}/unifiedformat/python")
+
 from PyQt6.QtWidgets import (
-    QMainWindow,  QToolBar, QTextEdit, QWidget, QStyle, QFileDialog, QMessageBox
+    QMainWindow,  QToolBar, QTextEdit, QWidget, QStyle, QFileDialog, QMessageBox,
+    QDialog, QDialogButtonBox
 )
+from nscldaq.editablelist6 import ListToListEditor
+from nscldaq.mg_configutils import OkDialog
 from PyQt6.QtGui     import QFont, QAction
 from PyQt6.QtCore    import pyqtSignal, Qt
 
 import importlib.machinery
+import daqformat
+
+
+def _ringitemTypes() -> dict[str, int]:
+    # Internal function that will return a dict whose keys are
+    # textual versino of ring item types and whose values are item types.
+    # wish I was smart enough to figure out a simpler way to do this:
+    
+    return {
+        'ABNORMAL_ENDRUN'     : daqformat.ABNORMAL_ENDRUN,
+        'BEGIN_RUN'           : daqformat.BEGIN_RUN,
+        'END_RUN'             : daqformat.END_RUN,
+        'EVB_FRAGMENT'        : daqformat.EVB_FRAGMENT,
+        'EVB_GLOM_INFO'       : daqformat.EVB_GLOM_INFO,
+        'EVB_UNKNOWN_PAYLOAD' : daqformat.EVB_UNKNOWN_PAYLOAD,
+        'INCREMENTAL_SCALERS' : daqformat.INCREMENTAL_SCALERS,
+        'MONITORED_VARIABLES' : daqformat.MONITORED_VARIABLES,
+        'PACKET_TYPES'        : daqformat.PACKET_TYPES,
+        'PAUSE_RUN'           : daqformat.PAUSE_RUN,
+        'PERIODIC_SCALERS'    : daqformat.PERIODIC_SCALERS,
+        'PHYSICS_EVENT'       : daqformat.PHYSICS_EVENT,
+        'PHYSICS_EVENT_COUNT' : daqformat.PHYSICS_EVENT_COUNT,
+        'RESUME_RUN'          : daqformat.PHYSICS_EVENT_COUNT,
+        'RING_FORMAT'         : daqformat.RING_FORMAT,
+        'TIMESTAMPED_NONINCR_SCALERS' : daqformat.RING_FORMAT
+    }
+
+class FilterPrompt(ListToListEditor):
+    '''
+        A list 2 list editor stocked with the ring item types.
+        
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        itemlist = _ringitemTypes().keys()
+        self.sourcebox().addItems(itemlist)
+
+
 
 class DumpWidget(QTextEdit):
     '''
@@ -69,13 +118,15 @@ class MainWindow(QMainWindow):
       exit   - Exit requested and confirmed,  do any needed cleanup.
       filter - Set a new event filter.
       clearfilter - clear any existing event filter.
+      next  - load the next event.
     
     '''        
     open = pyqtSignal(str)
     plugin = pyqtSignal(str)
     exit  = pyqtSignal()
     filter = pyqtSignal(list)
-    clearfilter = pyqtSignal
+    clearfilter = pyqtSignal()
+    next = pyqtSignal()
 
     def __init__(self, parent : QWidget | None = None):
         super().__init__(parent)
@@ -116,8 +167,11 @@ class MainWindow(QMainWindow):
         filter = menubar.addMenu('Filters')
         
         types = QAction('Filter Types...', filter)
+        types.triggered.connect(self._filter)
         filter.addAction(types)
+        
         clear = QAction('Clear Filters', filter)
+        clear.triggered.connect(self.clearfilter.emit)
         filter.addAction(clear)
         
         
@@ -128,6 +182,7 @@ class MainWindow(QMainWindow):
         nextpixmap = QStyle.StandardPixmap.SP_MediaPlay
         nexticon   = self.style().standardIcon(nextpixmap)
         next    = QAction(nexticon, 'Next', toolbar)
+        next.triggered.connect(self.next.emit)
         toolbar.addAction(next)
         self.addToolBar(Qt.ToolBarArea.BottomToolBarArea, toolbar)
     
@@ -169,7 +224,16 @@ class MainWindow(QMainWindow):
         )
         if response == QMessageBox.StandardButton.Yes:
             self.exit.emit()
+    def _filter(self) -> None:
+        # Handler the Filter->Filter Types...
+        # Prompt for a filter and emit filter if we were saved:
         
+        dlg = OkDialog(FilterPrompt(self), self)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            typenames = dlg.workarea().list()
+            typemap = _ringitemTypes()
+            types = [typemap[t] for t in typenames]
+            self.filter.emit(types)
 # Test code
 
 if __name__ == '__main__':
@@ -180,12 +244,25 @@ if __name__ == '__main__':
         print('Open', path)
     def load(path):
         print('Load', path)
+    def next() :
+        print('next event.')
+    
+    def clrfilt():
+        print('clear filters')
+        
+    def filter(items) :
+        print("new filter", items)
+        
     app = QApplication(sys.argv)
     win = MainWindow()
     win.show()
     win.centralWidget().setText('line1\nline2\nanother line')
     win.open.connect(open)
     win.exit.connect(sys.exit)
+    win.next.connect(next)
+    win.filter.connect(filter)
+    win.clearfilter.connect(clrfilt)
+    
     
     win.plugin.connect(load)
     sys.exit(app.exec())
