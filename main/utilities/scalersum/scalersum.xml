@@ -1,7 +1,7 @@
 <!-- manpage 1daq -->
-<refentry>
+<refentry id='daq1.scalersum'>
    <refmeta>
-      <refentrytitle>scalersum</refentrytitle>
+      <refentrytitle id='daq1.scalersum.title'>scalersum</refentrytitle>
       <manvolnum>1daq</manvolnum>
    </refmeta>
    <refnamediv>
@@ -139,5 +139,67 @@ makeNameFile <replaceable>def-file name-file</replaceable>
             (<replaceable>name-file</replaceable>).
           </para>
     </refsect1>
+</refentry>
+<refentry>
+   <refmeta>
+      <refentrytitle>pyMakeNameFile</refentrytitle>
+      <manvolnum>1daq</manvolnum>
+   </refmeta>
+   <refnamediv>
+      <refname>pyMakeNameFile</refname>
+      <refpurpose>Make name files from pyScaler TOML definition files.</refpurpose>
+   </refnamediv>
+   <refsynopsisdiv>
+      <cmdsynopsis>
+
+<command>$DAQBIN/pyMakeNameFile </command>
+   <arg choice='plain'>pyscalerdef-toml</arg>
+   <arg choice='plain'>output-file</arg>
+      </cmdsynopsis>
+   </refsynopsisdiv>
+   <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+         This command makes a name file for the 
+         <link linkend='daq1.scalersum' endterm='daq1.scalersum.title' />
+         program using, as input, the TOML configuration file for the
+         <link linkend='man.pyscaler' endterm='man.pyscaler.title' /> program.
+      </para>
+      <para>
+         <replaceable>pyscalerdef-toml</replaceable> is the path to  the
+         <command>pyScalers</command> TOML configuration file.
+         <replaceable>output-file</replaceable> is the path to where
+         the <command>scalersum</command> scaler name file should be
+         written.
+      </para>
+      <note>
+         <title>NOTE</title>
+         <para>
+            If you have scaler sources with source ids other than
+            <literal>0</literal>, you must add a <literal>sourceid</literal>
+            specification to data sources for which that's true.  This is ignored by
+            <command>pyScaler</command> but provides the source id for the data source
+            to write into the name file for each scaler from that source.
+         </para>
+         <example>
+            <title>Sample data source with source id</title>
+            <programlisting>
+[datasource.testing]
+url='tcp://spdaq20/ron'
+version=12
+scalers=['triggers.live', 'sin1',
+    'sin2', 'sin3', 'sin4', 'sin5',
+    'sin6', 'sin7', 'sin8', 'sin9', 'sin10', 'triggers.raw']
+incremental = false
+sourceid=1
+            </programlisting>
+         </example>
+      </note>
+      <para>
+         The example above says that data from the ringbuffer <literal>ron</literal> in spdaq20
+         will have a source id of <literal>1</literal>.  If the <literal>sourceid</literal> definition
+         is not provided, the source id defaults to <literal>0</literal>
+      </para>
+   </refsect1>
 </refentry>
 <!-- /manpage -->
