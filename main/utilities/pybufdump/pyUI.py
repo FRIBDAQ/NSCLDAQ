@@ -137,7 +137,12 @@ class MainWindow(QMainWindow):
         self._makeMenus()
         self._makeToolbars()
         
-    
+    def dumpWidget(self) -> DumpWidget:
+        '''
+        @return the dump widget:
+        '''
+        return self._dump
+        
     # Construction Utiltities:
     
     def _makeMenus(self) -> None:
