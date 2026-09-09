@@ -56,7 +56,7 @@ def _ringitemTypes() -> dict[str, int]:
         'PHYSICS_EVENT_COUNT' : daqformat.PHYSICS_EVENT_COUNT,
         'RESUME_RUN'          : daqformat.PHYSICS_EVENT_COUNT,
         'RING_FORMAT'         : daqformat.RING_FORMAT,
-        'TIMESTAMPED_NONINCR_SCALERS' : daqformat.RING_FORMAT
+        'TIMESTAMPED_NONINCR_SCALERS' : daqformat.TIMESTAMPED_NONINCR_SCALERS
     }
 
 class FilterPrompt(ListToListEditor):
