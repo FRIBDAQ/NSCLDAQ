@@ -35,6 +35,7 @@ def main() -> int:
     app = QApplication(sys.argv)
     win = pyUI.MainWindow()
     win.show()
+    win.resize(800, 400)
     
     _controller = pybufdumpController.BufDumpController(win, win)
     
