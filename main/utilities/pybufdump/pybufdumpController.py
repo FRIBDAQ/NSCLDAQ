@@ -16,8 +16,8 @@
 @author Ron Fox
 '''
 
-from PyQt6.QtWidgets import QMessageBox
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtWidgets import QMessageBox, QApplication
+from PyQt6.QtCore import QObject, pyqtSignal, Qt
 import pyUI
 import daqformat
 from datetime import datetime
@@ -122,6 +122,10 @@ class BufDumpController(QObject):
     
     def _nextItem(self) -> None:
         if self._eventfile:    # Nothing if no event file.
+            # Filters can cause a long delay t othe next item so
+            # set an wait cursor.
+            
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
             while True:
                 item = self._eventfile.next()
                 if not item:
@@ -143,6 +147,7 @@ class BufDumpController(QObject):
                         self._view.dumpWidget().setText(text)
                         self._refreshStatusBar()
                         break
+        QApplication.restoreOverrideCursor()
     #  Formatting methods:  In general, these take a ring itemand 
     # return a string that is stuffed into the dumper widget.
 
