@@ -85,7 +85,7 @@ class BufDumpController(QObject):
             self._eventfile = FileDataSource(path, self._version, set(), set())
             self._eventfileName = path
             self._setStatusBar(f'Reading data from {path}')
-            
+            self._view.dumpWidget().setText('')     # Clear any done message.
         except Exception as e:
             QMessageBox.warning(
                 None, 'Failed Event Source',
