@@ -127,6 +127,8 @@ class BufDumpController(QObject):
                 return self._formatabend(item)
             case daqformat.BEGIN_RUN | daqformat.END_RUN | daqformat.PAUSE_RUN | daqformat.RESUME_RUN:
                 return self._formatStateChange(item)
+            case daqformat.RING_FORMAT:
+                return self._formatRingVersion(item)
             case _:
                 return f'Unhandled item type: {item.type()}\n'
 
@@ -173,4 +175,8 @@ class BufDumpController(QObject):
         result += f'Title: {item.getTitle()}\n'
         result += f'From original source id: {item.originalSource()}\n\n'
         
+        return result
+    def _formatRingVersion(self, item: daqformat.ringformatitem) -> str:
+        result = 'Ring Format item: \n'
+        result += f'  FRIB/NSCLDAQ version: {item.getMajor()}\n\n'
         return result
