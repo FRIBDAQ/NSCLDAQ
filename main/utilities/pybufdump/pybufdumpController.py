@@ -120,7 +120,9 @@ class BufDumpController(QObject):
                         text = self._format(item)
                         self._view.dumpWidget().setText(text)
                         break
-
+    #  Formatting methods:  In general, these take a ring itemand 
+    # return a string that is stuffed into the dumper widget.
+    
     def _format(self, item : daqformat.ringitem) -> str:
         match item.type():
             case daqformat.ABNORMAL_ENDRUN:
@@ -129,9 +131,32 @@ class BufDumpController(QObject):
                 return self._formatStateChange(item)
             case daqformat.RING_FORMAT:
                 return self._formatRingVersion(item)
+            case daqformat.EVB_FRAGMENT:
+                return self._formatEvbFragment(item)
+            case daqformat.EVB_GLOM_INFO:
+                return self._formatGlomParameters(item)
             case _:
                 return f'Unhandled item type: {item.type()}\n'
 
+    def _formatByteArray(self, data : bytearray) -> str:
+        # Format a byte array like the body of an event or
+        # the body of a fragment item.
+        
+        nBytes = len(data)
+        result = f'{nBytes} Bytes:\n'
+        
+        # We run hex on 16 byte slices with a space separation every two bytes.
+        
+        start = 0
+        while start < nBytes:
+            segment = data[start:start+16]   # 8x16 bit words.
+            hexified = segment.hex(' ', 2)
+            result += hexified
+            result += '\n'
+            
+        return result
+    
+    
     def _timestring(self, stamp : int) -> str:
         '''
         Convert a unix timestamp in to a time string in the current zone.
@@ -180,3 +205,26 @@ class BufDumpController(QObject):
         result = 'Ring Format item: \n'
         result += f'  FRIB/NSCLDAQ version: {item.getMajor()}\n\n'
         return result
+    
+    def _formatEvbFragment(self, item : daqformat.ringfragmentitem) -> str:
+        result = 'Ring Fragment Item\n'
+        result += self._formatBodyHeader(item)
+        fts = item.timestamp()
+        fts &= 0xffffffffffffffff     # Makes it unsigned 64 bit.
+        result += f'Fragment Timestamp : {fts:016x}\n'
+        result += f'Fragment Source id : {item.source()}\n'
+        result += f'Fragment Barrier id: {item.barrierType()}\n'
+        result += 'Payload:\n'
+        payload = item.payload()     # Byte array of the body.
+        # @todo - this could be submitted to plugins for formatting.
+        
+        result += self._formatByteArray(payload)
+        result += '\n'
+        return result
+    
+    def _formatGlomParameters(self, item: daqformat.glomparameters) -> str:
+        result = 'Event builder Glom parameters:\n'
+        result += f'Coincidence Ticks: {item.coincidenceTicks()}\n'
+        building = 'Bulding' if item.isBuiding() else 'Not Building'
+        result += f'Glom is          :  {building}\n'
+        result += f'Timestamp policy :  {item.policy()}\n\n'
