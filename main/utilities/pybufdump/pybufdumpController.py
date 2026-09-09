@@ -22,6 +22,7 @@ import pyUI
 import daqformat
 from datetime import datetime
 import time
+import struct
 
 from  nscldaq.pyscaler.datasource import FileDataSource
 class BufDumpController(QObject):
@@ -107,10 +108,11 @@ class BufDumpController(QObject):
                 item = self._eventfile.next()
                 if not item:
                     # End of file:
-                    self.endfile.emit()
+                    self.endFile.emit()
                     self._eventfile.close()
                     self._eventfile = None
                     self._eventfilename = None
+                    break
                 else:
                     # Skip the item?
                     
@@ -135,8 +137,18 @@ class BufDumpController(QObject):
                 return self._formatEvbFragment(item)
             case daqformat.EVB_GLOM_INFO:
                 return self._formatGlomParameters(item)
+            case daqformat.EVB_UNKNOWN_PAYLOAD:
+                return self._formatUnknown(item)
+            case daqformat.INCREMENTAL_SCALERS | daqformat.PERIODIC_SCALERS | daqformat.TIMESTAMPED_NONINCR_SCALERS:
+                return self._formatScalerItem(item)
+            case daqformat.MONITORED_VARIABLES | daqformat.PACKET_TYPES:
+                return self._formatTextItem(item)
+            case daqformat.PHYSICS_EVENT:
+                return self._formatPhysicsEvent(item)
+            case daqformat.PHYSICS_EVENT_COUNT:
+                return self._formatEventCount(item)
             case _:
-                return f'Unhandled item type: {item.type()}\n'
+                return self._formatUnknown(item)
 
     def _formatByteArray(self, data : bytearray) -> str:
         # Format a byte array like the body of an event or
@@ -147,13 +159,18 @@ class BufDumpController(QObject):
         
         # We run hex on 16 byte slices with a space separation every two bytes.
         
+        
+        
         start = 0
-        while start < nBytes:
-            segment = data[start:start+16]   # 8x16 bit words.
-            hexified = segment.hex(' ', 2)
-            result += hexified
-            result += '\n'
+        for (word,) in struct.iter_unpack('<H', data):
+            result += f'{word:04x} '
+            start +=1
+            if start %8 == 0:
+                result += '\n'
             
+        if nBytes % 16:
+            result += '\n'
+        
         return result
     
     
@@ -176,7 +193,7 @@ class BufDumpController(QObject):
             # Force timestamp to unsigned 64 bits:
             ts &= 0xfffffffffffffff
             result += 'Body header:\n'
-            result += f'  Timestamp   : {ts:016x}\n'
+            result += f'  Timestamp   : 0x{ts:016x}\n'
             result += f'  Source Id   : {item.sourceid()}\n'
             result += f'  Barrier Type: {item.barriertype()}\n\n'
         return result
@@ -198,9 +215,9 @@ class BufDumpController(QObject):
         result += self._formatBodyHeader(item)
         result += f'For run {item.getRunNumber()}, {item.getElapsedTime():.2f} into the run, at {self._timestring(item.getTime())}\n'
         result += f'Title: {item.getTitle()}\n'
-        result += f'From original source id: {item.originalSource()}\n\n'
-        
+        result += f'From original source id: {item.originalSource()}\n\n'     
         return result
+    
     def _formatRingVersion(self, item: daqformat.ringformatitem) -> str:
         result = 'Ring Format item: \n'
         result += f'  FRIB/NSCLDAQ version: {item.getMajor()}\n\n'
@@ -224,7 +241,68 @@ class BufDumpController(QObject):
     
     def _formatGlomParameters(self, item: daqformat.glomparameters) -> str:
         result = 'Event builder Glom parameters:\n'
+        result += self._formatBodyHeader(item)
         result += f'Coincidence Ticks: {item.coincidenceTicks()}\n'
         building = 'Bulding' if item.isBuiding() else 'Not Building'
         result += f'Glom is          :  {building}\n'
         result += f'Timestamp policy :  {item.policy()}\n\n'
+        return result
+    
+    def _formatUnknown(self, item : daqformat.ringitem) -> str:
+        # Unknonwn payload.. just provide the body after the 'normal' stuff.
+        
+        result = 'Unknown payload/item type:\n'
+        result += self._formatBodyHeader(item)
+        payload = item.body()
+        result += self._formatByteAarray(payload)
+        result += '\n'
+        return result
+    
+    def _formatScalerItem(self, item :daqformat.scaleritem) -> str:
+        result = 'Periodic Scaler: \n'
+        result += self._formatBodyHeader(item)
+        result += f'Readout at {self._timestring(item.absoluteTime())}'
+        result += f'accumleted from {item.startTime():02f} to {item.endTime():02f} seconds into the run.\n'
+        result += f'Original Source Id: {item.getOriginalSourceId()}\n'
+        incr = 'Incremental'  if item.isIncremental() else 'Not Incremental'
+        result += f'Readout is {incr}\n'
+        result += 'Counters:\n'
+        for chan, value in enumerate(item.getScalers()):
+            result += f'Channel: {chan} : {value}\n'
+        result += '\n'
+        
+        return result
+    
+    
+    def _formatTextItem(self, item: daqformat.stringlistitem) -> str:
+        result = ('Monitored Variables\n' if item.type() == daqformat.MONITORED_VARIABLES 
+            else 'Packet Types\n')
+        result += self._formatBodyHeader(item)
+        result += f'{item.getElapsedTime():.2f} seconds into the run at {self._timestring(item.getTime())}\n'
+        result += f'Original Source id: {item.originalSource()}\n'
+        result += 'Strings:\n'
+        for string in item.getStrings():
+            result += f'{string}\n'
+        result += '\n'
+        
+        return result
+    
+    def _formatPhysicsEvent(self, item : daqformat.physicsevent) -> str:
+        result = 'Physics event\n'
+        result += self._formatBodyHeader(item)
+        result += 'Body\n'
+        result += self._formatByteArray(item.getbody())
+        result += '\n'
+        
+        return result
+    
+    
+    def _formatEventCount(self, item : daqformat.eventcountitem) -> str:
+        result = 'Trigger/Event count\n'
+        result += self._formatBodyHeader(item)
+        result += f'{item.timeOffset():.2f} seconds into the run at {self._timestring(item.time())}\n'
+        result += f'Original Source id: {item.originalSource()}\n'
+        result += f'{item.eventCount()} triggers accepted\n' 
+        result += '\n'
+
+        return result
