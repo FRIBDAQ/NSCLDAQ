@@ -52,6 +52,7 @@ class BufDumpController(QObject):
         self._filter       = None
         self._version       = 12
         self._eventbuilt    = False
+        self._statusText    = ''
 
         # Hook in to the signals the view will emit:
         #
@@ -62,6 +63,18 @@ class BufDumpController(QObject):
         self._view.clearfilter.connect(self._clearFilter)
         self._view.next.connect(self._nextItem)
         
+    # Utilities for interacting with the view:
+    
+    def _setStatusBar(self, text : str) -> None:
+        # Put text in the status bar:
+        sb = self._view.statusBar()
+        sb.showMessage(text)
+        self._statusText = text
+    def _refreshStatusBar(self) -> None:
+        self._setStatusBar(self._statusText)
+    def _clearStatusBar(self) -> None:
+        sb = self._view.statusBar()
+        sb.clearMessage()
         
     # Slots that are internal (private) to the controller:
     
@@ -71,6 +84,8 @@ class BufDumpController(QObject):
         try:
             self._eventfile = FileDataSource(path, self._version, set(), set())
             self._eventfileName = path
+            self._setStatusBar(f'Reading data from {path}')
+            
         except Exception as e:
             QMessageBox.warning(
                 None, 'Failed Event Source',
@@ -79,6 +94,7 @@ class BufDumpController(QObject):
 
      
     def _loadPlugin(self, pluginPath : str) -> None:
+        self._refreshStatusBar()
         # Load a formatting plugin  @todo
         pass   
      
@@ -92,11 +108,13 @@ class BufDumpController(QObject):
             self._eventfileName = None
 
     def _setFilter(self, filter : list) -> None:
+        self._refreshStatusBar()
         # set the list of acceptable ring item types:
         
         self._filter = filter
         
     def _clearFilter(self) -> None:
+        self._refreshStatusBar()
         # Clear any ring item type filter:
         
         self._filter = None
@@ -112,6 +130,8 @@ class BufDumpController(QObject):
                     self._eventfile.close()
                     self._eventfile = None
                     self._eventfilename = None
+                    self._clearStatusBar()
+                    self._view.dumpWidget().setHtml('<h1>No more items</h1>')
                     break
                 else:
                     # Skip the item?
@@ -121,11 +141,14 @@ class BufDumpController(QObject):
                     else:
                         text = self._format(item)
                         self._view.dumpWidget().setText(text)
+                        self._refreshStatusBar()
                         break
     #  Formatting methods:  In general, these take a ring itemand 
     # return a string that is stuffed into the dumper widget.
+
     
     def _format(self, item : daqformat.ringitem) -> str:
+        
         match item.type():
             case daqformat.ABNORMAL_ENDRUN:
                 return self._formatabend(item)
