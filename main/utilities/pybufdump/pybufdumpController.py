@@ -17,11 +17,12 @@
 '''
 
 import struct
-import tomllib
 from datetime import datetime
 
 import daqformat
 import pyUI
+import tabulate
+import tomllib
 from nscldaq.pyscaler.datasource import FileDataSource
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMessageBox
@@ -108,7 +109,6 @@ class BufDumpController(QObject):
             raw_toml = tomllib.load(f)
         
         self._scaler_map = self._makeScalerMap(raw_toml)
-        print(self._scaler_map)
         
     
     # Utilities for interacting with the view:
@@ -343,8 +343,14 @@ class BufDumpController(QObject):
         incr = 'Incremental'  if item.isIncremental() else 'Not Incremental'
         result += f'Readout is {incr}\n'
         result += 'Counters:\n'
+        data_list = []
+        interval = item.endTime() - item.startTime()
         for chan, value in enumerate(item.getScalers()):
-            result += f'Channel: {chan} : {value}\n'
+            name = self._scaler_Name(item.getOriginalSourceId(), chan)
+            rate = value/interval if interval != 0.0 else '***'
+            data_list.append([name, value, rate])
+    
+        result += tabulate.tabulate(data_list, headers = ['Name', 'Value', 'Rate'])
         result += '\n'
         
         return result
@@ -396,3 +402,16 @@ class BufDumpController(QObject):
             scaler_map[id] = names
         
         return scaler_map
+
+    def _scaler_Name(self, source : int, channel : int) -> str:
+        # Given a scaler channel and its original source id,
+        # rerturn a name for that scaler;
+        
+        # If we can't map it's just the channel number:
+        
+        result = f'Channel {channel}'
+        if self._scaler_map and source in self._scaler_map:
+            names = self._scaler_map[source]
+            result = names[channel] if channel < len(names) else result
+        
+        return result
