@@ -16,15 +16,17 @@
 @author Ron Fox
 '''
 
-from PyQt6.QtWidgets import QMessageBox, QApplication
-from PyQt6.QtCore import QObject, pyqtSignal, Qt
-import pyUI
-import daqformat
-from datetime import datetime
-import time
 import struct
+import tomllib
+from datetime import datetime
 
-from  nscldaq.pyscaler.datasource import FileDataSource
+import daqformat
+import pyUI
+from nscldaq.pyscaler.datasource import FileDataSource
+from PyQt6.QtCore import QObject, Qt, pyqtSignal
+from PyQt6.QtWidgets import QApplication, QMessageBox
+
+
 class BufDumpController(QObject):
     '''
         The controller has public entry points for each of the
@@ -53,6 +55,10 @@ class BufDumpController(QObject):
         self._version       = 12
         self._eventbuilt    = False
         self._statusText    = ''
+        self._scaler_file   = None
+        self._scaler_map  = None
+        self._sid_file      = None
+        self._sid_map       = {}      # source id - > name map
 
         # Hook in to the signals the view will emit:
         #
@@ -62,7 +68,49 @@ class BufDumpController(QObject):
         self._view.filter.connect(self._setFilter)
         self._view.clearfilter.connect(self._clearFilter)
         self._view.next.connect(self._nextItem)
+    
+    # attributes:
+    def formatVersion(self) -> int:
+        '''@return int - ring item format version.'''
+        return self._version
+    def setFormatVersion(self, vsn : int) -> None:
+        '''
+        @param vsn : int - DAQ format version to apply to the next
+              input event file.  
+        @note setting this does not change the version of the current file
+              data source.
+        '''
+        self._version = vsn
+    
+    def eventbuild(self) -> bool:
+        '''@return bool - true if event build data should be unpacked at fragment level.'''
+        return self._eventbuilt
+    def setEventBuilt(self, built : bool ) -> None:
+        '''
+        @param built : bool If true, the formatting is done assuming tyhe data are
+                    event built and fragments are broken out for events.
+        '''
+        self._eventbuilt = built
         
+    def scalerFile(self) -> str | None:
+        ''' @return str | None - path to scaler toml file or None if there isn't one'''
+        return self.scaler_file
+    def setScalerFile(self, path : str) -> None:
+        ''' @param path : str - Path to a scaler toml file from which the scaler
+                        name  map is built
+        '''
+        # Note the map format is keyed by source id  
+        # and each map then contains a list of channel names.
+        # If defined the dump of scalers will use those names rather than channel
+        # number to label the scalers.
+        self._scaler_file = path
+        with open(self._scaler_file, "rb") as f:
+            raw_toml = tomllib.load(f)
+        
+        self._scaler_map = self._makeScalerMap(raw_toml)
+        print(self._scaler_map)
+        
+    
     # Utilities for interacting with the view:
     
     def _setStatusBar(self, text : str) -> None:
@@ -334,3 +382,17 @@ class BufDumpController(QObject):
         result += '\n'
 
         return result
+    
+    # Other utility methods:
+    
+    def _makeScalerMap(self, toml : dict[str]) -> dict[int, list[str]]:
+        # Convert the raw toml of a parsed scaler def into a scaler map
+        #
+        
+        scaler_map = {}
+        for source in toml['datasource'].values():
+            id = source.get('sourceid', 0)
+            names = source['scalers']
+            scaler_map[id] = names
+        
+        return scaler_map
