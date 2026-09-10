@@ -110,7 +110,18 @@ class BufDumpController(QObject):
         
         self._scaler_map = self._makeScalerMap(raw_toml)
         
-    
+    def sidFile(self) -> str | None:
+        ''' @return str | None - the name of the source id definition file if present. '''
+        return self._sid_file
+    def setSidFile(self, path : str) -> None:
+        ''' 
+            Update the source id map from a new source id file.
+            @param path - name of a new sourcde id definition file.  
+        '''
+        self._sid_file = path
+        self._sid_map  = self._makeSidMap()
+        
+        
     # Utilities for interacting with the view:
     
     def _setStatusBar(self, text : str) -> None:
@@ -123,7 +134,10 @@ class BufDumpController(QObject):
     def _clearStatusBar(self) -> None:
         sb = self._view.statusBar()
         sb.clearMessage()
+    
+    
         
+            
     # Slots that are internal (private) to the controller:
     
     def _openEventFile(self, path : str) -> None:
@@ -270,7 +284,7 @@ class BufDumpController(QObject):
             ts &= 0xfffffffffffffff
             result += 'Body header:\n'
             result += f'  Timestamp   : 0x{ts:016x}\n'
-            result += f'  Source Id   : {item.sourceid()}\n'
+            result += f'  Source Id   : {self._makeSidString(item.sourceid())}\n'
             result += f'  Barrier Type: {item.barriertype()}\n\n'
         return result
     
@@ -291,7 +305,7 @@ class BufDumpController(QObject):
         result += self._formatBodyHeader(item)
         result += f'For run {item.getRunNumber()}, {item.getElapsedTime():.2f} into the run, at {self._timestring(item.getTime())}\n'
         result += f'Title: {item.getTitle()}\n'
-        result += f'From original source id: {item.originalSource()}\n\n'     
+        result += f'From original source id: {self._makeSidString(item.originalSource())}\n\n'     
         return result
     
     def _formatRingVersion(self, item: daqformat.ringformatitem) -> str:
@@ -305,7 +319,7 @@ class BufDumpController(QObject):
         fts = item.timestamp()
         fts &= 0xffffffffffffffff     # Makes it unsigned 64 bit.
         result += f'Fragment Timestamp : {fts:016x}\n'
-        result += f'Fragment Source id : {item.source()}\n'
+        result += f'Fragment Source id : {self._makeSidString(item.source())}\n'
         result += f'Fragment Barrier id: {item.barrierType()}\n'
         result += 'Payload:\n'
         payload = item.payload()     # Byte array of the body.
@@ -339,7 +353,7 @@ class BufDumpController(QObject):
         result += self._formatBodyHeader(item)
         result += f'Readout at {self._timestring(item.absoluteTime())}'
         result += f'accumleted from {item.startTime():02f} to {item.endTime():02f} seconds into the run.\n'
-        result += f'Original Source Id: {item.getOriginalSourceId()}\n'
+        result += f'Original Source Id: {self._makeSidString(item.getOriginalSourceId())}\n'
         incr = 'Incremental'  if item.isIncremental() else 'Not Incremental'
         result += f'Readout is {incr}\n'
         result += 'Counters:\n'
@@ -361,7 +375,7 @@ class BufDumpController(QObject):
             else 'Packet Types\n')
         result += self._formatBodyHeader(item)
         result += f'{item.getElapsedTime():.2f} seconds into the run at {self._timestring(item.getTime())}\n'
-        result += f'Original Source id: {item.originalSource()}\n'
+        result += f'Original Source id: {self._makeSidString(item.originalSource())}\n'
         result += 'Strings:\n'
         for string in item.getStrings():
             result += f'{string}\n'
@@ -383,7 +397,7 @@ class BufDumpController(QObject):
         result = 'Trigger/Event count\n'
         result += self._formatBodyHeader(item)
         result += f'{item.timeOffset():.2f} seconds into the run at {self._timestring(item.time())}\n'
-        result += f'Original Source id: {item.originalSource()}\n'
+        result += f'Original Source id: {self._makeSidString(item.originalSource())}\n'
         result += f'{item.eventCount()} triggers accepted\n' 
         result += '\n'
 
@@ -415,3 +429,30 @@ class BufDumpController(QObject):
             result = names[channel] if channel < len(names) else result
         
         return result
+
+    def _makeSidMap(self) -> dict[int, str]:
+        # Generate an sid to name map. and return it.
+        
+        with open(self._sid_file, "r") as f:
+            lines = f.readlines()
+        
+        result = {}
+        for line in lines:
+            info = line.split(maxsplit=1)
+            sid = int(info[0])
+            name = info[1]
+            result[sid] = name
+        
+        return result
+
+    def _makeSidString(self, sid : int) -> str:
+        # IF there's an sid map and the source id
+        # is in it then make a nice string for it:
+        
+        name = f'{sid}'
+        if self._sid_map and sid in self._sid_map:
+            name = f'{self._sid_map[sid]} ({sid}) '
+        
+        return name
+        
+        

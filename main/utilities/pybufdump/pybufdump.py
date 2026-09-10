@@ -76,7 +76,8 @@ def main() -> int:
     controller.setEventBuilt(parameters.unpack_fragments)
     if parameters.scaler_definitions:
         controller.setScalerFile(parameters.scaler_definitions)
-    
+    if parameters.sourceid_definitions:
+        controller.setSidFile(parameters.sourceid_definitions)
     # Exit when requested.
     
     win.exit.connect(onExit)
