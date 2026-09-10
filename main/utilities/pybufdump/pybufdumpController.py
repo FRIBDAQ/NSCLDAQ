@@ -333,7 +333,7 @@ class BufDumpController(QObject):
         result = 'Event builder Glom parameters:\n'
         result += self._formatBodyHeader(item)
         result += f'Coincidence Ticks: {item.coincidenceTicks()}\n'
-        building = 'Bulding' if item.isBuiding() else 'Not Building'
+        building = 'Building' if item.isBuilding() else 'Not Building'
         result += f'Glom is          :  {building}\n'
         result += f'Timestamp policy :  {item.policy()}\n\n'
         return result
