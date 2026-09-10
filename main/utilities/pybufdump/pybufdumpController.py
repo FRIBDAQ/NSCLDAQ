@@ -28,6 +28,81 @@ from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
 
+class Fragment:
+    '''
+    This class represents an event builder fragment.
+    '''
+    def __init__(self, data : bytearray):
+        self._data = data
+    
+    def timestamp(self) -> int:
+        '''
+        @return int (unsigned int64) the fragment timestamp.
+        
+        '''
+        # The and below makes it appear unsigned.
+        
+        return int.from_bytes(self._data[0:8], byteorder='little') & 0xffffffffffffffff
+    def sourceId(self) -> int:
+        '''
+        @return int (unsigned int32) the fragment source id.
+        '''
+        
+        return int.from_bytes(self._data[8:12], byteorder='little') & 0xffffffff
+    
+    def payloadSize(self) -> int:
+        '''
+        @return int (unsigned int32) the size of the fragment payload.
+        '''
+        return int.from_bytes(self._data[12:16], byteorder='little') & 0xffffffff
+    def barrierId(self) -> int:
+        '''
+        @return int (unsigned int32) - The barrier id of the fragment.
+        
+        '''
+        return int.from_bytes(self._data[16:20], byteorder='little') & 0xffffffff
+    
+    def payload(self) -> bytearray:
+        '''
+        @return bytearray - the payload sliced from the fragment
+        '''
+        return self._data[20:]
+        
+        
+    
+    
+
+class BuiltEventIterator:
+    '''
+        This class (might eventually want to go elsewhere like ufmt)
+        provides a mechanism to iterate through the fragments in an
+        event that came out of an event builder.
+    '''
+    header_size = 20         # Bytes in the fragment headers.
+    
+    def __init__(self, event : bytearray):
+        self._data = event
+        # Self inclusive fragmet size.
+        self._size = int.from_bytes(self._data[0:4], byteorder='little') &  0xffffffff 
+        self._offset = 4   # First fragment offset.
+        
+        
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> Fragment:
+        if self._offset < self._size:
+            offset = self._offset
+            size_offset = offset + 12    # Where the payload size is for the fragment.
+            payload_size = int.from_bytes(self._data[size_offset:size_offset+4], byteorder='little') & 0xffffffff
+            total_size   = payload_size + self.header_size
+            self._offset += total_size         # offset to next fragment.
+            return Fragment(self._data[offset:self._offset])
+        else:
+            raise StopIteration
+        
+    
+
 class BufDumpController(QObject):
     '''
         The controller has public entry points for each of the
@@ -387,7 +462,11 @@ class BufDumpController(QObject):
         result = 'Physics event\n'
         result += self._formatBodyHeader(item)
         result += 'Body\n'
-        result += self._formatByteArray(item.getbody())
+        if self._eventbuilt:
+            result += self._formatFragments(item.getbody())
+        else:
+            result += self._formatByteArray(item.getbody())
+            
         result += '\n'
         
         return result
@@ -403,6 +482,27 @@ class BufDumpController(QObject):
 
         return result
     
+    def _formatFragment(self, fragment : Fragment) -> str:
+        # Format a single fragment from event build data
+        
+        result =  f'Fragment Timestamp : {fragment.timestamp():016x}\n'
+        result += f'Fragment Source    : {self._makeSidString(fragment.sourceId())}\n'
+        result += f'Fragment Size      : {fragment.payloadSize()}\n'
+        result += f'Fragment Barrier id: {fragment.barrierId()}\n'
+        
+        result += self._formatByteArray(fragment.payload())
+        result += '\n'
+        
+        return result
+        
+    
+    def _formatFragments(self, body : bytearray) -> str:
+        # Format fragments in an event built body:
+        result = 'Fragments: \n'
+        fragments = BuiltEventIterator(body)
+        for fragment in fragments:
+            result += self._formatFragment(fragment)
+        return result
     # Other utility methods:
     
     def _makeScalerMap(self, toml : dict[str]) -> dict[int, list[str]]:
