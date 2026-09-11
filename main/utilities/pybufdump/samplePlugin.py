@@ -40,7 +40,7 @@ Objects rather than an unbound function is used for formatting in case the forma
 wants to have memory.
 
 '''
-
+import struct
 
 #  This is the list of source ids that are DDAS modules
 
@@ -60,9 +60,27 @@ class DDASFormatter:
                 includes the ringitem header and the body header as well.
             @return str - The string we want displayed as the body of the
                  fragment.
+            @note there is no DDAS data from version 10 formats, therefore we
+                will have body header info but...
         '''
         result = f'\nFormatting DDAS fragment body data for source {srcid}\n'
-        result += f'The fragment body has {len(body)} bytes of data\n\n'
+        
+        # Skip the ring item header and body header to get to the 
+        # actual DDAS Data:
+        
+        bodyheader_offset = 8      # Size of ring item header.
+        (body_header_size,)  = struct.unpack('<L', body[bodyheader_offset:bodyheader_offset+4])
+        
+        # In earlier NSCLDAQ, if there was no body header size, this field had 0 so:
+        # Make it sizeof(uint32) if that's the case as it is for version 12.
+        
+        body_header_size  = 4 if body_header_size == 0 else body_header_size
+        
+        # This is the actual DDAS data:
+        result += f'Skipping {body_header_size + bodyheader_offset} bytes of header data.\n'
+        ddasbody = body[bodyheader_offset + body_header_size:]
+        
+        result += f' The actual ddas body is {len(ddasbody)} bytes long\n\n'
         
         return result
 
