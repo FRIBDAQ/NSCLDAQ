@@ -48,8 +48,32 @@ ddas_sources : list[int] = [0, 2]
 
 class DDASFormatter:
     ''' Our sample formatter class.'''
-    def __init__(self):
-        pass                          # Any initialization is done here.
+    def __init__(self,controller):
+        # We save the controller in case we want to 
+        # use some of its features for formatting.
+        
+        self._controller = controller
+    
+    
+    def _moduletype(self, info : int) -> (int, int, int):
+        # Given the digitizer informatino word,
+        # return trip of (rev, bits, mhz).
+        
+        mhz = info & 0xffff
+        bits = (info >> 16) & 0xff
+        rev   = (info >> 24) & 0xff
+        return (rev, bits, mhz)
+    
+    def _decodeHdr0(self, hdr0) -> (int, int, int, int, int):
+        # Decode header 0 into event length, header length, crate, slot, chan
+        
+        evlen = (hdr0 >>  17) & 0x3fff
+        hdrlen= (hdr0 >> 12)  & 0x1f
+        crate = (hdr0 >> 8)   & 0xf
+        slot  = (hdr0 >> 4)  & 0xf
+        chan  = (hdr0  & 0xf)
+        
+        return (evlen, hdrlen, crate, slot, chan)
     
     def format(self, srcid : int, body : bytearray) -> str:
         ''' This does the formatting for any sources that
@@ -65,6 +89,9 @@ class DDASFormatter:
         '''
         result = f'\nFormatting DDAS fragment body data for source {srcid}\n'
         
+        result += '-------\n'
+        result += self._controller._formatByteArray(body)
+        result += '-------\n'
         # Skip the ring item header and body header to get to the 
         # actual DDAS Data:
         
@@ -80,8 +107,26 @@ class DDASFormatter:
         result += f'Skipping {body_header_size + bodyheader_offset} bytes of header data.\n'
         ddasbody = body[bodyheader_offset + body_header_size:]
         
-        result += f' The actual ddas body is {len(ddasbody)} bytes long\n\n'
         
+        (ddasbodylongs,digitizerinfo, nsts) = struct.unpack('<LLd', ddasbody[0:16])     
+        ddasbodylongs = ddasbodylongs/2                          # 16 bit item size -> 32 bit item size.
+        
+        result += f'{ddasbodylongs} Longwords of data  \n'
+        
+        (rev, bits, mhz) = self._moduletype(digitizerinfo)
+        result += f'Module is rev {rev:x}, {bits} bits wide sampling at {mhz}MHz\n'
+        result += f'Timestamp in ns: {nsts} '
+        
+        # Next is the 4 long word fixed pixie header:
+        
+        pixieHeader = struct.unpack('<LLLL', ddasbody[16:32])
+        
+        (evlen, hdrlen, crate, slot, chan) = self._decodeHdr0(pixieHeader[0])
+        result += f'Pixie header 0: {pixieHeader[0]:08x}\n'
+        result += f'Data from crate {crate}, slot {slot}, channel {chan}\n'
+        result += f'DDAS event length {evlen}, header is {hdrlen}\n'
+        
+        result += '\n\n'
         return result
 
 def registerFormatters(controller : object) -> None:
@@ -91,5 +136,5 @@ def registerFormatters(controller : object) -> None:
         we're going to provide:
     '''
     for src in ddas_sources:
-        formatter = DDASFormatter()
+        formatter = DDASFormatter(controller)
         controller.registerFormatter(src, formatter)
