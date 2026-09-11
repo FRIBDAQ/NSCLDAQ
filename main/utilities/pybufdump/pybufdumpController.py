@@ -18,7 +18,7 @@
 
 import struct
 from datetime import datetime
-
+import sys
 import daqformat
 import pyUI
 import tabulate
@@ -26,7 +26,30 @@ import tomllib
 from nscldaq.pyscaler.datasource import FileDataSource
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMessageBox
+import importlib.util        # For plugin loading.
+import uuid
+import types
 
+def _generate_plugin_name() -> str:
+    # Uses uuid4 to generate a random, unique plugin\
+    # module name for importlib loads:
+    
+    suffix  = str(uuid.uuid4())
+    module  = 'plugin' + suffix
+    return module
+
+def _load_plugin(path : str) -> types.ModuleType:
+    # Loads a plugin and returns the module object.
+    # path - is the path to the plugin file.
+    # returns the module that was loaded.
+    
+    module_name = _generate_plugin_name()
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)    # Runs outer code if there is some.
+
+    return module
 
 class Fragment:
     '''
@@ -126,7 +149,7 @@ class BufDumpController(QObject):
         self._view          = view
         self._eventfile     = None
         self._eventfileName = None
-        self._plugins       = None
+        self._plugins       = {}
         self._filter       = None
         self._version       = 12
         self._eventbuilt    = False
@@ -145,6 +168,22 @@ class BufDumpController(QObject):
         self._view.clearfilter.connect(self._clearFilter)
         self._view.next.connect(self._nextItem)
     
+    # public methods:
+    
+    def registerFormatter(self, srcid : int, formatter : object) -> None:
+        '''
+            Register a formatter for a specific source id.  Any
+            prior formatter registered for that source id
+            is removed.
+            
+            @param srcid - fragments from this source id will be
+                           formatted by this formatter.
+            @param formatter - the object whose format method will be
+                           called to format that srcid.
+                
+        '''
+        self._plugins[srcid] = formatter
+        
     # attributes:
     def formatVersion(self) -> int:
         '''@return int - ring item format version.'''
@@ -232,8 +271,14 @@ class BufDumpController(QObject):
      
     def _loadPlugin(self, pluginPath : str) -> None:
         self._refreshStatusBar()
-        # Load a formatting plugin  @todo
-        pass   
+        
+        # Load the plugin and call its registerFormatters function
+        #
+        
+        
+        plugin = _load_plugin(pluginPath)   
+        plugin.registerFormatters(self)
+        
      
     def _cleanup(self) -> None:
         # Cleanup before exiting:
@@ -484,14 +529,22 @@ class BufDumpController(QObject):
     
     def _formatFragment(self, fragment : Fragment) -> str:
         # Format a single fragment from event build data
+        sourceid = fragment.sourceId()
         
         result =  f'Fragment Timestamp : {fragment.timestamp():016x}\n'
-        result += f'Fragment Source    : {self._makeSidString(fragment.sourceId())}\n'
+        result += f'Fragment Source    : {self._makeSidString(sourceid)}\n'
         result += f'Fragment Size      : {fragment.payloadSize()}\n'
         result += f'Fragment Barrier id: {fragment.barrierId()}\n'
         
-        result += self._formatByteArray(fragment.payload())
-        result += '\n'
+        # If there's a plugin formatter us it otherwise,
+        # just render the byte array:
+        
+        formatter = self._plugins.get(sourceid, None)
+        if formatter:
+            result += formatter.format(sourceid, fragment.payload())      
+        else:
+            result += self._formatByteArray(fragment.payload()) 
+            result += '\n'
         
         return result
         
