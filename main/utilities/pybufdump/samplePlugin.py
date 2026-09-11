@@ -34,10 +34,13 @@ as a bytearray object.  The formatter must return a string that will be used as 
 formatted fragment body.
 
 
-This sample will demonstrate that for simple DDAS data
+This sample will demonstrate that for simple DDAS data from NSCLDAQ-11.. There are differences
+in the DDAS-12 format so you can't use it for that.
 
 Objects rather than an unbound function is used for formatting in case the formatting object
 wants to have memory.
+
+
 
 '''
 import struct
@@ -46,7 +49,7 @@ import struct
 
 ddas_sources : list[int] = [0, 2]
 
-class DDASFormatter:
+class DDAS11Formatter:
     ''' Our sample formatter class.'''
     def __init__(self,controller):
         # We save the controller in case we want to 
@@ -75,6 +78,15 @@ class DDASFormatter:
         
         return (evlen, hdrlen, crate, slot, chan)
     
+    def _decodeTimeAndCFD(self, hdr1 : int, hdr2: int) -> (bool, int, int):
+        # Decode the time and cfd information in the header1/2 words.
+        # Returns the cfd forced trigger flag, the cfd fractional time and
+        # the timestamp:
+        
+        forcedCfd = True if (hdr2 & 0x8000) != 0 else False
+        ts        = hdr1 | ((hdr2 & 0xffff) << 32)
+        cfdfine   = (hdr2 >> 16) & 0x7fff
+        return (forcedCfd, cfdfine, ts)
     def format(self, srcid : int, body : bytearray) -> str:
         ''' This does the formatting for any sources that
             we say have DDAS data  (see the ddas_sources global.)
@@ -89,9 +101,11 @@ class DDASFormatter:
         '''
         result = f'\nFormatting DDAS fragment body data for source {srcid}\n'
         
-        result += '-------\n'
-        result += self._controller._formatByteArray(body)
-        result += '-------\n'
+        if False:                     # DEbugging.
+            result += '-------\n'
+            result += self._controller._formatByteArray(body)
+            result += '-------\n'
+            
         # Skip the ring item header and body header to get to the 
         # actual DDAS Data:
         
@@ -104,27 +118,30 @@ class DDASFormatter:
         body_header_size  = 4 if body_header_size == 0 else body_header_size
         
         # This is the actual DDAS data:
-        result += f'Skipping {body_header_size + bodyheader_offset} bytes of header data.\n'
+        
+        
         ddasbody = body[bodyheader_offset + body_header_size:]
-        
-        
-        (ddasbodylongs,digitizerinfo, nsts) = struct.unpack('<LLd', ddasbody[0:16])     
+        (ddasbodylongs,digitizerinfo) = struct.unpack('<LL', ddasbody[0:8])     
         ddasbodylongs = ddasbodylongs/2                          # 16 bit item size -> 32 bit item size.
-        
-        result += f'{ddasbodylongs} Longwords of data  \n'
+    
         
         (rev, bits, mhz) = self._moduletype(digitizerinfo)
         result += f'Module is rev {rev:x}, {bits} bits wide sampling at {mhz}MHz\n'
-        result += f'Timestamp in ns: {nsts} '
+    
         
         # Next is the 4 long word fixed pixie header:
         
-        pixieHeader = struct.unpack('<LLLL', ddasbody[16:32])
+        pixieHeader = struct.unpack('<LLLL', ddasbody[8:24])
         
         (evlen, hdrlen, crate, slot, chan) = self._decodeHdr0(pixieHeader[0])
-        result += f'Pixie header 0: {pixieHeader[0]:08x}\n'
         result += f'Data from crate {crate}, slot {slot}, channel {chan}\n'
-        result += f'DDAS event length {evlen}, header is {hdrlen}\n'
+        
+        (cfdforced, fractionalTime, evtime) = self._decodeTimeAndCFD(pixieHeader[1], pixieHeader[2])
+        if cfdforced:
+            result += 'CFD had forced trigger. '
+            
+        # @todo - fold evtime and fractional time together.
+        result += f'Coarse timestamp: {evtime}  CFD correction: {fractionalTime}\n'
         
         result += '\n\n'
         return result
@@ -136,5 +153,5 @@ def registerFormatters(controller : object) -> None:
         we're going to provide:
     '''
     for src in ddas_sources:
-        formatter = DDASFormatter(controller)
+        formatter = DDAS11Formatter(controller)
         controller.registerFormatter(src, formatter)
