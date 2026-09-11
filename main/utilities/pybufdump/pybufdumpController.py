@@ -20,7 +20,7 @@ import struct
 from datetime import datetime
 import sys
 import daqformat
-import pyUI
+from nscldaq.pydumper import pyUI
 import tabulate
 import tomllib
 from nscldaq.pyscaler.datasource import FileDataSource

@@ -17,8 +17,8 @@
 @brief Main program for the pyqt buffer dumper.
 @author Ron Fox
 '''
-import pyUI
-import pybufdumpController
+from  nscldaq.pydumper import pyUI
+from  nscldaq.pydumper import pybufdumpController
 import sys
 from PyQt6.QtWidgets import QApplication
 import argparse
