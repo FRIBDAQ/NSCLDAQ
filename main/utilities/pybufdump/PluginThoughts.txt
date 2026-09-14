@@ -1,0 +1,30 @@
+Plugins will be used in event builder unpack mode.
+A plugin is a dynamically loaded module that is expected
+to have a registerFormatters unbound function.
+That function takes the controller as a parameter.
+
+regiserFormatters is supposed to instantiate fragment
+formatters for specific source ids and register tham with the controller.
+e.g.
+
+def registerFormatters(controller):
+    # Create a formatter for source id 0 and 
+    # register it with the controller.
+
+    src0Formatter = DDASFormatter()
+    controller.registerFormatter(0, src0Formatter)
+
+
+
+a formatter class _must_ provide a method:
+
+def format(self, srcid: int, body : bytearray) -> str:
+   ...
+
+where srcid - is the source id of the fragment.
+body        - is the fragment payload.
+
+Note that the body is the full payload of the fragment which includes the ring item heder
+and body header the fragment might have. 
+The formatter is then expected to return a string that will be used 
+as the body of the fragment _instead_ of the raw dump.
