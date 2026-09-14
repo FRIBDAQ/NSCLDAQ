@@ -180,13 +180,7 @@ class DDAS11Formatter:
                 result += 'note at least one point was out of range'
             result += '\n'
         
-        if traceSize > 0:
-            result += 'Trace:\n'
         
-            tracestart = 8 + hdrlen * 4   # Byte off set of trace start.
-            traceend   = tracestart + traceSize*2   # 16 bit trace points.
-            traceslice = ddasbody[tracestart: traceend]
-            result += self._controller.formatByteArray(traceslice)
         
         # Do I have energy sums?
         
@@ -203,15 +197,24 @@ class DDAS11Formatter:
             chargeinfo = struct.unpack('<LLLLLLLL', ddasbody[40:72])
             result += 'QDC Sums:'
             for i in range(8):
-                result += 'QDC Sum[{i}] = {chargeinfo[i]}\n'
+                result += f'QDC Sum[{i}] = {chargeinfo[i]}\n'
             
         # External timestamp:
         
         if hdrlen > 16:
             ts = struct.unpack('<Q', ddasbody[72:80])
-            result += 'External timetamp:  {ts:016x}\n'
+            result += f'External timestamp:  {ts:016x}\n'
         
         # If there is a trace, then make the slice for it and format it
+        
+        if traceSize > 0:
+            result += 'Trace:\n'
+        
+            tracestart = 8 + hdrlen * 4   # Byte off set of trace start.
+            traceend   = tracestart + traceSize*2   # 16 bit trace points.
+            traceslice = ddasbody[tracestart: traceend]
+            result += self._controller.formatByteArray(traceslice)
+        
         
         result += '\n\n'
         return result
