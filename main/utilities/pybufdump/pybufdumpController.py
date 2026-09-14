@@ -261,6 +261,15 @@ class BufDumpController(QObject):
              will be formatted with the default formatter.
         '''
         return self._formatFragments(body)
+    
+    def formatByteArray(self, data : bytearray) -> str:
+        '''
+        Format a byte array as a nice dump of 16 bit words.
+        
+        @param data : bytearray - the data to format.
+        @return str  - the formatted byte array
+        '''
+        return self._formatByteArray(data)
         
     # Utilities for interacting with the view:
     
