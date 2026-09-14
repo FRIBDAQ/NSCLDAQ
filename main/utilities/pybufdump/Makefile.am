@@ -2,7 +2,7 @@
 MODULES = pyUI.py pybufdumpController.py
 EXAMPLES=samplePlugin.py
 PROGRAM_FILES=pybufdump.py
-DOCUMENTATION=pybufdump.xml
+DOCUMENTATION=pybufdump.xml PluginThoughts.txt
 
 install-exec-local:
 	$(mkinstalldirs) @datarootdir@/pydumper
