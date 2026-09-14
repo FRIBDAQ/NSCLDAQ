@@ -47,7 +47,7 @@ import struct
 
 #  This is the list of source ids that are DDAS modules
 
-ddas_sources : list[int] = [0, 2]
+ddas_sources : list[int] = [0, 2, 3]
 
 class DDAS11Formatter:
     ''' Our sample formatter class.'''
@@ -78,15 +78,38 @@ class DDAS11Formatter:
         
         return (evlen, hdrlen, crate, slot, chan)
     
-    def _decodeTimeAndCFD(self, hdr1 : int, hdr2: int) -> (bool, int, int):
+    def _decodeTimeAndCFD(self, rev : int, hdr1 : int, hdr2: int) -> (bool | int, int, int):
         # Decode the time and cfd information in the header1/2 words.
         # Returns the cfd forced trigger flag, the cfd fractional time and
         # the timestamp:
         
-        forcedCfd = True if (hdr2 & 0x8000) != 0 else False
+        # the top bit or two bits meaning depends on the rev:
+        
+        if rev < 0xf:
+             # Just a force CFD bit bool:
+            forcedCfd = True if (hdr2 & 0x8000) != 0 else False
+            cfdfinemask = 0x7fff
+        else:
+            # Three bits of trigger source:
+            
+            forcedCfd = (hdr2 >> 29) & 0x7
+            cfdfinemask = 0x1fff
+            
         ts        = hdr1 | ((hdr2 & 0xffff) << 32)
-        cfdfine   = (hdr2 >> 16) & 0x7fff
+        cfdfine   = (hdr2 >> 16) & cfdfinemask
         return (forcedCfd, cfdfine, ts)
+    
+    def _decodeEnergy(self, hdr3) -> (bool, int, int):
+        # Decode the last header word into energy, trace length and
+        # and trace out of range flag  (oorflag, tracelength, energy)
+        
+        energy = hdr3 & 0xffff
+        trlength = (hdr3 >> 16) & 0x7fff
+        oorflag  = (hdr3 & 0x80000000) != 0
+        
+        return (oorflag, trlength, energy)
+        
+        
     def format(self, srcid : int, body : bytearray) -> str:
         ''' This does the formatting for any sources that
             we say have DDAS data  (see the ddas_sources global.)
@@ -135,13 +158,27 @@ class DDAS11Formatter:
         
         (evlen, hdrlen, crate, slot, chan) = self._decodeHdr0(pixieHeader[0])
         result += f'Data from crate {crate}, slot {slot}, channel {chan}\n'
+        result += f'Event length: {evlen} header length: {hdrlen}\n'
         
-        (cfdforced, fractionalTime, evtime) = self._decodeTimeAndCFD(pixieHeader[1], pixieHeader[2])
-        if cfdforced:
-            result += 'CFD had forced trigger. '
+        (cfdforced, fractionalTime, evtime) = self._decodeTimeAndCFD(rev, pixieHeader[1], pixieHeader[2])
+        
+        if rev < 0xf:
+            if cfdforced:
+                result += 'CFD had forced trigger. '
+        else:
+            result += f'Cfd trigger bits: {cfdforced:03x} '
             
         # @todo - fold evtime and fractional time together.
         result += f'Coarse timestamp: {evtime}  CFD correction: {fractionalTime}\n'
+        
+        (outofRange, traceSize, energy) = self._decodeEnergy(pixieHeader[3])
+        
+        result += f'Energy: {energy}\n'
+        if traceSize > 0:
+            result += f'A waveform of {traceSize} points was taken '
+            if outofRange:
+                result += 'note at least one point was out of range'
+            result += '\n'
         
         result += '\n\n'
         return result

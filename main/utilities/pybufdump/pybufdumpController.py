@@ -234,7 +234,33 @@ class BufDumpController(QObject):
         '''
         self._sid_file = path
         self._sid_map  = self._makeSidMap()
+    
+    
+    #  These are public entries plugins can use:
+    # 
+    def formatFragment(self, fragment : Fragment) -> str:    
+        '''
+        Format an event builder framgent:
+        @param fragment : Fragment - The fragment to format. See the Fragment class above
+        @return str  - the formatted fragment.
+        @note - if there is a plugin for the source id, it will be used to format the
+            fragment. If not a default formatting will be done
+        '''
+        return self._formatFragment(fragment)
+    
+    def formatFragments(self, body : bytearray) -> str:
+        '''
+        Given a byte array that is the body of an event build ring item
+        (after the ring item and body headers), formats
+        the fragments.
         
+        @param body : bytearray - byte array (slice?) of the event built body.
+        @return str - the formatted fragments.
+        @note if a fragment in the event built body has a plugin that is registered
+             to format it, that plugin will be used, otherwise, each fragment
+             will be formatted with the default formatter.
+        '''
+        return self._formatFragments(body)
         
     # Utilities for interacting with the view:
     
