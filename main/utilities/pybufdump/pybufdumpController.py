@@ -270,7 +270,9 @@ class BufDumpController(QObject):
         @return str  - the formatted byte array
         '''
         return self._formatByteArray(data)
-        
+    
+    def makeSidString(self, sid : int) -> str:
+        return self._makeSidString(sid)
     # Utilities for interacting with the view:
     
     def _setStatusBar(self, text : str) -> None:

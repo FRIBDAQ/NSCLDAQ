@@ -2,6 +2,7 @@
 MODULES = pyUI.py pybufdumpController.py
 EXAMPLES=samplePlugin.py
 PROGRAM_FILES=pybufdump.py
+DOCUMENTATION=pybufdump.xml
 
 install-exec-local:
 	$(mkinstalldirs) @datarootdir@/pydumper
@@ -16,5 +17,5 @@ install-exec-local:
 		$(INSTALL_SCRIPT) @srcdir@/$$f @prefix@/pythonLibs/nscldaq/pydumper; \
 	done
 
-EXTRA_DIST=$(MODULES) $(EXAMPLES) $(PROGRAMS)
+EXTRA_DIST=$(MODULES) $(EXAMPLES) $(PROGRAMS) $(DOCUMENTATION)
 
