@@ -124,10 +124,6 @@ class DDAS11Formatter:
         '''
         result = f'\nFormatting DDAS fragment body data for source {srcid}\n'
         
-        if False:                     # DEbugging.
-            result += '-------\n'
-            result += self._controller.formatByteArray(body)
-            result += '-------\n'
             
         # Skip the ring item header and body header to get to the 
         # actual DDAS Data:
