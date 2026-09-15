@@ -72,6 +72,7 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/simplesetups/v775 \
 	@top_srcdir@/simplesetups/v785 \
 	@top_srcdir@/utilities/bufdump \
+	@top_srcdir@/utilities/pybufdump \
 	@top_srcdir@/utilities/eventlog \
 	@top_srcdir@/utilities/scalersum \
 	@top_srcdir@/servers/portmanager \

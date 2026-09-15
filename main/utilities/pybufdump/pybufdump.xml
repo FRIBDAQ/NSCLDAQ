@@ -1,0 +1,939 @@
+<!-- chapter utilities -->
+
+
+<chapter id='ch.pybufdump'>
+    <title id='ch.pybufdump.title'>pybufdump - extensible PyQt event dumper</title>
+    <para>
+        <literal>pybufdump</literal> is a Python Qt event dumper. For
+        reference material, see <link linkend='daq1.pybufdump' endterm='daq1.pybufdump.title' />.
+        Features of <literal>pybufdump</literal> include:
+    </para>
+    <itemizedlist>
+        <listitem>
+            <para>
+                All items are decoded into human readable text.
+            </para>
+        </listitem>
+        <listitem>
+            <para>
+                The ability to only look at a set of selected item types.
+            </para>
+        </listitem>
+        <listitem>
+            <para>
+                The ability to break down event build data into individual event fragments
+            </para>
+        </listitem>
+        <listitem>
+            <para>
+                The ability to assigne textual names to readout source ids.
+            </para>
+        </listitem>
+        <listitem>
+            <para>
+                Support for plugins that can be assigned to do application specific 
+                formatting of event builder fragments for specific source ids.
+            </para>
+        </listitem>
+        <listitem>
+            <para>
+                Through use of the python bindings for the unified format library, support for
+                all version of the FRIB/NSCLDAQ data formats supported by that library (currently
+                10, 11, or 12).
+            </para>
+        </listitem>
+    </itemizedlist>
+    <para>
+        This chapter will describe:
+    </para>
+    <itemizedlist>
+        <listitem>
+            <para>
+                How to operate the program once it is started.
+            </para>
+        </listitem>
+        <listitem>
+            <para>
+                How to associate event source ids with textual names.
+            </para>
+        </listitem>
+        <listitem>
+            <para>
+                How to write plugins to do custom formatting.
+            </para>
+        </listitem>
+    </itemizedlist>
+    <section>
+        <title>Operating pybufdump</title>
+        <para>
+            <literal>pybufdump</literal> is started via the <literal>$DAQBIN/pybufdump</literal> command. 
+            it is available in FRIB/NSCLDAQ versions 12.2-010 and higher.
+            Several command options control how the dumper operates:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><option>--format-version</option></term>
+                    <listitem>
+                        <para>
+                            Lets you provde an initial guess about the version of the 
+                            FRIB/NSCLDAQ data you're looking at.  The program will correct this
+                            if a ring format item is found in the data.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>--sourceid-definitions</option></term>
+                    <listitem>
+                        <para>
+                            Allows you to provide a source-id definition file.
+                            For more about this, see 
+                            <link linkend='pydump.sec.sidfile' endterm='pydump.sec.sidfile.title' />
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>--scaler-definitions</option></term>
+                    <listitem>
+                        <para>
+                            Allows you to point to a scaler defintion file of the type used
+                            by <literal>pyScaler</literal> to providee names to scaler channels
+                            that are dumped in scaler items.  Note that to use this, data sources
+                            must be annotated with a <literal>sourceid</literal> so that the source
+                            id associated with each scaler data source is known.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>--unpack-fragments</option></term>
+                    <listitem>
+                        <para>
+                            If present, the dumper will treat events as output from the
+                            event builder and format the fragments rather than presenting an
+                            homogeneous soup of data for  physics event.
+                        </para>
+                        <para>
+                            Using 
+                            <link linkend='pydump.sec.plugins'>format plugins</link> is only possible
+                            with event built data and by enabling this option.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            Once the program has been started, you'll have a window that consists of four segments:
+        </para>
+        <orderedlist>
+            <listitem>
+                <para>
+                    A menu bar at the top which we'll describe below.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    A text area that takes up the majority of the window real estate.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    A tool bar that currently has one button, a right arrow that advances to the next
+                    item in the event file.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    A status bar that, when an event file is attached, will show the path to that 
+                    event file.
+                </para>
+            </listitem>
+        </orderedlist>
+        <section>
+            <title>The menus</title>
+            <para>
+                This section describes the menus provided by <literal>pybufdump</literal>.
+                For the most part you will use this to set up the analysis/display of ring items in your
+                source file and then use the right arrow button in the toolbar to advance through the
+                file.
+            </para>
+            <para>
+                The file menu has the following commands:
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><command>Open...</command></term>
+                        <listitem>
+                            <para>
+                                Pops up a file selection dialog that allows you to choose the
+                                file to dump.  If a file is already open, that file is closed first.
+                                To prevent confusion, the opened file is listed in the status bar.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><command>Load Plugin...</command></term>
+                        <listitem>
+                            <para>
+                                Pops up a file selection dialog that allows you to load a python
+                                script file that contains a plugin modules.  Plugins
+                                are described in  the
+                                <link linkend='pydump.sec.plugins' endterm='pydump.sec.plugins.title' />
+                                section below.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><command>Exit...</command></term>
+                        <listitem>
+                            <para>
+                                Requests confirmation and and, if confirmed, exits the program.
+                                Window controls will aslo exit the program without confirmation.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                The second menu controls filters.   Filters define the set of item types that will 
+                be dumpe.  All other item types are skipped when encountered in the input file.
+                Initially, all items are dumped.  Opening a new event file will not change the filter.
+                The filter menu has the following commands:
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><command>Filter Types...</command></term>
+                        <listitem>
+                            <para>
+                                Pops up a dialog to select the types to dump.  The dialog contains a pair 
+                                of list boxes.  Moving an item type from the left listbox to the right list box
+                                adds it to the set of items that will be formatted (
+                                    will <emphasis>not</emphasis> be skipped
+                                ).
+                            </para>
+                            <para>
+                                Once the right listbox has the set of item types you want to see, 
+                                clicking <guibutton>Ok</guibutton> establishes the filter.  The filter
+                                can be changed at any time.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><command>Clear Filters</command></term>
+                        <listitem>
+                            <para>
+                                Goes back to displaying all item types.  This is like establishing a filter
+                                with all item types in the right box of the filter definition dialog.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                Once you have your event file selected and filters, if any, set up, each click of the right
+                arrow button in the toolbox will advance to the next ring item in the file that is in the
+                filtered list of types and display a formatted version of it.
+            </para>
+            <para>
+                If you hit the end of the event file the text <literal>No more items</literal> is displayed
+                and the status bar is blanked out indicating you no longer have an open event file.
+            </para>
+            <para>
+                Some filters may require some time to get to the next  matching item in the event file.  Therefore, 
+                the cursor takes a busy shape until the next matching item is found.
+            </para>
+        </section>
+    </section>
+    <section id='pydump.sec.sidfile'>
+        <title id='pydump.sec.sidfile.title'>Providing a source id definition file</title>
+        <para>
+            FRIB/NSCLDAQ ring items can have a source id indicating which data source provided the
+            item.   Furthermore, when unpacking event built data anf formatting fragments, each fragment
+            has a source id that, once more, indicates where it came from.  Source ids are usually small 
+            integer numbers.
+        </para>
+        <para>
+            The <option>--sourceid-definitions</option> allows you to provide a file that
+            associates text strings with source ids.  The format of a source id file is quite simple:
+            Each line of the file defines a text name for a source id.  The first columns of each
+            line contain a source id number followed by a space.  The rest of the line is the
+            string to associated with that source id.
+        </para>
+        <para>
+            Below is a sample sourcde id file.
+        </para>
+        <example>
+            <title>pybufdump sample source id file</title>
+            <programlisting>
+0 Event builder output or DDAS crate0
+1 DDAS Crate 1
+2 DDAS Crate 2
+            </programlisting>
+        </example>
+        <para>
+            When a source id definition file is provided, a matching source id will
+            show the text associated with that source id as well as the integer value.
+        </para>
+        <para>
+            Below, for example, is a begin run item with an annotated source id
+        </para>
+        <informalexample>
+            <programlisting>
+Begin Run 
+Body header:
+  Timestamp   : 0x0000000000000000
+  Source Id   : Event builder output or DDAS crate0 (0) 
+  Barrier Type: 0
+
+For run 1196, 0.00 into the run, at Mon 03 Feb 2020 02:57:04 AM 
+Title: good data
+From original source id: Event builder output or DDAS crate0 (0) 
+
+            </programlisting>
+        </informalexample>
+    </section>
+    <section id='pydump.sec.plugins'>
+        <title id='pydump.sec.plugins.title'>Writing and loading plugins</title>
+        <para>
+            A plugin is a python script that can be dynamically loaded into 
+            <literal>pybufdump</literal> to format some subset of the data in 
+            a physics event ring item. This section describes what plugins do, 
+            in a bit more detail, how to write a plugin and register its formatters
+            with <literal>pybufdump</literal> as well as some of the services
+            that <literal>pybufdump</literal> provides to plugins.
+        </para>
+        <para>
+            A plugin can provide custom formatting to event fragments in event
+            built data that match specific source ids.  Using a plugin, therefore
+            requires that <literal>pybufdump</literal> have been run with the
+            <option>--unpack-fragments</option> option.
+        </para>
+        <para>
+            Plugins must, in general:
+        </para>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    Provide one more classes that implement a 
+                    <methodname>format</methodname> method.  Such classes are
+                    called <firstterm>formatting classes</firstterm> or
+                    <firstterm>formatter</firstterm>
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    Provide an unbound function named
+                    <function>registerFormatter</function> that registers instances
+                    of the formatting classes defined in the plugin to format data
+                    from fragments that have specific source ids.
+                </para>
+            </listitem>
+        </itemizedlist>
+        <para>
+            It's worth noting here that a sample formatter, that formats fragments with XIA/DDAS data in 
+            FRIB/NSCLDAQ foramt for version 11 is provided in 
+            <filename>$DAQSHARE/pydumper/samplePlugin.py</filename>.  I recommend  looking at 
+            this code before attempting to write your own plugin.
+        </para>
+        <para>
+            Let's now start by looking at formatting classes.  The only requirement of these classes
+            is that they provide and implement a method of the following type (we use Python 3 type hints
+            here for clarity):
+        </para>
+        <informalexample>
+            <programlisting language='python'>
+class SomeFormatter:
+    ...
+    def format(self, srcid : int, body : bytearray) -> str:
+        ...
+    ...
+            </programlisting>
+        </informalexample>
+        <para>
+            The parameters of this method are the source id of the 
+            fragment that is to be formatted, and the body of the
+            fragment.  Note that in general, this body in cludes 
+            a ring item header and a body header.  As the type signature
+            indicates, the body is passed as a byte array.  Normally
+            the struct module's <function>unpack</function> can be used
+            to get data from this byte array or, rather slices of it.
+        </para>
+        <para>
+            The expectation is that the formatter will return a string. The 
+            <literal>pybufdump</literal>
+            program will use this string as the formatted body of the fragment.
+        </para>
+        <para>
+            Formatter's must be associated with source id of fragments.
+            This is done by the plugin providing a function that must be
+            called <function>registerFormatters</function> that is passed
+            an object that is the <literal>pybufdump</literal> controller. It's not
+            so important to know wha the controller does, in the design of the
+            <literal>pybufdump</literal> program, only the services it provides.
+        </para>
+        <para>
+            Below is the <function>registerformatters</function> function
+            from the sample plugin provided in 
+            <filename>$DAQSHARE/pydumper/samplePlugin.py</filename>.
+        </para>
+        <example>
+            <title>Sample <function>registerFormatters</function> pydumper plugin function</title>
+            <programlisting language='python'>
+
+
+ddas_sources : list[int] = [0, 2, 3]
+...
+
+def registerFormatters(controller : object) -&gt; None:
+    '''
+        After our plugin is loaded, this function is called and
+        must register instances of DDASFormatter for each source id
+        we're going to provide:
+    '''
+    for src in ddas_sources:
+        formatter = DDAS11Formatter(controller)
+        controller.registerFormatter(src, formatter)
+            </programlisting>
+        </example>
+        <para>
+            As you can see, for each sourcde id in the <varname>ddas_sources</varname> variable,
+            it creates an instance of the <classname>DDAS11Formatter</classname> and invokes
+            <methodname>registerFormatter</methodname> on the controller it was passed to
+            associate that formatter with that source id.
+        </para>
+        <para>
+            So that the formatter can make use of controller formatting helper functions,
+            the controller is passed to the constructor of our formatter.
+        </para>
+        <section>
+            <title>Controller services for plugins..</title>
+            <para>
+                The <literal>pybufdump</literal> 
+                controller provides several servicdes for plugins.  This
+                section provides reference material for those methods.
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type>None</type>
+                            <methodname>registerFormatter</methodname>
+                            <methodparam>
+                                <type /><parameter>srcid : int</parameter>
+                            </methodparam>
+                            <methodparam>
+                                <type /><parameter>formatter : object</parameter>
+                            </methodparam>
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Registers an instance of a formatter, <parameter>object</parameter>
+                                to format data from fragments that came from the source 
+                                identified by <parameter>srcid</parameter>.  This replaces
+                                any existing formatter for that source id that might already exist.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type>str</type><methodname>formatByteArray</methodname>
+                            <methodparam>
+                                <type /><parameter> data : bytearray</parameter>
+                            </methodparam>
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Returns a string that formats <parameter>data</parameter>
+                                as a set of unsigned 16 bit words in hexadecimal format.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type>str</type> <methodname>formatFragments</methodname>
+                            <methodparam>
+                                <type/><parameter> body :bytearray</parameter>
+                            </methodparam>
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Assumes the <parameter>body</parameter> is the ring item
+                                body of event built data, this returns a string that data.
+                                If the sourceid of a fragment matches the registration of a
+                                plugin, that plugin is allowed to format the body of the fragment.
+                                If not, <methodname>formatByteArray</methodname> is used to
+                                format the fragment instead.
+                            </para>
+                            <para>
+                                This method is intended to support plugins for
+                                data from events built in a multi-level event builder.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type>str</type><methodname>makeSidString</methodname>
+                            <methodparam><type/> <parameter>sid : int</parameter>
+                            </methodparam>
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Returns a textual string for a source id.  If a source id
+                                definition file has been specified, it is consulted to 
+                                format the string.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </section>
+    </section>
+</chapter>
+
+<!-- /chapter -->
+
+<!-- manpage 1daq -->
+<refentry id='daq1.pybufdump'>
+    <refmeta>
+        <refentrytitle id='daq1.pybufdump.title'>pybufdump</refentrytitle>
+        <manvolnum>1daq</manvolnum>
+    </refmeta>
+    <refnamediv>
+        <refname>pybufdump</refname>
+        <refpurpose>Formatted event buffer with Qt6.</refpurpose> 
+    </refnamediv>
+    <refsynopsisdiv>
+        <cmdsynopsis>
+<command>$DAQBIN/pybufdump</command>
+    <arg>-h | --help</arg>
+    <arg>-U | --unpack-fragments</arg>
+    <arg>-F | --format-version <replaceable>10 | 11 | 12</replaceable></arg>
+    <arg>-N | --scaler-definitions<replaceable> scaler-toml-path</replaceable></arg>
+    <arg>-S | --sourceid-definitions<replaceable> source-id-filepath</replaceable></arg>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsect1>
+        <title>DESCRIPTION</title>
+        <para>
+            <literal>pybufdump</literal> is a ringitem dumper that produces a graphical user
+            interface from which event files can be selected and ring items formatted for
+            human readable output.  The program supports some user defined formatting through
+            scaler definition files, source id definitions files and user formatting 
+            plugins.
+        </para>
+        <para>
+            For detailed information about how to use the program, see the tutorial chapter
+            for <literal>pybufdump</literal> in the <literal>Utilities</literal> section of
+            the FRIB/NSCLDAQ documentation website.
+        </para>
+    </refsect1>
+    <refsect1>
+        <title>OPTIONS</title>
+        <para>
+            Note that all program options have a short (single character) form and a long
+            (multi-character) form.
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><option>-h</option> or <option>--help</option></term>
+                    <listitem>
+                        <para>
+                            Outputs a brief description of the program options and their
+                            meanings to standard output.  If this option is provided, the
+                            program immediately exits without doing anything useful other than
+                            documenting itself.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-U</option> or <option>--unpack-fragments</option></term>
+                    <listitem>
+                        <para>
+                            The event files to be analyzed are assumed to be the output of an
+                            FRIB/NSCLDAQ event builder.  The formatted output of physics event
+                            ring items will do some decoding of the fragments in each event.
+                            More interesting formatting can be done on a per source-id basis via
+                            plugins that are dynamically  loaded.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-F</option>or <option>--format-version</option> <replaceable>10 | 11 | 12</replaceable></term>
+                    <listitem>
+                        <para>
+                            Sets the best guess as to the version of the FRIB/NSCLDAQ version that produced the
+                            event data that will be dumped.  Note that if the data comes from a version 11 or
+                            version 12 format and a format version ring item is found, the version will auto-correct.
+                            The default format version is <literal>12</literal> if not specified.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-S,</option> or <option>--scaler-definitions</option> <replaceable>scaler-toml-path</replaceable></term>
+                    <listitem>
+                        <para>
+                            Specifies a path to a scaler definition file used by <literal>pyscaler</literal> to define
+                            the names of scalers.  If provided, scaler ring item scaler channels are named in accordance
+                            with the definition file.  Note that each <literal>datasource</literal> section must
+                            have a <literal>sourceid</literal> line that associates a source id number with the data source.
+                            For example:
+                        </para>
+                        <informalexample>
+                            <programlisting>
+[datasource.testing]
+url='tcp://localhost/ron'
+version=12
+scalers=['triggers.live', 'sin1',
+    'sin2', 'sin3', 'sin4', 'sin5',
+    'sin6', 'sin7', 'sin8', 'sin9', 'sin10', 'triggers.raw']
+incremental = false
+sourceid=1                            
+                            </programlisting>
+                        </informalexample>
+                        <para>
+                            Provides the names of scaler ring items from the original sourced id 1.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><option>-N</option> or <option>--sourceid-definitions</option> <replaceable>source-id-deffile</replaceable></term>
+                    <listitem>
+                        <para>
+                            If present provides the name of a source id definition file.  Source id definition
+                            files allow the association of human readable names with data sources.  A source id
+                            definition file is a text file that contains a definition per line.  The first characters
+                            of each line are a source id number.  After whitespace, all subsequent text on a line provides
+                            a name to associate with that sourceid.  For example:
+                        </para>
+                        <informalexample>
+                            <programlisting>
+0 Event builder output or DDAS crate0
+1 DDAS Crate 1
+2 DDAS Crate 2                            
+                            </programlisting>
+                        </informalexample>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>Operating the program</title>
+        <para>
+            To operate the program you will interact with it through its menus and, once an event file
+            is open, you will use the toolbar right arrow button to display the next ring  item.
+            There are two menus, <guimenu>File</guimenu> and <guimenu>Filters</guimenu>
+        </para>
+        <para>
+            Let's look at the contents of each of these menus:
+        </para>
+        <variablelist>
+            <varlistentry>
+                    <term><guimenu>File</guimenu>&rarr;<guimenuitem>Open...</guimenuitem></term>
+                    <listitem>
+                        <para>
+                            Pops up a file chooser dialog.   Choosing a file opens it for formatting.
+                            The path to the file is displayed in the status bar of the
+                            program until there are no more item to dump.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><guimenu>File</guimenu>&rarr;<guimenuitem>Load Plugin...</guimenuitem></term>
+                    <listitem>
+                        <para>
+                            Pops upa file chooser dialot to prompt for a python script to load as
+                            a formatting plugin.  See <literal>PLUGINS</literal> below for a descsription
+                            of what those scripts are, what they can do and their requirements.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><guimenu>File</guimenu>&rarr;<guimenuitem>Exit...</guimenuitem></term>
+                    <listitem>
+                        <para>
+                            Pops up a message box to confirm that you wan to exit and, if you confirm,
+                            exits the program.  Note that the window controls can exit the program 
+                            without confirmation.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><guimenu>Filters</guimenu>&rarr;<guimenuitem>Filter Types...</guimenuitem></term>
+                    <listitem>
+                        <para>
+                            Pops up a dialog that allows you to select which ring item types will be formatted
+                            and which skipped.  The dialog lists all ring item types in a list in the left side.
+                            Moving a ring item type adds it to the list of items that will <emphasis>not</emphasis>
+                            be skipped.
+                        </para>
+                    </listitem>
+            </varlistentry>
+            <varlistentry>
+                    <term><guimenu>Filters</guimenu>&rarr;<guimenuitem>Clear Filters</guimenuitem></term>
+                    <listitem>
+                        <para>
+                            Clears the ring item type filter.  Once this is done, no ring item types will be
+                            skipped.
+                        </para>
+                    </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+    <refsect1>
+        <title>PLUGINS</title>
+        <para>
+            Plugins are python modules that are dynamically loaded into the <literal>pybufdump</literal>
+            program via the <guimenu>File</guimenu>&rarr;<guimenuitem>Load Plugin...</guimenuitem> menu
+            command.  The are used when the <option>--unpack-fragments</option> option is supplied to 
+            format fragments from specific source ids.
+        </para>
+        <para>
+            This section will describe what you need to do to program a plugin and 
+            have it do what you want when it's loaded.  The subsection
+            <literal>Controller Methods Supporting Plugins</literal> will describe some facilities that
+            are available to help plugins create formatted fragments.
+        </para>
+        <para>
+            First a bit about the <firstterm>controller</firstterm>. This comes from the design
+            pattern of 
+            <ulink url='https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller'>Model, View Controller or MVC for short</ulink>.
+            In <literal>pybufdump</literal> it is the controller that is responsible for delivering
+            formatted ring items to the view (the GUI yo uinteract with).  Furthermore, it is the
+            controller that actually loads your plugins.
+        </para>
+        <para>
+            A sample plugin is supplied in <filename>$DAQSHARE/pydumper/samplePlugin.py</filename>.  This is
+            a non-trivieal plugin that knows how to format data from DDAS/XIA crates read in FRIB/NSCLDAQ
+            version 11.  It may be useful to look at it before writing a plugin of your own.
+        </para>
+        <para>
+            Plugins must supply a function called <function>registerFormatters</function>.  This must have
+            the following signature:
+            <informalexample><programlisting>
+<methodsynopsis language='python'>
+<type>None</type><methodname>registerFormatters</methodname>
+<methodparam><type /> <parameter>controller : object</parameter></methodparam>
+</methodsynopsis>
+            </programlisting></informalexample>
+        </para>
+        <para>
+            <function>registerFormatters</function> is called just after the plugin is loaded.
+            The <parameter>controller</parameter> parameter refers to the controller object of 
+            <literal>pybufdump</literal>.  <function>registerFormatters</function> must create instances
+            of formatting classes and register them to format fragments from specific source ids.
+            It does this by calling the controller's <methodname>registerFormatter</methodname>
+            method.  This has the signature:
+        </para>
+        <informalexample>
+            <methodsynopsis language='python'>
+<type>None</type> <methodname>registerFormatter</methodname>
+    <methodparam><type /><parameter>source : int</parameter></methodparam>
+    <methodparam><type /><parameter>formatter : object</parameter></methodparam>
+            </methodsynopsis>
+        </informalexample>
+        <para>
+            Where <parameter>source</parameter> is the id of the source the formatter shoud format
+            and <parameter>formatter</parameter> is an instance of a formatter.
+        </para>
+        <para>
+            So what is a formatter object.  Formatter objects are instances of a class that implements
+            a method called <methodname>format</methodname>/
+            The signature of that method is
+        </para>
+        <informalexample>
+        <programlisting>
+<methodsynopsis language='python'>
+    <type>str</type> <methodname>format</methodname>
+    <methodparam><type /><parameter>source : int</parameter></methodparam>
+    <methodparam><type /><parameter> body : bytearray </parameter></methodparam>
+</methodsynopsis>
+        </programlisting>
+        </informalexample>
+        <para>
+            The string that <methodname>format</methodname> is expected to return is appended
+            to the output window.  The <parameter>source</parameter> parameter is the source id
+            of the fragment passed to the method and <parameter>body</parameter> is a byte array
+            containing the fragment body.  Note that the fragment body includes the ring item
+            header and body header.  See the sample formatter for an example of a 
+            <methodname>format</methodname> method that skips that information.
+        </para>
+        <para>
+            In the next subsection, we'll desribe a few controller methods that may be useful
+            to the plugin's <methodname>format</methodname> method.  Again, refer to the
+            sample plugin for an example of a formatter that retains the controller and
+            calls back to it.
+        </para>
+        <refsect2>
+            <title>Controller Methods Supporting Plugins</title>
+            <para>
+                The controller provides some convenience formatting methods to
+                plugins.  It also provides a pair of classes that may or may not
+                be useful.  These are described in this section.
+            </para>
+            <para>
+                Methods that are useful are:
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type> str</type><methodname>formatFragment</methodname>
+                            <methodparam><type /><parameter>fragment : pybufdumpController.Fragment</parameter></methodparam>
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                This may be useful if you have a plugin that has to format data that looks like a fragment.
+                                See the definition of the <classname>Fragment</classname> below.  This method will
+                                format the <parameter>fragment</parameter> passed to it.  Note that if the fragment source 
+                                id has a plugin formatter registered for it, that will be used to format the
+                                fragment.  If not, the default, raw dump formatter embedded in the controller is used.
+                                The method returns a string that is the formatted fragment.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type>str</type> <methodname>formatFragments</methodname>
+                            <methodparam><type /><parameter>body : bytearray</parameter></methodparam>
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Given a <parameter>body</parameter> that looks like the body of event built data,
+                                formats the fragments.  This is useful for formatters that are dealing with 
+                                hierarchical event built data. Note that if a fragment source id has a formatter
+                                registered it will be used to format that fragment.  You can think of this
+                                method as iterating over the fragments in the event built <parameter>body</parameter>
+                                and invoking <methodname>formatFragment</methodname> for each of them.
+                                The returned value is a string with the formatted data.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                           <type>str</type><methodname>formatByteArray</methodname>
+                           <methodparam><type/><parameter>data : bytearray</parameter></methodparam>   
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Returns a string that is a formatted dump of a the byte array,
+                                <parameter>data</parameter>  
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type>str</type><methodname>makeSidString</methodname>
+                            <methodparam><type /><parameter> sid : int</parameter></methodparam>
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Given a source id, returns its stringified version.  If
+                                the source id has been given a name via a source id definition
+                                file, the name will be returned.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                <literal>pybufdump</literal>'s  controller module, provides a pair
+                of classes that may  be useful for custom handling of hierarchical
+                event built data.  To use these, your plugin will need to import
+                them from <literal>nscldaq.pydumper.pybufdumpController</literal>.
+                The classes are <classname>Fragment</classname> which, when given a 
+                slice that contains an event builder fragment (header and body) provides
+                methods to access parts of the fragment, and
+                <classname>BuiltEventIterator</classname> which, when givben a bytearray
+                that contains the body of a ring item that is event built data, supports
+                iteration through the fragments.
+            </para>
+            <para>
+                Let's start by looking at the <classname>BuiltEventIterator</classname>.
+                It is constructed on a <type>bytearray</type> object that contains
+                the ring item body of event built data.  Once that's done, it functions
+                as a normal Python iterator, returning <classname>Fragment</classname>
+                objects.  Here is an example of its use from the body of the controller's
+                <methodname>formatFragments</methodname> method:
+            </para>
+            <informalexample>
+                <programlisting>
+...
+        fragments = BuiltEventIterator(body)
+        for fragment in fragments:
+            result += self.formatFragment(fragment)
+        return result
+...
+                </programlisting>
+            </informalexample>
+            <para>
+                In this example, <varname>body</varname> is a bytearray that 
+                is the body of an event built ring item.
+            </para>
+            <para>
+                <classname>Fragment</classname> provides methods that decode
+                an event builder fragment:
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><constructorsynopsis language='python'>
+                            <methodname>__init__</methodname>
+                            <methodparam><type /><parameter>data : bytearray</parameter>
+                            </methodparam>
+                        </constructorsynopsis></term>
+                        <listitem>
+                            <para>
+                                Constructor, the <parameter>data</parameter> must be
+                                the ring item body (after the body header) of an event
+                                created by the FRIB/NSCLDAQ event builder.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type>int</type><methodname>timestamp</methodname><void />
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Returns the 64 bit unsigned timestamp of the fragment.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type>int</type><methodname>sourceId</methodname> <void />
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Returns the unsigned integer source id of the fragment.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='pytyhon'>
+                            <type>int</type><methodname>payloadSize</methodname><void />
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Returns the number of bytes in the fragment's payload
+                                as an unsiged integer.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type>int</type><methodname>barrierId</methodname><void />
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Returns the barrier id if the fragment.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><methodsynopsis language='python'>
+                            <type>bytearray</type><methodname>payload</methodname>
+                        </methodsynopsis></term>
+                        <listitem>
+                            <para>
+                                Returns the payload of the fragment as a bytearray.  If the payload
+                                came from FRIB/NSCLDAQ, it will include a ring item header and, if version
+                                11 or higher, a body header.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect2>
+    </refsect1>
+</refentry>
+<!-- /manpage -->

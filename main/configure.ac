@@ -836,6 +836,7 @@ AC_CONFIG_FILES([
     utilities/eventlog/Makefile
     utilities/sclclient/Makefile
     utilities/tkbufdump/Makefile
+    utilities/pybufdump/Makefile
     utilities/filter/Makefile
     utilities/filter/Makefile-template
     utilities/filter/FilterIncludes

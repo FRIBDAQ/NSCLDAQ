@@ -15,6 +15,7 @@ SUBDIRS = 				common	\
 					bufdump	\
 					sclclient \
 					tkbufdump \
+					pybufdump \
 					compatibility \
 					newscaler	\
 					pyscaler \
