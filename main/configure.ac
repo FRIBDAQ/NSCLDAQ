@@ -877,6 +877,7 @@ AC_CONFIG_FILES([
     daq/format/Makefile
     daq/IO/Makefile
     daq/readoutgui/Makefile
+    daq/pyReadoutGui/Makefile
     daq/readoutgui/InstallRoot.tcl
     daq/readoutgui/ReadoutShell.tcl
     daq/s800callouts/Makefile
