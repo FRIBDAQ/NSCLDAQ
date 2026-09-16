@@ -866,11 +866,11 @@ sourceid=1
             </para>
             <variablelist>
                 <varlistentry>
-                        <term><constructorsynopsis language='python'>
+                        <term><methodsynopsis language='python'><type />
                             <methodname>__init__</methodname>
                             <methodparam><type /><parameter>data : bytearray</parameter>
                             </methodparam>
-                        </constructorsynopsis></term>
+                        </methodsynopsis></term>
                         <listitem>
                             <para>
                                 Constructor, the <parameter>data</parameter> must be
