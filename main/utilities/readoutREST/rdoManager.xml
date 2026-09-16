@@ -929,12 +929,12 @@ close stdin
       <title>METHODS</title>
       <variablelist>
          <varlistentry>
-               <term><constructorsynopsis language='python'>
+               <term><methodsynopsis language='python'>
                   <methodname>ReadoutClient</methodname>
                   <methodparam><type></type><parameter>host</parameter></methodparam>
                   <methodparam><type></type><parameter>serviceName</parameter></methodparam>
                   <methodparam><type></type><parameter>readoutUser</parameter></methodparam>
-               </constructorsynopsis></term>
+               </methodsynopsis></term>
                <listitem>
                   <para>
                      <parameter>host</parameter> is the host in which the Readout is running.

@@ -1337,6 +1337,42 @@ stagearea +
                         </para>
                     </listitem>
                 </varlistentry>
+                <varlistentry>
+                        <term><command>OnPrecheck</command>></term>
+                        <listitem>
+                            <para>
+                                Called to verify that a transition from one state to another
+                                is possible.  The proc is passed, in order, the names
+                                of the from and to states.  If the proc returns a non-empty string or
+                                throws an error, the state transition will not be attempted
+                                and the message is added to the list of messages presented
+                                showing why.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><command>OnEnslaved</command></term>
+                        <listitem>
+                            <para>
+                                Called when the readout GUI is being enslaved by a remote controlling
+                                process.  The proc is passed the host that is enslaving the 
+                                GUI.  This may be a dotted IP address, rather than a hostname
+                                (e.g. <literal>11.22.33.44</literal> not 
+                                <literal>some.hostat.some.domain</literal>)
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><command>OnEmancipation</command></term>
+                        <listitem>
+                            <para>
+                                Called when a remote enslaving program has freed the
+                                GUI.   The host of the enslaving program is passed as a
+                                parameter.  As with <command>OnEnslaved</command>, this may
+                                be a dotted IP rather than  a hostname.
+                            </para>
+                        </listitem>
+                </varlistentry>
             </variablelist>
             <para>
                 Note that all procs described above are called at the global

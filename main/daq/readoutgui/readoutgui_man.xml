@@ -6848,7 +6848,7 @@ $DAQROOT/bin/ReadoutShell
                             File that contains extensions to the ReadoutShell.
                             This file is searched for in order in:
                             <filename>~</filename>,
-                            <filename>!/stagearea/experiment/currnet</filename>
+                            <filename>~/stagearea/experiment/currnet</filename>
                             and the current worknig directory.  The first found
                             file and only the first of these is loaded.
                         </para>
@@ -6856,6 +6856,115 @@ $DAQROOT/bin/ReadoutShell
                 </varlistentry>
                 
             </variablelist>
+            <para>
+                This script can provide extensions to the GUI presented by the
+                ReadoutShell program. See the man pages in <literal>3rdogui</literal> for API
+                provided to this script.  In addition, the script can provide callouts
+                which are invoked by the RaedoutShell as a result of specific events.
+                These are:
+            </para>
+            <variablelist>
+                <varlistentry>
+                    <term><command>OnBegin</command></term>
+                    <listitem>
+                        <para>
+                            This command is invoked when the <literal>Halted</literal>
+                            state is left for the <literal>Active</literal> state.
+                            The command is passed the number of the run that is
+                            about to be started.
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><command>OnEnd</command></term>
+                    <listitem>
+                        <para>
+                            This command is invoked when the <literal>Halted</literal>
+                            state is being entered from either the
+                            <literal>Active</literal> or <literal>Paused</literal>
+                            states.  As with <command>OnBegin</command> the run
+                            number of the run being ended is passed to the command.
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><command>OnPause</command></term>
+                    <listitem>
+                        <para>
+                            Called when the <literal>Paused</literal> state is
+                            entered.  The run number of the current run is passed
+                            in.
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><command>OnResume</command></term>
+                    <listitem>
+                        <para>
+                            Called when the <literal>Paused</literal> state
+                            is left for <literal>Active</literal>. Again the
+                            current run number is passed to the command.
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><command>OnStart</command></term>
+                    <listitem>
+                        <para>
+                            Called when the <literal>Halted</literal> state
+                            is entered from the <literal>Starting</literal> state
+                            indicating that all event sources have started
+                            without errors.
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><command>OnFail</command></term>
+                    <listitem>
+                        <para>
+                            Called when <literal>NotReady</literal> is
+                            entered from any state other than
+                            <literal>NotReady</literal>.
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><command>OnPrecheck</command>></term>
+                        <listitem>
+                            <para>
+                                Called to verify that a transition from one state to another
+                                is possible.  The proc is passed, in order, the names
+                                of the from and to states.  If the proc returns a non-empty string or
+                                throws an error, the state transition will not be attempted
+                                and the message is added to the list of messages presented
+                                showing why.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><command>OnEnslaved</command></term>
+                        <listitem>
+                            <para>
+                                Called when the readout GUI is being enslaved by a remote controlling
+                                process.  The proc is passed the host that is enslaving the 
+                                GUI.  This may be a dotted IP address, rather than a hostname
+                                (e.g. <literal>11.22.33.44</literal> not 
+                                <literal>some.hostat.some.domain</literal>)
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><command>OnEmancipation</command></term>
+                        <listitem>
+                            <para>
+                                Called when a remote enslaving program has freed the
+                                GUI.   The host of the enslaving program is passed as a
+                                parameter.  As with <command>OnEnslaved</command>, this may
+                                be a dotted IP rather than  a hostname.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>            
         </refsect1>
       </refentry>
          <refentry>
