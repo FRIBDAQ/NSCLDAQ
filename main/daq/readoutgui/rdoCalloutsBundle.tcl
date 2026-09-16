@@ -46,11 +46,11 @@ package require ExpFileSystem
 #
 #  * OnFail     - Called when NotReady is entered from any other state. (tested)
 #  * OnPrecheck - Hooks into the precheckTransitionForErrors bundle.
-#  * OnEnslaving- Called when we are enslaving a slave GUI.
+#  * OnEnslaving- Called when we are enslaving a slave GUI.  - don't think this is used.
 #  * OnEnslaved - Called when we are being enslaved by a master GUI.
-#  * OnFreeing  - Called when we are freeing a slave GUI.
+#  * OnFreeing  - Called when we are freeing a slave GUI. - dont' think this is called.
 #  * OnEmancipation - Called when we are being freed by a master GUI.
-#  * OnSlaveConnectionLost - Called when as a master we lose connection to a slave.
+#  * OnSlaveConnectionLost - Called when as a master we lose connection to a slave. - don't think this is used?
 #
 
 
