@@ -76,6 +76,7 @@ class ReadoutStateMachine(QObject):
     leave(str, str)     - Called when leaving a state (from, to passed).
     enter(str, str)     - Called when entering a new state (from, to passed).
     failed(str, str)    - The transition was failed by one of the signal handlers.
+    newstate(str)       - Successful state change to str.
     
     Attributes:
         state  [Readonly] - the current state
@@ -97,6 +98,7 @@ class ReadoutStateMachine(QObject):
     leave    = pyqtSignal(str, str)
     enter    = pyqtSignal(str, str)
     failed   = pyqtSignal(str, str)
+    newstate = pyqtSignal(str)
     
     # The transition diagram is a dict that has a list of legal subsequent states keyed
     # by current state:
@@ -190,8 +192,16 @@ class ReadoutStateMachine(QObject):
                 self._state = self._lastState
                 self._lastState = prior
                 self.failed.emit(self._state, to)
+                return
                 
-    
+        else:
+            self.failed.emit(self._state, to)     # Pre-check failed.
+            return
+            
+        # Transition succeeded, signal that too:
+                
+        self.newstate.emit(self._state)
+            
     # Slots (public)
     
     def failedPrecheck(self) -> None:
@@ -201,7 +211,7 @@ class ReadoutStateMachine(QObject):
         '''
         self._precheckFailed = True
 
-    def failTransitino(self) -> None:
+    def failTransition(self) -> None:
         '''
             Call only when a state transition operation failed.
             in that case the state transition is rolledback.
@@ -268,6 +278,8 @@ if __name__ == '__main__':
                     ReadoutStateMachine.instance().listTransitions()
                 )    
         
+        # Testing transitions and the associated signals.
+        
         def test_precheckOk(self) -> None:
             prechecked = False
             f          = ''
@@ -318,5 +330,189 @@ if __name__ == '__main__':
             
             with self.assertRaises(IllegalStateTransition):
                 ReadoutStateMachine.instance().transition('Active')
+        
+        def test_leaveOk(self) -> None:
+            # Test that the leave signal works:
+            
+            l = False
+            f = None
+            t = None
+            
+            def leave(fr : str, to: str) -> None:
+                nonlocal l, f, t
+
+                l = True
+                f = fr
+                t = to
+            
+            i = ReadoutStateMachine.instance()
+            i.leave.connect(leave)
+            
+            was = i.state()
+            willbe = i.listTransitions()[0]
+            i.transition(willbe)
+            
+            self.assertTrue(l)
+            self.assertEqual(f, was)
+            self.assertEqual(t, willbe)
+            self.assertEqual(willbe, i.state())
+        
+        def test_leaveFails(self) -> None:
+            # Fail the transition aborts it:
+            
+            def leave(_f : str, _t : str) -> None:
+                
+                ReadoutStateMachine.instance().failTransition()
+                
+            i = ReadoutStateMachine.instance()
+            i.leave.connect(leave)
+            
+            to = i.listTransitions()[0]
+            s     = i.state()    
+            i.transition(to)
+            self.assertEqual(s, i.state())   # Won't transition.
+        
+        
+        def test_enterOk(self) -> None:
+            # Enter works for a good state change
+            
+            e = False
+            f = None
+            t = None
+
+            def enter(fr : str, to: str) -> None:
+                nonlocal e,f,t
+                e = True
+                f = fr
+                t = to
+            
+            i = ReadoutStateMachine.instance()
+            i.enter.connect(enter)
+            initial = i.state()
+            final   = i.listTransitions()[0]
+            i.transition(final)
+            
+            self.assertTrue(e)
+            self.assertEqual(final, i.state())    # good transition.
+            self.assertEqual(initial, f)
+            self.assertEqual(final, t)
+        
+        def test_enterFailed(self) -> None:
+            def enter(_f : str, _t: str) -> None:
+                ReadoutStateMachine.instance().failTransition()
+            
+            i = ReadoutStateMachine.instance()
+            i.enter.connect(enter)
+            
+            initial = i.state()
+            final   = i.listTransitions()[0]
+            i.transition(final)
+            
+            # We must still be in the initial state:
+            
+            self.assertEqual(initial, i.state())
+            
+        def test_newstateSignalled(self) -> None:
+            # if a transition suceeded, the newstate signal is emitted.
+            
+            new = False
+            state = None
+            
+            def newstate(s : str) -> None:
+                nonlocal new, state
+                new = True
+                state = s
+
+            i = ReadoutStateMachine.instance()
+            i.newstate.connect(newstate)
+            
+            next = i.listTransitions()[0]
+            i.transition(next)
+            
+            self.assertTrue(new)
+            self.assertTrue(next, state)
+            
+        def test_newstateNotSignalled_1(self):
+            # NO newstate signal if precheck fails.
+            
+            new = False
+            def newstate(s : str) -> None:
+                nonlocal new
+                new = True
+            
+            def precheck(f : str, t : str) -> None:
+                ReadoutStateMachine.instance().failedPrecheck()
+                
+            i  = ReadoutStateMachine.instance()
+            i.newstate.connect(newstate)
+            i.precheck.connect(precheck)
+            
+            i.transition(i.listTransitions()[0])
+            
+            self.assertFalse(new)
+        def test_newstateNotSignalled_2(self):
+            # No newstate signal if leave failed the transition.
+            
+            new = False
+            def newstate(_ : str) -> None:
+                nonlocal new
+                new = True
+
+            def leave(_f : str, _t : str) -> None:
+                ReadoutStateMachine.instance().failTransition()
+            
+            i  = ReadoutStateMachine.instance()
+            i.newstate.connect(newstate)
+            i.leave.connect(leave)
+            
+            i.transition(i.listTransitions()[0])
+            
+            self.assertFalse(new)
+    
+        def test_newstateNotSignalled(self) -> None:
+            # New newstate signal if enter failed the transition:
+            
+            new = False
+            def newstate(_ : str) -> None:
+                new = True
+            
+            def enter(_f: str, _t: str) -> None:
+                ReadoutStateMachine.instance().failTransition()
+
+            i  = ReadoutStateMachine.instance()
+            i.newstate.connect(newstate)
+            i.enter.connect(enter)
+            
+            i.transition(i.listTransitions()[0])
+            
+            self.assertFalse(new)
+                
+         
+        def test_failedSignaled_1(self) -> None:
+            #  failed is signalled if precheck fails.
+            
+            fail = False
+            fr   = None
+            to   = None
+            def failed(f : str, t : str) -> None:
+                nonlocal fail, fr, to
+                fail = True
+                fr = f
+                to = t
+            def precheck(_f : str, _t: str) -> None:
+                ReadoutStateMachine.instance().failedPrecheck()  
+            
+            i = ReadoutStateMachine.instance()
+            i.failed.connect(failed)
+            i.precheck.connect(precheck)
+            
+            initial = i.state()
+            next    = i.listTransitions()[0]
+            
+            i.transition(next)
+            self.assertTrue(fail)
+            self.assertEqual(initial, fr)
+            self.assertEqual(next, to)
+                    
     unittest.main()
     
