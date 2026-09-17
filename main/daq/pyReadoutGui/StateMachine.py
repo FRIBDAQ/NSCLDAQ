@@ -513,6 +513,77 @@ if __name__ == '__main__':
             self.assertTrue(fail)
             self.assertEqual(initial, fr)
             self.assertEqual(next, to)
-                    
+        def test_failedSignal_2(self):
+            # Test failed signal if enter fails.
+            
+            fail = False
+            fr   = None
+            to   = None
+            def failed(f : str, t: str) -> None:
+                nonlocal fail, fr, to
+                fail = True
+                fr = f
+                to = t
+            
+            def enter(_f: str, _t : str) -> None:
+                ReadoutStateMachine.instance().failTransition()
+            
+            i = ReadoutStateMachine.instance()
+            i.failed.connect(failed)
+            i.enter.connect(enter)
+            
+            initial = i.state()
+            next    = i.listTransitions()[0]
+            
+            i.transition(next)
+            self.assertTrue(fail)
+            self.assertEqual(initial, fr)
+            self.assertEqual(next, to)
+            
+        def test_failedSignal_3(self):
+            #  Test failed signal for leave failed.
+            
+            fail = False
+            fr   = None
+            to   = None
+            
+            def failed(f : str, t : str) -> None:
+                nonlocal fail, fr, to
+                fail = True
+                fr   = f
+                to   = t            
+            
+            def leave(_f : str, _t :str) -> None:
+                ReadoutStateMachine.instance().failTransition()
+            
+            i = ReadoutStateMachine.instance()
+            i.failed.connect(failed)
+            i.leave.connect(leave)
+            
+            initial = i.state()
+            next    = i.listTransitions()[0]
+            
+            i.transition(next)
+            self.assertTrue(fail)
+            self.assertEqual(initial, fr)
+            self.assertEqual(next, to)
+            
+        def test_nofailIfSuccess(self) -> None:
+            # Fail signal not emitted for good transition:
+            
+            fail = False
+            
+            def failed(_f: str, _t: str) -> None:
+                nonlocal fail
+                fail = True
+            
+            i = ReadoutStateMachine.instance()
+            i.failed.connect(failed)
+            
+            next    = i.listTransitions()[0]
+            
+            i.transition(next)
+            self.assertFalse(fail)    
+                
     unittest.main()
     
