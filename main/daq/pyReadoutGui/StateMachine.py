@@ -34,9 +34,11 @@ States are:
 *  Paused    - Data taking is now paused.
 '''
 
-from typing     import ClassVar, Self
 import traceback
+from typing import ClassVar, Self
+
 from PyQt6.QtCore import QObject, pyqtSignal
+
 
 class StateTransitionException(Exception):
     '''
