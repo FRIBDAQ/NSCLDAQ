@@ -1,4 +1,5 @@
-MODULES=StateMachine.py
+TESTABLE_MODULES=StateMachine.py
+MODULES=$(TESTABLE_MODULES) StateView.py
 
 MODULE_DIR=@prefix@/pythonLibs/nscldaq/readoutgui
 install-exec-local:
@@ -8,4 +9,7 @@ install-exec-local:
 	  $(INSTALL_SCRIPT) @srcdir@/$$f $(MODULE_DIR); \
 	done
 
+TESTS=$(TESTABLE_MODULES)
+
+EXTRA_DIST=$(MODULES)
 
