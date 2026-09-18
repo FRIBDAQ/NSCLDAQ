@@ -29,7 +29,7 @@ from PyQt6.QtWidgets import (
 )
 
 
-class QStateButtons(QWidget):
+class StateButtons(QWidget):
     '''
         Given the state, displays the correct buttons to handle state transitions:
         
@@ -203,7 +203,7 @@ if __name__ == '__main__':
         
         
     app = QApplication(sys.argv)
-    win = QStateButtons()
+    win = StateButtons()
     
     updateState()
     
