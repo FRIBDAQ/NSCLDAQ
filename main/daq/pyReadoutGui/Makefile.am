@@ -1,5 +1,5 @@
 TESTABLE_MODULES=StateMachine.py
-MODULES=$(TESTABLE_MODULES) StateView.py
+MODULES=$(TESTABLE_MODULES) StateView.py RunTimerView.py
 
 MODULE_DIR=@prefix@/pythonLibs/nscldaq/readoutgui
 install-exec-local:
