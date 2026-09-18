@@ -19,8 +19,15 @@
 '''
 
 
-from PyQt6.QtWidgets import QCheckBox, QLabel, QSpinBox, QHBoxLayout, QVBoxLayout, QWidget
-from PyQt6.QtCore    import pyqtSignal, QTimer, Qt
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QHBoxLayout,
+    QLabel,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class RunTimerView(QWidget):
@@ -91,13 +98,91 @@ class RunTimerView(QWidget):
         
         # Attribute storage:
         
-        self._plannedDuration = 0    # units of seconds.
         self._duration        = 0    # Units of seconds.
+    
+    # Implement attributes:
+    
+    def timed(self) -> bool:
+        ''' @return bool - True if the timed run checkbox is set. '''
         
+        return self._timedRun.checkState() == Qt.CheckState.Checked
+    
+    def setTimed(self, timed : bool ) -> None:
+        '''
+            @param timed : bool - True turns on the timed run checkbox, false, turns it off:
+        '''
+        checkstate = Qt.CheckState.Checked  if timed else Qt.CheckState.Unchecked
+        self._timedRun.setCheckState(checkstate)
+    
+    def plannedDuration(self) -> int:
+        ''' @return int - seconds in the planned run duration.
+            @note you still need to query the timed attribute to know 
+                  if this is a timed run.
+        '''
+        days    = self._days.value()
+        hours   = self._hours.value()
+        minutes = self._minutes.value()
+        secs    = self._seconds.value()
+        
+        return secs + minutes*60 + hours * 3600 + days * 3600*24
+    
+    def setPlannedDuration(self, seconds : int) -> None:
+        '''@param seconds - seconds to set the planned run time widgets.
+           @note you must still use setTimed to enable timed runs.
+        '''
+        
+        (days, hours, min, secs) = self._secsToTimes(seconds)
+        self._days.setValue(days)
+        self._hours.setValue(hours)
+        self._minutes.setValue(min)
+        self._seconds.setValue(secs)
+        
+        
+    def duration(self) -> int:
+        ''' @return int - run duration in seconds. '''
+        return self._duration
+    
+    # Public slots:
+    
+    def start(self) -> None:
+        '''
+          Zero the duration, update th view of the elapsed time
+          and start the ticker which will update the duration and
+          elapsed time label.
+        '''
+        self._duration = 0
+        self._updateElapsedLabel()
+        self._ticker.start()
+        
+    def stop(self) -> None:    
+        '''
+             Top updating the duration.. note the duration value
+             is unchanged
+        '''
+        
+        self._ticker.stop()
+    
+    def result(self) -> None:
+        '''
+            Resume updating the duration without zeroing it.
+        '''
+        self._ticker.start()
+        
+    
     # Private slotes:
     def _tick(self) -> None:
         #  Handle timer ticks.
-        pass
+        
+        # Update the elapsed time display 
+        
+        self._duration += 1
+        self._updateElapsedLabel()
+        
+        # If the timed run has run past the duration, emit the end signal.
+        
+        if self._duration >= self.plannedDuration() and self.timed():
+            self.end.emit()
+        
     # Utilities:
     
     def _spinbox(self, low, high) -> QSpinBox:
@@ -106,16 +191,45 @@ class RunTimerView(QWidget):
         result.setMaximum(high)
         
         return result
+
+    def _updateElapsedLabel(self) -> None:
+        # Update self._elapsedTime from self._duration
         
+        (days, hours, min, secs) = self._secsToTimes(self._duration)
+        labelStr = f'{days} - {hours:02d}:{min:02d}:{secs:02d}'
+        self._elapsedTime.setText(labelStr)
+            
+    
+    def  _secsToTimes(self, seconds : int) -> tuple[int, int, int, int]:
+        #  Turns seconds into (days, hours, minutes, seconds)
+           
+        secs      = seconds % 60
+        remainder = int(seconds/60)
+        min       = remainder  % 60
+        remainder = int(remainder/60)
+        hours     = remainder % 60
+        days      = int(remainder/60) % 24
+        
+        return (days, hours, min, secs)
         
 # Test code:
 
 if __name__ == '__main__':
     import sys
+
     from PyQt6.QtWidgets import QApplication
+    
+    def done() -> None:
+        print("timed run would end here.")
+        win.stop()
     
     app = QApplication(sys.argv)
     win = RunTimerView()
+    win.setTimed(True)       # time run.
+    win.setPlannedDuration(60)
+    win.end.connect(done)
+    win.start()
+    
     
     win.show()
     sys.exit(app.exec())
