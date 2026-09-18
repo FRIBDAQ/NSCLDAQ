@@ -18,12 +18,15 @@
 @author Ron Fox
 '''
 
-from PyQt6.QtWidgets import (QPushButton, QLabel, QCheckBox, QSpinBox, QStackedWidget,
-    QHBoxLayout, QVBoxLayout, QWidget)
-from PyQt6.QtCore     import pyqtSignal, Qt
-
 from typing import ClassVar
 
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import (
+    QHBoxLayout,
+    QPushButton,
+    QStackedWidget,
+    QWidget,
+)
 
 
 class QStateButtons(QWidget):
@@ -160,10 +163,11 @@ class QStateButtons(QWidget):
         
 # test code.
 if __name__ == '__main__':
-    from PyQt6.QtWidgets import QApplication
-    from PyQt6.QtCore    import QTimer
     import sys
+
     from nscldaq.readoutgui import StateMachine
+    from PyQt6.QtCore import QTimer
+    from PyQt6.QtWidgets import QApplication
     
     def updateState() -> None:
         win.setState(StateMachine.ReadoutStateMachine.instance().state())
