@@ -162,7 +162,7 @@ class RunTimerView(QWidget):
         
         self._ticker.stop()
     
-    def result(self) -> None:
+    def resume(self) -> None:
         '''
             Resume updating the duration without zeroing it.
         '''
