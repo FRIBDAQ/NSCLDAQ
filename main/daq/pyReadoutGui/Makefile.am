@@ -1,6 +1,6 @@
 TESTABLE_MODULES=StateMachine.py
 MODULES=$(TESTABLE_MODULES) StateView.py RunTimerView.py
-
+INTERACTIVE_TESTS=testRunStateController.py
 MODULE_DIR=@prefix@/pythonLibs/nscldaq/readoutgui
 install-exec-local:
 	$(mkinstalldirs) $(MODULE_DIR)
@@ -11,5 +11,5 @@ install-exec-local:
 
 TESTS=$(TESTABLE_MODULES)
 
-EXTRA_DIST=$(MODULES)
+EXTRA_DIST=$(MODULES) $(INTERActive_TESTS)
 
