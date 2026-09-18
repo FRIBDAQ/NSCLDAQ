@@ -27,7 +27,7 @@ events are signalled and those signals can be connected to slots
 to make things happen.
 
 States are:
-*  Not ready - no data sources are active.
+*  Not Ready - no data sources are active.
 *  Starting  - The data sources are now being started.
 *  Halted    - All data sources are active but the run is not.
 *  Active    - Data taking is active.
