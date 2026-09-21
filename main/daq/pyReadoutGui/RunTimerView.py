@@ -143,7 +143,8 @@ class RunTimerView(QWidget):
         return self._duration
     
     # Public slots:
-    
+    #   @todo disable the timed run controls when
+    #      active.
     def start(self) -> None:
         '''
           Zero the duration, update th view of the elapsed time
