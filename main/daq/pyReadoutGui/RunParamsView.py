@@ -30,6 +30,11 @@ class RunParamsView(QWidget):
         title  - The title stringh.
         run    - The run number.
         
+        
+        Public Methods:
+        
+        nextRun - Increment the run number.
+        
         @note - The title length is limited to MAX_TITLE
         @note - The run is validated to be an unsigned integer, 0 is legal.
     '''
@@ -57,7 +62,44 @@ class RunParamsView(QWidget):
         self._layout.addWidget(self._run)
         
         self._setTitleWidgetWidth()
+    
+    # Attributes:
+    
+    def title(self) -> str:
+        '''
+        @return str - Current value of the title line edit.
+        '''
+        return self._title.text()
+    
+    def setTitle(self, newTitle: str) -> None:
+        '''
+        @param newTitle : str - New value to put in the title line edit.
+        '''
+        self._title.setText(newTitle)
         
+    def run(self) -> int:
+        '''
+        @return int - run number value:
+        '''
+        return int(self._run.text())
+
+    def setRun(self, newRun : int) -> None:
+        '''
+        @param newRun : int - new run number to set.
+        '''
+        self._run.setText(str(newRun))
+        
+    # Public methods:
+    
+    def nextRun(self) -> int:
+        '''
+            Increment the run number and return it:
+            @return int - the incremented run number.
+        '''
+        newRun = self.run() + 1
+        self.setRun(newRun)
+        
+        return newRun
         
     # Utilities:
     
@@ -87,6 +129,13 @@ if __name__ == '__main__':
     
     app = QApplication(sys.argv)
     win = RunParamsView()
+    
+    win.setTitle('My run title is this')
+    print(win.title())
+    
+    win.setRun(1234)
+    print(win.run())
+    print(win.nextRun())
     
     win.show()
     sys.exit(app.exec())
