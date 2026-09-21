@@ -81,6 +81,13 @@ not of {type(value).__name__}'''
         '''
         return self._configuration[name]
     
+    def sourceType(self) -> str:
+        '''
+        @return the actual class name of the data source:
+        '''
+        return type(self).__name__
+        
+    
     # Not pure virtual but often overridden:
     
     def capabilities(self) -> dict[str, bool]:
