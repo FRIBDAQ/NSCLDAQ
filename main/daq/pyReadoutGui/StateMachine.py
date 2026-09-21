@@ -206,6 +206,22 @@ class ReadoutStateMachine(QObject):
         # Transition succeeded, signal that too:
                 
         self.newstate.emit(self._state)
+    
+    def removePause(self) -> None:
+        '''
+        There are some combinations of data sources for which the 'Paused'
+        state must be removed because one or more of the data sources
+        does not have a Pause state.  This method does that:
+        '''
+        
+        self._LegalTransitions.pop('Paused', None) # Remove from set of states.
+        
+        # Remove transitions to 'Paused':
+        
+        for key, value in self._LegalTransitions.items():
+            if 'Paused' in value:
+                value.remove('Paused')   
+                
             
     # Slots (public)
     

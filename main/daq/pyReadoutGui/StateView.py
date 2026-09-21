@@ -129,6 +129,17 @@ class StateButtons(QWidget):
         self._state = None   
         self._normalCursor = self.cursor()
     
+    # Public methods:
+    
+    def disablePaused(self) -> None:
+        '''
+            Remove the Pause/Resume buttons as an option because
+            there are cases the statemachine gets Paused deleted ...e.g.
+            when there are data sources with no Pause capability.
+        '''
+        for k in self.rightIndex:
+            self.rightIndex[k] = 0     # Right button  only used for pause/resume.
+        
     # Attributes:
     
     def state(self) -> str | None:
