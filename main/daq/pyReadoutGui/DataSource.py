@@ -105,21 +105,21 @@ not of {type(value).__name__}'''
             '''    
             return True
     
-    def pause() -> None:
+    def pause(self) -> None:
         '''
         Called to pause a run - only gets called if canPause is one of the capabilities.
         Default action does nothing.
         '''
         pass
     
-    def resume() -> None:
+    def resume(self) -> None:
         ''''
         Called when a run is about to be resumed.   This only gets called if canPause is a capbility.
         Default action is to do nothing.
         '''
         pass
     
-    def init() -> None:
+    def init(self) -> None:
         '''
         Called to initialize the data source after its started.
         Default action is to do nothing
@@ -155,7 +155,7 @@ not of {type(value).__name__}'''
         '''
         ...
     @abstractmethod
-    def end() -> None:
+    def end(self) -> None:
         '''
         Called when a run is going to end.
         '''
