@@ -1,4 +1,4 @@
-TESTABLE_MODULES=StateMachine.py
+TESTABLE_MODULES=StateMachine.py DataSourceManager.py
 MODULES=$(TESTABLE_MODULES) StateView.py RunTimerView.py RunParamsView.py \
 	DataSource.py DelaySource.py
 INTERACTIVE_TESTS=testRunStateController.py
@@ -10,6 +10,8 @@ install-exec-local:
 	  $(INSTALL_SCRIPT) @srcdir@/$$f $(MODULE_DIR); \
 	done
 
+
+TESTS_ENVIRONMENT=PYTHONPATH=@prefix@/pythonLibs
 TESTS=$(TESTABLE_MODULES)
 
 EXTRA_DIST=$(MODULES) $(INTERActive_TESTS)

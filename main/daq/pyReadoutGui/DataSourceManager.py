@@ -20,12 +20,13 @@
 @brief Provides a singleton to manage all data sources.
 @author Ron Fox
 '''
-from PyQt6.QtCore import QObject, pyqtSignal
 import traceback
-from typing import Self
-from nscldaq.readoutgui import DataSource
 from collections.abc import KeysView
 from operator import methodcaller
+from typing import Self
+
+from nscldaq.readoutgui import DataSource
+from PyQt6.QtCore import QObject, pyqtSignal
 
 # Exceptions this module can raise:
 
@@ -148,6 +149,8 @@ class DataSourceManager(QObject):
         
         if name in self._sources.keys():
             raise DuplicateName(name)
+        
+        self._sources[name] = source
     
     def removeSource(self, name : str) -> DataSource.DataSource:
         '''
@@ -335,6 +338,36 @@ if __name__ == '__main__':
     # Tests
     
     import unittest
+    import sys
+    from PyQt6.QtCore import QCoreApplication
+    
+    class NullDataSource(DataSource.DataSource):
+        # Data source that doesn't do much.
+        def __init__(self, **kwargs) :
+            # Init our configuration to defaults:
+            super().__init__({'anint' : 1, 'astring' : 'hello'}, **kwargs)
+            self._run = None
+            self._title = None
+
+        def parameters(self) -> dict[str, type]:
+            return {'anint': int, 'astring' : str}
+        
+        def start(self) -> None:
+            pass
+        
+        def check(self) -> True:
+            return True
+        
+        def stop(self) -> None:
+            pass
+        
+        def begin(self, run : int, title : str) -> None:
+            self._run = run
+            self._title = title
+
+        def end(self) -> None:
+            pass
+
     
     class Tests(unittest.TestCase):
         def setUp(self):
@@ -342,7 +375,15 @@ if __name__ == '__main__':
             # because we are in the same file
             _instance = DataSourceManager()
             
-        def test_sample(self):
-            pass
-
+        def test_instance(self):
+            self.assertEqual(_instance, DataSourceManager.instance())
+        def test_addSource_1(self):
+            # Add a single source is ok:
+            
+            src = NullDataSource()
+            DataSourceManager.instance().addSource('src', src) 
+            self.assertEqual(1, len(_instance._sources))
+            self.assertTrue('src' in _instance._sources)
+        
+    app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
