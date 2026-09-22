@@ -371,12 +371,15 @@ if __name__ == '__main__':
     
     class Tests(unittest.TestCase):
         def setUp(self):
+            global _instance
             # New data source manager each test... we can do this
             # because we are in the same file
             _instance = DataSourceManager()
             
+            
         def test_instance(self):
             self.assertEqual(_instance, DataSourceManager.instance())
+            
         def test_addSource_1(self):
             # Add a single source is ok:
             
@@ -384,6 +387,28 @@ if __name__ == '__main__':
             DataSourceManager.instance().addSource('src', src) 
             self.assertEqual(1, len(_instance._sources))
             self.assertTrue('src' in _instance._sources)
+            
+        def test_addSource_2(self):
+            # Different names can be added:
+            
+            src = NullDataSource()
+            i   = DataSourceManager.instance()
+            i.addSource('src1', src)
+            i.addSource('src2', src)
+            
+            self.assertEqual(2, len(_instance._sources))
+            self.assertTrue('src1' in _instance._sources)
+            self.assertTrue('src2' in _instance._sources)
         
+        def test_addSource_3(self):
+            # Two sources with the same name is illegal.
+            
+            src = NullDataSource()
+            i   = DataSourceManager.instance()
+            i.addSource('src', src)
+            
+            with self.assertRaises(DuplicateName):
+                i.addSource('src', src)   # Duplicat name fails.
+            
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
