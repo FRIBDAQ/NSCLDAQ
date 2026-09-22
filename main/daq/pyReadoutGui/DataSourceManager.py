@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+
+# The shebang allows running this for unittests
+
+#    This software is Copyright by the Board of Trustees of Michigan
+#    State University (c) Copyright 2014, 2026
+#
+#    You may use this software under the terms of the GNU public license
+#    (GPL).  The terms of this license are described at:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+#
+#	     FRIB
+#	     Michigan State University
+#	     East Lansing, MI 48824-1321
+
+
+'''
+@file DataSourceManager.py
+@brief Provides a singleton to manage all data sources.
+@author Ron Fox
+'''
+from PyQt6.QtCore import QObject, pyqtSignal
+import traceback
+from typing import Self
+from nscldaq.readoutgui import DataSource
+from collections.abc import KeysView
+from operator import methodcaller
+
+# Exceptions this module can raise:
+
+class SourceManagerException(Exception):
+    ''' Base class to allow generic exception handling.'''
+    def __init__(self, msg : str) :
+        super().__init__(msg)
+    
+class DuplicateName(SourceManagerException):
+    ''' Attempting to add a data source with a name that already exists'''
+    def __init__(self, name : str):
+        super().__init__(f'{name} already exists')
+
+class SingletonViolation(SourceManagerException) :
+    ''' Attempted to construct the data source manager from outside this module. '''
+    def __init__(self, filename: str):
+        super().__init__(f'Bad intsantiation from {filename}')
+        
+class NoSuchSource(SourceManagerException):
+    ''' Attempted a look up of a data source that does not exist.'''
+    def __init__(self, name: str):
+        super().__init__(f'{name} is not a data source')
+ 
+class NotCapable(SourceManagerException):
+    '''  Attempted to perform an action  at least one source could not do'''       
+    def __init__(self, action : str):
+        super().__init__(f'At least one data source is not capable of: {action}')
+# The manager.
+class DataSourceManager(QObject):
+    '''
+    At its heart, this class provides a singleton that manages
+    the data sources the pyReadoutGui has.  It provides a named set of
+    data sources.
+    
+    Major methods include:
+    addSource    - Add a new data source.
+    removeSource - Remove a data source
+    sourceNames  - List the names of all data sources.
+    mergedCapabilities - Merge the data source capabilities by logically anding them all.
+    
+    Slots(?)
+    start    - start all data sources
+    precheck - check that it's likely a run will be able to start.
+    begin    - Start runs in all data sources.
+    end      - End the active run in all data sorces.
+    pause    - Pause runs in all data sources
+    resume   - Resume a paused run.
+    stop     - Stop all data sources.
+    live     - Check data sources for liveness.
+    
+    Signals emitted by the manager are:
+    starting - start called.
+    started  - Start completed.
+    
+    prechecking - Precheck started.
+    prechecked  - Precheck completed
+    
+    beginning   - Starting a run.
+    begun       - run  begun.
+    
+    ending      - ending a run
+    ended       - run ended.
+    
+    pausing     - pausing a run
+    paused      - Run paused.
+    
+    resuming    - resuming a run.
+    resumed     - run resumed.
+    
+    stopping    - Stop all data sources.
+    stopped     - All deata srouces were stopped.
+    
+    failed(str, str) - operation failed operation/sourcename
+    
+    sourceDied(str, str) - Source named,type died.
+    
+    '''
+    starting = pyqtSignal()
+    started  = pyqtSignal()
+    prechecking = pyqtSignal()
+    prechecked  = pyqtSignal
+    beginning   = pyqtSignal()
+    begun       = pyqtSignal()
+    ending      = pyqtSignal()
+    ended       = pyqtSignal()
+    pausing     = pyqtSignal()
+    paused      = pyqtSignal()
+    resumeing   = pyqtSignal()
+    resumed     = pyqtSignal()
+    stopping    = pyqtSignal()
+    stopped     = pyqtSignal()
+    
+    failed      = pyqtSignal(str, str)
+    sourceDied  = pyqtSignal(str, str)
+    
+    def __init__(self) -> None:
+        # Validate singleton-ness:
+        caller = traceback.extract_stack()[-2]
+        if caller.filename != __file__:
+            raise SingletonViolation(caller.filename)
+    
+        self._sources = {}    # dict[str, DataSource.DataSource]
+        
+        
+    def instance() -> Self:
+        '''
+        @return DataSourceManager - the singleton instance.
+        @note External clients should use this.  External construction will result in
+              an exception being thrown.
+        '''
+        return _instance
+    
+    #  Public methods:
+    def addSource(self, name : str, source : DataSource.DataSource) -> None:
+        '''
+            @param  name : str - name of the new data source.
+            @param  source : DataSource.DataSource - the data source to add.
+            @throws DuplicateName exception if name is already in use.
+        '''
+        
+        if name in self._sources.keys():
+            raise DuplicateName(name)
+    
+    def removeSource(self, name : str) -> DataSource.DataSource:
+        '''
+            @param name -name of the data source to remove.
+            @return DataSource.DataSource, the actual data source removed.
+            @throw NoSuchSource if 'name' is not a data source name.
+        '''
+        result = self._source.pop(name, None)
+        if not result:
+            raise NoSuchSource(name)
+
+        return result
+    
+    def sourceNames(self) -> KeysView:
+        '''
+            @return KeysView - the names of all data sources.
+        '''
+        
+        return self._sources.keys()
+    
+    def mergedCapabilities(self) -> dict[str, bool]:
+        '''
+         Analyzes the capabilities of all of the data sources and
+         returns a dict that provides the least capable values.
+         
+         @return dict[str, bool] - Capability name/value dict.
+        '''
+        result : dict[str, bool] = {
+            'canPause' : True, 'runsHaveTitles': True, 'runsHaveNumbers': True
+        }
+        for source in self._sources.values() :
+            source_caps = source.capabilities()
+            for cap in source_caps:
+                result[cap] &= source_caps[cap]
+            
+        return result
+    
+    # Public slots:
+    
+    def start(self) -> None:
+        '''
+            Start all data sources.
+            'starting' is emitted before iterating over the sources.
+            'started' is emitted when iteration completes.
+            
+            @note it is possible a source can throw an exception starting.
+                  This is not captured by us but propagated up the call stack.
+            @note started data sources are initialized.
+        '''
+        self.starting.emit()
+        
+        self._iterateAction('start')
+        #@todo - is a delay appropriate here?
+        self._iterateAction('init')
+        
+        self.started.emit()
+    
+    def precheck(self) -> bool:
+        '''
+            Ask all the data sources to perform a check to see if a run is
+            likely to be startable.
+            
+            @return bool - True if all sources agreed, False if any disagreed.
+            @note prechecking is signaled before beginning the iteration over sources.
+            @note If successful (would return true, prechecked is emitted).
+            @note All sources are prechecked even if one has failed earlier in the iteration.
+            @note This does not emit failed if the precheck failed.  The return value
+            is sufficient information for the caller....for now.
+        '''
+        # Can't use _iteraateAction because we need to collect the results.
+        
+        result : bool = True
+        self.prechecking.emit()
+        for name in self._sources:
+            result &= self._sources[name].canBegin()
+        
+        if result:
+            self.prechecked.emit()
+            
+        return result
+    
+    def begin(self, run : int, title: str) -> None:
+        '''
+            emits the beginning signal.  
+            Once that's done, iterates over the data sources,
+            asking them to begin a run. If none of those raises an 
+            exception (which is propagated out of this method), 
+            begun is emitted when the iteration is completed.
+            
+            @param run : int - the run number, passed to all source begin methods.
+            @param title :str - The run title, passed to all source begin methods
+            
+            @note if a source is incapable of run numbers or titles, it will ignore
+            those items.
+        '''
+        self.begin.emit()
+        for name in self._sources:
+            try:
+                self._sources[name].begin(run, title)
+            except Exception as e:
+                self.failed.emit('begin', name)
+                raise e
+        
+        self.begun.emit()
+        
+    
+    def end(self) -> None:
+        '''
+        Emits ending then iterates over all data sources invoking end()
+        if not exceptions were raised in this process, ended is emitted.
+        '''   
+        self.ending.emit()
+        self._iteratAction('end')
+        self.ended.emit()
+        
+    def pause(self) -> None:
+        '''
+        emits pausing, tries to pause all data source then, if successful,
+        emits paused.
+        
+        @throws NotCapabile without emitting any signals if at least one data source
+        does not support pausing.
+        '''
+        if self.mergedCapabilities()['canPause']:
+            self.pausing.emit()
+            self._iterateAction('pause')
+            self.paused.emit()
+        else:
+            raise NotCapable('pausing')
+    
+    def resume(self) -> None:
+        '''
+            See pause above, except the data sources are resumed if they can be.
+        '''
+        if self.mergedCapabilities()['canPause']:
+            self.resuming.emit()
+            self._iterateAction('resume')
+            self.resumeded.emit()
+        else:
+            raise NotCapable('pausing/resuming')
+        
+    
+    def stop(self) -> None:
+        ''''
+        emits the stopping signal, attempts to stop all data sourcdes
+        and emits stopped if that was successful.
+        
+        '''
+        self.stopping.emit()
+        self._iterateAction('stop')
+        self.stopped.emit()
+    
+    def live(self) -> bool | None:
+        '''
+        Polls all of the data sources to see if they are live.  For each
+        sourc reporting it is dead, sourceDied is emitted.
+        @return bool - True if all sources are live, False if at least one is dead.
+        '''
+        result = True
+        for name in self._sources:
+            if not self._sources[name].check():
+                result = False
+                self.sourceDied.emit(name, type(self._sources[name].__name__))
+                
+        return result
+        
+    # Utilities:
+    
+    def _iterateAction(self, action : str) -> None:
+        # Iterates over all data sources calling the named action with no
+        # parameters.
+        # emits failed if a data source raised an exception.
+        for name in self._sources:
+            func = methodcaller(action)
+            try:
+                func(self._sources[name])
+            except Exception as e:
+                self.failed.emit(action, name)
+                raise e
+            
+            
+_instance : DataSourceManager = DataSourceManager()
+
+if __name__ == '__main__':
+    # Tests
+    
+    import unittest
+    
+    class Tests(unittest.TestCase):
+        def setUp(self):
+            # New data source manager each test... we can do this
+            # because we are in the same file
+            _instance = DataSourceManager()
+            
+        def test_sample(self):
+            pass
+
+    unittest.main()
