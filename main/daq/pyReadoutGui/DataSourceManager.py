@@ -147,7 +147,7 @@ class DataSourceManager(QObject):
             @throws DuplicateName exception if name is already in use.
         '''
         
-        if name in self._sources.keys():
+        if name in self._sources:
             raise DuplicateName(name)
         
         self._sources[name] = source
@@ -158,7 +158,7 @@ class DataSourceManager(QObject):
             @return DataSource.DataSource, the actual data source removed.
             @throw NoSuchSource if 'name' is not a data source name.
         '''
-        result = self._source.pop(name, None)
+        result = self._sources.pop(name, None)
         if not result:
             raise NoSuchSource(name)
 
@@ -170,6 +170,15 @@ class DataSourceManager(QObject):
         '''
         
         return self._sources.keys()
+    
+    def sources(self) -> dict[str, DataSource.DataSource]:
+        '''
+        @return - a name/data source dict.  This is a shallow copy
+        of our internal dict,so the data sources are references to the
+        actual data sources in the manager.
+        '''
+        return dict(self._sources)
+        
     
     def mergedCapabilities(self) -> dict[str, bool]:
         '''
@@ -408,7 +417,54 @@ if __name__ == '__main__':
             i.addSource('src', src)
             
             with self.assertRaises(DuplicateName):
-                i.addSource('src', src)   # Duplicat name fails.
+                i.addSource('src', src)   # Duplicate name fails.
+        
+        def test_removeSource_1(self):
+            # Can remove an existing source and it happens.
             
+            src = NullDataSource()
+            i   = DataSourceManager.instance()
+            i.addSource('src', src)
+            self.assertEqual(src, i.removeSource('src'))
+            self.assertEqual(0, len(i._sources))
+            
+        def test_removeSource_2(self):
+            # The right source is removed:
+            
+            src = NullDataSource()
+            i   = DataSourceManager.instance()
+            
+            i.addSource('src1', src)
+            i.addSource('src2', src)
+            
+            i.removeSource('src1')
+            self.assertTrue('src2' in i._sources)
+            
+        def test_removeSource_3(self):
+            # NoSuchSource thrown if removing nonexistent source.
+            
+            src = NullDataSource()
+            i   = DataSourceManager.instance()
+            
+            i.addSource('src', src)
+            
+            with self.assertRaises(NoSuchSource):
+                i.removeSource('srcccccccc')   # bad spelling.
+        
+        def test_names_1(self):
+            # No names initially.
+            
+            self.assertEqual(0, len(_instance.sourceNames()))
+        
+        def test_names_2(self):
+            # Inserting a source allows names to name it:
+            src = NullDataSource()
+            i   = DataSourceManager.instance()
+            
+            i.addSource('src', src)
+            
+            self.assertEqual(1, len(i.sourceNames()))
+            self.assertTrue('src' in i.sourceNames())
+                           
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
