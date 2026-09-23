@@ -273,7 +273,7 @@ class DataSourceManager(QObject):
         if not exceptions were raised in this process, ended is emitted.
         '''   
         self.ending.emit()
-        if self._iteratAction('end'):
+        if self._iterateAction('end'):
             self.ended.emit()   
         
     def pause(self) -> None:
@@ -815,7 +815,114 @@ if __name__ == '__main__':
             self.assertEqual('begin', op)
             self.assertEqual('fail', src)
             
+        def test_end_1(self):
+            # End with no sources is ok.
             
+            ending = False
+            ended  = False
+            
+            failed = False
+            fop    = None
+            fsrc   = None
+
+            def ending_slot():
+                nonlocal ending
+                ending = True
+            def ended_slot():
+                nonlocal ended
+                ended = True
+            
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop = op
+                fsrc = src
+
+            i = DataSourceManager.instance()
+            i.ending.connect(ending_slot)
+            i.ended.connect(ended_slot)
+            i.failed.connect(failed_slot)
+            
+            i.end()
+            
+            self.assertTrue(ending)
+            self.assertTrue(ended)
+            self.assertFalse(failed)
+        
+        def test_end_2(self):
+            # with no-p data source also works:
+            
+            ending = False
+            ended  = False
+            
+            failed = False
+            fop    = None
+            fsrc   = None
+
+            def ending_slot():
+                nonlocal ending
+                ending = True
+            def ended_slot():
+                nonlocal ended
+                ended = True
+            
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop = op
+                fsrc = src
+
+            i = DataSourceManager.instance()
+            i.ending.connect(ending_slot)
+            i.ended.connect(ended_slot)
+            i.failed.connect(failed_slot)
+            i.addSource('src', NullDataSource())            
+            
+            i.end()
+            
+            self.assertTrue(ending)
+            self.assertTrue(ended)
+            self.assertFalse(failed)
+        
+            
+        def test_end_3(self):
+            # With failing data source...
+            
+            
+            ending = False
+            ended  = False
+            
+            failed = False
+            fop    = None
+            fsrc   = None
+
+            def ending_slot():
+                nonlocal ending
+                ending = True
+            def ended_slot():
+                nonlocal ended
+                ended = True
+            
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop = op
+                fsrc = src
+
+            i = DataSourceManager.instance()
+            i.ending.connect(ending_slot)
+            i.ended.connect(ended_slot)
+            i.failed.connect(failed_slot)
+            i.addSource('fail', FailDataSource())            
+            i.end()
+            
+            self.assertTrue(ending)
+            self.assertFalse(ended)
+            self.assertTrue(failed)
+            self.assertEqual('end', fop)
+            self.assertEqual('fail', fsrc)
+        
+     
         
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
