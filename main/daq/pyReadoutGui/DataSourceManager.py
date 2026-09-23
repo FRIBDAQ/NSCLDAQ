@@ -107,7 +107,7 @@ class DataSourceManager(QObject):
     starting = pyqtSignal()
     started  = pyqtSignal()
     prechecking = pyqtSignal()
-    prechecked  = pyqtSignal
+    prechecked  = pyqtSignal()
     beginning   = pyqtSignal()
     begun       = pyqtSignal()
     ending      = pyqtSignal()
@@ -409,6 +409,9 @@ if __name__ == '__main__':
 
         def end(self) -> None:
             raise Exception("not Important'")
+        # Precheck:
+        def canBegin(self) -> bool:
+            return False
 
     class NoPauseSource(DataSource.DataSource):
         #  A data source that can't pause.
@@ -674,7 +677,70 @@ if __name__ == '__main__':
             self.assertEqual('start', failop)
             self.assertTrue('src', failsrc)
             
-               
+        def test_precheck_1(self):
+            # Precheck with no source if fine:
+            
+            pc  = False
+            pcd = False
+            def precheck_slot():
+                nonlocal pc
+                pc = True
+            
+            def prechecked_slot():
+                nonlocal pcd
+                pcd = True
+
+            i = DataSourceManager.instance()
+            i.prechecking.connect(precheck_slot)      
+            i.prechecked.connect(prechecked_slot)
+            
+            self.assertTrue(i.precheck())
+            self.assertTrue(pc)
+            self.assertTrue(pcd)
+            
+        def test_precheck_2(self):
+            #  PRecheck with null data source works too:
+            
+            pc  = False
+            pcd = False
+            def precheck_slot():
+                nonlocal pc
+                pc = True
+            
+            def prechecked_slot():
+                nonlocal pcd
+                pcd = True
+
+            i = DataSourceManager.instance()
+            i.addSource('src', NullDataSource())
+            i.prechecking.connect(precheck_slot)      
+            i.prechecked.connect(prechecked_slot)
+            
+            self.assertTrue(i.precheck())
+            self.assertTrue(pc)
+            self.assertTrue(pcd)
+            
+        def test_precheck_3(self):
+            # Test with failing precheck fails.   
+            pc  = False
+            pcd = False
+            def precheck_slot():
+                nonlocal pc
+                pc = True
+            
+            def prechecked_slot():
+                nonlocal pcd
+                pcd = True
+
+            i = DataSourceManager.instance()
+            i.addSource('src', FailDataSource())
+            i.prechecking.connect(precheck_slot)      
+            i.prechecked.connect(prechecked_slot)
+            
+            
+            self.assertFalse(i.precheck())
+            self.assertTrue(pc)
+            self.assertFalse(pcd)
             
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
