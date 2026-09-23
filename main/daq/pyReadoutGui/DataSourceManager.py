@@ -114,7 +114,7 @@ class DataSourceManager(QObject):
     ended       = pyqtSignal()
     pausing     = pyqtSignal()
     paused      = pyqtSignal()
-    resumeing   = pyqtSignal()
+    resuming   = pyqtSignal()
     resumed     = pyqtSignal()
     stopping    = pyqtSignal()
     stopped     = pyqtSignal()
@@ -298,7 +298,7 @@ class DataSourceManager(QObject):
         if self.mergedCapabilities()['canPause']:
             self.resuming.emit()
             if self._iterateAction('resume'):
-                self.resumeded.emit()
+                self.resumed.emit()
         else:
             raise NotCapable('pausing/resuming')
         
@@ -1061,8 +1061,146 @@ if __name__ == '__main__':
             self.assertFalse(paused)
             self.assertFalse(failed)
 
+        def test_resume_1(self):
+            resuming = False
+            resumed  = False
+            failed   = False
+            fop      = None
+            fsrc     = None
+            
+            def resuming_slot():
+                nonlocal resuming
+                resuming = True
+            def resumed_slot():
+                nonlocal resumed
+                resumed = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop    = op
+                fsrc   = src
 
+            i  = DataSourceManager.instance()
+            i.resuming.connect(resuming_slot)
+            i.resumed.connect(resumed_slot)
+            i.failed.connect(failed_slot)
+            
+            # No data source:
+            
+            i.resume()
+            
+            self.assertTrue(resuming)
+            self.assertTrue(resumed)
+            self.assertFalse(failed)
 
-        
+        def test_resume_2(self):
+            resuming = False
+            resumed  = False
+            failed   = False
+            fop      = None
+            fsrc     = None
+            
+            def resuming_slot():
+                nonlocal resuming
+                resuming = True
+            def resumed_slot():
+                nonlocal resumed
+                resumed = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop    = op
+                fsrc   = src
+
+            i  = DataSourceManager.instance()
+            i.resuming.connect(resuming_slot)
+            i.resumed.connect(resumed_slot)
+            i.failed.connect(failed_slot)
+            
+            # Null data source is ok.
+            
+            i.addSource('src', NullDataSource())
+            
+            i.resume()
+            
+            self.assertTrue(resuming)
+            self.assertTrue(resumed)
+            self.assertFalse(failed)
+            
+        def test_resume_3(self):
+            resuming = False
+            resumed  = False
+            failed   = False
+            fop      = None
+            fsrc     = None
+            
+            def resuming_slot():
+                nonlocal resuming
+                resuming = True
+            def resumed_slot():
+                nonlocal resumed
+                resumed = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop    = op
+                fsrc   = src
+
+            i  = DataSourceManager.instance()
+            i.resuming.connect(resuming_slot)
+            i.resumed.connect(resumed_slot)
+            i.failed.connect(failed_slot)
+
+            # Failing data source:
+            
+            i.addSource('failed', FailDataSource())
+            
+            # No data source:
+            
+            i.resume()
+
+            self.assertTrue(resuming)
+            self.assertFalse(resumed)
+            self.assertTrue(failed)
+            self.assertEqual('resume', fop)
+            self.assertEqual('failed', fsrc)
+            
+        def test_resume_4(self):     
+            resuming = False
+            resumed  = False
+            failed   = False
+            fop      = None
+            fsrc     = None
+            
+            def resuming_slot():
+                nonlocal resuming
+                resuming = True
+            def resumed_slot():
+                nonlocal resumed
+                resumed = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop    = op
+                fsrc   = src
+
+            i  = DataSourceManager.instance()
+            i.resuming.connect(resuming_slot)
+            i.resumed.connect(resumed_slot)
+            i.failed.connect(failed_slot)
+
+            # Data source that can't pause:
+            
+            i.addSource('nopause', NoPauseSource())
+            
+            # No data source:
+            
+            with self.assertRaises(NotCapable):
+                i.resume()
+
+            self.assertFalse(resuming)
+            self.assertFalse(resumed)
+            self.assertFalse(failed)
+                    
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
