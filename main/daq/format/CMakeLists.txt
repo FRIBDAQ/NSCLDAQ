@@ -69,3 +69,7 @@ target_link_libraries(format_ringTests PRIVATE
 
 nscldaq_add_test(NAME unittests COMMAND format_unittests)
 nscldaq_add_test(NAME ringTests COMMAND format_ringTests)
+
+# $(AM_CXXFLAGS) was in this target's CPPFLAGS, which also apply to its C
+# sources (gengetopt/C files); nscldaq_add_* only applies it to C++.
+target_compile_options(dataformat PRIVATE $<$<COMPILE_LANGUAGE:C>:-fno-strict-aliasing>)

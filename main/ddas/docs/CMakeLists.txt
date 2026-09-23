@@ -26,19 +26,30 @@ add_custom_command(
   VERBATIM)
 add_custom_target(ddas_docs ALL DEPENDS ${_ddasdocs_stamp})
 
-# install-exec-local
+# install-exec-local:
+#   find ./html/ -type f -exec install {} share/ddasdocs/html
+#   find ./html/search/ -type f -exec install {} share/ddasdocs/html/search
+# The first find flattens html/search/* into html/ as well, where e.g.
+# search/functions_b.html overwrites the class member page
+# functions_b.html; which copy wins depends on find's directory order.  Do
+# it deterministically with the result the Autotools CI build produced
+# (search/ files copied last).
 
 install(CODE "
   set(_dest \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/share/ddasdocs/html\")
+  set(_html \"${CMAKE_CURRENT_BINARY_DIR}/html\")
   file(MAKE_DIRECTORY \"\${_dest}\" \"\${_dest}/search\")
-  file(GLOB_RECURSE _files LIST_DIRECTORIES false
-    \"${CMAKE_CURRENT_BINARY_DIR}/html/*\")
-  if(_files)
-    file(INSTALL \${_files} DESTINATION \"\${_dest}\")
+  file(GLOB_RECURSE _all LIST_DIRECTORIES false \"\${_html}/*\")
+  file(GLOB_RECURSE _search LIST_DIRECTORIES false \"\${_html}/search/*\")
+  set(_top \${_all})
+  if(_search)
+    list(REMOVE_ITEM _top \${_search})
   endif()
-  file(GLOB_RECURSE _files LIST_DIRECTORIES false
-    \"${CMAKE_CURRENT_BINARY_DIR}/html/search/*\")
-  if(_files)
-    file(INSTALL \${_files} DESTINATION \"\${_dest}/search\")
-  endif()
+  message(STATUS \"Installing: \${_dest} (flattened DDAS html)\")
+  foreach(_f IN LISTS _top _search)
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy \"\${_f}\" \"\${_dest}\")
+  endforeach()
+  foreach(_f IN LISTS _search)
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy \"\${_f}\" \"\${_dest}/search\")
+  endforeach()
 ")

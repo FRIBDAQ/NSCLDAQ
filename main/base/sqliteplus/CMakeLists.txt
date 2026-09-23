@@ -16,3 +16,7 @@ target_include_directories(sqliteplus_unittests PRIVATE
   ${PROJECT_SOURCE_DIR}/base/testutils)
 target_link_libraries(sqliteplus_unittests PRIVATE
   NSCLDAQ::SQLite3 NSCLDAQ::CppUnit)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(Sqlite3pp sqliteplus_unittests)

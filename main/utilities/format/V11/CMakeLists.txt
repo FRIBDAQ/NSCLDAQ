@@ -35,3 +35,7 @@ target_link_libraries(formatv11_unittests PRIVATE
   NSCLDAQ::tclPlusHeaders NSCLDAQ::TclHeaders NSCLDAQ::PixieHeaders
   NSCLDAQ::CppUnit dataformatv11 daqshm NSCLDAQ::Exception NSCLDAQ::TclOnly)
 nscldaq_add_test(NAME unittests COMMAND formatv11_unittests)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(dataformatv11)

@@ -149,3 +149,7 @@ nscldaq_add_test(NAME transmittests COMMAND eventbuilder_transmittests)
 nscldaq_add_test(NAME outputtests COMMAND eventbuilder_outputtests)
 nscldaq_add_test(NAME fragcmdtests COMMAND eventbuilder_fragcmdtests)
 nscldaq_add_tcl_test(NAME tclTests)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(eventbuilder_ordertests eventbuilder_fragcmdtests)

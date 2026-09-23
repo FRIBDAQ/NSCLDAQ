@@ -67,8 +67,9 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/UserMakefile
   DESTINATION skeletons/sbs RENAME Makefile)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/SBSRdoMakeIncludes DESTINATION etc)
 file(GLOB _sbsrdo_headers CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+# $(INSTALL_SCRIPT) @srcdir@/*.h - installed 0755.
 nscldaq_install_headers(${_sbsrdo_headers} ${CMAKE_CURRENT_BINARY_DIR}/options.h
-  DESTINATION include/sbsreadout)
+  DESTINATION include/sbsreadout EXECUTABLE)
 install(PROGRAMS readoutStateHook.tcl DESTINATION TclLibs/readoutStateHook)
 install(CODE "file(WRITE \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/TclLibs/readoutStateHook/pkgIndex.tcl\"
   \"package ifneeded ReadoutStateHook 1.0 [list source [file join \\\$dir readoutStateHook.tcl]]\\n\")")

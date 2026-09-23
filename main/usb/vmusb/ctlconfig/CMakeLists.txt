@@ -76,4 +76,6 @@ target_include_directories(vmusb_ctlconfig_unittests PRIVATE
 target_link_libraries(vmusb_ctlconfig_unittests PRIVATE
   NSCLDAQ::PixieHeaders VMUSBCtlConfig ConfigurableObject NSCLDAQ::Tcl
   NSCLDAQ::tclPlus NSCLDAQ::CppUnit)
-nscldaq_add_test(NAME unittests COMMAND vmusb_ctlconfig_unittests)
+# Not registered as a test: Makefile.am defines a check-TESTS rule but no
+# TESTS variable, so 'make check' never ran it.  The rule was:
+#   ./unittests

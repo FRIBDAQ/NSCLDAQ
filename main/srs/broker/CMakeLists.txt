@@ -11,3 +11,7 @@ target_link_libraries(UDPBrokerDerived
   PUBLIC UDPBrokerBase Udp daqio dataformat SRSMaps SRSSorter NSCLDAQ::Exception)
 
 nscldaq_install_headers(UDPBrokerDerived.h datagramHeader.h pcapHeader.h)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(UDPBrokerDerived)

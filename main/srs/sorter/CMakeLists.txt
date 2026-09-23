@@ -6,3 +6,7 @@ target_link_libraries(SRSSorter
   PUBLIC daqio dataformat NSCLDAQ::Exception)
 
 nscldaq_install_headers(SRSSorter.h)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(SRSSorter)

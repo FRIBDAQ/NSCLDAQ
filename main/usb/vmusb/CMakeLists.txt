@@ -2,6 +2,13 @@
 #  usb/vmusb: VM-USB support and the VMUSBReadout program.
 #
 
+# Makefile.am passed AM_MAKEFLAGS="AM_CXXFLAGS=$(WORKAROUNDS)" down, which
+# replaced -fno-strict-aliasing with the VMUSB workaround definitions in
+# this whole subtree.  The targets that used AM_CXXFLAGS (VMUSBReadout,
+# VMUSBCore, VMUSBDaqConfig) link NSCLDAQ::VMUSBWorkarounds explicitly.
+
+set(NSCLDAQ_AM_CXXFLAGS "")
+
 add_subdirectory(vmusb)
 add_subdirectory(daqconfig)
 add_subdirectory(ctlconfig)

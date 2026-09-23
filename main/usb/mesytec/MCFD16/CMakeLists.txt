@@ -11,4 +11,6 @@ nscldaq_install_tcl_index(TclLibs/mesytec -verbose "*.tcl")
 
 # check-TESTS
 
-nscldaq_add_tcl_test(NAME tclTests)
+# Not registered as a test: Makefile.am defines a check-TESTS rule but no
+# TESTS variable, so 'make check' never ran it.  The rule was:
+#   TCLLIBPATH="@prefix@/TclLibs" ... tclsh @srcdir@/tclTests.tcl

@@ -39,3 +39,7 @@ target_link_libraries(CCUSBReadout PRIVATE
 
 file(GLOB _ccusb_readout_headers CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 install(FILES ${_ccusb_readout_headers} DESTINATION ccusbdriver/include)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(CCUSBReadout)

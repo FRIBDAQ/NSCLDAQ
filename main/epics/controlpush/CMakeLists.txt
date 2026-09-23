@@ -40,3 +40,7 @@ if(ENABLE_EPICS_TOOLS)
     NSCLDAQ::tclPlusHeaders NSCLDAQ::EPICSBin NSCLDAQ::PixieHeaders
     NSCLDAQ::CppUnit ${_controlpush_libs})
 endif()
+
+# $(AM_CXXFLAGS) was in this target's CPPFLAGS, which also apply to its C
+# sources (gengetopt/C files); nscldaq_add_* only applies it to C++.
+target_compile_options(controlpush PRIVATE $<$<COMPILE_LANGUAGE:C>:-fno-strict-aliasing>)

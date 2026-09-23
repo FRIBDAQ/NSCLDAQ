@@ -9,6 +9,8 @@ target_link_libraries(vmusbloader PRIVATE NSCLDAQ::USB)
 
 add_library(loaders_VMUSBReadout_Globals OBJECT
   ${PROJECT_SOURCE_DIR}/usb/vmusb/Globals.cpp)
+# Compiled as part of a program there, so not PIC.
+set_property(TARGET loaders_VMUSBReadout_Globals PROPERTY POSITION_INDEPENDENT_CODE OFF)
 target_include_directories(loaders_VMUSBReadout_Globals PRIVATE
   ${PROJECT_SOURCE_DIR}/usb/vmusb
   ${PROJECT_SOURCE_DIR}/usb/vmusb/vmusb

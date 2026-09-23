@@ -88,3 +88,7 @@ nscldaq_install_tcl_index(TclLibs/ring -verbose "*.tcl")
 install(PROGRAMS pyRingBuffer.py DESTINATION bin RENAME ringbuffer)
 install(PROGRAMS pyRingMaster.py DESTINATION pythonLibs/nscldaq RENAME RingMaster.py)
 nscldaq_install_copy(lib/libPyRingBuffer.so pythonLibs/nscldaq/RingBuffer.so)
+
+# $(AM_CXXFLAGS) was in this target's CPPFLAGS, which also apply to its C
+# sources (gengetopt/C files); nscldaq_add_* only applies it to C++.
+target_compile_options(ringtostdout PRIVATE $<$<COMPILE_LANGUAGE:C>:-fno-strict-aliasing>)

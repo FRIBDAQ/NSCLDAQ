@@ -37,13 +37,14 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_INSTALL_SO_NO_EXE OFF)
 
-# Automake's DEFAULT_INCLUDES: -I. -I$(srcdir) -I$(top_builddir), plus
-# -DHAVE_CONFIG_H and AM_CXXFLAGS=-fno-strict-aliasing.
+# Automake's DEFAULT_INCLUDES: -I. -I$(srcdir) -I$(top_builddir) and
+# -DHAVE_CONFIG_H.  AM_CXXFLAGS (-fno-strict-aliasing) is applied per target
+# by nscldaq_add_library/nscldaq_add_executable - see NSCLDAQ_AM_CXXFLAGS in
+# NSCLDAQHelpers.cmake.
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(${PROJECT_BINARY_DIR})
 add_compile_definitions(HAVE_CONFIG_H)
-add_compile_options(-fno-strict-aliasing)
 
 # -Wno-error=date-time if the compiler knows about it (NODATEWARN).
 
@@ -84,7 +85,7 @@ foreach(_hdr
     arpa/inet.h fcntl.h limits.h malloc.h netdb.h netinet/in.h stdint.h
     stdlib.h string.h sys/socket.h sys/time.h unistd.h float.h values.h
     sys/wait.h stdbool.h inttypes.h memory.h strings.h sys/stat.h
-    sys/types.h stdio.h sys/param.h vfork.h)
+    sys/types.h stdio.h sys/param.h vfork.h dlfcn.h)
   string(TOUPPER "HAVE_${_hdr}" _var)
   string(REGEX REPLACE "[/.]" "_" _var "${_var}")
   check_include_file(${_hdr} ${_var})
@@ -103,12 +104,12 @@ foreach(_fn
   string(TOUPPER "HAVE_${_fn}" _var)
   check_function_exists(${_fn} ${_var})
 endforeach()
-if(NOT HAVE_FLOOR OR NOT HAVE_POW OR NOT HAVE_SQRT)
-  # libm functions are builtins for gcc; check_function_exists links without
-  # -lm so they may appear missing.  They are part of C99 so just say yes.
-  set(HAVE_FLOOR 1)
-  set(HAVE_POW 1)
-  set(HAVE_SQRT 1)
+# (floor/pow/sqrt are in libm, which AC_CHECK_FUNCS did not link either, so
+#  like configure these checks normally fail.)
+
+# AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK (via AC_FUNC_STAT): true on Linux.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(LSTAT_FOLLOWS_SLASHED_SYMLINK 1)
 endif()
 
 set(HAVE_WORKING_FORK ${HAVE_FORK})

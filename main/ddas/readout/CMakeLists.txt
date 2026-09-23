@@ -24,6 +24,9 @@ add_dependencies(DDASReadout ggo_sbs_readout_options)
 target_compile_definitions(DDASReadout PRIVATE
   FIRMWARE_FILE="${prefix}/${_ddasreadout_sharedir}/DDASFirmwareVersions.txt"
   SORTING)
+# DDASReadout_CPPFLAGS has -fPIC (instead of the default -fPIE).
+set_property(TARGET DDASReadout PROPERTY POSITION_INDEPENDENT_CODE OFF)
+target_compile_options(DDASReadout PRIVATE -fPIC)
 target_link_libraries(DDASReadout PRIVATE
   SBSProductionReadout SBSVmeAPI daqthreads daqshm Configuration
   SystemBooter DDASException NSCLDAQ::Pixie NSCLDAQ::tclPlus NSCLDAQ::Tcl
@@ -71,3 +74,7 @@ file(GLOB _ddasreadout_crate1 CONFIGURE_DEPENDS
   LIST_DIRECTORIES false ${CMAKE_CURRENT_SOURCE_DIR}/crate_1/*)
 install(FILES ${_ddasreadout_crate1} DESTINATION ${_ddasreadout_sharedir}/crate_1)
 install(PROGRAMS ddasReadout.tcl DESTINATION bin RENAME ddasReadout)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(ddas_readout_unittests)

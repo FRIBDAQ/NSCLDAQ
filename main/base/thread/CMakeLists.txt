@@ -11,3 +11,7 @@ target_link_libraries(daqthreads
 nscldaq_install_headers(dshwrappthreads.h dshwrapthreads.h Runnable.h
   SyncGuard.h Synchronizable.h Thread.h CMutex.h CCondition.h
   CSynchronizedThread.h CGaurdedObject.h CBufferQueue.h CBufferQueue.cpp)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(daqthreads)

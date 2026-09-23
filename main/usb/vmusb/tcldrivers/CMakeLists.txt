@@ -10,4 +10,6 @@ install(PROGRAMS sis330xdriver.tcl sis3300.tcl VMUSBDriverSupport.tcl
   DESTINATION TclLibs/vmusbdrivers)
 nscldaq_install_tcl_index(TclLibs/vmusbdrivers -verbose "*.tcl")
 
-nscldaq_add_tcl_test(NAME tclTests TCLLIBPATH ${prefix}/TclLibs ${prefix}/lib)
+# Not registered as a test: Makefile.am defines a check-TESTS rule but no
+# TESTS variable, so 'make check' never ran it.  The rule was:
+#   TCLLIBPATH="@prefix@/TclLibs @prefix@/lib" ... tclsh @srcdir@/tclTests.tcl

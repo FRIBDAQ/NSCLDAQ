@@ -97,6 +97,7 @@ function(_rust_install_code out toml reldir)
 " PARENT_SCOPE)
 endfunction()
 
+# file(INSTALL) prepends $DESTDIR itself.
 set(_code "set(_files \"\")\n")
 foreach(_sub IN LISTS _rust_subdirs)
   _rust_install_code(_c ${_bin}/${_sub}/Cargo.toml ${_bin}/${_sub}/target/release)
@@ -104,7 +105,7 @@ foreach(_sub IN LISTS _rust_subdirs)
 endforeach()
 string(APPEND _code "
     file(INSTALL \${_files} TYPE PROGRAM
-      DESTINATION \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/rust\")
+      DESTINATION \"\${CMAKE_INSTALL_PREFIX}/bin/rust\")
 ")
 install(CODE "${_code}")
 
@@ -117,7 +118,7 @@ endforeach()
 string(APPEND _code "
     if(_files)
       file(INSTALL \${_files} TYPE PROGRAM
-        DESTINATION \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/rust\")
+        DESTINATION \"\${CMAKE_INSTALL_PREFIX}/bin/rust\")
     endif()
 ")
 install(CODE "${_code}")

@@ -34,4 +34,6 @@ nscldaq_install_mkdir(share/html/figures)
 install(FILES gd16_startup.png DESTINATION share/html/figures)
 install(FILES l3trigicon.png DESTINATION share/images)
 
-nscldaq_add_tcl_test(NAME tclTests)
+# Not registered as a test: Makefile.am defines a check-TESTS rule but no
+# TESTS variable, so 'make check' never ran it.  The rule was:
+#   TCLLIBPATH=@prefix@/TclLibs ... tclsh @srcdir@/tclTests.tcl

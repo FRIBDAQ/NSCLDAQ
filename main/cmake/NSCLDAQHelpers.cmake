@@ -6,6 +6,7 @@
 #
 #    nscldaq_add_library        lib_LTLIBRARIES / noinst_LTLIBRARIES
 #    nscldaq_add_executable     bin_PROGRAMS / noinst_PROGRAMS / check_PROGRAMS
+#    nscldaq_no_am_cxxflags     target whose foo_CXXFLAGS omit $(AM_CXXFLAGS)
 #    nscldaq_add_test           TESTS
 #    nscldaq_add_tcl_test       TESTS that run tclTests.tcl with TCLLIBPATH=...
 #    nscldaq_gengetopt          foosw.ggo -> foosw.c/foosw.h
@@ -137,6 +138,35 @@ function(_nscldaq_reldir out)
 endfunction()
 
 #---------------------------------------------------------------------------
+#  AM_CXXFLAGS.
+#
+#  configure.ac set AM_CXXFLAGS=-fno-strict-aliasing.  Automake applies
+#  AM_CXXFLAGS to the C++ (not C) compilations of every target that has no
+#  foo_CXXFLAGS of its own; a target with foo_CXXFLAGS gets it only if those
+#  include $(AM_CXXFLAGS).  So:
+#
+#  * every target made by nscldaq_add_library/nscldaq_add_executable gets
+#    ${NSCLDAQ_AM_CXXFLAGS} on its C++ sources.  A directory can change the
+#    value for itself and its subdirectories (usb/vmusb passed
+#    AM_CXXFLAGS=$(WORKAROUNDS) down with AM_MAKEFLAGS).
+#  * nscldaq_no_am_cxxflags(<targets>) removes it for targets whose
+#    foo_CXXFLAGS did not include $(AM_CXXFLAGS).
+
+set(NSCLDAQ_AM_CXXFLAGS -fno-strict-aliasing)
+
+function(_nscldaq_apply_am_cxxflags tgt)
+  set_property(TARGET ${tgt} PROPERTY NSCLDAQ_AM_CXXFLAGS ${NSCLDAQ_AM_CXXFLAGS})
+  target_compile_options(${tgt} PRIVATE
+    "$<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:NSCLDAQ_AM_CXXFLAGS>>")
+endfunction()
+
+function(nscldaq_no_am_cxxflags)
+  foreach(_t IN LISTS ARGN)
+    set_property(TARGET ${_t} PROPERTY NSCLDAQ_AM_CXXFLAGS "")
+  endforeach()
+endfunction()
+
+#---------------------------------------------------------------------------
 #  nscldaq_version_info(<current:revision:age> <version-var> <soversion-var>)
 #
 #  libtool -version-info c:r:a  ->  libX.so.(c-a).a.r with SONAME libX.so.(c-a)
@@ -185,6 +215,7 @@ function(nscldaq_add_library tgt)
   if(A_OUTPUT_NAME)
     set_target_properties(${tgt} PROPERTIES OUTPUT_NAME ${A_OUTPUT_NAME})
   endif()
+  _nscldaq_apply_am_cxxflags(${tgt})
 endfunction()
 
 #---------------------------------------------------------------------------
@@ -211,6 +242,7 @@ function(nscldaq_add_executable tgt)
   if(A_OUTPUT_NAME)
     set_target_properties(${tgt} PROPERTIES OUTPUT_NAME ${A_OUTPUT_NAME})
   endif()
+  _nscldaq_apply_am_cxxflags(${tgt})
   if(NOT A_NOINST AND NOT A_TEST)
     if(NOT A_DESTINATION)
       set(A_DESTINATION bin)
@@ -226,6 +258,11 @@ endfunction()
 #
 #  The test is registered as <dir-relative-to-main>/<name>.  COMMAND may name
 #  an executable target.
+#
+#  Tests run with ${TCLSH_CMD} are judged by their tcltest summary line
+#  ("Total N Passed P Skipped S Failed F"), not the exit status: the tcltest
+#  drivers exit 0 even when tests fail (as they did under 'make check').  The
+#  test passes only if a summary is printed and fails if any count Failed.
 
 function(nscldaq_add_test)
   if(NOT BUILD_TESTING)
@@ -241,6 +278,13 @@ function(nscldaq_add_test)
     WORKING_DIRECTORY ${A_WORKING_DIRECTORY})
   if(A_ENVIRONMENT)
     set_tests_properties(${_name} PROPERTIES ENVIRONMENT "${A_ENVIRONMENT}")
+  endif()
+  list(GET A_COMMAND 0 _cmd0)
+  if(_cmd0 STREQUAL TCLSH_CMD OR _cmd0 STREQUAL "${TCLSH_CMD}")
+    set(_summary "Total[ \t]+[0-9]+[ \t]+Passed[ \t]+[0-9]+[ \t]+Skipped[ \t]+[0-9]+[ \t]+Failed")
+    set_tests_properties(${_name} PROPERTIES
+      PASS_REGULAR_EXPRESSION "${_summary}"
+      FAIL_REGULAR_EXPRESSION "${_summary}[ \t]+[1-9]")
   endif()
 endfunction()
 
@@ -329,14 +373,17 @@ function(nscldaq_use_gengetopt tgt)
 endfunction()
 
 #---------------------------------------------------------------------------
-#  nscldaq_install_headers(<files...> [DESTINATION <dir>])  default include
+#  nscldaq_install_headers(<files...> [DESTINATION <dir>] [EXECUTABLE])
+#
+#  DESTINATION defaults to include.  EXECUTABLE installs them 0755, for
+#  Makefiles that used $(INSTALL_SCRIPT) rather than include_HEADERS.
 #
 #  Installs headers and, when they go under include/, also links them into
 #  ${NSCLDAQ_STAGE_INCLUDE_DIR} (NSCLDAQ::PrefixInclude) so that code which
 #  used -I@prefix@/include finds them without a prior install.
 
 function(nscldaq_install_headers)
-  cmake_parse_arguments(A "" "DESTINATION" "" ${ARGN})
+  cmake_parse_arguments(A "EXECUTABLE" "DESTINATION" "" ${ARGN})
   if(NOT A_DESTINATION)
     set(A_DESTINATION include)
   endif()
@@ -351,7 +398,11 @@ function(nscldaq_install_headers)
     endif()
     list(APPEND _files ${_f})
   endforeach()
-  install(FILES ${_files} DESTINATION ${A_DESTINATION})
+  if(A_EXECUTABLE)
+    install(PROGRAMS ${_files} DESTINATION ${A_DESTINATION})
+  else()
+    install(FILES ${_files} DESTINATION ${A_DESTINATION})
+  endif()
   if(A_DESTINATION MATCHES "^include(/(.*))?$")
     set(_stage ${NSCLDAQ_STAGE_INCLUDE_DIR})
     if(CMAKE_MATCH_2)
@@ -472,6 +523,34 @@ function(nscldaq_install_code cmd)
 endfunction()
 
 #---------------------------------------------------------------------------
+#  @CC@/@CXX@ as autoconf recorded them: $CC/$CXX if set in the environment,
+#  otherwise the name AC_PROG_CC/AC_PROG_CXX found on PATH (gcc, g++) when
+#  that is the compiler in use, otherwise the full compiler path (as for an
+#  explicit CXX=/path/mpicxx).
+
+function(_nscldaq_ac_compiler out envvar compiler)
+  set(_names ${ARGN})
+  if(DEFINED ENV{${envvar}})
+    set(${out} "$ENV{${envvar}}" PARENT_SCOPE)
+    return()
+  endif()
+  get_filename_component(_real "${compiler}" REALPATH)
+  foreach(_n IN LISTS _names)
+    find_program(_nscldaq_ac_${_n} ${_n})
+    if(_nscldaq_ac_${_n})
+      get_filename_component(_nreal "${_nscldaq_ac_${_n}}" REALPATH)
+      if(_nreal STREQUAL _real)
+        set(${out} "${_n}" PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+  endforeach()
+  set(${out} "${compiler}" PARENT_SCOPE)
+endfunction()
+_nscldaq_ac_compiler(NSCLDAQ_AC_CC CC "${CMAKE_C_COMPILER}" gcc cc)
+_nscldaq_ac_compiler(NSCLDAQ_AC_CXX CXX "${CMAKE_CXX_COMPILER}" g++ c++)
+
+#---------------------------------------------------------------------------
 #  nscldaq_configure_file(<input> <output> [EXECUTABLE])
 #
 #  AC_CONFIG_FILES equivalent: substitutes @VAR@ (prefix, TCLSH_CMD, ...,
@@ -489,8 +568,8 @@ function(nscldaq_configure_file in out)
   set(abs_top_srcdir "${PROJECT_SOURCE_DIR}")
   set(top_builddir "${PROJECT_BINARY_DIR}")
   set(abs_top_builddir "${PROJECT_BINARY_DIR}")
-  set(CC "${CMAKE_C_COMPILER}")
-  set(CXX "${CMAKE_CXX_COMPILER}")
+  set(CC "${NSCLDAQ_AC_CC}")
+  set(CXX "${NSCLDAQ_AC_CXX}")
   if(NOT IS_ABSOLUTE ${out})
     set(out ${CMAKE_CURRENT_BINARY_DIR}/${out})
   endif()

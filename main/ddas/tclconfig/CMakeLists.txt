@@ -29,3 +29,7 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/pkgIndex.tcl
 nscldaq_install_copy(lib/libpixie16.so TclLibs/pixie16/libpixie16.so)
 install(FILES Pixie16Server.tcl ${CMAKE_CURRENT_BINARY_DIR}/pkgIndex.tcl
   DESTINATION TclLibs/pixie16)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(pixie16)

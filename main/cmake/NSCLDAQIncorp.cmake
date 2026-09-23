@@ -71,6 +71,7 @@ function(_nscldaq_incorp_source var dir marker repo tag)
     message(STATUS "Using previously incorporated ${dir} from ${PROJECT_SOURCE_DIR}/${dir}")
     set(${var}_SOURCE_ARGS SOURCE_DIR ${PROJECT_SOURCE_DIR}/${dir} PARENT_SCOPE)
     set(${var}_FROM_GIT OFF PARENT_SCOPE)
+    set(${var}_LOCAL_DIR ${PROJECT_SOURCE_DIR}/${dir} PARENT_SCOPE)
   else()
     message(STATUS "Incorporating ${dir} from ${repo} (${tag}) at build time")
     set(${var}_SOURCE_ARGS
@@ -81,6 +82,28 @@ function(_nscldaq_incorp_source var dir marker repo tag)
       UPDATE_DISCONNECTED ON
       PARENT_SCOPE)
     set(${var}_FROM_GIT ON PARENT_SCOPE)
+    set(${var}_LOCAL_DIR "" PARENT_SCOPE)
+  endif()
+endfunction()
+
+# ExternalProject steps are stamp based: once built, edits to a package's
+# sources would never be picked up (configure.ac rebuilt incorporated
+# packages on every configure).  Make <step> of <ep> depend on the source
+# files under <dir> so the package is rebuilt, and restaged, when they
+# change - and only then, so dependents are not relinked needlessly.
+#   _nscldaq_incorp_track(<ep> <step> <dir>)
+
+function(_nscldaq_incorp_track ep step dir)
+  if(NOT dir)
+    return()
+  endif()
+  file(GLOB_RECURSE _srcs CONFIGURE_DEPENDS
+    ${dir}/*.c ${dir}/*.cc ${dir}/*.cpp ${dir}/*.cxx ${dir}/*.h ${dir}/*.hpp
+    ${dir}/*.i ${dir}/*.py ${dir}/*.tcl ${dir}/*.in ${dir}/*.m4
+    ${dir}/CMakeLists.txt ${dir}/*.cmake ${dir}/Makefile.am ${dir}/configure.ac)
+  list(FILTER _srcs EXCLUDE REGEX "/(\\.git|autom4te\\.cache)/")
+  if(_srcs)
+    ExternalProject_Add_StepDependencies(${ep} ${step} ${_srcs})
   endif()
 endfunction()
 
@@ -115,6 +138,8 @@ ExternalProject_Add(libtcl_incorp
   LOG_BUILD ON
   LOG_INSTALL ON
   LOG_OUTPUT_ON_FAILURE ON)
+
+_nscldaq_incorp_track(libtcl_incorp build "${LIBTCL_LOCAL_DIR}")
 
 _nscldaq_staged_library(NSCLDAQ::Exception ${_libtcl_libdir}/libException.so
   ${NSCLDAQ_STAGE_PREFIX}/include libtcl_incorp)
@@ -169,6 +194,7 @@ function(_nscldaq_cmake_incorp name dir repo tag instdir libs)
     LOG_BUILD ON
     LOG_INSTALL ON
     LOG_OUTPUT_ON_FAILURE ON)
+  _nscldaq_incorp_track(${name} build "${_SRC_LOCAL_DIR}")
 endfunction()
 
 _nscldaq_cmake_incorp(unifiedformat_incorp unifiedformat
@@ -227,6 +253,10 @@ ExternalProject_Add(tclhttpd_incorp
   LOG_BUILD ON
   LOG_INSTALL ON
   LOG_OUTPUT_ON_FAILURE ON)
+
+# Re-copy (and so rebuild/reinstall) tclhttpd when its sources change.
+file(GLOB_RECURSE _tclhttpd_srcs CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/tclhttpd3.5.1/*)
+ExternalProject_Add_StepDependencies(tclhttpd_incorp download ${_tclhttpd_srcs})
 
 #---------------------------------------------------------------------------
 #  Installation of the staged packages.  This is done first so that the

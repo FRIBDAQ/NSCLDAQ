@@ -100,3 +100,7 @@ nscldaq_add_test(NAME logbookadmin
   COMMAND ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/logbookadmin.py
   ENVIRONMENT PYTHONPATH=${prefix}/pythonLibs)
 nscldaq_add_test(NAME unittests COMMAND logbook_unittests)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(Logbook PyLogbook TclLogbook)

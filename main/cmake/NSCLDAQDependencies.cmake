@@ -24,7 +24,7 @@
 #    NSCLDAQ::JsonCpp      JSON_CFLAGS/JSON_LIBS
 #    NSCLDAQ::YamlCpp      YAML_CFLAGS/YAML_LIBS           (MVLC only)
 #    NSCLDAQ::Python       PYTHON(3)_CFLAGS/PYTHON(3)_LIBS (python3-embed)
-#    NSCLDAQ::ROOT         ROOT_CFLAGS/ROOT_LDFLAGS
+#    NSCLDAQ::ROOT         ROOT_CFLAGS/ROOT_LDFLAGS (including its -std=c++NN)
 #    NSCLDAQ::Pixie        PIXIE_CPPFLAGS/PIXIE_LDFLAGS    (empty unless DDAS)
 #    NSCLDAQ::EPICS        EPICS_INCLUDES/EPICS_LDFLAGS    (EPICS tools only)
 #    NSCLDAQ::EPICSBin     EPICS_BIN (the -DEPICS_BIN=... definition)
@@ -96,8 +96,9 @@ function(_nscldaq_cflags_to_target tgt)
       target_include_directories(${tgt} SYSTEM INTERFACE "${CMAKE_MATCH_1}")
     elseif(_f MATCHES "^-D(.+)")
       target_compile_definitions(${tgt} INTERFACE "${CMAKE_MATCH_1}")
-    elseif(_f MATCHES "^-std=(c|gnu)\\+\\+([0-9]+)$")
-      target_compile_features(${tgt} INTERFACE cxx_std_${CMAKE_MATCH_2})
+    elseif(_f MATCHES "^-std=")
+      # Keep the exact dialect (e.g. root-config's -std=c++17, not gnu++17).
+      target_compile_options(${tgt} INTERFACE "${_f}")
     elseif(_f STREQUAL "-pthread")
       target_link_libraries(${tgt} INTERFACE Threads::Threads)
     else()
@@ -154,16 +155,24 @@ set(THREADC_FLAGS "-pthread")
 set(THREADLD_FLAGS "-lpthread -lrt")
 
 #---------------------------------------------------------------------------
-#  X11/Xt - configure put these in LIBS so everything linked them.
+#  X11/Xt - configure did AC_CHECK_LIB([X11], [XSetWindowBackground]) and
+#  AC_CHECK_LIB([Xt], [XtManage]), putting each library that passed into LIBS
+#  so everything linked it.  (XtManage does not exist, so in practice Xt is
+#  never linked - reproduce the checks, not just the library search.)
 
 find_library(NSCLDAQ_X11_LIBRARY X11)
 find_library(NSCLDAQ_XT_LIBRARY Xt)
 if(NSCLDAQ_X11_LIBRARY)
-  set(HAVE_LIBX11 1)
-  link_libraries(${NSCLDAQ_X11_LIBRARY})
+  check_library_exists(${NSCLDAQ_X11_LIBRARY} XSetWindowBackground ""
+    HAVE_LIBX11)
 endif()
 if(NSCLDAQ_XT_LIBRARY)
-  set(HAVE_LIBXT 1)
+  check_library_exists(${NSCLDAQ_XT_LIBRARY} XtManage "" HAVE_LIBXT)
+endif()
+if(HAVE_LIBX11)
+  link_libraries(${NSCLDAQ_X11_LIBRARY})
+endif()
+if(HAVE_LIBXT)
   link_libraries(${NSCLDAQ_XT_LIBRARY})
 endif()
 

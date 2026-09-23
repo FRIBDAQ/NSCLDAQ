@@ -34,3 +34,7 @@ target_link_libraries(formatv10_unittests PRIVATE
   NSCLDAQ::CppUnit buffer dataformatv10 daqshm NSCLDAQ::TclOnly
   NSCLDAQ::Exception)
 nscldaq_add_test(NAME unittests COMMAND formatv10_unittests)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(dataformatv10)

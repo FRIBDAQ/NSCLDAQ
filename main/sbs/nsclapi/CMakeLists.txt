@@ -18,3 +18,7 @@ nscldaq_add_executable(sbs_nsclapi_unittests TEST OUTPUT_NAME unittests
 target_link_libraries(sbs_nsclapi_unittests PRIVATE
   NSCLDAQ::PixieHeaders SBSVmeAPI NSCLDAQ::CppUnit NSCLDAQ::TclOnly pthread)
 nscldaq_add_test(NAME unittests COMMAND sbs_nsclapi_unittests)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(sbs_nsclapi_unittests)

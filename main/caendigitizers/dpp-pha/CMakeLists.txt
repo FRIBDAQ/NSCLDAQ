@@ -31,3 +31,7 @@ file(GLOB _dpppha_skel CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/skel/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/skel/*.h)
 install(FILES ${_dpppha_skel} ${CMAKE_CURRENT_BINARY_DIR}/skel/Makefile
   DESTINATION skeletons/dpp-pha)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(CAENDPP_PHA)

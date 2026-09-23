@@ -11,7 +11,8 @@ nscldaq_add_executable(daqstart
   SOURCES daqstart.cpp CDAQStart.cpp ${_daqstart_testable})
 nscldaq_use_gengetopt(daqstart cmdline)
 target_include_directories(daqstart PRIVATE ${_daqstart_includes})
-target_compile_definitions(daqstart PRIVATE _GNU_SOURCE)
+# -D_GNU_SOURCE was in daqstart_CXXFLAGS, i.e. C++ sources only.
+target_compile_definitions(daqstart PRIVATE $<$<COMPILE_LANGUAGE:CXX>:_GNU_SOURCE>)
 target_link_libraries(daqstart PRIVATE
   NSCLDAQ::tclPlusHeaders NSCLDAQ::PixieHeaders
   NSCLDAQ::Exception daqshm NSCLDAQ::Threads NSCLDAQ::Tcl)

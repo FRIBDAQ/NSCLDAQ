@@ -31,3 +31,7 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/qtscope DESTINATION bin)
 install(FILES figures/timing_diagram.png DESTINATION ddas/qtscope/figures)
 file(GLOB _qtscope_python CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.py)
 install(FILES ${_qtscope_python} DESTINATION ddas/qtscope)
+
+# The Makefile.am's per-target CXXFLAGS did not include $(AM_CXXFLAGS), so
+# these were compiled without -fno-strict-aliasing.
+nscldaq_no_am_cxxflags(qtscope_bin)
