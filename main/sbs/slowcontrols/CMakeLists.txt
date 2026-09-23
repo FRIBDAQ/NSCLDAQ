@@ -1,0 +1,5 @@
+add_subdirectory(vhq)
+add_subdirectory(caenv812)
+add_subdirectory(n568b)
+add_subdirectory(bcnaf)
+add_subdirectory(vhs)

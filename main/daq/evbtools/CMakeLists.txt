@@ -1,0 +1,7 @@
+add_subdirectory(ringsource)
+add_subdirectory(teering)
+add_subdirectory(glom)
+add_subdirectory(unglom)
+add_subdirectory(offlineorderer)
+add_subdirectory(evts2frags)
+add_subdirectory(evblite)

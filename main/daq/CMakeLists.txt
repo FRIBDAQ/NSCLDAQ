@@ -1,0 +1,7 @@
+add_subdirectory(format)
+add_subdirectory(IO)
+add_subdirectory(s800callouts)
+add_subdirectory(readoutgui)
+add_subdirectory(eventbuilder)
+add_subdirectory(evbtools)
+add_subdirectory(actions)

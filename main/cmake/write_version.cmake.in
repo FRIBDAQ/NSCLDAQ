@@ -1,0 +1,35 @@
+#
+#  Install script: writes ${prefix}/VERSION (was done in the top level
+#  Makefile.am install-data-local).
+#
+
+set(_dest "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}")
+execute_process(COMMAND date OUTPUT_VARIABLE _now OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(DEFINED ENV{USER})
+  set(_user "$ENV{USER}")
+else()
+  execute_process(COMMAND whoami OUTPUT_VARIABLE _user OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
+
+function(_incorp_version out dir)
+  execute_process(COMMAND "@GIT@" -C "${dir}" describe --tags --always
+    OUTPUT_VARIABLE _v OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET RESULT_VARIABLE _status)
+  if(NOT _status EQUAL 0)
+    set(_v "unknown")
+  endif()
+  set(${out} "${_v}" PARENT_SCOPE)
+endfunction()
+
+_incorp_version(_libtcl "@NSCLDAQ_LIBTCL_SOURCE_DIR@")
+_incorp_version(_ufmt "@NSCLDAQ_UNIFIEDFORMAT_SOURCE_DIR@")
+_incorp_version(_ddasfmt "@NSCLDAQ_DDASFORMAT_SOURCE_DIR@")
+
+file(WRITE "${_dest}/VERSION"
+"Version: NSCLDAQ-@NSCLDAQ_VERSION_STRING@ built on @_nscldaq_host@ ${_now} by ${_user}
+  $ cmake -DCMAKE_INSTALL_PREFIX=@CMAKE_INSTALL_PREFIX@ @NSCLDAQ_CONFIGURE_OPTIONS@
+libtcl++ ${_libtcl}
+unifiedformat ${_ufmt}
+ddasformat ${_ddasfmt}
+")
+message(STATUS "Installing: ${_dest}/VERSION")

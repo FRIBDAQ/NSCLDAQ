@@ -1,0 +1,3 @@
+add_subdirectory(portmanager)
+add_subdirectory(tclserver)
+add_subdirectory(tclhttpdlaunch)

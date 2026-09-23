@@ -1,0 +1,159 @@
+name: CMake build (and packaging)
+
+# Same pipeline as build.yml but built with CMake instead of Autotools.
+# Artifact names and tarball file names carry "cmake" so they don't clash
+# with build.yml's when both run in one workflow (release.yml collects all
+# *.tar.gz files into one directory).
+
+on:
+  workflow_call:
+    inputs:
+      os-version:
+        required: true
+        type: string
+      packaging:
+        required: true
+        type: boolean
+      dist-packaging:
+        default: false
+        type: boolean
+
+jobs:
+  build-and-packaging:
+    name: CMake build (and packaging)
+    runs-on: ubuntu-latest
+    container:
+      image: fribdaq/frib-${{ inputs.os-version }}-ci
+      options: --cpus 2
+    steps:
+      - uses: actions/checkout@v6
+      - name: Configure libtcl++
+        env:
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
+        working-directory: ./main
+        shell: bash
+        run: |
+          git config --global --add safe.directory '*'
+          eval `ssh-agent -s`
+          
+          echo "${{ secrets.LIBTCLPLUS }}" | ssh-add -
+          ./tcl++incorp
+          ssh-add -D
+          
+          eval `ssh-agent -k`
+      - name: Incorporate unified format
+        env:
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
+        working-directory: ./main
+        shell: bash
+        run: |
+          git config --global --add safe.directory '*'
+          eval `ssh-agent -s`
+          
+          echo "${{ secrets.UNIFIEDFMT }}" | ssh-add -
+          ./unifiedfmt-incorp.sh
+          ssh-add -D
+          
+          eval `ssh-agent -k`
+      - name: Incorporate DDAS format
+        env:
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
+        working-directory: ./main
+        shell: bash
+        run: |
+          git config --global --add safe.directory '*'
+          eval `ssh-agent -s`
+          
+          echo "${{ secrets.DDASFMT }}" | ssh-add -
+          ./ddasfmt-incorp.sh
+          ssh-add -D
+          
+          eval `ssh-agent -k`          
+      - name: Configuring
+        working-directory: ./main
+        shell: bash
+        run: |
+          cmake -S . -B oot \
+                -DCMAKE_INSTALL_PREFIX=/usr/opt/nscldaq/$GITHUB_REF_NAME \
+                -DENABLE_USB=ON \
+                -DENABLE_CAEN_DIGITIZER_SUPPORT=ON \
+                -DENABLE_DOCS=ON \
+                -DENABLE_EPICS_TOOLS=ON \
+                -DWITH_CAEN_DIGITIZER_LIBROOT=`cat /usr/opt/CAENDIGITIZERLIBS_PATH` \
+                -DWITH_EPICS_ROOTDIR=`cat /usr/opt/EPICS_PATH` \
+                -DENABLE_DDAS=ON \
+                -DENABLE_DDAS_DOCS=ON \
+                -DWITH_INCORP_BUILD_CORES=2 \
+                -DWITH_XIAAPIDIR=`cat /usr/opt/XIAAPI_PATH` \
+                -DWITH_FIRMWAREDIR=`cat /usr/opt/DDASFIRMWARE_PATH-12.2` \
+                -DWITH_ROOTSYS=`cat /usr/opt/ROOT_PATH` \
+                -DENABLE_MVLC_STACK_GENERATOR=ON \
+                -DWITH_MVLCDIR=`cat /usr/opt/MESYTECMVLC_PATH` \
+                -DENABLE_RUST_TOOLS=ON \
+                -DCMAKE_CXX_COMPILER=`cat /usr/opt/MPI_PATH`
+      - name: Make
+        working-directory: ./main
+        shell: bash
+        run: |
+          cmake --build oot -j2 && cmake --install oot
+      - name: Make check
+        id: make-check
+        working-directory: ./main/oot
+        shell: bash
+        run : |
+          source /usr/cargo/env
+          rustup default stable
+          cargo install portman
+          cargo install nscldaq_ringmaster
+          cargo install nscldaq_ringtostdout
+          export PATH=$PATH:~/.cargo/bin
+          nohup portman > /dev/null 2>&1 &
+          sleep 2
+          nohup nscldaq_ringmaster -l /dev/null >/dev/null 2>&1 &
+          xvfb-run -a ctest --output-on-failure
+      - name: Show portman and ringmaster logs on unittest failure
+        if: always() && steps.make-check.outcome == 'failure'
+        run: |
+          echo "=== Portman log: ==="
+          cat /tmp/portman.log
+          [ -f /tmp/portman.log ] && cat /tmp/portman.log || echo "(not created)"
+          echo "=== Ringmaster log: ==="
+          cat /tmp/ringmaster.log
+          [ -f /tmp/ringmaster.log ] && cat /tmp/ringmaster.log || echo "(not created)"
+      - name: Checking disk space
+        working-directory: ./main/oot
+        run: |
+          df
+          df -h
+      - name: Packaging for complete source distribution
+        if: ${{ inputs.packaging == true && inputs.dist-packaging == true}}
+        working-directory: ./main/oot
+        run: |
+          cmake --build . --target package_source
+          mv nscldaq-*.tar.gz nscldaq-${{ github.ref_name }}-dist-cmake-${{ inputs.os-version }}.tar.gz
+      - name: Complete source distribution package
+        if: ${{ inputs.packaging == true && inputs.dist-packaging == true}}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.os-version }} complete source distribution (CMake)
+          path: ./main/oot/nscldaq-${{ github.ref_name }}-dist-cmake-${{ inputs.os-version }}.tar.gz
+      - name: Packaging for binary distribution
+        if: ${{ inputs.packaging == true }}
+        working-directory: /usr/opt/nscldaq
+        run: tar -czf nscldaq-$GITHUB_REF_NAME-cmake-${{ inputs.os-version }}.tar.gz $GITHUB_REF_NAME
+      - name: Upload binary distribution package
+        if: ${{ inputs.packaging == true }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.os-version }} binary distribution (CMake)
+          path: /usr/opt/nscldaq/nscldaq-${{ github.ref_name }}-cmake-${{ inputs.os-version }}.tar.gz
+      - name: Packaging usropt for distribution
+        if: ${{ inputs.packaging == true }}
+        working-directory: /usr/opt
+        run: tar -czf usropt-nscldaq-${{ github.ref_name }}-cmake-${{ inputs.os-version }}.tar.gz opt-${{ inputs.os-version }}
+      - name: Upload usropt distribution package
+        if: ${{ inputs.packaging == true }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.os-version }} usropt distribution (CMake)
+          path: /usr/opt/usropt-nscldaq-${{ github.ref_name }}-cmake-${{ inputs.os-version }}.tar.gz
