@@ -122,12 +122,13 @@ class DataSourceManager(QObject):
     failed      = pyqtSignal(str, str)
     sourceDied  = pyqtSignal(str, str)
     
-    def __init__(self) -> None:
+    def __init__(self, parent : QObject | None = None) -> None:
         # Validate singleton-ness:
         caller = traceback.extract_stack()[-2]
         if caller.filename != __file__:
             raise SingletonViolation(caller.filename)
     
+        super().__init__(parent)
         self._sources = {}    # dict[str, DataSource.DataSource]
         
         
@@ -211,11 +212,11 @@ class DataSourceManager(QObject):
         '''
         self.starting.emit()
         
-        self._iterateAction('start')
-        #@todo - is a delay appropriate here?
-        self._iterateAction('init')
-        
-        self.started.emit()
+        if self._iterateAction('start'):  # noqa: SIM102
+            #@todo - is a delay appropriate here?
+            if self._iterateAction('init'):
+                self.started.emit()
+    
     
     def precheck(self) -> bool:
         '''
@@ -238,7 +239,7 @@ class DataSourceManager(QObject):
         
         if result:
             self.prechecked.emit()
-            
+    
         return result
     
     def begin(self, run : int, title: str) -> None:
@@ -246,8 +247,7 @@ class DataSourceManager(QObject):
             emits the beginning signal.  
             Once that's done, iterates over the data sources,
             asking them to begin a run. If none of those raises an 
-            exception (which is propagated out of this method), 
-            begun is emitted when the iteration is completed.
+            exception begun is emitted when the iteration is completed.
             
             @param run : int - the run number, passed to all source begin methods.
             @param title :str - The run title, passed to all source begin methods
@@ -259,9 +259,10 @@ class DataSourceManager(QObject):
         for name in self._sources:
             try:
                 self._sources[name].begin(run, title)
-            except Exception as e:
+            except Exception as _e:  # noqa: BLE001
                 self.failed.emit('begin', name)
-                raise e
+                return
+                
         
         self.begun.emit()
         
@@ -272,8 +273,8 @@ class DataSourceManager(QObject):
         if not exceptions were raised in this process, ended is emitted.
         '''   
         self.ending.emit()
-        self._iteratAction('end')
-        self.ended.emit()
+        if self._iteratAction('end'):
+            self.ended.emit()   
         
     def pause(self) -> None:
         '''
@@ -285,8 +286,8 @@ class DataSourceManager(QObject):
         '''
         if self.mergedCapabilities()['canPause']:
             self.pausing.emit()
-            self._iterateAction('pause')
-            self.paused.emit()
+            if self._iterateAction('pause'):
+                self.paused.emit()
         else:
             raise NotCapable('pausing')
     
@@ -296,8 +297,8 @@ class DataSourceManager(QObject):
         '''
         if self.mergedCapabilities()['canPause']:
             self.resuming.emit()
-            self._iterateAction('resume')
-            self.resumeded.emit()
+            if self._iterateAction('resume'):
+                self.resumeded.emit()
         else:
             raise NotCapable('pausing/resuming')
         
@@ -309,8 +310,8 @@ class DataSourceManager(QObject):
         
         '''
         self.stopping.emit()
-        self._iterateAction('stop')
-        self.stopped.emit()
+        if self._iterateAction('stop'):
+            self.stopped.emit()
     
     def live(self) -> bool | None:
         '''
@@ -328,17 +329,21 @@ class DataSourceManager(QObject):
         
     # Utilities:
     
-    def _iterateAction(self, action : str) -> None:
+    def _iterateAction(self, action : str) -> bool:
         # Iterates over all data sources calling the named action with no
         # parameters.
         # emits failed if a data source raised an exception.
+        # and returns False.  If all succeeded, returns True.
+        
         for name in self._sources:
             func = methodcaller(action)
             try:
                 func(self._sources[name])
-            except Exception as e:
+            except Exception :  # noqa: BLE001
                 self.failed.emit(action, name)
-                raise e
+                return False
+        return True
+        
             
             
 _instance : DataSourceManager = DataSourceManager()
@@ -377,7 +382,66 @@ if __name__ == '__main__':
         def end(self) -> None:
             pass
 
-    
+    class FailDataSource(DataSource.DataSource):
+        # Data source that fails at everything it's asked to do.
+        def __init__(self, **kwargs) :
+            # Init our configuration to defaults:
+            super().__init__({'anint' : 1, 'astring' : 'hello'}, **kwargs)
+            self._run = None
+            self._title = None
+
+        def parameters(self) -> dict[str, type]:
+            return {'anint': int, 'astring' : str}
+        
+        def start(self) -> None:
+            raise Exception("not Important'")
+        
+        def check(self) -> True:
+            raise Exception("not Important'")
+        
+        def stop(self) -> None:
+            raise Exception("not Important'")
+        
+        def begin(self, run : int, title : str) -> None:
+            self._run = run
+            self._title = title
+            raise Exception("not Important'")
+
+        def end(self) -> None:
+            raise Exception("not Important'")
+
+    class NoPauseSource(DataSource.DataSource):
+        #  A data source that can't pause.
+        def __init__(self, **kwargs) :
+            # Init our configuration to defaults:
+            super().__init__({'anint' : 1, 'astring' : 'hello'}, **kwargs)
+            self._run = None
+            self._title = None
+ 
+        def parameters(self) -> dict[str, type]:
+            return {'anint': int, 'astring' : str}
+         
+        def start(self) -> None:
+            pass
+         
+        def check(self) -> True:
+            return True
+         
+        def stop(self) -> None:
+            pass
+         
+        def begin(self, run : int, title : str) -> None:
+            self._run = run
+            self._title = title
+
+        def end(self) -> None:
+            pass
+      
+        def capabilities(self) -> dict[str, bool]:
+            return {
+                'canPause' : False, 'runsHaveTitles' : True, 'runsHaveNumbers' : True
+            }
+        
     class Tests(unittest.TestCase):
         def setUp(self):
             global _instance
@@ -466,5 +530,151 @@ if __name__ == '__main__':
             self.assertEqual(1, len(i.sourceNames()))
             self.assertTrue('src' in i.sourceNames())
                            
+        def test_sources_1(self):
+            # initially empty sources are returned.
+            
+            self.assertEqual(0, len(DataSourceManager.instance().sources()))
+            
+        def test_sources_2(self):
+            # Inserting a source gets it out again.
+            
+            src = NullDataSource()
+            i   = DataSourceManager.instance()
+            i.addSource('src', src)
+            
+            sources = i.sources()
+            self.assertEqual(1, len(sources))
+            self.assertTrue('src' in sources)
+            self.assertIs(src, sources['src'])
+            
+        def test_caps_1(self):
+            #  Nosources have full merged capabilities:
+            
+            caps = DataSourceManager.instance().mergedCapabilities()
+            
+            self.assertTrue(caps['canPause'])
+            self.assertTrue(caps['runsHaveTitles'])
+            self.assertTrue(caps['runsHaveNumbers'])
+            
+        def test_caps_2(self):
+            #  Null data source inserted has full caps:
+            
+            src = NullDataSource()
+            i   = DataSourceManager.instance()
+            i.addSource('src', src)
+            
+            caps = i.mergedCapabilities()
+            self.assertTrue(caps['canPause'])
+            self.assertTrue(caps['runsHaveTitles'])
+            self.assertTrue(caps['runsHaveNumbers'])
+            
+        def test_caps_3(self):
+            # NoPauseSource added pause is not possible.
+            
+            src = NoPauseSource()
+            i   = DataSourceManager.instance()
+            i.addSource('src', src)
+            
+            caps = i.mergedCapabilities()
+            self.assertFalse(caps['canPause'])
+            self.assertTrue(caps['runsHaveTitles'])
+            self.assertTrue(caps['runsHaveNumbers'])
+            
+        def test_caps_4(self):
+            # Both null and no pause inserted pause is not possible.
+            
+            src1 = NullDataSource()
+            src2 = NoPauseSource()
+            i    = DataSourceManager.instance()
+            
+            i.addSource('pausable', src1)
+            i.addSource('not-pausable', src2)
+            
+            caps = i.mergedCapabilities()
+            self.assertFalse(caps['canPause'])
+            self.assertTrue(caps['runsHaveTitles'])
+            self.assertTrue(caps['runsHaveNumbers'])
+        
+        def test_start_1(self) :
+            #  No sources can start with no errors...and will emit both signals.
+            
+            starting = False
+            started  = False
+            def starting_slot():
+                nonlocal starting
+                starting = True
+            def started_slot():
+                nonlocal started
+                started = True
+
+            i = DataSourceManager.instance()
+            i.starting.connect(starting_slot)
+            i.started.connect(started_slot)
+            
+            i.start()
+            
+            self.assertTrue(starting)
+            self.assertTrue(started)
+            
+        def test_start_2(self):
+            # If NullSource is registered, start works:
+            starting = False
+            started  = False
+            def starting_slot():
+                nonlocal starting
+                starting = True
+            def started_slot():
+                nonlocal started
+                started = True
+
+            i = DataSourceManager.instance()
+            i.addSource('src', NullDataSource())
+            
+            i.starting.connect(starting_slot)
+            i.started.connect(started_slot)
+            
+            i.start()
+            
+            self.assertTrue(starting)
+            self.assertTrue(started)            
+            
+        def test_start_3(self):
+            # If FailingSource is added, the started signal won't be emitted
+            # because its start raises an exception.
+            
+            starting = False
+            started  = False
+            failed   = False
+            failop   = None
+            failsrc = None
+            
+            def starting_slot():
+                nonlocal starting
+                starting = True
+            def started_slot():
+                nonlocal started
+                started = True
+            def failed_slot(op : str, src : str):
+                nonlocal failed, failop, failsrc
+                failed = True
+                failop = op
+                failsrc = src
+                
+            i = DataSourceManager.instance()
+            i.addSource('src', FailDataSource())
+            i.starting.connect(starting_slot)
+            i.started.connect(started_slot)
+            i.failed.connect(failed_slot)
+            
+            i.start()
+            
+            self.assertTrue(starting)
+            self.assertFalse(started)            
+            self.assertTrue(failed)
+            self.assertEqual('start', failop)
+            self.assertTrue('src', failsrc)
+            
+               
+            
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
