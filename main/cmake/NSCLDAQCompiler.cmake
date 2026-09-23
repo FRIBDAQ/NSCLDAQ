@@ -28,6 +28,34 @@ if(NOT DEFINED CMAKE_CXX_STANDARD AND DEFINED CMAKE_CXX_STANDARD_COMPUTED_DEFAUL
   endif()
 endif()
 
+# Optimization flags, as Autotools did them: configure used "-g -O2" and
+# never -DNDEBUG, and re-running it re-applied those defaults (only an
+# explicit CXXFLAGS=... overrode them).  A lot of the code (and tests) relies
+# on assert(), some with side effects (e.g. a socket read inside assert() in
+# daq/eventbuilder/transmittests.cpp).  So on every configure - fresh or an
+# existing build tree - any per-build-type flags still at CMake's stock
+# value are replaced: RelWithDebInfo gets "-g -O2", Release/MinSizeRel keep
+# their optimization level without -DNDEBUG.  Values someone set on purpose
+# (anything other than the stock value) are left alone.
+
+foreach(_lang C CXX)
+  foreach(_cfg RELWITHDEBINFO RELEASE MINSIZEREL)
+    set(_var CMAKE_${_lang}_FLAGS_${_cfg})
+    string(STRIP "${${_var}_INIT}" _stock)
+    string(STRIP "${${_var}}" _current)
+    if(_current STREQUAL _stock OR _current STREQUAL "")
+      if(_cfg STREQUAL "RELWITHDEBINFO")
+        set(_want "-g -O2")
+      else()
+        string(REGEX REPLACE "(^| )-DNDEBUG( |$)" " " _want "${_stock}")
+        string(STRIP "${_want}" _want)
+      endif()
+      set(${_var} "${_want}" CACHE STRING
+        "${_lang} flags for ${_cfg} builds (no -DNDEBUG: asserts must stay enabled)" FORCE)
+    endif()
+  endforeach()
+endforeach()
+
 # libtool builds everything PIC; so do we (convenience libraries included).
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

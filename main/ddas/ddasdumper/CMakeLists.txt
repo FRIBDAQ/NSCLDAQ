@@ -14,7 +14,7 @@ add_custom_command(
     ${ROOTSYS}/bin/rootcint -f ddasrootformatDictionary.cpp
     -rml libddasrootformat.so -rmf libddasrootformat.rootmap
     -I${CMAKE_CURRENT_SOURCE_DIR}
-    -I${NSCLDAQ_STAGE_PREFIX}/ddasformat/include
+    -I${NSCLDAQ_DDASFMT_STAGE_PREFIX}/ddasformat/include
     -c -p DDASRootHit.h DDASRootEvent.h LinkDef.h
   DEPENDS DDASRootHit.h DDASRootEvent.h LinkDef.h ddasformat_incorp
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

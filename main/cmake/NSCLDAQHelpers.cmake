@@ -523,17 +523,14 @@ function(nscldaq_install_code cmd)
 endfunction()
 
 #---------------------------------------------------------------------------
-#  @CC@/@CXX@ as autoconf recorded them: $CC/$CXX if set in the environment,
-#  otherwise the name AC_PROG_CC/AC_PROG_CXX found on PATH (gcc, g++) when
-#  that is the compiler in use, otherwise the full compiler path (as for an
-#  explicit CXX=/path/mpicxx).
+#  @CC@/@CXX@ as autoconf recorded them: the name AC_PROG_CC/AC_PROG_CXX
+#  would have found on PATH (gcc, g++) when that is the compiler in use,
+#  otherwise the full compiler path (as for an explicit CXX=/path/mpicxx).
+#  ($CC/$CXX can't be consulted here: CMake itself sets them in its own
+#  environment while detecting compilers on the first configure.)
 
-function(_nscldaq_ac_compiler out envvar compiler)
+function(_nscldaq_ac_compiler out compiler)
   set(_names ${ARGN})
-  if(DEFINED ENV{${envvar}})
-    set(${out} "$ENV{${envvar}}" PARENT_SCOPE)
-    return()
-  endif()
   get_filename_component(_real "${compiler}" REALPATH)
   foreach(_n IN LISTS _names)
     find_program(_nscldaq_ac_${_n} ${_n})
@@ -547,8 +544,8 @@ function(_nscldaq_ac_compiler out envvar compiler)
   endforeach()
   set(${out} "${compiler}" PARENT_SCOPE)
 endfunction()
-_nscldaq_ac_compiler(NSCLDAQ_AC_CC CC "${CMAKE_C_COMPILER}" gcc cc)
-_nscldaq_ac_compiler(NSCLDAQ_AC_CXX CXX "${CMAKE_CXX_COMPILER}" g++ c++)
+_nscldaq_ac_compiler(NSCLDAQ_AC_CC "${CMAKE_C_COMPILER}" gcc cc)
+_nscldaq_ac_compiler(NSCLDAQ_AC_CXX "${CMAKE_CXX_COMPILER}" g++ c++)
 
 #---------------------------------------------------------------------------
 #  nscldaq_configure_file(<input> <output> [EXECUTABLE])

@@ -25,25 +25,13 @@ set(NSCLDAQ_VERSION_STRING "12.2-010")
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)-0*([0-9]+)$" "\\1.\\2.\\3"
   _nscldaq_numeric_version "${NSCLDAQ_VERSION_STRING}")
 
-# Autotools compiled with "-g -O2" and without -DNDEBUG; a lot of the code
-# (and tests) rely on assert(), some with side effects (e.g. a socket read
-# inside assert() in daq/eventbuilder/transmittests.cpp).  Default to
-# RelWithDebInfo with exactly those flags, and keep -DNDEBUG out of the
-# other optimized build types too.  This must precede project(): the
-# compiler modules only initialize these cache entries if they don't exist.
+# Default build type: RelWithDebInfo, whose flags NSCLDAQCompiler.cmake sets
+# to the Autotools "-g -O2" (no -DNDEBUG).
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
     "Build type (Debug Release RelWithDebInfo MinSizeRel)")
 endif()
-foreach(_lang C CXX)
-  set(CMAKE_${_lang}_FLAGS_RELWITHDEBINFO "-g -O2" CACHE STRING
-    "${_lang} flags for RelWithDebInfo builds (autotools default, asserts enabled)")
-  set(CMAKE_${_lang}_FLAGS_RELEASE "-O3" CACHE STRING
-    "${_lang} flags for Release builds (no -DNDEBUG: asserts must stay enabled)")
-  set(CMAKE_${_lang}_FLAGS_MINSIZEREL "-Os" CACHE STRING
-    "${_lang} flags for MinSizeRel builds (no -DNDEBUG: asserts must stay enabled)")
-endforeach()
 
 project(nscldaq
   VERSION ${_nscldaq_numeric_version}

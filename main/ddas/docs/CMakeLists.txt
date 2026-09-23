@@ -30,10 +30,10 @@ add_custom_target(ddas_docs ALL DEPENDS ${_ddasdocs_stamp})
 #   find ./html/ -type f -exec install {} share/ddasdocs/html
 #   find ./html/search/ -type f -exec install {} share/ddasdocs/html/search
 # The first find flattens html/search/* into html/ as well, where e.g.
-# search/functions_b.html overwrites the class member page
-# functions_b.html; which copy wins depends on find's directory order.  Do
-# it deterministically with the result the Autotools CI build produced
-# (search/ files copied last).
+# search/functions_b.html collides with the class member page
+# functions_b.html; which copy survives depends on find's directory order
+# (successive Autotools CI runs produced both).  Do it deterministically,
+# keeping the real pages: search/ files first, then html/ top level.
 
 install(CODE "
   set(_dest \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/share/ddasdocs/html\")
@@ -46,7 +46,7 @@ install(CODE "
     list(REMOVE_ITEM _top \${_search})
   endif()
   message(STATUS \"Installing: \${_dest} (flattened DDAS html)\")
-  foreach(_f IN LISTS _top _search)
+  foreach(_f IN LISTS _search _top)
     execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy \"\${_f}\" \"\${_dest}\")
   endforeach()
   foreach(_f IN LISTS _search)
