@@ -255,7 +255,7 @@ class DataSourceManager(QObject):
             @note if a source is incapable of run numbers or titles, it will ignore
             those items.
         '''
-        self.begin.emit()
+        self.beginning.emit()
         for name in self._sources:
             try:
                 self._sources[name].begin(run, title)
@@ -741,6 +741,81 @@ if __name__ == '__main__':
             self.assertFalse(i.precheck())
             self.assertTrue(pc)
             self.assertFalse(pcd)
+        
+        def test_begin_1(self):
+            beginning = False
+            begun     = False
+            def beginning_slot() :
+                nonlocal beginning
+                beginning = True
+            def begun_slot():
+                nonlocal begun
+                begun = True
+            # Begin with no data sources works.
+            i = DataSourceManager.instance()
+            i.beginning.connect(beginning_slot)
+            i.begun.connect(begun_slot)
             
+            i.begin('some title', 1234)
+            self.assertTrue(beginning)
+            self.assertTrue(begun)
+            
+        def test_begin_2(self):
+            # Test with null data source:
+            beginning = False
+            begun     = False
+            def beginning_slot() :
+                nonlocal beginning
+                beginning = True
+            def begun_slot():
+                nonlocal begun
+                begun = True
+            # Begin with no data sources works.
+            i = DataSourceManager.instance()
+            i.addSource('src', NullDataSource())
+            i.beginning.connect(beginning_slot)
+            i.begun.connect(begun_slot)
+            
+            i.begin('some title', 1234)
+            self.assertTrue(beginning)
+            self.assertTrue(begun)
+        
+        def test_begin_3(self):
+            #  Test begin with fail data source:
+            beginning = False
+            begun     = False
+            def beginning_slot() :
+                nonlocal beginning
+                beginning = True
+            def begun_slot():
+                nonlocal begun
+                begun = True
+                
+            failed = False
+            op    = None
+            src   = None
+
+            def failed_slot(fop, fsrc):
+                nonlocal failed, op, src
+                failed =True
+                op = fop
+                src = fsrc
+            
+            # Begin with no data sources works.
+            i = DataSourceManager.instance()
+            i.addSource('fail', FailDataSource())
+            i.beginning.connect(beginning_slot)
+            i.begun.connect(begun_slot)
+            i.failed.connect(failed_slot)
+            
+            i.begin('some title', 1234)
+            self.assertTrue(beginning)
+            self.assertFalse(begun)
+            self.assertTrue(failed)
+            self.assertEqual('begin', op)
+            self.assertEqual('fail', src)
+            
+            
+        
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
