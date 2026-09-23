@@ -412,6 +412,11 @@ if __name__ == '__main__':
         # Precheck:
         def canBegin(self) -> bool:
             return False
+    
+        def pause(self) -> None:
+            raise Exception('Not important')
+        def resume(self) -> None:
+            raise Exception('Not important')
 
     class NoPauseSource(DataSource.DataSource):
         #  A data source that can't pause.
@@ -922,7 +927,142 @@ if __name__ == '__main__':
             self.assertEqual('end', fop)
             self.assertEqual('fail', fsrc)
         
-     
+        # Need extra tests for pause to cover the case where a data source does not support
+        # pausing.
+        
+        def test_pause_1(self):
+            # NO sources
+            pausing = False
+            paused  = False
+            failed  = False
+            fop     = None
+            fsrc    = None
+
+            def pausing_slot():
+                nonlocal pausing
+                pausing = True
+            def paused_slot():
+                nonlocal paused
+                paused = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop = op
+                fsrc = src
+                
+            i = DataSourceManager.instance()
+            i.pausing.connect(pausing_slot)
+            i.paused.connect(paused_slot)
+            i.failed.connect(failed_slot)
+            
+            i.pause()
+            
+            self.assertTrue(pausing)
+            self.assertTrue(paused)
+            self.assertFalse(failed)
+        
+        def test_pause_2(self):
+            #Null source:
+            pausing = False
+            paused  = False
+            failed  = False
+            fop     = None
+            fsrc    = None
+
+            def pausing_slot():
+                nonlocal pausing
+                pausing = True
+            def paused_slot():
+                nonlocal paused
+                paused = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop = op
+                fsrc = src
+                
+            i = DataSourceManager.instance()
+            i.pausing.connect(pausing_slot)
+            i.paused.connect(paused_slot)
+            i.failed.connect(failed_slot)
+            i.addSource('src', NullDataSource())            
+            i.pause()
+            
+            self.assertTrue(pausing)
+            self.assertTrue(paused)
+            self.assertFalse(failed)
+        
+        def test_pause_3(self):
+            #  Fail source:
+            pausing = False
+            paused  = False
+            failed  = False
+            fop     = None
+            fsrc    = None
+
+            def pausing_slot():
+                nonlocal pausing
+                pausing = True
+            def paused_slot():
+                nonlocal paused
+                paused = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop = op
+                fsrc = src
+                
+            i = DataSourceManager.instance()
+            i.pausing.connect(pausing_slot)
+            i.paused.connect(paused_slot)
+            i.failed.connect(failed_slot)
+            i.addSource('fail', FailDataSource())            
+            i.pause()
+            
+            self.assertTrue(pausing)
+            self.assertFalse(paused)
+            self.assertTrue(failed)
+            self.assertEqual('pause', fop)
+            self.assertEqual('fail', fsrc)
+        
+        def test_pause_4(self):
+            # Data source does not support pausing.
+            
+            pausing = False
+            paused  = False
+            failed  = False
+            fop     = None
+            fsrc    = None
+
+            def pausing_slot():
+                nonlocal pausing
+                pausing = True
+            def paused_slot():
+                nonlocal paused
+                paused = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed = True
+                fop = op
+                fsrc = src
+                
+            i = DataSourceManager.instance()
+            i.pausing.connect(pausing_slot)
+            i.paused.connect(paused_slot)
+            i.failed.connect(failed_slot)
+            i.addSource('nopause', NoPauseSource())            
+            
+            
+            with self.assertRaises(NotCapable):
+               i.pause()
+            
+            # NO signals fired.
+            self.assertFalse(pausing)
+            self.assertFalse(paused)
+            self.assertFalse(failed)
+
+
+
         
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
