@@ -1201,6 +1201,106 @@ if __name__ == '__main__':
             self.assertFalse(resuming)
             self.assertFalse(resumed)
             self.assertFalse(failed)
+        
+        def test_stop_1(self):
+            # stop with no sources is ok.
+            
+            stopping = False
+            stopped  = False
+            failed   = False
+            fop      = None
+            fsrc     = None
+
+            def stopping_slot():
+                nonlocal stopping
+                stopping = True
+            def stopped_slot():
+                nonlocal stopped
+                stopped = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed  = True
+                fop = op
+                fsrc = src
+            
+            i = DataSourceManager.instance()
+            i.stopping.connect(stopping_slot)
+            i.stopped.connect(stopped_slot)
+            i.failed.connect(failed_slot)
+            
+            i.stop()
+        
+            self.assertTrue(stopping)
+            self.assertTrue(stopped)
+            self.assertFalse(failed)
+            
+        def test_stop_2(self):
+            # Null data source works:
+                
+            stopping = False
+            stopped  = False
+            failed   = False
+            fop      = None
+            fsrc     = None
+
+            def stopping_slot():
+                nonlocal stopping
+                stopping = True
+            def stopped_slot():
+                nonlocal stopped
+                stopped = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed  = True
+                fop = op
+                fsrc = src
+            
+            i = DataSourceManager.instance()
+            i.stopping.connect(stopping_slot)
+            i.stopped.connect(stopped_slot)
+            i.failed.connect(failed_slot)
+            i.addSource('src', NullDataSource())            
+            i.stop()
+        
+            self.assertTrue(stopping)
+            self.assertTrue(stopped)
+            self.assertFalse(failed)
+            
+            
+        def test_stop_3(self):
+            # FailDataSource...
+            
+            stopping = False
+            stopped  = False
+            failed   = False
+            fop      = None
+            fsrc     = None
+
+            def stopping_slot():
+                nonlocal stopping
+                stopping = True
+            def stopped_slot():
+                nonlocal stopped
+                stopped = True
+            def failed_slot(op, src):
+                nonlocal failed, fop, fsrc
+                failed  = True
+                fop = op
+                fsrc = src
+            
+            i = DataSourceManager.instance()
+            i.stopping.connect(stopping_slot)
+            i.stopped.connect(stopped_slot)
+            i.failed.connect(failed_slot)
+            i.addSource('failed', FailDataSource())            
+            i.stop()
+        
+            self.assertTrue(stopping)
+            self.assertFalse(stopped)
+            self.assertTrue(failed)
+            self.assertEqual('stop', fop)
+            self.assertEqual('failed', fsrc)
+
                     
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
