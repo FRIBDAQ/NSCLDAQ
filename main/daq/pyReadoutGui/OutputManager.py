@@ -67,7 +67,7 @@ class OutputManager(QTabWidget):
                       will be highlighted with a red foreground.
                       This should be used _only_ for really
                       high priority events, like an unexpected program exit.
-        
+        setRecording - Turn the recording backgroun on/off for the texts we manage.
         @note  To support rich text, the clients of the OutputWindow should
                emit the html subset supported by Qt. Note that the output window
                automatically wraps stuff added with addOutput in a <p></p> tag
@@ -83,6 +83,10 @@ class OutputManager(QTabWidget):
         # Now create the 'main' window:
         
         self._main = OutputWindow.OutputWindow(self)
+        
+        self._nonRecordingStyleSheet = self._main.styleSheet()
+        
+        self._recordingStyleSheet    = 'QTextEdit { background-color : green; color : white; font-size : 15pt;}'
         self.addTab(self._main, 'Main')
         
         # Since it looks like there's no way to look up a 
@@ -90,7 +94,8 @@ class OutputManager(QTabWidget):
         # the tab output windows as a name/widget dict.
         
         
-        self._outputs : dict[str, OutputWindow.OutputWIndow] = {}
+        self._outputs : dict[str, OutputWindow.OutputWindow] = {}
+        self.setRecording(False)
     # Public methods:
     
     def addOutput(self, name : str) -> OutputWindow.OutputWindow:
@@ -103,6 +108,7 @@ class OutputManager(QTabWidget):
         if name in self._outputs:
             raise DuplicateTabName(name)
         newWindow = OutputWindow.OutputWindow(self)
+        newWindow.setStyleSheet('QTextEdit { font-size : 15pt;}')
         self.addTab(newWindow, name)
         self._outputs[name] = newWindow
         
@@ -162,7 +168,7 @@ class OutputManager(QTabWidget):
         
         # wrap the text in a div to set the color:
         
-        fullText = '<span style="color: red;">' + msg + '</span>'
+        fullText = '<span style="color: #800020;">' + msg + '</span>'
 
         #  See if we should add  the text to the current tab:
         
@@ -177,6 +183,23 @@ class OutputManager(QTabWidget):
         
         self._main.append(fullText)
         
+    def setRecording(self, state : bool) -> None:
+        '''
+            Set the default background/foregroung colors to those
+            appropriate to the recording state.
+            
+            @param state : bool  - True for reconding colors, False for non recording
+        '''
+        style = self._recordingStyleSheet if state else self._nonRecordingStyleSheet
+        self._main.setStyleSheet(style)
+        
+        if not state:
+            self._main.setStyleSheet('QTextEdit {font-size :  15pt;}')    
+        for output in self._outputs.values():
+            output.setStyleSheet(style)
+            if not state:
+                self._main.setStyleSheet('QTextEdit {font-size :  15pt;}')  
+            
 # Test code.
 
 if __name__ == '__main__':
@@ -201,6 +224,16 @@ if __name__ == '__main__':
         #  With apologies to "The Russians are Coming" emergency text:
         
         win.emergencyMessage('Emergency, emergency, everyone to come out from the streets!')
+    
+    # Flip colors:
+    
+    recording = True
+    def flip(win : OutputManager) -> None:
+        global recording
+        
+        win.setRecording( recording)
+        recording = not recording
+        
     # entry
 
     app = QApplication(sys.argv)
@@ -237,6 +270,15 @@ if __name__ == '__main__':
     teTimer.setSingleShot(False)
     teTimer.timeout.connect(lambda : emergency(win))
     teTimer.start()
+    
+    # Colorization:
+    
+    rTimer = QTimer()
+    rTimer.setInterval(60*1000)  # Flip every min.
+    rTimer.setSingleShot(False)
+    rTimer.timeout.connect(lambda : flip(win))
+    rTimer.start()
+    
     
     win.show()
     sys.exit(app.exec())
