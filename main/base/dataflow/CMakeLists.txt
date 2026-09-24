@@ -81,7 +81,7 @@ nscldaq_add_test(NAME unittests COMMAND dataflow_unittests)
 #-------------- Installation of the scripts, Tcl and python packages.
 
 install(PROGRAMS RingMaster.tcl DESTINATION bin RENAME RingMaster)
-install(TARGETS RingBuffer LIBRARY DESTINATION TclLibs)
+nscldaq_install_library_copy(RingBuffer TclLibs)
 nscldaq_install_tcl_index(TclLibs -verbose "*.so")
 install(PROGRAMS ringutils.tcl DESTINATION TclLibs/ring)
 nscldaq_install_tcl_index(TclLibs/ring -verbose "*.tcl")

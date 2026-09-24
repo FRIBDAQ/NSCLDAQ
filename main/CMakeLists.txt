@@ -101,6 +101,14 @@ if(ENABLE_RUST_TOOLS)
   add_subdirectory(rust_tools)
 endif()
 
+# libtool's static libFoo.a beside every installed libFoo.so (needs every
+# library's final settings, so after all subdirectories).  Those targets are
+# created here but carry their own directory's -I. -I$(srcdir), so don't
+# also add this (top level) directory's.
+
+set(CMAKE_INCLUDE_CURRENT_DIR OFF)
+nscldaq_add_static_libraries()
+
 #----------------------------------------------------------------------------
 #  Top level installation (was install-data-local in Makefile.am).
 #  Declared after the subdirectories so it runs last, as it did before.

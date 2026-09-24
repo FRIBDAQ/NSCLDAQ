@@ -53,6 +53,7 @@ The full list:
 | `WITH_GENGETOPT_PATH` | | gengetopt executable |
 | `WITH_TCLCONFIG`, `WITH_TKCONFIG` | | tclConfig.sh / tkConfig.sh to use (found from `tclsh` otherwise) |
 | `BUILD_TESTING` | ON | Build the unit tests |
+| `BUILD_STATIC_LIBS` | ON | Also build and install a static `lib*.a` beside every installed library, as libtool did (`OFF` is configure's `--disable-static`) |
 
 Other tools are located the usual CMake way, for example `-DTCLSH_CMD=...`,
 `-DBOOST_ROOT=...` and `-DOPENSSL_ROOT_DIR=...`.
@@ -117,9 +118,9 @@ With the CI options, the install tree was compared file by file against an
 Autotools install of the same source. The file lists match apart from the
 items below, and all installed ELF files resolve their libraries.
 
-- Only shared libraries are built. libtool also built static `.a` archives
-  (e.g. `TclLibs/SBSVme/libSBSVme.a`), and no `.la`/`.lai` files are
-  installed.
+- No libtool `.la`/`.lai` files are installed. The static `.a` archives are
+  (see `BUILD_STATIC_LIBS`), in the same places as before, including the
+  `TclLibs` ones such as `TclLibs/SBSVme/libSBSVme.a`.
 - `share/examples/ReadNSCLDAQFiles` also gets the example sources. The
   Makefile copied that directory from the build tree, so an out-of-tree
   Autotools build (CI) installed only the configured `Makefile`.

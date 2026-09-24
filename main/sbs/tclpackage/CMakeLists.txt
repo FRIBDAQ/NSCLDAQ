@@ -15,6 +15,6 @@ target_link_libraries(SBSVme
 # built by CMake.)
 
 nscldaq_install_mkdir(TclLibs/SBSVme)
-install(TARGETS SBSVme LIBRARY DESTINATION TclLibs/SBSVme)
+nscldaq_install_library_copy(SBSVme TclLibs/SBSVme)
 install(CODE "file(APPEND \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/TclLibs/SBSVme/pkgIndex.tcl\"
   \"package ifneeded Vme 2.0 [list load [file join \\\$dir libSBSVme.so]]\\n\")")

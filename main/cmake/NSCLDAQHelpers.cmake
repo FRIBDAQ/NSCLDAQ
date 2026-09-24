@@ -211,11 +211,130 @@ function(nscldaq_add_library tgt)
       set(A_DESTINATION lib)
     endif()
     install(TARGETS ${tgt} LIBRARY DESTINATION ${A_DESTINATION})
+    # libtool also built and installed a static libFoo.a next to libFoo.so;
+    # nscldaq_add_static_libraries() creates those at the end.
+    set_property(GLOBAL APPEND PROPERTY _NSCLDAQ_INSTALLED_LIBRARIES ${tgt})
+    set_property(TARGET ${tgt} PROPERTY NSCLDAQ_LIBRARY_DESTINATIONS ${A_DESTINATION})
   endif()
   if(A_OUTPUT_NAME)
     set_target_properties(${tgt} PROPERTIES OUTPUT_NAME ${A_OUTPUT_NAME})
   endif()
   _nscldaq_apply_am_cxxflags(${tgt})
+endfunction()
+
+#  nscldaq_install_library_copy(<target> <destination>)
+#
+#  Install an nscldaq_add_library() library a second time, e.g. into TclLibs
+#  ($(INSTALL_SCRIPT) .libs/libFoo.* @prefix@/TclLibs), with its static
+#  archive, as copying libtool's .libs/libFoo.* did.
+
+function(nscldaq_install_library_copy tgt dest)
+  install(TARGETS ${tgt} LIBRARY DESTINATION ${dest})
+  set_property(TARGET ${tgt} APPEND PROPERTY NSCLDAQ_LIBRARY_DESTINATIONS ${dest})
+endfunction()
+
+#---------------------------------------------------------------------------
+#  Static libraries.
+#
+#  libtool built every installed library twice: shared (PIC) and static
+#  (non-PIC), and installed libFoo.a beside libFoo.so.  To do the same, each
+#  nscldaq_add_library() library gets a <target>_static archive, created once
+#  every directory has been processed (so all target_* calls made on the
+#  shared library are known) by nscldaq_add_static_libraries(), called at the
+#  end of the top level CMakeLists.txt.  The archive is compiled from the same
+#  sources with the same compile settings, and installed wherever the shared
+#  library is.  -DBUILD_STATIC_LIBS=OFF is the equivalent of
+#  configure --disable-static.
+
+option(BUILD_STATIC_LIBS "Also build and install static (.a) libraries, as libtool did" ON)
+
+function(_nscldaq_add_static_library tgt)
+  get_target_property(_srcdir ${tgt} SOURCE_DIR)
+  get_target_property(_bindir ${tgt} BINARY_DIR)
+  get_target_property(_srcs ${tgt} SOURCES)
+  set(_abs "")
+  foreach(_s IN LISTS _srcs)
+    if(_s MATCHES "^\\$<")
+      list(APPEND _abs "${_s}")
+      continue()
+    endif()
+    if(IS_ABSOLUTE "${_s}")
+      set(_f "${_s}")
+    elseif(EXISTS "${_srcdir}/${_s}")
+      set(_f "${_srcdir}/${_s}")
+    else()
+      set(_f "${_bindir}/${_s}")
+    endif()
+    # Sources generated in the library's own directory (gengetopt, SWIG,
+    # rootcling, ...) must be marked generated here too; the library target
+    # (a dependency below) runs their rules.
+    get_source_file_property(_gen "${_f}" DIRECTORY "${_srcdir}" GENERATED)
+    if(_gen OR NOT EXISTS "${_f}")
+      set_source_files_properties("${_f}" PROPERTIES GENERATED TRUE)
+    endif()
+    list(APPEND _abs "${_f}")
+  endforeach()
+
+  set(_st ${tgt}_static)
+  add_library(${_st} STATIC ${_abs})
+  add_dependencies(${_st} ${tgt})
+
+  get_target_property(_name ${tgt} OUTPUT_NAME)
+  if(NOT _name)
+    set(_name ${tgt})
+  endif()
+  set_target_properties(${_st} PROPERTIES
+    OUTPUT_NAME ${_name}
+    ARCHIVE_OUTPUT_DIRECTORY ${_bindir}/static
+    POSITION_INDEPENDENT_CODE OFF)
+
+  # Same compile settings as the shared library: its own properties (which
+  # include its directory's include_directories()/definitions), the
+  # automake -I. -I$(srcdir) for its directory, and the usage requirements
+  # of everything it links.
+  # The include path in the shared library's exact order: its directory's
+  # -I. -I$(srcdir) first (CMAKE_INCLUDE_CURRENT_DIR), then its own list
+  # (which starts with the top build directory).  Order matters: some
+  # directories have their own config.h.
+  get_target_property(_incs ${tgt} INCLUDE_DIRECTORIES)
+  if(NOT _incs)
+    set(_incs "")
+  endif()
+  set_property(TARGET ${_st} PROPERTY INCLUDE_DIRECTORIES ${_bindir} ${_srcdir} ${_incs})
+  # Other list properties are appended; single-valued ones are copied
+  # (newer CMake refuses to append to e.g. C_STANDARD).
+  foreach(_p COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES)
+    get_target_property(_v ${tgt} ${_p})
+    if(NOT _v STREQUAL "_v-NOTFOUND")
+      set_property(TARGET ${_st} APPEND PROPERTY ${_p} ${_v})
+    endif()
+  endforeach()
+  foreach(_p C_STANDARD C_STANDARD_REQUIRED C_EXTENSIONS CXX_STANDARD
+      CXX_STANDARD_REQUIRED CXX_EXTENSIONS NSCLDAQ_AM_CXXFLAGS)
+    get_target_property(_v ${tgt} ${_p})
+    if(NOT _v STREQUAL "_v-NOTFOUND")
+      set_property(TARGET ${_st} PROPERTY ${_p} ${_v})
+    endif()
+  endforeach()
+  get_target_property(_links ${tgt} LINK_LIBRARIES)
+  if(_links)
+    target_link_libraries(${_st} PRIVATE ${_links})
+  endif()
+
+  get_target_property(_dests ${tgt} NSCLDAQ_LIBRARY_DESTINATIONS)
+  foreach(_d IN LISTS _dests)
+    install(TARGETS ${_st} ARCHIVE DESTINATION ${_d})
+  endforeach()
+endfunction()
+
+function(nscldaq_add_static_libraries)
+  if(NOT BUILD_STATIC_LIBS)
+    return()
+  endif()
+  get_property(_libs GLOBAL PROPERTY _NSCLDAQ_INSTALLED_LIBRARIES)
+  foreach(_t IN LISTS _libs)
+    _nscldaq_add_static_library(${_t})
+  endforeach()
 endfunction()
 
 #---------------------------------------------------------------------------
