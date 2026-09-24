@@ -64,8 +64,8 @@ class OutputManager(QTabWidget):
         addToMain   - Adds a message to the main tab output widget.
         emergencyMessage - Adds a message to the main tab and, if it's not the
                       currently displayed tab the current tab.  These messages
-                      will be highlighted with a red foreground and black
-                      background.  This should be used _only_ for really
+                      will be highlighted with a red foreground.
+                      This should be used _only_ for really
                       high priority events, like an unexpected program exit.
         
         @note  To support rich text, the clients of the OutputWindow should
@@ -105,6 +105,8 @@ class OutputManager(QTabWidget):
         newWindow = OutputWindow.OutputWindow(self)
         self.addTab(newWindow, name)
         self._outputs[name] = newWindow
+        
+        return newWindow
         
     def removeOutput(self, name: str) -> None:
         '''
@@ -160,13 +162,14 @@ class OutputManager(QTabWidget):
         
         # wrap the text in a div to set the color:
         
-        fullText = '<div color="red" bgcolor="black">' + msg + '</div>'
-        
+        fullText = '<span style="color: red;">' + msg + '</span>'
+
         #  See if we should add  the text to the current tab:
         
         currentTabText = self.tabText(self.currentIndex())
         if currentTabText in self._outputs:
             #  The current tab is one of our output widgets.
+            #  Won't match if 'Main' either.
             widget = self._outputs[currentTabText]
             widget.append(fullText)
         
@@ -174,7 +177,70 @@ class OutputManager(QTabWidget):
         
         self._main.append(fullText)
         
+# Test code.
+
+if __name__ == '__main__':
+
+    import sys
+    from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtCore    import QTimer
+
+    # Slots:
     
+    def output(widget :OutputWindow.OutputWindow) -> None:
+        #  Standard output.
+        
+        widget.append('standard text')
+    
+    def toMain(win : OutputManager) -> None:
+        # Some normal text to the main window:
+        
+        win.addToMain('main standard text')
+    
+    def emergency(win : OutputManager) -> None:
+        #  With apologies to "The Russians are Coming" emergency text:
+        
+        win.emergencyMessage('Emergency, emergency, everyone to come out from the streets!')
+    # entry
+
+    app = QApplication(sys.argv)
+    win = OutputManager()
+    
+    tab1 = win.addOutput('Tab1')
+    tab2 = win.addOutput('tab2')
+    
+    # Timers to do output:
+    #   To specific tabs
+    t1Timer = QTimer()
+    t1Timer.setInterval(2000)    # output every 2 secs.
+    t1Timer.setSingleShot(False)
+    t1Timer.timeout.connect(lambda : output(tab1))
+    t1Timer.start()
+    
+    t2Timer = QTimer()
+    t2Timer.setInterval(3000)   # Every 3 seconds.
+    t2Timer.setSingleShot(False)
+    t2Timer.timeout.connect(lambda : output(tab2))
+    t2Timer.start()
+    
+    tmTimer = QTimer()
+    tmTimer.setInterval(5000)
+    tmTimer.setSingleShot(False)
+    tmTimer.timeout.connect(lambda : toMain(win))
+    tmTimer.start()
+    
+    
+    #  Now emergency messages.
+    
+    teTimer = QTimer()
+    teTimer.setInterval(30*1000)    # every 30 seconds.
+    teTimer.setSingleShot(False)
+    teTimer.timeout.connect(lambda : emergency(win))
+    teTimer.start()
+    
+    win.show()
+    sys.exit(app.exec())
+
         
         
 
