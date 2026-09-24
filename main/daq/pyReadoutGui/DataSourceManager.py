@@ -25,6 +25,7 @@ from collections.abc import KeysView
 from operator import methodcaller
 from typing import Self
 
+
 from nscldaq.readoutgui import DataSource
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -101,7 +102,7 @@ class DataSourceManager(QObject):
     
     failed(str, str) - operation failed operation/sourcename
     
-    sourceDied(str, str) - Source named,type died.
+    sourceDied(str, DataSource) - Source named,  source refernce died.
     
     '''
     starting = pyqtSignal()
@@ -120,7 +121,7 @@ class DataSourceManager(QObject):
     stopped     = pyqtSignal()
     
     failed      = pyqtSignal(str, str)
-    sourceDied  = pyqtSignal(str, str)
+    sourceDied  = pyqtSignal(str, DataSource.DataSource)
     
     def __init__(self, parent : QObject | None = None) -> None:
         # Validate singleton-ness:
@@ -313,7 +314,7 @@ class DataSourceManager(QObject):
         if self._iterateAction('stop'):
             self.stopped.emit()
     
-    def live(self) -> bool | None:
+    def live(self) -> bool:
         '''
         Polls all of the data sources to see if they are live.  For each
         sourc reporting it is dead, sourceDied is emitted.
@@ -323,7 +324,7 @@ class DataSourceManager(QObject):
         for name in self._sources:
             if not self._sources[name].check():
                 result = False
-                self.sourceDied.emit(name, type(self._sources[name].__name__))
+                self.sourceDied.emit(name, self._sources[name])
                 
         return result
         
@@ -355,6 +356,7 @@ if __name__ == '__main__':
     import sys
     from PyQt6.QtCore import QCoreApplication
     
+    
     class NullDataSource(DataSource.DataSource):
         # Data source that doesn't do much.
         def __init__(self, **kwargs) :
@@ -382,6 +384,12 @@ if __name__ == '__main__':
         def end(self) -> None:
             pass
 
+    class DeadDataSource(NullDataSource):
+        def __init__(self, **kwargs):
+            super().__init__(*kwargs)
+        def check(self) -> bool:
+            return False                                        # indicates the source died.
+        
     class FailDataSource(DataSource.DataSource):
         # Data source that fails at everything it's asked to do.
         def __init__(self, **kwargs) :
@@ -417,6 +425,11 @@ if __name__ == '__main__':
             raise Exception('Not important')
         def resume(self) -> None:
             raise Exception('Not important')
+
+        def check(self) -> bool:
+            
+            #  Source is dead.
+            return False
 
     class NoPauseSource(DataSource.DataSource):
         #  A data source that can't pause.
@@ -1301,6 +1314,45 @@ if __name__ == '__main__':
             self.assertEqual('stop', fop)
             self.assertEqual('failed', fsrc)
 
+        def test_check_1(self):
+            deadSources : list[tuple[str, DataSource.DataSource]] = []
+            
+            def died_slot(name, type_name):
+                nonlocal deadSources
+                deadSources.append((name, type_name))
                     
+            i = DataSourceManager.instance()
+            i.sourceDied.connect(died_slot)
+            
+            self,self.assertTrue(i.live())
+            
+            # No signals:
+            
+            self.assertEqual(0, len(deadSources))
+
+        def test_check_2(self):
+            deadSources : list[tuple[str, DataSource.DataSource]] = []
+            
+            def died_slot(name, type_name):
+                nonlocal deadSources
+                deadSources.append((name, type_name))
+                    
+            i = DataSourceManager.instance()
+            i.sourceDied.connect(died_slot)
+            src = DeadDataSource()
+            i.addSource('failed', src)
+            
+            
+            
+            self,self.assertFalse(i.live())
+            
+            # No signals:
+            
+            self.assertEqual(1, len(deadSources))
+            died = deadSources[0]
+            self.assertEqual('failed', died[0])
+            self.assertEqual(src, died[1])
+            
+            
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
     unittest.main()
