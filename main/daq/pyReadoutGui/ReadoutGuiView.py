@@ -18,8 +18,9 @@
 @author Ron Fox
 '''
 
-from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QSizePolicy
+from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QSizePolicy, QMenuBar, QMenu, QCheckBox
 from PyQt6.QtCore    import pyqtSignal
+from PyQt6.QtGui      import QAction
 from nscldaq.readoutgui import OutputManager, RunParamsView, RunTimerView, StateView
 
 
@@ -33,7 +34,7 @@ class ReadoutGuiCentralWidget(QWidget):
         StateControls - Gets the StateView.  See docs for nscldaq.readoutgui.StateView.StateButtons
         RunTimer      - Gets the timed run controls. See docs for nscldaq.readoutgui.RunTimer.RunTimer
         Outputs       - Gets the OutputManager. See docs for nscldaq.reaodutgui.OutputManager.OutputManager.
-        
+        Recording     - Recording checkbox.
     '''
     def __init__(self, parent : QWidget | None = None):
         super().__init__(parent)
@@ -72,6 +73,12 @@ class ReadoutGuiCentralWidget(QWidget):
         
         self._layout.addLayout(rslayout)
         
+        # Recording button:
+        
+        self._recording = QCheckBox('Recording', self)
+        self._recording.setSizePolicy(fixedHeight)
+        self._layout.addWidget(self._recording)
+        
         #  Below all of ths is the output manager.
         
         self._output = OutputManager.OutputManager(self)
@@ -98,6 +105,12 @@ class ReadoutGuiCentralWidget(QWidget):
         @return RunTimerView.RunTimerView - the widget that has the timed run controls and elapsed time.
         '''
         return self._timedruns
+    
+    def Recording(self) -> QCheckBox:
+        ''' 
+        @return QCheckBox - the recording control.
+        '''
+        return self._recording
     
     def Outputs(self) -> OutputManager.OutputManager:
         '''
@@ -129,7 +142,7 @@ class ReadoutGuiMainWindow(QMainWindow):
             dsDeleteSource     - Delete a data source
             dsListSources      - List data sources
         Settings menu:
-            setingsEventLog    - Event log settings.
+            settingsEventLog    - Event log settings.
     '''
     # Signals:
     
@@ -169,11 +182,75 @@ class ReadoutGuiMainWindow(QMainWindow):
     
     def _createMenus(self) -> None:
         # Create the menus and their actions.
-        pass
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('File')
+        self._createFileMenu(fileMenu)
+        
+        dataSourceMenu = menubar.addMenu('Data Source')
+        self._createDataSourceMenu(dataSourceMenu)
+        
+        settingsMenu = menubar.addMenu('Settings')
+        self._createSettingsMenu(settingsMenu)
+    
+    
+    def _createFileMenu(self, fileMenu : QMenu) -> None:
+        # Create the entries for the file menu and map the action triggers
+        # to our signals.
+        self._fileLoadAction = QAction('Load...', fileMenu)
+        self._fileLoadAction.triggered.connect(self.fileMenuLoad)
+        fileMenu.addAction(self._fileLoadAction)
+        
+        self._fileAddLibAction = QAction('Add Library...', fileMenu)
+        self._fileAddLibAction.triggered.connect(self.fileMenuAddLibrary)
+        fileMenu.addAction(self._fileAddLibAction)
+        
+        fileMenu.addSeparator()
+        
+        self._fileLogAction = QAction('Log...', fileMenu)
+        self._fileLogAction.triggered.connect(self.fileLog)
+        fileMenu.addAction(self._fileLogAction)
+        
+        self._fileDisableLogAction = QAction('Disable Logging', fileMenu)
+        self._fileDisableLogAction.triggered.connect(self.fileDisableLog)
+        fileMenu.addAction(self._fileDisableLogAction)
+        
+        fileMenu.addSeparator()
+        
+        self._fileExitAction = QAction('Exit...', fileMenu)
+        self._fileExitAction.triggered.connect(self.fileExit)
+        fileMenu.addAction(self._fileExitAction)
+    
+    def _createDataSourceMenu(self, menu : QMenu) -> None:
+        # Create the data source menu actions and map their
+        # signals to our class's signals.
+        
+        self._dsAddAction = QAction('Add...', menu)
+        self._dsAddAction.triggered.connect(self.dsAddSource)
+        menu.addAction(self._dsAddAction)
+        
+        self._dsDelSourceAction = QAction('Delete...', menu)
+        self._dsDelSourceAction.triggered.connect(self.dsDeleteSource)
+        menu.addAction(self._dsDelSourceAction)
+        
+        menu.addSeparator()
+        
+        self._dsListAction = QAction('List', menu)
+        self._dsListAction.triggered.connect(self.dsListSources)
+        menu.addAction(self._dsListAction)
+        
+    def _createSettingsMenu(self, menu : QMenu) -> None:
+        # Create the settings menu and connect its actions to our signals.
+        
+        self._settingsEvlogAction = QAction('Event Log...', menu)
+        self._settingsEvlogAction.triggered.connect(self.settingsEventLog)
+        menu.addAction(self._settingsEvlogAction)
+        
+        
 #  Test code:
 
 if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtCore import Qt
     import sys
 
     app = QApplication(sys.argv)
@@ -181,6 +258,9 @@ if __name__ == '__main__':
     
     win.setStatusMessage('Recording to abc.evt 100Mb')
     win.centralWidget().Outputs().setRecording(True)
+    win.centralWidget().Outputs().addToMain('Run started')
+    win.centralWidget().StateControls().setState('Active')
+    win.centralWidget().Recording().setCheckState(Qt.CheckState.Checked)
     
     win.show()
     sys.exit(app.exec())
