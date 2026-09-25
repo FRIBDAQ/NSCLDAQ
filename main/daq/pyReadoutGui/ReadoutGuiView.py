@@ -35,6 +35,9 @@ class ReadoutGuiCentralWidget(QWidget):
         RunTimer      - Gets the timed run controls. See docs for nscldaq.readoutgui.RunTimer.RunTimer
         Outputs       - Gets the OutputManager. See docs for nscldaq.reaodutgui.OutputManager.OutputManager.
         Recording     - Recording checkbox.
+        
+        Layout        - Retrieves the QVBoxLayout that does the layout of our widget.  This
+                        allows extensions to add to the widget dynamically.
     '''
     def __init__(self, parent : QWidget | None = None):
         super().__init__(parent)
@@ -117,6 +120,13 @@ class ReadoutGuiCentralWidget(QWidget):
         @return OutputManager.OutputManager  - The output manager widget (tabs with outputs)
         '''
         return self._output
+    
+    def Layout(self) -> QVBoxLayout:
+        '''
+        @return QVBoxLayout - The layout of the widget.
+        '''
+        return self.layout()
+        
    
 class ReadoutGuiMainWindow(QMainWindow):
     ''''
@@ -249,7 +259,7 @@ class ReadoutGuiMainWindow(QMainWindow):
 #  Test code:
 
 if __name__ == '__main__':
-    from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication, QPushButton
     from PyQt6.QtCore import Qt
     import sys
 
@@ -261,6 +271,11 @@ if __name__ == '__main__':
     win.centralWidget().Outputs().addToMain('Run started')
     win.centralWidget().StateControls().setState('Active')
     win.centralWidget().Recording().setCheckState(Qt.CheckState.Checked)
+    
+    # Test run-time extensibility:
+    
+    button = QPushButton('MyButton', win)
+    win.centralWidget().Layout().addWidget(button)
     
     win.show()
     sys.exit(app.exec())
