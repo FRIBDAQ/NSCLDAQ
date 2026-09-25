@@ -18,10 +18,19 @@
 @author Ron Fox
 '''
 
-from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QSizePolicy, QMenuBar, QMenu, QCheckBox
-from PyQt6.QtCore    import pyqtSignal
-from PyQt6.QtGui      import QAction
 from nscldaq.readoutgui import OutputManager, RunParamsView, RunTimerView, StateView
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QAction
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMenu,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class ReadoutGuiCentralWidget(QWidget):
@@ -259,9 +268,10 @@ class ReadoutGuiMainWindow(QMainWindow):
 #  Test code:
 
 if __name__ == '__main__':
-    from PyQt6.QtWidgets import QApplication, QPushButton
-    from PyQt6.QtCore import Qt
     import sys
+
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtWidgets import QApplication, QPushButton
 
     app = QApplication(sys.argv)
     win = ReadoutGuiMainWindow()
