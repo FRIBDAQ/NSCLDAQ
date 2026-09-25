@@ -22,6 +22,7 @@ from nscldaq.readoutgui import OutputManager, RunParamsView, RunTimerView, State
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QHBoxLayout,
     QLabel,
@@ -264,14 +265,30 @@ class ReadoutGuiMainWindow(QMainWindow):
         self._settingsEvlogAction.triggered.connect(self.settingsEventLog)
         menu.addAction(self._settingsEvlogAction)
         
-        
+ 
+def mainWindow() -> ReadoutGuiMainWindow  | None:       
+    '''
+    Must be called after the applicatin and window have been instantiated.
+    @return ReadoutGuiMainWindow  - The main window of the application
+    @retval None if called before the app or main window were instantiated.
+    '''
+    app = QApplication.instance()
+    if app:
+        widgets = app.topLevelWidgets()
+        for w in widgets:
+            if type(w) == ReadoutGuiMainWindow:
+                return w
+        return None
+    else:
+        return None
+     
 #  Test code:
 
 if __name__ == '__main__':
     import sys
 
     from PyQt6.QtCore import Qt
-    from PyQt6.QtWidgets import QApplication, QPushButton
+    from PyQt6.QtWidgets import QPushButton
 
     app = QApplication(sys.argv)
     win = ReadoutGuiMainWindow()
