@@ -274,11 +274,14 @@ def mainWindow() -> ReadoutGuiMainWindow  | None:
     '''
     app = QApplication.instance()
     if app:
-        widgets = app.topLevelWidgets()
-        for w in widgets:
-            if type(w) == ReadoutGuiMainWindow:
-                return w
-        return None
+        try:
+            widgets = app.topLevelWidgets()
+            for w in widgets:
+                if type(w) == ReadoutGuiMainWindow:
+                    return w
+            return None
+        except AttributeError:    # Testing with QCoreApplication.
+            return None
     else:
         return None
      
