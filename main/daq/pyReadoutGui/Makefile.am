@@ -9,10 +9,10 @@ install-exec-local:
 	do \
 	  $(INSTALL_SCRIPT) @srcdir@/$$f $(MODULE_DIR); \
 	done
-
+	$(INSTALL_SCRIPT) @srcdir@/pyReadoutGui.py @bindir@/pyReadoutGui
 
 TESTS_ENVIRONMENT=PYTHONPATH=@prefix@/pythonLibs
 TESTS=$(TESTABLE_MODULES)
 
-EXTRA_DIST=$(MODULES) $(INTERActive_TESTS)
+EXTRA_DIST=pyReadoutGui.py $(MODULES) $(INTERActive_TESTS)
 
