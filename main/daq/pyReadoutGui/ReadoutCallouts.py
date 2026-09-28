@@ -204,6 +204,7 @@ class CalloutExtensionManager:
     # Private slots:
 
     def _leave(self, fromstate : str, tostate : str) -> None:
+        print("_leave", fromstate, tostate)
         # Leaving one state ... starting the transition to another.
         match tostate:
             case 'Starting':
@@ -224,22 +225,23 @@ class CalloutExtensionManager:
             case _:                                             # Other tostates do nothing.
                 pass
     def _enter(self, fromstate : str, tostate: str) -> None:
+        print("_enter", fromstate, tostate)
         # Entering the new state successfully:
         match tostate:
             case 'Halted':    # 3 ways to get here:
-                if fromstate == 'Starting:':                   # Boot finished:
-                    self._invokeExtension('OnStarted')
+                if fromstate == 'Starting':                   # Boot finished:
+                    self._invokeExtensions('onStarted')
                 else:                            # End of an active/paused run:
-                    self._invokeExtension('OnEnded')
+                    self._invokeExtensions('onEnded')
             case 'NotReady':
-                self._invokeExtension('OnShutdown')
+                self._invokeExtensions('onShutdown')
             case 'Active':          # Begin or Resume:
                 if fromstate == 'Halted':
-                    self._invokeExtension('OnBegun')
+                    self._invokeExtensions('onBegun')
                 else:
-                    self._invokeExtension('OnResumed')
+                    self._invokeExtensions('onResumed')
             case 'Paused':
-                self._invokeExtension('OnPaused')
+                self._invokeExtensions('onPaused')
             case _:                                            # Anything else - do nothing.
                 pass
             
@@ -338,6 +340,10 @@ if __name__ == '__main__':
         def test_Starting(self):
             ReadoutStateMachine.instance().transition('Starting')
             self.assertEqual('onAboutToStart', self._extension.lastCalled)
+        def test_started(self):
+            ReadoutStateMachine.instance().transition('Starting')
+            ReadoutStateMachine.instance().transition('Halted')
+            self.assertEqual('onStarted', self._extension.lastCalled)
     
     app = QCoreApplication(sys.argv)   # I think I need this for signals to flow.
     unittest.main()                    # Run my tests.
