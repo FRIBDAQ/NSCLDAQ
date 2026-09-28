@@ -207,12 +207,12 @@ class CalloutExtensionManager:
         # Leaving one state ... starting the transition to another.
         match tostate:
             case 'Starting':
-                self._invokExtensions('onAboutToStart')
+                self._invokeExtensions('onAboutToStart')
             case 'Not Ready':
                 self._invokeExtensions('onShuttingDown')
             case 'Halted':                 # Three ways to get here...from Starting, Active, or Paused.
                 if fromstate != 'Starting':
-                    self._invokExtensions('onEnding')
+                    self._invokeExtensions('onEnding')
                     
             case 'Active':                      # Could be begin or resume:
                 if fromstate == 'Halted':
@@ -261,9 +261,14 @@ class CalloutExtensionManager:
                 title = gui.centralWidget().RunParameters().title()
                 run   = gui.centralWidget().RunParameters().run()
                 recording = gui.centralWidget().Recording.checkState == Qt.CheckState.Checked
-                for extension in self._extensions:
-                    func = getattr(extension, methodname)
-                    func(run, title, recording)
+            else:
+                # For testing:
+                title = 'a test title'
+                run   = 1234
+                recording = False
+            for extension in self._extensions:
+                func = getattr(extension, methodname)
+                func(run, title, recording)
         
 # Tests:
 #
@@ -323,14 +328,16 @@ if __name__ == '__main__':
             # and force the state -> NotReaDy via its 'private' _state and _laststate
             # vars.  this just puts it in a known state.
             
-            ReadoutStateMachine.instance()._state = 'NotReady'
-            ReadoutStateMachine.instance()._lastState = 'NotReady'
+            ReadoutStateMachine.instance()._state = 'Not Ready'
+            ReadoutStateMachine.instance()._lastState = 'Not Ready'
             
         def test_registerCallback(self):
             self.assertIsNotNone(self._extension.lastCalled)
             self.assertEqual('onRegistered', self._extension.lastCalled)
             
-    
+        def test_Starting(self):
+            ReadoutStateMachine.instance().transition('Starting')
+            self.assertEqual('onAboutToStart', self._extension.lastCalled)
     
     app = QCoreApplication(sys.argv)   # I think I need this for signals to flow.
     unittest.main()                    # Run my tests.
