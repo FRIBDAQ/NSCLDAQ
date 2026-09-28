@@ -204,7 +204,7 @@ class CalloutExtensionManager:
     # Private slots:
 
     def _leave(self, fromstate : str, tostate : str) -> None:
-    
+        
         # Leaving one state ... starting the transition to another.
         match tostate:
             case 'Starting':
@@ -233,7 +233,7 @@ class CalloutExtensionManager:
                     self._invokeExtensions('onStarted')
                 else:                            # End of an active/paused run:
                     self._invokeExtensions('onEnded')
-            case 'NotReady':
+            case 'Not Ready':
                 self._invokeExtensions('onShutdown')
             case 'Active':          # Begin or Resume:
                 if fromstate == 'Halted':
@@ -368,13 +368,52 @@ if __name__ == '__main__':
             self.assertEqual('onPausing', self._extension.lastCalled[-2])
             self.assertEqual('onPaused', self._extension.lastCalled[-1])
             
+        def test_End_1(self):
+            # Direct end from active:
+            ReadoutStateMachine.instance().transition('Starting')
+            ReadoutStateMachine.instance().transition('Halted')
+            ReadoutStateMachine.instance().transition('Active')
+            ReadoutStateMachine.instance().transition('Halted')
+            
+            self.assertEqual('onEnding', self._extension.lastCalled[-2])
+            self.assertEqual('onEnded', self._extension.lastCalled[-1])
         
+        def test_End_2(self):
+            # Ending from paused:
+            
+            ReadoutStateMachine.instance().transition('Starting')
+            ReadoutStateMachine.instance().transition('Halted')
+            ReadoutStateMachine.instance().transition('Active')
+            ReadoutStateMachine.instance().transition('Paused')
+            ReadoutStateMachine.instance().transition('Halted')
+            
+            self.assertEqual('onEnding', self._extension.lastCalled[-2])
+            self.assertEqual('onEnded', self._extension.lastCalled[-1])
+            
+        def test_Resume(self):
+            ReadoutStateMachine.instance().transition('Starting')
+            ReadoutStateMachine.instance().transition('Halted')
+            ReadoutStateMachine.instance().transition('Active')
+            ReadoutStateMachine.instance().transition('Paused')
+            ReadoutStateMachine.instance().transition('Active')
+            
+            self.assertEqual('onResuming', self._extension.lastCalled[-2])            
+            self.assertEqual('onResumed',  self._extension.lastCalled[-1])
+        
+        def test_Shutdown(self):
+            # Can happen from any state:
+            ReadoutStateMachine.instance().transition('Starting')
+            ReadoutStateMachine.instance().transition('Halted')
+            ReadoutStateMachine.instance().transition('Active')
+            ReadoutStateMachine.instance().transition('Paused')
+            ReadoutStateMachine.instance().transition('Active')
+            ReadoutStateMachine.instance().transition('Not Ready')
             
             
+            self.assertEqual('onShuttingDown', self._extension.lastCalled[-2])
+            self.assertEqual('onShutdown', self._extension.lastCalled[-1])
+                        
             
-            
-            
-    
     app = QCoreApplication(sys.argv)   # I think I need this for signals to flow.
     unittest.main()                    # Run my tests.
     
