@@ -204,7 +204,7 @@ class CalloutExtensionManager:
     # Private slots:
 
     def _leave(self, fromstate : str, tostate : str) -> None:
-        print("_leave", fromstate, tostate)
+    
         # Leaving one state ... starting the transition to another.
         match tostate:
             case 'Starting':
@@ -217,15 +217,15 @@ class CalloutExtensionManager:
                     
             case 'Active':                      # Could be begin or resume:
                 if fromstate == 'Halted':
-                    self._invokeExtensions('onBeginning')
+                    self._invokeBegin('onBeginning')
                 else:
                     self._invokeExtensions('onResuming')
             case 'Paused':
-                self._invokeExtensions('OnPausing')
+                self._invokeExtensions('onPausing')
             case _:                                             # Other tostates do nothing.
                 pass
     def _enter(self, fromstate : str, tostate: str) -> None:
-        print("_enter", fromstate, tostate)
+        
         # Entering the new state successfully:
         match tostate:
             case 'Halted':    # 3 ways to get here:
@@ -237,7 +237,7 @@ class CalloutExtensionManager:
                 self._invokeExtensions('onShutdown')
             case 'Active':          # Begin or Resume:
                 if fromstate == 'Halted':
-                    self._invokeExtensions('onBegun')
+                    self._invokeBegin('onBegun')
                 else:
                     self._invokeExtensions('onResumed')
             case 'Paused':
@@ -285,35 +285,41 @@ if __name__ == '__main__':
     class TestCallouts(pyReadoutExtension):
         def __init__(self):
             super().__init__()
-            self.lastCalled = None
+            self.lastCalled = []      # Log of called methods.
         #  The callbacks will just set self.lastCalled to their methodnames...
         #   This is simpler than a custom class decorator...
         def  onRegistered(self) -> None:
-            self.lastCalled = 'onRegistered'
+            self.lastCalled.append('onRegistered')
         def onAboutToStart(self) -> None:
-            self.lastCalled = 'onAboutToStart'
+            self.lastCalled.append('onAboutToStart')
         def onStarted(self) -> None:
-            self.lastCalled = 'onStarted'
-        def onBeginning(self) -> None:
-            self.lastCalled = 'onBeginning'
-        def onBegun(self) -> None:
-            self.lastCalled = 'onBegun'
+            self.lastCalled.append('onStarted')
+        def onBeginning(self, run, title, isrecording) -> None:
+            self._run = run
+            self._title = title
+            self._recording = isrecording
+            self.lastCalled.append('onBeginning')
+        def onBegun(self, run, title, isrecording) -> None:
+            self.lastCalled.append('onBegun')
+            self._run = run
+            self._title = title
+            self._recording = isrecording
         def onEnding(self) -> None:
-            self.lastCalled = 'onEnding'
+            self.lastCalled.append('onEnding')
         def onEnded(self) -> None:
-            self.lastCalled = 'onEnded'
+            self.lastCalled.append('onEnded')
         def onPausing(self) -> None:
-            self.lastCalled = 'onPausing'
+            self.lastCalled.append('onPausing')
         def onPaused(self) -> None:
-            self.lastCalled = 'onPaused'
+            self.lastCalled.append('onPaused')
         def onResuming(self) -> None:
-            self.lastCalled = 'onResuming'
+            self.lastCalled.append('onResuming')
         def onResumed(self) -> None:
-            self.lastCalled = 'onResumed'
+            self.lastCalled.append('onResumed')
         def onShuttingDown(self) -> None:
-            self.lastCalled= 'onShuttingDown'
+            self.lastCalled.append('onShuttingDown')
         def onShutdown(self) -> None:
-            self.lastCalled = 'onShutdown'
+            self.lastCalled.append('onShutdown')
         
     
     # Tests:
@@ -335,15 +341,39 @@ if __name__ == '__main__':
             
         def test_registerCallback(self):
             self.assertIsNotNone(self._extension.lastCalled)
-            self.assertEqual('onRegistered', self._extension.lastCalled)
+            self.assertEqual('onRegistered', self._extension.lastCalled[-1])
             
         def test_Starting(self):
             ReadoutStateMachine.instance().transition('Starting')
-            self.assertEqual('onAboutToStart', self._extension.lastCalled)
+            self.assertEqual('onAboutToStart', self._extension.lastCalled[-1])
         def test_started(self):
             ReadoutStateMachine.instance().transition('Starting')
             ReadoutStateMachine.instance().transition('Halted')
-            self.assertEqual('onStarted', self._extension.lastCalled)
+            self.assertEqual('onStarted', self._extension.lastCalled[-1])
+        def test_Begin(self):
+            ReadoutStateMachine.instance().transition('Starting')
+            ReadoutStateMachine.instance().transition('Halted')
+            ReadoutStateMachine.instance().transition('Active')
+            self.assertEqual('onBeginning', self._extension.lastCalled[-2])
+            self.assertEqual('onBegun', self._extension.lastCalled[-1])
+            self.assertEqual('a test title', self._extension._title)
+            self.assertEqual(1234, self._extension._run)
+            self.assertFalse(self._extension._recording)
+        def test_Pause(self):
+            ReadoutStateMachine.instance().transition('Starting')
+            ReadoutStateMachine.instance().transition('Halted')
+            ReadoutStateMachine.instance().transition('Active')
+            ReadoutStateMachine.instance().transition('Paused')
+            
+            self.assertEqual('onPausing', self._extension.lastCalled[-2])
+            self.assertEqual('onPaused', self._extension.lastCalled[-1])
+            
+        
+            
+            
+            
+            
+            
     
     app = QCoreApplication(sys.argv)   # I think I need this for signals to flow.
     unittest.main()                    # Run my tests.
