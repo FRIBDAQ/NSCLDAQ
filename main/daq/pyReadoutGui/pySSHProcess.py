@@ -98,6 +98,44 @@ class SSHProcess(QProcess):
         
         pass
     
+    def ReadAll(self) -> str:
+        '''
+            This utility reads any pending data from the stdout/stderr pipes
+            and returns it as a string.
+            Much more useful than the stuff provided
+            
+            @return str - the string read.
+            @retval None - there's no pending in put.
+        '''
+        result = self.readAll()
+        if result:
+            return result.data().decode('utf-8')
+        else:
+            return None
+    def ReadLine(self) -> str:
+        '''
+        Reads a line of from the stderr/stdout stream and 
+        decodes it into a string.
+        
+        @return str - the line.
+        @retval None - There's no pending input.
+        
+        '''
+        result = self.readLine()
+        if result:
+            return result.data().decode('utf8')
+        else:
+            return None
+        
+    def Write(self, msg : str) -> int:
+        ''' Needed because the pyqt bindings for QIODevice don't let us
+            write strings without first converting them to byte arrays and, well
+            let's face it, I'm too lazy to not encapsulate that  here:
+            
+            @param msg  - message to write.
+        ''' 
+        return self.write(bytearray(msg, 'utf-8'))
+        
     # Utilities
     
     def _ssh(self, host : str) -> None:
@@ -109,7 +147,7 @@ class SSHProcess(QProcess):
         self.setArguments([host,])
         self.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
         self.start()
-        if self._Write(f'cd {os.getcwd()}\n') < 0:
+        if self.Write(f'cd {os.getcwd()}\n') < 0:
             raise RuntimeError('Unable to write the cd command to a subprocess')
         
 
@@ -134,7 +172,7 @@ class SSHProcess(QProcess):
             # Push the container startup command down the pipe:
             command = f'apptainer shell {shell_spec} {bindings_spec} {container_image}\n'
             
-            self._Write(command)
+            self.Write(command)
             
     def _getBindings(self):
         # The bindings are either specified in an environment variable:
@@ -144,7 +182,7 @@ class SSHProcess(QProcess):
         if 'CONTAINER_BINDINGS' in os.environ:
             return f'--bind {os.environ["CONTAINER_BINDINGS"]}'
         else:
-            bindpoints_file = pathlib.Path('~/.singularity_bindpoints').expand_user()
+            bindpoints_file = pathlib.Path('~/.singularity_bindpoints').expanduser()
             if bindpoints_file.exists():
                 bindings = ''
                 with bindpoints_file.open() as f:
@@ -156,9 +194,5 @@ class SSHProcess(QProcess):
             else:
                 return ''
     
-    def _Write(self, msg : str) -> int:
-        # Needed because the pyqt bindings for QIODevice don't let us
-        # write strings without first converting them to byte arrays and, well
-        # let's face it, I'm too lazy to not encapsulate that  here:
-        print("Sendinng", msg)
-        return self.write(bytearray(msg, 'utf-8'))
+    
+    
