@@ -352,8 +352,9 @@ _instance : DataSourceManager = DataSourceManager()
 if __name__ == '__main__':
     # Tests
     
-    import unittest
     import sys
+    import unittest
+
     from PyQt6.QtCore import QCoreApplication
     
     
