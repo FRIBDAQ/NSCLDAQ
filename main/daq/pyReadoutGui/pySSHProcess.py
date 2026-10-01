@@ -18,6 +18,7 @@
 '''
 import os
 import pathlib
+import time
 
 from PyQt6.QtCore import QProcess, QObject
 
@@ -83,9 +84,16 @@ class SSHProcess(QProcess):
         @param remote :str - host in which the program will run. DNS name or dotted IP.
         @param command - The command to run.
         '''
+        self.spawnRemote(remote, command)
+        output = ""
+        while self.state() != QProcess.ProcessState.NotRunning:
+            self.waitForReadyRead(1000)
+            data =  self.ReadAll()
+            if data is not None:
+                output += data
         
-        pass
-
+        return output
+        
     def spawnRemote(self, remote : str, command : str) -> None:
         '''
         Spawn a program into the remote system.  After the program is run,
@@ -93,10 +101,13 @@ class SSHProcess(QProcess):
         
         @param remote :str - the system the program will run in. DNS name or dotted IP.
         @param command :str - The command to run.
-        @note This is intended for short-lived commands.
+        @note This is intended for  long-lived commands.
         '''
         
-        pass
+        fullcommand = self._reconstructContainer() + '"' + command + '"'
+        print('full command: ', fullcommand)
+        self._ssh(remote, fullcommand)
+
     
     def ReadAll(self) -> str:
         '''
@@ -133,22 +144,32 @@ class SSHProcess(QProcess):
             let's face it, I'm too lazy to not encapsulate that  here:
             
             @param msg  - message to write.
+            @return  int - number of bytes written...
         ''' 
         return self.write(bytearray(msg, 'utf-8'))
-        
+    def WriteLine(self, msg : str) -> int:
+        '''
+         Same as Write abovbe but just appends a \n to the msg before
+         writing it.
+         
+         @param msg - the message to write.
+         @return int - number of bytes written.
+         
+        '''
+        writemsg = msg + '\n'
+        return self.Write(writemsg)
     # Utilities
     
-    def _ssh(self, host : str) -> None:
+    def _ssh(self, host : str, command :str) -> None:
         #
         #   This actually set up and starts the ssh pipeline to the host.
         
         
         self.setProgram('ssh')
-        self.setArguments([host,])
+        self.setArguments([host, command])
         self.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
         self.start()
-        if self.Write(f'cd {os.getcwd()}\n') < 0:
-            raise RuntimeError('Unable to write the cd command to a subprocess')
+        
         
 
     def _reconstructContainer(self) -> None:
@@ -158,22 +179,21 @@ class SSHProcess(QProcess):
         # APPTAINER_CONTAINER - Full path to the container.
         # APPTAINER_SHELL     - shell to start in the container.
         # 
+        #  IF containerized, a prefix to the actual command is returned.
+        #
         if 'APPTAINER_CONTAINER' in os.environ:
-            print('reconstruct container')
             container_image = os.environ['APPTAINER_CONTAINER']
             # Shell might or might not exist:
 
-            if 'APPTAINER_SHELL' in os.environ:
-                shell_spec = f'--shell {os.environ["APPTAINER_SHELL"]}'
-            else:
-                shell_spec = ''
+
             bindings_spec = self._getBindings()
             
             # Push the container startup command down the pipe:
-            command = f'apptainer shell {shell_spec} {bindings_spec} {container_image}\n'
+            command = f'apptainer exec {bindings_spec} {container_image} bash -c '
             
-            self.Write(command)
-            
+            return command
+        else:
+            return ''
     def _getBindings(self):
         # The bindings are either specified in an environment variable:
         # CONTAINER_BINDINGS if they exist or in the file ~/.singularity_bindpoints
