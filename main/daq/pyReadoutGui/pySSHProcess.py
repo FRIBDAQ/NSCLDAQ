@@ -18,10 +18,8 @@
 '''
 import os
 import pathlib
-import time
 
-from PyQt6.QtCore import QProcess, QObject
-
+from PyQt6.QtCore import QObject, QProcess
 
 
 class SSHProcess(QProcess):
@@ -105,7 +103,6 @@ class SSHProcess(QProcess):
         '''
         
         fullcommand = self._reconstructContainer() + '"' + command + '"'
-        print('full command: ', fullcommand)
         self._ssh(remote, fullcommand)
 
     
@@ -215,4 +212,37 @@ class SSHProcess(QProcess):
                 return ''
     
     
+# Test program
+
+if __name__ == '__main__':
+    import sys
+
+    from nscldaq.OutputWindow import OutputWindow
+    from PyQt6.QtWidgets import (
+        QApplication,
+        QLineEdit,
+        QPushButton,
+        QVBoxLayout,
+        QWidget,
+    )
     
+    
+    def runit():
+        cmd = command.text()
+        p   = SSHProcess()
+        out.append(p.runRemote('localhost', cmd))
+    
+    app = QApplication(sys.argv)
+    win = QWidget()
+    
+    win.setLayout(QVBoxLayout())
+    out = OutputWindow(win)
+    win.layout().addWidget(out)
+    command = QLineEdit(win)
+    win.layout().addWidget(command)
+    button = QPushButton('Execute', win)
+    win.layout().addWidget(button)
+    button.clicked.connect(runit)
+    
+    win.show()
+    sys.exit(app.exec())
