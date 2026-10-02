@@ -32,19 +32,6 @@ class DataSource(QObject, metaclass=QObjectABCMeta):
     '''
     
     
-    @classmethod
-    @abstractmethod
-    def parameters() -> dict[str, type]:
-        '''
-            This class method returns a dictionary who's keys
-            are parameters that instances of this class
-            can be insantiated with and who's values are the types of those
-            parametes e.g. {'sourceid' : int, 'host': str}  is a parameter named 'sourceid' whose
-            value is an integer and a parameter named 'host' whose parameter is 
-            a string.
-            
-        '''
-        ...
     def __init__(self, parameters : dict[str, object], **kwargs):
         '''
         @param parameters - initial configuration  parameters.
@@ -54,6 +41,20 @@ class DataSource(QObject, metaclass=QObjectABCMeta):
         super().__init__(**kwargs)
         self._configuration = parameters
     
+    @classmethod
+    @abstractmethod
+    def parameters(cls) -> dict[str, type]:
+        '''
+            This method returns a dictionary who's keys
+            are parameters that instances of this class
+            can be insantiated with and who's values are the types of those
+            parametes e.g. {'sourceid' : int, 'host': str}  is a parameter named 'sourceid' whose
+            value is an integer and a parameter named 'host' whose parameter is 
+            a string.
+            
+        '''
+        ...
+
     def configure(self, name : str, value: object) -> None:
         '''
         Configures the value of a parameter.
