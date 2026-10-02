@@ -15,13 +15,13 @@ import getpass
 import time
 from nscldaq.readoutgui.pySSHProcess import SSHProcess
 from nscldaq.readoutgui.DataSource import DataSource
-from nscldaq.readoutgui.ReadoutGuiView import mainWindow()
-from nscldaq.readoutREST import ReadoutClient
+from nscldaq.readoutgui.ReadoutGuiView import mainWindow
+from nscldaq.readoutREST.readoutRestClient import ReadoutClient
 
 from PyQt6.QtCore import QProcess
 
 
-class SSHProcess():
+class FRIBDAQSource(DataSource):
     def __init__(self, parameters: dict[str, object], **kwargs):
         super().__init__(parameters, **kwargs)
         self._ssh: SSHProcess | None = None
@@ -95,7 +95,7 @@ class SSHProcess():
         self._require_client()
         self._client.setRunNumber(run)
         self._client.setTitle(title)
-        self._client.begin())
+        self._client.begin()
     
     def end(self) -> None:
         self._require_client()
@@ -128,7 +128,7 @@ class SSHProcess():
         '''
         command = ''
         if 'service' in self._configuration:
-            command=f'SERVICE_NAME={self.cget('service')} '
+            command=f'SERVICE_NAME={self.cget("service")} '
         command += self.cget('program_path') 
         command += ' --ring=' + self._configuration.get('ring', getpass.user())
         command += ' --sourceid=' + self._configuration.get('source_id', 0)
@@ -136,8 +136,8 @@ class SSHProcess():
         # If logging add thast stuff too:
         
         if 'log' in self._configuration:
-            command += f' --log {self.cget('log')}'
-            command += f' --debug_level={self._configuration.get('debug_level', 0)}'
+            command += f' --log {self.cget("log")}'
+            command += f' --debug_level={self._configuration.get("debug_level", 0)}'
         
         # We need to add an initscript so that the ReST server starts.
         # Since daqsetup will not necessarily have been run in the target host:
@@ -173,9 +173,9 @@ class SSHProcess():
         for key in self._configuration:
             if key not in self.parameters():
                 raise KeyError(f'Invalid parameter name: {key}')
-            if type(self._configuration[key]) != self.parameters()[key](1):
+            if type(self._configuration[key]) != self.parameters()[key]:
                 raise TypeError(
-                    f'Invalid type for parameter {key} was {type(self._configuration[key]).__name__} must be {self.parameters()[key](1).__name__}'
+                    f'Invalid type for parameter {key} was {type(self._configuration[key]).__name__} must be {self.parameters()[key].__name__}'
                 )
     def _make_client(self):
         # Mote the program must be running for this to be called, else
@@ -190,3 +190,60 @@ class SSHProcess():
     def _require_client(self) -> bool:
         if not self._client:
             raise RuntimeError('Attempting to do a client request but no ReST client was instantiated.')
+        
+# Test code  
+#   Note this is specific to my development env  because it assumes
+#   there's a readout program in ~/daqtest/readout/Readout.
+
+# the test is a mini readout GUI with:
+#  The readout GUI.
+#  The state manager.
+#  The Data source manager
+#  A single data FRIBDAQDataSource.
+
+if __name__ == '__main__':
+    import sys
+    from PyQt6.QtWidgets import QApplication
+    from  nscldaq.readoutgui import ReadoutGuiView
+    from  nscldaq.readoutgui import StateMachine
+    from  nscldaq.readoutgui import DataSourceManager
+    
+    def start(sm : StateMachine.ReadoutStateMachine) -> None:
+        sm.transition('Starting')
+        sm.transition('Halted')
+    
+    app = QApplication(sys.argv)
+    gui = ReadoutGuiView.ReadoutGuiMainWindow()
+    
+    # Make our data source and add it to the data source manager:
+    
+    source = FRIBDAQSource({
+        'host' : 'localhost',
+        'program_path' : '~/daqtest/readout/Readout'
+    })
+    DataSourceManager.DataSourceManager.instance().addSource('DataSource', source)
+    
+    # The GUI signals make state transitions happe in the state machine
+    # and the state machine signals make things happen in the data source:
+    
+    controlGui = gui.centralWidget().StateControls()
+    sm   = StateMachine.ReadoutStateMachine.instance()
+    controlGui.setState(sm.state())
+    
+    # Drive the state machine from the GUI:
+    
+    controlGui.start.connect(lambda : start(sm))
+    controlGui.begin.connect(lambda : sm.transition('Active'))
+    controlGui.end.connect(lambda : sm.transition('Halted'))
+    controlGui.pause.connect(lambda : sm.transition('Paused'))
+    controlGui.resume.connect(lambda : sm.transitino('Active'))
+    
+    # State machine drives the GUI appearance:
+    
+    sm.newstate.connect(controlGui.setState)
+    
+    
+    gui.show()
+    sys.exit(app.exec())
+    
+    
