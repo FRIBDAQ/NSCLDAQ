@@ -1,0 +1,192 @@
+#    This software is Copyright by the Board of Trustees of Michigan
+#    State University (c) Copyright 2014, 2026
+#
+#    You may use this software under the terms of the GNU public license
+#    (GPL).  The terms of this license are described at:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+#
+#	     FRIB
+#	     Michigan State University
+#	     East Lansing, MI 48824-1321
+
+import os
+import getpass
+import time
+from nscldaq.readoutgui.pySSHProcess import SSHProcess
+from nscldaq.readoutgui.DataSource import DataSource
+from nscldaq.readoutgui.ReadoutGuiView import mainWindow()
+from nscldaq.readoutREST import ReadoutClient
+
+from PyQt6.QtCore import QProcess
+
+
+class SSHProcess():
+    def __init__(self, parameters: dict[str, object], **kwargs):
+        super().__init__(parameters, **kwargs)
+        self._ssh: SSHProcess | None = None
+        self._client: ReadoutClient | None = None
+        self._validate_configuration()
+        
+        # Find the output tabbed widget and make a tab for us
+        # Named ring@host
+    
+        host = self._configuration.get('host', 'localhost')
+        ring = self._configuration.get('ring', getpass.getuser())
+        self._output = mainWindow().centralWidget().Outputs().addOutput(f'{ring}@{host}')
+    @classmethod        
+    def parameters(cls) -> dict[str, type]:
+        '''
+        @return dict[str,type] - Dictionary of parameters we recognize and their types:        
+        '''
+        return {
+            'host'        : str,     # Where we run.
+            'program_path': str,     # what we run
+            'service'     : str,     # ReST service name.
+            'ring'        : str,     # where data are written.
+            'source_id'   : int,     # Source id.
+            'log'         : str,     # Log file path if should log.
+            'debug_level' : int,     # Debugging level for logging.
+            
+        }
+        
+
+    def start(self) -> None:
+        '''
+        Start the processon the SSH Pipe.
+        If one is already running, shut it down.
+        When the process is started we connect
+        '''
+        
+        if self._ssh is not None and self._ssh.state != QProcess.ProcessState.NotRunning: 
+            self.stop()
+        self._ssh = SSHProcess()
+        self._ssh.readyReadStandardOutput.connect(self._relayOutput)
+        self._ssh.readReadStandardError.connect(self._relayOutput)
+        self._ssh.finished.connect(self._relayExit)
+        command = self.createCommandLine()
+        host = self._configuration.get('host', 'localhost')
+        
+        self._ssh.spawnRemote(host, command)
+        self._client = self._make_client()    # Since translation doesn't happen until requests are done.
+
+    
+    def check(self) -> bool: 
+        if self._client is not None and  (self._ssh is None or self._ssh.state() != QProcess.ProcessState.NotRunning):
+            return False
+        # See if we can poll the status from the ReST interface
+        
+        try:
+            self._client.getState()
+            return True
+        except KeyError:
+            return False
+    
+    def canBegin(self) -> bool: 
+        return self.check()
+    
+    def stop(self) -> None:
+        if self._client is not None:
+            try: 
+                self._client.shutdown()
+            except Exception: 
+                pass
+    def begin(self, run: int, title: str) -> None:
+        self._require_client()
+        self._client.setRunNumber(run)
+        self._client.setTitle(title)
+        self._client.begin())
+    
+    def end(self) -> None:
+        self._require_client()
+        self._client.end()
+    
+    def pause(self)->None:
+        self._require_client()
+        self._client.pause()
+    
+    def resume(self)->None:
+        self._require_client() 
+        self._client.resume()
+        
+    def canBegin(self) -> bool:
+        try: 
+            return self.check()
+        except Exception: 
+            return False
+    def capabilities(self) -> dict[str, bool]:
+        return {'canPause': True, 'runsHaveTitles': True, 'runsHaveNumbers': True}
+
+    def createCommandLine(self):
+        '''
+            This will need to be overidden by subclasses, it will 
+            create the command line given the configuration options. subclasses
+            for e.g. VMUSBReadout will have additional paramters that result in additional
+            command line options.
+            
+            @return str - the commandline string.
+        '''
+        command = ''
+        if 'service' in self._configuration:
+            command=f'SERVICE_NAME={self.cget('service')} '
+        command += self.cget('program_path') 
+        command += ' --ring=' + self._configuration.get('ring', getpass.user())
+        command += ' --sourceid=' + self._configuration.get('source_id', 0)
+        
+        # If logging add thast stuff too:
+        
+        if 'log' in self._configuration:
+            command += f' --log {self.cget('log')}'
+            command += f' --debug_level={self._configuration.get('debug_level', 0)}'
+        
+        # We need to add an initscript so that the ReST server starts.
+        # Since daqsetup will not necessarily have been run in the target host:
+        
+        daqshare = os.environ['DAQSHARE']
+        command += f' --init-script={daqshare}/scripts/rest_init_script.tcl'
+        
+        return command
+    
+    
+    # Slots for signals from the process:
+    
+    def _relayOutput(self) -> None:
+        #  ouptut is available to be added to the output window.
+        self._output.append(self._ssh.ReadAll())
+    def _relayExit(self, exitCode : int, status : QProcess.ExitStatus) -> None:
+        # Called on process exit, make an suitable message
+        # for the output window.
+        
+        match status:
+            case QProcess.ExitStatus.NormalExit:
+                strStatus = 'Normally'
+            case QProcess.ExitStatus.CrashExit:
+                strStatus = 'By crashing'
+            case _:
+                strSTatus = "In an unknown way"
+        
+        self._output.append(f'Exited with code {exitCode}, exited {strStatus}\n')
+    
+    # Utilities:
+        
+    def _validate_configuration(self):
+        for key in self._configuration:
+            if key not in self.parameters():
+                raise KeyError(f'Invalid parameter name: {key}')
+            if type(self._configuration[key]) != self.parameters()[key](1):
+                raise TypeError(
+                    f'Invalid type for parameter {key} was {type(self._configuration[key]).__name__} must be {self.parameters()[key](1).__name__}'
+                )
+    def _make_client(self):
+        # Mote the program must be running for this to be called, else
+        # the service -> port translation will fail.
+        host = self._configuration.get('host', 'localhost')
+        service =self._configuration.get('service', 'ReadoutREST')
+        user = getpass.getuser()
+        
+        self._client = ReadoutClient(host, service, user)
+
+    
+    def _require_client(self) -> bool:
+        if not self._client:
+            raise RuntimeError('Attempting to do a client request but no ReST client was instantiated.')
