@@ -186,7 +186,10 @@ class SSHProcess(QProcess):
             bindings_spec = self._getBindings()
             
             # Push the container startup command down the pipe:
-            command = f'apptainer exec {bindings_spec} {container_image} bash -c '
+            # We use a login script, hoping the user
+            # has setup a DAQ e.g.
+            
+            command = f'apptainer exec {bindings_spec} {container_image} bash -lc '
             
             return command
         else:
