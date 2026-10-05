@@ -35,7 +35,7 @@ class FRIBDAQSource(DataSource):
         host = self._configuration.get('host', 'localhost')
         ring = self._configuration.get('ring', getpass.getuser())
         self._outputWin = mainWindow().centralWidget().Outputs().addOutput(f'{ring}@{host}')
-        print("Output window: ", self._outputWin)
+        
     @classmethod        
     def parameters(cls) -> dict[str, type]:
         '''
@@ -59,41 +59,39 @@ class FRIBDAQSource(DataSource):
         If one is already running, shut it down.
         When the process is started we connect
         '''
-        print('Start in frib src')
+    
         self._outputMsg('Start\n')
         if self._ssh is not None and self._ssh.state != QProcess.ProcessState.NotRunning: 
             print('calling stop')
             self.stop()
             print('called')
         self._ssh = SSHProcess()
-        print('made ssh')
         self._ssh.readyReadStandardOutput.connect(self._relayOutput)
-        print('connected output')
         self._ssh.readyReadStandardError.connect(self._relayOutput)
-        print('and error')
         self._ssh.finished.connect(self._relayExit)
-        print('and exit')
-        try:
-            command = self.createCommandLine()
-            self._outputMsg(f'Staring "{command}"')
-            host = self._configuration.get('host', 'localhost')
-            self._outputMsg(f' in {host}')
-            self._ssh.spawnRemote(host, command)
-            self._client = self._make_client()    # Since translation doesn't happen until requests are done.
-        except Exception as e:
-            print(f'{e} at\n {traceback.format_exc()}')
-            raise
-    
+        command = self.createCommandLine()
+        self._outputMsg(f'Staring "{command}"')
+        host = self._configuration.get('host', 'localhost')
+        self._outputMsg(f' in {host}')
+        self._ssh.spawnRemote(host, command)
+        self._make_client()    # Since translation doesn't happen until requests are done.  
+        print("client: ", self._client)
+
     def check(self) -> bool: 
-        if self._client is not None and  (self._ssh is None or self._ssh.state() != QProcess.ProcessState.NotRunning):
+        print('check')
+        if self._client is None or   (self._ssh is None or self._ssh.state() != QProcess.ProcessState.Running):
+            print(' big if failed', self._client, self._ssh)
             return False
         # See if we can poll the status from the ReST interface
         
         try:
+            print('state check')
             self._client.getState()
             return True
         except KeyError:
+            print('exception')
             return False
+        
     
     
     
@@ -104,25 +102,36 @@ class FRIBDAQSource(DataSource):
             except Exception: 
                 pass
     def begin(self, run: int, title: str) -> None:
-        self._require_client()
-        self._client.setRunNumber(run)
-        self._client.setTitle(title)
-        self._client.begin()
+        try:
+            self._outputMsg(f'Beginning run {run} : {title}')
+            self._require_client()
+            self._outputMsg(f'Setting run numbger to {run}\n')
+            self._client.setRunNumber(run)
+            self._outputMsg(f'Setting title to "{title}\n"')
+            self._client.setTitle(title)
+            self._outputMsg('Starting run:')
+            self._client.begin()
+            self._outputMsg(' run started\n')
+        except Exception as e:
+            print(f'{e} \n {traceback.format_exc()}')
     
     def end(self) -> None:
         self._require_client()
         self._client.end()
     
     def pause(self)->None:
+        print('pause')
         self._require_client()
         self._client.pause()
     
     def resume(self)->None:
+        print('resume')
         self._require_client() 
         self._client.resume()
         
     def canBegin(self) -> bool:
         try: 
+            print(f'canbegin {self.check()}')
             return self.check()
         except Exception: 
             return False
@@ -138,9 +147,19 @@ class FRIBDAQSource(DataSource):
             
             @return str - the commandline string.
         '''
+        
+        # Need TCLLIBPATH for the httpd packages etc.
         command = f'TCLLIBPATH={os.environ["DAQTCLLIBS"]} '
-        if 'service' in self._configuration:
-            command=f'SERVICE_NAME={self.cget("service")} '
+        
+        # Fold in all env vars that Start with DAQ
+        
+        for envname in os.environ:
+            if envname.startswith('DAQ'):
+                command += f'{envname}={os.environ[envname]} '
+            
+        
+        service = self._configuration.get('service', 'ReadoutREST')
+        command +=f'SERVICE_NAME={service} '
         command += self.cget('program_path') 
         command += ' --ring=' + self._configuration.get('ring', getpass.getuser())
         command += ' --sourceid=' + str(self._configuration.get('source_id', 0))
@@ -198,12 +217,13 @@ class FRIBDAQSource(DataSource):
         host = self._configuration.get('host', 'localhost')
         service =self._configuration.get('service', 'ReadoutREST')
         user = getpass.getuser()
-        
+        self._outputMsg(f'Creating ReST client for {service}@{host} user: {user}')
         self._client = ReadoutClient(host, service, user)
 
     
     def _require_client(self) -> bool:
         if not self._client:
+            self._outputMsg('_require_client did not have one!!')
             raise RuntimeError('Attempting to do a client request but no ReST client was instantiated.')
         
 # Test code  
@@ -264,6 +284,8 @@ if __name__ == '__main__':
                             title = mw.centralWidget().RunParameters().title()
                             
                             mgr.begin(run, title)
+                        else:
+                            raise RuntimeError('BEGIN  failed precheck')
                     elif fromState == 'Paused':
                         mgr.resume()
                     else:
@@ -307,7 +329,7 @@ if __name__ == '__main__':
     controlGui.begin.connect(lambda : sm.transition('Active'))
     controlGui.end.connect(lambda : sm.transition('Halted'))
     controlGui.pause.connect(lambda : sm.transition('Paused'))
-    controlGui.resume.connect(lambda : sm.transitino('Active'))
+    controlGui.resume.connect(lambda : sm.transition('Active'))
     
     # State machine drives the GUI appearance:
     
