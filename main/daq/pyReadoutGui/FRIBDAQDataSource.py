@@ -60,7 +60,6 @@ class FRIBDAQSource(DataSource):
         When the process is started we connect
         '''
     
-        self._outputMsg('Start\n')
         if self._ssh is not None and self._ssh.state != QProcess.ProcessState.NotRunning: 
             print('calling stop')
             self.stop()
@@ -70,7 +69,7 @@ class FRIBDAQSource(DataSource):
         self._ssh.readyReadStandardError.connect(self._relayOutput)
         self._ssh.finished.connect(self._relayExit)
         command = self.createCommandLine()
-        self._outputMsg(f'Staring "{command}"')
+        self._outputMsg(f'Starting "{command}"')
         host = self._configuration.get('host', 'localhost')
         self._outputMsg(f' in {host}')
         self._ssh.spawnRemote(host, command)
@@ -78,14 +77,12 @@ class FRIBDAQSource(DataSource):
         print("client: ", self._client)
 
     def check(self) -> bool: 
-        print('check')
         if self._client is None or   (self._ssh is None or self._ssh.state() != QProcess.ProcessState.Running):
             print(' big if failed', self._client, self._ssh)
             return False
         # See if we can poll the status from the ReST interface
         
         try:
-            print('state check')
             self._client.getState()
             return True
         except KeyError:
@@ -103,15 +100,10 @@ class FRIBDAQSource(DataSource):
                 pass
     def begin(self, run: int, title: str) -> None:
         try:
-            self._outputMsg(f'Beginning run {run} : {title}')
             self._require_client()
-            self._outputMsg(f'Setting run numbger to {run}\n')
             self._client.setRunNumber(run)
-            self._outputMsg(f'Setting title to "{title}\n"')
             self._client.setTitle(title)
-            self._outputMsg('Starting run:')
             self._client.begin()
-            self._outputMsg(' run started\n')
         except Exception as e:
             print(f'{e} \n {traceback.format_exc()}')
     
@@ -120,18 +112,16 @@ class FRIBDAQSource(DataSource):
         self._client.end()
     
     def pause(self)->None:
-        print('pause')
         self._require_client()
         self._client.pause()
+        
     
     def resume(self)->None:
-        print('resume')
         self._require_client() 
         self._client.resume()
         
     def canBegin(self) -> bool:
         try: 
-            print(f'canbegin {self.check()}')
             return self.check()
         except Exception: 
             return False
@@ -183,14 +173,12 @@ class FRIBDAQSource(DataSource):
     
     def _relayOutput(self) -> None:
         #  ouptut is available to be added to the output window.
-        print('Relay Output called')
         self._outputMsg(self._ssh.ReadAll() + '\n')
     def _outputMsg(self, msg : str) -> None:
         self._outputWin.append(msg)
     def _relayExit(self, exitCode : int, status : QProcess.ExitStatus) -> None:
         # Called on process exit, make an suitable message
         # for the output window.
-        print('_relayExit called')
         match status:
             case QProcess.ExitStatus.NormalExit:
                 strStatus = 'Normally'
@@ -223,7 +211,7 @@ class FRIBDAQSource(DataSource):
     
     def _require_client(self) -> bool:
         if not self._client:
-            self._outputMsg('_require_client did not have one!!')
+            self._outputMsg('_require_client did not have a client!!')
             raise RuntimeError('Attempting to do a client request but no ReST client was instantiated.')
         
 # Test code  
