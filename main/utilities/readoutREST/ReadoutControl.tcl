@@ -55,10 +55,14 @@ Url_PrefixInstall /control ControlOperation
 proc _validTransition {op state} {
     if {$op eq "INIT"} {
         return [expr {$state eq "idle"}]
+    } elseif {$op eq "PAUSE"} {
+        return [expr {$state eq "active"}]
+    } elseif {$op eq "RESUME"} {
+        return [expr {$state eq "paused"}]
     } elseif {$op eq "BEGIN"} {
         return [expr {$state eq "idle"}]
     } elseif {$op eq "END"} {
-        return [expr {$state eq "active"}]
+        return [expr {$state eq "active" || $state eq "paused"}]
     } elseif {$op eq "SHUTDOWN"} {
         return 1;         # Always legal.
     } else {
@@ -82,6 +86,10 @@ proc _transition {op} {
         begin
     } elseif {$op eq "END"} {
         end
+    } elseif {$op eq "PAUSE"} {
+        pause
+    } elseif {$op eq "RESUME"} {
+        resume
     } elseif {$op eq "SHUTDOWN"} {
         after 500 exit;        # Ensures we get our response out to the client. 
     }
