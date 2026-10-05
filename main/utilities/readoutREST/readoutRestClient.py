@@ -129,6 +129,13 @@ class ReadoutClient:
     
     #     Fetch state items:
     
+    def pause(self) -> dict:
+        ''' Request a pause run'''
+        return self._transition('PAUSE')
+    def resume(self) -> dict:
+        ''' Request a resume run'''
+        return self._transition('RESUME')
+    
     def getState(self) -> dict:
         ''' Return the run state text 
             On success, the returned dict will contain
