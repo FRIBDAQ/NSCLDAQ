@@ -10,15 +10,15 @@
 #	     Michigan State University
 #	     East Lansing, MI 48824-1321
 
-import os
 import getpass
+import os
 import time
 import traceback
-from nscldaq.readoutgui.pySSHProcess import SSHProcess
+
 from nscldaq.readoutgui.DataSource import DataSource
+from nscldaq.readoutgui.pySSHProcess import SSHProcess
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from nscldaq.readoutREST.readoutRestClient import ReadoutClient
-
 from PyQt6.QtCore import QProcess
 
 
@@ -61,9 +61,7 @@ class FRIBDAQSource(DataSource):
         '''
     
         if self._ssh is not None and self._ssh.state != QProcess.ProcessState.NotRunning: 
-            print('calling stop')
             self.stop()
-            print('called')
         self._ssh = SSHProcess()
         self._ssh.readyReadStandardOutput.connect(self._relayOutput)
         self._ssh.readyReadStandardError.connect(self._relayOutput)
@@ -74,19 +72,28 @@ class FRIBDAQSource(DataSource):
         self._outputMsg(f' in {host}')
         self._ssh.spawnRemote(host, command)
         self._make_client()    # Since translation doesn't happen until requests are done.  
-        print("client: ", self._client)
 
     def check(self) -> bool: 
-        if self._client is None or   (self._ssh is None or self._ssh.state() != QProcess.ProcessState.Running):
-            print(' big if failed', self._client, self._ssh)
+        if self._client is None or   (
+            self._ssh is None or 
+            self._ssh.state() not in  
+            [QProcess.ProcessState.Running, QProcess.ProcessState.Starting]):
+            
             return False
         # See if we can poll the status from the ReST interface
         
+        # If we are starting we're ok:
+        
+        if self._ssh.state() == QProcess.ProcessState.Starting:
+            
+            return True
+        
         try:
+            
             self._client.getState()
             return True
         except KeyError:
-            print('exception')
+            
             return False
         
     
@@ -188,6 +195,10 @@ class FRIBDAQSource(DataSource):
                 strStatus = "In an unknown way"
         
         self._outputMsg(f'Exited with code {exitCode}, exited {strStatus}\n')
+        
+        # Kill the process as well:
+        
+        self._ssh = None
     
     # Utilities:
         
@@ -226,16 +237,50 @@ class FRIBDAQSource(DataSource):
 
 if __name__ == '__main__':
     import sys
-    from PyQt6.QtWidgets import QApplication
-    from  nscldaq.readoutgui import ReadoutGuiView
-    from  nscldaq.readoutgui import StateMachine
-    from  nscldaq.readoutgui import DataSourceManager
+
+    from nscldaq.readoutgui import DataSourceManager, ReadoutGuiView, StateMachine
+    from PyQt6.QtCore import QTimer
+    from PyQt6.QtWidgets import QApplication, QMessageBox
+    
+    liveness = None    # Live timer when it's active.
     
     def start(sm : StateMachine.ReadoutStateMachine) -> None:
         sm.transition('Starting')
+    
+    def stopSources() -> None:
+        # Normally called just before exit...we stop
+        # all of the data sources via the source manager.
+        
+        DataSourceManager.DataSourceManager.instance().stop()
+           
+    def doExit() -> None:
+        # Confirm:
+        
+        confirm = QMessageBox.question(
+            mainWindow(), 'Really exit?', 'Are you sure you want to exit?'
+        )
+        if confirm == QMessageBox.StandardButton.Yes:
+            stopSources()
+            QApplication.instance().exit(0)
+            
+    
+    def checkDataSources() -> None:
+        # Check the liveness of data sources.
+        # If one of them failed transition to NotReady which will
+        # cause the data sources to be shutdown.
+        
+        mgr = DataSourceManager.DataSourceManager.instance()
+        mw = mainWindow()
+        sm = StateMachine.ReadoutStateMachine.instance()
+        
+        if sm.state() in ['Halted', 'Active', 'Paused'] and not mgr.live():
+            sm.transition('Not Ready')
+            
+        
         
     
     def transitionDataSources(fromState : str, toState : str) :
+        global liveness
         # Transition the data sources 
         
         mgr = DataSourceManager.DataSourceManager.instance()
@@ -250,12 +295,15 @@ if __name__ == '__main__':
             match toState:
                 case 'Not Ready':
                     mgr.stop()
+                    # If liveness is active, kill it off
+                    
+                    if liveness:
+                        liveness.stop()
+                        liveness = None
                 case 'Starting' :
-                    print('Starting in signal handler')
                     # Note on success, we have to drive the state-manager to the halted state.
                     
                     mgr.start()
-                    sm.transition('Halted')   # Will signal us again for halted.
                 case 'Halted':
                     #  IF the from state was Starting we don't need to do anything.
                     if fromState != 'Starting':
@@ -293,6 +341,23 @@ if __name__ == '__main__':
                 sm.failTransition()            
             
     
+    def postTransition(fromstate : str, tostate: str):
+        
+        global liveness
+        # IF we got into starting, we can now transition to Halted
+        
+        if tostate == 'Starting':
+            StateMachine.ReadoutStateMachine.instance().transition('Halted')
+            
+            # Set up a timer to check data source liveness.
+            
+            liveness = QTimer(mainWindow())
+            liveness.setInterval(1000)
+            liveness.setSingleShot(False)
+            liveness.timeout.connect(checkDataSources)
+            liveness.start()
+            
+    
     app = QApplication(sys.argv)
     gui = ReadoutGuiView.ReadoutGuiMainWindow()
     
@@ -309,7 +374,6 @@ if __name__ == '__main__':
     
     controlGui = gui.centralWidget().StateControls()
     sm   = StateMachine.ReadoutStateMachine.instance()
-    controlGui.setState(sm.state())
     
     # Drive the state machine from the GUI:
     
@@ -326,11 +390,27 @@ if __name__ == '__main__':
     # State machine drives the data source manager:
     # We transition the sources on enter so everyone else can prepare
     
-    sm.enter.connect(transitionDataSources)
+    sm.leave.connect(transitionDataSources)
+    sm.enter.connect(postTransition)
     
-    # Add a liveness timer check.. ...every second.
+ 
+    # If a data source livecheck fails, output an emergency message
+    # to the output window:
     
+    DataSourceManager.DataSourceManager.instance().sourceDied.connect(
+        lambda srcname : gui.centralWidget().Outputs().emergencyMessage(
+            f'Data source {srcname} just died.'
+        )
+    )
+    # Set the GUI initial state:
     
+    controlGui.setState(sm.state())
+    
+    # If the program is exiting, force the state to 
+    # Not Ready to kill off the data sources.
+    
+    gui.fileExit.connect(doExit)
+    gui.destroyed.connect(stopSources)
     
     gui.show()
     sys.exit(app.exec())
