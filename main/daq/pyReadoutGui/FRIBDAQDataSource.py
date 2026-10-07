@@ -742,8 +742,9 @@ if __name__ == '__main__':
             liveness.timeout.connect(checkDataSources)
             liveness.start()
             
-    def promptSource() -> FRIBDAQSource:
-        dialog = SaveDialog(ConfigureSource())
+    def promptSource(oldsrc : FRIBDAQSource | None = None) -> FRIBDAQSource:
+        dialog = SaveDialog(ConfigureSource(oldsrc))
+        
         while dialog.exec() == QDialog.DialogCode.Accepted:
             source : FRIBDAQSource | str = dialog.workarea().makeSource()
             if type(source) == str:
@@ -820,7 +821,7 @@ if __name__ == '__main__':
     # In a dialog with the Ok button to dismiss it.
     
     gui.dsListSources.connect(lambda: listSources(gui))
+    gui.dsAddSource.connect(lambda: promptSource(source))  # For fun.
     
     sys.exit(app.exec())
-    
     
