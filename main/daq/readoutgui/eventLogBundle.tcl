@@ -120,6 +120,68 @@ namespace eval ::EventLog {
     # incremented when the eventLogger exits...this can be a vwait target:
     
     variable eventLogEnded 0
+
+    #--------------------------------------------------------------------------
+    #  Recorded-run lifecycle (issue: run number not advancing).  The design:
+    #  * Finalization is keyed on a per-run record (runPhase/pendingRun), never
+    #    on whether a logger pid still exists, so an EOF consumed early by
+    #    another callout bundle or a provider cannot skip it.
+    #  * The event logger child is owned until its termination is CONFIRMED
+    #    (non-consuming observation of every pipeline pid) and then reaped by
+    #    the single owner: closing the Tcl pipeline channel.  Nothing is
+    #    finalized under a writer whose termination is not confirmed.
+    #  * Cleanup (filesystem) and advancement (run number) are separate,
+    #    retryable phases; the number is advanced exactly once.
+    #
+    # @var loggerState  - none | running | exited (EOF seen, reaped) |
+    #                     killed (killed by us, reaped) | unterminated
+    #                     (kill did not confirm; still owned, never finalized).
+    # @var loggerExitStatus - "ok" or the error text from [close]
+    #                     (CHILDSTATUS/CHILDKILLED) once reaped; else "".
+    # @var loggerPids   - Every pid of the owned logger pipeline, captured at
+    #                     open.  Observation/kill only ever touch these.
+    # @var eofSeen      - EOF was seen on the logger's pipe (the readable
+    #                     handler is unregistered at that point).
+    # @var runPhase     - none | recording | ending | cleaned | advanced.
+    # @var pendingRun   - Run number captured at start for the owned run (-1).
+    # @var runOutcome   - "" | complete | incomplete | failed | unknown, with
+    #                     runOutcomeReason.  First classification is kept;
+    #                     only worsening updates are accepted.
+    # @var nextRun      - Run number to advance to (frozen at cleanup).
+    # @var unresolvedRun- A run whose finalization FAILED; Begin is refused
+    #                     until resolveFailedRun is invoked for that number.
+    # @var ending       - runEnding in progress (owner of the lifecycle).
+    # @var abortRequested/abortReason - a NotReady transition arrived while
+    #                     ending; recorded and completed by the owner.
+    # @var waitResult   - vwait target: eof | timeout | poll | abort.
+    # @var reapGrace    - seconds to wait for termination confirmation.
+    # @var observeProc  - command {pid} -> exited|alive|unknown (injectable).
+    # @var killProc     - command {pids} that kills them (injectable).
+    # @var interactive  - If true dialogs are shown (when Tk has a main
+    #                     window); tests set 0.
+    # @var needFinalization - compatibility: derived from runPhase.
+    #
+    variable loggerState      none
+    variable loggerExitStatus ""
+    variable loggerStderr     ""
+    variable loggerPids       [list]
+    variable eofSeen          0
+    variable runPhase         none
+    variable pendingRun       -1
+    variable runOutcome       ""
+    variable runOutcomeReason ""
+    variable nextRun          -1
+    variable unresolvedRun    -1
+    variable unresolvedReason ""
+    variable ending           0
+    variable abortRequested   0
+    variable abortReason      ""
+    variable waitResult       ""
+    variable reapGrace        2
+    variable observeProc      ::EventLog::_observeProcfs
+    variable killProc         ::EventLog::_killPids
+    variable interactive      1
+    variable sleepTick        0
     
     # Export the bundle interface methods
     
@@ -226,7 +288,7 @@ proc ::EventLog::getLoggerPath {} {}
 #   @return the path to the .started file.
 #
 proc ::EventLog::_getStartFile {} {
-  set run [ReadoutGUIPanel::getRun]
+  set run [::EventLog::_currentRun]
   set destDir [::ExpFileSystem::getRunDir $run]
       
   set startFile [file join $destDir .started]
@@ -239,12 +301,347 @@ proc ::EventLog::_getStartFile {} {
 proc ::EventLog::_getExitFile {} {
   
 
-  set run [ReadoutGUIPanel::getRun]
+  set run [::EventLog::_currentRun]
   set destDir [::ExpFileSystem::getRunDir $run]
   
   set result [file join $destDir .exited]
   return $result
 
+}
+#------------------------------------------------------------------------------
+#  Recorded-run lifecycle helpers.
+
+##
+# _currentRun
+#   @return the run number the owned run refers to (captured at start) or,
+#           if none is owned, whatever the GUI shows.
+proc ::EventLog::_currentRun {} {
+    if {$::EventLog::pendingRun != -1} {
+        return $::EventLog::pendingRun
+    }
+    return [::ReadoutGUIPanel::getRun]
+}
+##
+# _log - log to the EventLogManager tab.
+proc ::EventLog::_log {severity msg} {
+    ::ReadoutGUIPanel::Log EventLogManager $severity $msg
+}
+##
+# _setPhase - set the run phase, keeping the compatibility flag in step.
+proc ::EventLog::_setPhase {phase} {
+    set ::EventLog::runPhase $phase
+    set ::EventLog::needFinalization \
+        [expr {$phase in [list recording ending cleaned]}]
+}
+##
+# isRunPending
+#   @return true if a recorded run is owned and not yet fully finalized
+#           (phase recording, ending or cleaned).  Headless consumers
+#           (offline orderer) use this instead of looking at the pid.
+proc ::EventLog::isRunPending {} {
+    return [expr {$::EventLog::runPhase in [list recording ending cleaned]}]
+}
+##
+# _setOutcome
+#   Record the run outcome.  The first classification is kept; only a
+#   worsening (complete -> incomplete -> failed/unknown) replaces it.
+proc ::EventLog::_setOutcome {outcome reason} {
+    set rank [dict create "" 0 complete 1 incomplete 2 failed 3 unknown 3]
+    if {[dict get $rank $outcome] >= [dict get $rank $::EventLog::runOutcome]} {
+        set ::EventLog::runOutcome       $outcome
+        set ::EventLog::runOutcomeReason $reason
+    }
+    if {$outcome ne "complete"} {
+        ::EventLog::_log error "Run $::EventLog::pendingRun $outcome: $reason"
+    }
+}
+##
+# _reportError
+#   Log an error and, when interactive and a Tk main window exists, show
+#   a modal dialog parented to it.  Headless consumers only get the log.
+proc ::EventLog::_reportError {title msg} {
+    ::EventLog::_log error "$title: $msg"
+    if {$::EventLog::interactive && ([info commands tk_messageBox] ne "") \
+            && ![catch {winfo exists .} exists] && $exists} {
+        tk_messageBox -icon error -type ok -title $title -message $msg -parent .
+    }
+}
+##
+# _sleep - sleep ms while keeping the event loop (timers, fileevents) alive.
+proc ::EventLog::_sleep {ms} {
+    after $ms [list incr ::EventLog::sleepTick]
+    vwait ::EventLog::sleepTick
+}
+##
+# _notifyWait
+#   Wake _waitForLoggerExit with an informational reason (eof | poll).  Never
+#   overwrites an authoritative reason (abort, timeout) already recorded.
+proc ::EventLog::_notifyWait {what} {
+    if {$::EventLog::waitResult eq ""} {
+        set ::EventLog::waitResult $what
+    }
+}
+##
+# _observeProcfs
+#   Non-consuming termination observation of ONE owned pid via Linux procfs.
+#   @return exited  - the process is a zombie/dead (Z or X): the owner's
+#                     blocking close will reap it without waiting.
+#           alive   - any other state.
+#           unknown - not Linux, unreadable, or malformed.  Never treated as
+#                     termination.
+#   @note Only ever called with pids from loggerPids (our unreaped children),
+#         so the pid cannot have been reused.  Readability of /proc/<pid>/stat
+#         does not imply ownership; membership is enforced by the caller.
+proc ::EventLog::_observeProcfs {pid} {
+    if {![string is integer -strict $pid] || ($pid <= 0)} {
+        return unknown
+    }
+    if {[catch {
+        set fd [open /proc/$pid/stat r]
+        set line [read $fd]
+        close $fd
+    }]} {
+        return unknown
+    }
+    set idx [string last ")" $line]
+    if {$idx < 0} {
+        return unknown
+    }
+    set state [string index [string trim [string range $line [expr {$idx + 1}] end]] 0]
+    if {$state eq ""} {
+        return unknown
+    }
+    if {$state in [list Z X]} {
+        return exited
+    }
+    return alive
+}
+##
+# _observeLogger
+#   Observe every owned pipeline pid.
+#   @return exited only if ALL are exited; unknown if ANY is unknown (or
+#           nothing is owned); otherwise alive.
+proc ::EventLog::_observeLogger {} {
+    if {[llength $::EventLog::loggerPids] == 0} {
+        return unknown
+    }
+    set result exited
+    foreach pid $::EventLog::loggerPids {
+        set o [$::EventLog::observeProc $pid]
+        if {$o eq "unknown"} {
+            return unknown
+        }
+        if {$o eq "alive"} {
+            set result alive
+        }
+    }
+    return $result
+}
+##
+# _killPids - default kill implementation (SIGKILL each owned pid).
+proc ::EventLog::_killPids {pids} {
+    foreach pid $pids {
+        catch {exec kill -9 $pid}
+    }
+}
+##
+# _reapLogger
+#   The single reaping owner.  Precondition: termination of every owned pid
+#   has been confirmed (observed exited), so the blocking [close] of the
+#   pipeline returns at once and yields the exit status.  Idempotent.
+#   @param how - exited | killed
+#   @return exit status text ("ok" or the [close] error).
+proc ::EventLog::_reapLogger {how} {
+    set fd [lindex $::EventLog::loggerFd end]
+    if {$fd eq ""} {
+        return $::EventLog::loggerExitStatus
+    }
+    catch {fileevent $fd readable [list]}
+    #  [close] on a read pipeline fails whenever the child wrote to stderr,
+    #  even on a clean exit (errorCode NONE); only CHILDSTATUS/CHILDKILLED/
+    #  CHILDSUSP are real failures.  Keep the stderr text separately.
+    set ::EventLog::loggerStderr ""
+    if {[catch {close $fd} msg]} {
+        set code $::errorCode
+        switch -- [lindex $code 0] {
+            NONE {
+                #  The only benign failure: the child wrote to stderr and
+                #  exited with status 0.
+                set ::EventLog::loggerStderr [string trim $msg]
+                set ::EventLog::loggerExitStatus ok
+            }
+            CHILDSTATUS {
+                set ::EventLog::loggerStderr [string trim $msg]
+                set ::EventLog::loggerExitStatus "exit status [lindex $code 2]"
+            }
+            CHILDKILLED {
+                set ::EventLog::loggerStderr [string trim $msg]
+                set ::EventLog::loggerExitStatus "killed by [lindex $code 2]"
+            }
+            CHILDSUSP {
+                set ::EventLog::loggerStderr [string trim $msg]
+                set ::EventLog::loggerExitStatus "suspended by [lindex $code 2]"
+            }
+            default {
+                #  Anything else (e.g. POSIX ...) is an unexpected close
+                #  failure: never declare success for it.
+                set ::EventLog::loggerExitStatus "close error ([lindex $code 0]): $msg"
+            }
+        }
+        if {$::EventLog::loggerStderr ne ""} {
+            ::EventLog::_log output "Event logger stderr: $::EventLog::loggerStderr"
+        }
+    } else {
+        set ::EventLog::loggerExitStatus ok
+    }
+    set ::EventLog::loggerFd    [list]
+    set ::EventLog::loggerPid   -1
+    set ::EventLog::loggerState $how
+    return $::EventLog::loggerExitStatus
+}
+##
+# _confirmTerminated
+#   Bounded (reapGrace seconds) wait for every owned pid to be observed
+#   exited.  @return 1 if confirmed, 0 otherwise.
+proc ::EventLog::_confirmTerminated {} {
+    set deadline [expr {[clock milliseconds] + $::EventLog::reapGrace*1000}]
+    while {1} {
+        if {[::EventLog::_observeLogger] eq "exited"} {
+            return 1
+        }
+        if {[clock milliseconds] >= $deadline} {
+            return 0
+        }
+        ::EventLog::_sleep 50
+    }
+}
+##
+# _terminateLogger
+#   Kill the owned logger, confirm termination and reap it.  If termination
+#   cannot be confirmed the logger stays owned in state 'unterminated' and
+#   nothing downstream may finalize.
+#   @return 1 if reaped, 0 if unterminated.
+proc ::EventLog::_terminateLogger {} {
+    set fd [lindex $::EventLog::loggerFd end]
+    if {$fd ne ""} {
+        catch {fileevent $fd readable [list]}
+    }
+    $::EventLog::killProc $::EventLog::loggerPids
+    if {[::EventLog::_confirmTerminated]} {
+        ::EventLog::_reapLogger killed
+        return 1
+    }
+    set ::EventLog::loggerState      unterminated
+    set ::EventLog::loggerExitStatus "termination not confirmed"
+    ::EventLog::_log error "Event logger (pids $::EventLog::loggerPids) could not be \
+confirmed terminated within $::EventLog::reapGrace s; it remains owned and the run is not finalized"
+    return 0
+}
+##
+# _waitForLoggerExit
+#   Wait, bounded by shutdownTimeout, for the running logger to exit.
+#   Wake-ups: eof (readable handler reaped it), poll (EOF was seen while the
+#   child was still alive: observe again), timeout, abort (a NotReady
+#   transition arrived while we own the ending).  On timeout/abort the
+#   logger is killed and its termination confirmed before returning.
+#   On return loggerState is exited, killed or unterminated.
+proc ::EventLog::_waitForLoggerExit {} {
+    set ::EventLog::waitResult ""
+    set timer [after [expr {$::EventLog::shutdownTimeout*1000}] \
+                   [list set ::EventLog::waitResult timeout]]
+    set poll ""
+    while {($::EventLog::loggerState eq "running") && ($::EventLog::waitResult eq "") \
+            && !$::EventLog::abortRequested} {
+        if {$::EventLog::eofSeen && ($poll eq "")} {
+            set poll [after 200 [list ::EventLog::_notifyWait poll]]
+        }
+        vwait ::EventLog::waitResult
+        if {$::EventLog::waitResult eq "poll"} {
+            set ::EventLog::waitResult ""
+            set poll ""
+            if {[::EventLog::_observeLogger] eq "exited"} {
+                ::EventLog::_reapLogger exited
+                incr ::EventLog::eventLogEnded
+            }
+        }
+    }
+    after cancel $timer
+    if {$poll ne ""} {
+        after cancel $poll
+    }
+    #  abortRequested is authoritative: an abort recorded by a nested
+    #  transition is honoured even if an eof/poll wake-up was serviced in
+    #  between (those never overwrite it, see _notifyWait).
+    if {$::EventLog::abortRequested} {
+        ::EventLog::_setOutcome incomplete \
+            "aborted while waiting for the event logger to exit ($::EventLog::abortReason)"
+    }
+    if {$::EventLog::loggerState eq "running"} {
+        if {$::EventLog::waitResult eq "timeout"} {
+            ::EventLog::_setOutcome incomplete "timed out after $::EventLog::shutdownTimeout s \
+waiting for the event logger to exit; it was killed"
+            ::EventLog::_reportError "Run $::EventLog::pendingRun incomplete" \
+                "Timed out after $::EventLog::shutdownTimeout seconds waiting for the event logger \
+to exit; it is being killed and the run will be finalized as incomplete."
+        }
+        ::EventLog::_terminateLogger
+    }
+}
+##
+# _beginBarrier
+#   Pure (no Tk) check of whether a new run may start.
+#   @return "" if it may, else the reason.
+proc ::EventLog::_beginBarrier {} {
+    if {$::EventLog::ending} {
+        return "Run $::EventLog::pendingRun is still being finalized; wait for that to finish before starting a run"
+    }
+    if {[::EventLog::isRunPending]} {
+        return "Run $::EventLog::pendingRun has not been finalized (phase $::EventLog::runPhase,\
+ outcome '$::EventLog::runOutcome'); it must be finalized before a new run can start"
+    }
+    if {$::EventLog::unresolvedRun != -1} {
+        return "Run $::EventLog::unresolvedRun could not be finalized: $::EventLog::unresolvedReason.\
+  Resolve it (::EventLog::resolveFailedRun $::EventLog::unresolvedRun) before starting a new run"
+    }
+    return ""
+}
+##
+# resolveFailedRun
+#   Guarded operator resolution of a run whose finalization failed.  The run
+#   number must name the unresolved run.
+proc ::EventLog::resolveFailedRun {run} {
+    if {$::EventLog::unresolvedRun == -1} {
+        error "There is no unresolved run"
+    }
+    if {$run != $::EventLog::unresolvedRun} {
+        error "Run $run is not the unresolved run ($::EventLog::unresolvedRun)"
+    }
+    ::EventLog::_log output "Run $run (failed: $::EventLog::unresolvedReason) marked resolved by the operator at [clock format [clock seconds]]"
+    set ::EventLog::unresolvedRun    -1
+    set ::EventLog::unresolvedReason ""
+}
+##
+# _promptResolveFailedRun
+#   Optional guarded GUI resolution: only when interactive with a Tk main
+#   window; asks a yes/no question naming the run.  Headless: never prompts.
+#   @return 1 if the run was resolved.
+proc ::EventLog::_promptResolveFailedRun {} {
+    if {$::EventLog::unresolvedRun == -1} {
+        return 0
+    }
+    if {!$::EventLog::interactive || ([info commands tk_messageBox] eq "") \
+            || [catch {winfo exists .} exists] || !$exists} {
+        return 0
+    }
+    set run $::EventLog::unresolvedRun
+    set answer [tk_messageBox -type yesno -icon warning -parent . \
+        -title "Unresolved run $run" \
+        -message "Run $run could not be finalized: $::EventLog::unresolvedReason\n\nMark run $run as resolved and allow a new run to start?"]
+    if {$answer eq "yes"} {
+        ::EventLog::resolveFailedRun $run
+        return 1
+    }
+    return 0
 }
 #
 # ::EventLog::_extractEventLogVersion
@@ -389,11 +786,40 @@ proc ::EventLog::_startLogger {} {
     ReadoutGUIPanel::isRecording
     set logger [DAQParameters::getEventLogger] 
     set loggerVsn [::EventLog::_getLoggerVersion $logger]
-    set switches [::EventLog::_computeLoggerSwitches $loggerVsn]
+    set destDir [::ExpFileSystem::getRunDir [::EventLog::_currentRun]]
+    set existedBefore [file exists $destDir]
+    set switches [::EventLog::_computeLoggerSwitches $loggerVsn];  # creates destDir
     
-    set ::EventLog::loggerFd \
-        [open "| $logger $switches" r]
-    set ::EventLog::loggerPid [pid $::EventLog::loggerFd]
+    if {[catch {open "| $logger $switches" r} fd]} {
+        #  Pre-spawn failure.  Roll back only a run directory this attempt
+        #  created and that is still empty; anything else is left for the
+        #  stagearea precheck to report.  (Open failing is not proof that no
+        #  process launched, which is why only an empty directory is removed.)
+        if {!$existedBefore && [file isdirectory $destDir]} {
+            set contents [glob -nocomplain -directory $destDir -tails * .*]
+            set contents [lsearch -all -inline -not -regexp $contents {^\.\.?$}]
+            if {[llength $contents] == 0} {
+                catch {
+                    set expDir [file dirname $destDir]
+                    set originalPerms [file attributes $expDir -permissions]
+                    file attributes $expDir -permissions u=rwx,g=rx
+                    file delete $destDir
+                    file attributes $expDir -permissions $originalPerms
+                }
+            }
+        }
+        error "Could not start the event logger '$logger': $fd"
+    }
+    #  Ownership is captured here, before anything else can fail.
+    set ::EventLog::loggerFd         $fd
+    set ::EventLog::loggerPid        [pid $fd]
+    set ::EventLog::loggerPids       [pid $fd]
+    set ::EventLog::loggerState      running
+    set ::EventLog::loggerExitStatus ""
+    set ::EventLog::eofSeen          0
+    set ::EventLog::waitResult       ""
+    ::EventLog::_setPhase recording
+    
     set fd [lindex $::EventLog::loggerFd end]
     fconfigure $fd -buffering line
     fileevent $fd readable ::EventLog::_handleInput
@@ -408,12 +834,27 @@ proc ::EventLog::_startLogger {} {
 #
 proc ::EventLog::_handleInput {} {
     set fd [lindex $::EventLog::loggerFd end]
+    if {$fd eq ""} {
+        return;                       # Stale callback; the logger was reaped.
+    }
     if {[eof $fd]} {
-        # Need to close off the fd before the pop up shows as that will
-        # re-enter the event loop
-        
+        #  Unregister first so a persistent EOF can never spin the event loop.
         fileevent $fd readable [list]
-        catch {close $fd} msg
+        set ::EventLog::eofSeen 1
+        
+        #  EOF is not termination: confirm every owned pid is gone before the
+        #  owner reaps.  A child that closed its output but is still running
+        #  stays owned; runEnding's wait polls for it (and kills on timeout).
+        if {[::EventLog::_observeLogger] ne "exited"} {
+            ::EventLog::_log warning "The event logger closed its output but has not exited \
+(pids $::EventLog::loggerPids); waiting for it to exit"
+            ::EventLog::_notifyWait poll;      # Arm observation if the owner is waiting.
+            return
+        }
+        # Need to close off the fd before the pop up shows as that will
+        # re-enter the event loop.  _reapLogger is the single reaping owner.
+        
+        set msg [::EventLog::_reapLogger exited]
 
         # Log to the output window and pop up and error.  It's ok to exit
         # at this time if we're expecting it or if the pending state is halted.
@@ -431,11 +872,13 @@ proc ::EventLog::_handleInput {} {
 		::Diagnostics::Error {The event logger exited unexpectedly check EventLogManager tab for errors.!!}
 	    }
         } else {
-            # ::EventLog::_finalizeRun;            # May need that if exit before wait.
+            #  Finalization is deliberately NOT done here: this handler can run
+            #  inside an event loop serviced by an earlier callout bundle or a
+            #  data source provider before our enter method runs.  runEnding
+            #  finalizes the owned run whether or not the EOF got here first.
         }
-        set ::EventLog::loggerFd [list]
-        set ::EventLog::loggerPid -1
         incr ::EventLog::eventLogEnded
+        ::EventLog::_notifyWait eof
     } else {
         set line [gets $fd]
         ::ReadoutGUIPanel::Log EventLogManager output $line
@@ -480,25 +923,37 @@ proc ::EventLog::_waitForFile {name waitTimeout pollInterval} {
 #        3.   Make links in the complete dir that point to the run dir.
 #
 proc ::EventLog::_finalizeRun {} {
-    if {$::EventLog::needFinalization} {
-        
-        set srcdir [::ExpFileSystem::getCurrentRunDir]
-        set completeDir [::ExpFileSystem::getCompleteEventfileDir]
-        set run [ReadoutGUIPanel::getRun]
-        set destDir [::ExpFileSystem::getRunDir $run]
-        
-        #  IF the run dir does not exist there's a real problem here:
-        
-        if {![file isdirectory $destDir]} {
-          set msg "The run directory $destDir which should hold the event files \
+    if {$::EventLog::runPhase ni [list recording ending]} {
+        return;                              # Nothing to clean up (idempotent).
+    }
+    if {$::EventLog::loggerState ni [list exited killed]} {
+        error "BUG: _finalizeRun called while the event logger is '$::EventLog::loggerState'"
+    }
+    set srcdir [::ExpFileSystem::getCurrentRunDir]
+    set completeDir [::ExpFileSystem::getCompleteEventfileDir]
+    set run $::EventLog::pendingRun
+    set destDir [::ExpFileSystem::getRunDir $run]
+    
+    #  IF the run dir does not exist there's a real problem here.  The number
+    #  is still consumed (it was handed to a logger) but the outcome is FAILED
+    #  and stays unresolved until the operator resolves it (Begin barrier).
+    
+    if {![file isdirectory $destDir]} {
+        set msg "The run directory $destDir which should hold the event files \
 for $run either does not exist or is not a directory"
-          tk_messageBox -icon error -type ok -title "Error no event directory" \
-            -message $msg
-          return
-        }
-        
+        ::EventLog::_setOutcome failed $msg
+        set ::EventLog::unresolvedRun    $run
+        set ::EventLog::unresolvedReason $msg
+        set ::EventLog::nextRun [expr {$run + 1}]
+        ::EventLog::_setPhase cleaned
+        ::EventLog::_reportError "Error no event directory" $msg
+        return
+    }
+    #  The filesystem work below is idempotent; if it throws the phase stays
+    #  'ending' with the outcome preserved so that a retry redoes only this.
+    
+    if {[catch {
         #  Remove any links to event files in the srcdir
-        
         
         set  fileBaseName [::ExpFileSystem::genEventfileBasename $run]
         set  eventFiles [glob -nocomplain [file join $srcdir ${fileBaseName}*.evt]]
@@ -515,17 +970,12 @@ for $run either does not exist or is not a directory"
         
         set eventFiles [glob -nocomplain [file join $destDir ${fileBaseName}*.evt]]
         foreach file $eventFiles {
-
-          
           set linkName [file join $completeDir [file tail $file]]
-          
           if {[catch {exec ln -sr $file $linkName} msg]} { ;   # Want to force relative.
-
             puts stderr "Could not link $linkName -> $file : $msg"
           }
         }
         file attributes $completeDir -permissions $perms; # Restor prior perms.
-        
         
         #  Now what's left gets recursively/link-followed copied to the destDir
         #  using tar.
@@ -533,34 +983,69 @@ for $run either does not exist or is not a directory"
         set tarcmd "(cd $srcdir; tar chf - .) | (cd $destDir; tar --warning=no-timestamp -xpf -)"
         set tarStatus [catch {exec sh << $tarcmd} msg]
         if {$tarStatus} {
-            tk_messageBox -title {Tar Failed} -icon error -type ok \
-                -message "Copy of files from $srcdir to $destDir failed: $msg, Fix problem and move files manually."
-            set ::EventLog::needFinalization 0
-            ReadoutGUIPanel::incrRun
-            return
-        }
-        #
-        #  Kill off the start file and exitfiles:
-        
-        ::EventLog::deleteStartFile
-        ::EventLog::deleteExitFile
-        
-        # If required, protect the files:
-        #   - The destDir is set to 0555
-        #   - The parent dir is set to 0555.
-        #   - A chmod -R is done to set the contents to 0x555 as well.
-        
-        if {$::EventLog::protectFiles} {
-            set files [glob -nocomplain -directory $destDir -types {f d} *]
-            if {[llength $files]>0} {
-              exec sh << "chmod -R 0555 $files"
-              file attributes $destDir -permissions 0555 
-              file attributes [file join $destDir ..] -permissions 0555 
+            #  Existing policy: warn, the number is still consumed; the markers
+            #  and protection are left alone so the operator can inspect.
+            ::EventLog::_setOutcome incomplete "copy of files from $srcdir to $destDir failed: $msg"
+            ::EventLog::_reportError {Tar Failed} \
+                "Copy of files from $srcdir to $destDir failed: $msg, Fix problem and move files manually."
+        } else {
+            #  Kill off the start file and exitfiles:
+            
+            ::EventLog::deleteStartFile
+            ::EventLog::deleteExitFile
+            
+            # If required, protect the files:
+            #   - The destDir is set to 0555
+            #   - The parent dir is set to 0555.
+            #   - A chmod -R is done to set the contents to 0x555 as well.
+            
+            if {$::EventLog::protectFiles} {
+                set files [glob -nocomplain -directory $destDir -types {f d} *]
+                if {[llength $files]>0} {
+                  exec sh << "chmod -R 0555 $files"
+                  file attributes $destDir -permissions 0555
+                  file attributes [file join $destDir ..] -permissions 0555
+                }
             }
         }
-        set ::EventLog::needFinalization 0
-        ReadoutGUIPanel::incrRun
+    } msg]} {
+        set trace $::errorInfo
+        ::EventLog::_log error "Cleanup of run $run failed and will be retried: $msg"
+        return -code error -errorinfo $trace "Cleanup of run $run failed: $msg"
     }
+    if {$::EventLog::runOutcome eq ""} {
+        ::EventLog::_setOutcome complete ""
+    }
+    set ::EventLog::nextRun [expr {$run + 1}]
+    ::EventLog::_setPhase cleaned
+}
+##
+# ::EventLog::_advanceRun
+#   Advancement phase: cleaned -> advanced by setting the run number to the
+#   frozen nextRun.  Exactly once; a failure keeps the phase 'cleaned' with
+#   the identity and outcome intact so that a retry only repeats this step,
+#   and is reported as an error (never a silent success).
+#
+proc ::EventLog::_advanceRun {} {
+    if {$::EventLog::runPhase ne "cleaned"} {
+        return
+    }
+    set run  $::EventLog::pendingRun
+    set next $::EventLog::nextRun
+    if {[catch {::ReadoutGUIPanel::setRun $next} msg]} {
+        set trace $::errorInfo
+        ::EventLog::_log error "Could not advance the run number to $next after run $run: $msg; \
+advancement is still pending"
+        return -code error -errorinfo $trace "Could not advance the run number to $next: $msg"
+    }
+    ::EventLog::_setPhase advanced
+    set reason ""
+    if {$::EventLog::runOutcomeReason ne ""} {
+        set reason ": $::EventLog::runOutcomeReason"
+    }
+    ::EventLog::_log output "Run $run finalized ($::EventLog::runOutcome$reason); run number advanced to $next"
+    set ::EventLog::pendingRun -1
+    set ::EventLog::nextRun    -1
 }
 ##
 # ::EventLog::_getSegmentInfo
@@ -748,20 +1233,29 @@ proc ::EventLog::deleteExitFile {} {
 #
 proc ::EventLog::runStarting {} {
 
-    #  If there's already an event logger just force it to exit.
-
-  if {$::EventLog::loggerPid ne -1} {
-    foreach pid $::EventLog::loggerPid {
-      catch {exec kill -9 $pid};            # Catch because the pipeline could run down.
-      set ::EventLog::loggerPid -1
-    }
+  set barrier [::EventLog::_beginBarrier]
+  if {$barrier ne ""} {
+    error $barrier
+  }
+  #  Defensive only: the barrier above refuses while a run is owned.
+  if {$::EventLog::loggerState eq "running"} {
+    ::EventLog::_log warning "An event logger from a previous run is still running; killing it"
+    ::EventLog::_terminateLogger
   }
 
   # Now if desired start the new run.
   ::StageareaValidation::correctAndValidate
 
   if {[::ReadoutGUIPanel::recordData]} {
+    #  Capture the identity of the run now; _startLogger takes ownership of
+    #  the logger (phase 'recording') as soon as it is spawned.
     
+    set ::EventLog::pendingRun       [::ReadoutGUIPanel::getRun]
+    set ::EventLog::runOutcome       ""
+    set ::EventLog::runOutcomeReason ""
+    set ::EventLog::nextRun          -1
+    set ::EventLog::abortRequested   0
+    set ::EventLog::abortReason      ""
         
     set startFile [::EventLog::_getStartFile]
 
@@ -771,78 +1265,138 @@ proc ::EventLog::runStarting {} {
     ::StageareaValidation::deleteStartFile
     set ::EventLog::expectingExit 0
     ::EventLog::_setStatusLine 2000
-    set ::EventLog::needFinalization 1
   }
 }
 ##
-# Called when the run is ending.  We're only going to do something if the
-# event logger's pid is not -1.  In that case:
-# * Set that we expect an exit.
-# * Wait for the .exited file
-# * Set the PID -> -1
-# * Finalize the run.
+##
+# ::EventLog::runEnding
 #
-#  @note - We let the file readable handler handle closing the fd.
+#  Finalize the owned recorded run, if any.  Owner of the ending lifecycle:
+#  a re-entrant call (nested transition) is ignored; a NotReady arriving
+#  while we run is recorded by enter and completed here.
+#  Phases: recording/ending -> (wait/confirm/classify, cleanup) -> cleaned
+#          -> (advance the run number) -> advanced.
+#  Errors (termination not confirmed, cleanup or advancement failure) are
+#  thrown after the state has been recorded so that the transition fails
+#  visibly; the run stays owned and the next call retries only what is left.
 #
 proc ::EventLog::runEnding {} {
-
-    set startFile [::EventLog::_getStartFile]
-    set exitFile [::EventLog::_getExitFile]
-
-    # ne is used below because the logger could be a pipeline in which case
-    # ::EventLog::loggerPid will be a list of pids which freaks out ==.
-    
-    if {$::EventLog::loggerPid ne -1} {
+    if {![::EventLog::isRunPending]} {
+        ReadoutGUIPanel::normalColors
+        return
+    }
+    if {$::EventLog::ending} {
+        ::EventLog::_log warning "runEnding re-entered for run $::EventLog::pendingRun; ignored (the outer call owns it)"
+        return
+    }
+    set ::EventLog::ending 1
+    set status [catch {::EventLog::_runEnding} msg]
+    set trace $::errorInfo
+    set ::EventLog::ending 0
+    ReadoutGUIPanel::normalColors
+    if {$status} {
+        return -code error -errorinfo $trace $msg
+    }
+}
+##
+# _runEnding - body of runEnding (see there).
+#
+proc ::EventLog::_runEnding {} {
+    set run $::EventLog::pendingRun
+    set ::EventLog::expectingExit 1
+    if {$::EventLog::runPhase eq "recording"} {
+        ::EventLog::_setPhase ending
+    }
+    if {$::EventLog::runPhase eq "ending"} {
+        #  1. The writer must be gone.  An abort already recorded (sources
+        #     stopped without an end, or a nested NotReady) means no END_RUN
+        #     will come: kill now under our ownership instead of waiting.
+        #     Otherwise wait (bounded).  Retry the kill if a previous attempt
+        #     could not confirm termination.
         
-        set ::EventLog::expectingExit 1
-        
-        #  First do a vwait for eventLogEnded after disabling the
-        #  begin/end etc. buttons.
-        #  A timeout is used in case there's a problem and the event log
-        #  never exists.
-        
-        
-        set timeoutId [after \
-            [expr {$::EventLog::shutdownTimeout*1000}]    \
-            [list incr ::EventLog::eventLogEnded]         \
-        ]
-        set oldValue $::EventLog::eventLogEnded;      # so we know if there was a timeout.
-        vwait ::EventLog::eventLogEnded
-        after cancel $timeoutId
-        
-        if {$oldValue == $::EventLog::eventLogEnded} {
-            
-            # Wait timed out.
-            tk_messageBox -title "EventLogger exit timeout" -icon warning -type ok \
-                -message {Timed out waiting for eventlog to exit, killing it}
-            foreach pid $::EventLog::loggerPid {
-              catch {exec kill -9 $pid}; # in case waitforfile timed out.
-            }
-        } else {
-            # Normal exit, this should fall through very quickly, now that
-            #  we know the logger exited.
-            
-            ::EventLog::_waitForFile $exitFile $::EventLog::shutdownTimeout \
-                $::EventLog::filePollInterval
-            
-            
+        if {$::EventLog::abortRequested && ($::EventLog::loggerState eq "running")} {
+            ::EventLog::_setOutcome incomplete \
+                "run aborted ($::EventLog::abortReason) before the event logger could see the end of run"
+            ::EventLog::_terminateLogger
+        }
+        if {$::EventLog::loggerState eq "running"} {
+            ::EventLog::_waitForLoggerExit
+        }
+        if {$::EventLog::loggerState eq "unterminated"} {
+            ::EventLog::_terminateLogger
+        }
+        if {$::EventLog::loggerState ni [list exited killed]} {
+            ::EventLog::_setOutcome unknown \
+                "the event logger's termination is not confirmed (state $::EventLog::loggerState)"
+            ::EventLog::_reportError "Run $run: recovery required" \
+                "The event logger for run $run could not be confirmed terminated; the run is not \
+finalized and no new run can start until this is resolved."
+            error "Run $run cannot be finalized: event logger termination not confirmed"
         }
         
-        set ::EventLog::loggerPid -1  
+        #  A previous attempt that could not confirm termination left the
+        #  outcome 'unknown'; termination is confirmed now, so classify afresh.
+        
+        if {$::EventLog::runOutcome eq "unknown"} {
+            set ::EventLog::runOutcome       ""
+            set ::EventLog::runOutcomeReason ""
+        }
+        
+        #  2. Classify once.  Only a clean exit is expected to leave the
+        #     .exited marker; wait for it only in that case.
+        
+        if {$::EventLog::runOutcome eq ""} {
+            if {$::EventLog::loggerState eq "killed"} {
+                ::EventLog::_setOutcome incomplete "the event logger was killed"
+            } elseif {$::EventLog::loggerExitStatus ne "ok"} {
+                ::EventLog::_setOutcome incomplete \
+                    "the event logger exited abnormally ($::EventLog::loggerExitStatus): $::EventLog::loggerStderr"
+            } elseif {[string match "*Timed out with*ends still not seen*" $::EventLog::loggerStderr]} {
+                #  eventlog's own diagnostic for ending on its data timeout
+                #  with END_RUN items missing (eventlogMain.cpp).
+                ::EventLog::_setOutcome incomplete \
+                    "the event logger reported: $::EventLog::loggerStderr"
+            } elseif {![::EventLog::_waitForFile [::EventLog::_getExitFile] \
+                        $::EventLog::shutdownTimeout $::EventLog::filePollInterval]} {
+                ::EventLog::_setOutcome incomplete \
+                    "the event logger exited but did not create [::EventLog::_getExitFile]"
+            } else {
+                #  Frozen here, BEFORE cleanup deletes the marker, so a cleanup
+                #  retry never re-examines evidence that cleanup removed.
+                ::EventLog::_setOutcome complete ""
+            }
+            if {$::EventLog::runOutcome ne "complete"} {
+                ::EventLog::_reportError "Run $run incomplete" $::EventLog::runOutcomeReason
+            }
+        }
+        #  An abort recorded while a yielding step above ran (dialog, sleep)
+        #  is applied before anything is committed.
+        if {$::EventLog::abortRequested} {
+            ::EventLog::_setOutcome incomplete "aborted ($::EventLog::abortReason)"
+        }
+        
+        #  3. Cleanup (idempotent; throws and stays 'ending' on failure).
+        
         ::EventLog::_finalizeRun
-      
-
+        
         #  Cancel the after that updates the event segments and set a new
         #  status line entry indicting the run ended.
         
         if {$::EventLog::statusUpdateId != -1} {
             after cancel $::EventLog::statusUpdateId
             set EventLog::statusUpdateId -1
-            $::EventLog::statusBarManager setMessage $::EventLog::statusbar \
-                {Run ended}
+            if {$::EventLog::runOutcome eq "complete"} {
+                set msg {Run ended}
+            } else {
+                set msg "Run $run ended ($::EventLog::runOutcome): $::EventLog::runOutcomeReason"
+            }
+            $::EventLog::statusBarManager setMessage $::EventLog::statusbar $msg
         }
     }
-    ReadoutGUIPanel::normalColors
+    
+    #  4. Advancement (exactly once; throws and stays 'cleaned' on failure).
+    
+    ::EventLog::_advanceRun
 }
 
 
@@ -874,6 +1428,19 @@ proc ::EventLog::attach {state} {
 proc ::EventLog::precheckTransitionForErrors {from to} {
   set msg {}
   if {$from eq "Halted" && $to eq "Active"} {
+    #  Begin barrier (pure; applies with Record off too).  The optional GUI
+    #  resolution prompt is separate and only offered when interactive with
+    #  a Tk main window; headless callers get the plain error.
+    set barrier [::EventLog::_beginBarrier]
+    if {($barrier ne "") && ($::EventLog::unresolvedRun != -1) \
+            && ![::EventLog::isRunPending] && !$::EventLog::ending} {
+      if {[::EventLog::_promptResolveFailedRun]} {
+        set barrier [::EventLog::_beginBarrier]
+      }
+    }
+    if {$barrier ne ""} {
+      return $barrier
+    }
     if {[::ReadoutGUIPanel::recordData]} {
       ::StageareaValidation::correctFixableProblems;         # Some things can be fixed :-)
       set msg [::StageareaValidation::listIdentifiableProblems]
@@ -888,33 +1455,40 @@ proc ::EventLog::precheckTransitionForErrors {from to} {
 #   {Paused, Active} -> Halted.
 #
 proc ::EventLog::enter {from to} {
-  #  None of this needs to be done if the event log is off.
-  if {[::ReadoutGUIPanel::recordData]} {
-      if {($from in [list Active Paused]) && ($to eq "Halted")} {
-        # if the start was aborted then we should not try to cleanup
-        if {! $::EventLog::failed} {
-          ::EventLog::runEnding
-        }
-      }
-      if {($from in [list Active Paused]) && ($to eq "NotReady")} {
-        # if the start was aborted then we should not try to cleanup
-        if {! $::EventLog::failed} {
-          # Kill of the event log program since it's not going to see ends:
-          foreach pid $::EventLog::loggerPid {
-              if {$pid != -1} {
-                  catch {exec kill -9 $pid}
-              }
-          }
-          # Create the exit file:
-          set fd [open [::EventLog::_getExitFile] w]
-          puts $fd "dummy"
-          close $fd
-          ::EventLog::runEnding
-        } 
-  
-      }
+  if {($from in [list Active Paused]) && ($to eq "Halted")} {
+    #  Finalize the owned run.  Keyed on the run record, not on whether the
+    #  logger process is still alive: its EOF may already have been consumed
+    #  by an earlier callout bundle or a provider that serviced the event loop.
+    if {[::EventLog::isRunPending]} {
+      ::EventLog::runEnding
+    } elseif {[::ReadoutGUIPanel::recordData]} {
+      ReadoutGUIPanel::normalColors
+    }
   }
-
+  if {($to eq "NotReady") && [::EventLog::isRunPending]} {
+    if {$::EventLog::ending} {
+      #  Nested: an emergency transition arrived while the outer runEnding
+      #  owns the lifecycle.  Record it and wake the outer wait; the outer
+      #  call kills/reaps/finalizes and records the superseding outcome.
+      set ::EventLog::abortRequested 1
+      set ::EventLog::abortReason    "$from -> NotReady"
+      ::EventLog::_log warning "Abort ($from -> NotReady) requested while run $::EventLog::pendingRun \
+is being finalized; the finalization in progress completes it as incomplete"
+      set ::EventLog::waitResult abort
+      return
+    }
+    if {($from in [list Active Paused]) || !$::EventLog::expectingExit} {
+      #  The data sources are being stopped without ending the run (or the
+      #  run never got going): the logger will never see END_RUN items.
+      #  Record the abort; the teardown itself runs inside runEnding so that
+      #  the single owner (ending=1) covers the yielding confirmation wait.
+      set ::EventLog::abortRequested 1
+      set ::EventLog::abortReason    "$from -> NotReady"
+    }
+    #  Otherwise (Halted -> NotReady because an earlier enter callback failed
+    #  after the sources were ended) the logger gets its normal bounded wait.
+    ::EventLog::runEnding
+  }
 }
 ##
 # ::EventLog::leave
@@ -927,6 +1501,15 @@ proc ::EventLog::enter {from to} {
 #
 proc ::EventLog::leave {from to} {
   
+  if {($from eq "Halted") && ($to eq "Active")} {
+    #  Begin barrier for every Begin path (button, timed, remote), Record
+    #  off included.
+    set barrier [::EventLog::_beginBarrier]
+    if {$barrier ne ""} {
+      ::EventLog::_log error $barrier
+      error $barrier
+    }
+  }
   # None of this needs to be done if we're not recording.
   
   if {[::ReadoutGUIPanel::recordData]} {
@@ -934,6 +1517,9 @@ proc ::EventLog::leave {from to} {
         if {[catch {::EventLog::runStarting} msg]} {
           set trace $::errorInfo
           set ::EventLog::failed 1
+          if {$::EventLog::runPhase eq "none"} {
+            set ::EventLog::pendingRun -1;   # Nothing was spawned: nothing owned.
+          }
           ::ReadoutGUIPanel::Log EventLogManager error "$msg : $trace"
           error "$msg : $trace"
         }
@@ -941,8 +1527,8 @@ proc ::EventLog::leave {from to} {
         set ::EventLog::failed 0
     }
     if {($from in [list "Active" "Paused"]) && ($to eq "Halted") } {
-      if {! $::EventLog::failed} { 
-        set  ::EventLog::expectingExit 1
+      if {[::EventLog::isRunPending]} {
+        set  ::EventLog::expectingExit 1;   # The logger exits once the sources end.
       }
       set ::EventLog::failed 0
     }

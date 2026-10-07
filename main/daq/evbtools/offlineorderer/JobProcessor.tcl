@@ -174,7 +174,7 @@ snit::type JobProcessor {
         # job ended normally
         puts "we are going to try to end this thing"
 
-        if {$::EventLog::loggerPid != -1} { 
+        if {[::EventLog::isRunPending]} { 
           ::EventLog::runEnding
         }
         # the transition to active was successful so we should expect that 

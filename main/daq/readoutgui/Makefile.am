@@ -51,7 +51,7 @@ TCLTESTS =    filesystem.test \
 	initconfig.test installroot.test system.test tests.test  ostest.test \
 	s800.test  rstatemachine.test rdocallouts.test \
 	  state.test  delayprovider.test \
-		applauncher.test bundlemgr.test
+		applauncher.test bundlemgr.test eventloglifecycle.test
 
 # to enable sshpipe.test uncomment the next line:
 #TCLTESTS+=sshpipe.test
