@@ -20,6 +20,15 @@ from nscldaq.readoutgui.pySSHProcess import SSHProcess
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from nscldaq.readoutREST.readoutRestClient import ReadoutClient
 from PyQt6.QtCore import QProcess
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class FRIBDAQSource(DataSource):
@@ -157,12 +166,12 @@ class FRIBDAQSource(DataSource):
         
         if 'log' in self._configuration:
             command += f' --log {self.cget("log")}'
-            command += f' --debug_level={self._configuration.get("debug_level", 0)}'
+            command += f' --debug={self._configuration.get("debug_level", 0)}'
         
         # Tcl server?
         
         if 'port' in self._configuration:
-            command += f' --port={self.cget('port')}'
+            command += f' --port={self.cget("port")}'
         
         # We need to add an initscript so that the ReST server starts.
         # Since daqsetup will not necessarily have been run in the target host:
@@ -241,6 +250,69 @@ class FRIBDAQSource(DataSource):
         if not self._client:
             self._outputMsg('_require_client did not have a client!!')
             raise RuntimeError('Attempting to do a client request but no ReST client was instantiated.')
+
+
+#   Data sources need two other things:
+#   - The ablity to display their configuraiton in a QWidget
+#   - The ability to configure themeselves.
+#
+#  These are used by the framework as a whole to list data sources and their
+#  attributes and to create configured data sources.
+#  To support modules that can be loaded to extend the set of
+#  supported data source types, these must have the class names:
+#
+#  ConfigurationDisplay  - To display the configuration of a data source.
+#  ConfigureSource       - To create a configured data source.
+
+
+class ConfigurationDisplay(QWidget):
+    '''
+    Configuration display object for the FRIBDAQDataSource.  
+    Instantiate this passing a data source instance and an
+    optional parent.  The resulting widget will display
+    (non modifyably) the configuration of the source.
+    '''
+    def __init__(self, source : FRIBDAQSource, parent : QWidget | None = None):
+        '''
+            Instantiate the data source:
+            @param source : FRIBDAQSource - The data sourcde to describe.
+            @param parent : QWidget | None = NOne - the parent widget if desired.
+        '''
+        super().__init__(parent)
+        config = source.getConfig()
+        self._row = 0
+        
+        self.setLayout(QGridLayout())
+        
+        self._addRow('Data Source type: ', 'Generic Readout')
+        self._addRow('Run In:', config.get('host', 'localhost'))
+        self._addRow('Program', config['program_path'])
+        self._addRow('Output Ring:', config.get('ring', getpass.getuser()))
+        self._addRow('Source Id', str(config.get('source_id', 0)))
+        self._addRow('Rest Service', config.get('service', 'ReadoutREST'))
+        
+        # Now the optional stuff:
+        
+        
+        if 'port' in config:
+            self._addRow('Tcl server  port', str(config['port']))
+            
+        if 'log' in config:
+            self._addRow('Logging to ', config['log'])
+            self._addRow('Log level',  str(config.get('debug_level', 0)))
+                             
+                             
+    # Utilities:
+    def _addRow(self, title : str, value : str) -> None:
+        # Fill in the next row of the widget:
+        
+        self.layout().addWidget(QLabel(title, self),  self._row, 0)
+        self.layout().addWidget(QLabel(value, self),  self._row, 1)
+        
+        self._row += 1
+    
+        
+
     
 # Test code  
 #   Note this is specific to my development env  because it assumes
@@ -257,8 +329,29 @@ if __name__ == '__main__':
 
     from nscldaq.readoutgui import DataSourceManager, ReadoutGuiView, StateMachine
     from PyQt6.QtCore import QTimer
-    from PyQt6.QtWidgets import QApplication, QMessageBox
+    from PyQt6.QtWidgets import QApplication, QMessageBox, QDialog, QDialogButtonBox
     
+    #  Toy Class to display the data source 'list'
+    
+    class ListSources(QDialog):
+        def __init__(self, parent : QWidget| None = None):
+            super().__init__(parent)
+            
+            self.setLayout(QVBoxLayout())
+            sources = DataSourceManager.DataSourceManager.instance().sources()
+            source = sources[list(sources.keys())[0]]
+            self.layout().addWidget(ConfigurationDisplay(source, self))
+            
+            self._buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, self)
+            self.layout().addWidget(self._buttons)
+            self._buttons.rejected.connect(self.reject)
+            
+    
+    
+    def listSources(parent) -> None:
+        lister = ListSources(parent)
+        lister.exec()
+        
     liveness = None    # Live timer when it's active.
     
     def start(sm : StateMachine.ReadoutStateMachine) -> None:
@@ -382,7 +475,9 @@ if __name__ == '__main__':
     
     source = FRIBDAQSource({
         'host' : 'localhost',
-        'program_path' : '~/daqtest/readout/Readout'
+        'program_path' : '~/daqtest/readout/Readout',
+        'port' : 1234,
+        'log'  : '~/readout.log'
     })
     DataSourceManager.DataSourceManager.instance().addSource('DataSource', source)
     
@@ -430,6 +525,12 @@ if __name__ == '__main__':
     gui.destroyed.connect(stopSources)
     
     gui.show()
+    
+    # Attach DataSource -> List  to displaying the  data source.
+    # In a dialog with the Ok button to dismiss it.
+    
+    gui.dsListSources.connect(lambda: listSources(gui))
+    
     sys.exit(app.exec())
     
     
