@@ -81,6 +81,8 @@ not of {type(value).__name__}'''
         for not all parameters to be configured.
         '''
         return self._configuration[name]
+    def getConfig(self) -> dict[str, object]:
+        return self._configuration
     
     def sourceType(self) -> str:
         '''
