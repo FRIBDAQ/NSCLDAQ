@@ -14,18 +14,22 @@ import getpass
 import os
 import time
 import traceback
+from typing import ClassVar
 
 from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.pySSHProcess import SSHProcess
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from nscldaq.readoutREST.readoutRestClient import ReadoutClient
-from PyQt6.QtCore import QProcess
+from PyQt6.QtCore import QProcess, Qt
 from PyQt6.QtWidgets import (
     QCheckBox,
+    QFileDialog,
     QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QPushButton,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -313,7 +317,277 @@ class ConfigurationDisplay(QWidget):
     
         
 
+class ConfigureSource(QWidget):
+    '''
+    Instantiate this in a dialog to configure a data source.
+    WHen the dialog is accepted call the makeSource method.
+    It will either return a FRIBDAQSource data source or
+    an str if there are detected errors.  In that case,
+    the string should be displayed in a messagebox and 
+    the dialog re-execed until either it's cancelled
+    or an FRIBDAQSource is returned from the makeSource
+    method.
+    '''
+    # _mandatory_parmaeters is the set of parameters that must not be blank.
     
+    _mandatory_parameters : ClassVar[tuple[str]] = ('host', 'program_path')
+                                                        # Default values.
+    def __init__(self, source : FRIBDAQSource | None = None, parent : QWidget | None = None):
+        '''
+        @param source - if provided, the source's configuration is used to pre-load the form.
+                        this is to support modification/replacement of an existing source.
+        @param parent - Parent widget.
+        
+        '''
+        super().__init__(parent)
+        
+        # Layout the form:
+        
+        self.setLayout(QVBoxLayout())
+        layout = self.layout()
+        
+        
+        
+        # TItle me:
+        
+        layout.addWidget(QLabel('Configure an FRIBDAQ generic data source', self))
+        
+        # Host and program path:
+                
+        host_program_layout = QHBoxLayout()
+        host_program_layout.addWidget(QLabel('Host:', self))
+        self._host = QLineEdit(self)
+        host_program_layout.addWidget(self._host)
+        
+        host_program_layout.addWidget(QLabel('Program:', self))
+        self._program = QLineEdit(self)
+        host_program_layout.addWidget(self._program)
+        self._browse = QPushButton('Browse...', self)
+        host_program_layout.addWidget(self._browse)
+        
+        self._browse.clicked.connect(self._browseProgram)
+        
+        layout.addLayout(host_program_layout)
+        
+        # ReSt Service name:
+        
+        service_layout =  QHBoxLayout()
+        service_layout.addWidget(QLabel('ReST service: ', self))
+        self._restService = QLineEdit('ReadoutREST', self)
+        service_layout.addWidget(self._restService)
+        
+        layout.addLayout(service_layout)
+        
+        # RingBuffer:
+        
+        ring_layout = QHBoxLayout()
+        ring_layout.addWidget(QLabel('Ouput ring name: ', self))
+        self._ring = QLineEdit(getpass.getuser(), self)
+        ring_layout.addWidget(self._ring)
+        
+        layout.addLayout(ring_layout)
+        
+        # Source ID:
+        
+        sourceid_layout  = QHBoxLayout()
+        sourceid_layout.addWidget(QLabel('Source Id', self))
+        self._sourceid = QSpinBox(self)
+        sourceid_layout.addWidget(self._sourceid)
+        self._sourceid.setMinimum(0),
+        self._sourceid.setMaximum(0x7fffffff)
+    
+        layout.addLayout(sourceid_layout)
+        
+        #Logging:
+        
+        self._enableLogging  = QCheckBox('Enable logging', self)  # Controls enable.
+        layout.addWidget(self._enableLogging)
+        self._enableLogging.clicked.connect(self._enableDisableLogWidgets)
+    
+        logging_layout = QHBoxLayout()
+        logging_layout.addWidget(QLabel('Log File:', self))
+        
+        self._logfile = QLineEdit(self)
+        logging_layout.addWidget(self._logfile)
+        self._logfile.setEnabled(False)      # unles/until _enableLogging checked.
+        self._browseLogfile = QPushButton('Browse...', self)
+        logging_layout.addWidget(self._browseLogfile)
+        self._browseLogfile.clicked.connect(self._browseLogFile)
+        self._browseLogfile.setEnabled(False)
+    
+        logging_layout.addWidget(QLabel("Log level", self))    
+        self._logLevel = QSpinBox(self)
+        logging_layout.addWidget(self._logLevel)
+        self._logLevel.setMinimum(0)
+        self._logLevel.setMaximum(2)
+        self._logLevel.setEnabled(False)
+        
+        self._logWidgets = (self._logfile, self._browseLogfile, self._logLevel)    # Enabled via checkbox.
+    
+        layout.addLayout(logging_layout)
+        
+        # TCL Server - 
+        
+        tcl_server_layout = QHBoxLayout()
+        self._enableTclServer = QCheckBox('Enable Tcl Server', self)
+        
+        tcl_server_layout.addWidget(self._enableTclServer)
+        self._enableTclServer.clicked.connect(self._enableDisableServerWidgets)
+        tcl_server_layout.addWidget(QLabel('Port', self))
+
+        self._tclport = QSpinBox(self)
+        tcl_server_layout.addWidget(self._tclport)
+        self._tclport.setMinimum(1024)         # unpriv port.
+        self._tclport.setMaximum(29999)        # Below the port manager port pool.
+        self._tclport.setEnabled(False)        # Unless enableTclServer is checked.
+        
+        self._tclServerWidgets = (self._tclport,)   # For now.
+
+        layout.addLayout(tcl_server_layout)
+        
+        # If a source was provided, load the form from it:
+        
+        
+        if source:
+            self._loadForm(source)
+        
+        
+    # Public methods:
+    
+    def makeSource(self) -> FRIBDAQSource | str:
+        '''
+            Attempts to construct a daq data source from the configuration
+            in the widget.
+            @return FRIBDAQSource - if the configuration allowed us to do that.
+            @return str           - Error message to display if not.
+            
+        '''
+        # pull the raw configuration out first.
+        
+        # Mandatory stuff:
+        
+        config = {
+            'host'         : self._host.text(),
+            'program_path' : self._program.text(),
+            'source_id'       : self._sourceid.value(),
+            
+        }
+        
+        # Things with defaults:
+        
+        svc = self._restService.text()
+        if svc.strip():
+            config['service'] = svc
+        
+        ring = self._ring.text()
+        if ring.strip():
+            config['ring'] = ring
+            
+        if self._isChecked(self._enableLogging):
+            # There must be a log file:
+            
+            logfile = self._logfile.text()
+            if logfile.strip():
+                config['log'] = logfile
+            else:
+                return "If you enable logging you must supply a log file as well."
+            
+            config['debug_level'] = self._logLevel.value()
+        
+        if self._isChecked(self._enableTclServer):
+            config['port'] = self._tclport.value()
+        
+        # Be sure the mandatory parameters are set:
+        
+        for key in self._mandatory_parameters:
+            if not config[key].strip():
+                return f'The {key} configuration must be provided.'
+        
+        # Valid config so:
+        
+        return FRIBDAQSource(config)
+    
+    # Private methods:
+    
+    def _loadForm(self, source : FRIBDAQSource) -> None:
+        # Load the contents of the form from the 
+        # configuration of an existing data source:
+        
+        config = source.getConfig()
+        
+        # These two must be present.
+        
+        self._host.setText(config['host'])
+        self._program.setText(config['program_path'])
+        
+        if 'service' in config:
+            self._restService.setText(config['service'])
+            
+        if 'ring' in config:
+            self._ring.setText(config['ring'])
+        
+        if 'source_id' in config:
+            self._sourceid.setValue(config['source_id'])
+            
+        # Set logging if enabgled:
+        
+        if 'log' in config and config['log'].strip():
+            self._enableLogging.setCheckState(Qt.CheckState.Checked)
+            self._enableDisableLogWidgets()       # Should enable the widgets.
+            self._logfile.setText(config['log'])
+            if config['debug_level'] in config:
+                self._loglevel.setValue(config['debug_level'])
+        
+        # Set Tcl server port if enabled:
+        
+        if 'port' in config:
+            self._enableTclServer.setCheckState(Qt.CheckState.Checked)
+            self._enableDisableServerWidgets()
+            self._tclport.setValue(config['port'])
+    
+    # Private slots:
+    
+    def _browseProgram(self) -> None:
+        # Browse for the program.  On accepted, set self._program from the resulting
+        #path
+        
+        path, _ = QFileDialog.getOpenFileName(self, 'Choose Program', '.')
+        if path.strip() :
+            self._program.setText(path)
+    
+    def _enableDisableLogWidgets(self) -> None:
+        # Depending on the state of self._enableLogging, turn on/off the
+        # widgets in self._logWidgets:
+        
+        state = self._isChecked(self._enableLogging)
+        for w in self._logWidgets:
+            w.setEnabled(state)
+            
+    def _browseLogFile(self) -> None:
+        # Set  self._logfile from the output of a file dialog borwser:
+        
+        path, _ = QFileDialog.getSaveFileName(
+            self, 'Choose Log file', '.', 'Log Files (*.log);;All Files (*)'
+        )
+        if path.strip():
+            self._logfile.setText(path)
+        
+    def _enableDisableServerWidgets(self) -> None:
+        # Enable/disable the tcl server widgets depending on the state
+        # of the enable chekcbutton:
+        
+        state = self._isChecked(self._enableTclServer)  
+        for w in self._tclServerWidgets:
+            w.setEnabled(state)
+    
+    # Utilities:
+    
+    def _isChecked(self, w : QCheckBox) -> bool:
+        # Simplify checking box states for bistate.
+
+        return w.checkState() == Qt.CheckState.Checked        
+            
+
 # Test code  
 #   Note this is specific to my development env  because it assumes
 #   there's a readout program in ~/daqtest/readout/Readout.
@@ -327,9 +601,10 @@ class ConfigurationDisplay(QWidget):
 if __name__ == '__main__':
     import sys
 
+    from nscldaq.mg_configutils import SaveDialog
     from nscldaq.readoutgui import DataSourceManager, ReadoutGuiView, StateMachine
     from PyQt6.QtCore import QTimer
-    from PyQt6.QtWidgets import QApplication, QMessageBox, QDialog, QDialogButtonBox
+    from PyQt6.QtWidgets import QApplication, QDialog, QDialogButtonBox, QMessageBox
     
     #  Toy Class to display the data source 'list'
     
@@ -467,18 +742,33 @@ if __name__ == '__main__':
             liveness.timeout.connect(checkDataSources)
             liveness.start()
             
+    def promptSource() -> FRIBDAQSource:
+        dialog = SaveDialog(ConfigureSource())
+        while dialog.exec() == QDialog.DialogCode.Accepted:
+            source : FRIBDAQSource | str = dialog.workarea().makeSource()
+            if type(source) == str:
+                QMessageBox.warning(dialog, 'Missing parameters', source)
+            else:
+                return source
+    
+        # Exit for now if no source chosen.
+        
+        QApplication.instance().exit(-1)    
+        
+    
     
     app = QApplication(sys.argv)
     gui = ReadoutGuiView.ReadoutGuiMainWindow()
     
     # Make our data source and add it to the data source manager:
     
-    source = FRIBDAQSource({
-        'host' : 'localhost',
-        'program_path' : '~/daqtest/readout/Readout',
-        'port' : 1234,
-        'log'  : '~/readout.log'
-    })
+    #source = FRIBDAQSource({
+    #    'host' : 'localhost',
+    #    'program_path' : '~/daqtest/readout/Readout',
+    #    'port' : 1234,
+    #    'log'  : '~/readout.log'
+    #})
+    source = promptSource()
     DataSourceManager.DataSourceManager.instance().addSource('DataSource', source)
     
     # The GUI signals make state transitions happe in the state machine
