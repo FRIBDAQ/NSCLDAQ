@@ -49,6 +49,7 @@ class FRIBDAQSource(DataSource):
             'source_id'   : int,     # Source id.
             'log'         : str,     # Log file path if should log.
             'debug_level' : int,     # Debugging level for logging.
+            'port'        : int,     # TCL Server port.
             
         }
         
@@ -144,19 +145,10 @@ class FRIBDAQSource(DataSource):
             
             @return str - the commandline string.
         '''
+        command = self.create_command_env()
         
-        # Need TCLLIBPATH for the httpd packages etc.
-        command = f'TCLLIBPATH={os.environ["DAQTCLLIBS"]} '
+        # Now the program and its options
         
-        # Fold in all env vars that Start with DAQ
-        
-        for envname in os.environ:
-            if envname.startswith('DAQ'):
-                command += f'{envname}={os.environ[envname]} '
-            
-        
-        service = self._configuration.get('service', 'ReadoutREST')
-        command +=f'SERVICE_NAME={service} '
         command += self.cget('program_path') 
         command += ' --ring=' + self._configuration.get('ring', getpass.getuser())
         command += ' --sourceid=' + str(self._configuration.get('source_id', 0))
@@ -167,14 +159,39 @@ class FRIBDAQSource(DataSource):
             command += f' --log {self.cget("log")}'
             command += f' --debug_level={self._configuration.get("debug_level", 0)}'
         
+        # Tcl server?
+        
+        if 'port' in self._configuration:
+            command += f' --port={self.cget('port')}'
+        
         # We need to add an initscript so that the ReST server starts.
         # Since daqsetup will not necessarily have been run in the target host:
         
         daqshare = os.environ['DAQSHARE']
         command += f' --init-script={daqshare}/scripts/rest_init_script.tcl'
         
+        
+        
         return command
     
+    def create_command_env(self) -> str:
+            '''
+            @return str - The environment setting part of the command.
+                          separated out to allow re-use.
+            '''
+            env = f'TCLLIBPATH={os.environ["DAQTCLLIBS"]} '
+            
+            # Fold in all env vars that Start with DAQ
+            
+            for envname in os.environ:
+                if envname.startswith('DAQ'):
+                    env += f'{envname}={os.environ[envname]} '
+                
+            
+            service = self._configuration.get('service', 'ReadoutREST')
+            env +=f'SERVICE_NAME={service} '
+            
+            return env
     
     # Slots for signals from the process:
     
@@ -224,7 +241,7 @@ class FRIBDAQSource(DataSource):
         if not self._client:
             self._outputMsg('_require_client did not have a client!!')
             raise RuntimeError('Attempting to do a client request but no ReST client was instantiated.')
-        
+    
 # Test code  
 #   Note this is specific to my development env  because it assumes
 #   there's a readout program in ~/daqtest/readout/Readout.
