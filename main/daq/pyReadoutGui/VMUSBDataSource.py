@@ -19,10 +19,10 @@
 
 import os
 
-from nscldaq.readoutgui.FRIBDAQDataSource import FRIBDAQSource
+import nscldaq.readoutgui.FRIBDAQDataSource
+from PyQt6.QtWidgets import QWidget
 
-
-class VMUSBDataSource(FRIBDAQSource):
+class VMUSBDataSource(nscldaq.readoutgui.FRIBDAQDataSource.FRIBDAQSource):
     """FRIBDAQ source configured to run VMUSBReadout by default."""
 
     def __init__(self, parameters: dict[str, object], **kwargs):
@@ -106,4 +106,53 @@ class VMUSBDataSource(FRIBDAQSource):
         # return the command.
         
         return command
+
+# Configuration display and configuration methods:
+
+class ConfigurationDisplay(nscldaq.readoutgui.FRIBDAQDataSource.ConfigurationDisplay):
+    '''
+        We just have to display the base class configuration and then
+        add to it the additional parameters we have.
+    '''
+    def __init__(self, source : VMUSBDataSource, parent : QWidget | None = None):
+        super().__init__(source, parent)
+        
+        config = source.getConfig()
+        self._addRow('Readout Configuration:', config['daqconfig'])
+        
+        if 'ctlconfig' in config:
+            self._addRow('Slow Control configuration', config['ctlconfig'])
+        
+        if 'serial' in  config:
+            self._addRow('Connect to VMSUB: ', config['serial'])
+        
+        self._addRow('Slow controls server port', str(config.get('port', 2700)))
+        
+        if 'timestamplib' in config:
+            self._addRow('Extract timestamps with', config['timestamplib'])
+        
+        quickstart = config.get('quickstart', 'off')
+        self._addRow('Quick start is', quickstart)
+    
+    
+#  Test code:
+
+if __name__ == '__main__':
+    import sys
+    from nscldaq.readoutgui import ReadoutGuiView
+    from PyQt6.QtWidgets import QApplication
+    app = QApplication(sys.argv)
+    dummyGui = ReadoutGuiView.ReadoutGuiMainWindow()
+    
+    source = VMUSBDataSource({
+        'daqconfig' : '/home/ron/daqtest/daqconfig.tcl',
+        'ctlconfig' : '/home/ron/daqtest/ctlconfig.tcl',
+        'serial'    : 'VM0123',
+        'timestamplib' : '/home/ron/daqtest/tslib.so',
+        
+    })
+    win = ConfigurationDisplay(source)
+    win.show()
+    
+    sys.exit(app.exec())
         
