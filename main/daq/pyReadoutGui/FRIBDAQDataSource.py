@@ -288,7 +288,7 @@ class ConfigurationDisplay(QWidget):
         
         self.setLayout(QGridLayout())
         
-        self._addRow('Data Source type: ', 'Generic Readout')
+        self._addRow('Data Source type: ', type(source).__name__)
         self._addRow('Run In:', config.get('host', 'localhost'))
         self._addRow('Program', config['program_path'])
         self._addRow('Output Ring:', config.get('ring', getpass.getuser()))
@@ -710,7 +710,7 @@ if __name__ == '__main__':
                     elif fromState == 'Paused':
                         mgr.resume()
                     else:
-                        raise Exception(f'Transition to "Active" unrecognized from state: {fromState}')
+                        raise RuntimeError(f'Transition to "Active" unrecognized from state: {fromState}')
                 case 'Paused':
                     mgr.pause()
                 case _ :
