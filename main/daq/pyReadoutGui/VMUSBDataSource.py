@@ -33,7 +33,15 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PyQt6.QtCore import Qt
 
+
+#  Factor out computation of program path.
+
+def _programPath() -> str:
+    return os.path.join(
+        os.environ['DAQBIN'], 'VMUSBReadout'
+                )
 
 class VMUSBDataSource(nscldaq.readoutgui.FRIBDAQDataSource.FRIBDAQSource):
     """FRIBDAQ source configured to run VMUSBReadout by default."""
@@ -45,9 +53,7 @@ class VMUSBDataSource(nscldaq.readoutgui.FRIBDAQDataSource.FRIBDAQSource):
         # caller.
         if 'program_path' not in configuration:
             try:
-                configuration['program_path'] = os.path.join(
-                    os.environ['DAQBIN'], 'VMUSBReadout'
-                )
+                configuration['program_path'] = _programPath()
             except KeyError as error:
                 raise RuntimeError(
                     'DAQBIN must be set to locate VMUSBReadout'
@@ -162,7 +168,7 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
     
     # New set of mandatory_parmaeters...daqconfig is also needed.
     _mandatory_parameters : ClassVar[tuple[str]] = ('host', 'program_path', 'daqconfig')
-    
+
     def __init__(self, source : VMUSBDataSource | None = None, parent : QWidget | None = None):
         super().__init__(source, parent)   # Layout base class form.
         
@@ -172,7 +178,6 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         
         dclayout = QHBoxLayout()
         dclayout.addWidget(QLabel('Readout Configuration', self))
-        
         self._daqconfig = QLineEdit(self)
         dclayout.addWidget(self._daqconfig)
         
@@ -212,10 +217,10 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         snolayout.addWidget(self._serial)
         self._serial.setInputMask('VM9999')
         self._serial.setEnabled(False)
-        self._enablesno.clicked.connect(lambda:
-            self._setWidgetStates(self._enablesno, [self._serial,])
+        self._serialno_widgets = [self._serial,]
+        self._enablesno.clicked.connect(
+            lambda: self._setWidgetStates(self._enablesno, self._serialno_widgets)
         )
-        
         layout.addLayout(snolayout)
         
         
@@ -235,8 +240,9 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         self._browsets.setEnabled(False)
         self._browsets.clicked.connect(self._browseSo)
         
+        self._tswidgets = [self._tslib, self._browsets]
         self._enablets.clicked.connect(
-            lambda: self._setWidgetStates(self._enablets, [self._tslib, self._browsets])
+            lambda: self._setWidgetStates(self._enablets, self._tswidgets)
         )
         
         layout.addLayout(tslayout)
@@ -258,14 +264,60 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         
         # Patch the program path:
         
-        ds = VMUSBDataSource({})
-        self._program.setText(ds.getConfig()['program_path'])
+        self._program.setText(_programPath())
         
         # If a source was provided, load the form:
-        
+        # We do things this way to allow derivation of
+        # this class forcing our _loadFOrm method to be called.
+        #  .. since this is __init__
         if source:
-            self._loadForm(source)
+            ConfigureSource._loadForm(self, source)
+            
 
+    # Utilities:
+    
+    def _loadForm(self, source : VMUSBDataSource) -> None:
+        # Load the form from the existing VMUSB Data Source object.
+        
+        super()._loadForm(source)     # Load the superclass form.
+        config = source.getConfig()   # Configuration to load from.
+        # Load the stuff that the base class didn't.
+        # 'daqconfig', 'ctlconfig', 'serial', 'timetamplib', and 'quickstart'
+        
+        self._daqconfig.setText(config.get('daqconfig', ''))
+        self._ctlconfig.setText(config.get('ctlconfig', ''))
+        
+        if 'serial' in config:
+            self._enablesno.setCheckState(Qt.CheckState.Checked)
+            self._serial.setText(config['serial'])
+        else:
+            self._enablesno.setCheckState(Qt.CheckState.Unchecked) # Asume nothing.
+        
+        self._setWidgetStates(self._enablesno, self._serialno_widgets)   # Update state of widgets.
+        
+        if 'timestamplib' in config:
+            self._enablets.setCheckState(Qt.CheckState.Checked)
+            self._tslib.setText(config['timestamplib'])
+        else:
+            self._enablets.setCheckState(Qt.CheckState.Unchecked)
+        self._setWidgetStates(self._enablets, self._tswidgets)
+        
+        # Who to check:
+        
+        if 'quickstart' not in config:
+            qs = self._qsOff
+        else:
+            if config['quickstart'] == 'on':
+                qs = self._qsOff
+            elif config['quickstart'] == 'off':
+                qs - self._qsOn
+            else:
+                raise ValueError(
+                    f'"quickstart" configuration parameter must be either "on" or "off" was {config["quickstart"]}'
+                )
+        
+        
+        
     
     # Private slots:
     
@@ -308,8 +360,15 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     dummyGui = ReadoutGuiView.ReadoutGuiMainWindow()
     
+    src = VMUSBDataSource({
+        'host'      : 'localhost',
+        'daqconfig' : '/home/ron/daqtest/daqconfig.tcl',
+        'ctlconfig' : '/home/ron/daqtest/ctlconfig.tcl',
+        'quickstart' : 'on'
+        
+    })
     
-    win = ConfigureSource()
+    win = ConfigureSource(src)
     win.show()
     
     sys.exit(app.exec())
