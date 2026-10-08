@@ -256,6 +256,11 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         
         layout.addLayout(qslayout)
         
+        # Patch the program path:
+        
+        ds = VMUSBDataSource({})
+        self._program.setText(ds.getConfig()['program_path'])
+        
         # If a source was provided, load the form:
         
         if source:
