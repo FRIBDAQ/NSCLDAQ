@@ -18,9 +18,22 @@
 
 
 import os
+from typing import ClassVar
 
 import nscldaq.readoutgui.FRIBDAQDataSource
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QRadioButton,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
+
 
 class VMUSBDataSource(nscldaq.readoutgui.FRIBDAQDataSource.FRIBDAQSource):
     """FRIBDAQ source configured to run VMUSBReadout by default."""
@@ -60,7 +73,6 @@ class VMUSBDataSource(nscldaq.readoutgui.FRIBDAQDataSource.FRIBDAQSource):
         params['daqconfig'] = str
         params['ctlconfig'] = str
         params['serial']    = str
-        params['control_port'] = int
         params['timestamplib'] = str
         params['quickstart']   = str
         return params 
@@ -126,7 +138,6 @@ class ConfigurationDisplay(nscldaq.readoutgui.FRIBDAQDataSource.ConfigurationDis
         if 'serial' in  config:
             self._addRow('Connect to VMSUB: ', config['serial'])
         
-        self._addRow('Slow controls server port', str(config.get('port', 2700)))
         
         if 'timestamplib' in config:
             self._addRow('Extract timestamps with', config['timestamplib'])
@@ -134,7 +145,155 @@ class ConfigurationDisplay(nscldaq.readoutgui.FRIBDAQDataSource.ConfigurationDis
         quickstart = config.get('quickstart', 'off')
         self._addRow('Quick start is', quickstart)
     
+
+class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
+    '''
+    Instantiate this in a dialog to cofigure a data sourc.
+    Note that this just adds extra fields to the FRIBDAQDataSource
+    configuration form for the extra parameters the VMUSBReadout uses.
+    The program remains editable in case someone's done a custom extended
+    VMUSB Readout...not currently supported but maybe possible.
     
+    We completely re-implement makeSource, however to instantiate the
+    correct data source.
+    
+    For load, we load the base and our additional stuff.
+    '''
+    
+    # New set of mandatory_parmaeters...daqconfig is also needed.
+    _mandatory_parameters : ClassVar[tuple[str]] = ('host', 'program_path', 'daqconfig')
+    
+    def __init__(self, source : VMUSBDataSource | None = None, parent : QWidget | None = None):
+        super().__init__(source, parent)   # Layout base class form.
+        
+        layout : QVBoxLayout = self.layout()     
+        
+        # Daqconfig -  no default.
+        
+        dclayout = QHBoxLayout()
+        dclayout.addWidget(QLabel('Readout Configuration', self))
+        
+        self._daqconfig = QLineEdit(self)
+        dclayout.addWidget(self._daqconfig)
+        
+        self._browsedaqconfig = QPushButton('Browse...', self)
+        dclayout.addWidget(self._browsedaqconfig)
+        self._browsedaqconfig.clicked.connect(
+            lambda: self._browseConfigFile(self._daqconfig)
+        )
+        
+        layout.addLayout(dclayout)
+        
+        # Ctlconfig - default /dev/null:
+        
+        cclayout = QHBoxLayout()
+        cclayout.addWidget(QLabel('Control configuration', self))
+        
+        self._ctlconfig = QLineEdit(self)
+        cclayout.addWidget(self._ctlconfig)
+        self._ctlconfig.setText('/dev/null')
+        
+        self._browsectlconfig = QPushButton('Browse...')
+        cclayout.addWidget(self._browsectlconfig)
+        self._browsectlconfig.clicked.connect(
+            lambda: self._browseConfigFile(self._ctlconfig)
+        )
+        
+        layout.addLayout(cclayout)
+        
+        # Serial number connection:
+        
+        snolayout = QHBoxLayout()
+        self._enablesno = QCheckBox('Connect By serial', self)
+        snolayout.addWidget(self._enablesno)
+        
+        snolayout.addWidget(QLabel('Serial String:', self))
+        self._serial = QLineEdit(self)
+        snolayout.addWidget(self._serial)
+        self._serial.setInputMask('VM9999')
+        self._serial.setEnabled(False)
+        self._enablesno.clicked.connect(lambda:
+            self._setWidgetStates(self._enablesno, [self._serial,])
+        )
+        
+        layout.addLayout(snolayout)
+        
+        
+        # Optional timestamp extraction lib:
+        
+        tslayout = QHBoxLayout()
+        self._enablets = QCheckBox('Extract Timestamps:', self) 
+        tslayout.addWidget(self._enablets)
+        tslayout.addWidget(QLabel('Extraction library', self))
+        
+        self._tslib = QLineEdit(self)
+        self._tslib.setEnabled(False)
+        tslayout.addWidget(self._tslib)
+        
+        self._browsets = QPushButton('Browse...', self)
+        tslayout.addWidget(self._browsets)
+        self._browsets.setEnabled(False)
+        self._browsets.clicked.connect(self._browseSo)
+        
+        self._enablets.clicked.connect(
+            lambda: self._setWidgetStates(self._enablets, [self._tslib, self._browsets])
+        )
+        
+        layout.addLayout(tslayout)
+        
+        # Quick start:
+        
+        layout.addWidget(QLabel('Quick Start options:', self))
+        qslayout = QHBoxLayout()
+        self._qsOn = QRadioButton('On', self)
+        self._qsOn.setChecked(False)
+        
+        self._qsOff = QRadioButton('Off (recommended)', self)
+        self._qsOff.setChecked(True)
+        
+        qslayout.addWidget(self._qsOn)
+        qslayout.addWidget(self._qsOff)
+        
+        layout.addLayout(qslayout)
+        
+        # If a source was provided, load the form:
+        
+        if source:
+            self._loadForm(source)
+
+    
+    # Private slots:
+    
+    def _browseConfigFile(self, line : QLineEdit) -> None:
+        # Browse for a .tcl/.config file and, on accepted, fill in
+        # the line widget with the selected file:
+        
+        file, _ = QFileDialog.getOpenFileName(
+            self, 'Choose Config File', '.', 
+            'Tcl Scripts (*.tcl);;Config Files (*.cfg);; All Files (*)'
+        )
+        
+        if file.strip():
+            line.setText(file)
+    def _browseSo(self) -> None:
+        # Browse for the timestamp extraction library .so:
+        
+        file, _  = QFileDialog.getOpenFileName(
+            self, 'Choose tslib', '.',
+            'Shared libs (*.so);;All files (*)'
+        )
+        if file.strip():
+            self._tslib.setText(file)
+        
+    def _setWidgetStates(self, check : QCheckBox, widgets : list[QWidget]) -> None:
+        # Set the enabled state of a list of widgets based on the state of a
+        # checkbox.
+        
+        state = self._isChecked(check)     # From base class.
+        
+        for w in widgets:
+            w.setEnabled(state)
+            
 #  Test code:
 
 if __name__ == '__main__':
@@ -144,14 +303,8 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     dummyGui = ReadoutGuiView.ReadoutGuiMainWindow()
     
-    source = VMUSBDataSource({
-        'daqconfig' : '/home/ron/daqtest/daqconfig.tcl',
-        'ctlconfig' : '/home/ron/daqtest/ctlconfig.tcl',
-        'serial'    : 'VM0123',
-        'timestamplib' : '/home/ron/daqtest/tslib.so',
-        
-    })
-    win = ConfigurationDisplay(source)
+    
+    win = ConfigureSource()
     win.show()
     
     sys.exit(app.exec())
