@@ -449,7 +449,7 @@ class ConfigureSource(QWidget):
         
         
         if source:
-            self._loadForm(source)
+            ConfigureSource._loadForm(self, source)  # Force _my_ _loadForm in case there's a child class.
         
         
     # Public methods:
