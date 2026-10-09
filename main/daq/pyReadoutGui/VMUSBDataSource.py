@@ -166,8 +166,8 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
     For load, we load the base and our additional stuff.
     '''
     
-    # New set of mandatory_parmaeters...daqconfig is also needed.
-    _mandatory_parameters : ClassVar[tuple[str]] = ('host', 'program_path', 'daqconfig')
+    
+    
 
     def __init__(self, source : VMUSBDataSource | None = None, parent : QWidget | None = None):
         super().__init__(source, parent)   # Layout base class form.
@@ -273,7 +273,56 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         if source:
             ConfigureSource._loadForm(self, source)
             
+    def makeSource(self) -> VMUSBDataSource | str:
+        '''
+        If possible, create and return a VMUSBDataSource from the configuration
+        contents of the form.  If not, return a string that descdribes why this is
+        not possible (e.g. some items are missing).
+        @return VMUSBDataSource - The new data source.
+        @retval str - the reason the source could not be madee
+        
+        '''
+        
+        # Get the configuration for the FRIBDAQSource part of the form.
+        
+        config = super().makeConfiguration()
+        if isinstance(config, str) :
+            return config                          # Error.
+        
+        # Fold in our configuration - ? should we also make makeConfiguration polymorphic?
+        
+        daqconfig = self._daqconfig.text()
+        if not daqconfig:
+            return 'A Readout Configuration file is required but was omitted'
+        config['daqconfig'] = daqconfig
 
+        ctlconfig = self._ctlconfig.text()
+        if not ctlconfig:
+            ctlconfig = '/dev/null'              # Default value.
+        config['ctlconfig'] = ctlconfig
+
+        if self._isChecked(self._enablesno):
+            serial = self._serial.text()
+            if not serial:
+                return 'If you enable connection by serial you must provide a serial number string'
+            config['serial']  = serial
+        
+        if self._isChecked(self._enablets):
+            tslib = self._tslib.text()
+            if not tslib:
+                return 'If you enable the use of a timestamp extraction library, you must specify the library'
+            config['timestamplib'] = tslib
+        
+        # We only bother with --quickstart if it's enabled as off is the default:
+        
+        if self._qsOn.isChecked():
+            config['quickstart'] = 'on'
+            
+        
+        # Now we can create the source:
+        
+        return VMUSBDataSource(config)
+        
     # Utilities:
     
     def _loadForm(self, source : VMUSBDataSource) -> None:
@@ -316,7 +365,7 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
                     f'"quickstart" configuration parameter must be either "on" or "off" was {config["quickstart"]}'
                 )
         
-        
+        qs.setChecked(True)
         
     
     # Private slots:
@@ -356,20 +405,23 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
 if __name__ == '__main__':
     import sys
     from nscldaq.readoutgui import ReadoutGuiView
-    from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
+    from nscldaq.mg_configutils import SaveDialog
     app = QApplication(sys.argv)
     dummyGui = ReadoutGuiView.ReadoutGuiMainWindow()
     
-    src = VMUSBDataSource({
-        'host'      : 'localhost',
-        'daqconfig' : '/home/ron/daqtest/daqconfig.tcl',
-        'ctlconfig' : '/home/ron/daqtest/ctlconfig.tcl',
-        'quickstart' : 'on'
-        
-    })
-    
-    win = ConfigureSource(src)
-    win.show()
+    dialog = SaveDialog(ConfigureSource())
+    source : VMUSBDataSource | str | None = None
+    while dialog.exec() == QDialog.DialogCode.Accepted:
+        source  = dialog.workarea().makeSource()
+        if isinstance(source, str):
+            QMessageBox.warning(dialog, 'Missing parameters', source)
+        else:
+            break
+    if source:
+        # It's an actual source now:
+        win = ConfigurationDisplay(source)
+        win.show()
     
     sys.exit(app.exec())
         
