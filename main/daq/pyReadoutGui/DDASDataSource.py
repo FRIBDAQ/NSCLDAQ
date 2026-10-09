@@ -18,9 +18,10 @@
 
 import os
 import getpass
-from nscldaq.readoutgui.FRIBDAQDataSource import FRIBDAQSource
+import nscldaq.readoutgui.FRIBDAQDataSource
+from PyQt6.QtWidgets import QWidget
 
-class DDASDataSource(FRIBDAQSource):
+class DDASDataSource(nscldaq.readoutgui.FRIBDAQDataSource.FRIBDAQSource):
     '''
         FRIBDAQ data sourcde that runs ddasReadout to start both
         the readout for an XIA/DDAS crate and its hit sort program.
@@ -40,7 +41,7 @@ class DDASDataSource(FRIBDAQSource):
                 )
             except KeyError as e:
                 raise RuntimeError('DAQBIN ust be defined to locate ddasReadout, setup a version of FRIB/NSCLDAQ')
-        super.__init__(configuration, **kwargs)
+        super().__init__(configuration, **kwargs)
         
     @classmethod
     def parameters(cls) -> dict[str, type]:
@@ -117,10 +118,10 @@ class DDASDataSource(FRIBDAQSource):
         # so we don't have to change code if those defaults should change.
         
         if 'source_id' in self._configuration:     # Defaults to 0.
-            command += f' -sourceid' {self.cget("source_id")}
+            command += f' -sourceid {self.cget("source_id")}'
         if 'fifo_threshold' in self._configuration:   # Defaults to 20480
             command += f' -fifothreshold {self.cget("fifo_threshold")}'
-        if 'readout_buffersize' in self._configuration:   # Defaults to 163840
+        if 'readout_buffersize' in self._configuration:   # Defaults to 16934
             command += f' -buffersize {self.cget("readout_buffersize")}'
         if 'infinity_clock' in self._configuration:    # Defaults to false.
             value  = 'on' if self.cget('infinity_clock') else 'off'
@@ -156,9 +157,67 @@ class DDASDataSource(FRIBDAQSource):
         return command
             
                     
+class ConfigurationDisplay(nscldaq.readoutgui.FRIBDAQDataSource.ConfigurationDisplay):
+    '''
+    Displays the configuration parameters of a DDASDataSource in a widget.
+    The base paramters are displayed by the base class but we add lines below that
+    for each of the configuration parameters we added:
+                'rawring'            : str, 
+                'sorthost'           : str,
+                'crate_directory'    : str,
+                'fifo_threshold'     : int,
+                'readout_buffersize' : int,
+                'infinity_clock'     : bool, 
+                'clock_multiplier'   : int,
+                'scaler_period'      : int,
+                'sort_window'        : int,
+                'fast_boot'          : bool
+            }
+    '''
+    def __init__(self, source : DDASDataSource, parent : QWidget | None = None):
+        super().__init__(source)
+        
+        config = source.getConfig()
+        
+        self._addRow('Raw Readout ring', config['rawring'])
+        self._addRow('Host sorting hits', config['sorthost'])
+        self._addRow('Crate file directory', config['crate_directory'])
+        self._addRow('FIFO Threshold', str(config.get('fifo_threshold', 20480)))
+        self._addRow('Raw Readout Buffer Size', str(config.get('readout_buffersize', 16934)))
+        self._addRow('Infinity clock', 'Enabled' if config.get('infinity_clock', False) else 'Disabled')
+        self._addRow('Clock multiplier', str(config.get('clock_multiplier', 1)))
+        self._addRow('Scaler read period (secs)', str(config.get('scaler_period', 2)))
+        self._addRow('Hit sort window (secs)', str(config.get('sort_window', 10)))
+        self._addRow('Fast Boot', 'Enabled' if config.get('fast_boot', False) else 'Disabled')
         
         
+# Test code for configuration classes:
+
+if __name__ == '__main__':
+    import sys
+    from nscldaq.readoutgui import ReadoutGuiView
+    from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
+    from nscldaq.mg_configutils import SaveDialog
     
+    
+    app = QApplication(sys.argv)
+    dummyGui = ReadoutGuiView.ReadoutGuiMainWindow()
+    
+    # Make a data source and display its configuration:
+    
+    config = {
+        'host' : 'localhost', 
+        'ring' : 'sorted',
+        'rawring' : 'raw',
+        'sorthost' : 'daqcompute001',
+        'crate_directory' : '/home/ron/crate_1',
         
+    }   
+    source = DDASDataSource(config)
+    win = ConfigurationDisplay(source)
+    
+    win.show()
+    
+    sys.exit(app.exec()) 
         
     
