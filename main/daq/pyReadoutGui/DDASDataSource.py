@@ -353,9 +353,10 @@ class  ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         #  This reaches into the base class widget
         
         self._program.setText(_readoutProgram())
+        # Make the disabled widget readable.
         self._program.setStyleSheet("""
             QLineEdit:disabled {
-                color: #333333;        /* Dark gray/black text instead of faint gray */
+                color: #000000;        
                 background-color: #F0F0F0; /* Light gray background to still indicate it's disabled */
                 border: 1px solid #CCCCCC;
             }
