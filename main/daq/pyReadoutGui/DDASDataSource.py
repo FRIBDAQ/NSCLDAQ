@@ -20,6 +20,7 @@ import getpass
 import os
 
 import nscldaq.readoutgui.FRIBDAQDataSource
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -31,6 +32,7 @@ from PyQt6.QtWidgets import (
     QSpinBox,
     QWidget,
 )
+
 
 def _readoutProgram() -> str:
     try:
@@ -122,7 +124,7 @@ class DDASDataSource(nscldaq.readoutgui.FRIBDAQDataSource.FRIBDAQSource):
         command += self.cget('program_path')
         command += f' -readouthost {self.cget("host")}'
         
-        rawring = self._configuration.get('rawring', f'tcp://localhost/{getpass.getuser()}')
+        rawring = self._configuration.get('rawring', f'tcp://{self.cget("host")}/{getpass.getuser()}')
         command += f' -readoutring {rawring}'
         command += f' -sorthost {self.cget("sorthost")}'
         command += f' -sortring {self.cget("ring")}'
@@ -237,6 +239,7 @@ class  ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         rawlayout = QHBoxLayout()
         rawlayout.addWidget(QLabel('Raw Ring:', self))
         self._rawring = QLineEdit(self)
+        self._rawring.setText(f'tcp://localhost/{getpass.getuser()}')
         rawlayout.addWidget(self._rawring)
         
         layout.addLayout(rawlayout)
@@ -371,7 +374,24 @@ class  ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
     # private utilities:
     
     def _loadForm(self, source : DDASDataSource) -> None:
-        pass
+        # Load our part of the form from the parameters we added:
+        
+        config = source.getConfig()
+        
+        self._rawring.setText(config.get('rawring', f'tcp://{config["host"]}/{getpass.getuser()}'))
+        self._sorthost.setText(config['sorthost'])
+        self._cratedir.setText(config['crate_directory'])
+        self._fifothreshold.setValue(config.get('fifo_threshold', 20480))
+        self._buffersize.setValue(config.get('redaout_buffersize', 16384))
+        self._infinity.setCheckState(
+            Qt.CheckState.Checked if config.get('infinity_clock', False) else Qt.CheckState.Unchecked
+        )
+        self._clockmult.setText(str(config.get('clock_multiplier', 1)))
+        self._scalerperiod.setValue(config.get('scaler_period', 2))
+        self._sortwindow.setText(str(config.get('sort_window', 10)))
+        self._fastboot.setCheckState(
+            Qt.CheckState.Checked if config.get('fast_boot', False) else Qt.CheckState.Unchecked
+        )
     
     # Internal (private) slots.
         
@@ -397,13 +417,12 @@ if __name__ == '__main__':
     config = {
         'host' : 'localhost', 
         'ring' : 'sorted',
-        'rawring' : 'raw',
         'sorthost' : 'daqcompute001',
         'crate_directory' : '/home/ron/crate_1',
         
     }   
     source = DDASDataSource(config)
-    win = ConfigureSource()
+    win = ConfigureSource(source)
     
     win.show()
     
