@@ -453,16 +453,11 @@ class ConfigureSource(QWidget):
         
         
     # Public methods:
-    
-    def makeSource(self) -> FRIBDAQSource | str:
+    def makeConfiguration(self) -> dict[str, object | str]:
         '''
-            Attempts to construct a daq data source from the configuration
-            in the widget.
-            @return FRIBDAQSource - if the configuration allowed us to do that.
-            @return str           - Error message to display if not.
-            
+        Given the form either generate a valid configuration or an error string.
         '''
-        # pull the raw configuration out first.
+# pull the raw configuration out first.
         
         # Mandatory stuff:
         
@@ -501,11 +496,27 @@ class ConfigureSource(QWidget):
         
         for key in self._mandatory_parameters:
             if not config[key].strip():
-                return f'The {key} configuration must be provided.'
+                return f'The {key} configuration must be provided.'      
+    
+        return config
+      
+    def makeSource(self) -> FRIBDAQSource | str:
+        '''
+            Attempts to construct a daq data source from the configuration
+            in the widget.
+            @return FRIBDAQSource - if the configuration allowed us to do that.
+            @return str           - Error message to display if not.
+            
+        '''
+        
         
         # Valid config so:
+        result = self.makeConfiguration()
         
-        return FRIBDAQSource(config)
+        retval = result if isinstance(result, str) else FRIBDAQSource(result)
+        
+        return retval
+        
     
     # Private methods:
     
