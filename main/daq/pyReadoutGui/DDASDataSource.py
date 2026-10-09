@@ -16,10 +16,29 @@
     @author Ron Fox
 '''
 
-import os
 import getpass
+import os
+
 import nscldaq.readoutgui.FRIBDAQDataSource
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtGui import QIntValidator
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSpinBox,
+    QWidget,
+)
+
+def _readoutProgram() -> str:
+    try:
+        return os.path.join(
+                    os.environ['DAQBIN'], 'ddasReadout'
+                )
+    except KeyError as e:
+        raise RuntimeError('DAQBIN ust be defined to locate ddasReadout, setup a version of FRIB/NSCLDAQ')
 
 class DDASDataSource(nscldaq.readoutgui.FRIBDAQDataSource.FRIBDAQSource):
     '''
@@ -35,12 +54,7 @@ class DDASDataSource(nscldaq.readoutgui.FRIBDAQDataSource.FRIBDAQSource):
         #  will default the program to $DAQBIN/ddasReadout
         
         if 'program_path' not in configuration:
-            try :
-                configuration['program_path'] = os.path.join(
-                    os.environ['DAQBIN'], 'ddasReadout'
-                )
-            except KeyError as e:
-                raise RuntimeError('DAQBIN ust be defined to locate ddasReadout, setup a version of FRIB/NSCLDAQ')
+            configuration['program_path'] = _readoutProgram()
         super().__init__(configuration, **kwargs)
         
     @classmethod
@@ -189,7 +203,181 @@ class ConfigurationDisplay(nscldaq.readoutgui.FRIBDAQDataSource.ConfigurationDis
         self._addRow('Scaler read period (secs)', str(config.get('scaler_period', 2)))
         self._addRow('Hit sort window (secs)', str(config.get('sort_window', 10)))
         self._addRow('Fast Boot', 'Enabled' if config.get('fast_boot', False) else 'Disabled')
+
+class  ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
+    '''
+    Widget to configure and create XIA/DDAS data sources.  The idea is to display this in a
+    dialog and then ask the widget to create the data source for you.
+    Example:
+    from nscldaq.mg_configutils import SaveDialog
+    from PyQt6.QtWidgets import QDialog, QMessageBox
+    from nscldaq.readoutgui import DDASDataSource
+    ...
+    
+    dialog = SaveDialog(DDASDataSource.ConfigureSource())
+    source : DDASDataSource.DDASDataSource | str | None = None
+    while dialog.exec() == QDialog.DialogCode.Accepted:
+        source  = dialog.workarea().makeSource()
+        if isinstance(source, str):
+            QMessageBox.warning(dialog, 'Missing parameters', source)
+        else:
+            break    
+    # If source is None, the dialog was rejected, otherwise it's a data source,
+    # ready to go.
+    
+    '''
+    def __init__(self, source : DDASDataSource | None = None, parent : QWidget | None = None):
+        super().__init__(source, parent)
         
+        layout = self.layout()
+        
+        # Prompt for:
+        # 'rawring' 
+        
+        rawlayout = QHBoxLayout()
+        rawlayout.addWidget(QLabel('Raw Ring:', self))
+        self._rawring = QLineEdit(self)
+        rawlayout.addWidget(self._rawring)
+        
+        layout.addLayout(rawlayout)
+        
+        
+        # Prompt For   'sorthost'
+        
+        sorthlayout = QHBoxLayout()
+        sorthlayout.addWidget(QLabel('Hit sorting host', self))
+        self._sorthost = QLineEdit(self)
+        sorthlayout.addWidget(self._sorthost)
+        
+        layout.addLayout(sorthlayout)
+        
+        # Prompt forcrate_directory .. with browse button.
+        
+        cdirlayout = QHBoxLayout()
+        cdirlayout.addWidget(QLabel('Crate file directory', self))
+        
+        self._cratedir = QLineEdit(self)
+        cdirlayout.addWidget(self._cratedir)
+        
+        self._browsecdir = QPushButton('Browse..', self)
+        cdirlayout.addWidget(self._browsecdir)
+        self._browsecdir.clicked.connect(self._browseCrateDir)
+        
+        layout.addLayout(cdirlayout)
+            
+        #  prompt for  'fifo_threshold'  
+       
+        fifolayout = QHBoxLayout()
+        fifolayout.addWidget(QLabel('Fifo Threshold', self)) 
+        
+        self._fifothreshold = QSpinBox(self)        
+        fifolayout.addWidget(self._fifothreshold)
+        self._fifothreshold.setMinimum(1024)    # Pretty small.
+        self._fifothreshold.setMaximum(128*1024)
+        self._fifothreshold.setSingleStep(1024)
+        self._fifothreshold.setValue(20480)
+        layout.addLayout(fifolayout)
+        
+        # prompt for  'readout_buffersize' 
+        
+        bsizelayout = QHBoxLayout()
+        bsizelayout.addWidget(QLabel('Readout buffersize', self))
+        
+        self._buffersize = QSpinBox(self)
+        bsizelayout.addWidget(self._buffersize)
+        self._buffersize.setMinimum(8*1024)
+        self._buffersize.setMaximum(128*1024)
+        self._buffersize.setSingleStep(1024)
+        self._buffersize.setValue(16*1024)
+        
+        layout.addLayout(bsizelayout)
+        
+        # Prompt for infinity clock on/off 'infinity_clock' 
+
+        self._infinity = QCheckBox('Infinity clock', self)
+        layout.addWidget(self._infinity)
+        
+        
+        # Prompt for   'clock_multiplier'   : int,
+        # Line edito with int validator.
+        
+        ckmullayout = QHBoxLayout()
+        ckmullayout.addWidget(QLabel('Clock multiplier', self))
+        
+        self._clockmult = QLineEdit(self)
+        ckmullayout.addWidget(self._clockmult)
+        self._clockmult.setText(str(1))
+        
+        posintvalidator = QIntValidator(self)
+        posintvalidator.setBottom(1)        # Validate to positive integers.
+        self._clockmult.setValidator(posintvalidator)
+        
+        layout.addLayout(ckmullayout)
+        
+        # Prompt for         'scaler_period'      : int,
+        # spinbox 1-3600   hour between scaler reads _ought_ to be sufficient.
+        
+        swlayout = QHBoxLayout()
+        swlayout.addWidget(QLabel('Scaler period'))
+        
+        self._scalerperiod = QSpinBox(self)
+        swlayout.addWidget(self._scalerperiod)
+        self._scalerperiod.setMinimum(1)
+        self._scalerperiod.setMaximum(3600)
+        self._scalerperiod.setValue(2)                                     
+        
+        layout.addLayout(swlayout)
+        
+        #  Propmt for + integer       'sort_window'        : int,
+        
+        
+        swinlayout = QHBoxLayout()
+        
+        swinlayout.addWidget(QLabel('Sort window (secs)', self))
+        self._sortwindow = QLineEdit(self)
+        swinlayout.addWidget(self._sortwindow)
+        self._sortwindow.setText(str(10))
+        self._sortwindow.setValidator(posintvalidator)
+        
+        
+        layout.addLayout(swinlayout)
+        
+        #  Prompt for       'fast_boot'          : bool
+        
+        self._fastboot = QCheckBox('Fast Boot', self)
+        layout.addWidget(self._fastboot)
+        
+        
+        # Set the program name to the ddas readout script.
+        # readonly.
+        #  This reaches into the base class widget
+        
+        self._program.setText(_readoutProgram())
+        self._program.setStyleSheet("""
+            QLineEdit:disabled {
+                color: #333333;        /* Dark gray/black text instead of faint gray */
+                background-color: #F0F0F0; /* Light gray background to still indicate it's disabled */
+                border: 1px solid #CCCCCC;
+            }
+        """)
+        self._program.setEnabled(False)
+        self._browse.setEnabled(False)
+        
+        if source:
+            self._loadForm(source)
+    
+    
+    # private utilities:
+    
+    def _loadForm(self, source : DDASDataSource) -> None:
+        pass
+    
+    # Internal (private) slots.
+        
+    def _browseCrateDir(self) -> None:
+        dir = QFileDialog.getExistingDirectory(self, 'Choose Crate Directory', '.')
+        if dir.strip():
+            self._cratedir.setText(dir)
         
 # Test code for configuration classes:
 
@@ -214,7 +402,7 @@ if __name__ == '__main__':
         
     }   
     source = DDASDataSource(config)
-    win = ConfigurationDisplay(source)
+    win = ConfigureSource()
     
     win.show()
     
