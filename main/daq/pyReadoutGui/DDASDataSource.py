@@ -370,7 +370,61 @@ class  ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         if source:
             self._loadForm(source)
     
-    
+    def makeSource(self) -> DDASDataSource | str:
+        '''
+        Make a data source from the form as it is. 
+        
+        @return DDASDataSource - The data source described by the form.
+        @retval str - An error message indicating why the data source could not be made.
+        '''
+        config = super().makeConfiguration()    # base class configuration from form.
+        if isinstance(config, str):
+            return config                       # Base class already had a problem.
+        
+        # ensure the required parameters are present and not empty:
+        
+        rawring = self._rawring.text().strip()
+        if not rawring:
+            return 'A ringbuffer for the raw output of DDASReadout must be supplied'
+        config['rawring'] = rawring
+        
+        sorthost = self._sorthost.text().strip()
+        if not sorthost:
+            return 'A host for the hit sorter must be supplied'
+        config['sorthost'] = sorthost
+        
+        crate_directory = self._cratedir.text().strip()
+        if not crate_directory:
+            return 'A directory for the crate files must be supplied'
+        config['crate_directory'] = crate_directory
+
+        #  The not so required paramters or the ones that the widgets that prompt for
+        #  them gaurantee are not empty.
+        
+        config['fifo_threshold'] = self._fifothreshold.value()
+        config['readout_buffersize'] = self._buffersize.value()
+        config['infinity_clock'] = self._isChecked(self._infinity)
+        mult = self._clockmult.text()
+        if mult.strip():
+            config['clock_multiplier'] = int(mult)
+        config['scaler_period'] = self._scalerperiod.value()    
+        
+        # Sort window is also required...defaults to 10 if empty.
+        
+        swin = self._sortwindow.text().strip()
+        if not swin:
+            swin = 10
+        else:
+            swin = int(swin)
+        config['sort_window'] = swin
+
+        config['fast_boot'] = self._isChecked(self._fastboot)
+        
+        
+        # We have a valid configuration, create the source:
+        
+        return DDASDataSource(config)
+        
     # private utilities:
     
     def _loadForm(self, source : DDASDataSource) -> None:
@@ -422,9 +476,22 @@ if __name__ == '__main__':
         
     }   
     source = DDASDataSource(config)
-    win = ConfigureSource(source)
-    
-    win.show()
+    dlg = SaveDialog(ConfigureSource(source))
+    source : DDASDataSource | str | None = None
+    while dlg.exec() == QDialog.DialogCode.Accepted:
+        source = dlg.workarea().makeSource()
+        if isinstance(source, str):
+            QMessageBox.warning(dlg, 'Missing parameter', source)
+        else:
+            break
+    del dlg
+    if source:
+        print("Have source: ", source)
+        win = ConfigurationDisplay(source)
+        win.show() 
+    else:
+        print('exiting')
+        app.exit(0) 
     
     sys.exit(app.exec()) 
         
