@@ -20,6 +20,7 @@
 import os
 from typing import ClassVar
 
+from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 import nscldaq.readoutgui.FRIBDAQDataSource
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -399,6 +400,10 @@ class ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         
         for w in widgets:
             w.setEnabled(state)
+            
+#  Add our source type to the sourcde registry:
+
+DataSourceRegistry.instance().add('VMUSB', VMUSBDataSource, ConfigurationDisplay, ConfigureSource)
             
 #  Test code:
 

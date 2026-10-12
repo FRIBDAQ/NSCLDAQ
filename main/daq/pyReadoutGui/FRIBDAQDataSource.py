@@ -17,6 +17,7 @@ import traceback
 from typing import ClassVar
 
 from nscldaq.readoutgui.DataSource import DataSource
+from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 from nscldaq.readoutgui.pySSHProcess import SSHProcess
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from nscldaq.readoutREST.readoutRestClient import ReadoutClient
@@ -598,6 +599,10 @@ class ConfigureSource(QWidget):
 
         return w.checkState() == Qt.CheckState.Checked        
             
+
+# Add this data source to the registry with the type: Generic
+
+DataSourceRegistry.instance().add('Generic', FRIBDAQSource, ConfigurationDisplay, ConfigureSource)
 
 # Test code  
 #   Note this is specific to my development env  because it assumes

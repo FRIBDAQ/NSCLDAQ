@@ -19,6 +19,7 @@
 import getpass
 import os
 
+from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 import nscldaq.readoutgui.FRIBDAQDataSource
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
@@ -453,7 +454,11 @@ class  ConfigureSource(nscldaq.readoutgui.FRIBDAQDataSource.ConfigureSource):
         dir = QFileDialog.getExistingDirectory(self, 'Choose Crate Directory', '.')
         if dir.strip():
             self._cratedir.setText(dir)
-        
+
+# Register our source type as XIA/DDAS:
+
+DataSourceRegistry.instance().add('XIA/DDAS', DDASDataSource, ConfigurationDisplay, ConfigureSource)
+
 # Test code for configuration classes:
 
 if __name__ == '__main__':
