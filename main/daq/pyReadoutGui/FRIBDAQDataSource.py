@@ -12,7 +12,6 @@
 
 import getpass
 import os
-import time
 import traceback
 from typing import ClassVar
 
