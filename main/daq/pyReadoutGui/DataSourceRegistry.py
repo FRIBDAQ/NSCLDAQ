@@ -58,7 +58,7 @@ class MyDataSourceMaker(QWidget):
             # or return a string that says why you could not.
             
 
-DataSourceRegistry.instance().registerDataSourceType(
+DataSourceRegistry.instance().add(
     'My Data Source', MyDataSource, MyDataSourceConfigurationDisplay, MyDataSourceMaker
 )
 
