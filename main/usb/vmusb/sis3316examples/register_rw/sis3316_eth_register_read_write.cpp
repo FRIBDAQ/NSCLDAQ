@@ -26,10 +26,8 @@
 /*                                                                         */
 /***************************************************************************/
 
-
-#include "project_system_define.h"		//define LINUX or WINDOWS
-#include "project_interface_define.h"   //define Interface (Ethnernet UDP)
-
+#include "project_interface_define.h" //define Interface (Ethnernet UDP)
+#include "project_system_define.h"    //define LINUX or WINDOWS
 
 #ifdef LINUX
 
@@ -38,117 +36,109 @@ using namespace std;
 
 //#include <iostream>
 //#include <string.h>
+#include <ctime>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctime>
 #include <sys/time.h>
 
-typedef int BOOL ;
-#define TRUE  1
+
+typedef int BOOL;
+#define TRUE 1
 #define FALSE 0
 
 #endif
 
 #ifdef WINDOWS
-	#include <iostream>
-	#include <iomanip>
-	using namespace std;
-	#define WIN32_LEAN_AND_MEAN
-	#include <windows.h>
-	#include <tchar.h>
-	#include <winsock2.h>
+#include <iostream>
+#include <iomanip>
+using namespace std;
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <tchar.h>
+#include <winsock2.h>
 
-	#include <stdlib.h>
-	#include <string.h>
-	//#include <math.h>
-	#include "wingetopt.h" 
+#include <stdlib.h>
+#include <string.h>
+//#include <math.h>
+#include "wingetopt.h"
 
-	#include <time.h>
-
+#include <time.h>
 
 #endif
 /******************************************************************************************************/
 
-
 #ifdef ETHERNET_UDP_INTERFACE
-	#include "sis3316_ethernet_access_class.h"
-	sis3316_eth *gl_virtual_vme_crate ;
+#include "sis3316_ethernet_access_class.h"
+sis3316_eth *gl_virtual_vme_crate;
 
-	#ifdef LINUX
-		#include <sys/types.h>
-		#include <sys/socket.h>
-	#endif
+#ifdef LINUX
+#include <sys/types.h>
+#include <sys/socket.h>
+#endif
 
-	#ifdef WINDOWS
-		#pragma comment(lib, "ws2_32.lib") 
-		typedef int socklen_t;
-		char  gl_sis3316_ip_addr_string[32] ;
+#ifdef WINDOWS
+#pragma comment(lib, "ws2_32.lib")
+typedef int socklen_t;
+char gl_sis3316_ip_addr_string[32];
 
-		long WinsockStartup()
-		{
-		  long rc;
-		  WORD wVersionRequested;
-		  WSADATA wsaData;
-		  wVersionRequested = MAKEWORD(2, 1);
+long WinsockStartup() {
+  long rc;
+  WORD wVersionRequested;
+  WSADATA wsaData;
+  wVersionRequested = MAKEWORD(2, 1);
 
-		  rc = WSAStartup( wVersionRequested, &wsaData );
-		  return rc;
-		}
-	#endif
+  rc = WSAStartup(wVersionRequested, &wsaData);
+  return rc;
+}
+#endif
 
 #endif
 
 #ifdef VMUSB_INTERFACE
-#include <CVMUSBFactory.h>
 #include <CVMUSB.h>
+#include <CVMUSBFactory.h>
 #include <sis_vmusb_interface.h>
 #include <stdint.h>
 #include <string>
 #include <vector>
+
 namespace Globals {
-        CVMUSB* pUSBController;
+CVMUSB *pUSBController;
 }
-vme_interface_class* gl_virtual_vme_crate;
+vme_interface_class *gl_virtual_vme_crate;
 /**
  *  Connect to the fist VMUSB and
  *  set that as Globals::pUSBController and instantiate
  * a sis_vmusb_interface -> gl_vme_crate.
- * We open the crate though I think that might be done 
+ * We open the crate though I think that might be done
  * elsewhere it's harmless to do more than once (vmeopen).
  */
 static int connectVME() {
-        try {
-                Globals::pUSBController =
-                        CVMUSBFactory::createUSBController(
-                          CVMUSBFactory::local, nullptr);
-                gl_virtual_vme_crate = new sis_vmusb_interface;
-                gl_virtual_vme_crate->vmeopen();
-        }
-        catch (std::string msg) {
-                std::cerr << "Unable to connect to a VMUSB:  "
-                          << msg << std::endl;
-                return -1;             // Fail.
-        }
-        return 0;    // Success
+  try {
+    Globals::pUSBController =
+        CVMUSBFactory::createUSBController(CVMUSBFactory::local, nullptr);
+    gl_virtual_vme_crate = new sis_vmusb_interface(Globals::pUSBController);
+    gl_virtual_vme_crate->vmeopen();
+  } catch (std::string msg) {
+    std::cerr << "Unable to connect to a VMUSB:  " << msg << std::endl;
+    return -1; // Fail.
+  }
+  return 0; // Success
 }
 
 #endif
 
+/******************************************************************************************************/
 
 /******************************************************************************************************/
 
-
-/******************************************************************************************************/
-
-
-#include "sis3316_class.h"
 #include "sis3316.h"
+#include "sis3316_class.h"
+
 
 /*===========================================================================*/
 /* Defines					  			     */
 /*===========================================================================*/
-
-
 
 /*===========================================================================*/
 /* Globals					  			     */
@@ -156,184 +146,183 @@ static int connectVME() {
 
 char gl_cmd_ip_string[64];
 
-
-
 /*===========================================================================*/
-/* Prototypes			                               		  			     */
+/* Prototypes */
 /*===========================================================================*/
-
-
-
 
 /*===========================================================================*/
 
+int main(int argc, char *argv[]) {
 
-int main(int argc, char *argv[])
-{
+  int int_ch;
+  char ch_string[256];
+  unsigned int uint_jumbo_frame_enable_flag;
 
-	int int_ch ;
-	char ch_string[256] ;
-	unsigned int uint_jumbo_frame_enable_flag ;
+  unsigned int *uint_data_buffer;
 
-	unsigned int *uint_data_buffer ;
+  CHAR char_messages[128];
+  UINT nof_found_devices;
+  unsigned int sis3316_not_OK;
 
-CHAR char_messages[128];
-UINT nof_found_devices ;
-unsigned int sis3316_not_OK;
+  int return_code;
+  unsigned int uint_address;
+  unsigned int uint_read_data;
+  unsigned int uint_write_data;
+  unsigned int uint_write_enable_flag;
 
+  return_code = 0;
+  uint_address = 0;
+  uint_read_data = 0;
+  uint_write_data = 0;
+  uint_write_enable_flag = 0;
 
+  /******************************************************************************************/
+  /*                                                                                        */
+  /*  SIS3316 program parameter */
+  /*                                                                                        */
+  /******************************************************************************************/
+  // Ethernet UDP IP address
+  strcpy(gl_cmd_ip_string, "192.168.1.2"); // SIS3316 IP address
+  // strcpy(gl_cmd_ip_string,"sis3316-0158") ; // SIS3316 IP address
+  // strcpy(gl_cmd_ip_string,"212.60.16.204") ; // SIS3316 IP address
+  // strcpy(gl_cmd_ip_string,"212.60.16.7") ; // SIS3316 IP address
 
+  uint_jumbo_frame_enable_flag = 0;
 
-	int return_code ;
-	unsigned int uint_address ;
-	unsigned int uint_read_data ;
-	unsigned int uint_write_data ;
-	unsigned int uint_write_enable_flag ;
+  /******************************************************************************************************************************/
 
-	return_code            = 0 ;
-	uint_address           = 0 ;
-	uint_read_data         = 0 ;
-	uint_write_data        = 0 ;
-	uint_write_enable_flag = 0 ;
+  if (argc > 1) {
 
-/******************************************************************************************/
-/*                                                                                        */
-/*  SIS3316 program parameter                                                             */
-/*                                                                                        */
-/******************************************************************************************/
-	// Ethernet UDP IP address
-	strcpy(gl_cmd_ip_string,"192.168.1.2") ; // SIS3316 IP address
-	//strcpy(gl_cmd_ip_string,"sis3316-0158") ; // SIS3316 IP address
-	//strcpy(gl_cmd_ip_string,"212.60.16.204") ; // SIS3316 IP address
-	//strcpy(gl_cmd_ip_string,"212.60.16.7") ; // SIS3316 IP address
+    while ((int_ch = getopt(argc, argv, "?hJI:A:W:")) != -1) {
+      switch (int_ch) {
+        // printf("ch %c    \n", int_ch );
 
-	uint_jumbo_frame_enable_flag = 0 ;
+      case 'I':
+        sscanf(optarg, "%s", ch_string);
+        // printf("-I %s    \n", ch_string );
+        strcpy(gl_cmd_ip_string, ch_string);
+        break;
 
-/******************************************************************************************************************************/
+      case 'A':
+        sscanf(optarg, "%X", &uint_address);
+        break;
 
-	if (argc > 1) {
+      case 'W':
+        sscanf(optarg, "%X", &uint_write_data);
+        uint_write_enable_flag = 1;
+        break;
 
-		while ((int_ch = getopt(argc, argv, "?hJI:A:W:")) != -1) {
-			switch (int_ch) {
-				//printf("ch %c    \n", int_ch );
+      case '?':
+      case 'h':
+      default:
+        printf("Usage: %s  [-?h]  -I ip -A address  [-W write data] ", argv[0]);
+        printf("   \n");
+        printf("   \n");
+        printf("   -I string  ......  SIS3316 IP Address  Default = %s\n",
+               gl_cmd_ip_string);
+        printf("   \n");
+        printf("   -A Address   ....  Read/Write Address  (hex)\n");
+        printf("   -W Wirite Data ..  Read/Write Address (hex) \n");
+        printf("   \n");
+        printf("   \n");
+        printf("   -h     ..........  print this message only\n");
+        printf("   \n");
+        printf("   \n");
+        printf("   date: 24.07.2024 \n");
+        printf("   \n");
+        printf("   \n");
+        exit(1);
+      }
+    }
+  } // if (argc > 2)
 
-				case 'I':
-					sscanf(optarg,"%s", ch_string) ;
-					//printf("-I %s    \n", ch_string );
-					strcpy(gl_cmd_ip_string,ch_string) ;
-					break;
+  printf("\n");
 
-				case 'A':
-					sscanf(optarg,"%X", &uint_address) ;
-					break;
-
-				case 'W':
-					sscanf(optarg,"%X", &uint_write_data) ;
-					uint_write_enable_flag = 1 ;
-					break;
-
-				case '?':
-				case 'h':
-				default:
-					printf("Usage: %s  [-?h]  -I ip -A address  [-W write data] ", argv[0]);
-					printf("   \n");
-					printf("   \n");
-					printf("   -I string  ......  SIS3316 IP Address  Default = %s\n", gl_cmd_ip_string);
-					printf("   \n");
-					printf("   -A Address   ....  Read/Write Address  (hex)\n");
-					printf("   -W Wirite Data ..  Read/Write Address (hex) \n");
-					printf("   \n");
-					printf("   \n");
-					printf("   -h     ..........  print this message only\n");
-					printf("   \n");
-					printf("   \n");
-					printf("   date: 24.07.2024 \n");
-					printf("   \n");
-					printf("   \n");
-					exit(1);
-			}
-		}
-    } // if (argc > 2)
-
-	printf("\n");
-
-
-
-
-/******************************************************************************************************************************/
-/* VME Master Create, Open and Setup                                                                                          */
-/******************************************************************************************************************************/
- 
+  /******************************************************************************************************************************/
+  /* VME Master Create, Open and Setup */
+  /******************************************************************************************************************************/
 
 #ifdef ETHERNET_UDP_INTERFACE
 
-	char  pc_ip_addr_string[32] ;
-	char  sis3316_ip_addr_string[32] ;
+  char pc_ip_addr_string[32];
+  char sis3316_ip_addr_string[32];
 
-	strcpy(sis3316_ip_addr_string, gl_cmd_ip_string) ; // SIS3316 IP address
-	//strcpy(sis3316_ip_addr_string,"192.168.1.100") ; // SIS3316 IP address
-	#ifdef WINDOWS
-    //return_code = WSAStartup();
-    return_code = WinsockStartup();
-	#endif
+  strcpy(sis3316_ip_addr_string, gl_cmd_ip_string); // SIS3316 IP address
+// strcpy(sis3316_ip_addr_string,"192.168.1.100") ; // SIS3316 IP address
+#ifdef WINDOWS
+  // return_code = WSAStartup();
+  return_code = WinsockStartup();
+#endif
 
-	gl_virtual_vme_crate = new sis3316_eth;  //sis3316_ethernet_access_class
+  gl_virtual_vme_crate = new sis3316_eth; // sis3316_ethernet_access_class
 
-	// increase read_buffer size
-	// SUSE needs following command as su: >sysctl -w net.core.rmem_max=33554432
-	int	sockbufsize = 335544432 ; // 0x2000000
-	return_code = gl_virtual_vme_crate->set_UdpSocketOptionBufSize(sockbufsize) ;
-	if(return_code != 0x0) {
-		printf("ERROR  set_UdpSocketOptionBufSize: return_code = 0x%08x\n\n", return_code);
-	}
+  // increase read_buffer size
+  // SUSE needs following command as su: >sysctl -w net.core.rmem_max=33554432
+  int sockbufsize = 335544432; // 0x2000000
+  return_code = gl_virtual_vme_crate->set_UdpSocketOptionBufSize(sockbufsize);
+  if (return_code != 0x0) {
+    printf("ERROR  set_UdpSocketOptionBufSize: return_code = 0x%08x\n\n",
+           return_code);
+  }
 
-	//strcpy(pc_ip_addr_string,"212.60.16.49") ; // Window example: secocnd Lan interface IP address is 212.60.16.49
-	strcpy(pc_ip_addr_string,"") ; // empty if default Lan interface (Window: use IP address to bind in case of 2. 3. 4. .. LAN Interface)
-	return_code = gl_virtual_vme_crate->set_UdpSocketBindMyOwnPort( pc_ip_addr_string);
+  // strcpy(pc_ip_addr_string,"212.60.16.49") ; // Window example: secocnd Lan
+  // interface IP address is 212.60.16.49
+  strcpy(pc_ip_addr_string,
+         ""); // empty if default Lan interface (Window: use IP address to bind
+              // in case of 2. 3. 4. .. LAN Interface)
+  return_code =
+      gl_virtual_vme_crate->set_UdpSocketBindMyOwnPort(pc_ip_addr_string);
 
-	gl_virtual_vme_crate->set_UdpSocketSIS3316_IpAddress( sis3316_ip_addr_string);
+  gl_virtual_vme_crate->set_UdpSocketSIS3316_IpAddress(sis3316_ip_addr_string);
 
-	gl_virtual_vme_crate->udp_reset_cmd();
-	gl_virtual_vme_crate->vme_A32D32_write(SIS3316_INTERFACE_ACCESS_ARBITRATION_CONTROL, 0x80000000); // kill request and grant from other vme interface
-	gl_virtual_vme_crate->vme_A32D32_write(SIS3316_INTERFACE_ACCESS_ARBITRATION_CONTROL, 0x1); // request access to SIS3316 from UDP interface
+  gl_virtual_vme_crate->udp_reset_cmd();
+  gl_virtual_vme_crate->vme_A32D32_write(
+      SIS3316_INTERFACE_ACCESS_ARBITRATION_CONTROL,
+      0x80000000); // kill request and grant from other vme interface
+  gl_virtual_vme_crate->vme_A32D32_write(
+      SIS3316_INTERFACE_ACCESS_ARBITRATION_CONTROL,
+      0x1); // request access to SIS3316 from UDP interface
 
 #endif
 
 #ifdef VMUSB_INTERFACE
-	// Really the program is a VME read/write not register read write,
-	// when used with the VMUSB_INTERFACE as there is no module object.
+  // Really the program is a VME read/write not register read write,
+  // when used with the VMUSB_INTERFACE as there is no module object.
 
-	if (connectVME()) {
-		return -1;     // COnnection failed.  connectVME output why to stderr.
-	}
+  if (connectVME()) {
+    return -1; // COnnection failed.  connectVME output why to stderr.
+  }
 #endif
 
+  // open Vme Interface device
+  return_code = gl_virtual_vme_crate->vmeopen(); // open Vme interface
+  gl_virtual_vme_crate->get_vmeopen_messages(
+      char_messages, &nof_found_devices); // open Vme interface
+  // printf("\n%s    (found %d vme interface device[s])\n\n",char_messages,
+  // nof_found_devices);
 
-// open Vme Interface device
-	return_code = gl_virtual_vme_crate->vmeopen ();  // open Vme interface
-	gl_virtual_vme_crate->get_vmeopen_messages (char_messages, &nof_found_devices);  // open Vme interface
-	//printf("\n%s    (found %d vme interface device[s])\n\n",char_messages, nof_found_devices);
+  if (return_code != 0x0) {
+    // printf("ERROR: gl_virtual_vme_crate->vmeopen: return_code = 0x%08x\n\n",
+    // return_code);
+    return -1;
+  }
 
-	if(return_code != 0x0) {
-		//printf("ERROR: gl_virtual_vme_crate->vmeopen: return_code = 0x%08x\n\n", return_code);
-		return -1 ;
-	}
+  printf("\n");
 
+  if (uint_write_enable_flag == 1) {
+    gl_virtual_vme_crate->vme_A32D32_write(uint_address, uint_write_data);
+    printf("write: address = 0x%08x     read_data = 0x%08x     return_code = "
+           "0x%08x\n",
+           uint_address, uint_write_data, return_code);
+  } else {
+    return_code =
+        gl_virtual_vme_crate->vme_A32D32_read(uint_address, &uint_read_data);
+    printf("read:  address = 0x%08x     read_data = 0x%08x     return_code = "
+           "0x%08x\n",
+           uint_address, uint_read_data, return_code);
+  }
+  printf("\n");
+  /******************************************************************************************/
 
-	printf("\n");
-
-	if(uint_write_enable_flag == 1) {
-		gl_virtual_vme_crate->vme_A32D32_write(uint_address, uint_write_data);
-		printf("write: address = 0x%08x     read_data = 0x%08x     return_code = 0x%08x\n",uint_address,  uint_write_data, return_code);
-	}
-	else {
-		return_code = gl_virtual_vme_crate->vme_A32D32_read ( uint_address, &uint_read_data);
-		printf("read:  address = 0x%08x     read_data = 0x%08x     return_code = 0x%08x\n",uint_address,  uint_read_data, return_code);
-	}
-	printf("\n");
-/******************************************************************************************/
-
-
-
-	return 0;
+  return 0;
 }
