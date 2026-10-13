@@ -1,0 +1,765 @@
+#    This software is Copyright by the Board of Trustees of Michigan
+#    State University (c) Copyright 2026.
+#
+#    You may use this software under the terms of the GNU public license
+#    (GPL).  The terms of this license are described at:
+#
+#     http://www.gnu.org/licenses/gpl.txt
+#
+##
+# @file eventloglifecycle.test
+# @brief Regression tests for the recorded-run lifecycle of the EventLog
+#        bundle (v2): finalization/advancement keyed on the run record, not
+#        the logger pid; confirmed termination before reaping/finalizing;
+#        separate retryable cleanup and advancement phases; Begin barrier;
+#        nested-abort ownership.
+#
+#  The event logger is a fake shell script (a disposable child of the test):
+#    - answers --version with "EventLog 11.0",
+#    - creates .started in its --path directory,
+#    - optionally closes its stdout (FAKELOG_CLOSE_STDOUT=1) while running,
+#    - blocks until the file named by $FAKELOG_GO exists,
+#    - creates .exited unless FAKELOG_NOMARKER=1 and exits with FAKELOG_EXIT.
+#  Observation/kill are injected through ::EventLog::observeProc/killProc for
+#  the unknown/kill-failure fixtures; no unrelated process is ever touched.
+#
+
+package require tcltest
+
+package provide Diagnostics 1.0
+package provide ReadoutGUIPanel 1.0
+
+package require eventLogBundle
+package require RunstateMachine
+package require Configuration
+package require ExpFileSystem
+package require snit
+
+namespace eval ::Diagnostics {}
+namespace eval ::ReadoutGUIPanel {}
+
+snit::type LifecycleStatusBar {
+    variable last ""
+    method addMessage msg {return junk}
+    method setMessage {id msg} {set last $msg}
+    method last {} {return $last}
+}
+LifecycleStatusBar lifecycleStatusBar
+proc ::StatusBar::getInstance {} {return lifecycleStatusBar}
+
+set ::logLines    [list]
+set ::runNumber   100
+set ::setRunCalls 0
+set ::recording   1
+set ::setRunFailOnce 0
+
+proc ::Diagnostics::Error  msg {lappend ::logLines [list diag $msg]}
+proc ::ReadoutGUIPanel::Log {src sev msg} {lappend ::logLines [list $sev $msg]}
+proc ::ReadoutGUIPanel::isRecording {} {}
+proc ::ReadoutGUIPanel::normalColors {} {}
+proc ::ReadoutGUIPanel::recordData {} {return $::recording}
+proc ::ReadoutGUIPanel::getRun {} {return $::runNumber}
+proc ::ReadoutGUIPanel::setRun n {
+    if {$::setRunFailOnce} {
+        set ::setRunFailOnce 0
+        error "simulated run widget failure"
+    }
+    set ::runNumber $n
+    incr ::setRunCalls
+}
+proc ::ReadoutGUIPanel::incrRun {} {::ReadoutGUIPanel::setRun [expr {$::runNumber + 1}]}
+
+#  Isolated stagearea in the working directory.
+
+set here      [pwd]
+set stagearea [tcltest::makeDirectory lifecycle-stagearea $here]
+::Configuration::Set StageArea  $stagearea
+::Configuration::Set Experiment [file join $here lifecycle-experiment]
+catch {::ExpFileSystem::CreateHierarchy}
+file mkdir [::ExpFileSystem::getMetadataRoot]
+file mkdir [::ExpFileSystem::getCurrentRunDir]
+file mkdir [::ExpFileSystem::getCompleteEventfileDir]
+
+#  The fake event logger.
+
+set ::fakeLogger [file join $here fakeeventlog.sh]
+set fd [open $::fakeLogger w]
+puts $fd {#!/bin/sh
+case "$1" in --version) echo "EventLog 11.0"; exit 0;; esac
+path=.
+for a in "$@"; do case "$a" in --path=*) path=${a#--path=};; esac; done
+echo "fake event logger recording into $path"
+touch "$path/.started"
+if [ "$FAKELOG_CLOSE_STDOUT" = "1" ]; then exec >/dev/null; fi
+while [ ! -f "$FAKELOG_GO" ]; do sleep 0.05; done
+if [ "$FAKELOG_CLOSE_AFTER_GO" = "1" ]; then exec >/dev/null; fi
+if [ -n "$FAKELOG_EXIT_DELAY" ]; then sleep "$FAKELOG_EXIT_DELAY"; fi
+if [ -n "$FAKELOG_STDERR" ]; then echo "$FAKELOG_STDERR" >&2; fi
+if [ "$FAKELOG_NOMARKER" != "1" ]; then touch "$path/.exited"; fi
+exit ${FAKELOG_EXIT:-0}
+}
+close $fd
+file attributes $::fakeLogger -permissions 0755
+::Configuration::Set EventLogger $::fakeLogger
+
+#  A first pipeline stage for multi-process logger tests: produces nothing,
+#  exits after FAKELOG_STAGE1_DELAY seconds (0 = early-exiting stage).
+
+set ::fakeStage1 [file join $here fakestage1.sh]
+set fd [open $::fakeStage1 w]
+puts $fd {#!/bin/sh
+if [ -n "$FAKELOG_STAGE1_DELAY" ] && [ "$FAKELOG_STAGE1_DELAY" != "0" ]; then sleep "$FAKELOG_STAGE1_DELAY"; fi
+exit 0
+}
+close $fd
+file attributes $::fakeStage1 -permissions 0755
+
+set ::EventLog::statusBarManager lifecycleStatusBar
+set ::EventLog::statusbar        junk
+set ::EventLog::protectFiles     0
+set ::EventLog::interactive      0
+
+#------------------------------------------------------------------------------
+#  Helpers
+
+proc lifecycleSetup {} {
+    set ::env(FAKELOG_GO) [file join $::here go.[pid].$::runNumber]
+    set ::env(FAKELOG_EXIT) 0
+    set ::env(FAKELOG_NOMARKER) 0
+    set ::env(FAKELOG_CLOSE_STDOUT) 0
+    set ::env(FAKELOG_CLOSE_AFTER_GO) 0
+    set ::env(FAKELOG_EXIT_DELAY) ""
+    set ::env(FAKELOG_STDERR) ""
+    set ::env(FAKELOG_STAGE1_DELAY) 0
+    ::Configuration::Set EventLogger $::fakeLogger
+    file delete -force $::env(FAKELOG_GO)
+    set ::logLines    [list]
+    set ::setRunCalls 0
+    set ::setRunFailOnce 0
+    set ::recording   1
+    set ::EventLog::shutdownTimeout  30
+    set ::EventLog::reapGrace        2
+    set ::EventLog::observeProc      ::EventLog::_observeProcfs
+    set ::EventLog::killProc         ::EventLog::_killPids
+    set ::EventLog::expectingExit    0
+    set ::EventLog::eventLogEnded    0
+    set ::EventLog::unresolvedRun    -1
+    set ::EventLog::unresolvedReason ""
+    set ::EventLog::ending           0
+    set ::EventLog::abortRequested   0
+    set ::Pending::pendingState None
+    ::EventLog::_setPhase none
+    set ::EventLog::pendingRun -1
+    set ::EventLog::runOutcome ""
+    set ::EventLog::runOutcomeReason ""
+}
+proc lifecycleCleanup {} {
+    #  Never leave a fake logger behind, whatever happened.
+    set ::EventLog::observeProc ::EventLog::_observeProcfs
+    set ::EventLog::killProc    ::EventLog::_killPids
+    foreach pid $::EventLog::loggerPids {
+        catch {exec kill -9 $pid}
+    }
+    set fd [lindex $::EventLog::loggerFd end]
+    if {$fd ne ""} {
+        catch {fileevent $fd readable [list]}
+        catch {close $fd}
+    }
+    set ::EventLog::loggerFd    [list]
+    set ::EventLog::loggerPid   -1
+    set ::EventLog::loggerPids  [list]
+    set ::EventLog::loggerState none
+    set ::EventLog::eofSeen     0
+    if {$::EventLog::statusUpdateId != -1} {
+        after cancel $::EventLog::statusUpdateId
+        set ::EventLog::statusUpdateId -1
+    }
+    ::EventLog::_setPhase none
+    set ::EventLog::pendingRun -1
+    set ::EventLog::ending 0
+    set ::EventLog::shutdownTimeout 30
+    file delete -force $::env(FAKELOG_GO)
+    foreach d [glob -nocomplain -directory [::ExpFileSystem::getMetadataRoot] run*] {
+        catch {file attributes $d -permissions u+rwx}
+        catch {exec chmod -R u+rwx $d}
+        file delete -force $d
+    }
+    foreach f [glob -nocomplain -directory [::ExpFileSystem::getCurrentRunDir] * .started .exited] {
+        file delete -force $f
+    }
+    foreach f [glob -nocomplain -directory [::ExpFileSystem::getCompleteEventfileDir] *] {
+        file delete -force $f
+    }
+    incr ::runNumber 10;    # Fresh run directory for the next test.
+}
+proc lifecycleBegin {} {
+    ::EventLog::leave Halted Active
+}
+proc lifecycleRelease {} {
+    close [open $::env(FAKELOG_GO) w]
+}
+# Service the event loop until the logger's EOF has been consumed (as
+# EndrunMon, multilogger, OnEnd or a vwait-ing provider would).
+proc lifecyclePumpUntil {condition} {
+    for {set i 0} {$i < 100} {incr i} {
+        if {[uplevel 1 [list expr $condition]]} {
+            return 1
+        }
+        after 50
+        update
+    }
+    return 0
+}
+proc lifecycleEnd {} {
+    ::EventLog::leave Active Halted
+    ::EventLog::enter Active Halted
+}
+
+#------------------------------------------------------------------------------
+#  Tests
+
+tcltest::test lifecycle-earlyEOF-1 {Logger EOF consumed before runEnding still finalizes and advances once} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    lifecycleBegin
+    lifecycleRelease
+    set sawEof [lifecyclePumpUntil {$::EventLog::loggerState eq "exited"}]
+    lifecycleEnd
+    list $sawEof [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runPhase \
+        $::EventLog::runOutcome [lifecycleStatusBar last]
+} -result [list 1 1 1 advanced complete {Run ended}]
+
+tcltest::test lifecycle-unreaped-1 {A normally exited but unreaped child is observed 'exited' and reaped at once} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    lifecycleBegin
+    lifecycleRelease
+    after 400;                               # blocking: no event processing, child is a zombie
+    set observed [::EventLog::_observeLogger]
+    set stillOpen [expr {[lindex $::EventLog::loggerFd end] ne ""}]
+    set t0 [clock milliseconds]
+    lifecycleEnd
+    list $observed $stillOpen $::EventLog::loggerExitStatus $::EventLog::runOutcome \
+        [expr {[clock milliseconds] - $t0 < 5000}]
+} -result [list exited 1 ok complete 1]
+
+tcltest::test lifecycle-normalEOF-1 {Logger exits during the wait: finalized, advanced once} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    lifecycleBegin
+    after 300 lifecycleRelease
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runPhase \
+        $::EventLog::runOutcome $::EventLog::loggerState $::EventLog::loggerExitStatus
+} -result [list 1 1 advanced complete exited ok]
+
+tcltest::test lifecycle-timeout-1 {Timer wake without EOF: logger killed and reaped, never finalized live} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    lifecycleBegin
+    set ::EventLog::shutdownTimeout 1
+    set t0 [clock milliseconds]
+    lifecycleEnd;                             # never released
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::loggerState \
+        $::EventLog::loggerExitStatus $::EventLog::runOutcome \
+        [expr {[clock milliseconds] - $t0 < 10000}] [string match "Run * ended (incomplete)*" [lifecycleStatusBar last]]
+} -result [list 1 1 killed {killed by SIGKILL} incomplete 1 1]
+
+tcltest::test lifecycle-collision-1 {EOF and timeout pending in the same pass: exactly one advancement} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    lifecycleBegin
+    lifecycleRelease
+    after 500;                                # EOF pending, not serviced
+    set ::EventLog::shutdownTimeout 0;        # timer pending too
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::setRunCalls \
+        [expr {$::EventLog::loggerState in [list exited killed]}] $::EventLog::runPhase
+} -result [list 1 1 1 advanced]
+
+tcltest::test lifecycle-duplicate-1 {Stale callback and repeated runEnding/enter/cleanup/advance never advance again} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    lifecycleBegin
+    after 200 lifecycleRelease
+    lifecycleEnd
+    ::EventLog::_handleInput
+    ::EventLog::runEnding
+    ::EventLog::enter Active Halted
+    ::EventLog::_finalizeRun
+    ::EventLog::_advanceRun
+    ::EventLog::_reapLogger exited
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runPhase
+} -result [list 1 1 advanced]
+
+tcltest::test lifecycle-abnormalExit-1 {Nonzero exit without marker: incomplete, consumed once, no long marker wait} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set ::env(FAKELOG_EXIT) 3
+    set ::env(FAKELOG_NOMARKER) 1
+    lifecycleBegin
+    lifecycleRelease
+    set t0 [clock milliseconds]
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runOutcome \
+        $::EventLog::loggerExitStatus [expr {[clock milliseconds] - $t0 < 10000}]
+} -result [list 1 1 incomplete {exit status 3} 1]
+
+tcltest::test lifecycle-stderrCleanExit-1 {stderr output with a clean exit (eventlog's "Begin run in recordRun") is NOT an abnormal exit} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set ::env(FAKELOG_STDERR) "Begin run in recordRun"
+    lifecycleBegin
+    after 200 lifecycleRelease
+    lifecycleEnd
+    set logged [expr {[lsearch -glob $::logLines "*stderr: Begin run in recordRun*"] != -1}]
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::loggerExitStatus \
+        $::EventLog::runOutcome $::EventLog::loggerStderr $logged
+} -result [list 1 1 ok complete {Begin run in recordRun} 1]
+
+tcltest::test lifecycle-stderrTimedOut-1 {eventlog's "Timed out with N ends still not seen" diagnostic marks the run incomplete despite a clean exit} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set ::env(FAKELOG_STDERR) " Timed out with 1 ends still not seen"
+    lifecycleBegin
+    after 200 lifecycleRelease
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::loggerExitStatus \
+        $::EventLog::runOutcome [string match "*reported:*ends still not seen*" $::EventLog::runOutcomeReason]
+} -result [list 1 1 ok incomplete 1]
+
+tcltest::test lifecycle-stderrAbnormal-1 {stderr output with a nonzero exit is abnormal and the stderr text is in the reason} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set ::env(FAKELOG_STDERR) "disk full"
+    set ::env(FAKELOG_EXIT) 2
+    set ::env(FAKELOG_NOMARKER) 1
+    lifecycleBegin
+    lifecycleRelease
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::EventLog::loggerExitStatus $::EventLog::runOutcome \
+        [string match "*(exit status 2): disk full*" $::EventLog::runOutcomeReason]
+} -result [list 1 {exit status 2} incomplete 1]
+
+tcltest::test lifecycle-closeError-1 {An unexpected [close] error (injected POSIX EIO) is never treated as success} \
+-setup {
+    lifecycleSetup
+    #  Deterministic injection: the real close still runs (the child is
+    #  reaped), then a POSIX error is raised for the logger channel only.
+    rename ::close ::lifecycleRealClose
+    proc ::close {args} {
+        set fd [lindex $args 0]
+        if {$fd eq [lindex $::EventLog::loggerFd end]} {
+            catch {uplevel 1 [list ::lifecycleRealClose {*}$args]}
+            return -code error -errorcode [list POSIX EIO {input/output error}] "injected I/O error"
+        }
+        uplevel 1 [list ::lifecycleRealClose {*}$args]
+    }
+} -cleanup {
+    rename ::close {}
+    rename ::lifecycleRealClose ::close
+    lifecycleCleanup
+} \
+-body {
+    set start $::runNumber
+    lifecycleBegin
+    after 200 lifecycleRelease
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::EventLog::loggerState $::EventLog::loggerExitStatus \
+        $::EventLog::runOutcome [string match "*close error (POSIX)*" $::EventLog::runOutcomeReason]
+} -result [list 1 exited {close error (POSIX): injected I/O error} incomplete 1]
+
+tcltest::test lifecycle-missingMarker-1 {Clean exit but no .exited marker: incomplete, consumed once} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set ::env(FAKELOG_NOMARKER) 1
+    set ::EventLog::shutdownTimeout 1
+    lifecycleBegin
+    lifecycleRelease
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runOutcome $::EventLog::loggerState
+} -result [list 1 1 incomplete exited]
+
+tcltest::test lifecycle-recordOff-1 {Record off: no logger, no record, number untouched} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set ::recording 0
+    lifecycleBegin
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runPhase \
+        $::EventLog::loggerState [::EventLog::isRunPending]
+} -result [list 0 0 none none 0]
+
+tcltest::test lifecycle-recordOff-2 {Record off does not interfere with a multilogger-style external advancement} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set ::recording 0
+    lifecycleBegin
+    ::EventLog::leave Active Halted
+    ::ReadoutGUIPanel::setRun [expr {[::ReadoutGUIPanel::getRun] + 1}];  # multilogger recordAlways
+    ::EventLog::enter Active Halted
+    list [expr {$::runNumber - $start}] [::EventLog::isRunPending]
+} -result [list 1 0]
+
+tcltest::test lifecycle-abort-1 {Active -> NotReady with an owned run: killed, incomplete, consumed once, fast} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    lifecycleBegin
+    set t0 [clock milliseconds]
+    ::EventLog::leave Active NotReady
+    ::EventLog::enter Active NotReady
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::loggerState \
+        $::EventLog::runOutcome $::EventLog::runPhase [expr {[clock milliseconds] - $t0 < 10000}]
+} -result [list 1 1 killed incomplete advanced 1]
+
+tcltest::test lifecycle-recovery-1 {Halted -> NotReady after an earlier enter failure still finalizes the ended run} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    lifecycleBegin
+    ::EventLog::leave Active Halted;      # sources ended ...
+    lifecycleRelease;                     # ... logger exits normally,
+    ::EventLog::enter Halted NotReady;    # but an earlier enter callback threw.
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runPhase $::EventLog::runOutcome
+} -result [list 1 1 advanced complete]
+
+tcltest::test lifecycle-nestedAbort-1 {NotReady arriving while the owner waits: recorded, owner kills/reaps/advances once, no leaked timers} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set timersBefore [llength [after info]]
+    lifecycleBegin
+    set nestedReturned 0
+    after 150 {::EventLog::enter Halted NotReady; set ::nestedReturned 1}
+    set t0 [clock milliseconds]
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::abortRequested \
+        $::EventLog::loggerState $::EventLog::runOutcome \
+        [string match "*NotReady*" $::EventLog::runOutcomeReason] $::nestedReturned \
+        [expr {[clock milliseconds] - $t0 < 10000}] [expr {[llength [after info]] - $timersBefore}]
+} -result [list 1 1 1 killed incomplete 1 1 1 0]
+
+tcltest::test lifecycle-missingDir-1 {Run directory vanished: FAILED outcome, number consumed once, unresolved until resolved} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set run $::runNumber
+    lifecycleBegin
+    lifecycleRelease
+    lifecyclePumpUntil {$::EventLog::loggerState eq "exited"}
+    file delete -force [::ExpFileSystem::getRunDir $run]
+    lifecycleEnd
+    set barrier [::EventLog::_beginBarrier]
+    set precheck [::EventLog::precheckTransitionForErrors Halted Active]
+    set wrong [catch {::EventLog::resolveFailedRun [expr {$run + 5}]}]
+    ::EventLog::resolveFailedRun $run
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runOutcome $::EventLog::runPhase \
+        [expr {$::EventLog::unresolvedRun == -1 ? 0 : 1}] [string match "*could not be finalized*" $barrier] \
+        [expr {$precheck ne ""}] $wrong [::EventLog::_beginBarrier]
+} -result [list 1 1 failed advanced 0 1 1 1 {}]
+
+tcltest::test lifecycle-tarFailure-1 {Copy failure keeps the existing policy: warning, consumed once, incomplete} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set run $::runNumber
+    lifecycleBegin
+    lifecycleRelease
+    lifecyclePumpUntil {$::EventLog::loggerState eq "exited"}
+    #  Make the copy fail in a privilege-independent way (CI runs as root, so
+    #  a read-only directory would not do): a metadata FILE in current/ whose
+    #  name is already a non-empty DIRECTORY in the run directory.  GNU tar
+    #  refuses to replace it ("Cannot open: File exists") and exits 2.
+    tcltest::makeFile {metadata} metadata.txt [::ExpFileSystem::getCurrentRunDir]
+    set collision [file join [::ExpFileSystem::getRunDir $run] metadata.txt]
+    file mkdir $collision
+    tcltest::makeFile {keep} inner $collision
+    lifecycleEnd
+    set warned [expr {[lsearch -glob $::logLines "*Tar Failed*"] != -1}]
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runOutcome $warned $::EventLog::runPhase
+} -result [list 1 1 incomplete 1 advanced]
+
+tcltest::test lifecycle-identity-1 {Finalization uses the captured run number even if the GUI value changed mid-run} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set run $::runNumber
+    lifecycleBegin
+    set ::runNumber 999
+    after 200 lifecycleRelease
+    lifecycleEnd
+    set destDir [::ExpFileSystem::getRunDir $run]
+    list [expr {$::runNumber == $run + 1}] [file isdirectory $destDir] [file exists [file join $destDir .exited]]
+} -result [list 1 1 0]
+
+tcltest::test lifecycle-setRunFailure-1 {Cleanup completed then setRun fails: error surfaces, phase cleaned, retry advances only} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set run $::runNumber
+    rename ::EventLog::_finalizeRun ::EventLog::_finalizeRunReal
+    set ::finalizeCalls 0
+    proc ::EventLog::_finalizeRun {} {incr ::finalizeCalls; ::EventLog::_finalizeRunReal}
+    set ::setRunFailOnce 1
+    lifecycleBegin
+    lifecycleRelease
+    set failed [catch {lifecycleEnd} msg]
+    set mid [list $failed [string match "*Could not advance*" $msg] $::EventLog::runPhase \
+        $::EventLog::runOutcome [expr {$::EventLog::nextRun == $run + 1}] [expr {$::runNumber - $start}] \
+        [file exists [file join [::ExpFileSystem::getRunDir $run] .exited]] \
+        [expr {[::EventLog::_beginBarrier] ne ""}] $::finalizeCalls]
+    ::EventLog::enter Halted NotReady;        # recovery: advance only
+    set after [list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runPhase $::finalizeCalls]
+    rename ::EventLog::_finalizeRun {}
+    rename ::EventLog::_finalizeRunReal ::EventLog::_finalizeRun
+    concat $mid $after
+} -result [list 1 1 cleaned complete 1 0 0 1 1 1 1 advanced 1]
+
+tcltest::test lifecycle-beginBarrier-1 {Begin is refused (precheck and leave) while a run is owned, Record off included} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    lifecycleBegin
+    lifecycleRelease
+    set withRecording [catch {::EventLog::leave Halted Active} m1]
+    set ::recording 0
+    set precheck [::EventLog::precheckTransitionForErrors Halted Active]
+    set recordOff [catch {::EventLog::leave Halted Active} m2]
+    set ::recording 1
+    lifecycleEnd
+    list $withRecording [string match "*not been finalized*" $m1] [expr {$precheck ne ""}] \
+        $recordOff [string match "*not been finalized*" $m2] $::EventLog::runPhase [::EventLog::_beginBarrier]
+} -result [list 1 1 1 1 1 advanced {}]
+
+tcltest::test lifecycle-unknownObservation-1 {Unknown observation fixture: never reaped/finalized; recovers once observation returns} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    proc ::lifecycleUnknown {pid} {return unknown}
+    set ::EventLog::observeProc ::lifecycleUnknown
+    set ::EventLog::shutdownTimeout 1
+    set ::EventLog::reapGrace 1
+    lifecycleBegin
+    lifecycleRelease
+    set failed [catch {lifecycleEnd} msg]
+    set mid [list $failed [string match "*termination not confirmed*" $msg] $::EventLog::loggerState \
+        $::EventLog::runPhase $::EventLog::runOutcome [expr {$::runNumber - $start}] \
+        [expr {[lindex $::EventLog::loggerFd end] ne ""}] [expr {[::EventLog::_beginBarrier] ne ""}]]
+    set ::EventLog::observeProc ::EventLog::_observeProcfs
+    ::EventLog::enter Halted NotReady;      # retry with real observation
+    concat $mid [list $::EventLog::loggerState $::EventLog::runPhase [expr {$::runNumber - $start}] $::setRunCalls]
+} -result [list 1 1 unterminated ending unknown 0 1 1 killed advanced 1 1]
+
+tcltest::test lifecycle-killFailure-1 {Kill that does not terminate the child: owned/unterminated, no finalization; retry succeeds} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    proc ::lifecycleNoKill {pids} {}
+    set ::EventLog::killProc ::lifecycleNoKill
+    set ::EventLog::shutdownTimeout 1
+    set ::EventLog::reapGrace 1
+    lifecycleBegin
+    set failed [catch {lifecycleEnd} msg];  # never released, kill is a no-op
+    set alive [::EventLog::_observeLogger]
+    set mid [list $failed $::EventLog::loggerState $alive $::EventLog::runPhase [expr {$::runNumber - $start}]]
+    set ::EventLog::killProc ::EventLog::_killPids
+    ::EventLog::enter Halted NotReady
+    concat $mid [list $::EventLog::loggerState $::EventLog::runOutcome $::EventLog::runPhase [expr {$::runNumber - $start}]]
+} -result [list 1 unterminated alive ending 0 killed incomplete advanced 1]
+
+tcltest::test lifecycle-stdoutClosedAlive-1 {EOF while the child is alive: handler unregistered, run completes when it exits} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set ::env(FAKELOG_CLOSE_STDOUT) 1
+    lifecycleBegin
+    set sawEof [lifecyclePumpUntil {$::EventLog::eofSeen}]
+    set state $::EventLog::loggerState
+    after 400 lifecycleRelease
+    lifecycleEnd
+    list $sawEof $state [expr {$::runNumber - $start}] $::EventLog::runOutcome $::EventLog::loggerState
+} -result [list 1 running 1 complete exited]
+
+tcltest::test lifecycle-stdoutClosedAlive-2 {EOF while alive and never exiting: killed on timeout, incomplete} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set ::env(FAKELOG_CLOSE_STDOUT) 1
+    set ::EventLog::shutdownTimeout 1
+    lifecycleBegin
+    lifecyclePumpUntil {$::EventLog::eofSeen}
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::EventLog::runOutcome $::EventLog::loggerState
+} -result [list 1 incomplete killed]
+
+tcltest::test lifecycle-transition-1 {Real state machine: a bundle before EventLog that pumps the event loop on End does not skip the increment} \
+-setup {
+    lifecycleSetup
+    namespace eval ::pumpBundle {
+        proc attach {s} {}
+        proc leave {from to} {}
+        proc enter {from to} {
+            if {($from eq "Active") && ($to eq "Halted")} {
+                lifecyclePumpUntil {$::EventLog::loggerState eq "exited"}
+            }
+        }
+        namespace export attach enter leave
+    }
+    set ::sm [RunstateMachineSingleton %AUTO%]
+    $::sm addCalloutBundle pumpBundle
+    ::EventLog::register
+} -cleanup {
+    catch {::EventLog::unregister}
+    catch {$::sm removeCalloutBundle pumpBundle}
+    catch {$::sm _setState NotReady}
+    $::sm destroy
+    namespace delete ::pumpBundle
+    lifecycleCleanup
+} \
+-body {
+    set start $::runNumber
+    $::sm transition Starting
+    $::sm transition Halted
+    $::sm transition Active
+    lifecycleRelease
+    $::sm transition Halted
+    list [$::sm getState] [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::runOutcome
+} -result [list Halted 1 1 complete]
+
+tcltest::test lifecycle-transition-2 {Real state machine precheck reports the Begin barrier while a run is owned} \
+-setup {
+    lifecycleSetup
+    set ::sm [RunstateMachineSingleton %AUTO%]
+    ::EventLog::register
+} -cleanup {
+    catch {::EventLog::unregister}
+    catch {$::sm _setState NotReady}
+    $::sm destroy
+    lifecycleCleanup
+} \
+-body {
+    $::sm transition Starting
+    $::sm transition Halted
+    $::sm transition Active
+    $::sm _setState Halted;                   # as if an enter callback had failed
+    set errors [$::sm precheckTransitionForErrors Active]
+    lifecycleRelease
+    ::EventLog::enter Halted NotReady
+    list [llength $errors] [lindex [lindex $errors 0] 0] $::EventLog::runPhase
+} -result [list 1 EventLog advanced]
+
+tcltest::test lifecycle-eofDuringWait-1 {R1: EOF arrives during the owner's wait while the child is alive; its later clean exit is detected promptly, not killed at timeout} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    set ::env(FAKELOG_CLOSE_AFTER_GO) 1
+    set ::env(FAKELOG_EXIT_DELAY) 1
+    set ::EventLog::shutdownTimeout 6
+    lifecycleBegin
+    after 200 lifecycleRelease;              # inside the wait: stdout closes, exit 1 s later
+    set t0 [clock milliseconds]
+    lifecycleEnd
+    set elapsed [expr {[clock milliseconds] - $t0}]
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::loggerState \
+        $::EventLog::loggerExitStatus $::EventLog::runOutcome [expr {$elapsed < 4000}]
+} -result [list 1 1 exited ok complete 1]
+
+tcltest::test lifecycle-nestedAbortCollision-1 {R2: nested NotReady, then EOF serviced before the owner resumes: abort reason preserved, one advancement} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    lifecycleBegin
+    after 150 {
+        ::EventLog::enter Halted NotReady;   # nested abort recorded ...
+        lifecycleRelease
+        after 400
+        update;                              # ... then the EOF is serviced while still nested
+    }
+    lifecycleEnd
+    list [expr {$::runNumber - $start}] $::setRunCalls $::EventLog::abortRequested \
+        $::EventLog::runOutcome [string match "*NotReady*" $::EventLog::runOutcomeReason] \
+        [expr {$::EventLog::loggerState in [list exited killed]}] $::EventLog::runPhase
+} -result [list 1 1 1 incomplete 1 1 advanced]
+
+tcltest::test lifecycle-cleanupRetry-1 {R3: cleanup fails after the marker was deleted; retry keeps the frozen classification, no marker wait, one advancement} \
+-setup {lifecycleSetup} -cleanup {
+    #  Restore the real proc only if the body left the wrapper in place.
+    if {[info commands ::EventLog::deleteExitFileReal] ne ""} {
+        catch {rename ::EventLog::deleteExitFile {}}
+        rename ::EventLog::deleteExitFileReal ::EventLog::deleteExitFile
+    }
+    lifecycleCleanup
+} \
+-body {
+    set start $::runNumber
+    set run $::runNumber
+    set ::EventLog::shutdownTimeout 2
+    rename ::EventLog::deleteExitFile ::EventLog::deleteExitFileReal
+    proc ::EventLog::deleteExitFile {} {
+        ::EventLog::deleteExitFileReal
+        error "simulated protection failure after marker deletion"
+    }
+    lifecycleBegin
+    lifecycleRelease
+    set failed [catch {lifecycleEnd} msg]
+    set mid [list $failed [string match "*Cleanup of run*" $msg] $::EventLog::runPhase \
+        $::EventLog::runOutcome [file exists [file join [::ExpFileSystem::getRunDir $run] .exited]] \
+        [expr {$::runNumber - $start}]]
+    rename ::EventLog::deleteExitFile {}
+    rename ::EventLog::deleteExitFileReal ::EventLog::deleteExitFile
+    set t0 [clock milliseconds]
+    ::EventLog::enter Halted NotReady;        # retry only the unfinished cleanup
+    set elapsed [expr {[clock milliseconds] - $t0}]
+    concat $mid [list $::EventLog::runPhase $::EventLog::runOutcome [expr {$::runNumber - $start}] \
+        $::setRunCalls [expr {$elapsed < 1500}]]
+} -result [list 1 1 ending complete 0 0 advanced complete 1 1 1]
+
+tcltest::test lifecycle-pipeline-early-1 {Two-process logger pipeline with an early-exiting first stage: both pids owned and reaped, run complete} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    ::Configuration::Set EventLogger "$::fakeStage1 | $::fakeLogger"
+    set ::env(FAKELOG_STAGE1_DELAY) 0
+    lifecycleBegin
+    set npids [llength $::EventLog::loggerPids]
+    after 300;                                # stage 1 is a zombie by now, stage 2 alive
+    set observed [::EventLog::_observeLogger]
+    after 200 lifecycleRelease
+    lifecycleEnd
+    list $npids $observed [expr {$::runNumber - $start}] $::EventLog::loggerState \
+        $::EventLog::loggerExitStatus $::EventLog::runOutcome
+} -result [list 2 alive 1 exited ok complete]
+
+tcltest::test lifecycle-pipeline-delayed-1 {Two-process logger pipeline with a stage outliving the last stage: EOF is not termination; reaped when every stage is gone} \
+-setup {lifecycleSetup} -cleanup {lifecycleCleanup} \
+-body {
+    set start $::runNumber
+    ::Configuration::Set EventLogger "$::fakeStage1 | $::fakeLogger"
+    set ::env(FAKELOG_STAGE1_DELAY) 2
+    set ::EventLog::shutdownTimeout 8
+    lifecycleBegin
+    lifecycleRelease;                         # last stage exits now; stage 1 lives ~2 s more
+    set sawEof [lifecyclePumpUntil {$::EventLog::eofSeen}]
+    set stateAfterEof $::EventLog::loggerState
+    set t0 [clock milliseconds]
+    lifecycleEnd
+    set elapsed [expr {[clock milliseconds] - $t0}]
+    list $sawEof $stateAfterEof [llength $::EventLog::loggerPids] [expr {$::runNumber - $start}] \
+        $::EventLog::loggerState $::EventLog::loggerExitStatus $::EventLog::runOutcome [expr {$elapsed < 6000}]
+} -result [list 1 running 2 1 exited ok complete 1]
+
+#------------------------------------------------------------------------------
+
+file delete -force $::fakeLogger $::fakeStage1
+tcltest::cleanupTests
