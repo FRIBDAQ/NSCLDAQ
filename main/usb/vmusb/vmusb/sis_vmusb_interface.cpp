@@ -35,6 +35,11 @@
 
 CMutex VME::m_monitor;
 
+/**
+ * constructor
+ *    Create the interface object. The caller is responsible for managing the
+ * lifetime of the pController handle.
+ */
 sis_vmusb_interface::sis_vmusb_interface(CVMUSB *pController)
     : m_pController(pController) {}
 

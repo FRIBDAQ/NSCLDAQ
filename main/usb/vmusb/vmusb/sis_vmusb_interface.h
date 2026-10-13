@@ -43,7 +43,8 @@ class CVMUSBReadoutList;
  */
 class sis_vmusb_interface : public vme_interface_class {
   static CMutex m_monitor; // Critical section monitor.
-  CVMUSB *m_pController;   // Pointer to the controller interface.
+  CVMUSB
+  *m_pController; // Pointer to the controller interface. Owned by caller.
 public:
   sis_vmusb_interface(CVMUSB *pController);
   virtual int vmeopen(void);

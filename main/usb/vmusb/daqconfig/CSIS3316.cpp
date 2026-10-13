@@ -67,11 +67,8 @@ static const uint64_t MaxPretrigger(0x3fff); // 14 bits of pre-trigger.
  *      Just needs to initialize the pointers to null
  */
 CSIS3316::CSIS3316()
-    : m_pConfiguration(nullptr), m_pModule(nullptr), m_pVmeBus(nullptr) {
-  // We handle this on initialization now:
-  // m_pVmeBus = new sis_vmusb_interface;         // By now there's a VMUSB
-  // object.
-}
+    : m_pConfiguration(nullptr), m_pModule(nullptr), m_pVmeBus(nullptr) {}
+
 /**
  *  destructor:
  */
@@ -86,33 +83,38 @@ CSIS3316::~CSIS3316() {
  *  Copy constructor = might actually be illegal we'll see.
  *
  * @param rhs - the object being copied.
+ *  @note We deliberately do NOT copy m_pVmeBus (the sis_vmusb_interface) or
+ *    m_pModule (the sis3316_adc). They are a matched pair, built together in
+ *    Initialize() where the interface is bound to the one CVMUSB controller for
+ *    the system. clone()/copy always happens at configuration time, before
+ *    Initialize(), so on a real copy both are already null -- and even if they
+ *    weren't, duplicating them is wrong: the module holds a back-pointer to its
+ *    interface, and the controller handle is a non-owning shared singleton
+ *    (Globals::pUSBController) that must never be duplicated. So we leave both
+ *    null and let Initialize() build a consistent interface+module pair. Only
+ *    the configuration pointer is shared across the copy.
  */
 CSIS3316::CSIS3316(const CSIS3316 &rhs)
-    : m_pConfiguration(nullptr), m_pModule(nullptr), m_pVmeBus(nullptr) {
-  if (rhs.m_pConfiguration) {
-    m_pConfiguration = rhs.m_pConfiguration;
-  }
-  if (rhs.m_pVmeBus) {
-    m_pVmeBus = new sis_vmusb_interface(*rhs.m_pVmeBus);
-  }
-  if (m_pModule) {
-    m_pModule = new sis3316_adc(*rhs.m_pModule);
-  }
-}
+    : m_pConfiguration(rhs.m_pConfiguration), m_pModule(nullptr),
+      m_pVmeBus(nullptr) {}
 
 /**
  * operator=
  *   @param rhs - the object being assigned to this.
  *   @return CSIS3316& - referenced to this.
+ *
+ *   @note Same policy as the copy constructor: share only the configuration and
+ *     leave the interface/module for Initialize() to (re)build. We delete any
+ *     interface/module we already hold first, so re-assignment doesn't leak.
  */
 CSIS3316 &CSIS3316::operator=(const CSIS3316 &rhs) {
-  if (this != &rhs) { // Else noop.,
+  if (this != &rhs) {
+    delete m_pModule;
+    delete m_pVmeBus;
+    m_pModule = nullptr;
+    m_pVmeBus = nullptr;
     m_pConfiguration = rhs.m_pConfiguration;
-    m_pVmeBus =
-        rhs.m_pVmeBus ? new sis_vmusb_interface(*rhs.m_pVmeBus) : nullptr;
-    m_pModule = rhs.m_pModule ? new sis3316_adc(*rhs.m_pModule) : nullptr;
   }
-
   return *this;
 }
 
@@ -166,15 +168,25 @@ void CSIS3316::onAttach(CReadoutModule &configuration) {
  * the buffer memory to the FIFO.
  *
  * @note
- * This is when/where we also make the VME interface object and the
- * module object we'll use to do the bits of the setup it can do.
+ * This is also where we (re)build the VME interface (m_pVmeBus) and the
+ * module object (m_pModule) -- they are a matched pair and only ever created
+ * here. Initialize() may be called again for a later run, so we tear down any
+ * existing pair first and rebuild, binding the interface to the controller
+ * handed to us for THIS run. Rebuilding each time means that if the framework
+ * ever recreates the controller between runs we always operate the current
+ * one. The interface stores a NON-OWNING pointer to `controller`; the
+ * framework owns it and keeps it alive for the duration of the run, so
+ * storing &controller is safe, and nothing in this object deletes it.
  *
- *
- * @param[inout] controller - references the CVMUSB module that runs the
- * VME crate the module is in.
+ * @param[inout] controller - references the CVMUSB that runs the crate this
+ * module lives in, provided and owned by the readout framework for the current
+ * run. We bind our VME interface to it; we do not take ownership
  */
 void CSIS3316::Initialize(CVMUSB &controller) {
-  // Make the bus interface and module objects:
+  // (Re)build the interface+module pair for this run. Delete any pair left from
+  // a previous Initialize() first, then bind a fresh sis_vmusb_interface to the
+  // controller we were handed. The interface only borrows the controller; the
+  // framework owns it and keeps it alive across the run:
 
   delete m_pModule;
   m_pModule = nullptr;
