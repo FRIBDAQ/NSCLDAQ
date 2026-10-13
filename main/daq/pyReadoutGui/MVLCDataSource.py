@@ -37,8 +37,11 @@ import os
 import pathlib
 
 from nscldaq.readoutgui.FRIBDAQDataSource import FRIBDAQSource
+import nscldaq.readoutgui.FRIBDAQDataSource    # For fully qualified ConfigurationDisplay
 from packaging.version import Version
 
+
+from PyQt6.QtWidgets import QWidget
 
 def _findExecutable() -> str | None:
     # Locate the fribdaq-readout executable.
@@ -167,7 +170,8 @@ class MVLCDataSource(FRIBDAQSource):
         if not executable:                        # Data source won't be created anyway.
             return {}
         
-        params = super().paramters()      # Starting point:
+        
+        params = super().parameters()      # Starting point:
         
         # Get rid of the unused items not supported by fribdaq-readout:
         
@@ -180,7 +184,7 @@ class MVLCDataSource(FRIBDAQSource):
         params['connection_parameter'] = str # Depends on the connection type.
         # params['init_only'] = bool           # Only initialize then exit. we're not going to allow it
         params['ignore_vme_init_errors'] = bool # Ignore VME errors on init.
-        params['timestamp-lib']   = str      # Path to timestamp extraction lib.
+        params['timestamp_lib']   = str      # Path to timestamp extraction lib.
         params['ctlconfig']       = str      # Path to the control configuration script.
         params['debug']            = bool     # Enable debugging output.
         params['trace']            = bool     # Enable trace output.
@@ -195,6 +199,12 @@ class MVLCDataSource(FRIBDAQSource):
         '''
         The super class does all the work:
         '''
+        exe = _findExecutable()
+        if not exe:
+            raise RunTimError('BUGCHECK - the frib-reaedout program cannot be located')
+        
+        config['program_path'] = exe
+        
         super().__init__(config, **kwargs)
         
     def createCommandLine(self) -> str:
@@ -206,12 +216,10 @@ class MVLCDataSource(FRIBDAQSource):
         
         '''
         
-        exe  = _findExecutable()
-        if not exe:
-            raise RuntimeError('BUGCHECK - Got into MVLCDataSource.createCommandLine without finding fribdaq-readout')
+
         
         command = self.create_command_env()
-        command += exe
+        command += self.cget('program_path')    # __init__ patched this in place.
 
         # Now figure out the program options:
         
@@ -243,8 +251,8 @@ class MVLCDataSource(FRIBDAQSource):
         if self._configuration.get('ignore_vme_init_errors', False):
             command += ' --ignore-vme-init-errors'
             
-        if self._configuration.get('timestamp_library') :
-            command += f' --timestamp-library {self.cget("timestamp_library")}'
+        if self._configuration.get('timestamp_lib') :
+            command += f' --timestamp-library {self.cget("timestamp_lib")}'
         
         if self._configuration.get('debug'):
             command += ' --debug'
@@ -264,3 +272,59 @@ class MVLCDataSource(FRIBDAQSource):
         return command
     
     # That's all we needed for FRIBDAQDataSource to take over the work.
+    
+    
+class ConfigurationDisplay(nscldaq.readoutgui.FRIBDAQDataSource.ConfigurationDisplay):
+    '''
+        Display the configuration of our data source.
+        The base class does some of the work.  We have to do the fribdaq-readout specific parameters.
+    '''
+    def __init__(self, source : MVLCDataSource, parent : QWidget | None = None):
+        super().__init__(source, parent)
+        config = source.getConfig()
+        
+        # For some connection types we have a connection parameter:
+        
+        connection_type = config['connection_type']
+        if connection_type in ('eth', 'usb-serial', 'usb-index'):
+            connection_type += ' ' + config['connection_parameter']
+        self._addRow('Connection:', connection_type)
+        
+        self._addRow(
+            'Ignore VME init errors', 'Yes' if config.get('ignore_vme_init_errors', False) else 'No'
+        )
+        self._addRow('Extract timestamps with: ', config.get('timestamp_lib', 'None'))
+        self._addRow('Readout config', config['daqconfig'])
+        self._addRow('Slow controls config: ', config.get('ctlconfig', 'None'))
+        self._addRow('Debug output', 'enabled' if config.get('debug', False) else 'disabled')
+        self._addRow('Trace output', 'enabled' if config.get('trace', False) else 'disabled')
+        self._addRow('Convert Tcl Daqconfig -> Yaml', 'yes' if config.get('convert-tcl', False) else 'no')
+        self._addRow('YAML template file: ', config.get('template') if config.get('template') else 'default')
+        
+        
+    
+# Test code:
+
+if __name__ == '__main__':
+    import sys
+    from nscldaq.readoutgui import ReadoutGuiView
+    from PyQt6.QtWidgets import QApplication
+    
+    app = QApplication(sys.argv)
+    dummyGui = ReadoutGuiView.ReadoutGuiMainWindow()
+    config = {
+        'host' : 'localhost',
+        'ring' : 'fox',
+        'source_id' : 123,
+        'connection_type' : 'eth',
+        'connection_parameter': 'mvlc0.frib.msu.edu',
+        'trace': True,
+        'convert-tcl' : True,
+        'daqconfig' : '/home/ron/daqconfig.tcl'
+    }
+    source = MVLCDataSource(config)
+    win = ConfigurationDisplay(source)
+    
+    win.show()
+    
+    sys.exit(app.exec())                
