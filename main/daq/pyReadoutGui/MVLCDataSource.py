@@ -36,12 +36,25 @@ import getpass
 import os
 import pathlib
 
+import nscldaq.readoutgui.FRIBDAQDataSource  # For fully qualified ConfigurationDisplay
 from nscldaq.readoutgui.FRIBDAQDataSource import FRIBDAQSource
-import nscldaq.readoutgui.FRIBDAQDataSource    # For fully qualified ConfigurationDisplay
 from packaging.version import Version
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
 
-
-from PyQt6.QtWidgets import QWidget
 
 def _findExecutable() -> str | None:
     # Locate the fribdaq-readout executable.
@@ -302,13 +315,184 @@ class ConfigurationDisplay(nscldaq.readoutgui.FRIBDAQDataSource.ConfigurationDis
         self._addRow('YAML template file: ', config.get('template') if config.get('template') else 'default')
         
         
+class ConfigureSource(QWidget):
+    '''
+        This is a prompter for the configuration of an MVLC Readout program (fribdaq-readout).
+        Note that instantiating this when the executable cannot be locate is a fatal error (after an
+        explantory message box.)
+    '''
+    def __init__(self, source : MVLCDataSource | None = None, parent : QWidget | None = None):
+        '''
+            @param source : MVLCDataSource | None - if not None, the form is pre-loaeded with the
+                          configuration of this source.
+            @param parent : QWidget | None - If provided, the parent widget of us.
+        '''
+        # Must be able to find the fribdaq-reaedout executable:
+        
+        if not _findExecutable():
+            QMessageBox.critical(
+                self, 
+                'No fribdaq-readout', 
+                "Can't locate the fribdaq-readout program, define the MVLC_DIR to the installation \
+directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled."
+            )
+            QApplication.exit(-1)       # push an exit.
+            return                      # Ensuring we don't do anythnig else
+        
+        super().__init__(parent)
+        
+        self.setLayout(QVBoxLayout())   # Primarily  a vertical layout.
+        layout = self.layout()
+        # Title the prompter including the location of fribdaq readout:
+        
+        titlelayout = QHBoxLayout()
+        titlelayout.addWidget(QLabel('Configure', self))
+        titlelayout.addWidget(QLabel(_findExecutable(), self))
+        layout.addLayout(titlelayout)
+        
+        #  Connection type used:
+        
+        connectionlayout = QHBoxLayout()
+        connectionlayout.addWidget(QLabel('Connect via', self))
+        
+        self._connection_type = QComboBox(self)
+        self._connection_type.addItems(['usb', 'usb by serial', 'usb by index', 'ethernet' ])
+        connectionlayout.addWidget(self._connection_type)
+        self._connection_type.currentTextChanged.connect(self._connectionChanged)
+        
+        self._connection_string = QLineEdit(self)
+        self._connection_string.setEnabled(False)
+        connectionlayout.addWidget(self._connection_string)
+    
+        layout.addLayout(connectionlayout)
+    
+        # DAQConfig (browsable).
+        
+        daqcfglayout = QHBoxLayout()
+        daqcfglayout.addWidget(QLabel('Readout Config: ', self))
+        
+        self._daqconfig = QLineEdit(self)
+        daqcfglayout.addWidget(self._daqconfig)
+        
+        self._browsedaqconfig = QPushButton('Browse...', self)
+        daqcfglayout.addWidget(self._browsedaqconfig)
+        self._browsedaqconfig.clicked.connect(
+            lambda : self._browseFile(self._daqconfig, yaml = True, tcl = True)
+        )
+        
+        layout.addLayout(daqcfglayout)  
+        
+        
+        
+        # CTLCOnfig - browsable  only Tcl...
+        
+        ctlconfiglayout = QHBoxLayout()
+        ctlconfiglayout.addWidget(QLabel('Slow controls config file', self))
+        
+        self._ctlconfig = QLineEdit(self)
+        ctlconfiglayout.addWidget(self._ctlconfig)
+        
+        self._browsectlconfig = QPushButton('Browse...', self)
+        ctlconfiglayout.addWidget(self._browsectlconfig)
+        self._browsectlconfig.clicked.connect(
+            lambda: self._browseFile(self._ctlconfig, yaml = False, tcl = True)
+        )
+        
+        layout.addLayout(ctlconfiglayout)
+        
+        # Ringbuffer:
+                
+        ringlayout = QHBoxLayout()
+        ringlayout.addWidget(QLabel('Ring Buffer:', self))
+        
+        self._ring = QLineEdit(self)
+        ringlayout.addWidget(self._ring)
+        
+        layout.addLayout(ringlayout)
+        
+        # port is for slow controls:
+        
+        scportlayout = QHBoxLayout()
+        scportlayout.addWidget(QLabel('Slow controls port', self))
+        
+        self._controlport = QSpinBox(self)
+        scportlayout.addWidget(self._controlport)
+        self._controlport.setMinimum(1024)
+        self._controlport.setMaximum(29999)
+        
+        layout.addLayout(scportlayout)
+        
+        #  checkbutton for convert-tcl and anoptional
+        #  template file that's disabled unless the checkbutton is enabled.
+        #  The tamplate can also be browsed:
+        
+        self._converttcl = QCheckBox('Convert daqconfig from tcl', self)
+        layout.addWidget(self._converttcl)
+        self._converttcl.clicked.connect(self._setTemplateState)
+        
+        templatelayout = QHBoxLayout()
+        templatelayout.addWidget(QLabel('Yaml Template File', self))
+        self._template = QLineEdit(self)
+        templatelayout.addWidget(self._template)
+        self._template.setPlaceholderText('<Use default>')
+        
+        self._browseTemplate = QPushButton('Browse...', self)
+        templatelayout.addWidget(self._browseTemplate)
+        self._browseTemplate.clicked.connect(
+            lambda: self._browseFile(self._template)
+        )
+        
+        layout.addLayout(templatelayout)
+        
+        #  Output control are just a pair of checkbuttons:
+        
+        outputlayout = QHBoxLayout()
+        
+        self._debug = QCheckBox('Debug output', self)
+        outputlayout.addWidget(self._debug)
+        
+        self._trace = QCheckBox('Trace output', self)
+        outputlayout.addWidget(self._trace)
+        
+        layout.addLayout(outputlayout)
+        
+    # Slots (Private)
+    
+    def _connectionChanged(self, newtype) :
+        # The connection type changed, enable/disable, connection_string accordingly.
+    
+        enabled = newtype in ['usb by serial', 'usb by index', 'ethernet']
+        self._connection_string.setEnabled(enabled)
+        
+    def _browseFile(self, target : QLineEdit, yaml = True, tcl = False):
+        # Browse for a file and put it in the target.  yaml - sets a filter to 
+        # allow browsing type .yaml,yml and tcl adds a filter for .tcl
+        
+        filter = ''
+        if tcl:
+            filter += 'Tcl Files (*.tcl);;'
+        if yaml:
+            filter += 'YAML files (*.yaml *.yml);;'
+        filter += 'All Files (*)'
+        
+        file, _  = QFileDialog.getOpenFileName(self, 'Choose file', '.', filter)
+        
+        if file.strip():
+            target.setText(file)
+    
+    def _setTemplateState(self):
+        # Set the state of the template widgets:
+        
+        state = self._converttcl.checkState() == Qt.CheckState.Checked
+        for w in [self._template, self._browseTemplate]:
+            w.setEnabled(state)
     
 # Test code:
 
 if __name__ == '__main__':
     import sys
     from nscldaq.readoutgui import ReadoutGuiView
-    from PyQt6.QtWidgets import QApplication
+    
     
     app = QApplication(sys.argv)
     dummyGui = ReadoutGuiView.ReadoutGuiMainWindow()
@@ -323,7 +507,7 @@ if __name__ == '__main__':
         'daqconfig' : '/home/ron/daqconfig.tcl'
     }
     source = MVLCDataSource(config)
-    win = ConfigurationDisplay(source)
+    win = ConfigureSource(source)
     
     win.show()
     
