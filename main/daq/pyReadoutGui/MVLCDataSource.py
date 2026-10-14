@@ -37,6 +37,7 @@ import os
 import pathlib
 from typing import ClassVar
 
+from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 import nscldaq.readoutgui.FRIBDAQDataSource  # For fully qualified ConfigurationDisplay
 from nscldaq.readoutgui.FRIBDAQDataSource import FRIBDAQSource
 from packaging.version import Version
@@ -665,14 +666,19 @@ directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled.
             w.setEnabled(state)
     def _checked(self, w : QCheckBox) -> bool:
         return w.checkState() == Qt.CheckState.Checked
+    
+# Register us with the type 'MVLC'
+
+DataSourceRegistry.instance().add('MVLC', MVLCDataSource, ConfigurationDisplay, ConfigureSource)    
+
 # Test code:
 
 if __name__ == '__main__':
     import sys
-    from nscldaq.readoutgui import ReadoutGuiView
+
     from nscldaq.mg_configutils import SaveDialog
-    from PyQt6.QtWidgets import QMessageBox, QDialog
     from nscldaq.readoutgui import ReadoutGuiView
+    from PyQt6.QtWidgets import QDialog, QMessageBox
     
     app = QApplication(sys.argv)
     mw = ReadoutGuiView.ReadoutGuiMainWindow()
