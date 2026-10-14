@@ -35,6 +35,7 @@ If the program is found this data source is registerd as 'MVLC'
 import getpass
 import os
 import pathlib
+from typing import ClassVar
 
 import nscldaq.readoutgui.FRIBDAQDataSource  # For fully qualified ConfigurationDisplay
 from nscldaq.readoutgui.FRIBDAQDataSource import FRIBDAQSource
@@ -321,6 +322,12 @@ class ConfigureSource(QWidget):
         Note that instantiating this when the executable cannot be locate is a fatal error (after an
         explantory message box.)
     '''
+    connectionmap : ClassVar[dict[str, str]] = {
+                'usb' : 'usb',
+                'eth' : 'ethernet',
+                'usb-serial' : 'usb by serial',
+                'usb-index'  : 'usb'
+            }
     def __init__(self, source : MVLCDataSource | None = None, parent : QWidget | None = None):
         '''
             @param source : MVLCDataSource | None - if not None, the form is pre-loaeded with the
@@ -479,6 +486,7 @@ directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled.
         self._converttcl = QCheckBox('Convert daqconfig from tcl', self)
         layout.addWidget(self._converttcl)
         self._converttcl.clicked.connect(self._setTemplateState)
+        self._converttcl.setCheckState(Qt.CheckState.Checked)   # On by default.
         
         templatelayout = QHBoxLayout()
         templatelayout.addWidget(QLabel('Yaml Template File', self))
@@ -514,7 +522,68 @@ directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled.
         
         if source:
             self._load(source)
-            
+    
+    def  makeSource(self) -> MVLCDataSource | str:
+        '''
+        Given the state of the form, either create a data source as specified by it or
+        return an error message string if the form state does not allow that.
+        @return MVLCDataSource - If successful, the source is returned/
+        @return str            - If not successful, an error message string is returned.
+        '''
+        
+        config = {
+            'host'         :  self._host.text().strip(),
+            'program_path' : _findExecutable(),
+            'service'      : self._restService.text().strip(),
+            'ring'         : self._ring.text().strip(),
+            'source_id'    : self._sid.value(),
+            'port'         : self._controlport.value(),
+            'connection_type' : next(k for k,v in self.connectionmap.items() if v == self._connection_type.currentText()),
+            'ignore_vme_init_errors' : self._checked(self._ignorevme),
+            'debug'        : self._checked(self._debug),
+            'trace'        : self._checked(self._trace),
+            'convert-tcl'  : self._checked(self._converttcl),
+            'daqconfig'    : self._daqconfig.text().strip()
+        }
+        
+        # Now for the optional ones 'ctlconfig', 'template', 'timestamplib' 'connection_parameter'... empty text means missing.
+        # Note that connection_parameter is required for connection_type in ['eth', 'usb-serial', 'usb-index]
+        
+        if config['connection_type'] in ['eth', 'usb-serial', 'usb-index']:
+            param = self._connection_string.text()
+            if param.strip():
+                config['connection_parameter'] = param
+            else:
+                return f'The Specified connection type: {self._connection_type.currentText()} requires a connection parameter'
+        
+        ctlconfig = self._ctlconfig.text()
+        if ctlconfig.strip():
+            config['ctlconfig'] = ctlconfig
+        
+        template = self._template.text().strip()
+        if template:
+            config['template']  = template
+
+        tslib = self._tslib.text().strip()
+        if tslib:
+            config['timestamp_lib'] = tslib
+
+        # Some items must be non empty:
+        
+        if not config['program_path']:
+            return "Not able to find the path for fribdaq-readout"
+        if not config['host']:
+            return 'You must specify a host in which to run fribdaq-readout'
+        if not config['service']:
+            return "You must specify a service name for the readout's ReST service"
+        if not config['ring']:
+            return 'You must specify an output ringbuffer'
+        if not config['daqconfig']:
+            return 'You must specify a readout configuration file'
+        
+        return MVLCDataSource(config)
+    
+    
     def _load(self, source : MVLCDataSource) -> None:
         config = source.getConfig()
         
@@ -524,13 +593,8 @@ directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled.
         self._sid.setValue(config.get('source_id', 0))
         
         # Connection type/parameter .. we need to also invoke _connectionChanged
-        connectionmap = {
-            'usb' : 'usb',
-            'eth' : 'ethernet',
-            'usb-serial' : 'usb by serial',
-            'usb-index'  : 'usb'
-        }
-        self._connection_type.setCurrentText(connectionmap[config.get('connection_type', 'usb')])
+        
+        self._connection_type.setCurrentText(self.connectionmap[config.get('connection_type', 'usb')])
         self._connection_string.setText(config.get('connection_parameter', ''))
         self._connectionChanged(self._connection_type.currentText())
         
@@ -599,29 +663,36 @@ directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled.
         state = self._converttcl.checkState() == Qt.CheckState.Checked
         for w in [self._template, self._browseTemplate]:
             w.setEnabled(state)
-    
+    def _checked(self, w : QCheckBox) -> bool:
+        return w.checkState() == Qt.CheckState.Checked
 # Test code:
 
 if __name__ == '__main__':
     import sys
     from nscldaq.readoutgui import ReadoutGuiView
-    
+    from nscldaq.mg_configutils import SaveDialog
+    from PyQt6.QtWidgets import QMessageBox, QDialog
+    from nscldaq.readoutgui import ReadoutGuiView
     
     app = QApplication(sys.argv)
-    dummyGui = ReadoutGuiView.ReadoutGuiMainWindow()
-    config = {
-        'host' : 'localhost',
-        'ring' : 'fox',
-        'source_id' : 123,
-        'connection_type' : 'eth',
-        'connection_parameter': 'mvlc0.frib.msu.edu',
-        'trace': True,
-        'convert-tcl' : True,
-        'daqconfig' : '/home/ron/daqconfig.tcl'
-    }
-    source = MVLCDataSource(config)
-    win = ConfigureSource(source)
+    mw = ReadoutGuiView.ReadoutGuiMainWindow()
+    dlg = SaveDialog(ConfigureSource())
     
-    win.show()
+    while True:
+        code = dlg.exec()
+        if code == QDialog.DialogCode.Accepted:
+            source : MVLCDataSource | str = dlg.workarea().makeSource()
+            if isinstance(source, str):
+                QMessageBox.warning(dlg, 'Missing parameters', source)
+            else:
+                win = ConfigurationDisplay(source)
+                win.show()
+                del dlg
+                break
+        else:
+            sys.exit(0)
+
+    
+    
     
     sys.exit(app.exec())                
