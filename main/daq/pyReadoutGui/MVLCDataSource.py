@@ -350,6 +350,28 @@ directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled.
         titlelayout.addWidget(QLabel(_findExecutable(), self))
         layout.addLayout(titlelayout)
         
+        # Where to run the program:
+        
+        hostlayout = QHBoxLayout()
+        hostlayout.addWidget(QLabel('Run in Host: ', self))
+        
+        self._host = QLineEdit(self)
+        hostlayout.addWidget(self._host)
+        
+        layout.addLayout(hostlayout)
+        
+        # ReST Service:
+        
+        restlayout = QHBoxLayout()
+        restlayout.addWidget(QLabel('ReST service'))
+        
+        self._restService = QLineEdit(self)
+        restlayout.addWidget(self._restService)
+        self._restService.setText('ReadoutREST')
+        
+        layout.addLayout(restlayout)
+        
+        
         #  Connection type used:
         
         connectionlayout = QHBoxLayout()
@@ -382,7 +404,22 @@ directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled.
         
         layout.addLayout(daqcfglayout)  
         
+        # Timestamp extracton library:
         
+        tslayout = QHBoxLayout()
+        tslayout.addWidget(QLabel("Timestamp extraction library"))
+        
+        self._tslib = QLineEdit()
+        tslayout.addWidget(self._tslib)
+        self._tslib.setPlaceholderText('<None>')
+        
+        self._browsetslib = QPushButton('Browse...', self)
+        tslayout.addWidget(self._browsetslib)
+        self._browsetslib.clicked.connect(lambda:
+            self._browseFileWithFilter(self._tslib, 'Shared Objects (*.so);;All Files (*)')
+        )
+        
+        layout.addLayout(tslayout)
         
         # CTLCOnfig - browsable  only Tcl...
         
@@ -409,6 +446,19 @@ directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled.
         ringlayout.addWidget(self._ring)
         
         layout.addLayout(ringlayout)
+        
+        # Source Id:
+        
+        sidlayout = QHBoxLayout()
+        sidlayout.addWidget(QLabel('Source id', self))
+        
+        self._sid = QSpinBox(self)
+        sidlayout.addWidget(self._sid)
+        self._sid.setMinimum(0)
+        self._sid.setMaximum(0x7fffffff)
+        self._sid.setValue(0)
+        
+        layout.addLayout(sidlayout)
         
         # port is for slow controls:
         
@@ -454,17 +504,77 @@ directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled.
         self._trace = QCheckBox('Trace output', self)
         outputlayout.addWidget(self._trace)
         
+        self._ignorevme = QCheckBox('Ignore VME init errors', self)
+        outputlayout.addWidget(self._ignorevme)
+        self._ignorevme.setCheckState(Qt.CheckState.Checked)
+        
         layout.addLayout(outputlayout)
+        
+        # if a source was passed in, load the form from it:
+        
+        if source:
+            self._load(source)
+            
+    def _load(self, source : MVLCDataSource) -> None:
+        config = source.getConfig()
+        
+        self._host.setText(config['host'])
+        self._restService.setText(config.get('service', 'ReadoutREST'))
+        self._ring.setText(config.get('ring', getpass.getuser()))
+        self._sid.setValue(config.get('source_id', 0))
+        
+        # Connection type/parameter .. we need to also invoke _connectionChanged
+        connectionmap = {
+            'usb' : 'usb',
+            'eth' : 'ethernet',
+            'usb-serial' : 'usb by serial',
+            'usb-index'  : 'usb'
+        }
+        self._connection_type.setCurrentText(connectionmap[config.get('connection_type', 'usb')])
+        self._connection_string.setText(config.get('connection_parameter', ''))
+        self._connectionChanged(self._connection_type.currentText())
+        
+        self._ignorevme.setCheckState(
+            Qt.CheckState.Checked if config.get('ignore_vme_init_errors', True) else \
+            Qt.CheckState.Unchecked
+        )
+        tslib = config.get('timestamp_lib')
+        if tslib:
+            self._tslib.setText(tslib)
+        
+        ctlconfig  = config.get('ctlconfig')
+        if ctlconfig:
+            self._ctlconfig.setText(ctlconfig)
+            
+        self._debug.setCheckState(
+            Qt.CheckState.Checked if config.get('debug', False) else Qt.CheckState.Unchecked
+        )
+        self._trace.setCheckState(
+            Qt.CheckState.Checked if config.get('trace', False) else Qt.CheckState.Unchecked
+        )
+        
+        # Convert Tcl -> Yaml also requires updating the state of the template file prompter
+        
+        self._converttcl.setCheckState(
+            Qt.CheckState.Checked if config.get('convert-tcl', True) else Qt.CheckState.Unchecked
+        )
+        self._setTemplateState()
+        
+        template = config.get('template')
+        if template:
+            self._template.setText(template)
+        
+        self._daqconfig.setText(config.get('daqconfig', ''))
         
     # Slots (Private)
     
-    def _connectionChanged(self, newtype) :
+    def _connectionChanged(self, newtype) -> None:
         # The connection type changed, enable/disable, connection_string accordingly.
     
         enabled = newtype in ['usb by serial', 'usb by index', 'ethernet']
         self._connection_string.setEnabled(enabled)
         
-    def _browseFile(self, target : QLineEdit, yaml = True, tcl = False):
+    def _browseFile(self, target : QLineEdit, yaml = True, tcl = False) -> None:
         # Browse for a file and put it in the target.  yaml - sets a filter to 
         # allow browsing type .yaml,yml and tcl adds a filter for .tcl
         
@@ -475,12 +585,15 @@ directory of mesytec-mvlc and be sure it was built with FRIBDAQ support enabled.
             filter += 'YAML files (*.yaml *.yml);;'
         filter += 'All Files (*)'
         
+        self._browseFileWithFilter(target, filter)
+    
+    def _browseFileWithFilter(self, target : QLineEdit, filter : str) -> None:
         file, _  = QFileDialog.getOpenFileName(self, 'Choose file', '.', filter)
         
         if file.strip():
-            target.setText(file)
+            target.setText(file)    
     
-    def _setTemplateState(self):
+    def _setTemplateState(self) -> None:
         # Set the state of the template widgets:
         
         state = self._converttcl.checkState() == Qt.CheckState.Checked
