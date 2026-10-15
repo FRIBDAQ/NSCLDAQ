@@ -1,7 +1,9 @@
 TESTABLE_MODULES=StateMachine.py DataSourceManager.py DataSourceRegistry.py
 MODULES=$(TESTABLE_MODULES) StateView.py RunTimerView.py RunParamsView.py \
-	DataSource.py DelaySource.py OutputManager.py ReadoutGuiView.py pySSHProcess.py \
-	FRIBDAQDataSource.py VMUSBDataSource.py DDASDataSource.py
+	DataSource.py DelaySource.py OutputManager.py \
+	ReadoutGuiView.py pySSHProcess.py \
+	FRIBDAQDataSource.py VMUSBDataSource.py DDASDataSource.py \
+	MVLCDataSource.py
 INTERACTIVE_TESTS=testRunStateController.py
 MODULE_DIR=@prefix@/pythonLibs/nscldaq/readoutgui
 install-exec-local:
