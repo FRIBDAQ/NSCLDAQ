@@ -3,7 +3,7 @@ MODULES=$(TESTABLE_MODULES) StateView.py RunTimerView.py RunParamsView.py \
 	DataSource.py DelaySource.py OutputManager.py \
 	ReadoutGuiView.py pySSHProcess.py \
 	FRIBDAQDataSource.py VMUSBDataSource.py DDASDataSource.py \
-	MVLCDataSource.py Log.py
+	MVLCDataSource.py Log.py DataSourceViews.py
 
 INTERACTIVE_TESTS=testRunStateController.py
 MODULE_DIR=@prefix@/pythonLibs/nscldaq/readoutgui
