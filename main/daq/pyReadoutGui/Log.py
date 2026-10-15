@@ -54,7 +54,7 @@ class Log:
         # Ensure we are being called from inside this module:
         
         caller = traceback.extract_stack()[-2]
-        if caller._filename != __file__:
+        if caller.filename != __file__:
             raise SingletonViolation(caller.filename)        
 
         # Setup the instance variables that control logging.
@@ -89,7 +89,7 @@ class Log:
         @param path : str - Path to the file.
         '''
         logger = logging.getLogger(__name__)
-        logger.setLeval(logging.INFO)
+        logger.setLevel(logging.INFO)
         logging.basicConfig(filename=path)
         self._filename = path
         self._enabled = True    # setting a new filename enables.
