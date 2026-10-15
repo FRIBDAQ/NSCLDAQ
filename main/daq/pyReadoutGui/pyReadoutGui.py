@@ -23,6 +23,7 @@ import sys
 import importlib
 import pathlib
 import uuid
+import traceback
 
 from nscldaq.readoutgui import (
     DDASDataSource,
@@ -58,7 +59,25 @@ def _loadModule() -> None:
             return 
         loaded_module = importlib.util.module_from_spec(module_spec)
         sys.modules[module] = loaded_module
-        module_spec.loader.exec_module(loaded_module)   # Run the stuff in the module global space.
+        try:
+            module_spec.loader.exec_module(loaded_module)   # Run the stuff in the module global space.
+        except Exception as e:
+            QMessageBox.warning(
+                mainWindow(), 'Module failed', 
+                f'Running the module global code for {file} failed: {e}\n{traceback.format_exc()}'
+            )
+
+def _addLibrary():
+    #
+    # File->Add Library menu command. IF we can just load a
+    # file you might wonder why we might need this.  The answer is
+    # that if we load a script with imports that are not in the module
+    # paths, that load will fail and we'll need to extend the
+    # module search path.
+    
+    dir = QFileDialog.getExistingDirectory(mainWindow(), 'Add to module search path', '.')
+    if dir.strip():
+        sys.path.append(dir)
 
 #   --- Utility functions.
 def _loadOptionalModules() -> None:
@@ -87,7 +106,7 @@ def _setupFileMenu(mainWindow : ReadoutGuiMainWindow) -> None:
     #  the file menu slots.
     
     mainWindow.fileMenuLoad.connect(_loadModule)
-    #mainWindow.filemenuAddLibrary.connect(_addLibrary)
+    mainWindow.fileMenuAddLibrary.connect(_addLibrary)
     #mainWindow.fileLog.connect(_setLogFile)
     #mainWindow.fileDisableLog.connect(_disableLogging)
     #mainWindow.fileExit.connect(_confirmExit)
