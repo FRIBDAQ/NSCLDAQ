@@ -95,7 +95,25 @@ def _disableLogging() -> None:
     
     Log.instance().disable()
 
+
+def _confirmExit():
+    # Handle File->Exit - confirm the user really wants to exit.
+    # If so, save the configuration and ask the application to exit.
+    
+    if QMessageBox.question(
+        mainWindow(), 'Confirm exit', 
+        'Do you really want to exit?'
+    ) == QMessageBox.StandardButton.Yes:
+        _saveConfiguration()
+        QApplication.exit(0)
+
+
 #   --- Utility functions.
+
+def  _saveConfiguration():
+    # Stub function to save the configuration script.
+    pass
+
 def _loadOptionalModules() -> None:
     #  Perform some initializations.
     #  In this case, that means:
@@ -125,7 +143,7 @@ def _setupFileMenu(mainWindow : ReadoutGuiMainWindow) -> None:
     mainWindow.fileMenuAddLibrary.connect(_addLibrary)
     mainWindow.fileLog.connect(_setLogFile)
     mainWindow.fileDisableLog.connect(_disableLogging)
-    #mainWindow.fileExit.connect(_confirmExit)
+    mainWindow.fileExit.connect(_confirmExit)
     
     
 def main() -> int:
