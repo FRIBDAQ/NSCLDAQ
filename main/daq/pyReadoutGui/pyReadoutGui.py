@@ -112,6 +112,7 @@ def _confirmExit():
 
 def  _saveConfiguration():
     # Stub function to save the configuration script.
+    print("Trying to save configuration.")
     pass
 
 def _loadOptionalModules() -> None:
@@ -145,6 +146,9 @@ def _setupFileMenu(mainWindow : ReadoutGuiMainWindow) -> None:
     mainWindow.fileDisableLog.connect(_disableLogging)
     mainWindow.fileExit.connect(_confirmExit)
     
+    #  If the GUI is being destroyed, nonetheless, save the config if possible.
+    
+    mainWindow.destroyed.connect(_saveConfiguration)
     
 def main() -> int:
     app = QApplication(sys.argv)
