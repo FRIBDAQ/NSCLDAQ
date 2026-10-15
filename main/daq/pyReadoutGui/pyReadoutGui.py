@@ -19,22 +19,27 @@
 @brief THe main program for the python Readout GUI.
 @author Ron Fox
 '''
-import sys
 import importlib
 import pathlib
-import uuid
+import sys
 import traceback
+import uuid
 
+from nscldaq.mg_configutils import SaveDialog
 from nscldaq.readoutgui import (
+    DataSourceViews,
     DDASDataSource,
     FRIBDAQDataSource,  # This import also registers
     MVLCDataSource,  # the sources with the source
     VMUSBDataSource,  # registry.
 )
+from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
+from nscldaq.readoutgui.DataSource import DataSource
+from nscldaq.readoutgui.DataSourceManager import DataSourceManager
+from nscldaq.readoutgui.Log import Log
 from nscldaq.readoutgui.ReadoutGuiView import ReadoutGuiMainWindow, mainWindow
 from nscldaq.readoutgui.StateMachine import ReadoutStateMachine
-from nscldaq.readoutgui.Log import Log
-from PyQt6.QtWidgets import QApplication, QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox
 
 #  --- Slots.
 
@@ -96,7 +101,7 @@ def _disableLogging() -> None:
     Log.instance().disable()
 
 
-def _confirmExit():
+def _confirmExit() -> None:
     # Handle File->Exit - confirm the user really wants to exit.
     # If so, save the configuration and ask the application to exit.
     
@@ -106,6 +111,33 @@ def _confirmExit():
     ) == QMessageBox.StandardButton.Yes:
         _saveConfiguration()
         QApplication.exit(0)
+
+def _addDataSource() -> None:
+    # Prompt for and add a data source.
+
+    dsTypes = DataSourceRegistry.instance().listSourceTypes()
+    typedlg = DataSourceViews.TypeChooser(dsTypes, mainWindow())
+    
+    if typedlg.exec() == QDialog.DialogCode.Accepted:
+        dataSourceType = typedlg.selected()
+        print('Making ', dataSourceType)
+        configdlg = SaveDialog(DataSourceRegistry.instance().sourceCreator(dataSourceType)())
+        result = configdlg.exec()
+        while  result == QDialog.DialogCode.Accepted:
+            source : DataSource | str = configdlg.workarea().makeSource()
+            if isinstance(source, DataSource):
+                break
+            else:
+                QMessageBox.warning(configdlg, "Can't make source'", f'Data source cannot be made: {source}')
+            result = configdlg.exec()
+        # We have a data in source.  We need to name it and add it to the manager... in the future
+        # Need to change up our widgets to get names.
+        
+        if result == QDialog.DialogCode.Accepted:
+            name = dataSourceType + uuid.uuid4().hex
+            print('Generated data source name', name)
+            DataSourceManager.instance().addSource(name, source)
+        
 
 
 #   --- Utility functions.
@@ -149,13 +181,18 @@ def _setupFileMenu(mainWindow : ReadoutGuiMainWindow) -> None:
     #  If the GUI is being destroyed, nonetheless, save the config if possible.
     
     mainWindow.destroyed.connect(_saveConfiguration)
-    
+ 
+def _setupDataSourceMenu(gui : ReadoutGuiMainWindow) -> None:
+     gui.dsAddSource.connect(_addDataSource)
+ 
+#--------------------------------------------------- Program main --------------------------------------   
 def main() -> int:
     app = QApplication(sys.argv)
     main_window = ReadoutGuiMainWindow()
     
     _loadOptionalModules()
     _setupFileMenu(main_window)
+    _setupDataSourceMenu(main_window)
     
     # Set the initial state of the buttons:
     
