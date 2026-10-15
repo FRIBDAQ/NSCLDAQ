@@ -33,6 +33,7 @@ from nscldaq.readoutgui import (
 )
 from nscldaq.readoutgui.ReadoutGuiView import ReadoutGuiMainWindow, mainWindow
 from nscldaq.readoutgui.StateMachine import ReadoutStateMachine
+from nscldaq.readoutgui.Log import Log
 from PyQt6.QtWidgets import QApplication, QFileDialog, QMessageBox
 
 #  --- Slots.
@@ -79,6 +80,15 @@ def _addLibrary():
     if dir.strip():
         sys.path.append(dir)
 
+def _setLogFile():
+    # Prompt for a new log file for the logging subsystrem.
+    
+    file,_  = QFileDialog.getSaveFileName(
+        mainWindow(), 'Choose log file',  '.', 'Log Files (*.log);;All Files'
+    )
+    if file.strip():
+        Log.instance().setLogFile(file)
+
 #   --- Utility functions.
 def _loadOptionalModules() -> None:
     #  Perform some initializations.
@@ -107,7 +117,7 @@ def _setupFileMenu(mainWindow : ReadoutGuiMainWindow) -> None:
     
     mainWindow.fileMenuLoad.connect(_loadModule)
     mainWindow.fileMenuAddLibrary.connect(_addLibrary)
-    #mainWindow.fileLog.connect(_setLogFile)
+    mainWindow.fileLog.connect(_setLogFile)
     #mainWindow.fileDisableLog.connect(_disableLogging)
     #mainWindow.fileExit.connect(_confirmExit)
     
