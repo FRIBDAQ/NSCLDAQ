@@ -68,7 +68,7 @@ def _loadModule() -> None:
                 f'Running the module global code for {file} failed: {e}\n{traceback.format_exc()}'
             )
 
-def _addLibrary():
+def _addLibrary() -> None:
     #
     # File->Add Library menu command. IF we can just load a
     # file you might wonder why we might need this.  The answer is
@@ -80,7 +80,7 @@ def _addLibrary():
     if dir.strip():
         sys.path.append(dir)
 
-def _setLogFile():
+def _setLogFile() -> None:
     # Prompt for a new log file for the logging subsystrem.
     
     file,_  = QFileDialog.getSaveFileName(
@@ -88,6 +88,12 @@ def _setLogFile():
     )
     if file.strip():
         Log.instance().setLogFile(file)
+
+def _disableLogging() -> None:
+    # Turn off logging to file - log messages will still
+    # go to the appropriate output windows.
+    
+    Log.instance().disable()
 
 #   --- Utility functions.
 def _loadOptionalModules() -> None:
@@ -118,7 +124,7 @@ def _setupFileMenu(mainWindow : ReadoutGuiMainWindow) -> None:
     mainWindow.fileMenuLoad.connect(_loadModule)
     mainWindow.fileMenuAddLibrary.connect(_addLibrary)
     mainWindow.fileLog.connect(_setLogFile)
-    #mainWindow.fileDisableLog.connect(_disableLogging)
+    mainWindow.fileDisableLog.connect(_disableLogging)
     #mainWindow.fileExit.connect(_confirmExit)
     
     
