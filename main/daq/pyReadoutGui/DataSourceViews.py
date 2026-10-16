@@ -17,7 +17,7 @@
 '''
 
 from nscldaq.mg_configutils import SaveDialog
-from nscldaq.readougui.DataSource import DataSource
+from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from PyQt6.QtCore import QModelIndex, QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QStandardItem, QStandardItemModel
@@ -72,6 +72,7 @@ class DataSourceModel(QStandardItemModel):
         
         icon_attr = getattr(QStyle.StandardPixmap, 'SP_TrashIcon')
         self._trashIcon = mainWindow().style().standardIcon(icon_attr)
+        self.load(sources)
         
     # Utilities:
     
@@ -96,7 +97,7 @@ class DataSourceModel(QStandardItemModel):
         self.setHorizontalHeaderLabels(['Type', 'Host', 'Program', 'Output Ring', ''])
         
     def _addRow(self, source_name : str, source : DataSource):
-        source_type = source_name.split(':')
+        source_type = source_name.split(':')[0]
         stype = QStandardItem(source_type)
         stype.setData(source_name)
         
@@ -106,7 +107,7 @@ class DataSourceModel(QStandardItemModel):
         host   = QStandardItem(config.get('host', 'N/A'))
         pgm    = QStandardItem(config.get('program_path', 'N/A'))
         output = QStandardItem(config.get('ring', 'N/A'))
-        trashcan = QStandardItemModel(self._trashIcon, '')
+        trashcan = QStandardItem(self._trashIcon, '')
         
         self.appendRow([stype, host, pgm, output, trashcan])
         
@@ -179,7 +180,7 @@ class DataSourceTable(QTableView):
         # Return the name of the row of index:
         
         name_index =  index.siblingAtColumn(0)
-        return self.model().data(name_index, Qt.ItemDataRole.UserRole)
+        return self.model().itemFromIndex(name_index).data(Qt.ItemDataRole.UserRole+1)
         
 # Test code
 if __name__ == '__main__':
