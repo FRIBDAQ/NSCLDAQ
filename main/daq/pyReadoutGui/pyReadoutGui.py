@@ -32,6 +32,7 @@ from nscldaq.readoutgui import (
     FRIBDAQDataSource,  # This import also registers
     MVLCDataSource,  # the sources with the source
     VMUSBDataSource,  # registry.
+    DataSourceMenuControllers,
 )
 from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 from nscldaq.readoutgui.DataSource import DataSource
@@ -139,7 +140,12 @@ def _addDataSource() -> None:
             DataSourceManager.instance().addSource(name, source)
         
 
-
+def _listDataSources() -> None:
+    # Bring up a data source lister:
+    
+    _lister = DataSourceMenuControllers.ListController(mainWindow())
+    
+    
 #   --- Utility functions.
 
 def  _saveConfiguration():
@@ -183,8 +189,8 @@ def _setupFileMenu(mainWindow : ReadoutGuiMainWindow) -> None:
     mainWindow.destroyed.connect(_saveConfiguration)
  
 def _setupDataSourceMenu(gui : ReadoutGuiMainWindow) -> None:
-     gui.dsAddSource.connect(_addDataSource)
- 
+    gui.dsAddSource.connect(_addDataSource)
+    gui.dsListSources.connect(_listDataSources)
 #--------------------------------------------------- Program main --------------------------------------   
 def main() -> int:
     app = QApplication(sys.argv)
