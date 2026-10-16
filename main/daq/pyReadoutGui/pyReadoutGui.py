@@ -134,7 +134,7 @@ def _addDataSource() -> None:
         # Need to change up our widgets to get names.
         
         if result == QDialog.DialogCode.Accepted:
-            name = dataSourceType + uuid.uuid4().hex
+            name = dataSourceType + ':' +  uuid.uuid4().hex
             print('Generated data source name', name)
             DataSourceManager.instance().addSource(name, source)
         
