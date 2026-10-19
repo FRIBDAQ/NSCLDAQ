@@ -44,7 +44,7 @@ class ListController:
         self._view.hideDelete()
         self._view.detail.connect(self._showDetail)
         self._dialog = OkDialog(self._view, parent)
-        
+        self._dialog.resize(500, self._dialog.height())
         
     def exec(self)  -> int:
         ''' Execute the view dialog '

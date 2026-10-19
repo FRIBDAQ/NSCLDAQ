@@ -152,6 +152,10 @@ class DataSourceTable(QTableView):
         
         self.clicked.connect(self._clicked)
         self.doubleClicked.connect(self._doubleClicked)
+        
+        # Make the window a bit wider than default:
+        
+        self.resize(800, self.height())
     
     def hideDelete(self):
         '''
