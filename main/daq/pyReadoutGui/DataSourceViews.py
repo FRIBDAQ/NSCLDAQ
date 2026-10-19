@@ -21,7 +21,7 @@ from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from PyQt6.QtCore import QModelIndex, QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QStandardItem, QStandardItemModel
-from PyQt6.QtWidgets import QComboBox, QStyle, QTableView, QWidget
+from PyQt6.QtWidgets import QComboBox, QStyle, QTableView, QWidget, QHBoxLayout, QLabel
 
 
 class TypeChooser(SaveDialog):
@@ -29,15 +29,23 @@ class TypeChooser(SaveDialog):
     Selects a type (in this case a data source type).  Intended for
     use with a list of data source types but, I suppose it might be more
     generally useful.  The types are presented as a combobox.
+    
+
     '''
     
     def __init__(self, typeList : list[str],  parent : QWidget | None = None):
-        super().__init__(QComboBox(), parent)
+        self._form = QWidget()    # Will be the workarea.
+        self._form.setLayout(QHBoxLayout())
+        self._form.layout().addWidget(QLabel('Choose Data Source Type', self._form))
+        self._selection = QComboBox(self._form)
+        self._form.layout().addWidget(self._selection)
+        
+        super().__init__(self._form, parent)
         
         # Now add the items to the box:
         
         self.workarea().setParent(self)
-        self.workarea().addItems(typeList)
+        self._selection.addItems(typeList)
         
     def selected(self) -> str:
         '''
@@ -45,7 +53,7 @@ class TypeChooser(SaveDialog):
         @return str
         
         '''
-        return self.workarea().currentText()     
+        return self._selection.currentText()     
 
 
 class DataSourceModel(QStandardItemModel):
