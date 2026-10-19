@@ -103,10 +103,10 @@ class OutputManager(QTabWidget):
         Add another tab containing an output window.
         @param name - Tab text.
         @return OutputWindow.OutputWIndow - The output window.
-        @throws DuplicateTabName if name is already a tab name.
+        @note if the name already exists, we just return its output window.
         '''
         if name in self._outputs:
-            raise DuplicateTabName(name)
+            return self._outputs[name]
         newWindow = OutputWindow.OutputWindow(self)
         newWindow.setStyleSheet('QTextEdit { font-size : 15pt;}')
         self.addTab(newWindow, name)
