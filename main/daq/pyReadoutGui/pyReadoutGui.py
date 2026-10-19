@@ -143,8 +143,12 @@ def _addDataSource() -> None:
 def _listDataSources() -> None:
     # Bring up a data source lister:
     
-    _lister = DataSourceMenuControllers.ListController(mainWindow())
+    lister = DataSourceMenuControllers.ListController(mainWindow())
+    lister.exec()
     
+def _deleteDataSource() -> None: 
+    deleter = DataSourceMenuControllers.DeleteController(mainWindow())
+    deleter.exec()
     
 #   --- Utility functions.
 
@@ -191,6 +195,7 @@ def _setupFileMenu(mainWindow : ReadoutGuiMainWindow) -> None:
 def _setupDataSourceMenu(gui : ReadoutGuiMainWindow) -> None:
     gui.dsAddSource.connect(_addDataSource)
     gui.dsListSources.connect(_listDataSources)
+    gui.dsDeleteSource.connect(_deleteDataSource)
 #--------------------------------------------------- Program main --------------------------------------   
 def main() -> int:
     app = QApplication(sys.argv)
