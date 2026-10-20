@@ -1,4 +1,5 @@
-TESTABLE_MODULES=StateMachine.py DataSourceManager.py DataSourceRegistry.py
+TESTABLE_MODULES=StateMachine.py DataSourceManager.py DataSourceRegistry.py\
+	StateSaveRestore.py
 MODULES=$(TESTABLE_MODULES) StateView.py RunTimerView.py RunParamsView.py \
 	DataSource.py DelaySource.py OutputManager.py \
 	ReadoutGuiView.py pySSHProcess.py \
