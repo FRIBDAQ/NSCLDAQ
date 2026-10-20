@@ -97,4 +97,6 @@ class RunConfigSerializer(Serializer):
         
         
         
-                
+# Register ourselves with the manager:
+
+SerializationManager.instance().addSerializer(RunConfigSerializer)              
