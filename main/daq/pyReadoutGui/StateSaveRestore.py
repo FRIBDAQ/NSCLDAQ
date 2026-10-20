@@ -128,7 +128,7 @@ class SerializationManager:
 
     def serialize(self, destination : io.TextIOBase) -> None:
         for serializer in self._serializers:
-            print(destination, f'#  configuration from  {serializer.__name__}')
+            destination.write(f'#  configuration from  {type(serializer).__name__} \n')
             serializer.serialize(destination)
     def deserialize(self, module : types.ModuleType) -> None:
         for serializer in self._serializers:
@@ -142,6 +142,14 @@ if __name__ == '__main__':
     import unittest
     import sys
     class SerializationManagerTests(unittest.TestCase):
+        class TestSerializer(Serializer):
+            def __init__(self):
+                self._data = None
+            def serialize(self, dest : io.TextIOBase) -> None:
+                dest.write('a=1  # This is my saved stuff\n')
+            def deserialize(self, module : types.ModuleType) -> None:
+                self._data = module.a
+        
         #  We'll output to a stream which
         #  will be imported as 'saved'.
         #  setup will create the stream and
@@ -154,12 +162,14 @@ if __name__ == '__main__':
             self._output = io.StringIO()
             self._manager = SerializationManager()
         def tearDown(self) -> None:
-            del sys.modules['saved']
+            try:
+                del sys.modules['saved']
+            except KeyError:
+                pass                      # Module might not be made in all tests
             self._manager = None
         def _load(self) -> None:
             module_name = 'saved'
             self._module       = types.ModuleType(module_name)
-            
             self._output.seek(0)
             exec(self._output.read(), self._module.__dict__)
             sys.modules[module_name] = self._module
@@ -175,8 +185,17 @@ if __name__ == '__main__':
             
             try:
                 self._load()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 self.fail('Could not load the module')
+        
+        def test_serdes(self):
+            test_obj = SerializationManagerTests.TestSerializer()
+            self._manager.addSerializer(test_obj)
+            self._manager.serialize(self._output)
+            self._load()
+            self._manager.deserialize(self._module)
+            
+            self.assertEqual(1, test_obj._data)
             
             
     unittest.main()
