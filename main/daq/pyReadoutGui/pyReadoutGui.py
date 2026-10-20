@@ -25,24 +25,29 @@ import sys
 import traceback
 import uuid
 
+import nscldaq.readoutgui.RunConfig  # Loads/registers the serializer for run config.
 from nscldaq.mg_configutils import SaveDialog
 from nscldaq.readoutgui import (
+    DataSourceMenuControllers,
     DataSourceViews,
     DDASDataSource,
     FRIBDAQDataSource,  # This import also registers
-    MVLCDataSource,  # the sources with the source
+    MVLCDataSource,  # the sources with the source  # noqa: F401
     VMUSBDataSource,  # registry.
-    DataSourceMenuControllers,
 )
-from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.DataSourceManager import DataSourceManager
+from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 from nscldaq.readoutgui.Log import Log
 from nscldaq.readoutgui.ReadoutGuiView import ReadoutGuiMainWindow, mainWindow
 from nscldaq.readoutgui.StateMachine import ReadoutStateMachine
 from nscldaq.readoutgui.StateSaveRestore import SerializationManager
-import nscldaq.readoutgui.RunConfig      # Loads/registers the serializer for run config.
 from PyQt6.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox
+from PyQt6.QtCore    import QTimer
+
+# Constants
+
+AUTOSAVE_INTERVAL_MS = 1000   
 
 #  --- Slots.
 
@@ -113,7 +118,6 @@ def _confirmExit() -> None:
         'Do you really want to exit?'
     ) == QMessageBox.StandardButton.Yes:
         _saveConfiguration()
-        print('back from save')
         QApplication.exit(0)
 
 def _addDataSource() -> None:
@@ -157,7 +161,7 @@ def _deleteDataSource() -> None:
 
 def  _saveConfiguration():
     # Stub function to save the configuration script.
-    print("Trying to save configuration.")
+    
     with open('readoutguiconfig.py', 'w', encoding='utf-8') as config:
         SerializationManager.instance().serialize(config)
 
@@ -206,6 +210,15 @@ def main() -> int:
     _loadOptionalModules()
     _setupFileMenu(main_window)
     _setupDataSourceMenu(main_window)
+    
+    # Set up auto save.  Every second we'll save the configuration:
+    
+    autosave_timer = QTimer(main_window)
+    autosave_timer.setSingleShot(False)
+    autosave_timer.setInterval(AUTOSAVE_INTERVAL_MS)
+    autosave_timer.timeout.connect(_saveConfiguration)
+    autosave_timer.start()
+    
     
     # Set the initial state of the buttons:
     
