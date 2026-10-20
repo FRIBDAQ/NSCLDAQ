@@ -64,7 +64,7 @@ class DataSourceConfig(Serializer):
         
         #  Ready to write:
         
-        destination.write(f'dataSources = {configuration}')
+        destination.write(f'dataSources = {configuration}\n')
         
 
     def deserialize(self, mod : types.ModuleType) -> None:
