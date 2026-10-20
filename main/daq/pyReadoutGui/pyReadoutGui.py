@@ -40,6 +40,8 @@ from nscldaq.readoutgui.DataSourceManager import DataSourceManager
 from nscldaq.readoutgui.Log import Log
 from nscldaq.readoutgui.ReadoutGuiView import ReadoutGuiMainWindow, mainWindow
 from nscldaq.readoutgui.StateMachine import ReadoutStateMachine
+from nscldaq.readoutgui.StateSaveRestore import SerializationManager
+import nscldaq.readoutgui.RunConfig      # Loads/registers the serializer for run config.
 from PyQt6.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox
 
 #  --- Slots.
@@ -111,6 +113,7 @@ def _confirmExit() -> None:
         'Do you really want to exit?'
     ) == QMessageBox.StandardButton.Yes:
         _saveConfiguration()
+        print('back from save')
         QApplication.exit(0)
 
 def _addDataSource() -> None:
@@ -155,7 +158,8 @@ def _deleteDataSource() -> None:
 def  _saveConfiguration():
     # Stub function to save the configuration script.
     print("Trying to save configuration.")
-    pass
+    with open('readoutguiconfig.py', 'w', encoding='utf-8') as config:
+        SerializationManager.instance().serialize(config)
 
 def _loadOptionalModules() -> None:
     #  Perform some initializations.
@@ -175,6 +179,7 @@ def _loadOptionalModules() -> None:
         pass
     try:
         import readoutguiconfig
+        SerializationManager.instance().deserialize(readoutguiconfig)    # load the configuration.
     except ModuleNotFoundError:
         pass
 
@@ -188,9 +193,6 @@ def _setupFileMenu(mainWindow : ReadoutGuiMainWindow) -> None:
     mainWindow.fileDisableLog.connect(_disableLogging)
     mainWindow.fileExit.connect(_confirmExit)
     
-    #  If the GUI is being destroyed, nonetheless, save the config if possible.
-    
-    mainWindow.destroyed.connect(_saveConfiguration)
  
 def _setupDataSourceMenu(gui : ReadoutGuiMainWindow) -> None:
     gui.dsAddSource.connect(_addDataSource)
