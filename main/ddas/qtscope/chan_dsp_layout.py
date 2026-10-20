@@ -37,6 +37,7 @@ class ChanDSPLayout(QTabWidget):
             "MultCoincidence",
             "TimingControl",
             "Histogram",
+            "QDCLen",
         ]
 
         # Define layout:
