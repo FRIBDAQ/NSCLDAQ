@@ -25,6 +25,7 @@ import sys
 import traceback
 import uuid
 
+import nscldaq.readoutgui.DataSourceConfig  # Loads/registers the serializer for data sources.
 import nscldaq.readoutgui.RunConfig  # Loads/registers the serializer for run config.
 from nscldaq.mg_configutils import SaveDialog
 from nscldaq.readoutgui import (
@@ -42,8 +43,8 @@ from nscldaq.readoutgui.Log import Log
 from nscldaq.readoutgui.ReadoutGuiView import ReadoutGuiMainWindow, mainWindow
 from nscldaq.readoutgui.StateMachine import ReadoutStateMachine
 from nscldaq.readoutgui.StateSaveRestore import SerializationManager
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox
-from PyQt6.QtCore    import QTimer
 
 # Constants
 
@@ -143,7 +144,6 @@ def _addDataSource() -> None:
         
         if result == QDialog.DialogCode.Accepted:
             name = dataSourceType + ':' +  uuid.uuid4().hex
-            print('Generated data source name', name)
             DataSourceManager.instance().addSource(name, source)
         
 
