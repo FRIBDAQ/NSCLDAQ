@@ -46,17 +46,17 @@ class RunConfigSerializer(Serializer):
         @param destination : io.TextIOBase - where to write the data.
         '''
         # Fetch the stuff we need to save:
-        main = mainWindow()
+        main = mainWindow().centralWidget()
         
         runparams = main.RunParameters()
         title = runparams.title()
         runNumber = runparams.run()
         
         timedrun = main.RunTimer()
-        isTimed = timedrun.timeed()
+        isTimed = timedrun.timed()
         duration = timedrun.plannedDuration()   # In seconds.
         
-        recording = main.Recording.checkState() == Qt.CheckState.Checked
+        recording = main.Recording().checkState() == Qt.CheckState.Checked
         
         # form the dict:
         
@@ -78,14 +78,14 @@ class RunConfigSerializer(Serializer):
         # For now ignore errors (e.g. partial config file)
         try:
             config = module.runParameters    # reduce typing.
-            main = mainWindow()
+            main = mainWindow().centralWidget()
             runparams = main.RunParameters()
             runparams.setTitle(config['title'])
             runparams.setRun(config['run'])
             
-            timedrun = main.runTimer()
+            timedrun = main.RunTimer()
             timedrun.setTimed(config['timedRun'])
-            timedrun.setPlannedDUraction(config['runDuration'])
+            timedrun.setPlannedDuration(config['runDuration'])
             
             recordingState = Qt.CheckState.Checked if config['recording'] else Qt.CheckState.Unchecked
             main.Recording().setCheckState(recordingState)
@@ -99,4 +99,4 @@ class RunConfigSerializer(Serializer):
         
 # Register ourselves with the manager:
 
-SerializationManager.instance().addSerializer(RunConfigSerializer)              
+SerializationManager.instance().addSerializer(RunConfigSerializer())              
