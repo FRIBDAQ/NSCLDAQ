@@ -56,7 +56,7 @@ from abc import ABC, abstractmethod
 from typing import ClassVar, Self
 
 
-class Serializer:
+class Serializer(ABC):
     '''
         This base class provides a definition that concrete
         configuration serialization classes must implement.
@@ -139,8 +139,8 @@ class SerializationManager:
 
 # Tests:
 if __name__ == '__main__':
-    import unittest
     import sys
+    import unittest
     class SerializationManagerTests(unittest.TestCase):
         class TestSerializer(Serializer):
             def __init__(self):
