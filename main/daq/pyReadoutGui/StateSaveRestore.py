@@ -137,4 +137,46 @@ class SerializationManager:
     def addSerializer(self, serializer : Serializer) -> None:
         self._serializers.append(serializer)
 
+# Tests:
+if __name__ == '__main__':
+    import unittest
+    import sys
+    class SerializationManagerTests(unittest.TestCase):
+        #  We'll output to a stream which
+        #  will be imported as 'saved'.
+        #  setup will create the stream and
+        #  teardown will remove the module from
+        #  the cache...
+        #  _load  is a utility each test can use to
+        #  load the module.
+        
+        def setUp(self) -> None:
+            self._output = io.StringIO()
+            self._manager = SerializationManager()
+        def tearDown(self) -> None:
+            del sys.modules['saved']
+            self._manager = None
+        def _load(self) -> None:
+            module_name = 'saved'
+            self._module       = types.ModuleType(module_name)
             
+            self._output.seek(0)
+            exec(self._output.read(), self._module.__dict__)
+            sys.modules[module_name] = self._module
+        
+        def test_empty(self):
+            # With no Serializers I get an empty file:
+            
+            self._manager.serialize(self._output)
+            contents = self._output.getvalue()
+            self.assertEqual('', contents)
+            
+            # Make sure the load crap works too:
+            
+            try:
+                self._load()
+            except Exception:
+                self.fail('Could not load the module')
+            
+            
+    unittest.main()
