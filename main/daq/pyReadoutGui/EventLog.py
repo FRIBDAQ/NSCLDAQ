@@ -104,6 +104,32 @@ class EventLog(ABC):
         a run for the event logger.  This includes ensuring the
         eventlogger actually exits at some point.
         '''
+        ...
+        
+    # Proctecte methods
+    def _validateConfig(self) -> bool:
+        '''
+        Validate the configuration against parameter types.
+        @return bool - True if all elements validate, False if not.
+        '''
+        return  len(self._listInvalidParameters()) == 0
+            
+        
+    def _listInvalidParameters(self) -> list[str]:
+        '''
+        @return list[str] - list of parameter names that are of invalid type.
+        '''
+        parameters = self.parameters()
+        result = []
+        for name, value in self._configuration.items():
+            if not isinstance(value, parameters[name]):
+                result.append(name)
+            
+        
+        return result
+        
+    
+                
         
         
         
