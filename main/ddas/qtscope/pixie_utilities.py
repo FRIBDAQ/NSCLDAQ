@@ -33,6 +33,18 @@ _lib = CDLL("libPixieUtilities.so")  # Must be in LD_LIBRARY_PATH.
 _logger = logging.getLogger("qtscope_logger")
 
 
+def _decode_reason(raw):
+    """Decode a reason string returned by a GetLastErrorMessage shim.
+
+    The text comes from the XIA API or std::exception::what() and is not
+    guaranteed to be UTF-8. Undecodable bytes become \\xNN escapes (pure
+    ASCII, so safe for the log file, the terminal and Qt).
+    """
+    if raw is None:
+        return ""
+    return raw.decode("utf-8", errors="backslashreplace")
+
+
 def _check_retval(retval, operation, last_error):
     """Validate a shim return code. Shared by all utility wrappers.
 
@@ -59,7 +71,11 @@ def _check_retval(retval, operation, last_error):
         and is logged before the exception is raised.
     """
     if retval < 0:
-        msg = f"{operation} failed with retval {retval}: {last_error()}"
+        try:
+            reason = last_error()
+        except Exception as e:
+            reason = f"<reason text unavailable {e!r}>"
+        msg = f"{operation} failed with retval {retval}: {reason}"
         _logger.error(msg)
         raise PixieError(msg)
     return retval
@@ -342,7 +358,7 @@ class SystemUtilities:
         str
             Last error message from the system (DDAS, XIA, ctypes shim...).
         """
-        return _lib.CPixieSystemUtilities_GetLastErrorMessage(self.obj).decode("utf-8")
+        return _decode_reason(_lib.CPixieSystemUtilities_GetLastErrorMessage(self.obj))
 
     def close(self):
         """Free the C++ object. Idempotent; the freed handle is nulled so a
@@ -604,7 +620,7 @@ class DSPUtilities:
         str
             Last error message from the system (DDAS, XIA, ctypes shim...).
         """
-        return _lib.CPixieDSPUtilities_GetLastErrorMessage(self.obj).decode("utf-8")
+        return _decode_reason(_lib.CPixieDSPUtilities_GetLastErrorMessage(self.obj))
 
     def close(self):
         """Free the C++ object. Idempotent; the freed handle is nulled so a
@@ -970,7 +986,7 @@ class RunUtilities:
         str
             Last error message from the system (DDAS, XIA, ctypes shim...).
         """
-        return _lib.CPixieRunUtilities_GetLastErrorMessage(self.obj).decode("utf-8")
+        return _decode_reason(_lib.CPixieRunUtilities_GetLastErrorMessage(self.obj))
 
     def close(self):
         """Free the C++ object. Idempotent; the freed handle is nulled so a
@@ -1152,7 +1168,7 @@ class TraceUtilities:
         str
             Last error message from the system (DDAS, XIA, ctypes shim...).
         """
-        return _lib.CPixieTraceUtilities_GetLastErrorMessage(self.obj).decode("utf-8")
+        return _decode_reason(_lib.CPixieTraceUtilities_GetLastErrorMessage(self.obj))
 
     def close(self):
         """Free the C++ object. Idempotent; the freed handle is nulled so a
