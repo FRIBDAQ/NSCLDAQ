@@ -207,6 +207,8 @@ class ReadoutStateMachine(QObject):
                 
         self.newstate.emit(self._state)
     
+    # @todo - add a restorePause method in case the data source
+    #         that disallows pause is removed.
     def removePause(self) -> None:
         '''
         There are some combinations of data sources for which the 'Paused'
