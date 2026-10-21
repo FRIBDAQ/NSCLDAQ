@@ -74,7 +74,7 @@ def _check_retval(retval, operation, last_error):
         try:
             reason = last_error()
         except Exception as e:
-            reason f"<reason text unavailable {e!r}>"
+            reason = f"<reason text unavailable {e!r}>"
         msg = f"{operation} failed with retval {retval}: {reason}"
         _logger.error(msg)
         raise PixieError(msg)
@@ -1168,7 +1168,7 @@ class TraceUtilities:
         str
             Last error message from the system (DDAS, XIA, ctypes shim...).
         """
-        return _decode_raw(_lib.CPixieTraceUtilities_GetLastErrorMessage(self.obj))
+        return _decode_reason(_lib.CPixieTraceUtilities_GetLastErrorMessage(self.obj))
 
     def close(self):
         """Free the C++ object. Idempotent; the freed handle is nulled so a
