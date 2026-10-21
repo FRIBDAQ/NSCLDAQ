@@ -17,8 +17,9 @@
 
 
 import logging
-from typing import ClassVar, Self
 import traceback
+from datetime import datetime
+from typing import ClassVar, Self
 
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 
@@ -104,6 +105,7 @@ class Log:
         
         @param the messager with whatever formattting indicators survived.
         '''
+        msg = self._PrependTimestamp(msg)
         if self._logging():
             logging.getLogger(__name__).debug(msg)
         self._logMain(msg)
@@ -113,6 +115,7 @@ class Log:
         Simplified delegation for the logger's info method:
         @param msg - message to log.
         '''
+        msg = self._PrependTimestamp(msg)
         if self._logging():
             logging.getLogger(__name__).info(msg)
         self._logMain(msg)
@@ -122,16 +125,19 @@ class Log:
         Simplfied interface to the logger's warning method.
         @param msg - message to log.
         '''
+        msg = self._PrependTimestamp(msg)
         if self._logging():
             logging.getLogger(__name__).warning(msg)
         self._logMain(msg)
         
     def error(self, msg : str) -> None:
+        msg = self._PrependTimestamp(msg)
         if self._logging():
             logging.getLogger(__name__).error(msg)
         self._logAll(msg)
         
     def critical(self, msg: str) -> None:
+        msg = self._PrependTimestamp(msg)
         if self._logging():
             logging.getLogger(__name__).critical(msg)
         self._logAll(msg)
@@ -144,8 +150,10 @@ class Log:
     def _logMain(self, msg: str) -> None:
         #  Log msg to the main window.
         
-        mainWindow().Outputs().addToMain(msg)
+        mainWindow().centralWidget().Outputs().addToMain(msg)
         
     def _logAll(self, msg : str) -> None:
         # emergency message:
-        mainWindow().Outputs().emergencyMessage(msg)
+        mainWindow().centralWidget().Outputs().emergencyMessage(msg)
+    def _PrependTimestamp(self, msg: str) -> str:
+        return f'{datetime.now().isoformat()}: {msg}'
