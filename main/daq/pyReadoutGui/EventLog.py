@@ -105,6 +105,12 @@ class EventLog(ABC):
         eventlogger actually exits at some point.
         '''
         ...
+    @abstractmethod
+    def stop(self) -> None:
+        '''
+        Called to stop an event logger (e.g when the run ends). This is a best effort attempt.
+        '''
+        ...
         
     # Proctecte methods
     def _validateConfig(self) -> bool:
