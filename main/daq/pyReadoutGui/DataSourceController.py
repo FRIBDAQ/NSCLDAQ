@@ -20,10 +20,13 @@ with slots in the Data Source manager singleton.  This connection is what actual
 something useful on state transitions.
 '''
 import time
+
+from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.DataSourceManager import DataSourceManager
-from nscldaq.readoutgui.StateMachine      import ReadoutStateMachine
-from nscldaq.readoutgui.ReadoutGuiView    import mainWindow
-from  nscldaq.readoutgui.DataSource       import DataSource
+from nscldaq.readoutgui.Log import Log
+from nscldaq.readoutgui.ReadoutGuiView import mainWindow
+from nscldaq.readoutgui.StateMachine import ReadoutStateMachine
+
 
 class DataSourceController:
     '''
@@ -99,6 +102,7 @@ class DataSourceController:
     def _sourceDied(self, name: str, source : DataSource):
         # IF a source died and the state is not 'Not Ready',
         # force a transition to 'Not Ready'
-        print('Source Died: ', name)
+        Log.instance().error(f'Data source named {name} exited.')
+        
         if self._stateMachine.state() != 'Not Ready':
             self._stateMachine.transition('Not Ready')

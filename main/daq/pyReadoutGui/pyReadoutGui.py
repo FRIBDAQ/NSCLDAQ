@@ -36,13 +36,16 @@ from nscldaq.readoutgui import (
     MVLCDataSource,  # the sources with the source  # noqa: F401
     VMUSBDataSource,  # registry.
 )
-from nscldaq.readoutgui.DataSourceController import DataSourceController
-
 from nscldaq.readoutgui.DataSource import DataSource
+from nscldaq.readoutgui.DataSourceController import DataSourceController
 from nscldaq.readoutgui.DataSourceManager import DataSourceManager
 from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 from nscldaq.readoutgui.Log import Log
-from nscldaq.readoutgui.ReadoutGuiView import ReadoutGuiMainWindow, ReadoutGuiCentralWidget, mainWindow
+from nscldaq.readoutgui.ReadoutGuiView import (
+    ReadoutGuiCentralWidget,
+    ReadoutGuiMainWindow,
+    mainWindow,
+)
 from nscldaq.readoutgui.StateMachine import ReadoutStateMachine
 from nscldaq.readoutgui.StateSaveRestore import SerializationManager
 from PyQt6.QtCore import QTimer
@@ -178,7 +181,14 @@ def _checkSources(stateManager : ReadoutStateMachine) -> None:
     
     if stateManager.state() not in ['Not Ready', 'Starting']:
         DataSourceManager.instance().live()
-        
+
+def _logTransition(newState : str) -> None:
+    #  Log a state change:
+    Log.instance().info(f'State Changed to {newState}')
+
+def _logTransitionFailed(oldState: str, newState: str) -> None:
+    Log.instance.error(f'State transition from {oldState} to {newState} failed')           
+
 #   --- Utility functions.
 
 def  _saveConfiguration():
@@ -236,6 +246,9 @@ def _setupStateInteractions(central : ReadoutGuiCentralWidget, manager : Readout
     buttons.pause.connect(lambda: manager.transition('Paused'))
     buttons.resume.connect(lambda: manager.transition('Active'))
     manager.newstate.connect(buttons.setState)          # Update the buttons to match the new state.
+    manager.newstate.connect(_logTransition)
+    manager.failed.connect(_logTransitionFailed)
+    
     
 #--------------------------------------------------- Program main --------------------------------------   
 def main() -> int:
