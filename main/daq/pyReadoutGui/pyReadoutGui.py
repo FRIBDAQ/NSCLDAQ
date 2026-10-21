@@ -36,11 +36,13 @@ from nscldaq.readoutgui import (
     MVLCDataSource,  # the sources with the source  # noqa: F401
     VMUSBDataSource,  # registry.
 )
+from nscldaq.readoutgui.DataSourceController import DataSourceController
+
 from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.DataSourceManager import DataSourceManager
 from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 from nscldaq.readoutgui.Log import Log
-from nscldaq.readoutgui.ReadoutGuiView import ReadoutGuiMainWindow, mainWindow
+from nscldaq.readoutgui.ReadoutGuiView import ReadoutGuiMainWindow, ReadoutGuiCentralWidget, mainWindow
 from nscldaq.readoutgui.StateMachine import ReadoutStateMachine
 from nscldaq.readoutgui.StateSaveRestore import SerializationManager
 from PyQt6.QtCore import QTimer
@@ -119,6 +121,12 @@ def _confirmExit() -> None:
         'Do you really want to exit?'
     ) == QMessageBox.StandardButton.Yes:
         _saveConfiguration()
+        # Stop data sources:
+        
+        try:
+            DataSourceManager.instance().stop()
+        except Exception:  # noqa: BLE001, S110
+            pass
         QApplication.exit(0)
 
 def _addDataSource() -> None:
@@ -144,7 +152,14 @@ def _addDataSource() -> None:
         
         if result == QDialog.DialogCode.Accepted:
             name = dataSourceType + ':' +  uuid.uuid4().hex
-            DataSourceManager.instance().addSource(name, source)
+            mgr  = DataSourceManager.instance()
+            mgr.addSource(name, source)
+            
+            # If necessary, remove the pause state from the state manager.
+            # note at present, we can't get this back.
+            if not mgr.mergedCapabilities()['canPause']:
+                ReadoutStateMachine.instance().removePause()
+                
         
 
 def _listDataSources() -> None:
@@ -157,6 +172,13 @@ def _deleteDataSource() -> None:
     deleter = DataSourceMenuControllers.DeleteController(mainWindow())
     deleter.exec()
     
+def _checkSources(stateManager : ReadoutStateMachine) -> None:
+    # If the state is not Not Ready or Starting, ask
+    # the data source manager to check source liveness.
+    
+    if stateManager.state() not in ['Not Ready', 'Starting']:
+        DataSourceManager.instance().live()
+        
 #   --- Utility functions.
 
 def  _saveConfiguration():
@@ -202,10 +224,25 @@ def _setupDataSourceMenu(gui : ReadoutGuiMainWindow) -> None:
     gui.dsAddSource.connect(_addDataSource)
     gui.dsListSources.connect(_listDataSources)
     gui.dsDeleteSource.connect(_deleteDataSource)
+    
+def _setupStateInteractions(central : ReadoutGuiCentralWidget, manager : ReadoutStateMachine) -> None:
+    #  Set up the signals so that the state machine will undertake the transitions requested
+    #  by the gui buttons.
+    
+    buttons = central.StateControls()
+    buttons.start.connect(lambda: manager.transition('Starting'))
+    buttons.begin.connect(lambda: manager.transition('Active'))
+    buttons.end.connect(lambda: manager.transition('Halted'))
+    buttons.pause.connect(lambda: manager.transition('Paused'))
+    buttons.resume.connect(lambda: manager.transition('Active'))
+    manager.newstate.connect(buttons.setState)          # Update the buttons to match the new state.
+    
 #--------------------------------------------------- Program main --------------------------------------   
 def main() -> int:
     app = QApplication(sys.argv)
     main_window = ReadoutGuiMainWindow()
+    
+    stateManager = ReadoutStateMachine.instance()   # We'll need this.
     
     _loadOptionalModules()
     _setupFileMenu(main_window)
@@ -219,10 +256,23 @@ def main() -> int:
     autosave_timer.timeout.connect(_saveConfiguration)
     autosave_timer.start()
     
+    # Alsos use the timer to monitor data sources:
+    
+    autosave_timer.timeout.connect(lambda: _checkSources(stateManager, ))  # will signal on failuer.
+    
     
     # Set the initial state of the buttons:
     
-    main_window.centralWidget().StateControls().setState(ReadoutStateMachine.instance().state())
+    
+    main_window.centralWidget().StateControls().setState(stateManager.state())
+    _setupStateInteractions(main_window.centralWidget(), stateManager)
+    _dataSourceController = DataSourceController()      # Handles state machine/data source interactions.
+    
+    # Try to ensure the data sources shutdown:
+    
+    app.aboutToQuit.connect(DataSourceManager.instance().stop)
+    
+    #  Ensure the main window is visible.
     
     main_window.show()
     
