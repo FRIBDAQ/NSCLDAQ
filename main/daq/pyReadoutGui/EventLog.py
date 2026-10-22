@@ -267,7 +267,7 @@ class MultiLogEventLog(EventLog, QObjectMeta):
         options += f'--prefix={datetime.now.isoformat()}--'
             
                 
-        self_logger.run(host, bindir, options)
+        self._logger.run(host, bindir, options)
     
     def end(self) -> None:
         '''
