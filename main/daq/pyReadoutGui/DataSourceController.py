@@ -63,7 +63,7 @@ class DataSourceController:
             case 'Starting':
                 #  Start the data sources:
                 self._dataSources.start()
-                time.sleep(1)                   # Wait for the ReST servers to start.
+                time.sleep(2)                   # Wait for the ReST servers to start.
                 
             case 'Halted':
                 # Run is ending.
