@@ -35,6 +35,7 @@ from nscldaq.readoutgui import (
     FRIBDAQDataSource,  # This import also registers
     MVLCDataSource,  # the sources with the source  # noqa: F401
     VMUSBDataSource,  # registry.
+    DelaySource,
 )
 from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.DataSourceController import DataSourceController
