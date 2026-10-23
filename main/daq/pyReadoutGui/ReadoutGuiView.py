@@ -161,8 +161,10 @@ class ReadoutGuiMainWindow(QMainWindow):
             dsAddSource        - Add a data source.
             dsDeleteSource     - Delete a data source
             dsListSources      - List data sources
-        Settings menu:
-            settingsEventLog    - Event log settings.
+        Event Log menu:
+            evlogAdd           - Add an  event log.
+            evlogList          - List event logs.
+            evlogEnable        - Enable/disable event logs.
     '''
     # Signals:
     
@@ -176,7 +178,9 @@ class ReadoutGuiMainWindow(QMainWindow):
     dsDeleteSource     = pyqtSignal()
     dsListSources      = pyqtSignal()
     
-    settingsEventLog   = pyqtSignal()
+    evlogAdd           = pyqtSignal()
+    evlogList          = pyqtSignal()
+    evlogEnable        = pyqtSignal()
     
     
     def __init__(self, parent : QWidget | None = None):
@@ -209,8 +213,8 @@ class ReadoutGuiMainWindow(QMainWindow):
         dataSourceMenu = menubar.addMenu('Data Source')
         self._createDataSourceMenu(dataSourceMenu)
         
-        settingsMenu = menubar.addMenu('Settings')
-        self._createSettingsMenu(settingsMenu)
+        evlogMenu = menubar.addMenu('Event Loggers')
+        self._createEventLogMenu(evlogMenu)
     
     
     def _createFileMenu(self, fileMenu : QMenu) -> None:
@@ -258,13 +262,21 @@ class ReadoutGuiMainWindow(QMainWindow):
         self._dsListAction.triggered.connect(self.dsListSources)
         menu.addAction(self._dsListAction)
         
-    def _createSettingsMenu(self, menu : QMenu) -> None:
+    def _createEventLogMenu(self, menu : QMenu) -> None:
         # Create the settings menu and connect its actions to our signals.
         
-        self._settingsEvlogAction = QAction('Event Log...', menu)
-        self._settingsEvlogAction.triggered.connect(self.settingsEventLog)
-        menu.addAction(self._settingsEvlogAction)
+        self._evlogAddAction      = QAction('Add...', menu)
+        self._evlogAddAction.triggered.connect(self.evlogAdd)
+        menu.addAction(self._evlogAddAction)
         
+        self._evlogListAction     = QAction('List...', menu)
+        self._evlogListAction.triggered.connect(self.evlogList)
+        menu.addAction(self._evlogListAction)
+        
+        
+        self._evlogEnableAction = QAction('Enable/Disable...', menu)
+        self._evlogEnableAction.triggered.connect(self.evlogEnable)
+        menu.addAction(self._evlogEnableAction)
  
 def mainWindow() -> ReadoutGuiMainWindow  | None:       
     '''
