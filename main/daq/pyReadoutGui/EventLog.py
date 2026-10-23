@@ -38,22 +38,32 @@ We include a ReadoutConfiguration saver to allow the
 set of event loggers and their configurations to be saved
 and restored on restart.
 '''
-from abc import ABC, abstractmethod, ABCMeta
 import datetime
-from typing import ClassVar, Self
-import pathlib
-import os
 import getpass
+import os
+import pathlib
 import subprocess
+from abc import ABC, ABCMeta, abstractmethod
+from typing import ClassVar, Self
 
 from nscldaq.readoutgui.pySSHProcess import SSHProcess
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
-from PyQt6.QtCore import QObject, pyqtSignal, QProcess
+from PyQt6.QtCore import QObject, QProcess, pyqtSignal
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
+
 
 class QObjectMeta(type(QObject), ABCMeta):
     pass
 
-class EventLog(ABC):
+class EventLog(QObject, metaclass=QObjectMeta):
     '''
     Abstract base class that defines the methods
     every event logger must implement.
@@ -62,13 +72,14 @@ class EventLog(ABC):
     about the event logger that's being run to allow
     foreignn event loggers to work.
     '''
-    def __init__(self, configuration : dict[str, object]):
+    def __init__(self, configuration : dict[str, object], **kwargs):
         '''
         @param configuration : dict[str, object] - the initial 
             configuration of the event.  It should
             conform to the types returned by the
             parameters abstractmethod.
         '''
+        super().__init__(**kwargs)
         self._configuration = configuration
     
     @classmethod
@@ -99,6 +110,12 @@ class EventLog(ABC):
             raise TypeError(
                 f'''Type {value} for parameter {name} must be of type {required_type.__name__} but was of {type(value).__name}'''
             ) 
+    def getConfig(self) -> dict[str, object]:
+        '''
+        @return dict[str, object] - the configuration of the logger.
+        '''
+        
+        return self._configuration
     
     @abstractmethod
     def start(self) -> None:
@@ -184,7 +201,7 @@ class FRIBEventLogProgram(SSHProcess):
         self.spawnRemote(remote, command)
         
 
-class MultiLogEventLog(EventLog, QObjectMeta):
+class MultiLogEventLog(EventLog):
     '''
     This class handles a multilog style event logger.  Specificaily,
     it does no post processing when an event logger exits.
@@ -199,7 +216,7 @@ class MultiLogEventLog(EventLog, QObjectMeta):
         readable - The pipe is readable.
     '''
     started  = pyqtSignal()
-    finished = pyqtSignal(QProcess.ExitStatus)
+    finished = pyqtSignal(int, QProcess.ExitStatus)
     readable = pyqtSignal()
     @classmethod
     def parameters(cls) -> dict[str, type]:
@@ -236,15 +253,15 @@ class MultiLogEventLog(EventLog, QObjectMeta):
         self._logger =  FRIBEventLogProgram(self)
         self._logger.started.connect(self.started)
         self._logger.finished.connect(self.finished)
-        self._logger.readyReadStandardError(self.readable)
-        self._logger.readyReadStandardOutput(self.readable)
+        self._logger.readyReadStandardError.connect(self.readable)
+        self._logger.readyReadStandardOutput.connect(self.readable)
        
         # Set our default configuration values:
         #  With the exception of source that is special, the
         #  Missing items have no default values and are required at the
         # time things start.
         #
-        self_defaults = {
+        self._defaults = {
             'host' : 'localhost',
             'bindir' : os.environ.get('DAQBIN', ''),
             'checksum': True,
@@ -305,7 +322,7 @@ class MultiLogEventLog(EventLog, QObjectMeta):
         options += '--oneshot'
         
         return options   
-        
+
     
 class FullEventLog(MultiLogEventLog):
     '''
@@ -403,3 +420,95 @@ class FullEventLog(MultiLogEventLog):
         
         for dir in [current, complete, experiment]:
             dir.mkdir(parents = True, existss_ok = True)
+
+class LoggerConfigDisplay(QWidget):
+    '''
+    Display the configuration of one of the logger types in this file.
+    The class type is enough to know if the logger being displayed is
+    'full' logger.
+    '''
+    
+    def __init__(self, logger : EventLog, parent : QWidget | None = None):
+        super().__init__(parent)
+        
+        self.setLayout(QVBoxLayout())      # Bunch of strips.
+        config = logger.getConfig()
+        
+        loggerType = 'full' if isinstance(logger, FullEventLog) else 'multilog'
+        self.layout().addWidget(QLabel(f'This is a {loggerType} event logger', self))
+    
+        # Where does the logger run:
+        
+        hostlayout = QHBoxLayout()
+        hostlayout.addWidget(QLabel('Runs in', self))
+        hostlayout.addWidget(QLabel(config.get('host', 'localhost'), self))                                    
+        
+        self.layout().addLayout(hostlayout)
+        
+        # Which logger runs:
+        
+        whichlayout = QHBoxLayout()
+        whichlayout.addWidget(QLabel('Event log program:', self))
+        whichlayout.addWidget(QLabel(f'{config.get("bindir", os.environ["DAQBIN"])}/eventlog', self))
+        
+        self.layout().addLayout(whichlayout)
+        
+        # Logging from what ringbuffer?
+        
+        ringlayout = QHBoxLayout()
+        ringlayout.addWidget(QLabel('Data source:', self))
+        ringbuffer = config.get('source', f'tcp://localhost/{getpass.getuser()}')
+        ringlayout.addWidget(QLabel(ringbuffer, self))
+        
+        self.layout().addLayout(ringlayout)
+        
+        #  Where does the data go:
+        
+        destlayout = QHBoxLayout()
+        destlayout.addWidget(QLabel('Logged to', parent))
+        destlayout.addWidget(QLabel(config.get('destination', '<not set>'), parent))
+        
+        self.layout().addLayout(destlayout)
+        
+        # Checksum?
+        
+        cksumlayout = QHBoxLayout()
+        cksumlayout.addWidget(QLabel('Checksumming', self))
+        checksums = 'Enabled' if config.get('checksum', True) else 'Disabled'
+        cksumlayout.addWidget(QLabel(checksums, self))
+        
+        self.layout().addLayout(cksumlayout)
+    
+        # Number of sources:
+        
+        countlayout = QHBoxLayout()
+        countlayout.addWidget(QLabel('Number of sources: ', self))
+        count = config.get('source_count', 1)
+        countlayout.addWidget(QLabel(str(count), self))
+        
+        self.layout().addLayout(countlayout)
+        
+# Test code:
+
+if __name__ == '__main__':
+    import sys
+
+    from PyQt6.QtWidgets import QApplication
+    
+    app = QApplication(sys.argv)
+    
+    config = {
+       'destination' : '/home/ron/events'
+    }
+    partial = MultiLogEventLog(configuration=config, parent=app)
+    full    = FullEventLog(configuration=config, parent=app)
+    
+    win1 = LoggerConfigDisplay(partial)
+    win1.show()
+    win2 = LoggerConfigDisplay(full)
+    win2.show()
+    
+    
+    sys.exit(app.exec())
+        
+    
