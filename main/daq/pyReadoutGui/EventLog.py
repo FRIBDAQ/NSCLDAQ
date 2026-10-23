@@ -48,12 +48,14 @@ from typing import ClassVar, Self
 
 from nscldaq.readoutgui.pySSHProcess import SSHProcess
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
-from PyQt6.QtCore import QObject, QProcess, pyqtSignal
+from PyQt6.QtCore import QObject, QProcess, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QPushButton,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -138,7 +140,7 @@ class EventLog(QObject, metaclass=QObjectMeta):
         '''
         ...
         
-    # Proctecte methods
+    # Proctected methods
     def _validateConfig(self) -> bool:
         '''
         Validate the configuration against parameter types.
@@ -488,15 +490,123 @@ class LoggerConfigDisplay(QWidget):
         
         self.layout().addLayout(countlayout)
         
+class LoggerConfigure(QWidget):        
+    '''
+    Configure a logger (multilogger or complete).
+    Normally this  is made the work area of a SaveDialog
+    and, on accept, the client invokes makeLogger
+    to create the logger.  That produces, either
+    a logger, or a string error that is normally
+    displayed in a message box subsequently giving
+    the user another go at the dialog.
+    
+    '''
+    def __init__(self, logger : EventLog | None = None, parent : QWidget | None = None):
+        '''
+        WHen instantiating the widget:
+        @param logger : EventLog | None = None - if supplied, the form is loaded with
+            the configuration of this logger. This allows a logger to be reconfigured later on.
+        @param parent : QWidget | None = None - If supplied, provides the form's parent.
+        
+        '''
+        super().__init__(parent)
+        
+        # Layout the form:
+        
+        layout = QVBoxLayout()    # Main layout is strips arranged vertically
+        self.setLayout(layout)
+        
+        # Full or partial logger:
+        
+        self._full = QCheckBox('Full logger', self)
+        layout.addWidget(self._full)
+        
+        # Run the logger in which host?
+        
+        hostlayout = QHBoxLayout()
+        hostlayout.addWidget(QLabel('Run in host:', self))
+        self._host = QLineEdit(self)
+        hostlayout.addWidget(self._host)
+        self._host.setText('localhost')    # Default value.
+        
+        layout.addLayout(hostlayout)
+        
+        # Which Logger?  Can browse for that:
+        
+        daqlayout = QHBoxLayout()
+        daqlayout.addWidget(QLabel('DAQ bin directory with eventlog'))
+        self._bindir = QLineEdit(self)
+        daqlayout.addWidget(self._bindir)
+        self._bindir.setText(os.environ.get('DAQBIN', ''))
+        self._browsebindir = QPushButton('Browse...', self)
+        daqlayout.addWidget(self._browsebindir)
+        self._browsebindir.clicked.connect(lambda: self._browseDir('/usr/opt/daq', self._bindir))   # Browse handler.
+        
+        layout.addLayout(daqlayout)
+    
+        # Source ring:
+        
+        ringlayout = QHBoxLayout()
+        ringlayout.addWidget(QLabel('Ring Buffer to log (URL)', self))
+        self._ringuri = QLineEdit(self)
+        ringlayout.addWidget(self._ringuri)
+        self._ringuri.setText(f'tcp://localhost/{getpass.getuser()}')
+        
+        layout.addLayout(ringlayout)
+        
+        # Destination (where to log)
+        
+        destlayout = QHBoxLayout()
+        destlayout.addWidget(QLabel('Logging Directory', self))
+        self._destination = QLineEdit(self)
+        destlayout.addWidget(self._destination)
+        self._destination.setText(str(pathlib.Path.home()))
+        self._browsedest = QPushButton('Browse...')
+        destlayout.addWidget(self._browsedest)
+        self._browsedest.clicked.connect(lambda : self._browseDir(str(pathlib.Path.home()), self._destination))
+        
+        layout.addLayout(destlayout)
+        
+        #  Do checksums:
+        
+        self._checksum = QCheckBox('Compute checksum files', self)
+        layout.addWidget(self._checksum)
+        
+        # Source Count:
+        
+        sourceslayout = QHBoxLayout()
+        sourceslayout.addWidget(QLabel('Number of event sources ', self))
+        self._sources = QSpinBox(self)
+        sourceslayout.addWidget(self._sources)
+        self._sources.setMinimum(1)
+        self._sources.setMaximum(10000)   # a lot (I hope).
+        
+        layout.addLayout(sourceslayout)
+    
+    # Slots:
+    
+    def _browseDir(self, base: str, target : QLineEdit) -> None:
+        # Browse for a directory and put it in the target line edit when found.
+        # The directory string for the dialog is set to base.
+        
+        dir = QFileDialog.getExistingDirectory(self, 'Choose directory', base)
+        if dir.strip():
+            target.setText(dir)
 # Test code:
 
 if __name__ == '__main__':
     import sys
 
-    from PyQt6.QtWidgets import QApplication
+    from nscldaq.mg_configutils import SaveDialog
+    from PyQt6.QtWidgets import QApplication, QDialog
     
     app = QApplication(sys.argv)
     
+    # Prompt with save dialog for now:
+    
+    dlg =  SaveDialog(LoggerConfigure()) 
+    while dlg.exec() == QDialog.DialogCode.Accepted:
+        pass
     config = {
        'destination' : '/home/ron/events'
     }
