@@ -571,6 +571,7 @@ class LoggerConfigure(QWidget):
         
         self._checksum = QCheckBox('Compute checksum files', self)
         layout.addWidget(self._checksum)
+        self._checksum.setCheckState(Qt.CheckState.Checked)     # Default is on.
         
         # Source Count:
         
@@ -582,8 +583,94 @@ class LoggerConfigure(QWidget):
         self._sources.setMaximum(10000)   # a lot (I hope).
         
         layout.addLayout(sourceslayout)
+        
+        # If the user supplied a logger, load the form from it:
+        
+        if logger :
+            self._loadForm(logger)
     
-    # Slots:
+    
+    
+    def makeLogger(self) -> EventLog | str:
+        '''
+        Either create a logger configured as per the form or
+        return an error message describing why that could not be done.
+        
+        @return Eventlog | str
+        '''
+        # Dict of mandatory parameters that must be present that the form
+        # would allow to be absent and their error messages:
+        mandatoryParameters = {
+            'host' : 'You must specify a host for the event logger to run in',
+            'bindir' : 'You must specify the bin subdirectory of an installed version of FRIB/NSCLDAQ so the eventlogger can be located', 
+            'source' : 'You must specify a ringbuffer URI from which the data are logged.',
+            'destination' : 'You must specify a destination directory in which loggin is done',
+        }
+        # CHeck that the mandator parameters are present and not empty.
+        
+        configuration = self._makeConfig()       # Make config dict from the form
+        for param, msg in mandatoryParameters.items():
+            if not configuration[param].strip():
+                return msg
+        # Futhermore, there must be an eventlog program in bindir:
+        
+        logger  = pathlib.Path(configuration['bindir']) / 'eventlog'
+        if not logger.exists():
+            return f'The directory {configuration["bindir"]} does not have an eventlog executable.'
+        
+        # make and return the appropriate logger type:
+        
+        if self._full.checkState() == Qt.CheckState.Checked:
+            return FullEventLog(configuration=configuration)
+        else:
+            return MultiLogEventLog(configuration=configuration)
+    
+    def _makeConfig(self) -> dict[str, object]:
+        # Create the configuration from the form.  Note that
+        # We ignore the state of self._full:
+        
+        return {
+            'host' : self._host.text(),
+            'bindir' : self._bindir.text(),
+            'source' : self._ringuri.text(),
+            'destination' : self._destination.text(),
+            'checksum' : self._checksum.checkState() == Qt.CheckState.Checked,
+            'source_count' : self._sources.value()
+        }
+    
+    def _loadForm(self, logger : EventLog) -> None:
+        # What type of logger:
+        
+        full_state = Qt.CheckState.Checked if isinstance(logger, FullEventLog) else Qt.CheckState.Unchecked
+        self._full.setCheckState(full_state)
+        
+        # Load the form from the EventLog ... assumed to have what we need
+        
+        config = logger.getConfig()
+        # This code  assumes the default values are already loaded into the 
+        # form
+        textFields = {
+            'host': self._host,
+            'bindir' : self._bindir,
+            'source' : self._ringuri,
+            'destination' : self._destination    # Text fields and corresponding QLineEdits
+        }
+        for param,field in textFields.items():
+            value = config.get(param, None)
+            if value:
+                field.setText(value)
+        
+        # that leaves the checksu7m and source count:
+        
+        checksum = config.get('checksum', None)
+        if checksum is not None:
+            state = Qt.CheckState.Checked if checksum else Qt.CheckState.Unchecked
+            self._checksum.setCheckState(state)
+        
+        sources = config.get('source_count', None)
+        if sources is not None:
+            self._sources.setValue(sources)
+    # Internal slots (private).
     
     def _browseDir(self, base: str, target : QLineEdit) -> None:
         # Browse for a directory and put it in the target line edit when found.
@@ -598,26 +685,30 @@ if __name__ == '__main__':
     import sys
 
     from nscldaq.mg_configutils import SaveDialog
-    from PyQt6.QtWidgets import QApplication, QDialog
+    from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox
     
     app = QApplication(sys.argv)
     
     # Prompt with save dialog for now:
     
     dlg =  SaveDialog(LoggerConfigure()) 
-    while dlg.exec() == QDialog.DialogCode.Accepted:
-        pass
-    config = {
-       'destination' : '/home/ron/events'
-    }
-    partial = MultiLogEventLog(configuration=config, parent=app)
-    full    = FullEventLog(configuration=config, parent=app)
+    status =  dlg.exec()
+    while status == QDialog.DialogCode.Accepted:
+        msgOrLogger = dlg.workarea().makeLogger()
+        if isinstance(msgOrLogger, EventLog):
+            logger = msgOrLogger
+            break
+        else:
+            QMessageBox.warning(dlg, 'Invalid configuration', msgOrLogger)
+            status = dlg.exec()
     
-    win1 = LoggerConfigDisplay(partial)
-    win1.show()
-    win2 = LoggerConfigDisplay(full)
-    win2.show()
+    if status != QDialog.DialogCode.Accepted:
+        sys.exit(-1)
     
+    cfgwin = LoggerConfigure(logger)
+    cfgwin.show()
+    win = LoggerConfigDisplay(logger)
+    win.show()
     
     sys.exit(app.exec())
         
