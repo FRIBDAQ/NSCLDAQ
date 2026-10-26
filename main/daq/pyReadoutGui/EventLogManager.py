@@ -273,9 +273,10 @@ class EventLogManager:
            
         
     
-    def list(self) -> list[str, bool]:
+    def list(self) -> list[str, bool, object]:
         '''
-        @return list [str, bool] List of the names of loggers and their enabled state.
+        @return list [str, bool, object] List of the names of loggers and 
+                    their enabled state and loggers themselves.
         '''
         result = []
         for name, info in self._registry.items():
@@ -290,7 +291,7 @@ class EventLogManager:
             @throws NoSuchName - if name is not a logger.
         '''
         try:
-            self._registry[name] = (True, self._registry[name][1])  # Tuples are immutable.
+            self._registry[name] = (True, self._registry[name][0], self._registry[name][1])  # Tuples are immutable.
         except KeyError:
             raise NoSuchName(name)
         
@@ -321,12 +322,10 @@ class EventLogManager:
                 method_name = 'stop'
                 require_enabled = False  # Everyone shuts down
             case 'Active':          # Run Starting if from  Halted
-                if self._logging():
-                    if entering == 'Halted':
+                if self._logging() and entering == 'Halted':
                         method_name = 'start'
             case 'Halted':
-                if self._logging():
-                    if entering in ['Active', 'Paused']:
+                if self._logging() and entering in ['Active', 'Paused']:
                         method_name = 'end'
         #  Ok ready to iterate if there's a method name:
         
@@ -343,3 +342,4 @@ class EventLogManager:
         
         return mainWindow().centralWidget.Recording().checkState() == Qt.CheckState.Checked
         
+# SerDeserialize settings
