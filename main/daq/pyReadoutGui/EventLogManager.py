@@ -154,6 +154,19 @@ class EventLogRegistry:
         @return list[str] - list of registered names:
         '''
         return list(self._registry.keys())    # Coerce it out of a view.
+    def find(self, logger : object) -> str :
+        '''
+        Given a logger object, locate the name of its type.
+        @return str - nmae that type of logger is registered as in the manager.
+        @throws EventLogRegistryException if the logger object type isn't in the registry.
+        '''
+        for name, (loggerClass, _a, _b, _c) in self._registry.items():
+            if isinstance(logger, loggerClass):
+                return name
+        
+        # No match:
+        
+        raise EventLogRegistryException(f'The logger class {logger.type().__name__} has not been registered.')
         
     def logger(self, name : str) -> type:
         '''
