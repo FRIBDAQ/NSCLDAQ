@@ -38,6 +38,12 @@ from collections.abc import Callable
 from typing import Self, ClassVar, Any
 import traceback
 
+from nscldaq.readoutgui.ReadoutGuiView import mainWindow
+
+from PyQt6.QtCore import Qt
+
+
+
 
 # Exceptions:
 
@@ -71,7 +77,7 @@ class SingletonViolation(EventLogRegistryException):
     
     '''    
     def __init__(self, filename : str):
-        super().__init__(f'Attempted to instantiate the data source registry singleton from {filename} not allowed')
+        super().__init__(f'Attempted to instantiate a ingleton from {filename} not allowed')
      
 
 class EventLogRegistry:
@@ -100,6 +106,8 @@ class EventLogRegistry:
         caller = traceback.extract_stack()[-2]    # Our caller.
         if caller.filename != __file__:
             raise SingletonViolation(caller.filename)    
+        if self._instance:
+            raise RuntimeError('Attempt to double construct the EventLogRegistry singleton.')
         self._registry : dict[str, tuple[type, type, type, Callable | None]]= {}     # Empty registry.
     
     
@@ -192,3 +200,120 @@ class EventLogRegistry:
             raise NoSuchName(name)
         
     
+class EventLogManager:
+    '''
+    This class is where _instances_ of event loggers should be registered.
+    Our leave method shouild be called on the state manager leave. method.
+    If event recording is active, all enabled loggers will be 
+    started.  end will be called for enabled loggers in transitions to
+    Halted.  Transitions to Not Ready will invoke _all_ stop 
+    methods, for enabled or disabled loggers (in case loggers have some
+    persistent process that needs to be shutdown).
+    
+    This, too is a singleton so you should use the instance() method rather
+    than construction to get an instance.
+    
+    The manager makes  a correspondence between a logger name and
+    a tuple contaning a bool (enable/disable state), and the logger object instance
+    itself.
+    '''
+    _instance : ClassVar[Self | None] = None
+    def __init__(self) :
+        '''Use the instance() class method to get the singleton instance, not construction'''
+        
+        
+        # Enforce singleton-ness
+    
+        caller = traceback.extract_stack()[-2]    # Our caller.
+        if caller.filename != __file__:
+            raise SingletonViolation(caller.filename)    
+        if self._instance:
+            raise RuntimeError('Attempt to double construct the EventLogRegistry singleton.')
+
+        # Make the registry:
+        
+        self._registry : dict[str, (bool, object)] = {}
+        
+    def add(self, name : str, logger: object, enabled : bool = True) -> None:
+        '''
+        Add a logger to the manager:
+        @param  name  : str    - A unique name for the event logger.
+        @param logger : object - the event logger object. Must satisfy the duck typing defined
+             by the nscldaq.readoutgui.Eventlog.EventLog base class
+        @param enabled : bool - optional parameter, the enable state of the logger, 
+             Defaults to True if not provided, enabling the logger by default.
+        @throws DuplicateName if 'name' is already defined.
+        '''
+        if name not in self._registry:
+            self._registry[name] = (enabled, logger)
+    
+    def list(self) -> list[str, bool]:
+        '''
+        @return list [str, bool] List of the names of loggers and their enabled state.
+        '''
+        result = []
+        for name, info in self._registry.items():
+            result.append((name, info[0]))
+
+        return result
+
+    def enable(self, name : str) -> None:        
+        '''
+            Enable a logger. Note if the logger is already enabled, it is not an error.
+            @param name : str - name of the logger.
+            @throws NoSuchName - if name is not a logger.
+        '''
+        try:
+            self._registry[name] = (True, self._registry[name][1])  # Tuples are immutable.
+        except IndexError:
+            raise NoSuchName(name)
+        
+    def disable(self, name :str) -> None:
+        '''
+        Disable a logger.  Note that if the logger is already disabled, its' not an error.
+            @param name : str - name of the logger.
+            @throws NoSuchName - if name is not a logger.        
+        '''
+        try:
+            self._registryt[name] = (False, self._registry[name][1]) # Tuples are immutable.
+        except IndexError:
+            raise NoSuchName(name)
+        
+    def leave(self, leaving: str, entering: str) -> None:
+        '''
+        Iterate over the various event loggers doing what's needed.
+        @param leaving : str - state being left.
+        @param entering: str - state being entered.
+        '''
+        # The method we need to call, if the object has to be enabled
+        # depends on the state being entered.
+        # If nothing is to be done, the method name will be None
+        method_name = None
+        require_enabled = True           # Most common case:
+        match entering:
+            case  'Not Ready':      # Shutting down:
+                method_name = 'stop'
+                require_enabled = False  # Everyone shuts down
+            case 'Active':          # Run Starting if from  Halted
+                if self._logging():
+                    if entering == 'Halted':
+                        method_name = 'start'
+            case 'Halted':
+                if self._logging():
+                    if entering in ['Active', 'Paused']:
+                        method_name = 'end'
+        #  Ok ready to iterate if there's a method name:
+        
+        if method_name:
+            for logger in self._registry.values():
+                if not require_enabled or (require_enabled and logger[0]):
+                    getattr(logger[1], method_name)
+        
+        
+    # Utility methods:
+    
+    def _logging(self) -> bool:
+        # return True if global logging is enabled in the GUI.
+        
+        return mainWindow().centralWidget.Recording().checkState() == Qt.CheckState.Checked
+        
