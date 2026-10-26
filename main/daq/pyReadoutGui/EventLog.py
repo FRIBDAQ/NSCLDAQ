@@ -46,6 +46,7 @@ import subprocess
 from abc import ABC, ABCMeta, abstractmethod
 from typing import ClassVar, Self
 
+from nscldaq.readoutgui.EventLogManager import EventLogRegistry
 from nscldaq.readoutgui.pySSHProcess import SSHProcess
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from PyQt6.QtCore import QObject, QProcess, Qt, pyqtSignal
@@ -311,11 +312,11 @@ class MultiLogEventLog(EventLog):
     # Utilities:
     
     def _makeStandardOptions(self) -> list[str]:
-        # Process the configuratin to get the starting option set:
+        # Process the configuration to get the starting option set:
         
         options = []
         
-        default_source = f'tcp://{host}/{getpass.getuser()}'
+        default_source = f'tcp://{self._configuration["host"]}/{getpass.getuser()}'
         options += f'''--source={self._configuration.get('source', default_source)}'''
         options += f'''--path={self._configuration['destination']}''' # Error on default.
         if self._configuration.get('checksum', self._defaults['checksum']):
@@ -590,7 +591,12 @@ class LoggerConfigure(QWidget):
             self._loadForm(logger)
     
     
-    
+    def setFull(self) -> None:
+        ''' Set the full logger checkbox.'''
+        self._full.setCheckState(Qt.CheckState.Checked)
+    def setMultilog(self) -> None:
+        ''' Unset the full logger checkbox. '''
+        self._full.setCheckState(Qt.CheckState.Unchecked)
     def makeLogger(self) -> EventLog | str:
         '''
         Either create a logger configured as per the form or
@@ -679,6 +685,19 @@ class LoggerConfigure(QWidget):
         dir = QFileDialog.getExistingDirectory(self, 'Choose directory', base)
         if dir.strip():
             target.setText(dir)
+            
+            
+# Register our loggers:
+
+EventLogRegistry.instance().add(
+    'multi logger', MultiLogEventLog, LoggerConfigDisplay, LoggerConfigure, 
+    lambda prompt: prompt.setMultilog()
+)
+EventLogRegistry.instance().add(
+    'Full logger', FullEventLog, LoggerConfigDisplay, LoggerConfigure,
+    lambda prompt: prompt.setFull()
+)
+
 # Test code:
 
 if __name__ == '__main__':
