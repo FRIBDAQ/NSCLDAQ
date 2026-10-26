@@ -196,7 +196,7 @@ class EventLogRegistry:
         
         try:
             return self._registry[name]
-        except IndexError:
+        except KeyError:
             raise NoSuchName(name)
         
     
@@ -247,6 +247,19 @@ class EventLogManager:
         if name not in self._registry:
             self._registry[name] = (enabled, logger)
     
+    def remove(self, name : str) -> None:
+        '''
+        Remove a logger from the manager.
+        @param naame :str - Name of the logger.
+        @throws NoSuchName if there is no mathching logger:
+        '''
+        try:
+            self._registry.popitem(name)
+        except KeyError:
+            raise NoSuchName(name)
+           
+        
+    
     def list(self) -> list[str, bool]:
         '''
         @return list [str, bool] List of the names of loggers and their enabled state.
@@ -265,7 +278,7 @@ class EventLogManager:
         '''
         try:
             self._registry[name] = (True, self._registry[name][1])  # Tuples are immutable.
-        except IndexError:
+        except KeyError:
             raise NoSuchName(name)
         
     def disable(self, name :str) -> None:
@@ -276,7 +289,7 @@ class EventLogManager:
         '''
         try:
             self._registryt[name] = (False, self._registry[name][1]) # Tuples are immutable.
-        except IndexError:
+        except KeyError:
             raise NoSuchName(name)
         
     def leave(self, leaving: str, entering: str) -> None:
