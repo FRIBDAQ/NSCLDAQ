@@ -35,11 +35,13 @@ ConfigurationSerializer - Registered with the configuration save/restore infrast
    
 '''
 from collections.abc import Callable
+import io
+import types
 from typing import Self, ClassVar, Any
 import traceback
 
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
-
+from nscldaq.readoutgui.StateSaveRestore import Serializer, SerializationManager
 from PyQt6.QtCore import Qt
 
 
@@ -353,4 +355,55 @@ class EventLogManager:
         
         return mainWindow().centralWidget.Recording().checkState() == Qt.CheckState.Checked
         
-# SerDeserialize settings
+
+class EventLogConfig(Serializer):
+    '''
+    Responsible for saving/restoring event log configuration.  Will save
+    as a list of dicts in the variable eventLoggers = []
+    
+    
+    This should be enough information to allow loggers to be restored.
+    The assumption is that all loggers are in the manager.  
+    '''
+    def serialize(self, destination: io.TextIOBase) -> None:
+        ''' We will make alist of dicts. Each list item describes a logger:
+        Each list item is a dict containing:
+            * name - name of the event logger.
+            * type - Type of the event logger.
+            * enabled - Enable state of the logger.
+            * configuration - the loggers' configuraiton dict.
+        
+        '''
+        manager = EventLogManager.instance()
+        registry = EventLogRegistry.instance()
+        configuration = []
+        for name, enabled, logger in manager.list():
+            typeName = registry.find(logger)
+            configuration.append({
+                'name' : name,
+                'type' : typeName,
+                'enabled' : enabled,
+                'configuration' : logger.getConfig()
+            })
+        destination.write(f'eventLoggers = {configuration}')
+        
+        
+    def deserialize(self, mod : types.ModuleType) -> None:
+        registry = EventLogRegistry.instance()
+        manager  = EventLogManager.instance()
+        knownTypes = registry.list()        
+        try:
+            loggers = mod.eventLoggers
+        except AttributeError as a:
+            print(f'Unable to get the event logger configuraiton {a}')
+            return    # Can't restore configuration.
+        
+        for loggerConfig in loggers:
+            if loggerConfig['type'] in knownTypes:
+                logger = registry.logger(loggerConfig['type'])(loggerConfig['configuration'])
+                manager.add(loggerConfig['name'], logger, loggerConfig['enabled'])
+            else:
+                print(f'Logger type {loggerConfig["type"]} has not been registered, logger {loggerConfig["name"]} cannot be restored')
+            
+        
+SerializationManager.instance().addSerializer(EventLogConfig())
