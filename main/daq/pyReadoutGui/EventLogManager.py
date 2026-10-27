@@ -298,7 +298,7 @@ class EventLogManager:
         '''
         result = []
         for name, info in self._registry.items():
-            result.append((name, info[0]))
+            result.append((name, info[0], info[1]))
 
         return result
 
