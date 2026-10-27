@@ -144,7 +144,6 @@ def _addDataSource() -> None:
     
     if typedlg.exec() == QDialog.DialogCode.Accepted:
         dataSourceType = typedlg.selected()
-        print('Making ', dataSourceType)
         configdlg = SaveDialog(DataSourceRegistry.instance().sourceCreator(dataSourceType)())
         result = configdlg.exec()
         while  result == QDialog.DialogCode.Accepted:
@@ -196,8 +195,10 @@ def _logTransitionFailed(oldState: str, newState: str) -> None:
 def _addLogger() -> None:
     # Prompt for and create a new event logger.
     
-    prompter = EventLogControllers.AddController(mainWindow())
+    _ = EventLogControllers.AddController(mainWindow())
 
+def _listLoggers() -> None:
+    _ = EventLogControllers.ListController(mainWindow())
 #   --- Utility functions.
 
 def  _saveConfiguration():
@@ -248,6 +249,7 @@ def _setupLoggerMenu(gui : ReadoutGuiMainWindow) -> None:
     #  Connect the menu entries in the Event loggers to code.
     
     gui.evlogAdd.connect(_addLogger)
+    gui.evlogList.connect(_listLoggers)
     
 def _setupStateInteractions(central : ReadoutGuiCentralWidget, manager : ReadoutStateMachine) -> None:
     #  Set up the signals so that the state machine will undertake the transitions requested
