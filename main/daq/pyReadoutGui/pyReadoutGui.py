@@ -37,7 +37,8 @@ from nscldaq.readoutgui import (
     VMUSBDataSource,  # registry.
     DelaySource,
     EventLogManager,  # EVent log serialization.
-    EventLogControllers
+    EventLogControllers,
+    EventLog,         # Register the types.
 )
 from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.DataSourceController import DataSourceController
