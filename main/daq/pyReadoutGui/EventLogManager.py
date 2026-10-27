@@ -271,7 +271,17 @@ class EventLogManager:
         except KeyError:
             raise NoSuchName(name)
            
-        
+    def find(self, name : str) -> tuple[bool, object]:
+        '''
+            @param name - name of a logger.
+            @return tuple[bool, object] - enable state and logger object.
+            @throws NoSuchName if there is no matching logger.
+            
+        '''
+        try:
+            return self._register[name]
+        except KeyError:
+            raise NoSuchName(name)
     
     def list(self) -> list[str, bool, object]:
         '''
@@ -291,7 +301,7 @@ class EventLogManager:
             @throws NoSuchName - if name is not a logger.
         '''
         try:
-            self._registry[name] = (True, self._registry[name][0], self._registry[name][1])  # Tuples are immutable.
+            self._registry[name] = (True, self._registry[name][1])  # Tuples are immutable.
         except KeyError:
             raise NoSuchName(name)
         
@@ -305,6 +315,7 @@ class EventLogManager:
             self._registryt[name] = (False, self._registry[name][1]) # Tuples are immutable.
         except KeyError:
             raise NoSuchName(name)
+    
         
     def leave(self, leaving: str, entering: str) -> None:
         '''
