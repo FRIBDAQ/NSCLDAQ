@@ -39,9 +39,10 @@ AddController prompts for the type of logger to create, then brings up the promp
     creates the requested logger and enters it into the EventLogManager.
 '''
 
-from nscldaq.readoutgui import EventLogManager, EventLogViews
+from  nscldaq.readoutgui import EventLogManager, EventLogViews
 from nscldaq.mg_configutils import SaveDialog, OkDialog
-from PyQt6.QtWidgets import QWidget, QMessageBox
+from PyQt6.QtWidgets import QWidget, QMessageBox, QComboBox, QLabel, QHBoxLayout, QDialog, QLineEdit
+
 
 
 class BaseController:
@@ -171,7 +172,7 @@ def EnableController(BaseController):
     the corresponding logger inthe
     manager.
     '''
-    def  __init__(self, parent  : QWidget, | none = None):
+    def  __init__(self, parent  : QWidget | none = None):
         super().__init__(SaveDialog, True, parent)
         self.model().enableToggled.connect(self._setEnable)
     
@@ -188,6 +189,98 @@ def EnableController(BaseController):
             
     
 #----- Handle adding a logger:
+
+class AddController:
+    '''
+    Used for adding controllers. 
+    A dialog with a chooser for the logger type is popped up.
+    If a logger type is accepted, 
+    the appropriate configuration prompter is popped up in
+    a SaveDialog.
+    If _that's_ accepted, the logger is created from the configuration
+    prompter and added to the manager.
+    
+    '''
+    
+    class TypePrompter(QWidget):
+        # Prompter for type of logger:
+        
+        def __init__(self, parent : QWidget | None = None):
+            super.__init__(parent)
+            self.setLayout(QVBoxLayout)
+            
+            nameLayout = QHBoxLayout()
+            nameLayout.addWidget(QLabel('Logger Name', self))
+            self._name = QLineEdit(self)
+            
+            self.layout().addLayout(nameLayout)
+           
+            typeLayout = QHBoxLayout()
+            typeLayout.addWidget(QLabel('Logger Type:', self))
+            
+            self._choice = QComboBox(self)
+            typeLayout.addWidget(self._choice)
+            self._choice.addItems(EventLogManager.EventLogRegistry.instance().list())
+            
+            self.layout().adddLayout(typeLayout)
+        
+        def choice(self) -> str:
+            ''' @return str - the current choice'''
+            return self._choice.currentText()
+        def name(self) -> str:
+            ''' @return str - name of the logger.'''
+            return self._name.text()
+        
+    
+    def __init__(self, parent : QWidget | None =None):
+        '''
+        @param parent : QWidget | None = None will parent the dialogs if set
+              that will influcence where the dialogs will pop up:
+        '''
+        
+        loggerType, name = self._promptType(parent)
+        if loggerType:
+            prompterClass = EventLogManager.EventLogRegistry.instance().prompter(loggerType)
+            prompterConfig =EventLogManager.EventLogRegistery.instance().prompterInit(loggerType)
+            
+            self._promptLogger(prompterClass, prompterConfig, name, parent)
+            
+    # Utility functions:
+    
+    def _promptType(self, parent : QWidget | None = None) -> str | None:
+        # Prompt for the type of logger to make.  If accepted, return
+        # else None if not.
+        
+        typeDialog = SaveDialog(AddController.TypePrompter(self.parent()), self.parent())
+        if typeDialog.exec() == QDialog.DialogCode.Accepted:
+            return (typeDialog.workarea().choice(), typeDialog.workarea().name())
+        else:
+            return (None, '')
+        
+    def _promptLogger(self, prompterClass : object, prompterInit : callable, name: str, parent : QWidget | None = None):
+        # Bring up the actual prompter:
+        
+        promptForm = prompterClass(parent = parent)
+        prompterInit(promptForm)      # ANy post initialization required
+        
+        dialog = SaveDialog(prompterInit, parent)
+        while dialog.exec() == QDialog.DialogCode.Accepted:
+            logger = dialog.workarea().makeLogger()
+            if isinstance(logger, str):
+                # Error message:
+                
+                QMessageBox.warning(parent, 'Logger config error', logger)
+                
+            else:
+                try:
+                    EventLogManager.EventLogManager.instance().add(name, logger)
+                except EventLogManager.EventLogRegistryException as e:
+                    QMessageBox.warning(parent, 'Error entering logger', f'Unable to enter the logger in the manager {e}')
+                return
+        
+    
+        
+        
     
     
         
