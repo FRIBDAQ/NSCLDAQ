@@ -192,6 +192,11 @@ def _logTransition(newState : str) -> None:
 def _logTransitionFailed(oldState: str, newState: str) -> None:
     Log.instance.error(f'State transition from {oldState} to {newState} failed')           
 
+def _addLogger() -> None:
+    # Prompt for and create a new event logger.
+    
+    prompter = EventLogControllers.AddController(mainWindow())
+
 #   --- Utility functions.
 
 def  _saveConfiguration():
@@ -237,6 +242,11 @@ def _setupDataSourceMenu(gui : ReadoutGuiMainWindow) -> None:
     gui.dsAddSource.connect(_addDataSource)
     gui.dsListSources.connect(_listDataSources)
     gui.dsDeleteSource.connect(_deleteDataSource)
+
+def _setupLoggerMenu(gui : ReadoutGuiMainWindow) -> None:
+    #  Connect the menu entries in the Event loggers to code.
+    
+    gui.evlogAdd.connect(_addLogger)
     
 def _setupStateInteractions(central : ReadoutGuiCentralWidget, manager : ReadoutStateMachine) -> None:
     #  Set up the signals so that the state machine will undertake the transitions requested
@@ -263,6 +273,7 @@ def main() -> int:
     _loadOptionalModules()
     _setupFileMenu(main_window)
     _setupDataSourceMenu(main_window)
+    _setupLoggerMenu(main_window)
     
     # Set up auto save.  Every second we'll save the configuration:
     
