@@ -112,11 +112,11 @@ class EventLogList(QStandardItemModel):
         
         # Now the checkbox:
         
-        enableWidget = QCheckBox('', self)
+        enableWidget = QCheckBox('')
         enableWidget.setCheckState(Qt.CheckState.Checked if enabled else Qt.CheckState.Unchecked)
         enableWidget.setStyleSheet(self.checkBoxStyle)
-        if not self._enableCheckoxes:
-            enableWidget.setDisable(True)
+        if not self._enableCheckboxes:
+            enableWidget.setDisabled(True)
         idx = self.indexFromItem(enabledItem)
         self.setIndexWidget(idx, enableWidget)
         
