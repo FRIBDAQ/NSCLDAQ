@@ -165,6 +165,7 @@ class ReadoutGuiMainWindow(QMainWindow):
             evlogAdd           - Add an  event log.
             evlogList          - List event logs.
             evlogEnable        - Enable/disable event logs.
+            evlogDelete        - Delete event loggers.
     '''
     # Signals:
     
@@ -181,6 +182,7 @@ class ReadoutGuiMainWindow(QMainWindow):
     evlogAdd           = pyqtSignal()
     evlogList          = pyqtSignal()
     evlogEnable        = pyqtSignal()
+    evlogDelete        = pyqtSignal()
     
     
     def __init__(self, parent : QWidget | None = None):
@@ -252,6 +254,7 @@ class ReadoutGuiMainWindow(QMainWindow):
         self._dsAddAction.triggered.connect(self.dsAddSource)
         menu.addAction(self._dsAddAction)
         
+        
         self._dsDelSourceAction = QAction('Delete...', menu)
         self._dsDelSourceAction.triggered.connect(self.dsDeleteSource)
         menu.addAction(self._dsDelSourceAction)
@@ -268,6 +271,12 @@ class ReadoutGuiMainWindow(QMainWindow):
         self._evlogAddAction      = QAction('Add...', menu)
         self._evlogAddAction.triggered.connect(self.evlogAdd)
         menu.addAction(self._evlogAddAction)
+        
+        self._evDelAction         = QAction('Delete...', menu)
+        self._evDelAction.triggered.connect(self.evlogDelete)
+        menu.addAction(self._evDelAction)
+        
+        menu.addSeparator()
         
         self._evlogListAction     = QAction('List...', menu)
         self._evlogListAction.triggered.connect(self.evlogList)
