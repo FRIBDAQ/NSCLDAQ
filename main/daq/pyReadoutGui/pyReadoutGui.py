@@ -36,6 +36,8 @@ from nscldaq.readoutgui import (
     MVLCDataSource,  # the sources with the source  # noqa: F401
     VMUSBDataSource,  # registry.
     DelaySource,
+    EventLogManager,  # EVent log serialization.
+    EventLogControllers
 )
 from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.DataSourceController import DataSourceController

@@ -248,6 +248,12 @@ class EventLogManager:
         # Make the registry:
         
         self._registry : dict[str, (bool, object)] = {}
+    
+    @classmethod
+    def instance(cls) -> Self:
+        if not cls._instance:
+            cls._instance = cls()
+        return cls._instance
         
     def add(self, name : str, logger: object, enabled : bool = True) -> None:
         '''
@@ -385,7 +391,7 @@ class EventLogConfig(Serializer):
                 'enabled' : enabled,
                 'configuration' : logger.getConfig()
             })
-        destination.write(f'eventLoggers = {configuration}')
+        destination.write(f'eventLoggers = {configuration}\n')
         
         
     def deserialize(self, mod : types.ModuleType) -> None:
