@@ -13,7 +13,7 @@
 
 from typing import ClassVar
 
-from PyQt6.QtWidgets import QTableView, QCheckButton, QWidget
+from PyQt6.QtWidgets import QTableView, QCheckBox, QWidget
 from PyQt6.QtGui import QStandardItem, QStandardItemModel
 from PyQt6.QtCore import pyqtSignal, Qt, QModelIndex
 
@@ -46,7 +46,7 @@ class EventLogList(QStandardItemModel):
     # QCheckBoxWigets - it makes them readable even if
     # disabled, as they are for just the list.
     
-    checkBoxStyle = ClassVar[str] = '''
+    checkBoxStyle : ClassVar[str] = '''
     QCheckBox:disabled {
         color: #333333; /* Forces text to remain dark and readable */
     }
@@ -112,7 +112,7 @@ class EventLogList(QStandardItemModel):
         
         # Now the checkbox:
         
-        enableWidget = QCheckButton('', self)
+        enableWidget = QCheckBox('', self)
         enableWidget.setCheckState(Qt.CheckState.Checked if enabled else Qt.CheckState.Unchecked)
         enableWidget.setStyleSheet(self.checkBoxStyle)
         if not self._enableCheckoxes:
