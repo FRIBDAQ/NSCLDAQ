@@ -406,7 +406,7 @@ class EventLogConfig(Serializer):
         
         for loggerConfig in loggers:
             if loggerConfig['type'] in knownTypes:
-                logger = registry.logger(loggerConfig['type'])(loggerConfig['configuration'])
+                logger = registry.logger(loggerConfig['type'])(configuration=loggerConfig['configuration'])
                 manager.add(loggerConfig['name'], logger, loggerConfig['enabled'])
             else:
                 print(f'Logger type {loggerConfig["type"]} has not been registered, logger {loggerConfig["name"]} cannot be restored')
