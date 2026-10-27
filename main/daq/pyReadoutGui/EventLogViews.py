@@ -15,7 +15,7 @@ from typing import ClassVar
 
 from PyQt6.QtWidgets import QTableView, QCheckButton, QWidget
 from PyQt6.QtGui import QStandardItem, QStandardItemModel
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import pyqtSignal, Qt, QModelIndex
 
 class EventLogList(QStandardItemModel):
     ''''
@@ -123,5 +123,38 @@ class EventLogList(QStandardItemModel):
         enableWidget.clicked.connect(lambda: self.enableToggled.emit(name))
         
     
+class EventLogListView(QTableView):
+    '''
+    The view for the event log list.  We just pre-set the model
+    to an EventLogList parented by us.  The client can get and load
+    the model as well as attach to its signals.  We provide
+    a signal
     
+    selected(str) - If a row is double cliked, the signal paramter
+          is the name of the logger in the selected row.
+    '''
+    selected = pyqtSignal(str)
+    
+    def __init__(self, enables: bool = False, parent :QWidget | None = None):
+        '''
+        @param enables bool (False) - have the model enable the enables checkboxes for modification.
+        @param parent : QWidget | None (None) - parent of this widget.
         
+        '''
+        
+        super().__init__(parent)
+        
+        self.setModel(EventLogList(enables, self))
+        
+        self.doubleClicked.connect(self._selectedRelay)
+        
+    # Internal (private) slots:
+    
+    def _selectedRelay(self, index :QModelIndex) -> None:
+        # Figure out the name of the logger in the clicked row and
+        # emit the selected signal.
+        
+        nameIndex = index.sibling(0)
+        nameItem  = self.model().itemFromIndex(nameIndex)
+        self.selected.emit(nameItem.text())
+    
