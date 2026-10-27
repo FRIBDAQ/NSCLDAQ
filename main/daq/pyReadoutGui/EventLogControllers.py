@@ -72,7 +72,7 @@ class BaseController:
         
         # Create the listing and stock its model
         
-        self.view = EventLogViews.EventLogList(enables)
+        self.view = EventLogViews.EventLogListView(enables)
         self._loadModel()
         
         # Embed the listing in the requested dialog.
