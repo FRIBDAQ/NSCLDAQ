@@ -39,10 +39,19 @@ AddController prompts for the type of logger to create, then brings up the promp
     creates the requested logger and enters it into the EventLogManager.
 '''
 
-from  nscldaq.readoutgui import EventLogManager, EventLogViews
-from nscldaq.mg_configutils import SaveDialog, OkDialog
-from PyQt6.QtWidgets import QWidget, QMessageBox, QComboBox, QLabel, QHBoxLayout, QDialog, QLineEdit
-
+from nscldaq.mg_configutils import OkDialog, SaveDialog
+from nscldaq.readoutgui import EventLogManager, EventLogViews
+from PyQt6.QtCore import QObject
+from PyQt6.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class BaseController:
@@ -190,7 +199,7 @@ def EnableController(BaseController):
     
 #----- Handle adding a logger:
 
-class AddController:
+class AddController(QObject):
     '''
     Used for adding controllers. 
     A dialog with a chooser for the logger type is popped up.
@@ -206,12 +215,13 @@ class AddController:
         # Prompter for type of logger:
         
         def __init__(self, parent : QWidget | None = None):
-            super.__init__(parent)
-            self.setLayout(QVBoxLayout)
+            super().__init__(parent)
+            self.setLayout(QVBoxLayout())
             
             nameLayout = QHBoxLayout()
             nameLayout.addWidget(QLabel('Logger Name', self))
             self._name = QLineEdit(self)
+            nameLayout.addWidget(self._name)
             
             self.layout().addLayout(nameLayout)
            
@@ -222,7 +232,7 @@ class AddController:
             typeLayout.addWidget(self._choice)
             self._choice.addItems(EventLogManager.EventLogRegistry.instance().list())
             
-            self.layout().adddLayout(typeLayout)
+            self.layout().addLayout(typeLayout)
         
         def choice(self) -> str:
             ''' @return str - the current choice'''
@@ -237,11 +247,11 @@ class AddController:
         @param parent : QWidget | None = None will parent the dialogs if set
               that will influcence where the dialogs will pop up:
         '''
-        
+        super().__init__(parent)        
         loggerType, name = self._promptType(parent)
         if loggerType:
             prompterClass = EventLogManager.EventLogRegistry.instance().prompter(loggerType)
-            prompterConfig =EventLogManager.EventLogRegistery.instance().prompterInit(loggerType)
+            prompterConfig =EventLogManager.EventLogRegistry.instance().prompterInit(loggerType)
             
             self._promptLogger(prompterClass, prompterConfig, name, parent)
             
@@ -251,7 +261,8 @@ class AddController:
         # Prompt for the type of logger to make.  If accepted, return
         # else None if not.
         
-        typeDialog = SaveDialog(AddController.TypePrompter(self.parent()), self.parent())
+        typeDialog = SaveDialog(AddController.TypePrompter(parent), parent)
+        
         if typeDialog.exec() == QDialog.DialogCode.Accepted:
             return (typeDialog.workarea().choice(), typeDialog.workarea().name())
         else:
@@ -263,7 +274,7 @@ class AddController:
         promptForm = prompterClass(parent = parent)
         prompterInit(promptForm)      # ANy post initialization required
         
-        dialog = SaveDialog(prompterInit, parent)
+        dialog = SaveDialog(promptForm, parent)
         while dialog.exec() == QDialog.DialogCode.Accepted:
             logger = dialog.workarea().makeLogger()
             if isinstance(logger, str):
