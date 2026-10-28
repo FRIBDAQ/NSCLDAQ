@@ -322,7 +322,7 @@ class EventLogManager:
             @throws NoSuchName - if name is not a logger.        
         '''
         try:
-            self._registryt[name] = (False, self._registry[name][1]) # Tuples are immutable.
+            self._registry[name] = (False, self._registry[name][1]) # Tuples are immutable.
         except KeyError:
             raise NoSuchName(name)
     
