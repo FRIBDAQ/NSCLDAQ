@@ -168,21 +168,21 @@ class DeleteController(BaseController):
             EventLogManager.EventLogManager.instance().remove(name)
             self._loadModel()
 
-def EnableController(BaseController):
+class EnableController(BaseController):
     '''
     List the loggers respond to enable/deisable clicks by enabling/disabling
     the corresponding logger inthe
     manager.
     '''
-    def  __init__(self, parent  : QWidget | none = None):
+    def  __init__(self, parent  : QWidget | None = None):
         super().__init__(SaveDialog, True, parent)
         self.view.enableToggled.connect(self._setEnable)
         self.dialog.exec()
+        
     # Internal (private) slots;
     
     def _setEnable(self, name : str, state: bool) -> None:
         # Set the state of the named logger:
-        
         manager = EventLogManager.EventLogManager.instance()
         if state:
             manager.enable(name)
