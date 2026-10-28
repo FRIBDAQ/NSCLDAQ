@@ -277,7 +277,7 @@ class EventLogManager:
         @throws NoSuchName if there is no mathching logger:
         '''
         try:
-            self._registry.popitem(name)
+            del self._registry[name]
         except KeyError:
             raise NoSuchName(name)
            
