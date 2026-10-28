@@ -147,11 +147,11 @@ class EventLogListView(QTableView):
         # We need to do this to keep the checkboxes straight. 
         # Done directly in the loop, the parameters will be those
         # of the end of the loop.
-        self._checks[row].clicked.connect(lambda: self._toggled(name, self._checks[row], row))
+        self._checks[row].clicked.connect(lambda: self._toggled(name, self._checks[row]))
         
     # Internal (private) slots:
     
-    def _toggled(self, loggerName : str, checkBox : QCheckBox, row):
+    def _toggled(self, loggerName : str, checkBox : QCheckBox):
         # PRocess checkbox clicks into enableToggled signals
         self.enableToggled.emit(loggerName, checkBox.checkState() == Qt.CheckState.Checked)
         
