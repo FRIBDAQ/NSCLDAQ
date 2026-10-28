@@ -506,10 +506,31 @@ class Plot(QWidget):
             _logger.debug(f"Fit panel guess params: {params}")
 
             # If the current subplot has data, get the fit limits and call the
-            # fit function's start() routine to perform the fit.
+            # fit function's start() routine to perform the fit:
             if ax.get_lines():
-                x = ax.lines[0].get_xdata()[idx_min:idx_max]
-                y = ax.lines[0].get_ydata()[idx_min:idx_max]
+                xdata = ax.lines[0].get_xdata()
+                ydata = ax.lines[0].get_ydata()
+
+                # Invalid ranges are user errors:
+                if idx_min >= idx_max:
+                    QMessageBox.about(
+                        self,
+                        "Warning",
+                        f"Invalid fit range [{idx_min}, {idx_max}]: "
+                        "Min x must be less than Max x.",
+                    )
+                    return
+                if idx_min < 0 or idx_max > len(xdata) - 1:
+                    QMessageBox.about(
+                        self,
+                        "Warning",
+                        f"Invalid fit range [{idx_min}, {idx_max}]: "
+                        f"must be within the plotted data [0, {len(xdata) - 1}].",
+                    )
+                    return
+
+                x = xdata[idx_min:idx_max]
+                y = ydata[idx_min:idx_max]
 
                 # Histogram x values are bin left edges, so fit at bin
                 # centers; trace samples are points and need no shift:
