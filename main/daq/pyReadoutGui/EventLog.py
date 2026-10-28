@@ -694,7 +694,7 @@ EventLogRegistry.instance().add(
     lambda prompt: prompt.setMultilog()
 )
 EventLogRegistry.instance().add(
-    'Full logger', FullEventLog, LoggerConfigDisplay, LoggerConfigure,
+    'full logger', FullEventLog, LoggerConfigDisplay, LoggerConfigure,
     lambda prompt: prompt.setFull()
 )
 

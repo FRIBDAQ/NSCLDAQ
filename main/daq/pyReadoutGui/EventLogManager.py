@@ -162,8 +162,10 @@ class EventLogRegistry:
         @return str - nmae that type of logger is registered as in the manager.
         @throws EventLogRegistryException if the logger object type isn't in the registry.
         '''
+        
         for name, (loggerClass, _a, _b, _c) in self._registry.items():
-            if isinstance(logger, loggerClass):
+            # Need an exact type match in case there are sublasses e.g.
+            if type(logger).__name__ ==  loggerClass.__name__:
                 return name
         
         # No match:
