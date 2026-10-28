@@ -131,23 +131,28 @@ class EventLogListView(QTableView):
         self.model().load(loggerInfo)
         
         # Now we need to add the enables.  These are in column 5.
-        self.checks = []      # Maintain the checkbuttons 
+        self._checks = []      # Maintain the checkbuttons 
         for row, info in enumerate(loggerInfo):
             index = self.model().index(row, 5)
             check = QCheckBox(self)
             check.setCheckState(Qt.CheckState.Checked if info[2] else Qt.CheckState.Unchecked)
             check.setDisabled(not self._enables)
-            self.checks.append(check)
-            check.clicked.connect(lambda: self._toggled(self.checks[row], info[0]))  # noqa: B023
+            self._checks.append(check)
+            self._connectCheckBox(info[0], row)
             self.setIndexWidget(index, check)
             
-            
+    # Utilities:
+    
+    def _connectCheckBox(self, name: str, row : int) -> None:
+        # We need to do this to keep the checkboxes straight. 
+        # Done directly in the loop, the parameters will be those
+        # of the end of the loop.
+        self._checks[row].clicked.connect(lambda: self._toggled(name, self._checks[row], row))
         
     # Internal (private) slots:
     
-    def _toggled(self, loggerName : str, checkBox : QCheckBox):
+    def _toggled(self, loggerName : str, checkBox : QCheckBox, row):
         # PRocess checkbox clicks into enableToggled signals
-        
         self.enableToggled.emit(loggerName, checkBox.checkState() == Qt.CheckState.Checked)
         
     
