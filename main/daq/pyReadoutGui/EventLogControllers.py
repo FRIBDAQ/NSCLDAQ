@@ -81,22 +81,13 @@ class BaseController:
     
     # Protected methods:
     
-    def dialog(self) -> OkDialog | SaveDialog:
-        '''
-        @return OkDialog | SaveDialog: - The dialog widget (so it can be execed e.g.)
-        '''
-        return self.dialog
+    
     def model(self) -> EventLogViews.EventLogList:
         '''
         @return EventLogViews.EventLogList  - the model of the list view.
         '''
         return self.view.model()
-    def listing(self) -> EventLogViews.EventLogList:
-        '''
-        @return EventLogViews.EventLogList - the list view widget.
-        '''
-        
-        return self.view
+    
     
     
     #  Utility methods:
@@ -119,7 +110,8 @@ class BaseController:
             loggerTypeName = registry.find(logger)
             listing.append((name, loggerTypeName, enable, logger))
         
-        self.model().load(listing)
+        self.view.load(listing)
+        
         
     
 class ListController(BaseController):
@@ -129,8 +121,9 @@ class ListController(BaseController):
     '''
     def __init__(self, parent : QWidget | None = None):
         super().__init__(OkDialog, False, parent)
-        self.view().selected.connect(self._showDetail)  # Double click shows logger config details.
-    
+        self.view.selected.connect(self._showDetail)  # Double click shows logger config details.
+        self.dialog.exec()
+        
     #  Internal (private) slots:
     
     def _showDetail(self, name : str) -> None:
@@ -144,11 +137,11 @@ class ListController(BaseController):
         # Get the logger object:
         
         _, logger = manager.find(name)
-        typeName = manager.find(logger)
-        displayerClass = manager.displayer(typeName)
+        typeName = registry.find(logger)
+        displayerClass =registry.displayer(typeName)
         
         displayer = displayerClass(logger)
-        dialog = OkDialog(displayer, self.dialog())  # Place over/near the listing.
+        dialog = OkDialog(displayer, self.dialog)  # Place over/near the listing.
         
         dialog.exec()      # Display modally until dismissed
         
@@ -161,8 +154,8 @@ class DeleteController(BaseController):
     '''
     def __init__(self, parent : QWidget | None = None):
         super().__init__(OkDialog, False, parent)
-        self.view().selectec.connect(self._confirmDelete)
-    
+        self.selected.connect(self._confirmDelete)
+        self.dialog.exec()
     
     # Internal (private) slots:
     
@@ -170,7 +163,7 @@ class DeleteController(BaseController):
         # Given the named logger, confirm that they want to delete it
         # and, if so, delete and re-load the list:
         
-        confirm = QMessageBox.question(self.dialog(), 'Delete logger?', f'Are you sure you want to delete {name}')
+        confirm = QMessageBox.question(self.dialog, 'Delete logger?', f'Are you sure you want to delete {name}')
         if confirm == QMessageBox.SandardButton.Yes:
             EventLogManager.EventLogManager.instance().remove(name)
             self._load()
@@ -183,8 +176,8 @@ def EnableController(BaseController):
     '''
     def  __init__(self, parent  : QWidget | none = None):
         super().__init__(SaveDialog, True, parent)
-        self.model().enableToggled.connect(self._setEnable)
-    
+        self.view.enableToggled.connect(self._setEnable)
+        self.dialog.exec()
     # Internal (private) slots;
     
     def _setEnable(self, name : str, state: bool) -> None:
