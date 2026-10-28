@@ -27,6 +27,8 @@ constexpr int CPIXIEERROR_INVALID_MODULE = -1002;
 /** Error during trace acquisition: trace length cannot be read from module,
  * trace is empty, or generator returns empty trace. */
 constexpr int CPIXIEERROR_TRACE_ACQUIRE = -1003;
+/** Run is still active after module's end run request. */
+constexpr int CPIXIEERROR_RUN_ACTIVE = -1004;
 
 /** @} */
 

@@ -250,7 +250,9 @@ class SystemUtilities:
         Raises
         ------
         PixieError
-            If a module fails to exit properly.
+            If any module fails to end an active run or to exit. Raised
+            once, after every module has been attempted; the message lists
+            each failure.
         """
         _check_retval(
             _lib.CPixieSystemUtilities_ExitSystem(self.obj),

@@ -755,8 +755,8 @@ Exit in any of these equivalent, safe ways:
 - Press **Ctrl-C** in the launching terminal.
 
 @par
-All three run the same clean shutdown: any active run is ended, the modules are
-released , the QtScop internal the thread pool is drained, native resources are
+All three run the same clean shutdown: the QtScope internal the thread pool is drained
+any active run is ended, the modules are released, native resources are
 freed, and the application quits. A brief pause during shutdown is normal --
 QtScope is talking to the hardware synchronously so shutdown cannot race an
 in-flight operation.

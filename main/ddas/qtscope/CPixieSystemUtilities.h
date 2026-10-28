@@ -64,10 +64,12 @@ public:
    */
   int LoadSetFile(char *fileName);
   /**
-   * @brief Exit the system and release resources from the modules.
+   * @brief End any active runs, then exit the system and release resources from
+   * the modules.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code on failure.
+   * @retval <0  First error code (XIA API or QtScope) if any module failed.
+   * The last error message lists every failure.
    */
   int ExitSystem();
 
@@ -127,7 +129,7 @@ public:
 
 private:
   /**
-   * @brief Best-effort end of a run left active on a module at exit.
+   * @brief End a run left active on a module at exit.
    * @param module Module number.
    * @throw CXIAException If the run status cannot be read, the end-run request
    * fails, or the run is still active after the retry limit.
@@ -148,7 +150,7 @@ int CPixieSystemUtilities_SaveSetFile(CPixieSystemUtilities *utils,
 /** @brief Wrapper to load a settings file. */
 int CPixieSystemUtilities_LoadSetFile(CPixieSystemUtilities *utils,
                                       char *fName);
-/** @brief Wrapper to exit the system file. */
+/** @brief Wrapper to exit the system. */
 int CPixieSystemUtilities_ExitSystem(CPixieSystemUtilities *utils);
 /** @brief Wrapper to set the boot mode. */
 void CPixieSystemUtilities_SetBootMode(CPixieSystemUtilities *utils, int mode);

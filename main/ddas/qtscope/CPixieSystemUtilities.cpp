@@ -167,10 +167,13 @@ int CPixieSystemUtilities::LoadSetFile(char *fileName) {
 
 /**
  * @details
- * If the call to Pixie16ExitSystem() fails for any module, return the first
- * error code and all context messages and set the booted state flag to false.
- * If a failure is encountered, attempt to release all other modules. The system
- * is likely in a bad state.
+ * Every module is attempted, even if an earlier one fails, so that one bad
+ * module cannot leave the others unreleased. For each module, a run the
+ * hardware reports as active is ended first (`EndActiveRun()`); if that fails,
+ * `Pixie16ExitSystem()` is not called for that module. Each failure is printed
+ * to stderr, and all failure messages are stored, separated by "; ", as the
+ * last error message. The booted flag is cleared whether or not any module
+ * failed.
  */
 int CPixieSystemUtilities::ExitSystem() {
   // If we aren't booted, we don't need to do anything, just return success:
@@ -356,22 +359,22 @@ void CPixieSystemUtilities_delete(CPixieSystemUtilities *utils) {
 //
 
 void CPixieSystemUtilities::EndActiveRun(int module) {
-  int status = Pixie16CheckRunStatus(module);
+  int retval = Pixie16CheckRunStatus(module);
 
-  if (status == 0) {
+  if (retval == 0) {
     return; // Normal case: no run active.
   }
 
-  if (status < 0) {
+  if (retval < 0) {
     std::stringstream msg;
     msg << "CPixieSystemUtilities::ExitSystem() failed to read run status"
         << " of module " << module;
-    throw CXIAException(msg.str(), "Pixie16CheckRunStatus()", status);
+    throw CXIAException(msg.str(), "Pixie16CheckRunStatus()", retval);
   }
 
   std::cerr << "CPixieSystemUtilities::ExitSystem() module " << module
             << " has an active run at exit; ending it" << std::endl;
-  int retval = Pixie16EndRun(module);
+  retval = Pixie16EndRun(module);
   if (retval < 0) {
     std::stringstream msg;
     msg << "CPixieSystemUtilities::ExitSystem() failed to end the active"
@@ -383,6 +386,12 @@ void CPixieSystemUtilities::EndActiveRun(int module) {
   const int maxRetries = 10;
   for (int n = 0; n < maxRetries; n++) {
     retval = Pixie16CheckRunStatus(module);
+    if (retval < 0) {
+      std::stringstream msg;
+      msg << "CPixieSystemUtilities::ExitSystem() failed to read run status"
+          << " of module " << module << " after end-run request";
+      throw CXIAException(msg.str(), "Pixie16CheckRunStatus()", retval);
+    }
     if (retval == 0) {
       return;
     }
@@ -391,5 +400,6 @@ void CPixieSystemUtilities::EndActiveRun(int module) {
   std::stringstream msg;
   msg << "CPixieSystemUtilities::ExitSystem() run in module " << module
       << " still active after end-run request";
-  throw CXIAException(msg.str(), "Pixie16CheckRunStatus()", retval);
+  throw CXIAException(msg.str(), "Pixie16CheckRunStatus()",
+                      CPIXIEERROR_RUN_ACTIVE);
 }
