@@ -534,7 +534,7 @@ class Plot(QWidget):
 
                 # Histogram x values are bin left edges, so fit at bin
                 # centers; trace samples are points and need no shift:
-                if len(x) == self.histogram_length[self.current_module]:
+                if len(xdata) == self.histogram_length[self.current_module]:
                     x = x + 0.5
 
                 result = fit.start(x, y, params, ax)

@@ -5,15 +5,17 @@
 
 #include "CPixieSystemUtilities.h"
 
+#include <chrono>
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <thread>
 
 #include <config.h>
 #include <config_pixie16api.h>
 
 #include <CXIAException.h>
 #include <SystemBooter.h>
-#include <string>
 
 #include "CPixieErrors.h"
 #include "CPixieShimGuard.h"
@@ -165,9 +167,10 @@ int CPixieSystemUtilities::LoadSetFile(char *fileName) {
 
 /**
  * @details
- * If the call to Pixie16ExitSystem() fails for any module, return the error
- * code and set the booted state flag to false. The system is likely in a bad
- * state.
+ * If the call to Pixie16ExitSystem() fails for any module, return the first
+ * error code and all context messages and set the booted state flag to false.
+ * If a failure is encountered, attempt to release all other modules. The system
+ * is likely in a bad state.
  */
 int CPixieSystemUtilities::ExitSystem() {
   // If we aren't booted, we don't need to do anything, just return success:
@@ -175,9 +178,13 @@ int CPixieSystemUtilities::ExitSystem() {
     return 0;
   }
 
-  // Assuming the system is booted then:
-  try {
-    for (int i = 0; i < m_config.getNumberOfModules(); i++) {
+  // Exit every module even if some fail, so one bad module cannot leave
+  // the rest unreleased. Report the first error code and all messages:
+  int firstError = 0;
+  std::stringstream errors;
+  for (int i = 0; i < m_config.getNumberOfModules(); i++) {
+    try {
+      EndActiveRun(i);
       int retval = Pixie16ExitSystem(i);
       if (retval < 0) {
         std::stringstream msg;
@@ -185,16 +192,22 @@ int CPixieSystemUtilities::ExitSystem() {
             << i;
         throw CXIAException(msg.str(), "Pixie16ExitSystem()", retval);
       }
+    } catch (const CXIAException &e) {
+      std::cerr << e.ReasonText() << std::endl;
+      errors << (firstError == 0 ? "" : "; ") << e.ReasonText();
+      if (firstError == 0) {
+        firstError = e.ReasonCode();
+      }
     }
-    m_booted = false;
-  } catch (const CXIAException &e) {
-    m_lastErrorMessage = e.ReasonText();
-    std::cerr << m_lastErrorMessage << std::endl;
-    m_booted = false;
-    return e.ReasonCode();
   }
 
-  return 0;
+  m_booted = false; // The system is likely in a bad state if anything failed.
+
+  if (firstError != 0) {
+    m_lastErrorMessage = errors.str();
+  }
+
+  return firstError;
 }
 
 /**
@@ -336,4 +349,47 @@ void CPixieSystemUtilities_delete(CPixieSystemUtilities *utils) {
     std::cerr << "CPixieSystemUtilities_delete unknown exception" << std::endl;
   }
 };
+}
+
+///
+// Private functions
+//
+
+void CPixieSystemUtilities::EndActiveRun(int module) {
+  int status = Pixie16CheckRunStatus(module);
+
+  if (status == 0) {
+    return; // Normal case: no run active.
+  }
+
+  if (status < 0) {
+    std::stringstream msg;
+    msg << "CPixieSystemUtilities::ExitSystem() failed to read run status"
+        << " of module " << module;
+    throw CXIAException(msg.str(), "Pixie16CheckRunStatus()", status);
+  }
+
+  std::cerr << "CPixieSystemUtilities::ExitSystem() module " << module
+            << " has an active run at exit; ending it" << std::endl;
+  int retval = Pixie16EndRun(module);
+  if (retval < 0) {
+    std::stringstream msg;
+    msg << "CPixieSystemUtilities::ExitSystem() failed to end the active"
+        << " run in module " << module;
+    throw CXIAException(msg.str(), "Pixie16EndRun()", retval);
+  }
+
+  // Same retry budget as CPixieRunUtilities::EndHistogramRun():
+  const int maxRetries = 10;
+  for (int n = 0; n < maxRetries; n++) {
+    retval = Pixie16CheckRunStatus(module);
+    if (retval == 0) {
+      return;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  std::stringstream msg;
+  msg << "CPixieSystemUtilities::ExitSystem() run in module " << module
+      << " still active after end-run request";
+  throw CXIAException(msg.str(), "Pixie16CheckRunStatus()", retval);
 }

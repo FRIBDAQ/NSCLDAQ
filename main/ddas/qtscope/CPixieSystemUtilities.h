@@ -124,6 +124,15 @@ public:
    * @return Pointer to the stored message; empty string if none.
    */
   const char *GetLastErrorMessage() { return m_lastErrorMessage.c_str(); };
+
+private:
+  /**
+   * @brief Best-effort end of a run left active on a module at exit.
+   * @param module Module number.
+   * @throw CXIAException If the run status cannot be read, the end-run request
+   * fails, or the run is still active after the retry limit.
+   */
+  void EndActiveRun(int module);
 };
 
 /** @} */
