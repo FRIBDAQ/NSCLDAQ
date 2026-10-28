@@ -274,6 +274,7 @@ def _setupStateInteractions(central : ReadoutGuiCentralWidget, manager : Readout
     manager.newstate.connect(buttons.setState)          # Update the buttons to match the new state.
     manager.newstate.connect(_logTransition)
     manager.failed.connect(_logTransitionFailed)
+    manager.leave.connect(EventLogManager.EventLogManager.instance().leave)
     
     
 #--------------------------------------------------- Program main --------------------------------------   

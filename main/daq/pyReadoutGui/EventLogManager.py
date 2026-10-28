@@ -328,6 +328,7 @@ class EventLogManager:
     
         
     def leave(self, leaving: str, entering: str) -> None:
+        print('Event log manager leaving', leaving, 'entering', entering)
         '''
         Iterate over the various event loggers doing what's needed.
         @param leaving : str - state being left.
@@ -343,11 +344,11 @@ class EventLogManager:
                 method_name = 'stop'
                 require_enabled = False  # Everyone shuts down
             case 'Active':          # Run Starting if from  Halted
-                if self._logging() and entering == 'Halted':
+                if self._logging() and leaving == 'Halted':
                         mainWindow().centralWidget().Outputs().setRecording(True)
                         method_name = 'start'
             case 'Halted':
-                if self._logging() and entering in ['Active', 'Paused']:
+                if self._logging() and leaving in ['Active', 'Paused']:
                         mainWindow().centralWidget().Outputs().setRecording(False)
                         method_name = 'end'
         #  Ok ready to iterate if there's a method name:
@@ -363,7 +364,7 @@ class EventLogManager:
     def _logging(self) -> bool:
         # return True if global logging is enabled in the GUI.
         
-        return mainWindow().centralWidget.Recording().checkState() == Qt.CheckState.Checked
+        return mainWindow().centralWidget().Recording().checkState() == Qt.CheckState.Checked
         
 
 class EventLogConfig(Serializer):
