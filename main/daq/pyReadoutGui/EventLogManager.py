@@ -287,7 +287,7 @@ class EventLogManager:
             
         '''
         try:
-            return self._register[name]
+            return self._registry[name]
         except KeyError:
             raise NoSuchName(name)
     
