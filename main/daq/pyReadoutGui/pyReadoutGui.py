@@ -203,6 +203,9 @@ def _listLoggers() -> None:
 def _deleteLoggers() -> None:
     _ = EventLogControllers.DeleteController(mainWindow())
     
+def _enableLoggers() -> None:
+    _ = EventLogControllers.EnableController(mainWindow())
+    
 #------------------------------------    
 #   --- Utility functions.
 
@@ -256,6 +259,7 @@ def _setupLoggerMenu(gui : ReadoutGuiMainWindow) -> None:
     gui.evlogAdd.connect(_addLogger)
     gui.evlogList.connect(_listLoggers)
     gui.evlogDelete.connect(_deleteLoggers)
+    gui.evlogEnable.connect(_enableLoggers)
     
 def _setupStateInteractions(central : ReadoutGuiCentralWidget, manager : ReadoutStateMachine) -> None:
     #  Set up the signals so that the state machine will undertake the transitions requested
