@@ -76,12 +76,10 @@ class EventLogList(QStandardItemModel):
     
     def _addRow(self, name : str, typename : str, enabled : bool, logger : object) -> None:
         config = logger.getConfig()
-        print('Adding row:', config)
         nameItem     = QStandardItem(name)
         typeNameItem = QStandardItem(typename)
         host         = QStandardItem(config.get('host', 'N/A'))
         source       = QStandardItem(config.get('source', 'N/A'))
-        print('Source: ', source.text())
         destination  = QStandardItem(config.get('destination', 'N/A'))
         enabledItem      = QStandardItem('')      # Placeholder.
         
@@ -105,25 +103,7 @@ class EventLogListView(QTableView):
     selected = pyqtSignal(str)   
     enableToggled = pyqtSignal(str, bool)
     
-    # This style sheet is applied to all of the
-    # QCheckBoxWigets - it makes them readable even if
-    # disabled, as they are for just the list.
     
-    checkBoxStyle : ClassVar[str] = '''
-    QCheckBox:disabled {
-        color: #333333; /* Forces text to remain dark and readable */
-    }
-
-    QCheckBox::indicator:disabled {
-        border: 1px solid #999999;
-        background-color: #ffffff; /* Keeps the checkbox background white */
-    }
-
-    QCheckBox::indicator:disabled:checked {
-        /* If you are using custom images, ensure the checkmark stays visible */
-        image: url(:/images/checkbox_checked_disabled.png); 
-    } 
-    '''
     def __init__(self, enables: bool = False, parent :QWidget | None = None):
         '''
         @param enables bool (False) - have the model enable the enables checkboxes for modification.
@@ -151,14 +131,14 @@ class EventLogListView(QTableView):
         self.model().load(loggerInfo)
         
         # Now we need to add the enables.  These are in column 5.
-        
+        self.checks = []      # Maintain the checkbuttons 
         for row, info in enumerate(loggerInfo):
             index = self.model().index(row, 5)
             check = QCheckBox(self)
             check.setCheckState(Qt.CheckState.Checked if info[2] else Qt.CheckState.Unchecked)
-            check.setStyleSheet(self.checkBoxStyle)
             check.setDisabled(not self._enables)
-            check.clicked.connect(lambda: self._toggled(check, info[0]))
+            self.checks.append(check)
+            check.clicked.connect(lambda: self._toggled(self.checks[row], info[0]))  # noqa: B023
             self.setIndexWidget(index, check)
             
             
