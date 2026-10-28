@@ -208,24 +208,25 @@ class ChanDSPGUI(QMainWindow):
         to the module.
         """
         self._set_current_tab_info()
+        mod, tab, tab_name = self.mod_idx, self.tab, self.tab_name
 
-        reason = getattr(self.tab, "unsupported_reason", None)
+        reason = getattr(tab, "unsupported_reason", None)
         if reason:
-            print(f"{self.tab_name}: {reason}. Nothing was applied.")
+            print(f"{tab_name}: {reason}. Nothing was applied.")
             return
 
-        self.tab.update_dsp(self.dsp_mgr, self.mod_idx)
+        tab.update_dsp(self.dsp_mgr, mod)
 
         self.toolbar.disable()
         _finished = [self.toolbar.enable]
 
-        if self.tab_name == "AnalogSignal":
-            self.tab.b_adjust_offsets.setEnabled(False)
-            _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
+        if tab_name == "AnalogSignal":
+            tab.b_adjust_offsets.setEnabled(False)
+            _finished.append(lambda: tab.b_adjust_offsets.setEnabled(True))
 
         self.pool_mgr.start_thread(
-            fcn=lambda: self._write_chan_dsp(self.mod_idx, self.tab),
-            results=[lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx)],
+            fcn=lambda: self._write_chan_dsp(mod, tab),
+            results=[lambda: tab.display_dsp(self.dsp_mgr, mod)],
             finished=_finished,
         )
 
@@ -236,24 +237,7 @@ class ChanDSPGUI(QMainWindow):
         values from the internal DSP. Reconfigure the tab toolbar if necessary.
         """
         self._set_current_tab_info()
-
-        reason = getattr(self.tab, "unsupported_reason", None)
-        if reason:
-            print(f"{self.tab_name}: {reason}. Nothing was read.")
-            return
-
-        self.toolbar.disable()
-        _finished = [self.toolbar.enable]
-
-        if self.tab_name == "AnalogSignal":
-            self.tab.b_adjust_offsets.setEnabled(False)
-            _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
-
-        self.pool_mgr.start_thread(
-            fcn=lambda: self._read_chan_dsp(self.mod_idx, self.tab),
-            results=[lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx)],
-            finished=_finished,
-        )
+        self._load_dsp(self.mod_idx, self.tab, self.tab_name)
 
     def copy_mod_dsp(self):
         """Copy DSP from one module to another."""
@@ -279,15 +263,15 @@ class ChanDSPGUI(QMainWindow):
         Calls API function to automatically set DC offsets then updates GUI.
         """
         self._set_current_tab_info()
-        self.tab.b_adjust_offsets.setEnabled(False)
+        mod, tab, tab_name = self.mod_idx, self.tab, self.tab_name
+
+        tab.b_adjust_offsets.setEnabled(False)
+        self.toolbar.disable()
+
         self.pool_mgr.start_thread(
-            fcn=lambda: self.dsp_mgr.adjust_offsets(self.mod_idx),
-            running=[self.toolbar.disable],
-            results=[self.load_dsp],
-            finished=[
-                lambda: self.tab.b_adjust_offsets.setEnabled(True),
-                self.toolbar.enable,
-            ],
+            fcn=lambda: self.dsp_mgr.adjust_offsets(mod),
+            results=[lambda: self._load_dsp(mod, tab, tab_name)],
+            errors=[lambda: tab.b_adjust_offsets.setEnabled(True), self.toolbar.enable],
         )
 
     def print_masks(self):
@@ -389,10 +373,41 @@ class ChanDSPGUI(QMainWindow):
         Parameters
         ----------
         mod : int
-            Currently selected module tab index.
+            Currently selected module.
         tab : QWidget
             Currently selected DSP tab.
         """
         if tab.has_extra_params:
             self.dsp_mgr.read(mod, tab.extra_params)
         self.dsp_mgr.read(mod, tab.param_names)
+
+    def _load_dsp(self, mod, tab, tab_name):
+        """Read DSP for one tab of one module and display it. All values are
+        bound at spawn so a tab switch mid-read cannot redirect the job.
+
+        Parameters
+        ----------
+        mod : int
+            Currently selected module.
+        tab : QWidget
+            Currently selected DSP tab.
+        tab_name : string
+            Name of currently selected DSP tab.
+        """
+        reason = getattr(tab, "unsupported_reason", None)
+        if reason:
+            print(f"{tab_name}: {reason}. Nothing was read.")
+            return
+
+        self.toolbar.disable()
+        _finished = [self.toolbar.enable]
+
+        if tab_name == "AnalogSignal":
+            tab.b_adjust_offsets.setEnabled(False)
+            _finished.append(lambda: tab.b_adjust_offsets.setEnabled(True))
+
+        self.pool_mgr.start_thread(
+            fcn=lambda: self._read_chan_dsp(mod, tab),
+            results=[lambda: tab.display_dsp(self.dsp_mgr, mod)],
+            finished=_finished,
+        )

@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QEventLoop
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog
 
 from chan_dsp_gui import ChanDSPGUI
@@ -72,6 +72,9 @@ class MainWindow(QMainWindow):
     trace_info : dict
         Single channel ADC trace information from last single channel
         acquisition.
+    exiting : bool
+        True if already exiting, to prevent potential double-exit from
+        operating on objects already freed by the first exit.
 
     Methods
     -------
@@ -109,6 +112,8 @@ class MainWindow(QMainWindow):
             simulated data.
         """
         super().__init__(*args, **kwargs)
+
+        self.exiting = False
 
         self.setWindowTitle(
             "QtScope -- ''Just the goods, bare and plain.'' Powered by Qt5"
@@ -387,26 +392,66 @@ class MainWindow(QMainWindow):
 
         Hardware calls run synchronously on the GUI thread here by design:
         app.quit() must not race them, and a brief freeze during shutdown
-        is accepted. Failures are logged and exit continues.
+        is accepted. In-flight workers are drained first so no hardware call
+        below can race a worker or touch a freed native object. Exiting
+        cannot fail: every step is attempted whatever happened in the steps
+        before it, every failure is logged, and the application always quits.
         """
-        if self.run_active:
-            try:
-                module = self.acq_toolbar.current_mod.value()
-                self.run_utils.end_run(module, self.active_type)
-            except PixieError as e:
-                _logger.error(f"Failed to end run during exit: {e}")
+        if self.exiting:  # Set False in __init__, only modified here
+            return
+        self.exiting = True
+
         try:
-            self.sys_utils.exit_system()
-        except PixieError as e:
-            _logger.exception(f"Failed to exit system cleanly: {e}")
-            print(e)
-        finally:
+            self.sys_toolbar.b_exit.setEnabled(False)
+
+            # Drain workers, then deliver their queued result/finished slots so
+            # run_active/active_type are current. User input is excluded so
+            # nothing new can be clicked. A flushed slot may chain one more
+            # worker (adjust_offsets -> load_dsp), so drain again.
+            self.pool_mgr.exit()
+            QApplication.processEvents(QEventLoop.ExcludeUserInputEvents)
+            self.pool_mgr.exit()
+
+            # End any active runs:
+
+            if self.run_active:
+                try:
+                    module = self.acq_toolbar.current_mod.value()
+                    self.run_utils.end_run(module, self.active_type)
+                except PixieError as e:
+                    _logger.error(f"Failed to end run during exit: {e}")
+                except Exception:
+                    _logger.exception("Unexpected error ending run during exit")
+                else:
+                    self.run_active = False
+
+            # Now we can safely exit the system:
+
+            try:
+                self.sys_utils.exit_system()
+            except PixieError as e:
+                _logger.error(f"Failed to exit system: {e}")
+                print(e)
+            except Exception:
+                _logger.exception("Unexpected error during system exit")
+
             for u in (self.trace_utils, self.run_utils, self.dsp_mgr, self.sys_utils):
-                u.close()
-        self.pool_mgr.exit()
-        app = QApplication.instance()
-        _logger.info("System exiting")
-        app.quit()
+                try:
+                    u.close()
+                except Exception:
+                    _logger.exception(
+                        f"Failed to release {type(u).__name__} during exit"
+                    )
+
+        except Exception:
+            # Only the drain or the event flush can get here. A worker may
+            # still be in the XIA API, so the remaining hardware calls and
+            # frees are skipped on purpose; __del__ frees the objects at
+            # interpreter shutdown.
+            _logger.exception("Unexpected error during exit; quitting anyway")
+        finally:
+            _logger.info("System exiting")
+            QApplication.instance().quit()
 
     ##
     # DSP management
