@@ -154,7 +154,7 @@ class DeleteController(BaseController):
     '''
     def __init__(self, parent : QWidget | None = None):
         super().__init__(OkDialog, False, parent)
-        self.selected.connect(self._confirmDelete)
+        self.view.selected.connect(self._confirmDelete)
         self.dialog.exec()
     
     # Internal (private) slots:
@@ -164,9 +164,9 @@ class DeleteController(BaseController):
         # and, if so, delete and re-load the list:
         
         confirm = QMessageBox.question(self.dialog, 'Delete logger?', f'Are you sure you want to delete {name}')
-        if confirm == QMessageBox.SandardButton.Yes:
+        if confirm == QMessageBox.StandardButton.Yes:
             EventLogManager.EventLogManager.instance().remove(name)
-            self._load()
+            self._loadModel()
 
 def EnableController(BaseController):
     '''
