@@ -344,9 +344,11 @@ class EventLogManager:
                 require_enabled = False  # Everyone shuts down
             case 'Active':          # Run Starting if from  Halted
                 if self._logging() and entering == 'Halted':
+                        mainWindow().centralWidget().Outputs().setRecording(True)
                         method_name = 'start'
             case 'Halted':
                 if self._logging() and entering in ['Active', 'Paused']:
+                        mainWindow().centralWidget().Outputs().setRecording(False)
                         method_name = 'end'
         #  Ok ready to iterate if there's a method name:
         
