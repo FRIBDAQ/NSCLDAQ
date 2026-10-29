@@ -375,7 +375,6 @@ class EventLogManager:
         if method_name:
             for logger in self._registry.values():
                 if not require_enabled or (require_enabled and logger[0]):
-                    print('calling logger method', method_name, logger[1])
                     getattr(logger[1], method_name)()
         
         # Now delay to let stuff happen:
