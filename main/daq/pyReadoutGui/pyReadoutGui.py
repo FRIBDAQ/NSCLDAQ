@@ -190,7 +190,7 @@ def _logTransition(newState : str) -> None:
     Log.instance().info(f'State Changed to {newState}')
 
 def _logTransitionFailed(oldState: str, newState: str) -> None:
-    Log.instance.error(f'State transition from {oldState} to {newState} failed')           
+    Log.instance().error(f'State transition from {oldState} to {newState} failed')           
 
 def _addLogger() -> None:
     # Prompt for and create a new event logger.
