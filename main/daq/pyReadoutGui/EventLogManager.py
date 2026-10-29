@@ -370,6 +370,10 @@ class EventLogManager:
                         mainWindow().centralWidget().Outputs().setRecording(False)
                         method_name = 'end'
                         self._exitOk = True          # Loggers are expected to exit.
+                        # We also update the run number:
+                        
+                        run = mainWindow().centralWidget().RunParameters().run()
+                        mainWindow().centralWidget().RunParameters().setRun(run+1)
         #  Ok ready to iterate if there's a method name:
         
         if method_name:
