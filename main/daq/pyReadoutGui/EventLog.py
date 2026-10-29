@@ -277,7 +277,7 @@ class MultiLogEventLog(EventLog):
         Start the event logger.  Other objects are responsible for
         any output/error monitoring or exit monitoring.
         '''
-        print('starting event logger')
+
         options = self._makeStandardOptions()   # We will build the program options here
         host    = self._configuration.get('host', self._defaults['host'])
         bindir  = self._configuration.get('bindir', self._defaults['bindir'])
@@ -287,7 +287,6 @@ class MultiLogEventLog(EventLog):
         
         options.append(f'--prefix={datetime.datetime.now().isoformat()}_run' ) # noqa: DTZ005
             
-        print('logger run: ', host, bindir, options)    
         self._logger.run(host, bindir, options)
     
     def end(self) -> None:
