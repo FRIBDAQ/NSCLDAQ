@@ -200,7 +200,7 @@ class FRIBEventLogProgram(SSHProcess):
             command += ' ' + option
 
         # Spawn:
-        
+        print("Spawning remote", remote, command)
         self.spawnRemote(remote, command)
         
 
@@ -277,6 +277,7 @@ class MultiLogEventLog(EventLog):
         Start the event logger.  Other objects are responsible for
         any output/error monitoring or exit monitoring.
         '''
+        print('starting event logger')
         options = self._makeStandardOptions()   # We will build the program options here
         host    = self._configuration.get('host', self._defaults['host'])
         bindir  = self._configuration.get('bindir', self._defaults['bindir'])
@@ -284,9 +285,9 @@ class MultiLogEventLog(EventLog):
         
         #  Options we always have:
         
-        options += f'--prefix={datetime.now.isoformat()}--'
+        options.append(f'--prefix={datetime.datetime.now().isoformat()}_run' ) # noqa: DTZ005
             
-                
+        print('logger run: ', host, bindir, options)    
         self._logger.run(host, bindir, options)
     
     def end(self) -> None:
@@ -317,12 +318,12 @@ class MultiLogEventLog(EventLog):
         options = []
         
         default_source = f'tcp://{self._configuration["host"]}/{getpass.getuser()}'
-        options += f'''--source={self._configuration.get('source', default_source)}'''
-        options += f'''--path={self._configuration['destination']}''' # Error on default.
+        options.append(f'''--source={self._configuration.get('source', default_source)}''')
+        options.append(f'''--path={self._configuration['destination']}''') # Error on default.
         if self._configuration.get('checksum', self._defaults['checksum']):
-            options += '--checksum'
-        options += f'''--number-of-sources={self._configuration.get('source_count', self._defaults['source_count'])}'''
-        options += '--oneshot'
+            options.append('--checksum')
+        options.append(f'''--number-of-sources={self._configuration.get('source_count', self._defaults['source_count'])}''')
+        options.append('--oneshot')
         
         return options   
 
@@ -402,7 +403,7 @@ class FullEventLog(MultiLogEventLog):
         options = super()._makeStandardOptions()
         for index, option in options.enumerate():
             if option.startswith('--path='):
-                options[index] += '/current'
+                options[index].append('/current')
                 break                       # There can be only one.
         
         return options
