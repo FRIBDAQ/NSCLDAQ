@@ -90,6 +90,36 @@ class OkDialog(QDialog):
     def keyPressEvent(self, event) -> None:
         pass
 
+class DismissDialog(QDialog):
+    '''
+    This is a dialog wrapper with only an Ok button:
+    '''
+    def __init__(self, work_area : QWidget, parent : QObject | None = None):
+        super().__init__(parent)
+        self._layout = QVBoxLayout()
+        self.setLayout(self._layout)
+        
+        self._workarea = work_area
+        self._layout.addWidget(self._workarea)
+        
+        self._buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok,
+            self
+        )
+        self._layout.addWidget(self._buttons)
+    
+        self._buttons.accepted.connect(self.accept)
+        self._buttons.rejected.connect(self.reject)
+        
+    def workarea(self) -> QWidget:
+            return self._workarea
+        
+        # Turn off key handling:
+        
+    def keyPressEvent(self, event) -> None:
+        pass    
+    
+
 class EditableTable(QWidget):
     '''  Megawidget that has a table that can be edited.
       Editing consists of supported deletion of the current row,
