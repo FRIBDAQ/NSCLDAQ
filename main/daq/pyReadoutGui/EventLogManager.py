@@ -37,6 +37,7 @@ ConfigurationSerializer - Registered with the configuration save/restore infrast
 
 import io
 import sys
+import time
 import traceback
 import types
 from collections.abc import Callable
@@ -376,6 +377,11 @@ class EventLogManager:
                 if not require_enabled or (require_enabled and logger[0]):
                     print('calling logger method', method_name, logger[1])
                     getattr(logger[1], method_name)()
+        
+        # Now delay to let stuff happen:
+        
+        if method_name == 'start':
+            time.sleep(2)               # Let the loggers start.
     
     # private (internal) slots:
     
@@ -417,7 +423,7 @@ class EventLogManager:
         
         try:
             logger = self._registry[name][1]
-            message = f'{name} : {logger.ReadAll()}'
+            message = f'{name} : {logger.read()}'
             if self._outputWindow:
                 self._outputWindow.append(message)
             else:
