@@ -34,18 +34,17 @@ ConfigurationSerializer - Registered with the configuration save/restore infrast
     
    
 '''
-from collections.abc import Callable
+
 import io
-import types
-from typing import Self, ClassVar, Any
+import sys
 import traceback
+import types
+from collections.abc import Callable
+from typing import ClassVar, Self
 
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
-from nscldaq.readoutgui.StateSaveRestore import Serializer, SerializationManager
-from PyQt6.QtCore import Qt
-
-
-
+from nscldaq.readoutgui.StateSaveRestore import SerializationManager, Serializer
+from PyQt6.QtCore import QProcess, Qt
 
 # Exceptions:
 
@@ -250,6 +249,8 @@ class EventLogManager:
         # Make the registry:
         
         self._registry : dict[str, (bool, object)] = {}
+        self._outputWindow = None
+        self._exitOk = True       #It's ok for loggers to exit.
     
     @classmethod
     def instance(cls) -> Self:
@@ -267,8 +268,19 @@ class EventLogManager:
              Defaults to True if not provided, enabling the logger by default.
         @throws DuplicateName if 'name' is already defined.
         '''
+        
+        # Make the output window if needed:
+        
+        if not self._outputWindow:
+            self._outputWindow = mainWindow().centralWidget().Outputs().addOutput('Event Loggers')
+        
         if name not in self._registry:
             self._registry[name] = (enabled, logger)
+            # Hook ito the logger's signals:
+            
+            logger.finished.connect(lambda status, exitStatus: self._loggerExited(name, status, exitStatus))
+            logger.readable.connect(lambda: self._loggerInput(name))
+            
     
     def remove(self, name : str) -> None:
         '''
@@ -277,6 +289,10 @@ class EventLogManager:
         @throws NoSuchName if there is no mathching logger:
         '''
         try:
+            # Assume we're the only one that cares about the exit and output signals:
+            logger = self._registry[name]
+            logger.finished.disconnect()
+            logger.readable.disconnect()
             del self._registry[name]
         except KeyError:
             raise NoSuchName(name)
@@ -328,7 +344,7 @@ class EventLogManager:
     
         
     def leave(self, leaving: str, entering: str) -> None:
-        print('Event log manager leaving', leaving, 'entering', entering)
+
         '''
         Iterate over the various event loggers doing what's needed.
         @param leaving : str - state being left.
@@ -347,17 +363,67 @@ class EventLogManager:
                 if self._logging() and leaving == 'Halted':
                         mainWindow().centralWidget().Outputs().setRecording(True)
                         method_name = 'start'
+                        self._exitOk = False   # Loggers exiting is abnormal
             case 'Halted':
                 if self._logging() and leaving in ['Active', 'Paused']:
                         mainWindow().centralWidget().Outputs().setRecording(False)
                         method_name = 'end'
+                        self._exitOk = True          # Loggers are expected to exit.
         #  Ok ready to iterate if there's a method name:
         
         if method_name:
             for logger in self._registry.values():
                 if not require_enabled or (require_enabled and logger[0]):
-                    getattr(logger[1], method_name)
+                    print('calling logger method', method_name, logger[1])
+                    getattr(logger[1], method_name)()
+    
+    # private (internal) slots:
+    
+    def _loggerExited(self, name : str, _status : int, exitStatus : QProcess.ExitStatus) -> None:
+        # A logger exited, we need to make the appropriate message
+        #   name - name of the logger.
+        #   _status - the integer status returned by the process to the O/S.
+        #    exitStatus - QProcess idea of how the process exited (normally or crashed).
         
+        # Always report a crash exit:
+        exitReason = 'Normally' if exitStatus == QProcess.ExitStatus.NormalExit else 'by crashing'
+        message = f'Logger {name} exited {exitReason}'
+        if not self._outputWindow: 
+            print('No output window: ', message, file=sys.stderr)
+            return                         # No output window not really possible but...        
+        if exitStatus == QProcess.ExitStatus.CrashExit:
+            # Emergency output and output to our window:
+            mainWindow().centralWidget().Outputs().emergencyMessage(message)
+            self._outputWindow().append(message)
+            return
+        
+        # If a normal exit, but we don't expect it, that's also an emergency:
+        
+        if not self._exitOk:
+            output = f'{message} during a recording run'
+            mainWindow().centralWidget().Outputs().emergencyMessage(output)
+            self._outputWindow.append(output)
+            return
+        
+        
+        # if we get here, it's a normal exit that's expected, so just log to the output window:
+        
+        self._outputWindow.append(message)
+    
+    
+    def _loggerInput(self, name : str) -> None:
+        # The logger 'name' has input, read it all and output it to the
+        # output window, if we have one or print it.
+        
+        try:
+            logger = self._registry[name]
+            message = f'{name} : {logger.ReadAll()}'
+            if self._outputWindow:
+                self._outputWindow.append(message)
+            else:
+                print('No output window:', message, file=sys.stderr)
+        except KeyError:
+            pass                         # Shouldn't happen but be defensive.
         
     # Utility methods:
     
@@ -406,7 +472,7 @@ class EventLogConfig(Serializer):
         try:
             loggers = mod.eventLoggers
         except AttributeError as a:
-            print(f'Unable to get the event logger configuraiton {a}')
+            print(f'Unable to get the event logger configuraiton {a}', file = sys.stderr)
             return    # Can't restore configuration.
         
         for loggerConfig in loggers:
@@ -414,7 +480,10 @@ class EventLogConfig(Serializer):
                 logger = registry.logger(loggerConfig['type'])(configuration=loggerConfig['configuration'])
                 manager.add(loggerConfig['name'], logger, loggerConfig['enabled'])
             else:
-                print(f'Logger type {loggerConfig["type"]} has not been registered, logger {loggerConfig["name"]} cannot be restored')
+                print(
+                    f'Logger type {loggerConfig["type"]} has not been registered, logger {loggerConfig["name"]} cannot be restored',
+                    file = sys.stderr
+                )
             
         
 SerializationManager.instance().addSerializer(EventLogConfig())
