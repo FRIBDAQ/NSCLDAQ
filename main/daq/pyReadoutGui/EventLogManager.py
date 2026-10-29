@@ -290,7 +290,7 @@ class EventLogManager:
         '''
         try:
             # Assume we're the only one that cares about the exit and output signals:
-            logger = self._registry[name]
+            logger = self._registry[name][1]
             logger.finished.disconnect()
             logger.readable.disconnect()
             del self._registry[name]
@@ -416,7 +416,7 @@ class EventLogManager:
         # output window, if we have one or print it.
         
         try:
-            logger = self._registry[name]
+            logger = self._registry[name][1]
             message = f'{name} : {logger.ReadAll()}'
             if self._outputWindow:
                 self._outputWindow.append(message)
