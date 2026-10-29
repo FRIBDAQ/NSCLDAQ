@@ -42,6 +42,7 @@ import datetime
 import getpass
 import os
 import pathlib
+import shutil
 import subprocess
 from abc import ABC, ABCMeta, abstractmethod
 from typing import ClassVar, Self
@@ -373,25 +374,33 @@ class FullEventLog(MultiLogEventLog):
         # Given the run number, construct a path glob search for the event files/checksums
         # these are of the form run-nnnn-*
         
-        topdir = pathlib.Path(self._configuration(['destiniation']))
+        topdir = pathlib.Path(self._configuration['destination'])
         current = topdir / 'current'
         evfilelist = current.glob(f'run-{self._runNumber:04d}*')   # Should catch .evt and checksums too.
         
         final = topdir / 'experiment' / f'run{self._runNumber}'
+        complete = topdir / 'complete'
         final.mkdir()
         #
-        # Move the event files:
+        # Move the event files and make symlinks in complete:
         #
+        
         for file in evfilelist:
-            file.move_into(final)
+            shutil.move(str(file), str(final))
+            complete_link = complete / file.name
+            print('linking', str(complete_link), str(final / file.name) )
+            complete_link.symlink_to(final / file.name)
         
         # Everything elses gets tarred -H to follow links.
         
-        subprocess.call(f'cd {str(current)}; tar czhf - .|(cd {str(final)}; tar --warning=no-timestamp -xpzf -)')
+        subprocess.call(
+            f'cd {current!s}; tar czhf - .|(cd {final!s}; tar --warning=no-timestamp -xpzf -)', 
+            stdout= subprocess.DEVNULL, shell=True
+        )
         
         # The directory and all files in final get chmod a-w:
         
-        subprocess.call(f'chmod -R a-w {str(final)}')   # Also does -w on the directory.
+        subprocess.call(f'chmod -R a-w {str(final)}', shell = True)   # Also does -w on the directory.
     
     # utilties
     
@@ -400,14 +409,14 @@ class FullEventLog(MultiLogEventLog):
         #  --path option to add a /current element to tit.
         
         options = super()._makeStandardOptions()
-        for index, option in options.enumerate():
+        for index, option in enumerate(options):
             if option.startswith('--path='):
-                options[index].append('/current')
+                options[index] += '/current'
                 break                       # There can be only one.
         
         return options
     
-    def __createDirectoryStructure(self) -> None:
+    def _createDirectoryStructure(self) -> None:
         #  Given the destiniation of the configuration, dest
         # Create:
         #    dest/current
@@ -421,8 +430,11 @@ class FullEventLog(MultiLogEventLog):
         complete = dest / 'complete'
         experiment = dest / 'experiment'
         
-        for dir in [current, complete, experiment]:
-            dir.mkdir(parents = True, existss_ok = True)
+        for dir in [dest, current, complete, experiment]:
+            # Note  parents = True does not seem to honor exist_ok
+            # for the parents 
+            print('making', str(dir))
+            dir.mkdir(parents = True, exist_ok = True)
 
 class LoggerConfigDisplay(QWidget):
     '''
