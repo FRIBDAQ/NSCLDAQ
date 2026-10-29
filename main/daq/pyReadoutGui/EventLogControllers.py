@@ -39,7 +39,7 @@ AddController prompts for the type of logger to create, then brings up the promp
     creates the requested logger and enters it into the EventLogManager.
 '''
 
-from nscldaq.mg_configutils import OkDialog, SaveDialog
+from nscldaq.mg_configutils import  SaveDialog, DismissDialog
 from nscldaq.readoutgui import EventLogManager, EventLogViews
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import (
@@ -60,7 +60,7 @@ class BaseController:
     list table.
     '''
     def __init__(self, 
-        dialogType : OkDialog | SaveDialog, 
+        dialogType : DismissDialog | SaveDialog, 
         enables : bool = False, 
         parent : QWidget | None = None ):
         '''
@@ -78,6 +78,7 @@ class BaseController:
         # Embed the listing in the requested dialog.
         
         self.dialog = dialogType(self.view, parent)
+        self.dialog.resize(700, self.dialog.height() + 400)
     
     # Protected methods:
     
@@ -120,7 +121,7 @@ class ListController(BaseController):
     its configuration is brought up.
     '''
     def __init__(self, parent : QWidget | None = None):
-        super().__init__(OkDialog, False, parent)
+        super().__init__(DismissDialog, False, parent)
         self.view.selected.connect(self._showDetail)  # Double click shows logger config details.
         self.dialog.exec()
         
@@ -141,7 +142,7 @@ class ListController(BaseController):
         displayerClass =registry.displayer(typeName)
         
         displayer = displayerClass(logger)
-        dialog = OkDialog(displayer, self.dialog)  # Place over/near the listing.
+        dialog = DismissDialog(displayer, self.dialog)  # Place over/near the listing.
         
         dialog.exec()      # Display modally until dismissed
         
@@ -153,7 +154,7 @@ class DeleteController(BaseController):
     the superclass _loadMOdel again.
     '''
     def __init__(self, parent : QWidget | None = None):
-        super().__init__(OkDialog, False, parent)
+        super().__init__(DismissDialog, False, parent)
         self.view.selected.connect(self._confirmDelete)
         self.dialog.exec()
     

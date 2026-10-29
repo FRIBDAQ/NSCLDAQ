@@ -19,7 +19,7 @@
 
 
 from nscldaq.readoutgui import DataSourceManager, DataSource, DataSourceRegistry, DataSourceViews, StateMachine
-from nscldaq.mg_configutils import OkDialog
+from nscldaq.mg_configutils import DismissDialog
 
 from PyQt6.QtWidgets import QWidget
 class ListController:
@@ -43,7 +43,7 @@ class ListController:
         self._view  = DataSourceViews.DataSourceTable(model, parent)
         self._view.hideDelete()
         self._view.detail.connect(self._showDetail)
-        self._dialog = OkDialog(self._view, parent)
+        self._dialog = DismissDialog(self._view, parent)
         self._dialog.resize(500, self._dialog.height())
         
     def exec(self)  -> int:
@@ -61,12 +61,12 @@ class ListController:
     
     def _showDetail(self, sourceName):
         # Called to show the details of a data sourcde.
-        # this will be wrapped in an OkDialog.
+        # this will be wrapped in an DismissDialog
         
         sourceType = sourceName.split(':')[0]
         source = DataSourceManager.DataSourceManager.instance().sources()[sourceName]
         displayer = DataSourceRegistry.DataSourceRegistry.instance().sourceDisplayer(sourceType)
-        dialog    = OkDialog(displayer(source), self._parent)
+        dialog    = DismissDialog(displayer(source), self._parent)
         dialog.exec()
         
     def _getSourceList(self) -> list[tuple[str, DataSource.DataSource]]:
