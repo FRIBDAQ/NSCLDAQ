@@ -46,6 +46,7 @@ from typing import ClassVar, Self
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from nscldaq.readoutgui.StateSaveRestore import SerializationManager, Serializer
 from PyQt6.QtCore import QProcess, Qt
+from PyQt6.QtWidgets import QMessageBox
 
 # Exceptions:
 
@@ -362,9 +363,16 @@ class EventLogManager:
                 require_enabled = False  # Everyone shuts down
             case 'Active':          # Run Starting if from  Halted
                 if self._logging() and leaving == 'Halted':
-                        mainWindow().centralWidget().Outputs().setRecording(True)
-                        method_name = 'start'
-                        self._exitOk = False   # Loggers exiting is abnormal
+                        if len(self._registry) == 0:
+                            # There's no loggers, warn the user and do nothingl
+                            QMessageBox.warning(
+                                mainWindow().centralWidget(), 
+                                'No Loggers', 
+                                'You have not set up any event  loggers, use the "Event Loggers" menu to set them up. Data will not be recorded.')
+                        else:
+                            mainWindow().centralWidget().Outputs().setRecording(True)
+                            method_name = 'start'
+                            self._exitOk = False   # Loggers exiting is abnormal
             case 'Halted':
                 if self._logging() and leaving in ['Active', 'Paused']:
                         mainWindow().centralWidget().Outputs().setRecording(False)
