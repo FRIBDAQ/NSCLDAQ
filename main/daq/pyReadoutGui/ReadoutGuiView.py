@@ -49,6 +49,7 @@ class ReadoutGuiCentralWidget(QWidget):
         Layout        - Retrieves the QVBoxLayout that does the layout of our widget.  This
                         allows extensions to add to the widget dynamically.
     '''
+    
     def __init__(self, parent : QWidget | None = None):
         super().__init__(parent)
     
@@ -98,6 +99,9 @@ class ReadoutGuiCentralWidget(QWidget):
         self._output.setSizePolicy(fullyStretched)
         self._layout.addWidget(self._output)
     
+        self._disableOnEnslaved = (self._state, self._timedruns, self._runparams, self._recording)
+        self._wasTimed = False  # Saved state of timed run thingy when enslaved.
+    
     # Public methods just allow clients to get components of the interface:
     
     def RunParameters(self) -> RunParamsView.RunParamsView:
@@ -137,7 +141,29 @@ class ReadoutGuiCentralWidget(QWidget):
         '''
         return self.layout()
         
-   
+    def enslave(self) -> None:
+        '''
+        Disables the controls that should be disabled when we are enslaved.
+        '''
+        for widget in self._disableOnEnslaved:
+            widget.setDisabled(True)
+        # We have to turn off the runtimer view's timed run:
+        # since the  master has full control over that stuff.
+        
+        self._wasTimed =  self._timedRuns.timed()    # Save the state 
+        self._timedRuns.setTimed(False)              # to restore.
+    def emancipate(self) -> None:
+        '''
+        Enables the controls that get disabled when we are enslaved.
+        '''
+        for widget in self._disableOnEnslaved:
+            widget.setDisabled(False)
+        
+        # If we have a saved state for the timed run checkbox, set it.
+        
+        if self._wasTimed is not None and self._wasTimed:
+            self._timedRuns.setTimed(self._wasTimed)
+        
 class ReadoutGuiMainWindow(QMainWindow):
     ''''
         This widget will be the central widget of the Readout GUI app.
