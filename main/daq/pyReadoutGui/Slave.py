@@ -237,9 +237,15 @@ class Slave:
     def _makeTitle(self, words : list[str]) -> str:
         # Build the title back. Note that if the first and last
         # letters are '"' assume they were quoting letter and remove them.
+        # There are actually two possibilities depending on the quoting
+        #  set title "this is a title" produces additional words, one per title word.
+        #  set title {this is a title} produces a nested list:
         
-        title = ' '.join(words)
-        title.strip('"')
+        if isinstance(words[0], list):
+            title = ' '.join(words[0])  # {} quoted case.
+        else:    
+            title = ' '.join(words)     # "" quoted case.
+            title.strip('"')
         return title
                         
     def _doSet(self, tail) -> str:
@@ -290,8 +296,9 @@ class Slave:
             case 'title':
                 # Title requires some processing of the tail to produce a title string.
                 # see the comments in _reqToWords.
+    
                 title = self._makeTitle(tail)
-                mainWindow().centralWidget().RunParameters().setTItle(title)
+                mainWindow().centralWidget().RunParameters().setTitle(title)
                 return 'OK'
             case 'recording': 
                 # Same restrictions on the value that set slave has:
@@ -319,6 +326,7 @@ class Slave:
         #  Note that if we are not a slave but get anything other
         #  than set slave 1 we fail.
         request_words = self._reqToWords(request)
+        print('Request words are:', request_words)
         verb = request_words.pop(0)
         
         if verb != 'set' and not self._isEnslaved:
@@ -375,7 +383,7 @@ class Slave:
         # Now a status message:
         
         peer = self._server.peerAddress().toString()  
-        print('peer: ', peer)
+
         # Try to get a host name:
         try:
             peer = socket.gethostbyaddr(peer)
