@@ -136,8 +136,9 @@ private:
   /**
    * @brief End a run left active on a module at exit.
    * @param module Module number.
-   * @throw CXIAException If the run status cannot be read, the end-run request
-   * fails, or the run is still active after the retry limit.
+   * @throw CXIAException If the run status cannot be read or the end-run
+   * request fails.
+   * @throw std::runtime_error If the run is still active after the retry limit.
    */
   void EndActiveRun(int module);
 };
