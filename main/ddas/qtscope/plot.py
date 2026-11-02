@@ -531,8 +531,9 @@ class Plot(QWidget):
                     )
                     return
 
-                x = xdata[idx_min:idx_max]
-                y = ydata[idx_min:idx_max]
+                # Include max index in the fit range, so slice to idx_max + 1:
+                x = xdata[idx_min : idx_max + 1]
+                y = ydata[idx_min : idx_max + 1]
 
                 # Histogram x values are bin left edges, so fit at bin
                 # centers; trace samples are points and need no shift:
