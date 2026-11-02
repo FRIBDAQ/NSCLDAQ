@@ -9,6 +9,7 @@
 #include <cmath>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 #include <CXIAException.h>
 #include <config.h>
