@@ -829,6 +829,8 @@ class MainWindow(QMainWindow):
             (module, selected, list of (channel, data) pairs).
         """
         module, selected, acquired = result
+        if not acquired:  # Exit requested: no trace acquired
+            return
         ch, data = acquired[0]
         self.trace_info.update(
             {"trace": copy.copy(data), "module": module, "channel": ch}

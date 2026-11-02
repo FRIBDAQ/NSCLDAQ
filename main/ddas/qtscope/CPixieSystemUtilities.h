@@ -70,6 +70,11 @@ public:
    * @retval 0   Success.
    * @retval <0  First error code (XIA API or QtScope) if any module failed.
    * The last error message lists every failure.
+   * @retval CPIXIEERROR_RUN_ACTIVE  If a run was still active after the retry
+   * limit.
+   * @retval SHIM_UNEXPECTED_ERROR  If an unexpected exception was thrown.
+   * @note If any module fails to exit, the system is likely in a bad state
+   * and should be power-cycled before the next boot.
    */
   int ExitSystem();
 

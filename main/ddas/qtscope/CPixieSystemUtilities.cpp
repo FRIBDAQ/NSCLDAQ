@@ -201,6 +201,18 @@ int CPixieSystemUtilities::ExitSystem() {
       if (firstError == 0) {
         firstError = e.ReasonCode();
       }
+    } catch (const std::runtime_error &e) { // EndActiveRun: run still active
+      std::cerr << e.what() << std::endl;
+      errors << (firstError == 0 ? "" : "; ") << e.what();
+      if (firstError == 0) {
+        firstError = CPIXIEERROR_RUN_ACTIVE;
+      }
+    } catch (const std::exception &e) { // Unexpected, e.g. bad_alloc
+      std::cerr << e.what() << std::endl;
+      errors << (firstError == 0 ? "" : "; ") << e.what();
+      if (firstError == 0) {
+        firstError = SHIM_UNEXPECTED_ERROR;
+      }
     }
   }
 
@@ -400,6 +412,5 @@ void CPixieSystemUtilities::EndActiveRun(int module) {
   std::stringstream msg;
   msg << "CPixieSystemUtilities::ExitSystem() run in module " << module
       << " still active after end-run request";
-  throw CXIAException(msg.str(), "Pixie16CheckRunStatus()",
-                      CPIXIEERROR_RUN_ACTIVE);
+  throw std::runtime_error(msg.str());
 }
