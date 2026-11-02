@@ -19,7 +19,7 @@
 '''
 
 from nscldaq.readoutgui import OutputManager, RunParamsView, RunTimerView, StateView
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
     QApplication,
@@ -31,6 +31,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QVBoxLayout,
     QWidget,
+    QWidgetAction,
 )
 
 
@@ -192,6 +193,9 @@ class ReadoutGuiMainWindow(QMainWindow):
             evlogList          - List event logs.
             evlogEnable        - Enable/disable event logs.
             evlogDelete        - Delete event loggers.
+        Enslavement Menu:
+            slaveConfigure     - Set the configuration of the slave server.
+            slaveEnable
     '''
     # Signals:
     
@@ -209,6 +213,9 @@ class ReadoutGuiMainWindow(QMainWindow):
     evlogList          = pyqtSignal()
     evlogEnable        = pyqtSignal()
     evlogDelete        = pyqtSignal()
+    
+    slaveConfigure      = pyqtSignal()
+    slaveEnable        = pyqtSignal(bool)
     
     
     def __init__(self, parent : QWidget | None = None):
@@ -243,6 +250,9 @@ class ReadoutGuiMainWindow(QMainWindow):
         
         evlogMenu = menubar.addMenu('Event Loggers')
         self._createEventLogMenu(evlogMenu)
+        
+        slaveMenu = menubar.addMenu('Slave Server')
+        self._createSlaveServerMenu(slaveMenu)
     
     
     def _createFileMenu(self, fileMenu : QMenu) -> None:
@@ -312,7 +322,31 @@ class ReadoutGuiMainWindow(QMainWindow):
         self._evlogEnableAction = QAction('Enable/Disable...', menu)
         self._evlogEnableAction.triggered.connect(self.evlogEnable)
         menu.addAction(self._evlogEnableAction)
+        
+    def _createSlaveServerMenu(self, menu : QMenu) -> None:
+        # Create the slave menu... it has the actions:
+        
+        # Configure
+        
+        self._slaveConfigAction = QAction('Configure...', menu)
+        self._slaveConfigAction.triggered.connect(self.slaveConfigure)
+        menu.addAction(self._slaveConfigAction)
+        
+        # Enable/disable checkbutton.
+        
+        self._slaveEnable = QCheckBox('Enable enslavement', menu)
+        self._slaveEnable.clicked.connect(self._slaveEnableToggled)
+        self._slaveEnableAction = QWidgetAction(menu)
+        self._slaveEnableAction.setDefaultWidget(self._slaveEnable)
+        menu.addAction(self._slaveEnableAction)
  
+    def _slaveEnableToggled(self) -> None:
+        # The slave enable button toggled...figure out its state and emit
+        # the correct signal:
+
+        self.slaveEnable.emit(self._slaveEnable.checkState() == Qt.CheckState.Checked)
+        
+        
 def mainWindow() -> ReadoutGuiMainWindow  | None:       
     '''
     Must be called after the applicatin and window have been instantiated.
