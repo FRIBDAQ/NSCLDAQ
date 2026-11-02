@@ -198,6 +198,10 @@ class Configuration(Serializer):
         controller._serviceName = config['service']     
         controller._toggleEnable(config['enabled'])    # Starts the Slave server if it's enabled.
         
+        # set the menu properly:
+        
+        mainWindow().setSlaveEnabled(config['enabled'])
+        
 # Register the serlializer so it's called.
 
 SerializationManager.instance().addSerializer(Configuration())

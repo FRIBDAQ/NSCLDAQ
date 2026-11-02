@@ -242,7 +242,14 @@ class ReadoutGuiMainWindow(QMainWindow):
         @return bool - True if the enable slave menu is checked.
         '''
         return self._slaveEnable.checkState() == Qt.CheckState.Checked
-        
+    
+    def setSlaveEnabled(self, state : bool) -> None:
+        '''
+        @param state - state of the enabled button on the GUI.
+        '''
+        checkstate = Qt.CheckState.Checked if state else Qt.CheckState.Unchecked
+        self._slaveEnable.setCheckState(checkstate)
+            
         
     # Utiltity methods:
     
