@@ -157,6 +157,10 @@ class Slave:
         
         self._listener.newConnection.connect(self._connect)
         
+        def __del__(self):
+            ''' If we are enabled shut everything down'''
+            self.disable()
+        
         # Public methods:
         
         def enable(self) -> None:
@@ -371,7 +375,7 @@ class Slave:
             try:
                 peer = socket.gethostbyaddr(peer)
             except socket.herror:
-                pass    # No translation leaves the peer as a text addresss.
+                pass    # No translation leaves the peer as a text address.
             mw.setStatusMessage(f'Enslaved by {peer}')
             
             
