@@ -136,7 +136,8 @@ class ModDSPGUI(QMainWindow):
         """Apply the module DSP settings.
 
         Updates internal DSP from the GUI values, then writes the internal DSP
-        to the module.
+        to the module. On a failed write, the hardware values are reloaded
+        into the internal DSP and the GUI.
         """
         for w in self.mod_params.param_widgets:
             w.update_dsp(self.dsp_mgr)
@@ -145,6 +146,7 @@ class ModDSPGUI(QMainWindow):
         self.pool_mgr.start_thread(
             fcn=self._write_mod_dsp,
             results=[self._display_mod_dsp],
+            errors=[self.load_dsp],
             finished=[self.toolbar.enable_mod_dsp],
         )
 

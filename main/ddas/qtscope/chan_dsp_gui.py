@@ -203,7 +203,8 @@ class ChanDSPGUI(QMainWindow):
         """Apply the channel DSP settings for the selected tab.
 
         Updates internal DSP from the GUI values then writes the internal DSP
-        to the module.
+        to the module. On a failed write, the hardware values are reloaded
+        into the internal DSP and the GUI.
         """
         self._set_current_tab_info()
         mod, tab, tab_name = self.mod_idx, self.tab, self.tab_name
@@ -225,6 +226,7 @@ class ChanDSPGUI(QMainWindow):
         self.pool_mgr.start_thread(
             fcn=lambda: self._write_chan_dsp(mod, tab),
             results=[lambda: tab.display_dsp(self.dsp_mgr, mod)],
+            errors=[lambda: self._load_dsp(mod, tab, tab_name)],
             finished=_finished,
         )
 
