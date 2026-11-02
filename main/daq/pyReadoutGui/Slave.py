@@ -37,7 +37,7 @@ import socket
 
 from nscldaq.portmanager.PortManager import PortManager
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QByteArray, Qt
 from PyQt6.QtNetwork import QTcpServer, QTcpSocket
 
 # This is vibe coded from gemini:
@@ -267,7 +267,11 @@ class Slave:
                     which = int(tail[0])
                     if which not in [1,0]:
                         return 'ERROR - set slave requires 1 or 0 but got {which}'
-                    self._isEnslaved = bool(which)
+                    
+                    if which:
+                        self._enslave()
+                    else:
+                        self._emancipate()
                     return 'OK'
                 except ValueError:
                     return f'ERROR - set slave value must be 1 or 0 was {tail[0]}'
@@ -363,7 +367,7 @@ class Slave:
     def _enslave(self) -> None:
         # Enslave ourselves:
         
-        self._isEnslaved = False    
+        self._isEnslaved = True    
         mw  = mainWindow()        
         gui = mw.centralWidget()
         gui.enslave()                               #  disable widgets.
@@ -371,15 +375,18 @@ class Slave:
         # Now a status message:
         
         peer = self._server.peerAddress().toString()  
+        print('peer: ', peer)
         # Try to get a host name:
         try:
             peer = socket.gethostbyaddr(peer)
         except socket.herror:
             pass    # No translation leaves the peer as a text address.
+        except OSError:
+            pass   # If address family not supported.
         mw.setStatusMessage(f'Enslaved by {peer}')
         
         
-    def _emanicpate(self) -> None:
+    def _emancipate(self) -> None:
         # No longer a slave
         
         self._isEnslaved = False
@@ -397,8 +404,9 @@ class Slave:
         lineArray = self._server.readLine()   
         if lineArray:
             line = lineArray.data().decode('utf-8')
-            response = self._doRequest(line)
-            self._server.write(response + '\n')
+            response = self._doRequest(line) + '\n'
+            qresponse = QByteArray(response.encode('utf-8'))
+            self._server.write(qresponse)
         else: 
             # Likely we lost the connection...
             # Eventually _lostConnection will fire so just ignore

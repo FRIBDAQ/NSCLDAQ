@@ -151,8 +151,8 @@ class ReadoutGuiCentralWidget(QWidget):
         # We have to turn off the runtimer view's timed run:
         # since the  master has full control over that stuff.
         
-        self._wasTimed =  self._timedRuns.timed()    # Save the state 
-        self._timedRuns.setTimed(False)              # to restore.
+        self._wasTimed =  self._timedruns.timed()    # Save the state 
+        self._timedruns.setTimed(False)              # to restore.
     def emancipate(self) -> None:
         '''
         Enables the controls that get disabled when we are enslaved.
@@ -163,7 +163,7 @@ class ReadoutGuiCentralWidget(QWidget):
         # If we have a saved state for the timed run checkbox, set it.
         
         if self._wasTimed is not None and self._wasTimed:
-            self._timedRuns.setTimed(self._wasTimed)
+            self._timedruns.setTimed(self._wasTimed)
         
 class ReadoutGuiMainWindow(QMainWindow):
     ''''
