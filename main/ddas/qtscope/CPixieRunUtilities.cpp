@@ -541,7 +541,7 @@ int CPixieRunUtilities_GetMaxBaselines(CPixieRunUtilities *utils, int mod) {
 }
 
 const char *CPixieRunUtilities_GetLastErrorMessage(CPixieRunUtilities *utils) {
-  return utils->GetLastErrorMessage();
+  return utils ? utils->GetLastErrorMessage() : "null utils handle";
 }
 
 void CPixieRunUtilities_delete(CPixieRunUtilities *utils) {

@@ -342,7 +342,7 @@ int CPixieSystemUtilities_GetModuleChannelCount(CPixieSystemUtilities *utils,
 
 const char *
 CPixieSystemUtilities_GetLastErrorMessage(CPixieSystemUtilities *utils) {
-  return utils->GetLastErrorMessage();
+  return utils ? utils->GetLastErrorMessage() : "null utils handle";
 }
 
 void CPixieSystemUtilities_delete(CPixieSystemUtilities *utils) {

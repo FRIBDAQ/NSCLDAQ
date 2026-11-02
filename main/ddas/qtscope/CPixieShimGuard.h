@@ -29,6 +29,10 @@ constexpr int SHIM_UNEXPECTED_ERROR = -1999;
  */
 template <typename T, typename R, typename Fn>
 R shimGuard(T *utils, const char *where, R fallback, Fn fn) {
+  if (utils == nullptr) {
+    std::cerr << where << " called with a null handle" << std::endl;
+    return fallback;
+  }
   try {
     utils->SetLastErrorMessage(""); // Clear any previous error message
     return fn();
@@ -52,6 +56,10 @@ R shimGuard(T *utils, const char *where, R fallback, Fn fn) {
  */
 template <typename T, typename Fn>
 void shimGuardVoid(T *utils, const char *where, Fn fn) {
+  if (utils == nullptr) {
+    std::cerr << where << " called with a null handle" << std::endl;
+    return;
+  }
   try {
     utils->SetLastErrorMessage(""); // Clear any previous error message
     fn();
@@ -74,6 +82,10 @@ void shimGuardVoid(T *utils, const char *where, Fn fn) {
  */
 template <typename Fn>
 auto shimGuardNew(const char *where, Fn fn) -> decltype(fn()) {
+  if (utils == nullptr) {
+    std::cerr << where << " called with a null handle" << std::endl;
+    return fallback;
+  }
   try {
     return fn();
   } catch (const std::exception &e) {

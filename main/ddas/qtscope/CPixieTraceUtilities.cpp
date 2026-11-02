@@ -268,7 +268,7 @@ void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities *utils,
 
 const char *
 CPixieTraceUtilities_GetLastErrorMessage(CPixieTraceUtilities *utils) {
-  return utils->GetLastErrorMessage();
+  return utils ? utils->GetLastErrorMessage() : "null utils handle";
 }
 
 void CPixieTraceUtilities_delete(CPixieTraceUtilities *utils) {
