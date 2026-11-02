@@ -100,7 +100,6 @@ def main():
         _logger.setLevel(log_level)
         _logger.info(f"PATH: {sys.path}")
         _logger.debug(f"Environ: {os.environ}")
-        sys.excepthook = _log_uncaught  # Any uncaught errors are logged
 
     try:
         offline = int(os.getenv("QTSCOPE_OFFLINE", 0))

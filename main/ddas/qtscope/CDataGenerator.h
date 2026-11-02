@@ -35,8 +35,8 @@ private:
   std::uniform_real_distribution<double> m_A; //!< Trace amplitude.
   std::normal_distribution<double> m_rise;    //!< Trace exponential rise.
   std::normal_distribution<double> m_decay;   //!< Trace exponential decay.
-  std::normal_distribution<double> m_noise;   //!< Trace random noise.
   std::uniform_real_distribution<double> m_baseline; //!< Baseline run data.
+  std::normal_distribution<double> m_noise;          //!< Trace random noise.
 
 public:
   /** @brief Constructor. */

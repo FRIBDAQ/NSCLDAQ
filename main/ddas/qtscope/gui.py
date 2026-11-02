@@ -13,7 +13,7 @@ from chan_dsp_gui import ChanDSPGUI
 import colors
 from dsp_manager import DSPManager
 from mod_dsp_gui import ModDSPGUI
-from pixie_utilities import SystemUtilities, RunUtilities, TraceUtilities, PixieError
+from pixie_utilities import SystemUtilities, RunUtilities, TraceUtilities
 from plot import Plot
 from run_type import RunType
 from trace_analyzer import TraceAnalyzer
@@ -23,8 +23,6 @@ from pixie_error import PixieError
 _logger = logging.getLogger("qtscope_logger")
 
 # @todo Toolbar disable shouldn't disable cancel button to close the windows.
-
-SETTINGS_FILE_FILTER = "XIA settings file (*.json)"
 
 
 class MainWindow(QMainWindow):
@@ -307,16 +305,12 @@ class MainWindow(QMainWindow):
         if not (fname and opt):
             return  # User canceled the save dialog.
         fext = os.path.splitext(fname)[-1].lower()
-        if opt != SETTINGS_FILE_FILTER:
-            print(f"Unrecognized option '{opt}'")
-            return
         if fext != ".json":
             print(
                 f"Unsupported extension for settings file: '{fext}': "
                 f"must be '.json'. Settings file has not been saved."
             )
             return
-
         try:
             self.sys_utils.save_set_file(fname)
         except PixieError as e:
@@ -329,17 +323,13 @@ class MainWindow(QMainWindow):
         fname, opt = self._load_dialog()
         if not (fname and opt):
             return  # User canceled the load dialog.
-        if opt != SETTINGS_FILE_FILTER:
-            print(f"Unrecognized option '{opt}'")
-            return
-
         try:
             self.sys_utils.load_set_file(fname)
         except PixieError as e:
             print(f"Failed to load settings file: {e}")
         else:
             print(f"DSP parameter file loaded from: {fname}")
-            if self.sys_utils.get_boot_status() == True:
+            if self.sys_utils.get_boot_status():
                 try:
                     self.dsp_mgr.load_new_dsp()
                 except PixieError as e:
@@ -361,7 +351,7 @@ class MainWindow(QMainWindow):
         """
         dialog = QFileDialog(self, "Save file")
         dialog.setAcceptMode(QFileDialog.AcceptSave)
-        dialog.setNameFilter(SETTINGS_FILE_FILTER)
+        dialog.setNameFilter("XIA settings file (*.json)")
         dialog.setDefaultSuffix("json")
         dialog.setOption(QFileDialog.DontUseNativeDialog)
         if dialog.exec_() == QFileDialog.Accepted:
@@ -381,7 +371,7 @@ class MainWindow(QMainWindow):
         dialog = QFileDialog(self, "Load file")
         dialog.setAcceptMode(QFileDialog.AcceptOpen)
         dialog.setFileMode(QFileDialog.ExistingFile)
-        dialog.setNameFilter(SETTINGS_FILE_FILTER)
+        dialog.setNameFilter("XIA settings file (*.json)")
         dialog.setOption(QFileDialog.DontUseNativeDialog)
         if dialog.exec_() == QFileDialog.Accepted:
             return dialog.selectedFiles()[0], dialog.selectedNameFilter()
