@@ -104,14 +104,11 @@ class Worker(QRunnable):
 class ThreadPoolManager:
     """Thread management for QtScope.
 
-    QThreadPool is used to recycle thread objects and reduce creation overhead.
-    The blocking feature of Python multithreading is useful here to
-    simultaneously block inputs from sections of the GUI which we want to
-    disable as well as disable the GUI elements which would respond to those
-    inputs. The concept of the "main event loop" in Qt and Python's blocking
-    thread behavior imply both of these steps are necessary: events can still
-    be queued in the main event loop if the GUI elements connected to those
-    signaling events are not disabled.
+    Runs module (XIA API) operations off the GUI thread and routes their
+    results back to GUI-thread slots. The pool has a single thread, so jobs
+    run one at a time in the order they were started: at most one entry
+    into the XIA API, whichever part of the program started the job
+    (§4.1 rule 2). A job started while another runs is queued, not refused.
 
     The main way to interact with this class is through the `start_thread()`
     method, specifying the function to be executed within the thread and the
@@ -126,7 +123,8 @@ class ThreadPoolManager:
     Attributes
     ----------
     pool : QThreadPool
-        Global thread pool.
+        Private single-thread pool for running module operations off the
+        GUI thread.
 
     Methods
     -------
@@ -143,7 +141,7 @@ class ThreadPoolManager:
     """
 
     def __init__(self, *args, **kwargs):
-        """Initialize the thread pool. Get the global thread pool.
+        """Initialize the thread pool.
 
         Parameters
         ----------
@@ -153,7 +151,9 @@ class ThreadPoolManager:
             Keyword arguments (passed uninspected to base class).
         """
         super().__init__(*args, **kwargs)
-        self.pool = QThreadPool.globalInstance()
+        # One worker at a time: at most one entry into XIA API.
+        self.pool = QThreadPool()
+        self.pool.setMaxThreadCount(1)
 
     def start_thread(
         self,

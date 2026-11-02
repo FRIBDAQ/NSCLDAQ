@@ -499,15 +499,13 @@ class MainWindow(QMainWindow):
             f"Beginning {run_type} run in Mod. {module} with {nchannels} channels"
         )
 
-        self.acq_toolbar.b_run_control.setEnabled(False)
+        self.acq_toolbar.disable()
+        self.chan_gui.setEnabled(False)
+        self.mod_gui.setEnabled(False)
         self.pool_mgr.start_thread(
             fcn=lambda: self._start_run(module, nchannels, run_type),
-            running=[
-                self.chan_gui.toolbar.disable,
-                self.mod_gui.toolbar.disable,
-            ],
             results=[self._on_run_started],
-            finished=[self._on_begin_finished],
+            finished=[self._on_run_control_finished],
         )
 
     def _start_run(self, module, nchannels, run_type):
@@ -531,7 +529,7 @@ class MainWindow(QMainWindow):
         return module, run_type, self.run_utils.get_run_active()
 
     def _on_run_started(self, result):
-        """Slot (GUI thread): all widget and state changes for active runs.
+        """Slot (GUI thread): record the run state and set up the plot.
 
         Parameters
         ----------
@@ -542,20 +540,7 @@ class MainWindow(QMainWindow):
         self.run_active = active
         self.active_type = run_type if active else RunType.INACTIVE
         if active:
-            self.acq_toolbar.b_run_control.setText("End run")
-            self.acq_toolbar.enable_run_active()
             self.mplplot.on_begin_run(module, run_type)
-            self.mod_gui.setEnabled(False)
-            self.chan_gui.setEnabled(False)
-
-    def _on_begin_finished(self):
-        """Slot (GUI thread): recovery floor. Runs after results/errors,
-        success or failure, so the GUI can never be left locked."""
-        self.acq_toolbar.b_run_control.setEnabled(True)
-        if not self.run_active:
-            self.acq_toolbar.enable()
-            self.chan_gui.toolbar.enable()
-            self.mod_gui.toolbar.enable()
 
     def _end_run(self):
         """Stop a data run in the currently selected module."""
@@ -566,11 +551,11 @@ class MainWindow(QMainWindow):
             f"Ending run type {run_type} in Mod. {module}"
         )
 
-        self.acq_toolbar.b_run_control.setEnabled(False)
+        self.acq_toolbar.disable()
         self.pool_mgr.start_thread(
             fcn=lambda: self._stop_run(module, run_type),
             results=[self._on_run_stopped],
-            finished=[lambda: self.acq_toolbar.b_run_control.setEnabled(True)],
+            finished=[self._on_run_control_finished],
         )
 
     def _stop_run(self, module, run_type):
@@ -596,8 +581,7 @@ class MainWindow(QMainWindow):
         return module, run_active
 
     def _on_run_stopped(self, result):
-        """Slot (GUI thread): all widget and state changes for stopped runs.
-        Returns the GUI to the state it was in before the run was started.
+        """Slot (GUI thread): record the run state after an end run.
 
         Parameters
         ----------
@@ -608,18 +592,25 @@ class MainWindow(QMainWindow):
         self.run_active = run_active
         active_type = self.active_type
         if not self.run_active:
-            self.acq_toolbar.b_run_control.setText("Begin run")
-            self.acq_toolbar.enable()
-            self.chan_gui.toolbar.enable()
-            self.mod_gui.toolbar.enable()
-            self.mod_gui.setEnabled(True)
-            self.chan_gui.setEnabled(True)
             self.active_type = RunType.INACTIVE
         _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: "
             f"End run type {active_type} in Mod. {module} finalized, "
             f"run active status: {self.run_active}"
         )
+
+    def _on_run_control_finished(self):
+        """Slot (GUI thread): set the run-control widgets for the current
+        run state. Runs after every begin and end run, success or failure,
+        so the GUI can never be left locked."""
+        if self.run_active:
+            self.acq_toolbar.b_run_control.setText("End run")
+            self.acq_toolbar.enable_run_active()
+        else:
+            self.acq_toolbar.b_run_control.setText("Begin run")
+            self.acq_toolbar.enable()
+            self.chan_gui.setEnabled(True)
+            self.mod_gui.setEnabled(True)
 
     def _read_data(self):
         """Configure a worker to read data from a module.
