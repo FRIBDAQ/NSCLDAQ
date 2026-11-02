@@ -33,12 +33,13 @@ from nscldaq.readoutgui import (
     DataSourceViews,
     DDASDataSource,
     DelaySource,
-    EventLog,  # Register the types.
+    EventLog,           # Register the types.
     EventLogControllers,
-    EventLogManager,  # EVent log serialization.
+    EventLogManager,    # EVent log serialization.
     FRIBDAQDataSource,  # This import also registers
-    MVLCDataSource,  # the sources with the source  # noqa: F401
-    VMUSBDataSource,  # registry.
+    MVLCDataSource,     # the sources with the source  # noqa: F401
+    VMUSBDataSource,    # registry.
+    SlaveController,   
 )
 from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.DataSourceController import DataSourceController
