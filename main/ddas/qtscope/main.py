@@ -18,12 +18,30 @@ sys.path.append(qtscope_path)
 os.environ["NO_PROXY"] = ""
 os.environ["XDG_RUNTIME_DIR"] = os.getcwd()
 
+####################################################################################
+# Logger configuration. Setup before any other imports so that any logging from
+# imported modules is captured.
 _logger = logging.getLogger("qtscope_logger")
 _logger.setLevel(logging.INFO)  # Default; overridden from env in main()
 _logger.propagate = False  # Own our logging; never touch the root logger
 _handler = logging.FileHandler("qtscope.log")
 _handler.setFormatter(logging.Formatter("%(levelname)s - %(asctime)s: %(message)s"))
 _logger.addHandler(_handler)
+
+
+def _log_uncaught(exc_type, exc_value, exc_tb):
+    """Last-resort backstop: log any uncaught exception before exiting."""
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(
+            exc_type, exc_value, exc_tb
+        )  # Ctrl-C is normal; don't log it
+        return
+    _logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_tb))
+    sys.__excepthook__(exc_type, exc_value, exc_tb)  # Keep the normal behavior too
+
+
+sys.excepthook = _log_uncaught  # Any uncaught errors are logged
+####################################################################################
 
 from PyQt5 import QtWidgets, QtCore
 
@@ -240,17 +258,6 @@ def create_fit_factory():
     )
 
     return factory
-
-
-def _log_uncaught(exc_type, exc_value, exc_tb):
-    """Last-resort backstop: log any uncaught exception before exiting."""
-    if issubclass(exc_type, KeyboardInterrupt):
-        sys.__excepthook__(
-            exc_type, exc_value, exc_tb
-        )  # Ctrl-C is normal; don't log it
-        return
-    _logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_tb))
-    sys.__excepthook__(exc_type, exc_value, exc_tb)  # Keep the normal behavior too
 
 
 # Run main when executed as a script, the way we intend to do this:
