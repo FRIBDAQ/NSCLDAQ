@@ -25,6 +25,8 @@ class FitPanel(QWidget):
     ----------
     function_list : QComboBox
         List of available fitting functions.
+    function_formula : QLabel
+        Formula of the selected fitting function.
     b_fit : QPushButton
         Perform the fit when button is clicked.
     b_clear : QPushButton
@@ -48,7 +50,7 @@ class FitPanel(QWidget):
 
     def __init__(self, *args, **kwargs):
         """FitPanel class constructor."""
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.setWindowTitle("QtScope fit panel")
 

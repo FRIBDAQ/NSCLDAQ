@@ -9,6 +9,7 @@
 #include <cmath>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 #include <CXIAException.h>
 #include <config.h>
@@ -58,7 +59,7 @@ int CPixieTraceUtilities::ReadTrace(int module, int channel) {
       // Unbiased estimator of Gaussian SD.
       double sigma = 1.4826 * GetMedianValue(traceMAD);
 
-      // iterators
+      // Max and min values:
       auto max = *std::max_element(m_trace.begin(), m_trace.end());
       auto min = *std::min_element(m_trace.begin(), m_trace.end());
 
@@ -152,7 +153,7 @@ void CPixieTraceUtilities::AcquireADCTrace(int module, int channel) {
     if (retval < 0) {
       std::stringstream msg;
       msg << "Failed to read trace from module " << module;
-      throw CXIAException(msg.str(), "PixieReadSglChanADCTrace()", retval);
+      throw CXIAException(msg.str(), "Pixie16ReadSglChanADCTrace()", retval);
     }
   } else {
     // Get the trace binning and if successful generate a pulse:
@@ -257,7 +258,7 @@ int CPixieTraceUtilities_GetTraceLength(CPixieTraceUtilities *utils, int mod,
 }
 
 unsigned short *CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities *utils) {
-  return utils->GetTraceData();
+  return utils ? utils->GetTraceData() : nullptr;
 }
 
 void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities *utils,
@@ -268,7 +269,7 @@ void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities *utils,
 
 const char *
 CPixieTraceUtilities_GetLastErrorMessage(CPixieTraceUtilities *utils) {
-  return utils->GetLastErrorMessage();
+  return utils ? utils->GetLastErrorMessage() : "null utils handle";
 }
 
 void CPixieTraceUtilities_delete(CPixieTraceUtilities *utils) {

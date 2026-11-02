@@ -65,7 +65,8 @@ class MultCoincidence(QWidget):
         modules for the time being. We do not know how these settings work
         on the Rev. H or 32-channel boards. This parameter is True iff
         nchannels == 16 and False otherwise.
-
+    b_print : QPushButton
+        Button to print the multiplicity mask information.
 
     Methods
     -------
@@ -78,7 +79,7 @@ class MultCoincidence(QWidget):
     print_masks(mgr, mod)
         Print the multiplicity mask and channel coincidence information.
     unsupported_reason
-        If the tab cannot be configured (unsupported module), return a
+        If the tab cannot be configured (unsupported module), return
         the reason as a string. This is decorated with @property, and
         can be called as if it is an attribute without the ().
     """
@@ -91,7 +92,7 @@ class MultCoincidence(QWidget):
         channels on the selected module.
 
         Parameters
-        -----------------
+        ----------
         *args : tuple
             Positional arguments passed to parent QWidget.
         nchannels : int, default=16
@@ -125,7 +126,7 @@ class MultCoincidence(QWidget):
         self.rbgroup = QButtonGroup(chan_group_widget)
 
         # The button group dictionary. Key is button id, dictionary containing
-        # channel grouping information is value. Channel grouping dicionary
+        # channel grouping information is value. Channel grouping dictionary
         # keys are the group name, the number of bits to shift, and the channel
         # mask. Shift and mask for unknown is meaningless, and if coincidence
         # is disabled, the mask should be equal to 0.
@@ -205,7 +206,7 @@ class MultCoincidence(QWidget):
         vbox.addWidget(settings_widget)
         settings_box.setLayout(vbox)
 
-        # Layout for all the consituent widgets above the toolbar:
+        # Layout for all the constituent widgets above the toolbar:
 
         top_widget = QWidget()
         hbox = QHBoxLayout()
@@ -383,7 +384,8 @@ class MultCoincidence(QWidget):
 
         # Channel trigger validation and coincidence width are the same for
         # all channels of the module based on what is set on this tab.
-        # Setup channel validation checkbox from channel 0 CSRA.
+        # Set up the channel validation status label from the CSRA of all
+        # channels.
         enb_list = []
         for i in range(self.nchannels):
             csra = int2ba(int(mgr.get_chan_par(mod, i, "CHANNEL_CSRA")), 32, "little")
@@ -542,8 +544,8 @@ class MultCoincidence(QWidget):
                 if found:
                     return idx
 
-        # If nothing was found, return the Unknown id value and log the
-        # details in a warning:
+        # If nothing was found, return the Unknown id value and print a
+        # warning:
         print(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Encountered unknown channel multiplicity state!"
         )
@@ -580,7 +582,7 @@ class MultCoincidence(QWidget):
                 f"Attempting to set unknown multiplicity mode on Mod. {mod}"
             )
             print(
-                f"{e}:\n\tPlease select a known multiplicty group and click "
+                f"{e}:\n\tPlease select a known multiplicity group and click "
                 f"'Apply' to update your settings."
             )
         else:
@@ -600,7 +602,7 @@ class MultCoincidence(QWidget):
                     if mode["name"] == "5 x 3" and i == 15:
                         mask[15:16] = 1  # It is enabled
                     else:
-                        # Update start and end every shift channels:
+                        # Update start every shift channels:
                         if i > 0 and i % shift == 0:
                             start_bit = start_bit + shift
 

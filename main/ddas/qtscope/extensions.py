@@ -47,7 +47,8 @@ class MyGridLayout(QGridLayout):
 
         Returns
         -------
-        The widget located at row, col or None if no widget exists.
+        QWidget or None
+            The widget located at row, col or None if no widget exists.
         """
         item = self.itemAtPosition(row, col)
         return item.widget() if item else None
@@ -88,7 +89,8 @@ class UInt32Validator(QValidator):
 
         Returns
         -------
-        Tuple of (QValidator::State, input string, position)
+        tuple
+            (QValidator.State, input string, position).
         """
         if input_str == "":
             return (QValidator.Intermediate, input_str, pos)

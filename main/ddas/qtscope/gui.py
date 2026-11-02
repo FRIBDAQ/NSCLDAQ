@@ -6,14 +6,14 @@ import math
 
 import numpy as np
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog
+from PyQt5.QtCore import Qt, QEventLoop
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox
 
 from chan_dsp_gui import ChanDSPGUI
 import colors
 from dsp_manager import DSPManager
 from mod_dsp_gui import ModDSPGUI
-from pixie_utilities import SystemUtilities, RunUtilities, TraceUtilities, PixieError
+from pixie_utilities import SystemUtilities, RunUtilities, TraceUtilities
 from plot import Plot
 from run_type import RunType
 from trace_analyzer import TraceAnalyzer
@@ -21,10 +21,9 @@ from thread_pool_manager import ThreadPoolManager
 from pixie_error import PixieError
 
 _logger = logging.getLogger("qtscope_logger")
+SETTINGS_FILE_FILTER = "XIA settings file (*.json)"
 
 # @todo Toolbar disable shouldn't disable cancel button to close the windows.
-
-SETTINGS_FILE_FILTER = "XIA settings file (*.json)"
 
 
 class MainWindow(QMainWindow):
@@ -53,7 +52,7 @@ class MainWindow(QMainWindow):
     run_utils : RunUtilities
         Interface to XIA API for MCA-mode run control.
     chan_gui : ChanDSPGUI
-       Channel DSP GUI.
+        Channel DSP GUI.
     mod_gui : ModDSPGUI
         Module DSP GUI.
     sys_toolbar : SystemToolBar
@@ -63,15 +62,18 @@ class MainWindow(QMainWindow):
     mplplot : Plot
         matplotlib plotting widget.
     run_active : bool
-         True when an energy histogram or baseline run is active, False
-         otherwise.
+        True when an energy histogram or baseline run is active, False
+        otherwise.
     active_type : Enum member
-         The run type set at run start, INACTIVE when no run is active.
+        The run type set at run start, INACTIVE when no run is active.
     channel_map : list
         Number of channels in each module, indexed by module number.
     trace_info : dict
         Single channel ADC trace information from last single channel
         acquisition.
+    exiting : bool
+        True if already exiting, to prevent potential double-exit from
+        operating on objects already freed by the first exit.
 
     Methods
     -------
@@ -92,8 +94,8 @@ class MainWindow(QMainWindow):
     ):
         """GUI MainWindow constructor.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         chan_dsp_factory : WidgetFactory
             Factory for implemented channel DSP widgets.
         mod_dsp_factory : WidgetFactory
@@ -110,6 +112,8 @@ class MainWindow(QMainWindow):
         """
         super().__init__(*args, **kwargs)
 
+        self.exiting = False
+
         self.setWindowTitle(
             "QtScope -- ''Just the goods, bare and plain.'' Powered by Qt5"
         )
@@ -120,8 +124,8 @@ class MainWindow(QMainWindow):
         # Set XIA API version. This is needed to support XIA API 3 JSON
         # settings files with a .json extension iff QtScope was compiled
         # against API 3. @todo (ASC 6/9/23): may not be needed after we
-        # fully migrate to API 3, but for now its an option to allow
-        # user's some ability to distinguish between the two formats.
+        # fully migrate to API 3, but for now it's an option to allow
+        # users some ability to distinguish between the two formats.
 
         self.xia_api_version = version
 
@@ -241,13 +245,17 @@ class MainWindow(QMainWindow):
         self.adjustSize()
 
     def _on_boot(self):
-        """Configure the system following a (hopefully) successful boot."""
+        """Configure the system following a successful boot.
+
+        A failed boot or post-boot configuration is a critical error: it is
+        reported, Boot stays disabled, and the user must exit QtScope and
+        investigate. Nothing is retried.
+        """
+        if self.exiting:  # Exit started while booting: nothing to configure
+            return
         if not self.sys_utils.get_boot_status():
-            # Boot failed: reason already presented via the error signal.
-            # Re-enable the system toolbar: the user may fix the problem
-            # (copy cfgPixie16.txt into the launch directory, load a
-            # different settings file, ...) and retry, or exit.
-            self.sys_toolbar.b_boot.setEnabled(True)
+            # Reason already presented via the worker error signal:
+            self._boot_failed("System boot failed.")
             return
 
         try:
@@ -273,11 +281,14 @@ class MainWindow(QMainWindow):
             self.mplplot.set_histogram_length(histogram_lengths)
             self.mplplot.set_trace_length(trace_lengths)
             self.dsp_mgr.initialize_dsp(num_modules, channel_map, msps_list)
-            self.chan_gui.configure(self.dsp_mgr, num_modules, msps_list, channel_map)
+            self.chan_gui.configure(self.dsp_mgr, num_modules, channel_map)
             self.mod_gui.configure(self.dsp_mgr, num_modules, channel_map)
         except PixieError as e:
-            print(f"Post-boot configuration failed: {e}")
-            self.sys_toolbar.b_boot.setEnabled(True)
+            self._boot_failed(f"Post-boot configuration failed: {e}")
+            return
+        except Exception:
+            _logger.exception("Unexpected error during post-boot configuration")
+            self._boot_failed("Post-boot configuration failed (unexpected error).")
             return
 
         # Configure toolbars, enable widgets:
@@ -291,6 +302,23 @@ class MainWindow(QMainWindow):
         print("QtScope system configuration complete!")
         _logger.info("System configuration successful")
 
+    def _boot_failed(self, reason):
+        """Report a critical boot failure. Boot stays disabled; the user
+        must exit QtScope and investigate.
+
+        Parameters
+        ----------
+        reason : str
+            What failed.
+        """
+        msg = (
+            f"{reason}\n\nQtScope cannot continue. Exit and check the "
+            "terminal output and qtscope.log for details."
+        )
+        _logger.critical(reason)
+        print(msg)
+        QMessageBox.critical(self, "Boot failed", msg)
+
     def _save_settings(self):
         """Save DSP parameters to an XIA settings file. Must have file
         extension '.json'.
@@ -302,16 +330,12 @@ class MainWindow(QMainWindow):
         if not (fname and opt):
             return  # User canceled the save dialog.
         fext = os.path.splitext(fname)[-1].lower()
-        if opt != SETTINGS_FILE_FILTER:
-            print(f"Unrecognized option '{opt}'")
-            return
         if fext != ".json":
             print(
                 f"Unsupported extension for settings file: '{fext}': "
                 f"must be '.json'. Settings file has not been saved."
             )
             return
-
         try:
             self.sys_utils.save_set_file(fname)
         except PixieError as e:
@@ -324,17 +348,20 @@ class MainWindow(QMainWindow):
         fname, opt = self._load_dialog()
         if not (fname and opt):
             return  # User canceled the load dialog.
-        if opt != SETTINGS_FILE_FILTER:
-            print(f"Unrecognized option '{opt}'")
+        fext = os.path.splitext(fname)[-1].lower()
+        if fext != ".json":
+            print(
+                f"Unsupported extension for settings file: '{fext}': "
+                f"must be '.json'. Settings file has not been loaded."
+            )
             return
-
         try:
             self.sys_utils.load_set_file(fname)
         except PixieError as e:
             print(f"Failed to load settings file: {e}")
         else:
             print(f"DSP parameter file loaded from: {fname}")
-            if self.sys_utils.get_boot_status() == True:
+            if self.sys_utils.get_boot_status():
                 try:
                     self.dsp_mgr.load_new_dsp()
                 except PixieError as e:
@@ -382,31 +409,94 @@ class MainWindow(QMainWindow):
             return dialog.selectedFiles()[0], dialog.selectedNameFilter()
         return "", ""
 
+    def _drain_workers(self):
+        """Exit only: wait, with no deadline, for in-flight workers.
+
+        Every worker call has a bounded duration, so this terminates.
+        Continuing while a worker is still in the XIA API would race it
+        and free objects it is using.
+        """
+        done = self.pool_mgr.exit()
+        while not done:
+            msg = (
+                f"Exit waiting for {self.pool_mgr.get_active_thread_count()} "
+                "in-flight hardware operation(s) to finish"
+            )
+            _logger.warning(msg)
+            print(msg)
+            done = self.pool_mgr.wait()
+
     def _system_exit(self):
         """Closes connection to Pixie modules and exits the application.
 
         Hardware calls run synchronously on the GUI thread here by design:
         app.quit() must not race them, and a brief freeze during shutdown
-        is accepted. Failures are logged and exit continues.
+        is accepted. In-flight workers are drained first so no hardware call
+        below can race a worker or touch a freed native object. Exiting
+        cannot fail: every step is attempted whatever happened in the steps
+        before it, every failure is logged, and the application always quits.
         """
-        if self.run_active:
-            try:
-                module = self.acq_toolbar.current_mod.value()
-                self.run_utils.end_run(module, self.active_type)
-            except PixieError as e:
-                _logger.error(f"Failed to end run during exit: {e}")
+        if self.exiting:  # Set False in __init__, only modified here
+            return
+        self.exiting = True
+
         try:
-            self.sys_utils.exit_system()
-        except PixieError as e:
-            _logger.exception(f"Failed to exit system cleanly: {e}")
-            print(e)
-        finally:
+            self.sys_toolbar.b_exit.setEnabled(False)
+            self.statusBar().showMessage(
+                "Exiting: waiting for hardware operations to finish..."
+            )
+            self.statusBar().repaint()
+
+            # Drain workers, then deliver their queued result/finished slots so
+            # run_active/active_type are current. User input is excluded so
+            # nothing new can be clicked. A flushed slot may chain one more
+            # worker (adjust_offsets -> load_dsp), so drain again.
+            self._drain_workers()
+            QApplication.processEvents(QEventLoop.ExcludeUserInputEvents)
+            self._drain_workers()
+
+            # End any active runs:
+
+            if self.run_active:
+                try:
+                    module = self.acq_toolbar.current_mod.value()
+                    self.run_utils.end_run(module, self.active_type)
+                except PixieError as e:
+                    _logger.error(f"Failed to end run during exit: {e}")
+                except Exception:
+                    _logger.exception("Unexpected error ending run during exit")
+                else:
+                    self.run_active = False
+
+            # Now we can safely exit the system:
+
+            try:
+                self.sys_utils.exit_system()
+            except PixieError as e:
+                _logger.error(f"Failed to exit system: {e}")
+                print(e)
+            except Exception:
+                _logger.exception("Unexpected error during system exit")
+
             for u in (self.trace_utils, self.run_utils, self.dsp_mgr, self.sys_utils):
-                u.close()
-        self.pool_mgr.exit()
-        app = QApplication.instance()
-        _logger.info("System exiting")
-        app.quit()
+                try:
+                    u.close()
+                except Exception:
+                    _logger.exception(
+                        f"Failed to release {type(u).__name__} during exit"
+                    )
+
+        except Exception:
+            # Only the steps before the end-run block can get here (in
+            # practice the drain or the event flush; an exception in a slot
+            # run by the flush goes to the excepthook instead). A worker may
+            # still be in the XIA API, so the remaining hardware calls and
+            # frees are skipped on purpose; __del__ frees the objects at
+            # interpreter shutdown.
+            _logger.exception("Unexpected error during exit; quitting anyway")
+        finally:
+            _logger.info("System exiting")
+            QApplication.instance().quit()
 
     ##
     # DSP management
@@ -445,15 +535,13 @@ class MainWindow(QMainWindow):
             f"Beginning {run_type} run in Mod. {module} with {nchannels} channels"
         )
 
-        self.acq_toolbar.b_run_control.setEnabled(False)
+        self.acq_toolbar.disable()
+        self.chan_gui.setEnabled(False)
+        self.mod_gui.setEnabled(False)
         self.pool_mgr.start_thread(
             fcn=lambda: self._start_run(module, nchannels, run_type),
-            running=[
-                self.chan_gui.toolbar.disable,
-                self.mod_gui.toolbar.disable,
-            ],
             results=[self._on_run_started],
-            finished=[self._on_begin_finished],
+            finished=[self._on_run_control_finished],
         )
 
     def _start_run(self, module, nchannels, run_type):
@@ -477,7 +565,7 @@ class MainWindow(QMainWindow):
         return module, run_type, self.run_utils.get_run_active()
 
     def _on_run_started(self, result):
-        """Slot (GUI thread): all widget and state changes for active runs.
+        """Slot (GUI thread): record the run state and set up the plot.
 
         Parameters
         ----------
@@ -488,20 +576,7 @@ class MainWindow(QMainWindow):
         self.run_active = active
         self.active_type = run_type if active else RunType.INACTIVE
         if active:
-            self.acq_toolbar.b_run_control.setText("End run")
-            self.acq_toolbar.enable_run_active()
             self.mplplot.on_begin_run(module, run_type)
-            self.mod_gui.setEnabled(False)
-            self.chan_gui.setEnabled(False)
-
-    def _on_begin_finished(self):
-        """Slot (GUI thread): recovery floor. Runs after results/errors,
-        success or failure, so the GUI can never be left locked."""
-        self.acq_toolbar.b_run_control.setEnabled(True)
-        if not self.run_active:
-            self.acq_toolbar.enable()
-            self.chan_gui.toolbar.enable()
-            self.mod_gui.toolbar.enable()
 
     def _end_run(self):
         """Stop a data run in the currently selected module."""
@@ -512,11 +587,11 @@ class MainWindow(QMainWindow):
             f"Ending run type {run_type} in Mod. {module}"
         )
 
-        self.acq_toolbar.b_run_control.setEnabled(False)
+        self.acq_toolbar.disable()
         self.pool_mgr.start_thread(
             fcn=lambda: self._stop_run(module, run_type),
             results=[self._on_run_stopped],
-            finished=[lambda: self.acq_toolbar.b_run_control.setEnabled(True)],
+            finished=[self._on_run_control_finished],
         )
 
     def _stop_run(self, module, run_type):
@@ -542,8 +617,7 @@ class MainWindow(QMainWindow):
         return module, run_active
 
     def _on_run_stopped(self, result):
-        """Slot (GUI thread): all widget and state changes for stopped runs.
-        Returns the GUI to the state it was in before the run was started.
+        """Slot (GUI thread): record the run state after an end run.
 
         Parameters
         ----------
@@ -554,18 +628,25 @@ class MainWindow(QMainWindow):
         self.run_active = run_active
         active_type = self.active_type
         if not self.run_active:
-            self.acq_toolbar.b_run_control.setText("Begin run")
-            self.acq_toolbar.enable()
-            self.chan_gui.toolbar.enable()
-            self.mod_gui.toolbar.enable()
-            self.mod_gui.setEnabled(True)
-            self.chan_gui.setEnabled(True)
             self.active_type = RunType.INACTIVE
         _logger.debug(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: "
             f"End run type {active_type} in Mod. {module} finalized, "
             f"run active status: {self.run_active}"
         )
+
+    def _on_run_control_finished(self):
+        """Slot (GUI thread): set the run-control widgets for the current
+        run state. Runs after every begin and end run, success or failure,
+        so the GUI can never be left locked."""
+        if self.run_active:
+            self.acq_toolbar.b_run_control.setText("End run")
+            self.acq_toolbar.enable_run_active()
+        else:
+            self.acq_toolbar.b_run_control.setText("Begin run")
+            self.acq_toolbar.enable()
+            self.chan_gui.setEnabled(True)
+            self.mod_gui.setEnabled(True)
 
     def _read_data(self):
         """Configure a worker to read data from a module.
@@ -586,20 +667,8 @@ class MainWindow(QMainWindow):
             self.acq_toolbar.disable()
             self.pool_mgr.start_thread(
                 fcn=lambda: self._acquire_run_data(module, channels, run_type),
-                running=[
-                    self.chan_gui.toolbar.disable,
-                    self.mod_gui.toolbar.disable,
-                    lambda: self.chan_gui.setEnabled(False),
-                    lambda: self.mod_gui.setEnabled(False),
-                ],
                 results=[self._show_run_data],
-                finished=[
-                    self.acq_toolbar.enable_run_active,
-                    self.chan_gui.toolbar.enable,
-                    self.mod_gui.toolbar.enable,
-                    lambda: self.chan_gui.setEnabled(True),
-                    lambda: self.mod_gui.setEnabled(True),
-                ],
+                finished=[self.acq_toolbar.enable_run_active],
             )
         else:  # Trace acquisition.
             fast = self.acq_toolbar.fast_acq.isChecked()
@@ -643,6 +712,8 @@ class MainWindow(QMainWindow):
         """
         acquired = []
         for ch in channels:
+            if self.exiting:  # Exit requested: stop between channels
+                break
             self.run_utils.read_data(module, ch, run_type)
             acquired.append((ch, self.run_utils.get_data(module, run_type)))
         return module, run_type, acquired
@@ -687,6 +758,8 @@ class MainWindow(QMainWindow):
         """
         acquired = []
         for ch in channels:
+            if self.exiting:  # Exit requested: stop between channels
+                break
             if fast:
                 self.trace_utils.read_fast_trace(module, ch)
             else:
@@ -792,6 +865,8 @@ class MainWindow(QMainWindow):
             (module, selected, list of (channel, data) pairs).
         """
         module, selected, acquired = result
+        if not acquired:  # Exit requested: no trace acquired
+            return
         ch, data = acquired[0]
         self.trace_info.update(
             {"trace": copy.copy(data), "module": module, "channel": ch}
@@ -829,7 +904,15 @@ class MainWindow(QMainWindow):
             )
 
     def _warn_stale_trace(self, module, channel):
-        """Tell the user the stored trace does not match the selection."""
+        """Tell the user the stored trace does not match the selection.
+
+        Parameters
+        ----------
+        module : int
+            The currently selected module number.
+        channel : int
+            The currently selected channel number.
+        """
         msg = (
             f"Stored trace data for Mod. {self.trace_info['module']} "
             f"Ch. {self.trace_info['channel']} does not match the current "

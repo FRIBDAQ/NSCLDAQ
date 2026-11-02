@@ -10,6 +10,24 @@ _logger = logging.getLogger("qtscope_logger")
 
 @dataclass
 class FilterParameters:
+    """Filter parameters for one channel, packed by _get_filter_parameters().
+
+    Attributes
+    ----------
+    xdt : float
+        Trace sample interval (XDT) in microseconds.
+    fast_risetime, fast_gap : int
+        Trigger filter risetime and gap in samples.
+    cfd_delay : int
+        CFD delay in samples.
+    cfd_scale : int
+        CFD scale factor in [0, 7].
+    slow_risetime, slow_gap : int
+        Energy filter risetime and gap in samples.
+    tau : int
+        Decay constant in samples.
+    """
+
     xdt: float = 0.0
     fast_risetime: int = 0
     fast_gap: int = 0
@@ -37,7 +55,7 @@ class TraceAnalyzer:
         Fast filter output calculated from the trace.
     cfd : list
         CFD output calculated from the fast filter.
-    slow_filter  : list
+    slow_filter : list
         Slow filter output calculated from the trace.
     """
 
@@ -67,6 +85,11 @@ class TraceAnalyzer:
             Channel number.
         trace : array
             Single channel ADC trace.
+
+        Raises
+        ------
+        ValueError
+            If the trace is empty.
         """
         self.trace = trace
         self._compute_filters(mod, chan)
@@ -161,6 +184,11 @@ class TraceAnalyzer:
     def _compute_slow_filter(self, fp):
         """Compute the slow filter output.
 
+        Parameters
+        ----------
+        fp : FilterParameters
+            Filter parameters for this channel.
+
         Notes
         -----
         Slow (energy) filter calculation for a single-channel ADC trace. For
@@ -171,11 +199,6 @@ class TraceAnalyzer:
         .. [1] H. Tan et al., "A Fast Digital Filter Algorithm for Gamma-Ray
         Spectroscopy With Double-Exponential Decaying Scintillators," IEEE
         T. Nucl. Sci. 51 1541 (2004).
-
-        Parameters
-        ----------
-        fp : FilterParameters
-            Filter parameters for this channel.
         """
         self.slow_filter = np.zeros(len(self.trace))
 
@@ -224,8 +247,11 @@ class TraceAnalyzer:
         """Read the filter parameters, convert to samples, and pack them.
 
         Reads the channel DSP filter parameters from the manager, converts
-        each to the nearest integer number of samples, and packs them into a
-        FilterParameters object.
+        the filter times (risetimes, gaps, CFD delay and tau) to the nearest
+        integer number of samples, and packs them into a FilterParameters
+        object. Risetimes, the CFD delay and tau shorter than one sample (XDT)
+        are set to 1 sample; gaps may be 0. The CFD scale is not a time and is
+        only cast to int.
 
         Parameters
         ----------

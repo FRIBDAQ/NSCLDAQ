@@ -1,7 +1,6 @@
 /**
  * @file CDataGenerator.h
- * @brief Defines a class for generating offline data for testing/debugging
- * and a ctypes interface for the class.
+ * @brief Defines a class for generating offline data for testing/debugging.
  */
 
 #ifndef CDATAGENERATOR_H
@@ -35,8 +34,8 @@ private:
   std::uniform_real_distribution<double> m_A; //!< Trace amplitude.
   std::normal_distribution<double> m_rise;    //!< Trace exponential rise.
   std::normal_distribution<double> m_decay;   //!< Trace exponential decay.
-  std::normal_distribution<double> m_noise;   //!< Trace random noise.
   std::uniform_real_distribution<double> m_baseline; //!< Baseline run data.
+  std::normal_distribution<double> m_noise;          //!< Trace random noise.
 
 public:
   /** @brief Constructor. */
@@ -46,14 +45,14 @@ public:
    * @brief Generate test trace data.
    * @param[in,out] data Pointer to the start of the trace data storage.
    * @param[in] dataSize How many data points to store.
-   * @param[in] binWidth Histogram bin width in microseconds.
+   * @param[in] binWidth Trace sample width (XDT) in microseconds.
    * @return int
    * @retval 0 Success.
    */
   int GetTraceData(unsigned short *data, int dataSize, double binWidth);
   /**
    * @brief Generate test Gaussian-distributed data.
-   * @param[in,out] data Pointer to the start of the baseline data storage.
+   * @param[in,out] data Pointer to the start of the histogram data storage.
    * @param[in] dataSize How many data points to store.
    * @return 0 (always).
    */

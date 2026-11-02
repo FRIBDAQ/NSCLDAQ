@@ -56,7 +56,7 @@ public:
    * @param nChannels Channels per module.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval <0 XIA API error code.
    */
   int BeginHistogramRun(int module, int nChannels);
   /**
@@ -64,9 +64,9 @@ public:
    * synchronization is OFF __but__ only stops a run in a single module.
    * @param module Module number.
    * @return int
-   * @retval 0   Run end attempted; may return 0 even if the run did not stop
-   * within the retry limit.
-   * @retval !=0 XIA API error code on failure.
+   * @retval 0 Success.
+   * @retval <0 XIA API error code on failure, or CPIXIEERROR_RUN_ACTIVE if the
+   * run is still active after the module's end run request.
    */
   int EndHistogramRun(int module);
   /**
@@ -74,8 +74,8 @@ public:
    * @param module  Module number.
    * @param channel Channel number on module to read histogram from.
    * @return int
-   * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval 0 Success.
+   * @retval <0 XIA API error code.
    */
   int ReadHistogram(int module, int channel);
   /**
@@ -83,7 +83,8 @@ public:
    * @param module Module number.
    * @param nChannels Channels per module.
    * @return int
-   * @retval 0 Always.
+   * @retval 0 Success.
+   * @retval <0 XIA API error code.
    */
   int BeginBaselineRun(int module, int nChannels);
   /**
@@ -98,16 +99,16 @@ public:
    * @param module  Module number.
    * @param channel Channel number on the module.
    * @return int
-   * @retval 0   Success.
-   * @retval !=0 XIA API error code on failure.
+   * @retval 0 Success.
+   * @retval <0 XIA API error code.
    */
   int ReadBaseline(int module, int channel);
   /**
    * @brief Read statistics for a single module after a run is ended.
    * @param module Module number.
    * @return int
-   * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval 0 Success.
+   * @retval <0 XIA API error code.
    */
   int ReadModuleStats(int module);
 
@@ -165,26 +166,29 @@ private:
    */
   void UpdateBaselineHistograms(int module);
   /**
-   * @brief Set the histogram length for a module. This is only used for
-   * testing with the generator and should not be used in normal operation.
+   * @brief Set the histogram length for a module.
    * @param module Module number (zero-indexed).
-   * @note Histogram length is assume to be the same for all channels on a
-   * module. This is a private functon since the histogram length is determined
+   * @return int
+   * @retval 0 Success.
+   * @retval <0 XIA API error code; m_lastErrorMessage already stored and
+   * m_histogramLength left unchanged.
+   * @note Histogram length is assumed to be the same for all channels on a
+   * module. This is a private function since the histogram length is determined
    * by the module and should not be set from the outside.
    */
-  void SetHistogramLength(int module) {
-    m_histogramLength = static_cast<unsigned int>(GetHistogramLength(module));
-  };
+  int SetHistogramLength(int module);
   /**
-   * @brief Set the maximum number of baselines for a module
-   * @param module Module number (zero-indexed)
+   * @brief Set the maximum number of baselines for a module.
+   * @param module Module number (zero-indexed).
+   * @return int
+   * @retval 0 Success.
+   * @retval <0 XIA API error code; m_lastErrorMessage already stored and
+   * m_maxBaselines left unchanged.
    * @note Max number of baselines is assumed to be the same for all channels on
    * a module. This is a private method since the max number of baselines is
    * determined by the module and should not be set from the outside.
    */
-  void SetMaxBaselines(int module) {
-    m_maxBaselines = static_cast<unsigned int>(GetMaxBaselines(module));
-  };
+  int SetMaxBaselines(int module);
 };
 
 /** @} */
@@ -210,21 +214,23 @@ int CPixieRunUtilities_ReadBaseline(CPixieRunUtilities *utils, int mod,
                                     int chan);
 /** @brief Wrapper to read run statistics from the module. */
 int CPixieRunUtilities_ReadModuleStats(CPixieRunUtilities *utils, int mod);
-/** @brief Wrapper to marshall the histogram data; cannot throw, unguarded. */
+/** @brief Wrapper to marshall the histogram data; cannot throw, unguarded.
+ * Returns nullptr for a null handle. */
 unsigned int *CPixieRunUtilities_GetHistogramData(CPixieRunUtilities *utils);
-/** @brief Wrapper to marshall the baseline data; cannot throw, unguarded. */
+/** @brief Wrapper to marshall the baseline data; cannot throw, unguarded.
+ * Returns nullptr for a null handle. */
 unsigned int *CPixieRunUtilities_GetBaselineData(CPixieRunUtilities *utils);
 /** @brief Wrapper to get the run active status. */
 bool CPixieRunUtilities_GetRunActive(CPixieRunUtilities *utils);
-/** @brief Wrapper to setup the offline data generator; no return value,
- * unguarded. */
+/** @brief Wrapper to set up the offline data generator; no return value. */
 void CPixieRunUtilities_SetUseGenerator(CPixieRunUtilities *utils, bool mode);
 /** @brief Wrapper to get histogram length for a single module. */
 int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities *utils, int mod);
 /** @brief Wrapper to get the maximum number of baselines for a single module.
  */
 int CPixieRunUtilities_GetMaxBaselines(CPixieRunUtilities *utils, int mod);
-/** @brief Wrapper to get the last error message. Cannot throw; unguarded. */
+/** @brief Wrapper to get the last error message. Cannot throw; unguarded.
+ * Returns "null utils handle" for a null handle. */
 const char *CPixieRunUtilities_GetLastErrorMessage(CPixieRunUtilities *utils);
 /** @brief Wrapper for the class destructor. */
 void CPixieRunUtilities_delete(CPixieRunUtilities *utils);

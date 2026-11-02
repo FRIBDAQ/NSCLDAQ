@@ -37,13 +37,13 @@ class TrigConfig0(QWidget):
     nmodules : int
         Number of installed modules in the crate.
     channel_map : list
-        List of number of channels per moduele.
+        List of number of channels per module.
     grid : QWidget
         Grid widget shown on the GUI.
     param_grid : MyGridLayout
-        Gridded layout for the CSRB GUI.
-    rb_group : QButtonGroup
-        Radio button group for common crate configurations.
+        Gridded layout for the TrigConfig0 GUI.
+    rbgroup : QButtonGroup
+        Radio button group for common trigger configurations.
     rb_dict : dict
         Dictionary of TrigConfig0 settings for common trigger settings.
     b_show_config : QPushButton
@@ -59,7 +59,7 @@ class TrigConfig0(QWidget):
     display_dsp(mgr, set_state=False)
         Display current DSP in GUI.
     set_param_grid(mgr)
-        Setup TrigConfig0 for known trigger settings.
+        Set up TrigConfig0 for known trigger settings.
     """
 
     def __init__(self, *args, nmodules=None, channel_map=None, **kwargs):
@@ -67,15 +67,15 @@ class TrigConfig0(QWidget):
         TrigConfig0 class constructor.
 
         Parameters
-        -----------------
+        ----------
         *args : tuple
-            Positional arguments passed to parent ChanDSPWidget.
+            Positional arguments passed to parent QWidget.
         nmodules : int, default=None
             Module count from factory create method.
         channel_map : list, default=None
             List of channels per module.
         **kwargs : dict
-            Keyword arguments passed to parent ChanDSPWidget.
+            Keyword arguments passed to parent QWidget.
         """
         super().__init__(*args, **kwargs)
 
@@ -124,7 +124,8 @@ class TrigConfig0(QWidget):
         # (possible trigger sources), bit_low and bit_high are the TrigConfig0
         # mask to set this trigger option, and a tooltip. Option order matters:
         # index in the options list is the value to set the masked TrigConfig0
-        # bits; "chan" means a list of channels [0, nchannels-1].
+        # bits; entries without an options list select a channel in
+        # [0, nchannels-1].
 
         self.param_labels = {
             0: {
@@ -264,8 +265,8 @@ class TrigConfig0(QWidget):
         Parameters
         ----------
         mgr : DSPManager
-             Manager for internal DSP and interface for XIA API read/write
-             operations.
+            Manager for internal DSP and interface for XIA API read/write
+            operations.
         """
         self.display_dsp(mgr, set_state=True)
 
@@ -275,8 +276,8 @@ class TrigConfig0(QWidget):
         Parameters
         ----------
         mgr : DSPManager
-             Manager for internal DSP and interface for XIA API read/write
-             operations.
+            Manager for internal DSP and interface for XIA API read/write
+            operations.
         """
 
         for i in range(self.nmodules):
@@ -298,10 +299,10 @@ class TrigConfig0(QWidget):
         Parameters
         ----------
         mgr : DSPManager
-             Manager for internal DSP and interface for XIA API read/write
-             operations.
+            Manager for internal DSP and interface for XIA API read/write
+            operations.
         set_state : bool, default=False
-            Set the TrigConfig0 button state based on the current confiugration
+            Set the TrigConfig0 button state based on the current configuration
             settings.
         """
         if set_state:
@@ -351,14 +352,14 @@ class TrigConfig0(QWidget):
         Parameters
         ----------
         mgr : DSPManager
-             Manager for internal DSP and interface for XIA API read/write
-             operations.
+            Manager for internal DSP and interface for XIA API read/write
+            operations.
 
         Returns
         -------
         int
-            Value corresponding to the crate configuration stored in the
-            CSRB settings.
+            Value corresponding to the trigger configuration stored in the
+            TrigConfig0 settings.
         """
         config = -1
 

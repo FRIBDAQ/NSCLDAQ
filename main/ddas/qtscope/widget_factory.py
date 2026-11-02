@@ -8,8 +8,6 @@ class WidgetFactory:
 
     Attributes
     ----------
-    logger : Logger
-        QtScope Logger object.
     builders : dict
         Dictionary of builder methods for concrete classes.
 
@@ -17,7 +15,7 @@ class WidgetFactory:
     -------
     register_builder(key, builder)
         Register a builder by key name.
-    create(key)
+    create(key, *args, **kwargs)
         Create a widget using its builder.
     """
 
@@ -53,14 +51,15 @@ class WidgetFactory:
         *args : tuple
             Other positional arguments passed to widget builder (generally
             not used).
-        **kwargs : tuple
+        **kwargs : dict
             Keyword arguments passed to widget builder (e.g. number of
             channels for this module via `nchannels` for channel params or
             number of modules in the system via `nmodules` for module params).
 
         Returns
         -------
-        An instance of the widget class, if it exists.
+        QWidget
+            An instance of the widget class, if it exists.
 
         Raises
         ------

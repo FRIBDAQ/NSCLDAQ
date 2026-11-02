@@ -29,8 +29,11 @@ tools like matplotlib and NumPy. Communication with the Pixie-16 modules via the
 XIA API is implemented using the Python ctypes foreign function library. QtScope 
 implements a model-view-controller (MVC) architecture for user interaction with 
 the Pixie-16 hardware and manages the DSP parameters internally using a Python 
-dataframe. The viewer never calls the hardware, and lifecycle operations 
-(boot/configure, save/load, exit) are synchronous in the main thread by design.
+dataframe. During interactive use the view never calls the hardware directly: 
+hardware access runs in worker threads, and widgets are updated only from slots 
+on the main thread. Lifecycle operations -- post-boot configuration, settings 
+save/load, and exit -- run synchronously on the main thread by design, since 
+there is nothing to mediate.
 
 @par
 QtScope provides a number of useful features for configuring DDAS systems, including:
@@ -97,7 +100,7 @@ $DAQBIN/qtscope
 @par
 QtScope reads several environment variables at startup. Set them (typically with 
 `export NAME=value`) before launching. Note that environment variables must be
-set in the environment where QtScope is launched i.e., inside a container.
+set in the environment where QtScope is launched, e.g., inside a container.
 
 | Variable | Required? | Effect |
 | :- | :- | :- |
@@ -175,7 +178,7 @@ INFO - 2026-07-30 09:15:02,481: System boot successful
 @subsection sec_qtscope_logging_expert Details for Experts
 @par
 QtScope uses a single application-owned logger named `qtscope_logger`. `main.py` 
-attaches a `FileHandler` (to `qtscope.log`) directly to the logger it and sets 
+attaches a `FileHandler` (to `qtscope.log`) directly to the logger and sets 
 `propagate = False`, so QtScope's logging is fully self-contained and never goes 
 through Python's root logger. A last-resort hook (`sys.excepthook`) catches any 
 exception that escapes all other handling and writes it to the log at `critical` 
@@ -237,12 +240,12 @@ it again does nothing.
 @image html qtscope_booted.png "The QtScope GUI state after a successful system boot. Note that the button previously displaying [Boot system] is now green, disabled, and reads [Booted]. The remaining GUI elements are enabled upon a successful boot."
 
 @par
-If booting fails -- most commonly because `cfgPixie16.txt` or `modevtlen.txt` is 
-missing or malformed -- QtScope prints an error to the terminal and the log, does 
-not crash, and leaves the system unbooted. Fix the problem (for example, copy a 
-correct `cfgPixie16.txt` into the launch directory) and click **[Boot system]** 
-again; the configuration files are re-read on every attempt. The **[Exit]** button 
-is always available.
+If booting or the configuration that follows it fails -- most commonly because 
+`cfgPixie16.txt` or `modevtlen.txt` is missing or malformed -- QtScope treats it as 
+a critical error: it shows an error dialog, prints the reason to the terminal and 
+the log, and leaves **[Boot system]** disabled. Click **[Exit]** (always 
+available), fix the problem (for example, copy a correct `cfgPixie16.txt` into the 
+launch directory), and start QtScope again.
 
 @note
 QtScope numbers modules with an internal, zero-indexed counter that is **not** the 
@@ -332,7 +335,7 @@ and **Channel selection**.
 @par
 - **[Read trace]** -- acquires and plots an ADC trace from the selected channel
   (or all channels, if **Read all** is checked). QtScope repeatedly reacquires
-  until it finds what it thinks is a vaild trace or hits its reacquire limit. 
+  until it finds what it thinks is a valid trace or hits its reacquire limit. 
   Note that this is **not** a triggered trace acquisition as you would have when 
   running a production readout program. If no validated trace is found, the last 
   acquired trace is displayed. Displayed traces are generally **8192 samples at 60 ns/sample**; 
@@ -369,7 +372,7 @@ Trace-acquisition controls are disabled while a run is active.
   the canvas. You can read repeatedly during a run to watch a histogram fill.
   Enabled only while a run is active.
 
-@image html qtscope_run_active.png "QtScope while a run is active with an energy spectrum shown on the canvas. Note that operations which are not permitted during a run, such as acquiring an ADC trace, are disabled on the GUI.
+@image html qtscope_run_active.png "QtScope while a run is active with an energy spectrum shown on the canvas. Note that operations which are not permitted during a run, such as acquiring an ADC trace, are disabled on the GUI."
 
 @par
 When you click **[End run]**, the run stops and QtScope returns to the idle state
@@ -394,7 +397,7 @@ where *input* = triggers/second, *output* = accepted triggers/second, *livetime*
   patient.
 
 @subsection sec_qtscope_plotbar The Plot Toolbar and Fitting
-@image html plot_toolbar.png "The QtScope plot toolbar.
+@image html plot_toolbar.png "The QtScope plot toolbar."
 @par
 The plot toolbar controls the canvas display and provides curve fitting. It
 combines a few standard matplotlib navigation buttons with QtScope-specific
@@ -464,7 +467,7 @@ a top-level tab per module (Mod. 0, Mod. 1, ...), and within each module a set o
 function tabs (AnalogSignal, TriggerFilter, ...). Each row within a tab is one 
 channel, labeled by its zero-indexed channel number.
 
-@image html analog_signal.png "The channel DSP popup window displayed when clicking the [Channel DSP] button. The tab controlling the analog signal properties and DC offset on module 0 is selected. Additional tabs at the top allow the user to select other modules. The channel DSP toolbar is visible on the bottom of the figure.
+@image html analog_signal.png "The channel DSP popup window displayed when clicking the [Channel DSP] button. The tab controlling the analog signal properties and DC offset on module 0 is selected. Additional tabs at the top allow the user to select other modules. The channel DSP toolbar is visible on the bottom of the figure."
 
 @subsubsection sec_qtscope_chandsp_toolbar The Channel DSP Toolbar
 @par
@@ -650,7 +653,7 @@ tab reports that the feature is unsupported and disables its controls. (Correct
 32-channel groupings require input from the XIA; the disable is an intentional 
 safeguard against silently writing a wrong coincidence configuration.)
 
-@image html mult_coincidence.png "The Multipliplicity and Coincidence tab. The [Print mask] button will print the values of the 32-bit multiplicity masks for each channel on the module."
+@image html mult_coincidence.png "The Multiplicity and Coincidence tab. The [Print mask info] button will print the values of the 32-bit multiplicity masks for each channel on the module."
 
 @subsubsection sec_qtscope_chandsp_timing TimingControl
 @par
@@ -755,11 +758,18 @@ Exit in any of these equivalent, safe ways:
 - Press **Ctrl-C** in the launching terminal.
 
 @par
-All three run the same clean shutdown: any active run is ended, the modules are
-released , the QtScop internal the thread pool is drained, native resources are
+All three run the same clean shutdown: QtScope's internal thread pool is drained,
+any active run is ended, the modules are released, native resources are
 freed, and the application quits. A brief pause during shutdown is normal --
 QtScope is talking to the hardware synchronously so shutdown cannot race an
-in-flight operation.
+in-flight operation. If a hardware operation is still running when exit starts, 
+QtScope waits for it to finish; if that takes longer than 10 seconds, a message 
+is printed to the terminal while it waits.
+
+@par
+Exiting cannot fail: QtScope attempts to release every module even if another 
+module fails, any failure is written to qtscope.log, and the application always 
+quits.
 
 @section sec_qtscope_reference Reference: Parameter Names
 @par

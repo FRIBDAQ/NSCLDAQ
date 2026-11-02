@@ -47,7 +47,7 @@ class Worker(QRunnable):
     -------
     run()
         Executes the code we wish to run from the passed function fn.
-    set_function(function)
+    set_function(new_fn)
         Set function attribute.
     """
 
@@ -60,7 +60,7 @@ class Worker(QRunnable):
 
         Parameters
         ----------
-        fn : QObject
+        fn : callable, optional
             Function attached to this worker thread.
         args : tuple
             Arguments to pass to the callback function.
@@ -104,55 +104,47 @@ class Worker(QRunnable):
 class ThreadPoolManager:
     """Thread management for QtScope.
 
-    QThreadPool is used to recycle thread objects and reduce creation overhead.
-    The blocking feature of Python multithreading is useful here to
-    simultaneously block inputs from sections of the GUI which we want to
-    disable as well as disable the GUI elements which would respond to those
-    inputs. The concept of the "main event loop" in Qt and Python's blocking
-    thread behavior imply both of these steps are necessary: events can still
-    be queued in the main event loop if the GUI elements connected to those
-    signaling events are not disabled.
+    Runs module (XIA API) operations off the GUI thread and routes their
+    results back to GUI-thread slots. The pool has a single thread, so jobs
+    run one at a time in the order they were started: at most one entry
+    into the XIA API, whichever part of the program started the job
+    (§4.1 rule 2). A job started while another runs is queued, not refused.
 
     The main way to interact with this class is through the `start_thread()`
     method, specifying the function to be executed within the thread and the
     functions connected to the thread's `running`, `finished`, `results`, and
     `error` signals. The `start_thread()` method will create, configure, and
     run an object encapsulating a worker thread in a QRunnable. Note that
-    QThreadPool takes ownership of the runnable and will delete it if it
-    returns true; otherwise ownership remains with the caller. Worker failures
+    QThreadPool takes ownership of the runnable and will delete it if its
+    autoDelete() returns true; otherwise ownership remains with the caller. Worker failures
     are always reported by `_report_worker_error`; the `errors` list adds
     recovery handlers on top of that reporting.
 
     Attributes
     ----------
     pool : QThreadPool
-        Global thread pool.
+        Private single-thread pool for running module operations off the
+        GUI thread.
 
     Methods
     -------
     start_thread(fcn, running, finished, results, errors)
-        Reserve a thread and run its callback, wiring the signal handlers.
+        Queue fcn on the single-thread pool, wiring the signal handlers.
     get_active_thread_count()
         Return the number of active threads.
-    wait(int)
-        Wait for all threads to exit and remove them from the global pool.
+    wait(time=10000)
+        Wait for all threads to exit; return False if the wait timed out.
     exit()
-        Remove all queued runnables which have not yet started.
+        Remove all queued runnables which have not yet started, then wait
+        for running threads; return False if the wait timed out.
 
     """
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the thread pool. Get the global thread pool.
-
-        Parameters
-        ----------
-        args : tuple
-            Arguments (passed uninspected to base class).
-        kwargs : dict
-            Keyword arguments (passed uninspected to base class).
-        """
-        super().__init__(*args, **kwargs)
-        self.pool = QThreadPool.globalInstance()
+    def __init__(self):
+        """Initialize the thread pool."""
+        # One worker at a time: at most one entry into XIA API.
+        self.pool = QThreadPool()
+        self.pool.setMaxThreadCount(1)
 
     def start_thread(
         self,
@@ -211,7 +203,7 @@ class ThreadPoolManager:
         self.pool.start(worker)
 
     def get_active_thread_count(self):
-        """Return the number of threads from QThreadPool.getActiveThreadCount().
+        """Return the number of threads from QThreadPool.activeThreadCount().
 
         Returns
         -------
@@ -228,15 +220,20 @@ class ThreadPoolManager:
         ----------
         time : int
             Wait time in milliseconds (optional, default=10 s).
+
+        Returns
+        -------
+        bool
+            True if all threads finished, False if the wait timed out.
         """
-        self.pool.waitForDone(time)
+        return self.pool.waitForDone(time)
 
     def exit(self):
         """Clears all runnables from the queue and waits for all threads
-        to exit.
+        to exit. Returns True if all threads finished within the wait.
         """
         self.pool.clear()
-        self.wait()
+        return self.wait()
 
     ##
     # Private functions

@@ -51,7 +51,7 @@ public:
    * @param channel Channel number on module for trace read.
    * @return int
    * @retval 0 Success.
-   * @retval < 0 XIA API error code.
+   * @retval <0 XIA API error code.
    * @retval CPIXIEERROR_TRACE_ACQUIRE Other acquisition errors (trace empty,
    * offline generator failures).
    */
@@ -62,7 +62,7 @@ public:
    * @param channel Channel number on module for trace read.
    * @return int
    * @retval 0 Success.
-   * @retval < 0 XIA API error code.
+   * @retval <0 XIA API error code.
    * @retval CPIXIEERROR_TRACE_ACQUIRE Other acquisition errors (trace empty,
    * offline generator failures).
    */
@@ -72,7 +72,7 @@ public:
    * @param module Module number.
    * @param channel Channel number.
    * @return Trace length in samples.
-   * @retval < 0 XIA error code, could not read trace length.
+   * @retval <0 XIA error code, could not read trace length.
    */
   int GetTraceLength(int module, int channel);
   /**
@@ -148,12 +148,14 @@ int CPixieTraceUtilities_ReadFastTrace(CPixieTraceUtilities *utils, int mod,
 /** @brief Wrapper to get trace length. */
 int CPixieTraceUtilities_GetTraceLength(CPixieTraceUtilities *utils, int mod,
                                         int chan);
-/** @brief Wrapper to get trace data; cannot throw, unguarded. */
+/** @brief Wrapper to get trace data; cannot throw, unguarded. Returns
+ * nullptr for a null handle. */
 unsigned short *CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities *utils);
 /** @brief Wrapper to set generator use. */
 void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities *utils,
                                           bool mode);
-/** @brief Wrapper to get the last error message. Cannot throw, unguarded. */
+/** @brief Wrapper to get the last error message. Cannot throw, unguarded.
+ * Returns "null utils handle" for a null handle. */
 const char *
 CPixieTraceUtilities_GetLastErrorMessage(CPixieTraceUtilities *utils);
 /** @brief Wrapper for the class destructor. */

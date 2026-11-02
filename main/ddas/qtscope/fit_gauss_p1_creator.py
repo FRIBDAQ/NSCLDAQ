@@ -28,7 +28,7 @@ class GaussP1Fit(FitFunction):
             Parameters used to evaluate the function over x.
 
         Returns
-        ------
+        -------
         ndarray
             Array containing the fit values over the range.
         """
@@ -77,7 +77,7 @@ class GaussP1FitBuilder:
         """GaussP1FitBuilder class constructor."""
         self._instance = None
 
-    def __call__(self, params=[], form="", count_data=True):
+    def __call__(self, params=None, form="", count_data=True):
         """Create the fitting function.
 
         Create an instance of the fit function if it does not exist and
@@ -101,6 +101,7 @@ class GaussP1FitBuilder:
         GaussP1Fit
             Instance of the fit class.
         """
+        params = params if params is not None else []
         if not self._instance:
             self._instance = GaussP1Fit(params, form, count_data)
         return self._instance

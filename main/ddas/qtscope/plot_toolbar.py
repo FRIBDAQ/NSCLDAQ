@@ -75,7 +75,7 @@ class PlotToolBarBuilder:
     """Builder method for factory creation."""
 
     def __init__(self, *args, **kwargs):
-        """PlotToolbarBuilder class constructor."""
+        """PlotToolBarBuilder class constructor."""
 
     def __call__(self, *args, **kwargs):
         """Create an instance of the toolbar and return it to the caller.

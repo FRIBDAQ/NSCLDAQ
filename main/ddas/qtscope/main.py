@@ -18,12 +18,30 @@ sys.path.append(qtscope_path)
 os.environ["NO_PROXY"] = ""
 os.environ["XDG_RUNTIME_DIR"] = os.getcwd()
 
+####################################################################################
+# Logger configuration. Setup before any other imports so that any logging from
+# imported modules is captured.
 _logger = logging.getLogger("qtscope_logger")
 _logger.setLevel(logging.INFO)  # Default; overridden from env in main()
 _logger.propagate = False  # Own our logging; never touch the root logger
 _handler = logging.FileHandler("qtscope.log")
 _handler.setFormatter(logging.Formatter("%(levelname)s - %(asctime)s: %(message)s"))
 _logger.addHandler(_handler)
+
+
+def _log_uncaught(exc_type, exc_value, exc_tb):
+    """Last-resort backstop: log any uncaught exception before exiting."""
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(
+            exc_type, exc_value, exc_tb
+        )  # Ctrl-C is normal; don't log it
+        return
+    _logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_tb))
+    sys.__excepthook__(exc_type, exc_value, exc_tb)  # Keep the normal behavior too
+
+
+sys.excepthook = _log_uncaught  # Any uncaught errors are logged
+####################################################################################
 
 from PyQt5 import QtWidgets, QtCore
 
@@ -82,7 +100,6 @@ def main():
         _logger.setLevel(log_level)
         _logger.info(f"PATH: {sys.path}")
         _logger.debug(f"Environ: {os.environ}")
-        sys.excepthook = _log_uncaught  # Any uncaught errors are logged
 
     try:
         offline = int(os.getenv("QTSCOPE_OFFLINE", 0))
@@ -172,7 +189,7 @@ def create_mod_dsp_factory():
 
 
 def create_toolbar_factory():
-    """Create a widget factory and register module DSP builders with it.
+    """Create a widget factory and register toolbar builders with it.
 
     Returns
     -------
@@ -204,7 +221,7 @@ def create_fit_factory():
     # parameter values.
     config_fit_exp = {
         "params": [1, -0.003, 1],  # k = -0.003 approx. 20 us in 60 ns samples.
-        "form": "f(x) = p[0]*exp(p[1]*x) + p[2]",
+        "form": "f(x) = p[0]*exp(p[1]*(x - x[0])) + p[2]",
         "count_data": False,
     }
 
@@ -240,17 +257,6 @@ def create_fit_factory():
     )
 
     return factory
-
-
-def _log_uncaught(exc_type, exc_value, exc_tb):
-    """Last-resort backstop: log any uncaught exception before exiting."""
-    if issubclass(exc_type, KeyboardInterrupt):
-        sys.__excepthook__(
-            exc_type, exc_value, exc_tb
-        )  # Ctrl-C is normal; don't log it
-        return
-    _logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_tb))
-    sys.__excepthook__(exc_type, exc_value, exc_tb)  # Keep the normal behavior too
 
 
 # Run main when executed as a script, the way we intend to do this:

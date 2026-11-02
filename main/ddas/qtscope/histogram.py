@@ -6,7 +6,7 @@ from chan_dsp_widget import ChanDSPWidget
 
 
 class Histogram(ChanDSPWidget):
-    """Histograming DSP tab.
+    """Histogramming DSP tab.
 
     Methods
     -------
@@ -20,13 +20,12 @@ class Histogram(ChanDSPWidget):
         """Histogram class constructor.
 
         Parameters
-        -----------------
+        ----------
         *args : tuple
             Positional arguments passed to parent ChanDSPWidget.
-        nchannels : int, default=16
-            Channel count from factory create method.
         **kwargs : dict
-            Keyword arguments passed to parent ChanDSPWidget.
+            Keyword arguments passed to parent ChanDSPWidget, including the
+            channel count `nchannels` from the factory create method.
         """
         # XIA API parameter names:
 
@@ -47,7 +46,7 @@ class Histogram(ChanDSPWidget):
     def configure(self, mgr, mod):
         """Overridden template configuration operations.
 
-        Setup integer validators for EMin and BinFactor.
+        Set up integer validators for EMin and BinFactor.
 
         Parameters
         ----------

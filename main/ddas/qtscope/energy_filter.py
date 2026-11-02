@@ -10,12 +10,14 @@ class EnergyFilter(ChanDSPWidget):
     ----------
     extra_params : list
         Extra DSP settings configured on this tab.
+    filter_range : QSpinBox
+        Spin box to set the SLOW_FILTER_RANGE module parameter.
 
     Methods
     -------
     configure(mgr, mod)
         Configure the EnergyFilter class. Overridden from base class.
-    update(mgr, mod)
+    update_dsp(mgr, mod)
         Update DSP from GUI. Overridden from base class.
     display_dsp(mgr, mod)
         Display DSP from the dataframe. Overridden from base class.
@@ -25,7 +27,7 @@ class EnergyFilter(ChanDSPWidget):
         """EnergyFilter class constructor.
 
         Parameters
-        -----------------
+        ----------
         *args : tuple
             Positional arguments passed to parent ChanDSPWidget.
         nchannels : int, default=16

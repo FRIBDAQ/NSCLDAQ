@@ -17,7 +17,7 @@ class ModDSPGUI(QMainWindow):
     ----------
     pool_mgr : ThreadPoolManager
         Global thread pool manager.
-    mod_dsp_factory : ModDSPFactory
+    mod_dsp_factory : WidgetFactory
         Factory for implemented module DSP parameters.
     toolbar : DSPToolBar
         Toolbar for manipulating DSP settings.
@@ -50,8 +50,8 @@ class ModDSPGUI(QMainWindow):
         ----------
         mod_dsp_factory : WidgetFactory
             Factory for implemented module DSP parameters.
-        toolbar_factory : ToolBarFactory
-            Factory for implemented toolbars.
+        toolbar_factory : WidgetFactory
+            Factory for implemented toolbar widgets.
         pool_mgr : ThreadPoolManager
             Management for global thread pool.
         """
@@ -108,7 +108,7 @@ class ModDSPGUI(QMainWindow):
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Configuring GUI for {self.nmodules} modules using {self.dsp_mgr}"
         )
 
-        # Crate the module DSP layout and insert it on top of the
+        # Create the module DSP layout and insert it on top of the
         # manager layout above the toolbar:
 
         self.mod_params = ModDSPLayout(self.mod_dsp_factory, self.nmodules, channel_map)
@@ -136,7 +136,8 @@ class ModDSPGUI(QMainWindow):
         """Apply the module DSP settings.
 
         Updates internal DSP from the GUI values, then writes the internal DSP
-        to the module.
+        to the module. On a failed write, the hardware values are reloaded
+        into the internal DSP and the GUI.
         """
         for w in self.mod_params.param_widgets:
             w.update_dsp(self.dsp_mgr)
@@ -145,6 +146,7 @@ class ModDSPGUI(QMainWindow):
         self.pool_mgr.start_thread(
             fcn=self._write_mod_dsp,
             results=[self._display_mod_dsp],
+            errors=[self.load_dsp],
             finished=[self.toolbar.enable_mod_dsp],
         )
 
@@ -196,13 +198,13 @@ class ModDSPGUI(QMainWindow):
     #
 
     def _write_mod_dsp(self):
-        """Write module parameters to the dataframe for all modules."""
+        """Write module parameters from the dataframe to all modules."""
         for i in range(self.nmodules):
             for w in self.mod_params.param_widgets:
                 self.dsp_mgr.write(i, w.param_names)
 
     def _read_mod_dsp(self):
-        """Read module parameters from the dataframe for all modules."""
+        """Read module parameters from all modules into the dataframe."""
         for i in range(self.nmodules):
             for w in self.mod_params.param_widgets:
                 self.dsp_mgr.read(i, w.param_names)

@@ -1,6 +1,6 @@
 /**
  * @file CPixieDSPUtilities.cpp
- * @brief Implementation DSP utilities class.
+ * @brief Implementation of the DSP utilities class.
  */
 
 #include "CPixieDSPUtilities.h"
@@ -168,7 +168,7 @@ int CPixieDSPUtilities_ReadModPar(CPixieDSPUtilities *utils, int mod,
 }
 
 const char *CPixieDSPUtilities_GetLastErrorMessage(CPixieDSPUtilities *utils) {
-  return utils->GetLastErrorMessage();
+  return utils ? utils->GetLastErrorMessage() : "null utils handle";
 }
 
 void CPixieDSPUtilities_delete(CPixieDSPUtilities *utils) {

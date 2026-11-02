@@ -17,10 +17,10 @@ class DSPManager:
     parameters which are addressable by the code. The dataframe chan_par is an
     nchannel x nChanDSP dataframe of channel DSP parameters and the dataframe
     mod_par is a 1 x nModDSP dataframe of module DSP parameters. Channel and
-    module DSP parameters are defined by XIA.The rest of the system uses this
+    module DSP parameters are defined by XIA. The rest of the system uses this
     management class to modify the internal DSP parameter values stored in the
     dataframe as well as to read/write values to/from the modules via
-    getters/setters and the  DSPUtilities class.
+    getters/setters and the DSPUtilities class.
 
     Attributes
     ----------
@@ -42,25 +42,25 @@ class DSPManager:
 
     Methods
     -------
-    initialize_dsp(nmod, channel_map, msps_list):
+    initialize_dsp(nmod, channel_map, msps_list)
         Create and fill the DSP dictionary.
-    get_chan_par(mod, chan, pname):
+    get_chan_par(mod, chan, pname)
         Get a channel parameter value from the dataframe.
-    set_chan_par(mod, chan, pname, value):
+    set_chan_par(mod, chan, pname, value)
         Set a channel parameter value in the dataframe.
-    get_mod_par(mod, pname):
+    get_mod_par(mod, pname)
         Get a module parameter value from the dataframe.
-    set_mod_par(mod, pname, value):
+    set_mod_par(mod, pname, value)
         Set a module parameter value in the dataframe.
-    get_module_msps(mod):
+    get_module_msps(mod)
         Get the module MSPS value.
-    read(mod, pnames):
+    read(mod, pnames)
         Read DSP parameter(s) into the dataframe.
-    write(mod, pnames):
+    write(mod, pnames)
         Write DSP parameter(s) from the dataframe.
-    adjust_offsets(mod):
+    adjust_offsets(mod)
         Adjust the DC offset of all channels on a single module.
-    load_new_dsp():
+    load_new_dsp()
         Load new DSP settings into the dataframe.
     close()
         Release resources the manager owns.
@@ -91,6 +91,11 @@ class DSPManager:
             Map of channels per module.
         msps_list : list
             ADC sampling rate in MSPS for each module.
+
+        Raises
+        ------
+        PixieError
+            If a hardware read fails. Already logged at origin.
         """
         self._dsp = {}
         self._nmodules = nmod
@@ -232,7 +237,8 @@ class DSPManager:
 
         Returns
         -------
-        The module MSPS
+        int
+            ADC sampling rate in MSPS for the module.
         """
         return self._msps_list[mod]
 
@@ -283,6 +289,11 @@ class DSPManager:
         ----------
         mod : int
             Module number.
+
+        Raises
+        ------
+        PixieError
+            If the offset adjustment fails. Already logged at origin.
         """
         self._utils.adjust_offsets(mod)
 
@@ -294,6 +305,11 @@ class DSPManager:
         system. DSP settings are loaded on the modules without the need for a
         reboot, but the dataframe will hold the old values until this function
         is called.
+
+        Raises
+        ------
+        PixieError
+            If a hardware read fails. Already logged at origin.
         """
         for mod in range(self._nmodules):
             self.read(mod, [*xia.CHAN_PARS, *xia.MOD_PARS])
@@ -322,6 +338,8 @@ class DSPManager:
         ------
         ValueError
             If the parameter name is not known.
+        PixieError
+            If a hardware read fails.
         """
         if pname in xia.CHAN_PARS:
             for i in range(self._channel_map[mod]):
@@ -344,9 +362,10 @@ class DSPManager:
             Channel parameter name.
         """
         val = self._utils.read_chan_par(mod, chan, pname)
-        _logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Read Mod. {mod} Chan. {chan} {pname} {val}"
-        )
+        if _logger.isEnabledFor(logging.DEBUG):  # Skip the f-string in the hot path
+            _logger.debug(
+                f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Read Mod. {mod} Chan. {chan} {pname} {val}"
+            )
         self.set_chan_par(mod, chan, pname, val)
 
     def _read_and_set_mod_par(self, mod, pname):
@@ -360,9 +379,10 @@ class DSPManager:
             Module parameter name.
         """
         val = self._utils.read_mod_par(mod, pname)
-        _logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Read Mod. {mod} {pname} {val}"
-        )
+        if _logger.isEnabledFor(logging.DEBUG):
+            _logger.debug(
+                f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Read Mod. {mod} {pname} {val}"
+            )
         self.set_mod_par(mod, pname, val)
 
     def _get_and_write_par(self, mod, pname):
@@ -381,6 +401,8 @@ class DSPManager:
         ------
         ValueError
             If the parameter name is not known.
+        PixieError
+            If a hardware write fails.
         """
         if pname in xia.CHAN_PARS:
             for i in range(self._channel_map[mod]):
@@ -408,9 +430,10 @@ class DSPManager:
         """
         val = self.get_chan_par(mod, chan, pname)
         self._utils.write_chan_par(mod, chan, pname, val)
-        _logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Write Mod. {mod} Chan. {chan} {pname} {val}"
-        )
+        if _logger.isEnabledFor(logging.DEBUG):
+            _logger.debug(
+                f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Write Mod. {mod} Chan. {chan} {pname} {val}"
+            )
         # Read back and set parameters:
         self._read_and_set_chan_par(mod, chan, pname)
 
@@ -431,9 +454,10 @@ class DSPManager:
                 f"Module {mod}: New energy filter range = {val} -- filter parameters may have changed!"
             )
         self._utils.write_mod_par(mod, pname, val)
-        _logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Write Mod. {mod} {pname} {val}"
-        )
+        if _logger.isEnabledFor(logging.DEBUG):
+            _logger.debug(
+                f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Write Mod. {mod} {pname} {val}"
+            )
         self._read_and_set_mod_par(mod, pname)
 
     def _check_and_write_dependent_pars(self, mod, chan, pname):
@@ -448,11 +472,12 @@ class DSPManager:
         chan : int
             Channel number.
         pname : str
-            Channel parameter name.
+            Module or channel parameter name.
         """
         if pname in self._dsp_deps:
             for dep_par in self._dsp_deps[pname]:
-                _logger.debug(
-                    f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Get and write dependent {dep_par} for {pname}"
-                )
+                if _logger.isEnabledFor(logging.DEBUG):
+                    _logger.debug(
+                        f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Get and write dependent {dep_par} for {pname}"
+                    )
                 self._get_and_write_chan_par(mod, chan, dep_par)

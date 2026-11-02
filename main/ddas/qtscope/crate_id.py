@@ -35,15 +35,15 @@ class CrateID(QWidget):
         """CrateID class constructor.
 
         Parameters
-        -----------------
+        ----------
         *args : tuple
-            Positional arguments passed to parent ChanDSPWidget.
+            Positional arguments passed to parent QWidget.
         nmodules : int, default=None
             Module count from factory create method.
         channel_map : list, default=None
             List of channels per module (unused by this class).
         **kwargs : dict
-            Keyword arguments passed to parent ChanDSPWidget.
+            Keyword arguments passed to parent QWidget.
         """
         super().__init__(*args, **kwargs)
 
@@ -68,24 +68,27 @@ class CrateID(QWidget):
             Manager for internal DSP and interface for XIA API read/write
             operations.
 
-        Raises
-        ------
-        ValueError
-            If the crate ID values are not consistent for all modules.
+        Notes
+        -----
+        Crate ID values that are not consistent for all modules are logged
+        and reported to the user; no exception is raised to the caller.
         """
         # Rev. H data word 0 data format stores the crate ID in bits 11:10, so we restrict the crate ID values to [0, 3].
         self.crate_id.setRange(0, 3)
 
-        # Check crate ID consistency for all channels:
+        # Check crate ID consistency for all modules:
         id_list = []
         for i in range(self.nmodules):
             id_list.append(mgr.get_mod_par(i, self.param_names[0]))
 
         try:
-            if not all(id == id_list[0] for id in id_list):
-                raise ValueError(f"Inconsistent crate IDs read on Mod. {i}")
+            bad = [i for i, cid in enumerate(id_list) if cid != id_list[0]]
+            if bad:
+                raise ValueError(
+                    f"Inconsistent crate IDs: Mod. {bad[0]} differs from Mod. 0"
+                )
         except ValueError as e:
-            _logger.exception(f"Inconsistent crate ID values Mod. {i}: {id_list}")
+            _logger.exception(f"Inconsistent crate ID values: {id_list}")
             print(
                 f"{e}: Re-apply your module DSP parameters and check your settings file, it may be corrupt."
             )

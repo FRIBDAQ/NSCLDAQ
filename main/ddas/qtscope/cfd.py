@@ -20,7 +20,7 @@ class CFD(ChanDSPWidget):
         """CFD class constructor.
 
         Parameters
-        -----------------
+        ----------
         *args : tuple
             Positional arguments passed to parent ChanDSPWidget.
         nchannels : int, default=16
@@ -47,7 +47,7 @@ class CFD(ChanDSPWidget):
     def configure(self, mgr, mod):
         """Overridden template configuration operations.
 
-        Setup integer validator for CFDScale parameter. Disable CFD
+        Set up integer validator for CFDScale parameter. Disable CFD
         settings for 500 MSPS modules.
 
         Parameters

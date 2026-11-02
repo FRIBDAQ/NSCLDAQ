@@ -39,11 +39,11 @@ class DSPToolBar(QToolBar):
         Enable all toolbar widgets.
     enable_mod_dsp()
         Enable widgets for module DSP.
-    set_visible()
+    set_visible(name)
         Set which widgets are visible.
-    set_module_spinbox_range()
+    set_module_spinbox_range(nmodules)
         Set the range of the module spinbox.
-    set_channel_spinbox_range()
+    set_channel_spinbox_range(nchannels)
         Set the range of the channel spinbox for the currently selected module.
     """
 
@@ -131,7 +131,7 @@ class DSPToolBar(QToolBar):
         Parameters
         ----------
         nmodules : int
-        Number of modules in the system.
+            Number of modules in the system.
         """
         self.copy_mod.setRange(0, nmodules - 1)
 
@@ -151,7 +151,7 @@ class DSPToolBarBuilder:
     """Builder method for factory creation."""
 
     def __init__(self, *args, **kwargs):
-        """DSPToolbarBuilder class constructor."""
+        """DSPToolBarBuilder class constructor."""
 
     def __call__(self, *args, **kwargs):
         """Create an instance of the toolbar and return it to the caller.

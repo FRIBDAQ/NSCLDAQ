@@ -8,7 +8,7 @@ class Tau(ChanDSPWidget):
         """Tau class constructor.
 
         Parameters
-        -----------------
+        ----------
         *args : tuple
             Positional arguments passed to parent ChanDSPWidget.
         nchannels : int, default=16
@@ -17,15 +17,15 @@ class Tau(ChanDSPWidget):
             Keyword arguments passed to parent ChanDSPWidget.
         """
 
-        # XIA API parameter names"
+        # XIA API parameter names:
 
         param_names = ["TAU"]
 
-        # Parameter labels on the GUI"
+        # Parameter labels on the GUI:
 
         param_labels = ["Tau [us]"]
 
-        # Create instance of the parent class with these variables"
+        # Create instance of the parent class with these variables:
 
         super().__init__(param_names, param_labels, nchannels, *args, **kwargs)
 

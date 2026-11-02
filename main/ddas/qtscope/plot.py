@@ -20,7 +20,7 @@ _logger = logging.getLogger("qtscope_logger")
 class Plot(QWidget):
     """Plotting widget for the GUI utilizing the matplotlib Qt5 backend.
 
-    The caller must set the histogram and trace lengths for each module via '
+    The caller must set the histogram and trace lengths for each module via
     the set_histogram_length() and set_trace_length() methods respectively
     prior to drawing any data.
 
@@ -57,24 +57,26 @@ class Plot(QWidget):
     draw_run_data(data, run_type, nrows=1, ncols=1, idx=1)
         Draw single- or multiple-channel energy histogram or baseline data.
     on_begin_run(module, run_type)
-        Draw a blank histogram-style canvas when starting a histogram run.
+        Draw a blank histogram-style canvas when starting a histogram or baseline run.
     get_subplot_data(chan)
         Scrape data from a subplot (e.g., if 'Read all' is checked).
     draw_test_data()
         Draw a test figure with a random number of subplots.
     set_histogram_length(lengths)
         Set the histogram lengths for each module.
+    set_trace_length(lengths)
+        Set the trace lengths for each module.
 
     """
 
     def __init__(self, mgr, toolbar_factory, fit_factory, *args, **kwargs):
         """Plot class constructor.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         mgr : DSPManager
             DSP manager for calls to XIA API.
-        toolbar_factory : ToolBarFactory
+        toolbar_factory : WidgetFactory
             Factory for implemented toolbars.
         fit_factory : FitFactory
             Factory method for fitting plot data.
@@ -158,7 +160,7 @@ class Plot(QWidget):
         ncols : int
             Number of subplot columns (optional, default=1).
         idx : int
-            Subplot index in [1, nrows*ncols] (optional).
+            Subplot index in [1, nrows*ncols] (optional, default=1).
 
         """
         self.raw_data[idx - 1] = data
@@ -297,8 +299,8 @@ class Plot(QWidget):
         which we assume is our data. It should be impossible for any other
         data to populate the subplot at this stage.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         chan : int
             Subplot/channel number.
 
@@ -463,8 +465,8 @@ class Plot(QWidget):
 
         """
         if ax.get_lines():
-            ymin = sys.float_info.max
-            ymax = sys.float_info.min
+            ymin = np.inf
+            ymax = -np.inf
             for line in ax.get_lines():
                 if min(line.get_ydata()) < ymin:
                     ymin = min(line.get_ydata())
@@ -505,21 +507,43 @@ class Plot(QWidget):
             _logger.debug(f"Fit limit indices: {idx_min}, {idx_max}")
             _logger.debug(f"Fit panel guess params: {params}")
 
-            # If the current subplot has data, get the fit limits and call the
-            # fit function's start() routine to perform the fit.
+            # If the current subplot has data, validate the fit range and call the
+            # fit function's start() routine to perform the fit:
             if ax.get_lines():
-                x = ax.lines[0].get_xdata()[idx_min:idx_max]
-                y = ax.lines[0].get_ydata()[idx_min:idx_max]
+                xdata = ax.lines[0].get_xdata()
+                ydata = ax.lines[0].get_ydata()
+
+                # Invalid ranges are user errors:
+                if idx_min >= idx_max:
+                    QMessageBox.about(
+                        self,
+                        "Warning",
+                        f"Invalid fit range [{idx_min}, {idx_max}]: "
+                        "Min x must be less than Max x.",
+                    )
+                    return
+                if idx_min < 0 or idx_max > len(xdata) - 1:
+                    QMessageBox.about(
+                        self,
+                        "Warning",
+                        f"Invalid fit range [{idx_min}, {idx_max}]: "
+                        f"must be within the plotted data [0, {len(xdata) - 1}].",
+                    )
+                    return
+
+                # Include max index in the fit range, so slice to idx_max + 1:
+                x = xdata[idx_min : idx_max + 1]
+                y = ydata[idx_min : idx_max + 1]
 
                 # Histogram x values are bin left edges, so fit at bin
                 # centers; trace samples are points and need no shift:
-                if len(x) == self.histogram_length[self.current_module]:
+                if len(xdata) == self.histogram_length[self.current_module]:
                     x = x + 0.5
 
-                result = fit.start(x, y, params, ax)
+                result = fit.start(x, y, params)
 
                 # Update the canvas with the results:
-                x_fit = np.linspace(limits[0], limits[1], 10000)
+                x_fit = np.linspace(x[0], x[-1], 10000)
                 y_fit = fit.model(x_fit, result.x)
                 ax.plot(x_fit, y_fit, "r-")
 

@@ -22,7 +22,7 @@ class ChanDSPGUI(QMainWindow):
     pool_mgr : ThreadPoolManager
         Global thread pool manager.
     chan_params : MyTabWidget
-        Tabbed widget of module DSP settings.
+        Tabbed widget of channel DSP settings, one tab per module.
     chan_dsp_factory : WidgetFactory
         Factory for implemented channel DSP widgets.
     toolbar : DSPToolBar
@@ -45,7 +45,7 @@ class ChanDSPGUI(QMainWindow):
 
     Methods
     -------
-    configure(dsp_manager, num_modules, msps_list, channel_map)
+    configure(dsp_manager, num_modules, channel_map)
         Initialize tabbed layout.
     apply_dsp()
         Apply DSP settings for a given module and DSP settings.
@@ -102,7 +102,7 @@ class ChanDSPGUI(QMainWindow):
 
         # Timing diagram. QLabel has a Pixmap, so we'll use that to display
         # the diagram and add some padding to the edges of the image because
-        # its very tightly cropped:
+        # it's very tightly cropped:
 
         fig_path = os.environ["DAQROOT"] + "/ddas/qtscope/figures/timing_diagram.png"
         fig = QPixmap(fig_path)
@@ -126,7 +126,7 @@ class ChanDSPGUI(QMainWindow):
 
         self.chan_params.currentChanged.connect(self._display_new_tab)
 
-    def configure(self, dsp_manager, num_modules, msps_list, channel_map):
+    def configure(self, dsp_manager, num_modules, channel_map):
         """Configure channel DSP manager.
 
         Setup the toolbar, get the DSP, and create the tabbed widget. This
@@ -140,8 +140,6 @@ class ChanDSPGUI(QMainWindow):
             operations.
         num_modules : int
             Number of modules in the system
-        msps_list : list
-            List of module ADC MSPS values.
         channel_map : list
             List of channels per module.
         """
@@ -205,27 +203,30 @@ class ChanDSPGUI(QMainWindow):
         """Apply the channel DSP settings for the selected tab.
 
         Updates internal DSP from the GUI values then writes the internal DSP
-        to the module.
+        to the module. On a failed write, the hardware values are reloaded
+        into the internal DSP and the GUI.
         """
         self._set_current_tab_info()
+        mod, tab, tab_name = self.mod_idx, self.tab, self.tab_name
 
-        reason = getattr(self.tab, "unsupported_reason", None)
+        reason = getattr(tab, "unsupported_reason", None)
         if reason:
-            print(f"{self.tab_name}: {reason}. Nothing was applied.")
+            print(f"{tab_name}: {reason}. Nothing was applied.")
             return
 
-        self.tab.update_dsp(self.dsp_mgr, self.mod_idx)
+        tab.update_dsp(self.dsp_mgr, mod)
 
         self.toolbar.disable()
         _finished = [self.toolbar.enable]
 
-        if self.tab_name == "AnalogSignal":
-            self.tab.b_adjust_offsets.setEnabled(False)
-            _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
+        if tab_name == "AnalogSignal":
+            tab.b_adjust_offsets.setEnabled(False)
+            _finished.append(lambda: tab.b_adjust_offsets.setEnabled(True))
 
         self.pool_mgr.start_thread(
-            fcn=lambda: self._write_chan_dsp(self.mod_idx, self.tab),
-            results=[lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx)],
+            fcn=lambda: self._write_chan_dsp(mod, tab),
+            results=[lambda: tab.display_dsp(self.dsp_mgr, mod)],
+            errors=[lambda: self._load_dsp(mod, tab, tab_name)],
             finished=_finished,
         )
 
@@ -236,24 +237,7 @@ class ChanDSPGUI(QMainWindow):
         values from the internal DSP. Reconfigure the tab toolbar if necessary.
         """
         self._set_current_tab_info()
-
-        reason = getattr(self.tab, "unsupported_reason", None)
-        if reason:
-            print(f"{self.tab_name}: {reason}. Nothing was read.")
-            return
-
-        self.toolbar.disable()
-        _finished = [self.toolbar.enable]
-
-        if self.tab_name == "AnalogSignal":
-            self.tab.b_adjust_offsets.setEnabled(False)
-            _finished.append(lambda: self.tab.b_adjust_offsets.setEnabled(True))
-
-        self.pool_mgr.start_thread(
-            fcn=lambda: self._read_chan_dsp(self.mod_idx, self.tab),
-            results=[lambda: self.tab.display_dsp(self.dsp_mgr, self.mod_idx)],
-            finished=_finished,
-        )
+        self._load_dsp(self.mod_idx, self.tab, self.tab_name)
 
     def copy_mod_dsp(self):
         """Copy DSP from one module to another."""
@@ -279,15 +263,15 @@ class ChanDSPGUI(QMainWindow):
         Calls API function to automatically set DC offsets then updates GUI.
         """
         self._set_current_tab_info()
-        self.tab.b_adjust_offsets.setEnabled(False)
+        mod, tab, tab_name = self.mod_idx, self.tab, self.tab_name
+
+        tab.b_adjust_offsets.setEnabled(False)
+        self.toolbar.disable()
+
         self.pool_mgr.start_thread(
-            fcn=lambda: self.dsp_mgr.adjust_offsets(self.mod_idx),
-            running=[self.toolbar.disable],
-            results=[self.load_dsp],
-            finished=[
-                lambda: self.tab.b_adjust_offsets.setEnabled(True),
-                self.toolbar.enable,
-            ],
+            fcn=lambda: self.dsp_mgr.adjust_offsets(mod),
+            results=[lambda: self._load_dsp(mod, tab, tab_name)],
+            errors=[lambda: tab.b_adjust_offsets.setEnabled(True), self.toolbar.enable],
         )
 
     def print_masks(self):
@@ -347,7 +331,12 @@ class ChanDSPGUI(QMainWindow):
         """
         m = self.chan_params.currentIndex()  # Currently selected module.
         if m != self.mod_idx:
-            self.chan_params[m].setCurrentIndex(self.par_idx)
+            # Block the inner tab signal, which would re-enter this method
+            # and display the DSP a second time:
+            inner = self.chan_params[m]
+            inner.blockSignals(True)
+            inner.setCurrentIndex(self.par_idx)
+            inner.blockSignals(False)
         self._set_current_tab_info()
         self.tab.display_dsp(self.dsp_mgr, self.mod_idx)
         self._configure_toolbar(
@@ -370,7 +359,7 @@ class ChanDSPGUI(QMainWindow):
         self.toolbar.set_visible(name)
 
     def _write_chan_dsp(self, mod, tab):
-        """Write channel parameters to the dataframe for specified module.
+        """Write channel parameters from the dataframe to the specified module.
 
         Parameters
         ----------
@@ -384,15 +373,46 @@ class ChanDSPGUI(QMainWindow):
         self.dsp_mgr.write(mod, tab.param_names)
 
     def _read_chan_dsp(self, mod, tab):
-        """Read channel parameters from the dataframe for a specified module.
+        """Read channel parameters from the specified module into the dataframe.
 
         Parameters
         ----------
         mod : int
-            Currently selected module tab index.
+            Currently selected module.
         tab : QWidget
             Currently selected DSP tab.
         """
         if tab.has_extra_params:
             self.dsp_mgr.read(mod, tab.extra_params)
         self.dsp_mgr.read(mod, tab.param_names)
+
+    def _load_dsp(self, mod, tab, tab_name):
+        """Read DSP for one tab of one module and display it. All values are
+        bound at spawn so a tab switch mid-read cannot redirect the job.
+
+        Parameters
+        ----------
+        mod : int
+            Currently selected module.
+        tab : QWidget
+            Currently selected DSP tab.
+        tab_name : str
+            Name of currently selected DSP tab.
+        """
+        reason = getattr(tab, "unsupported_reason", None)
+        if reason:
+            print(f"{tab_name}: {reason}. Nothing was read.")
+            return
+
+        self.toolbar.disable()
+        _finished = [self.toolbar.enable]
+
+        if tab_name == "AnalogSignal":
+            tab.b_adjust_offsets.setEnabled(False)
+            _finished.append(lambda: tab.b_adjust_offsets.setEnabled(True))
+
+        self.pool_mgr.start_thread(
+            fcn=lambda: self._read_chan_dsp(mod, tab),
+            results=[lambda: tab.display_dsp(self.dsp_mgr, mod)],
+            finished=_finished,
+        )

@@ -10,7 +10,7 @@ class FitFactory:
     ----------
     builders : dict
         Dictionary of builder methods.
-    config : dict
+    configs : dict
         Dictionary of configurations.
 
     Methods
@@ -58,7 +58,8 @@ class FitFactory:
 
         Returns
         -------
-        An instance of the fitting function class.
+        FitFunction
+            An instance of the fitting function class.
 
         Raises
         ------

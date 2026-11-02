@@ -57,7 +57,7 @@ def zeros(length, endian="big"):
     endianness, which may be 'big', 'little'.
 
     Older bitarray module versions which require us to define this function
-    do not necessarily support a gettable/settable  default endianness, so
+    do not necessarily support a gettable/settable default endianness, so
     here we assume a default value of "big" (as is done in 1.6.3) and instead
     pass it as a default parameter value to the function.
 
@@ -156,12 +156,12 @@ def int2ba(i, length=None, endian="big", signed=False):
     (big-endian) / trailing (little-endian) zeros, unless the `length`
     of the bitarray is provided.  An `OverflowError` is raised if the
     integer is not representable with the given number of bits. `signed`
-    determines  whether two's complement is used to represent the integer,
+    determines whether two's complement is used to represent the integer,
     and requires `length` to be provided. If signed is False and a negative
     integer is given, an OverflowError is raised.
 
     Older bitarray module versions which require us to define this function
-    do not necessarily support a gettable/settable  default endianness, so
+    do not necessarily support a gettable/settable default endianness, so
     here we assume a default value of "big" (as is done in 1.6.3) and instead
     pass it as a default parameter value to the function.
 
@@ -175,7 +175,7 @@ def int2ba(i, length=None, endian="big", signed=False):
         Integer to convert to bitarray.
     length : int, default=None
         Length of the bitarray.
-    endian : str, {'big', 'little'}
+    endian : str, {'big', 'little'}, default='big'
         Endianness of the bitarray.
     signed : bool, default=False
         Two's complement signed.
@@ -188,14 +188,13 @@ def int2ba(i, length=None, endian="big", signed=False):
     Raises
     ------
     TypeError
-        If the argument to convert is not an integer.
-        If no output bitarray length is provided.
-        If output is a signed integer and length is zero.
+        If the argument to convert or the length is not an integer, or if
+        `signed` is True and no length is provided.
     ValueError
-        The output bitarray length is zero.
+        If the length is provided and is not positive.
     OverflowError
-        If the integer value is too large to be represented by the number of
-        provided bits.
+        If the integer value cannot be represented by the number of provided
+        bits, or if it is negative and `signed` is False.
     """
     if not isinstance(i, (int, long) if _is_py2 else int):
         raise TypeError("integer expected")
@@ -271,7 +270,7 @@ def _strip(a, mode="right"):
     Returns
     -------
     bitarray
-        bitarray with zeroes stripped of the end(s).
+        bitarray with zeroes stripped off the end(s).
 
     Raises
     ------
@@ -314,7 +313,7 @@ def _rindex(a, value=True):
     on the first match.
 
     See https://github.com/ilanschnell/bitarray/blob/master/bitarray/util.py.
-    Required by strip(), which relies on the ValueError to detect a
+    Required by _strip(), which relies on the ValueError to detect a
     bitarray containing no set bits.
 
     Parameters

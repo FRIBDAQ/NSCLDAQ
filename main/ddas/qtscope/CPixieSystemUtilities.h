@@ -44,7 +44,7 @@ public:
    * @retval 0 On successful boot.
    * @retval CPIXIEERROR_INVALID_CONFIG Failed to generate the system
    * configuration.
-   * @retval !=0 XIA API error code on failure.
+   * @retval <0 XIA API error code on failure.
    */
   int Boot();
   /**
@@ -52,7 +52,7 @@ public:
    * @param fileName Name of file to save.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code on failure.
+   * @retval <0 XIA API error code on failure.
    */
   int SaveSetFile(char *fileName);
   /**
@@ -60,14 +60,21 @@ public:
    * @param fileName  Settings file name we are attempting to open.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code on failure.
+   * @retval <0 XIA API error code on failure.
    */
   int LoadSetFile(char *fileName);
   /**
-   * @brief Exit the system and release resources from the modules.
+   * @brief End any active runs, then exit the system and release resources from
+   * the modules.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code on failure.
+   * @retval <0  First error code (XIA API or QtScope) if any module failed.
+   * The last error message lists every failure.
+   * @retval CPIXIEERROR_RUN_ACTIVE  If a run was still active after the retry
+   * limit.
+   * @retval SHIM_UNEXPECTED_ERROR  If an unexpected exception was thrown.
+   * @note If any module fails to exit, the system is likely in a bad state
+   * and should be power-cycled before the next boot.
    */
   int ExitSystem();
 
@@ -124,6 +131,16 @@ public:
    * @return Pointer to the stored message; empty string if none.
    */
   const char *GetLastErrorMessage() { return m_lastErrorMessage.c_str(); };
+
+private:
+  /**
+   * @brief End a run left active on a module at exit.
+   * @param module Module number.
+   * @throw CXIAException If the run status cannot be read or the end-run
+   * request fails.
+   * @throw std::runtime_error If the run is still active after the retry limit.
+   */
+  void EndActiveRun(int module);
 };
 
 /** @} */
@@ -139,7 +156,7 @@ int CPixieSystemUtilities_SaveSetFile(CPixieSystemUtilities *utils,
 /** @brief Wrapper to load a settings file. */
 int CPixieSystemUtilities_LoadSetFile(CPixieSystemUtilities *utils,
                                       char *fName);
-/** @brief Wrapper to exit the system file. */
+/** @brief Wrapper to exit the system. */
 int CPixieSystemUtilities_ExitSystem(CPixieSystemUtilities *utils);
 /** @brief Wrapper to set the boot mode. */
 void CPixieSystemUtilities_SetBootMode(CPixieSystemUtilities *utils, int mode);
@@ -154,7 +171,8 @@ int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities *utils, int mod);
 /** @brief Wrapper to get the channel count for a single module. */
 int CPixieSystemUtilities_GetModuleChannelCount(CPixieSystemUtilities *utils,
                                                 int mod);
-/** @brief Wrapper to get the last error message. Cannot throw; unguarded. */
+/** @brief Wrapper to get the last error message. Cannot throw; unguarded.
+ * Returns "null utils handle" for a null handle. */
 const char *
 CPixieSystemUtilities_GetLastErrorMessage(CPixieSystemUtilities *utils);
 /** @brief Wrapper for the class destructor. */
