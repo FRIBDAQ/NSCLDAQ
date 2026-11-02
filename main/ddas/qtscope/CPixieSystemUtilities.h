@@ -165,7 +165,8 @@ int CPixieSystemUtilities_GetModuleMSPS(CPixieSystemUtilities *utils, int mod);
 /** @brief Wrapper to get the channel count for a single module. */
 int CPixieSystemUtilities_GetModuleChannelCount(CPixieSystemUtilities *utils,
                                                 int mod);
-/** @brief Wrapper to get the last error message. Cannot throw; unguarded. */
+/** @brief Wrapper to get the last error message. Cannot throw; unguarded.
+ * Returns "null utils handle" for a null handle. */
 const char *
 CPixieSystemUtilities_GetLastErrorMessage(CPixieSystemUtilities *utils);
 /** @brief Wrapper for the class destructor. */

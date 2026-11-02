@@ -511,11 +511,11 @@ int CPixieRunUtilities_ReadModuleStats(CPixieRunUtilities *utils, int mod) {
 }
 
 unsigned int *CPixieRunUtilities_GetHistogramData(CPixieRunUtilities *utils) {
-  return utils->GetHistogramData();
+  return utils ? utils->GetHistogramData() : nullptr;
 }
 
 unsigned int *CPixieRunUtilities_GetBaselineData(CPixieRunUtilities *utils) {
-  return utils->GetBaselineData();
+  return utils ? utils->GetBaselineData() : nullptr;
 }
 
 bool CPixieRunUtilities_GetRunActive(CPixieRunUtilities *utils) {

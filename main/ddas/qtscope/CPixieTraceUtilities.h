@@ -148,12 +148,14 @@ int CPixieTraceUtilities_ReadFastTrace(CPixieTraceUtilities *utils, int mod,
 /** @brief Wrapper to get trace length. */
 int CPixieTraceUtilities_GetTraceLength(CPixieTraceUtilities *utils, int mod,
                                         int chan);
-/** @brief Wrapper to get trace data; cannot throw, unguarded. */
+/** @brief Wrapper to get trace data; cannot throw, unguarded. Returns
+ * nullptr for a null handle. */
 unsigned short *CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities *utils);
 /** @brief Wrapper to set generator use. */
 void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities *utils,
                                           bool mode);
-/** @brief Wrapper to get the last error message. Cannot throw, unguarded. */
+/** @brief Wrapper to get the last error message. Cannot throw, unguarded.
+ * Returns "null utils handle" for a null handle. */
 const char *
 CPixieTraceUtilities_GetLastErrorMessage(CPixieTraceUtilities *utils);
 /** @brief Wrapper for the class destructor. */

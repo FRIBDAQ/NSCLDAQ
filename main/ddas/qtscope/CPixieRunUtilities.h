@@ -214,9 +214,11 @@ int CPixieRunUtilities_ReadBaseline(CPixieRunUtilities *utils, int mod,
                                     int chan);
 /** @brief Wrapper to read run statistics from the module. */
 int CPixieRunUtilities_ReadModuleStats(CPixieRunUtilities *utils, int mod);
-/** @brief Wrapper to marshall the histogram data; cannot throw, unguarded. */
+/** @brief Wrapper to marshall the histogram data; cannot throw, unguarded.
+ * Returns nullptr for a null handle. */
 unsigned int *CPixieRunUtilities_GetHistogramData(CPixieRunUtilities *utils);
-/** @brief Wrapper to marshall the baseline data; cannot throw, unguarded. */
+/** @brief Wrapper to marshall the baseline data; cannot throw, unguarded.
+ * Returns nullptr for a null handle. */
 unsigned int *CPixieRunUtilities_GetBaselineData(CPixieRunUtilities *utils);
 /** @brief Wrapper to get the run active status. */
 bool CPixieRunUtilities_GetRunActive(CPixieRunUtilities *utils);
@@ -228,7 +230,8 @@ int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities *utils, int mod);
 /** @brief Wrapper to get the maximum number of baselines for a single module.
  */
 int CPixieRunUtilities_GetMaxBaselines(CPixieRunUtilities *utils, int mod);
-/** @brief Wrapper to get the last error message. Cannot throw; unguarded. */
+/** @brief Wrapper to get the last error message. Cannot throw; unguarded.
+ * Returns "null utils handle" for a null handle. */
 const char *CPixieRunUtilities_GetLastErrorMessage(CPixieRunUtilities *utils);
 /** @brief Wrapper for the class destructor. */
 void CPixieRunUtilities_delete(CPixieRunUtilities *utils);

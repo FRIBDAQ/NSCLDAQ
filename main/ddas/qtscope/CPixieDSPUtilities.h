@@ -110,7 +110,8 @@ int CPixieDSPUtilities_WriteModPar(CPixieDSPUtilities *utils, int mod,
 /** @brief Wrapper to read a module parameter. */
 int CPixieDSPUtilities_ReadModPar(CPixieDSPUtilities *utils, int mod,
                                   char *pName, unsigned int *val);
-/** @brief Wrapper to get the last error message. Cannot throw; unguarded. */
+/** @brief Wrapper to get the last error message. Cannot throw; unguarded.
+ * Returns "null utils handle" for a null handle. */
 const char *CPixieDSPUtilities_GetLastErrorMessage(CPixieDSPUtilities *utils);
 /** @brief Wrapper for the class destructor. */
 void CPixieDSPUtilities_delete(CPixieDSPUtilities *utils);

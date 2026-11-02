@@ -257,7 +257,7 @@ int CPixieTraceUtilities_GetTraceLength(CPixieTraceUtilities *utils, int mod,
 }
 
 unsigned short *CPixieTraceUtilities_GetTraceData(CPixieTraceUtilities *utils) {
-  return utils->GetTraceData();
+  return utils ? utils->GetTraceData() : nullptr;
 }
 
 void CPixieTraceUtilities_SetUseGenerator(CPixieTraceUtilities *utils,

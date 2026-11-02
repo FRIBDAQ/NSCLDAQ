@@ -19,7 +19,8 @@
 constexpr int SHIM_UNEXPECTED_ERROR = -1999;
 
 /**
- * @brief Run fn() inside the boundary net; return fallback on any exception.
+ * @brief Run fn() inside the boundary net; return fallback on a null handle
+ * or any exception.
  * T must provide SetLastErrorMessage().
  * @param utils Pointer to the utility class instance.
  * @param where String indicating the location of the error.
@@ -49,7 +50,7 @@ R shimGuard(T *utils, const char *where, R fallback, Fn fn) {
 }
 
 /**
- * @brief Same net for void shims.
+ * @brief Same net for void shims; does nothing on a null handle.
  * @param utils Pointer to the utility class instance.
  * @param where String indicating the location of the error.
  * @param fn Function to execute within the guard.
@@ -82,10 +83,6 @@ void shimGuardVoid(T *utils, const char *where, Fn fn) {
  */
 template <typename Fn>
 auto shimGuardNew(const char *where, Fn fn) -> decltype(fn()) {
-  if (utils == nullptr) {
-    std::cerr << where << " called with a null handle" << std::endl;
-    return fallback;
-  }
   try {
     return fn();
   } catch (const std::exception &e) {
