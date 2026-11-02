@@ -941,7 +941,7 @@ class RunUtilities:
         """
         enabled = "enabled" if mode else "disabled"
         _logger.info(f"Synthetic data generation is {enabled}")
-        return _lib.CPixieRunUtilities_SetUseGenerator(self.obj, mode)
+        _lib.CPixieRunUtilities_SetUseGenerator(self.obj, mode)
 
     def get_histogram_length(self, module):
         """Wrapper to read the histogram length for a single module.
