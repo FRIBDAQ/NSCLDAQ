@@ -216,7 +216,6 @@ int CPixieRunUtilities::BeginBaselineRun(int module, int nChannels) {
     m_baseline.resize(m_histogramLength);
   }
   std::fill(m_baseline.begin(), m_baseline.end(), 0);
-
   m_runActive = true;
 
   return 0;
@@ -229,6 +228,7 @@ int CPixieRunUtilities::BeginBaselineRun(int module, int nChannels) {
 int CPixieRunUtilities::EndBaselineRun(int module) {
   m_runActive = false;
   std::cout << "Ended baseline run in Mod. " << module << std::endl;
+
   return 0;
 }
 
@@ -445,7 +445,7 @@ int CPixieRunUtilities::SetHistogramLength(int module) {
   m_histogramLength = static_cast<unsigned int>(len);
 
   return 0;
-};
+}
 
 int CPixieRunUtilities::SetMaxBaselines(int module) {
   int nbl = GetMaxBaselines(module); // Sets last error message on failure.
@@ -456,7 +456,7 @@ int CPixieRunUtilities::SetMaxBaselines(int module) {
   m_maxBaselines = static_cast<unsigned int>(nbl);
 
   return 0;
-};
+}
 
 extern "C" {
 CPixieRunUtilities *CPixieRunUtilities_new() {

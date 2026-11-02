@@ -64,7 +64,7 @@ public:
    * synchronization is OFF __but__ only stops a run in a single module.
    * @param module Module number.
    * @return int
-   * @retval 0 Run end attempted.
+   * @retval 0 Success.
    * @retval <0 XIA API error code on failure, or CPIXIEERROR_RUN_ACTIVE if the
    * run is still active after the module's end run request.
    */
@@ -83,7 +83,8 @@ public:
    * @param module Module number.
    * @param nChannels Channels per module.
    * @return int
-   * @retval 0 Always.
+   * @retval 0 Success.
+   * @retval <0 XIA API error code.
    */
   int BeginBaselineRun(int module, int nChannels);
   /**
