@@ -236,6 +236,13 @@ class ReadoutGuiMainWindow(QMainWindow):
         @note to clear, just use an empty string.
         '''
         self._statusText.setText(msg)
+    
+    def slaveEnabled(self) -> bool:
+        '''
+        @return bool - True if the enable slave menu is checked.
+        '''
+        return self._slaveEnable.checkState() == Qt.CheckState.Checked
+        
         
     # Utiltity methods:
     
