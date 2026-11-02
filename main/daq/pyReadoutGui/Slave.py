@@ -35,7 +35,7 @@ event loggers and that none of them are actually the 'main' logger.
 '''
 import socket
 
-from nscldaq.portmanager import PortManager
+from nscldaq.portmanager.PortManager import PortManager
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from PyQt6.QtCore import Qt
 from PyQt6.QtNetwork import QTcpServer, QTcpSocket
@@ -157,251 +157,251 @@ class Slave:
         
         self._listener.newConnection.connect(self._connect)
         
-        def __del__(self):
-            ''' If we are enabled shut everything down'''
-            self.disable()
-        
-        # Public methods:
-        
-        def enable(self) -> None:
-            '''
-            Enable the server.  If it is already enabled, this is a no-op.
-            If the server is being enabled, it starts listening for connections
-            and making a server on the first one received.
-            '''
-            
-            if not self._enabled:
-                # Do nothing if already enabled.
-                self._enabled = True
-                self._startListening()
-            
-        def disable(self) -> None:
-            '''
-            Disable the server. If it is already disabled, this is a no-op.
-            If the server is active it stops listening for connections
-            and any active server is shutdown without processing any
-            pening requests.
-            '''
-            
-            if self._enabled:
-                # Do nothing if already disabled.
-                
-                self._enabled = False
-                
-                if self._listener:
-                    self._listener.close()   # Will need to listen again.
-                    
-                # If there is a connection, shut it down now
-                
-                if self._server:
-                    self._server.abort()     # Hard stop flushing queues.
-                    self._server = None      # Kill it off.
-        
-        def getConfig(self) -> dict[str, object]:
-            '''
-            Return the configuration map.  This is normally used
-            to save the configuration so that it can be restored on startup.
-            '''
-            return {
-                'service': self._serviceName,
-                'enabled': self._enabled
-            }
-        #  Private Methods
-        
-        def _startListening(self) -> None:
-            # Start listening for connections
-            
-            # If I don't have a port yet for my service, get one:
-            
-            if not self._portManager:
-                self._portManager = PortManager('localhost')     # Need to maintain the connection.
-                self._port        = self._portManager.getPort(self._serviceName) # since a port was allocated.
-            
-            # Start the server listening.  We are alredy connected.
-            
-            self._listener.listen(port = self._port)
-        # Private methods:
-        
-        def _reqToWords(self, request : str) -> list[str]:
-            # Note the function below does the right thing for 
-            # {} but does not honor "" quoting therefore a 
-            # set title "this is a    title"
-            #  Will appear as list elements [... '"this', 'is', 'a' 'title"]
-            #  Which loses the internal extra blanks and
-            # requires stripping the "'s off the first and last word."
-            # I have a hunch the tcl version has similar issues
-            # stippling extra '  's.
-            #  
-            return _parse_tcl_list(request)
-        
-        def _makeTitle(self, words : list[str]) -> str:
-            # Build the title back. Note that if the first and last
-            # letters are '"' assume they were quoting letter and remove them.
-            
-            title = ' '.join(words)
-            title.strip('"')
-            return title
-                            
-        def _doSet(self, tail) -> str:
-            # Note that anything but set slave requires us to be enslaved.
-            
-            # There must be at least two elements in the tail:  a thing to set
-            # and a value - title is a bit more complex as we'll see.
-            
-            # Return value is the response to the client - without the trailing newline.
-            
-            if len(tail) < 2:
-                return 'ERROR - The set command requires something to set and a to set it to.'
-            
-            what = tail.pop(0)
-            if what != 'slave' and not self._isEnslaved:
-                return f'ERROR - set {what} requires enslavement but we are emancipated.'
-            
-            #  Only title can have more than one remaining tail element:
-            if what != 'title' and len(tail) > 1:
-                return f'ERROR - set {what} can only have a single additional word'
-            match what:
-                case 'slave':
-                    # set slave 1|0  - require the appropriate integer:
-                    try:
-                        which = int(tail[0])
-                        if which not in [1,0]:
-                            return 'ERROR - set slave requires 1 or 0 but got {which}'
-                        self._isEnslaved = bool(which)
-                        return 'OK'
-                    except ValueError:
-                        return f'ERROR - set slave value must be 1 or 0 was {tail[0]}'
-                case 'run':
-                    #  Similar restrictions to set slave, but any whole number:
-                    try:
-                        run = int(tail[0])
-                        if run < 0:
-                            raise ValueError('bad value')
-                        # Got a valid run number -- set it and return OK.
-                        
-                        mainWindow().centralWidget().RunParameters().setRun(run)
-                        return 'OK'
-                    except ValueError:
-                        return f'ERROR run number must be a counting number, was {tail[0]}'
-                case 'title':
-                    # Title requires some processing of the tail to produce a title string.
-                    # see the comments in _reqToWords.
-                    title = self._makeTitle(tail)
-                    mainWindow().centralWidget().RunParameters().setTItle(title)
-                    return 'OK'
-                case 'recording': 
-                    # Same restrictions on the value that set slave has:
-                    try: 
-                        which = int(tail[0])
-                        if which not in [1,0]:
-                            raise ValueError('bad value')
-                        state = Qt.CheckState.Checked if which else Qt.CheckState.Unchecked
-                        mainWindow().centralWidget().Recording().setCheckState(state)
-                        return 'OK'
-                    except ValueError:
-                        return f'ERROR - set recording requires a 1 or 0 got {tail[0]}'
-                case 'destination':
-                    # This is supported but a no-op for protocol completeness.  Our
-                    # local recording configuration is quite a bit more complex.
-                    return 'OK'
-                case _:
-                    return f'ERROR - set {what} is not legal must set slave|run|title|recording|destination'
-        
-        def _doRequest(self, request : str) -> str:
-            #
-            #  This is the beast that actually responds
-            #  to requests, performing them and returning
-            #  the string to send back to the client
-            #  Note that if we are not a slave but get anything other
-            #  than set slave 1 we fail.
-            request_words = self._reqToWords(request)
-            verb = request_words.pop(0)
-            
-            if verb != 'set' and not self._isEnslaved:
-                return f'ERROR - The {verb} request requires enslavement and we are emancipated'
-            
-            match verb:
-                case 'set':
-                    return self._doSet(request_words)
-                case 'begin':
-                    return self._doBegin(request_words)
-                case 'end':
-                    return self._doEnd(request_words)
-                case 'masterTransition':
-                    return self._doTransition(request_words)
-                case 'get':
-                    return self._doGet(request_words)
-                case _:
-                    return f'ERROR - {verb} is not a recognized request!'
+    def __del__(self):
+        ''' If we are enabled shut everything down'''
+        self.disable()
     
-        # Internal (private) slots:
+    # Public methods:
+    
+    def enable(self) -> None:
+        '''
+        Enable the server.  If it is already enabled, this is a no-op.
+        If the server is being enabled, it starts listening for connections
+        and making a server on the first one received.
+        '''
         
-        def _connect(self) -> None:
-            # A master is connecting. It appears that the act of connecting implicitly
-            # enslaves us.
-            
-            self._server = self._listener.nextPendingConnection()
-            
-            # Set the signal handling for the connection.
-            
-            self._server.disconnected.connect(self._lostConnection)    # Unenslaved on connection lost.
-            self._server.readyRead.connect(self._request)
-            
-            # set the GUI to show we are enslaved and by whom.
-            
-            self._enslave()
+        if not self._enabled:
+            # Do nothing if already enabled.
+            self._enabled = True
+            self._startListening()
         
-        def _lostConnection(self) -> None:
-            # Lost connection to the client:
-            self._emancipate()   # 12 years a slave is enough :-P
-            
-            # Clean up the server.
-            
-            self._server.abort()
-            self._server = None
+    def disable(self) -> None:
+        '''
+        Disable the server. If it is already disabled, this is a no-op.
+        If the server is active it stops listening for connections
+        and any active server is shutdown without processing any
+        pening requests.
+        '''
         
-        def _enslave(self) -> None:
-            # Enslave ourselves:
+        if self._enabled:
+            # Do nothing if already disabled.
             
-            self._isEnslaved = False    
-            mw  = mainWindow()        
-            gui = mw.centralWidget()
-            gui.enslave()                               #  disable widgets.
+            self._enabled = False
             
-            # Now a status message:
+            if self._listener:
+                self._listener.close()   # Will need to listen again.
+                
+            # If there is a connection, shut it down now
             
-            peer = self._server.peerAddress().toString()  
-            # Try to get a host name:
-            try:
-                peer = socket.gethostbyaddr(peer)
-            except socket.herror:
-                pass    # No translation leaves the peer as a text address.
-            mw.setStatusMessage(f'Enslaved by {peer}')
-            
-            
-        def _emanicpate(self) -> None:
-            # No longer a slave
-            
-            self._isEnslaved = False
-            mw = mainWindow()
-            gui = mw.centralWidget()
-            gui.emancipate()
-            mw.setStatusMessage('No longer enslaved')
-            
-            
-        def _request(self) -> None:
-            #  A request came in from a client that has enslaved us
-            
-            # Get the request and turn it into a string:
-            
-            lineArray = self._server.readLine()   
-            if lineArray:
-                line = lineArray.data().decode('utf-8')
-                response = self._doRequest(line)
-                self._server.write(response + '\n')
-            else: 
-                # Likely we lost the connection...
-                # Eventually _lostConnection will fire so just ignore
-                pass
-         
+            if self._server:
+                self._server.abort()     # Hard stop flushing queues.
+                self._server = None      # Kill it off.
+    
+    def getConfig(self) -> dict[str, object]:
+        '''
+        Return the configuration map.  This is normally used
+        to save the configuration so that it can be restored on startup.
+        '''
+        return {
+            'service': self._serviceName,
+            'enabled': self._enabled
+        }
+    #  Private Methods
+    
+    def _startListening(self) -> None:
+        # Start listening for connections
         
+        # If I don't have a port yet for my service, get one:
+        
+        if not self._portManager:
+            self._portManager = PortManager('localhost')     # Need to maintain the connection.
+            self._port        = self._portManager.getPort(self._serviceName) # since a port was allocated.
+        
+        # Start the server listening.  We are alredy connected.
+        
+        self._listener.listen(port = self._port)
+    # Private methods:
+    
+    def _reqToWords(self, request : str) -> list[str]:
+        # Note the function below does the right thing for 
+        # {} but does not honor "" quoting therefore a 
+        # set title "this is a    title"
+        #  Will appear as list elements [... '"this', 'is', 'a' 'title"]
+        #  Which loses the internal extra blanks and
+        # requires stripping the "'s off the first and last word."
+        # I have a hunch the tcl version has similar issues
+        # stippling extra '  's.
+        #  
+        return _parse_tcl_list(request)
+    
+    def _makeTitle(self, words : list[str]) -> str:
+        # Build the title back. Note that if the first and last
+        # letters are '"' assume they were quoting letter and remove them.
+        
+        title = ' '.join(words)
+        title.strip('"')
+        return title
+                        
+    def _doSet(self, tail) -> str:
+        # Note that anything but set slave requires us to be enslaved.
+        
+        # There must be at least two elements in the tail:  a thing to set
+        # and a value - title is a bit more complex as we'll see.
+        
+        # Return value is the response to the client - without the trailing newline.
+        
+        if len(tail) < 2:
+            return 'ERROR - The set command requires something to set and a to set it to.'
+        
+        what = tail.pop(0)
+        if what != 'slave' and not self._isEnslaved:
+            return f'ERROR - set {what} requires enslavement but we are emancipated.'
+        
+        #  Only title can have more than one remaining tail element:
+        if what != 'title' and len(tail) > 1:
+            return f'ERROR - set {what} can only have a single additional word'
+        match what:
+            case 'slave':
+                # set slave 1|0  - require the appropriate integer:
+                try:
+                    which = int(tail[0])
+                    if which not in [1,0]:
+                        return 'ERROR - set slave requires 1 or 0 but got {which}'
+                    self._isEnslaved = bool(which)
+                    return 'OK'
+                except ValueError:
+                    return f'ERROR - set slave value must be 1 or 0 was {tail[0]}'
+            case 'run':
+                #  Similar restrictions to set slave, but any whole number:
+                try:
+                    run = int(tail[0])
+                    if run < 0:
+                        raise ValueError('bad value')
+                    # Got a valid run number -- set it and return OK.
+                    
+                    mainWindow().centralWidget().RunParameters().setRun(run)
+                    return 'OK'
+                except ValueError:
+                    return f'ERROR run number must be a counting number, was {tail[0]}'
+            case 'title':
+                # Title requires some processing of the tail to produce a title string.
+                # see the comments in _reqToWords.
+                title = self._makeTitle(tail)
+                mainWindow().centralWidget().RunParameters().setTItle(title)
+                return 'OK'
+            case 'recording': 
+                # Same restrictions on the value that set slave has:
+                try: 
+                    which = int(tail[0])
+                    if which not in [1,0]:
+                        raise ValueError('bad value')
+                    state = Qt.CheckState.Checked if which else Qt.CheckState.Unchecked
+                    mainWindow().centralWidget().Recording().setCheckState(state)
+                    return 'OK'
+                except ValueError:
+                    return f'ERROR - set recording requires a 1 or 0 got {tail[0]}'
+            case 'destination':
+                # This is supported but a no-op for protocol completeness.  Our
+                # local recording configuration is quite a bit more complex.
+                return 'OK'
+            case _:
+                return f'ERROR - set {what} is not legal must set slave|run|title|recording|destination'
+    
+    def _doRequest(self, request : str) -> str:
+        #
+        #  This is the beast that actually responds
+        #  to requests, performing them and returning
+        #  the string to send back to the client
+        #  Note that if we are not a slave but get anything other
+        #  than set slave 1 we fail.
+        request_words = self._reqToWords(request)
+        verb = request_words.pop(0)
+        
+        if verb != 'set' and not self._isEnslaved:
+            return f'ERROR - The {verb} request requires enslavement and we are emancipated'
+        
+        match verb:
+            case 'set':
+                return self._doSet(request_words)
+            case 'begin':
+                return self._doBegin(request_words)
+            case 'end':
+                return self._doEnd(request_words)
+            case 'masterTransition':
+                return self._doTransition(request_words)
+            case 'get':
+                return self._doGet(request_words)
+            case _:
+                return f'ERROR - {verb} is not a recognized request!'
+
+    # Internal (private) slots:
+    
+    def _connect(self) -> None:
+        # A master is connecting. It appears that the act of connecting implicitly
+        # enslaves us.
+        
+        self._server = self._listener.nextPendingConnection()
+        
+        # Set the signal handling for the connection.
+        
+        self._server.disconnected.connect(self._lostConnection)    # Unenslaved on connection lost.
+        self._server.readyRead.connect(self._request)
+        
+        # set the GUI to show we are enslaved and by whom.
+        
+        self._enslave()
+    
+    def _lostConnection(self) -> None:
+        # Lost connection to the client:
+        self._emancipate()   # 12 years a slave is enough :-P
+        
+        # Clean up the server.
+        
+        self._server.abort()
+        self._server = None
+    
+    def _enslave(self) -> None:
+        # Enslave ourselves:
+        
+        self._isEnslaved = False    
+        mw  = mainWindow()        
+        gui = mw.centralWidget()
+        gui.enslave()                               #  disable widgets.
+        
+        # Now a status message:
+        
+        peer = self._server.peerAddress().toString()  
+        # Try to get a host name:
+        try:
+            peer = socket.gethostbyaddr(peer)
+        except socket.herror:
+            pass    # No translation leaves the peer as a text address.
+        mw.setStatusMessage(f'Enslaved by {peer}')
+        
+        
+    def _emanicpate(self) -> None:
+        # No longer a slave
+        
+        self._isEnslaved = False
+        mw = mainWindow()
+        gui = mw.centralWidget()
+        gui.emancipate()
+        mw.setStatusMessage('No longer enslaved')
+        
+        
+    def _request(self) -> None:
+        #  A request came in from a client that has enslaved us
+        
+        # Get the request and turn it into a string:
+        
+        lineArray = self._server.readLine()   
+        if lineArray:
+            line = lineArray.data().decode('utf-8')
+            response = self._doRequest(line)
+            self._server.write(response + '\n')
+        else: 
+            # Likely we lost the connection...
+            # Eventually _lostConnection will fire so just ignore
+            pass
+        
+    
