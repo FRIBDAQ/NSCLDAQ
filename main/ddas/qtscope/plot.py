@@ -463,8 +463,8 @@ class Plot(QWidget):
 
         """
         if ax.get_lines():
-            ymin = sys.float_info.max
-            ymax = sys.float_info.min
+            ymin = np.inf
+            ymax = -np.inf
             for line in ax.get_lines():
                 if min(line.get_ydata()) < ymin:
                     ymin = min(line.get_ydata())
