@@ -140,17 +140,8 @@ class ThreadPoolManager:
 
     """
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the thread pool.
-
-        Parameters
-        ----------
-        args : tuple
-            Arguments (passed uninspected to base class).
-        kwargs : dict
-            Keyword arguments (passed uninspected to base class).
-        """
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        """Initialize the thread pool."""
         # One worker at a time: at most one entry into XIA API.
         self.pool = QThreadPool()
         self.pool.setMaxThreadCount(1)

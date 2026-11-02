@@ -50,7 +50,7 @@ class FitPanel(QWidget):
 
     def __init__(self, *args, **kwargs):
         """FitPanel class constructor."""
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.setWindowTitle("QtScope fit panel")
 

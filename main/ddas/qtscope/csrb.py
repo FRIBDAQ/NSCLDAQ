@@ -267,7 +267,6 @@ class CSRB(QWidget):
         """
         config = self.rbgroup.checkedId()
         if self.rb_dict[config]["mod0"]:
-            mod0 = self.rb_dict[config]["mod0"]
             csrb = int2ba(self.rb_dict[config]["mod0"], 32, "little")
             for bit, _ in zip(self.param_labels, csrb):
                 self.param_grid[1, bit + 1].setChecked(csrb[bit])

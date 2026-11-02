@@ -7,7 +7,7 @@ import math
 import numpy as np
 
 from PyQt5.QtCore import Qt, QEventLoop
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox
 
 from chan_dsp_gui import ChanDSPGUI
 import colors
@@ -21,6 +21,7 @@ from thread_pool_manager import ThreadPoolManager
 from pixie_error import PixieError
 
 _logger = logging.getLogger("qtscope_logger")
+SETTINGS_FILE_FILTER = "XIA settings file (*.json)"
 
 # @todo Toolbar disable shouldn't disable cancel button to close the windows.
 
@@ -244,13 +245,17 @@ class MainWindow(QMainWindow):
         self.adjustSize()
 
     def _on_boot(self):
-        """Configure the system following a (hopefully) successful boot."""
+        """Configure the system following a successful boot.
+
+        A failed boot or post-boot configuration is a critical error: it is
+        reported, Boot stays disabled, and the user must exit QtScope and
+        investigate. Nothing is retried.
+        """
+        if self.exiting:  # Exit started while booting: nothing to configure
+            return
         if not self.sys_utils.get_boot_status():
-            # Boot failed: reason already presented via the error signal.
-            # Re-enable the system toolbar: the user may fix the problem
-            # (copy cfgPixie16.txt into the launch directory, load a
-            # different settings file, ...) and retry, or exit.
-            self.sys_toolbar.b_boot.setEnabled(True)
+            # Reason already presented via the worker error signal:
+            self._boot_failed("System boot failed.")
             return
 
         try:
@@ -276,11 +281,14 @@ class MainWindow(QMainWindow):
             self.mplplot.set_histogram_length(histogram_lengths)
             self.mplplot.set_trace_length(trace_lengths)
             self.dsp_mgr.initialize_dsp(num_modules, channel_map, msps_list)
-            self.chan_gui.configure(self.dsp_mgr, num_modules, msps_list, channel_map)
+            self.chan_gui.configure(self.dsp_mgr, num_modules, channel_map)
             self.mod_gui.configure(self.dsp_mgr, num_modules, channel_map)
         except PixieError as e:
-            print(f"Post-boot configuration failed: {e}")
-            self.sys_toolbar.b_boot.setEnabled(True)
+            self._boot_failed(f"Post-boot configuration failed: {e}")
+            return
+        except Exception:
+            _logger.exception("Unexpected error during post-boot configuration")
+            self._boot_failed("Post-boot configuration failed (unexpected error).")
             return
 
         # Configure toolbars, enable widgets:
@@ -293,6 +301,23 @@ class MainWindow(QMainWindow):
 
         print("QtScope system configuration complete!")
         _logger.info("System configuration successful")
+
+    def _boot_failed(self, reason):
+        """Report a critical boot failure. Boot stays disabled; the user
+        must exit QtScope and investigate.
+
+        Parameters
+        ----------
+        reason : str
+            What failed.
+        """
+        msg = (
+            f"{reason}\n\nQtScope cannot continue. Exit and check the "
+            "terminal output and qtscope.log for details."
+        )
+        _logger.critical(reason)
+        print(msg)
+        QMessageBox.critical(self, "Boot failed", msg)
 
     def _save_settings(self):
         """Save DSP parameters to an XIA settings file. Must have file
@@ -323,6 +348,13 @@ class MainWindow(QMainWindow):
         fname, opt = self._load_dialog()
         if not (fname and opt):
             return  # User canceled the load dialog.
+        fext = os.path.splitext(fname)[-1].lower()
+        if fext != ".json":
+            print(
+                f"Unsupported extension for settings file: '{fext}': "
+                f"must be '.json'. Settings file has not been loaded."
+            )
+            return
         try:
             self.sys_utils.load_set_file(fname)
         except PixieError as e:
@@ -351,7 +383,7 @@ class MainWindow(QMainWindow):
         """
         dialog = QFileDialog(self, "Save file")
         dialog.setAcceptMode(QFileDialog.AcceptSave)
-        dialog.setNameFilter("XIA settings file (*.json)")
+        dialog.setNameFilter(SETTINGS_FILE_FILTER)
         dialog.setDefaultSuffix("json")
         dialog.setOption(QFileDialog.DontUseNativeDialog)
         if dialog.exec_() == QFileDialog.Accepted:
@@ -371,7 +403,7 @@ class MainWindow(QMainWindow):
         dialog = QFileDialog(self, "Load file")
         dialog.setAcceptMode(QFileDialog.AcceptOpen)
         dialog.setFileMode(QFileDialog.ExistingFile)
-        dialog.setNameFilter("XIA settings file (*.json)")
+        dialog.setNameFilter(SETTINGS_FILE_FILTER)
         dialog.setOption(QFileDialog.DontUseNativeDialog)
         if dialog.exec_() == QFileDialog.Accepted:
             return dialog.selectedFiles()[0], dialog.selectedNameFilter()
@@ -410,6 +442,10 @@ class MainWindow(QMainWindow):
 
         try:
             self.sys_toolbar.b_exit.setEnabled(False)
+            self.statusBar().showMessage(
+                "Exiting: waiting for hardware operations to finish..."
+            )
+            self.statusBar().repaint()
 
             # Drain workers, then deliver their queued result/finished slots so
             # run_active/active_type are current. User input is excluded so

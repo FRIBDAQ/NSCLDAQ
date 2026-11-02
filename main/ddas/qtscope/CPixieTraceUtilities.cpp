@@ -153,7 +153,7 @@ void CPixieTraceUtilities::AcquireADCTrace(int module, int channel) {
     if (retval < 0) {
       std::stringstream msg;
       msg << "Failed to read trace from module " << module;
-      throw CXIAException(msg.str(), "PixieReadSglChanADCTrace()", retval);
+      throw CXIAException(msg.str(), "Pixie16ReadSglChanADCTrace()", retval);
     }
   } else {
     // Get the trace binning and if successful generate a pulse:

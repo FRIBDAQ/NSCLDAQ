@@ -45,7 +45,7 @@ class ChanDSPGUI(QMainWindow):
 
     Methods
     -------
-    configure(dsp_manager, num_modules, msps_list, channel_map)
+    configure(dsp_manager, num_modules, channel_map)
         Initialize tabbed layout.
     apply_dsp()
         Apply DSP settings for a given module and DSP settings.
@@ -126,7 +126,7 @@ class ChanDSPGUI(QMainWindow):
 
         self.chan_params.currentChanged.connect(self._display_new_tab)
 
-    def configure(self, dsp_manager, num_modules, msps_list, channel_map):
+    def configure(self, dsp_manager, num_modules, channel_map):
         """Configure channel DSP manager.
 
         Setup the toolbar, get the DSP, and create the tabbed widget. This
@@ -140,8 +140,6 @@ class ChanDSPGUI(QMainWindow):
             operations.
         num_modules : int
             Number of modules in the system
-        msps_list : list
-            List of module ADC MSPS values.
         channel_map : list
             List of channels per module.
         """
@@ -331,7 +329,12 @@ class ChanDSPGUI(QMainWindow):
         """
         m = self.chan_params.currentIndex()  # Currently selected module.
         if m != self.mod_idx:
-            self.chan_params[m].setCurrentIndex(self.par_idx)
+            # Block the inner tab signal, which would re-enter this method
+            # and display the DSP a second time:
+            inner = self.chan_params[m]
+            inner.blockSignals(True)
+            inner.setCurrentIndex(self.par_idx)
+            inner.blockSignals(False)
         self._set_current_tab_info()
         self.tab.display_dsp(self.dsp_mgr, self.mod_idx)
         self._configure_toolbar(

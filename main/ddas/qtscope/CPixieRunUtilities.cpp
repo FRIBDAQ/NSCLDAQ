@@ -252,7 +252,7 @@ int CPixieRunUtilities::ReadBaseline(int module, int channel) {
     if (retval < 0) {
       std::stringstream msg;
       msg << "CPixieRunUtilities::ReadBaseline() failed to"
-          << " allocate memory for baselines in module " << module;
+          << " acquire baselines in module " << module;
       throw CXIAException(msg.str(), "Pixie16AcquireBaselines()", retval);
     }
 

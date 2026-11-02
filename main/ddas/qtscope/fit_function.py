@@ -25,7 +25,7 @@ class FitFunction:
         Poisson negative log likelihood. Used if count_data == True.
     neg_log_likelihood_g(params, x, y)
         Gaussian negative log likelihood. Used if count_data == False.
-    start(x, y, params, axis)
+    start(x, y, params)
         Implementation of the fitting algorithm.
     get_parameter_errors(result, x)
         Get the parameter errors for the fit.
@@ -158,7 +158,7 @@ class FitFunction:
             res = y - pred
             return np.sum(np.square(res))
 
-    def start(self, x, y, params, axis):
+    def start(self, x, y, params):
         """Implementation of the fitting algorithm.
 
         Parameters
@@ -169,8 +169,6 @@ class FitFunction:
             y data values.
         params : list
             Array of fit parameters.
-        axis : matplotlib axes
-            Axes for the plot.
 
         Returns
         -------

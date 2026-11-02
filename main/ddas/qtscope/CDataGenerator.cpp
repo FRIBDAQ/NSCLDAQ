@@ -5,7 +5,9 @@
 
 #include "CDataGenerator.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 
 /**
  * @details
@@ -80,15 +82,16 @@ unsigned short CDataGenerator::SinglePulse(double C, double A, double t0,
   // channel parameter value:
 
   double dt = (sample - t0) * binWidth;
-  unsigned short pval = 0; // Pulse value for current sample
+  double val = 0; // Pulse value for current sample
 
   if (sample < t0) {
-    pval = static_cast<unsigned short>(C + m_noise(m_engine));
+    val = C + m_noise(m_engine);
   } else {
-    pval = static_cast<unsigned short>(
-        C + A * (1 - std::exp(-dt / rise)) * std::exp(-dt / decay) +
-        m_noise(m_engine));
+    val = C + A * (1 - std::exp(-dt / rise)) * std::exp(-dt / decay) +
+          m_noise(m_engine);
   }
 
-  return pval;
+  // Keep the value representable as an ADC sample:
+  const double maxVal = std::numeric_limits<unsigned short>::max();
+  return static_cast<unsigned short>(std::min(std::max(val, 0.0), maxVal));
 }

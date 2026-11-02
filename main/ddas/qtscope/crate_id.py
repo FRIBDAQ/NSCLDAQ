@@ -82,10 +82,13 @@ class CrateID(QWidget):
             id_list.append(mgr.get_mod_par(i, self.param_names[0]))
 
         try:
-            if not all(id == id_list[0] for id in id_list):
-                raise ValueError(f"Inconsistent crate IDs read on Mod. {i}")
+            bad = [i for i, cid in enumerate(id_list) if cid != id_list[0]]
+            if bad:
+                raise ValueError(
+                    f"Inconsistent crate IDs: Mod. {bad[0]} differs from Mod. 0"
+                )
         except ValueError as e:
-            _logger.exception(f"Inconsistent crate ID values Mod. {i}: {id_list}")
+            _logger.exception(f"Inconsistent crate ID values: {id_list}")
             print(
                 f"{e}: Re-apply your module DSP parameters and check your settings file, it may be corrupt."
             )

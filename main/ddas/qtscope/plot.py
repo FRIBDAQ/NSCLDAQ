@@ -540,7 +540,7 @@ class Plot(QWidget):
                 if len(xdata) == self.histogram_length[self.current_module]:
                     x = x + 0.5
 
-                result = fit.start(x, y, params, ax)
+                result = fit.start(x, y, params)
 
                 # Update the canvas with the results:
                 x_fit = np.linspace(x[0], x[-1], 10000)

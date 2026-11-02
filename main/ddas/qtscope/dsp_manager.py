@@ -362,9 +362,10 @@ class DSPManager:
             Channel parameter name.
         """
         val = self._utils.read_chan_par(mod, chan, pname)
-        _logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Read Mod. {mod} Chan. {chan} {pname} {val}"
-        )
+        if _logger.isEnabledFor(logging.DEBUG):  # Skip the f-string in the hot path
+            _logger.debug(
+                f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Read Mod. {mod} Chan. {chan} {pname} {val}"
+            )
         self.set_chan_par(mod, chan, pname, val)
 
     def _read_and_set_mod_par(self, mod, pname):
@@ -378,9 +379,10 @@ class DSPManager:
             Module parameter name.
         """
         val = self._utils.read_mod_par(mod, pname)
-        _logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Read Mod. {mod} {pname} {val}"
-        )
+        if _logger.isEnabledFor(logging.DEBUG):
+            _logger.debug(
+                f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Read Mod. {mod} {pname} {val}"
+            )
         self.set_mod_par(mod, pname, val)
 
     def _get_and_write_par(self, mod, pname):
@@ -428,9 +430,10 @@ class DSPManager:
         """
         val = self.get_chan_par(mod, chan, pname)
         self._utils.write_chan_par(mod, chan, pname, val)
-        _logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Write Mod. {mod} Chan. {chan} {pname} {val}"
-        )
+        if _logger.isEnabledFor(logging.DEBUG):
+            _logger.debug(
+                f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Write Mod. {mod} Chan. {chan} {pname} {val}"
+            )
         # Read back and set parameters:
         self._read_and_set_chan_par(mod, chan, pname)
 
@@ -451,9 +454,10 @@ class DSPManager:
                 f"Module {mod}: New energy filter range = {val} -- filter parameters may have changed!"
             )
         self._utils.write_mod_par(mod, pname, val)
-        _logger.debug(
-            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Write Mod. {mod} {pname} {val}"
-        )
+        if _logger.isEnabledFor(logging.DEBUG):
+            _logger.debug(
+                f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Write Mod. {mod} {pname} {val}"
+            )
         self._read_and_set_mod_par(mod, pname)
 
     def _check_and_write_dependent_pars(self, mod, chan, pname):
@@ -472,7 +476,8 @@ class DSPManager:
         """
         if pname in self._dsp_deps:
             for dep_par in self._dsp_deps[pname]:
-                _logger.debug(
-                    f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Get and write dependent {dep_par} for {pname}"
-                )
+                if _logger.isEnabledFor(logging.DEBUG):
+                    _logger.debug(
+                        f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Get and write dependent {dep_par} for {pname}"
+                    )
                 self._get_and_write_chan_par(mod, chan, dep_par)

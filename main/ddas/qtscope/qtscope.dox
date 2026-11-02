@@ -240,12 +240,12 @@ it again does nothing.
 @image html qtscope_booted.png "The QtScope GUI state after a successful system boot. Note that the button previously displaying [Boot system] is now green, disabled, and reads [Booted]. The remaining GUI elements are enabled upon a successful boot."
 
 @par
-If booting fails -- most commonly because `cfgPixie16.txt` or `modevtlen.txt` is 
-missing or malformed -- QtScope prints an error to the terminal and the log, does 
-not crash, and leaves the system unbooted. Fix the problem (for example, copy a 
-correct `cfgPixie16.txt` into the launch directory) and click **[Boot system]** 
-again; the configuration files are re-read on every attempt. The **[Exit]** button 
-is always available.
+If booting or the configuration that follows it fails -- most commonly because 
+`cfgPixie16.txt` or `modevtlen.txt` is missing or malformed -- QtScope treats it as 
+a critical error: it shows an error dialog, prints the reason to the terminal and 
+the log, and leaves **[Boot system]** disabled. Click **[Exit]** (always 
+available), fix the problem (for example, copy a correct `cfgPixie16.txt` into the 
+launch directory), and start QtScope again.
 
 @note
 QtScope numbers modules with an internal, zero-indexed counter that is **not** the 

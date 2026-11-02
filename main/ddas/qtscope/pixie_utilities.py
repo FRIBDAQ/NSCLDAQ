@@ -29,8 +29,25 @@ from converters import str2char
 from run_type import RunType
 from pixie_error import PixieError
 
-_lib = CDLL("libPixieUtilities.so")  # Must be in LD_LIBRARY_PATH.
+_lib = None  # Loaded on first use by _load_lib().
 _logger = logging.getLogger("qtscope_logger")
+
+
+def _load_lib():
+    """Load libPixieUtilities.so once, on first use.
+
+    Deferring the load lets this module be imported without the library
+    (e.g. for tests). The library must be in LD_LIBRARY_PATH.
+
+    Returns
+    -------
+    CDLL
+        The loaded library.
+    """
+    global _lib
+    if _lib is None:
+        _lib = CDLL("libPixieUtilities.so")
+    return _lib
 
 
 def _decode_reason(raw):
@@ -133,6 +150,8 @@ class SystemUtilities:
         PixieError
             The CPixieSystemUtilities object is not constructed.
         """
+        _load_lib()
+
         # Ctor:
         _lib.CPixieSystemUtilities_new.restype = POINTER(c_char)
 
@@ -260,6 +279,7 @@ class SystemUtilities:
             "System exit",
             self.get_last_error_message,
         )
+        _logger.info("System exit successful")
 
     def boot_offline(self, offline=False):
         """Wrapper to set system boot mode.
@@ -392,7 +412,10 @@ class SystemUtilities:
 
     def __del__(self):
         """SystemUtilities class destructor."""
-        self.close()
+        try:
+            self.close()
+        except Exception:
+            pass  # Interpreter shutdown: the library may already be unloaded
 
 
 ##########################################################################
@@ -436,6 +459,8 @@ class DSPUtilities:
         PixieError
             The CPixieDSPUtilities object is not constructed.
         """
+        _load_lib()
+
         # Ctor:
         _lib.CPixieDSPUtilities_new.restype = POINTER(c_char)
 
@@ -654,7 +679,10 @@ class DSPUtilities:
 
     def __del__(self):
         """DSPUtilities class destructor."""
-        self.close()
+        try:
+            self.close()
+        except Exception:
+            pass  # Interpreter shutdown: the library may already be unloaded
 
 
 ##########################################################################
@@ -704,6 +732,8 @@ class RunUtilities:
         PixieError
             The CPixieRunUtilities object is not constructed.
         """
+        _load_lib()
+
         # Ctor:
         _lib.CPixieRunUtilities_new.restype = POINTER(c_char)
 
@@ -925,7 +955,8 @@ class RunUtilities:
         ValueError
             If the run type is unknown.
         PixieError
-            If reading the histogram length fails.
+            If reading the histogram length fails, or no data buffer is
+            available.
         """
         # Assume all channels on the module have the same histogram length:
         size = self.get_histogram_length(module)
@@ -939,7 +970,10 @@ class RunUtilities:
         else:
             raise ValueError(f"Cannot read data for unrecognized run type {run_type}")
 
-        return np.array(d[:size], dtype=np.uint32)
+        if not d:  # NULL: the shim had no object to read from
+            raise PixieError("No data buffer: utilities object not available")
+        # One copy out of the C++ buffer, which the next read reuses:
+        return np.ctypeslib.as_array(d, shape=(size,)).copy()
 
     def get_run_active(self):
         """Wrapper to get the active run status.
@@ -1030,7 +1064,10 @@ class RunUtilities:
 
     def __del__(self):
         """RunUtilities class destructor."""
-        self.close()
+        try:
+            self.close()
+        except Exception:
+            pass  # Interpreter shutdown: the library may already be unloaded
 
 
 ##########################################################################
@@ -1072,6 +1109,8 @@ class TraceUtilities:
         PixieError
             The CPixieTraceUtilities object is not constructed.
         """
+        _load_lib()
+
         # Ctor:
         _lib.CPixieTraceUtilities_new.restype = POINTER(c_char)
 
@@ -1165,13 +1204,17 @@ class TraceUtilities:
         Raises
         ------
         PixieError
-            If reading the trace length fails.
+            If reading the trace length fails, or no data buffer is
+            available.
         """
         # Assume again that all channels have the same trace length:
         size = self.get_trace_length(module)
         d = _lib.CPixieTraceUtilities_GetTraceData(self.obj)
 
-        return np.array(d[:size], dtype=np.uint16)
+        if not d:  # NULL: the shim had no object to read from
+            raise PixieError("No data buffer: utilities object not available")
+        # One copy out of the C++ buffer, which the next read reuses:
+        return np.ctypeslib.as_array(d, shape=(size,)).copy()
 
     def use_generator_data(self, mode):
         """Wrapper to set the manager to use generated data.
@@ -1228,4 +1271,7 @@ class TraceUtilities:
 
     def __del__(self):
         """TraceUtilities class destructor."""
-        self.close()
+        try:
+            self.close()
+        except Exception:
+            pass  # Interpreter shutdown: the library may already be unloaded

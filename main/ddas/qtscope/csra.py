@@ -49,7 +49,7 @@ class CSRA(QWidget):
         Copy DSP from channel idx in GUI.
     """
 
-    def __init__(self, module=None, nchannels=16, *args, **kwargs):
+    def __init__(self, *args, nchannels=16, **kwargs):
         """CSRA class constructor.
 
         Initialize CSRA widget and set labels. Channel DSP is displayed on an
@@ -58,10 +58,12 @@ class CSRA(QWidget):
 
         Parameters
         ----------
-        module : int
-            Module number from factory create method.
+        *args : tuple
+            Positional arguments passed to parent QWidget.
         nchannels : int, default=16
             Number of channels per module.
+        **kwargs : dict
+            Keyword arguments passed to parent QWidget.
         """
         super().__init__(*args, **kwargs)
 
