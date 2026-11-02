@@ -30,7 +30,6 @@
  */
 
 const size_t kXIABUFSIZE = 1024; //!< XIA API return code max buffer length.
-const size_t kREASONSIZE = 2048; //!< Reason text max buffer length.
 
 class CXIAException : public CException {
 private:
@@ -47,7 +46,7 @@ public:
   CXIAException(std::string msg, std::string fcn, int rv);
 
   /** @brief Destructor. Nothing to do here. */
-  virtual ~CXIAException() {};
+  virtual ~CXIAException(){};
 
   // Exception interface:
 
