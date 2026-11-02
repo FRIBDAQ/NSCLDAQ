@@ -79,7 +79,7 @@ class GaussP2FitBuilder:
         """GaussP2FitBuilder class constructor."""
         self._instance = None
 
-    def __call__(self, params=[], form="", count_data=True):
+    def __call__(self, params=None, form="", count_data=True):
         """Create the fitting function.
 
         Create an instance of the fit function if it does not exist and
@@ -103,6 +103,7 @@ class GaussP2FitBuilder:
         GaussP2Fit
             Instance of the fit class.
         """
+        params = params if params is not None else []
         if not self._instance:
             self._instance = GaussP2Fit(params, form, count_data)
         return self._instance
