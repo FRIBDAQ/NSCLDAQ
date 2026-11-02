@@ -387,6 +387,23 @@ class MainWindow(QMainWindow):
             return dialog.selectedFiles()[0], dialog.selectedNameFilter()
         return "", ""
 
+    def _drain_workers(self):
+        """Exit only: wait, with no deadline, for in-flight workers.
+
+        Every worker call has a bounded duration, so this terminates.
+        Continuing while a worker is still in the XIA API would race it
+        and free objects it is using.
+        """
+        done = self.pool_mgr.exit()
+        while not done:
+            msg = (
+                f"Exit waiting for {self.pool_mgr.get_active_thread_count()} "
+                "in-flight hardware operation(s) to finish"
+            )
+            _logger.warning(msg)
+            print(msg)
+            done = self.pool_mgr.wait()
+
     def _system_exit(self):
         """Closes connection to Pixie modules and exits the application.
 
@@ -408,9 +425,9 @@ class MainWindow(QMainWindow):
             # run_active/active_type are current. User input is excluded so
             # nothing new can be clicked. A flushed slot may chain one more
             # worker (adjust_offsets -> load_dsp), so drain again.
-            self.pool_mgr.exit()
+            self._drain_workers()
             QApplication.processEvents(QEventLoop.ExcludeUserInputEvents)
-            self.pool_mgr.exit()
+            self._drain_workers()
 
             # End any active runs:
 
@@ -688,6 +705,8 @@ class MainWindow(QMainWindow):
         """
         acquired = []
         for ch in channels:
+            if self.exiting:  # Exit requested: stop between channels
+                break
             self.run_utils.read_data(module, ch, run_type)
             acquired.append((ch, self.run_utils.get_data(module, run_type)))
         return module, run_type, acquired
@@ -732,6 +751,8 @@ class MainWindow(QMainWindow):
         """
         acquired = []
         for ch in channels:
+            if self.exiting:  # Exit requested: stop between channels
+                break
             if fast:
                 self.trace_utils.read_fast_trace(module, ch)
             else:

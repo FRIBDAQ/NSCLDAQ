@@ -228,15 +228,20 @@ class ThreadPoolManager:
         ----------
         time : int
             Wait time in milliseconds (optional, default=10 s).
+
+        Returns
+        -------
+        bool
+            True if all threads finished, False if the wait timed out.
         """
-        self.pool.waitForDone(time)
+        return self.pool.waitForDone(time)
 
     def exit(self):
         """Clears all runnables from the queue and waits for all threads
-        to exit.
+        to exit. Returns True if all threads finished within the wait.
         """
         self.pool.clear()
-        self.wait()
+        return self.wait()
 
     ##
     # Private functions
