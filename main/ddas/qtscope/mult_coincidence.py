@@ -78,7 +78,7 @@ class MultCoincidence(QWidget):
     print_masks(mgr, mod)
         Print the multiplicity mask and channel coincidence information.
     unsupported_reason
-        If the tab cannot be configured (unsupported module), return a
+        If the tab cannot be configured (unsupported module), return
         the reason as a string. This is decorated with @property, and
         can be called as if it is an attribute without the ().
     """
@@ -91,7 +91,7 @@ class MultCoincidence(QWidget):
         channels on the selected module.
 
         Parameters
-        -----------------
+        ----------
         *args : tuple
             Positional arguments passed to parent QWidget.
         nchannels : int, default=16
@@ -125,7 +125,7 @@ class MultCoincidence(QWidget):
         self.rbgroup = QButtonGroup(chan_group_widget)
 
         # The button group dictionary. Key is button id, dictionary containing
-        # channel grouping information is value. Channel grouping dicionary
+        # channel grouping information is value. Channel grouping dictionary
         # keys are the group name, the number of bits to shift, and the channel
         # mask. Shift and mask for unknown is meaningless, and if coincidence
         # is disabled, the mask should be equal to 0.
@@ -205,7 +205,7 @@ class MultCoincidence(QWidget):
         vbox.addWidget(settings_widget)
         settings_box.setLayout(vbox)
 
-        # Layout for all the consituent widgets above the toolbar:
+        # Layout for all the constituent widgets above the toolbar:
 
         top_widget = QWidget()
         hbox = QHBoxLayout()
@@ -580,7 +580,7 @@ class MultCoincidence(QWidget):
                 f"Attempting to set unknown multiplicity mode on Mod. {mod}"
             )
             print(
-                f"{e}:\n\tPlease select a known multiplicty group and click "
+                f"{e}:\n\tPlease select a known multiplicity group and click "
                 f"'Apply' to update your settings."
             )
         else:

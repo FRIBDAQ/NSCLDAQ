@@ -93,10 +93,10 @@ int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
 
 /**
  * @details
- * If the run cannot be ended on the first attempt, retry 10 times before
- * returning CPIXIEERROR_RUN_ACTIVE with a stored error message. Generally
- * speaking, this is caused when one or more channels has a very high trigger
- * rate.
+ * Send the end-run request once, then poll the run status up to 10 times,
+ * 100 ms apart, before returning CPIXIEERROR_RUN_ACTIVE with a stored error
+ * message. Generally speaking, a run that will not stop is caused when one or
+ * more channels has a very high trigger rate.
  */
 int CPixieRunUtilities::EndHistogramRun(int module) {
   try {
@@ -277,7 +277,7 @@ int CPixieRunUtilities::ReadBaseline(int module, int channel) {
 
 /**
  * @details
- * XIA API major verson > 3 does not guarantee a fixed-size statistics block. We
+ * XIA API major version > 3 does not guarantee a fixed-size statistics block. We
  * must use the API function `Pixie16GetStatisticsSize()` to determine the stats
  * block size and dynamically allocate memory for the statistics prior to
  * reading them.

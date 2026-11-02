@@ -1,6 +1,6 @@
 /**
  * @file CPixieSystemUtilities.cpp
- * @brief Implementation the Pixie DAQ system utilities class.
+ * @brief Implementation of the Pixie DAQ system utilities class.
  */
 
 #include "CPixieSystemUtilities.h"

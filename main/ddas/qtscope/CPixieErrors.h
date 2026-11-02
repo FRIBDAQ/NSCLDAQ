@@ -2,7 +2,7 @@
  * @file CPixieErrors.h
  * @brief Defines error codes for the ctypes interface used by the *Utilities
  * classes to report errors which are handled internally. As of XIA API 5.1.0,
- * XIA error codes are > -1000, so QtScope error codes are < -1000 to avoid
+ * XIA error codes are > -1000, so QtScope error codes are <= -1000 to avoid
  * conflicts.
  * @note The error code for unexpected errors in the ctype shims is included in
  * its own header file CPixieShimGuard.h.

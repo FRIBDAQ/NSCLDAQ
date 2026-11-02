@@ -17,7 +17,7 @@ class ModDSPGUI(QMainWindow):
     ----------
     pool_mgr : ThreadPoolManager
         Global thread pool manager.
-    mod_dsp_factory : ModDSPFactory
+    mod_dsp_factory : WidgetFactory
         Factory for implemented module DSP parameters.
     toolbar : DSPToolBar
         Toolbar for manipulating DSP settings.
@@ -108,7 +108,7 @@ class ModDSPGUI(QMainWindow):
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name}: Configuring GUI for {self.nmodules} modules using {self.dsp_mgr}"
         )
 
-        # Crate the module DSP layout and insert it on top of the
+        # Create the module DSP layout and insert it on top of the
         # manager layout above the toolbar:
 
         self.mod_params = ModDSPLayout(self.mod_dsp_factory, self.nmodules, channel_map)

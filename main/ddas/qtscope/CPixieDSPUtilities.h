@@ -40,7 +40,7 @@ public:
    * @brief Write a channel parameter for a single channel.
    * @param module    Module number.
    * @param channel   Channel number on module.
-   * @param paramName XIA API chanel parameter name.
+   * @param paramName XIA API channel parameter name.
    * @param value     Parameter value to write.
    * @return int
    * @retval 0   Success.
@@ -61,7 +61,7 @@ public:
   /**
    * @brief Write a module parameter for a single module.
    * @param module    Module number.
-   * @param paramName XIA API chanel parameter name.
+   * @param paramName XIA API channel parameter name.
    * @param value     Parameter value to write.
    * @return int
    * @retval 0   Success.
@@ -71,7 +71,7 @@ public:
   /**
    * @brief Read a module parameter for a single module.
    * @param[in] module     Module number.
-   * @param[in] paramName  XIA API chanel parameter name.
+   * @param[in] paramName  XIA API channel parameter name.
    * @param[out] value  Reference to read parameter value.
    * @return int
    * @retval 0   Success.

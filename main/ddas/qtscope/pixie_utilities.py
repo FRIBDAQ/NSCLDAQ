@@ -97,7 +97,8 @@ class SystemUtilities:
     obj : POINTER(c_char)
         Handle for the SystemUtilities object.
 
-    Methods:
+    Methods
+    -------
     boot()
         Boot the system.
     save_set_file(name)
@@ -884,7 +885,7 @@ class RunUtilities:
         _logger.debug(f"Read stats from Mod. {module}")
 
     def get_data(self, module, run_type):
-        """Wrapper to provide access the acquired energy histogram data.
+        """Wrapper to provide access to the acquired energy histogram data.
 
         Parameters
         ----------
@@ -911,7 +912,7 @@ class RunUtilities:
 
         # The data arrays returned via a pointer are unguarded. There are only two run
         # types: histogram and baseline, which are guarded by the enum and the run start;
-        # if its not a histogram run, it has to be a baseline run.
+        # if it's not a histogram run, it has to be a baseline run.
         if run_type == RunType.HISTOGRAM:
             d = _lib.CPixieRunUtilities_GetHistogramData(self.obj)
         elif run_type == RunType.BASELINE:
@@ -1120,11 +1121,22 @@ class TraceUtilities:
         )
 
     def get_trace_data(self, module):
-        """Wrapper to provide access the acquired trace data.
+        """Wrapper to provide access to the acquired trace data.
+
+        Parameters
+        ----------
+        module : int
+            Module number.
 
         Returns
         -------
-        NumPy array of trace data.
+        ndarray
+            NumPy array of trace data.
+
+        Raises
+        ------
+        PixieError
+            If reading the trace length fails.
         """
         # Assume again that all channels have the same trace length:
         size = self.get_trace_length(module)

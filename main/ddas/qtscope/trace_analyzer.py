@@ -224,8 +224,11 @@ class TraceAnalyzer:
         """Read the filter parameters, convert to samples, and pack them.
 
         Reads the channel DSP filter parameters from the manager, converts
-        each to the nearest integer number of samples, and packs them into a
-        FilterParameters object.
+        the filter times (risetimes, gaps, CFD delay and tau) to the nearest
+        integer number of samples, and packs them into a FilterParameters
+        object. Risetimes, the CFD delay and tau shorter than one sample (XDT)
+        are set to 1 sample; gaps may be 0. The CFD scale is not a time and is
+        only cast to int.
 
         Parameters
         ----------

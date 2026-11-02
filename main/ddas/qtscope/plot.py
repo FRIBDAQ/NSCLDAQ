@@ -20,7 +20,7 @@ _logger = logging.getLogger("qtscope_logger")
 class Plot(QWidget):
     """Plotting widget for the GUI utilizing the matplotlib Qt5 backend.
 
-    The caller must set the histogram and trace lengths for each module via '
+    The caller must set the histogram and trace lengths for each module via
     the set_histogram_length() and set_trace_length() methods respectively
     prior to drawing any data.
 
@@ -64,6 +64,8 @@ class Plot(QWidget):
         Draw a test figure with a random number of subplots.
     set_histogram_length(lengths)
         Set the histogram lengths for each module.
+    set_trace_length(lengths)
+        Set the trace lengths for each module.
 
     """
 

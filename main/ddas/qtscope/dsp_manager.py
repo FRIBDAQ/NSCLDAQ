@@ -42,25 +42,25 @@ class DSPManager:
 
     Methods
     -------
-    initialize_dsp(nmod, channel_map, msps_list):
+    initialize_dsp(nmod, channel_map, msps_list)
         Create and fill the DSP dictionary.
-    get_chan_par(mod, chan, pname):
+    get_chan_par(mod, chan, pname)
         Get a channel parameter value from the dataframe.
-    set_chan_par(mod, chan, pname, value):
+    set_chan_par(mod, chan, pname, value)
         Set a channel parameter value in the dataframe.
-    get_mod_par(mod, pname):
+    get_mod_par(mod, pname)
         Get a module parameter value from the dataframe.
-    set_mod_par(mod, pname, value):
+    set_mod_par(mod, pname, value)
         Set a module parameter value in the dataframe.
-    get_module_msps(mod):
+    get_module_msps(mod)
         Get the module MSPS value.
-    read(mod, pnames):
+    read(mod, pnames)
         Read DSP parameter(s) into the dataframe.
-    write(mod, pnames):
+    write(mod, pnames)
         Write DSP parameter(s) from the dataframe.
-    adjust_offsets(mod):
+    adjust_offsets(mod)
         Adjust the DC offset of all channels on a single module.
-    load_new_dsp():
+    load_new_dsp()
         Load new DSP settings into the dataframe.
     close()
         Release resources the manager owns.

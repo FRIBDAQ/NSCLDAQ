@@ -188,14 +188,13 @@ def int2ba(i, length=None, endian="big", signed=False):
     Raises
     ------
     TypeError
-        If the argument to convert is not an integer.
-        If no output bitarray length is provided.
-        If output is a signed integer and length is zero.
+        If the argument to convert or the length is not an integer, or if
+        `signed` is True and no length is provided.
     ValueError
-        The output bitarray length is zero.
+        If the length is provided and is not positive.
     OverflowError
-        If the integer value is too large to be represented by the number of
-        provided bits.
+        If the integer value cannot be represented by the number of provided
+        bits, or if it is negative and `signed` is False.
     """
     if not isinstance(i, (int, long) if _is_py2 else int):
         raise TypeError("integer expected")

@@ -39,11 +39,11 @@ class DSPToolBar(QToolBar):
         Enable all toolbar widgets.
     enable_mod_dsp()
         Enable widgets for module DSP.
-    set_visible()
+    set_visible(name)
         Set which widgets are visible.
-    set_module_spinbox_range()
+    set_module_spinbox_range(nmodules)
         Set the range of the module spinbox.
-    set_channel_spinbox_range()
+    set_channel_spinbox_range(nchannels)
         Set the range of the channel spinbox for the currently selected module.
     """
 

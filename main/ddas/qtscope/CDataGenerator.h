@@ -46,14 +46,14 @@ public:
    * @brief Generate test trace data.
    * @param[in,out] data Pointer to the start of the trace data storage.
    * @param[in] dataSize How many data points to store.
-   * @param[in] binWidth Histogram bin width in microseconds.
+   * @param[in] binWidth Trace sample width (XDT) in microseconds.
    * @return int
    * @retval 0 Success.
    */
   int GetTraceData(unsigned short *data, int dataSize, double binWidth);
   /**
    * @brief Generate test Gaussian-distributed data.
-   * @param[in,out] data Pointer to the start of the baseline data storage.
+   * @param[in,out] data Pointer to the start of the histogram data storage.
    * @param[in] dataSize How many data points to store.
    * @return 0 (always).
    */

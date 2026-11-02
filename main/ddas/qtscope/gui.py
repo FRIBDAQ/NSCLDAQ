@@ -93,8 +93,8 @@ class MainWindow(QMainWindow):
     ):
         """GUI MainWindow constructor.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         chan_dsp_factory : WidgetFactory
             Factory for implemented channel DSP widgets.
         mod_dsp_factory : WidgetFactory
@@ -451,7 +451,9 @@ class MainWindow(QMainWindow):
                     )
 
         except Exception:
-            # Only the drain or the event flush can get here. A worker may
+            # Only the steps before the end-run block can get here (in
+            # practice the drain or the event flush; an exception in a slot
+            # run by the flush goes to the excepthook instead). A worker may
             # still be in the XIA API, so the remaining hardware calls and
             # frees are skipped on purpose; __del__ frees the objects at
             # interpreter shutdown.
@@ -638,20 +640,8 @@ class MainWindow(QMainWindow):
             self.acq_toolbar.disable()
             self.pool_mgr.start_thread(
                 fcn=lambda: self._acquire_run_data(module, channels, run_type),
-                running=[
-                    self.chan_gui.toolbar.disable,
-                    self.mod_gui.toolbar.disable,
-                    lambda: self.chan_gui.setEnabled(False),
-                    lambda: self.mod_gui.setEnabled(False),
-                ],
                 results=[self._show_run_data],
-                finished=[
-                    self.acq_toolbar.enable_run_active,
-                    self.chan_gui.toolbar.enable,
-                    self.mod_gui.toolbar.enable,
-                    lambda: self.chan_gui.setEnabled(True),
-                    lambda: self.mod_gui.setEnabled(True),
-                ],
+                finished=[self.acq_toolbar.enable_run_active],
             )
         else:  # Trace acquisition.
             fast = self.acq_toolbar.fast_acq.isChecked()

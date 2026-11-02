@@ -134,10 +134,11 @@ class ThreadPoolManager:
         Reserve a thread and run its callback, wiring the signal handlers.
     get_active_thread_count()
         Return the number of active threads.
-    wait(int)
-        Wait for all threads to exit and remove them from the global pool.
+    wait(time=10000)
+        Wait for all threads to exit; return False if the wait timed out.
     exit()
-        Remove all queued runnables which have not yet started.
+        Remove all queued runnables which have not yet started, then wait
+        for running threads; return False if the wait timed out.
 
     """
 
