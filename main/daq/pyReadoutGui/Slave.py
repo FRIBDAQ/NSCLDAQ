@@ -245,7 +245,8 @@ class Slave:
             title = ' '.join(words[0])  # {} quoted case.
         else:    
             title = ' '.join(words)     # "" quoted case.
-            title.strip('"')
+            print("title", title)
+            title = title.strip('"')
         return title
                         
     def _doSet(self, tail) -> str:
