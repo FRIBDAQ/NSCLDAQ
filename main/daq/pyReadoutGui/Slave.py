@@ -371,7 +371,7 @@ class Slave:
             try:
                 peer = socket.gethostbyaddr(peer)
             except socket.herror:
-                pass    # No translation leevs the peer an ip address
+                pass    # No translation leaves the peer as a text addresss.
             mw.setStatusMessage(f'Enslaved by {peer}')
             
             
