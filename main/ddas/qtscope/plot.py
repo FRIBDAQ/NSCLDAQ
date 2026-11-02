@@ -542,7 +542,7 @@ class Plot(QWidget):
                 result = fit.start(x, y, params, ax)
 
                 # Update the canvas with the results:
-                x_fit = np.linspace(limits[0], limits[1], 10000)
+                x_fit = np.linspace(x[0], x[-1], 10000)
                 y_fit = fit.model(x_fit, result.x)
                 ax.plot(x_fit, y_fit, "r-")
 

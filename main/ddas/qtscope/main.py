@@ -221,7 +221,7 @@ def create_fit_factory():
     # parameter values.
     config_fit_exp = {
         "params": [1, -0.003, 1],  # k = -0.003 approx. 20 us in 60 ns samples.
-        "form": "f(x) = p[0]*exp(p[1]*x) + p[2]",
+        "form": "f(x) = p[0]*exp(p[1]*(x - x[0])) + p[2]",
         "count_data": False,
     }
 
