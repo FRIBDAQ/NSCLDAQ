@@ -17,10 +17,10 @@ class DSPManager:
     parameters which are addressable by the code. The dataframe chan_par is an
     nchannel x nChanDSP dataframe of channel DSP parameters and the dataframe
     mod_par is a 1 x nModDSP dataframe of module DSP parameters. Channel and
-    module DSP parameters are defined by XIA.The rest of the system uses this
+    module DSP parameters are defined by XIA. The rest of the system uses this
     management class to modify the internal DSP parameter values stored in the
     dataframe as well as to read/write values to/from the modules via
-    getters/setters and the  DSPUtilities class.
+    getters/setters and the DSPUtilities class.
 
     Attributes
     ----------
@@ -91,6 +91,11 @@ class DSPManager:
             Map of channels per module.
         msps_list : list
             ADC sampling rate in MSPS for each module.
+
+        Raises
+        ------
+        PixieError
+            If a hardware read fails. Already logged at origin.
         """
         self._dsp = {}
         self._nmodules = nmod
@@ -232,7 +237,8 @@ class DSPManager:
 
         Returns
         -------
-        The module MSPS
+        int
+            ADC sampling rate in MSPS for the module.
         """
         return self._msps_list[mod]
 
@@ -283,6 +289,11 @@ class DSPManager:
         ----------
         mod : int
             Module number.
+
+        Raises
+        ------
+        PixieError
+            If the offset adjustment fails. Already logged at origin.
         """
         self._utils.adjust_offsets(mod)
 
@@ -294,6 +305,11 @@ class DSPManager:
         system. DSP settings are loaded on the modules without the need for a
         reboot, but the dataframe will hold the old values until this function
         is called.
+
+        Raises
+        ------
+        PixieError
+            If a hardware read fails. Already logged at origin.
         """
         for mod in range(self._nmodules):
             self.read(mod, [*xia.CHAN_PARS, *xia.MOD_PARS])
@@ -322,6 +338,8 @@ class DSPManager:
         ------
         ValueError
             If the parameter name is not known.
+        PixieError
+            If a hardware read fails.
         """
         if pname in xia.CHAN_PARS:
             for i in range(self._channel_map[mod]):
@@ -381,6 +399,8 @@ class DSPManager:
         ------
         ValueError
             If the parameter name is not known.
+        PixieError
+            If a hardware write fails.
         """
         if pname in xia.CHAN_PARS:
             for i in range(self._channel_map[mod]):
@@ -448,7 +468,7 @@ class DSPManager:
         chan : int
             Channel number.
         pname : str
-            Channel parameter name.
+            Module or channel parameter name.
         """
         if pname in self._dsp_deps:
             for dep_par in self._dsp_deps[pname]:

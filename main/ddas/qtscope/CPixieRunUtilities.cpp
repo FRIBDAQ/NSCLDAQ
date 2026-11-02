@@ -60,7 +60,7 @@ int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
     }
 
     // If the run time is properly set, begin a histogram run for this
-    // module turn off synchronization (0):
+    // module; turn off synchronization (0):
     paramName = "SYNCH_WAIT";
     retval = Pixie16WriteSglModPar(paramName.c_str(), 0, module);
     if (retval < 0) {
@@ -193,7 +193,7 @@ int CPixieRunUtilities::ReadHistogram(int module, int channel) {
  * run flag is set to true when taking a baseline "run."
  *
  * The baseline data itself is stored internally as a histogram of values in
- * [0, histLength). This data structure is reset on begin.
+ * [0, m_histogramLength). This data structure is reset on begin.
  */
 int CPixieRunUtilities::BeginBaselineRun(int module, int nChannels) {
   std::cout << "Beginning baseline run in Mod. " << module << std::endl;
@@ -246,7 +246,7 @@ int CPixieRunUtilities::EndBaselineRun(int module) {
  */
 int CPixieRunUtilities::ReadBaseline(int module, int channel) {
   try {
-    // Fill internal DSP memory prior to trace read:
+    // Fill internal DSP memory prior to baseline read:
     int retval = Pixie16AcquireBaselines(module);
 
     if (retval < 0) {

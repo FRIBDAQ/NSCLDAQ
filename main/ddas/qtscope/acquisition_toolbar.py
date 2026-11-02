@@ -44,9 +44,9 @@ class AcquisitionToolBar(QToolBar):
         Enable toolbar widgets for system idle.
     enable_run_active()
         Enable toolbar widgets for an active run.
-    set_module_spinbox_range()
+    set_module_spinbox_range(nmodules)
         Set the range of the module spinbox.
-    set_channel_spinbox_range()
+    set_channel_spinbox_range(nchannels)
         Set the range of the channel spinbox for the current module.
     """
 
@@ -163,7 +163,7 @@ class AcquisitionToolBar(QToolBar):
         Parameters
         ----------
         nmodules : int
-        Number of modules in the system.
+            Number of modules in the system.
         """
         self.current_mod.setRange(0, nmodules - 1)
 
@@ -183,7 +183,7 @@ class AcquisitionToolBarBuilder:
     """Builder method for factory creation."""
 
     def __init__(self, *args, **kwargs):
-        """AcquisitionToolbarBuilder class constructor."""
+        """AcquisitionToolBarBuilder class constructor."""
 
     def __call__(self, *args, **kwargs):
         """Create an instance of the toolbar and return it to the caller.

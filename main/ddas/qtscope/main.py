@@ -189,7 +189,7 @@ def create_mod_dsp_factory():
 
 
 def create_toolbar_factory():
-    """Create a widget factory and register module DSP builders with it.
+    """Create a widget factory and register toolbar builders with it.
 
     Returns
     -------

@@ -16,7 +16,7 @@ class FitFunction:
 
     Methods
     -------
-    model(x, *p)
+    model(x, params)
         Returns an array of function values evaluated over the range x.
     set_initial_parameters(x, y, params)
         Sets initial parameter values. Derived classes can override this
@@ -43,7 +43,7 @@ class FitFunction:
             Initial parameters to set.
         form : str
             Function formula to display on the fitting panel.
-        count_data : bool
+        count_data : bool, default=True
             True if the data represents counts.
         """
         self.p_init = params  # Initial guesses
@@ -102,6 +102,12 @@ class FitFunction:
             x data values.
         y : ndarray
             y data values.
+
+        Returns
+        -------
+        float
+            Poisson negative log-likelihood, or np.inf if the model is not
+            implemented.
         """
         # Make sure the model is implemented:
         try:
@@ -112,7 +118,7 @@ class FitFunction:
         else:
             # Replace small values with some small number to ensure log(pred)
             # is valid. I chose to modify the likelihood this way over
-            # returning, e.g, np.inf if any pred <= 0 because it prevents huge
+            # returning, e.g., np.inf if any pred <= 0 because it prevents huge
             # jumps in the objective function value when the parameters are
             # close to values which give pred <= 0. Also the return value is
             # always defined.
@@ -133,6 +139,13 @@ class FitFunction:
             x data values.
         y : ndarray
             y data values.
+
+        Returns
+        -------
+        float
+            Sum of squared residuals (the Gaussian negative log-likelihood
+            up to scale and offset), or np.inf if the model is not
+            implemented.
         """
         # Make sure the model is implemented:
         try:

@@ -100,7 +100,10 @@ class SystemToolBar(QToolBar):
                 c.setEnabled(True)
 
     def enable_booted(self):
-        """Enable widgets for the booted system state. The boot button is colored green and disabled."""
+        """Enable widgets for the booted system state.
+
+        The boot button is colored green and disabled.
+        """
         self.b_boot.setText("Booted")
         self.b_boot.setStyleSheet(colors.GREEN)
         self.b_boot.setEnabled(False)
@@ -112,7 +115,7 @@ class SystemToolBar(QToolBar):
         self.b_exit.setEnabled(True)
 
     def _about(self):
-        """Popup a QMessageBox containing the relevant info."""
+        """Pop up a QMessageBox containing the relevant info."""
         msg = """QtScope is the slow control program for NSCL DDAS which is used to configure DSP settings on XIA Pixie modules.\n\nVersion: 1.0\n\nQtScope makes use of PyQt5, which in turn makes use of Qt 5. We use the open-source license of Qt and thus must also provide a means to download the code for Qt as well as the source code of this program.\n\nInstructions for obtaining the Qt source code can be found at: https://wiki.qt.io/Building_Qt_5_from_Git#Getting_the_source_code\n\nThis project is in the main/ddas/qtscope directory of the NSCLDAQ  project: https://github.com/FRIBDAQ/NSCLDAQ\n\nAuthor:\n\tAaron Chester\n\tFacility for Rare Isotope Beams\n\tMichigan State University\n\tEast Lansing, MI 48824"""
         msg_box = QMessageBox()
         msg_box.setWindowTitle("About QtScope")
@@ -125,7 +128,7 @@ class SystemToolBarBuilder:
     """Builder method for factory creation."""
 
     def __init__(self, *args, **kwargs):
-        """SystemToolbarBuilder class constructor."""
+        """SystemToolBarBuilder class constructor."""
 
     def __call__(self, *args, **kwargs):
         """

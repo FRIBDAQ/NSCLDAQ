@@ -8,7 +8,7 @@ class TriggerFilter(ChanDSPWidget):
         """TriggerFilter class constructor.
 
         Parameters
-        -----------------
+        ----------
         *args : tuple
             Positional arguments passed to parent ChanDSPWidget.
         nchannels : int, default=16

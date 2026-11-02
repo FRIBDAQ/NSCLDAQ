@@ -26,10 +26,27 @@ class TrigConfigExtra(QWidget):
     -------
     configure(mgr)
         Initialize GUI.
+    update_dsp(mgr)
+        Update DSP from GUI.
+    display_dsp(mgr, set_state=False)
+        Display current DSP in GUI.
 
     """
 
     def __init__(self, *args, nmodules=None, channel_map=None, **kwargs):
+        """TrigConfigExtra class constructor.
+
+        Parameters
+        ----------
+        *args : tuple
+            Positional arguments passed to parent QWidget.
+        nmodules : int, default=None
+            Module count from factory create method.
+        channel_map : list, default=None
+            List of channels per module (unused by this class).
+        **kwargs : dict
+            Keyword arguments passed to parent QWidget.
+        """
         super().__init__(*args, **kwargs)
 
         # TrigConfig3 not currently used per XIA Pixie-16 manual:

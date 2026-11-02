@@ -59,7 +59,7 @@ int CPixieTraceUtilities::ReadTrace(int module, int channel) {
       // Unbiased estimator of Gaussian SD.
       double sigma = 1.4826 * GetMedianValue(traceMAD);
 
-      // iterators
+      // Max and min values:
       auto max = *std::max_element(m_trace.begin(), m_trace.end());
       auto min = *std::min_element(m_trace.begin(), m_trace.end());
 

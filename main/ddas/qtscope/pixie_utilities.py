@@ -102,12 +102,12 @@ class SystemUtilities:
     boot()
         Boot the system.
     save_set_file(name)
-        Save an XIA settings to file called name.
+        Save XIA settings to a file called name.
     load_set_file(name)
         Load XIA settings file called name.
     exit_system()
         Release resources used by the modules prior to exit.
-    boot_offline(mode)
+    boot_offline(offline=False)
         Set the system boot mode.
     get_boot_mode()
         Get the system boot mode.
@@ -115,9 +115,9 @@ class SystemUtilities:
         Get the system boot status.
     get_num_modules()
         Get the number of installed modules.
-    get_module_msps(mod)
+    get_module_msps(module)
         Get the sampling rate in MSPS for module.
-    get_module_channel_count(mod)
+    get_module_channel_count(module)
         Get the module channel count.
     get_last_error_message()
         Get the last error message from the system (DDAS, XIA, ctypes shim...).
@@ -284,6 +284,11 @@ class SystemUtilities:
         -------
         int
             Offline (1) or online (0) module boot mode flag.
+
+        Raises
+        ------
+        PixieError
+            If the read fails.
         """
         return _check_retval(
             _lib.CPixieSystemUtilities_GetBootMode(self.obj),
@@ -308,6 +313,11 @@ class SystemUtilities:
         -------
         int
             Number of modules installed in the system.
+
+        Raises
+        ------
+        PixieError
+            If the read fails.
         """
         return _check_retval(
             _lib.CPixieSystemUtilities_GetNumModules(self.obj),
@@ -327,6 +337,11 @@ class SystemUtilities:
         -------
         int
             Sampling rate in MSPS.
+
+        Raises
+        ------
+        PixieError
+            If the read fails.
         """
         return _check_retval(
             _lib.CPixieSystemUtilities_GetModuleMSPS(self.obj, module),
@@ -346,6 +361,11 @@ class SystemUtilities:
         -------
         int
             Channels on the module.
+
+        Raises
+        ------
+        PixieError
+            If the read fails.
         """
         return _check_retval(
             _lib.CPixieSystemUtilities_GetModuleChannelCount(self.obj, module),
@@ -568,7 +588,7 @@ class DSPUtilities:
         name : str
             Parameter name.
         val : float
-            Channel parameter value.
+            Module parameter value.
 
         Raises
         ------
@@ -657,7 +677,7 @@ class RunUtilities:
     end_run(module, run_type)
         End histogram or baseline run in a single module.
     read_data(module, channel, run_type)
-        Read data histograms for a single module.
+        Read run data from a single channel.
     read_stats(module)
         Read run statistics from the specified module.
     get_data(module, run_type)
@@ -665,7 +685,7 @@ class RunUtilities:
     get_run_active()
         Get the active run status of the system.
     use_generator_data(mode)
-        Set ParameterManager offline mode.
+        Set use of the data generator for testing.
     get_histogram_length(module)
         Get the histogram length for a single module.
     get_max_baselines(module)
@@ -885,7 +905,7 @@ class RunUtilities:
         _logger.debug(f"Read stats from Mod. {module}")
 
     def get_data(self, module, run_type):
-        """Wrapper to provide access to the acquired energy histogram data.
+        """Wrapper to provide access to the acquired energy histogram or baseline data.
 
         Parameters
         ----------
@@ -910,9 +930,8 @@ class RunUtilities:
         # Assume all channels on the module have the same histogram length:
         size = self.get_histogram_length(module)
 
-        # The data arrays returned via a pointer are unguarded. There are only two run
-        # types: histogram and baseline, which are guarded by the enum and the run start;
-        # if it's not a histogram run, it has to be a baseline run.
+        # The data arrays returned via a pointer are unguarded, so the run type
+        # selects which array to read; an unrecognized run type raises ValueError.
         if run_type == RunType.HISTOGRAM:
             d = _lib.CPixieRunUtilities_GetHistogramData(self.obj)
         elif run_type == RunType.BASELINE:
@@ -956,6 +975,11 @@ class RunUtilities:
         -------
         int
             Number of bins in the histogram.
+
+        Raises
+        ------
+        PixieError
+            If the read fails.
         """
         return _check_retval(
             _lib.CPixieRunUtilities_GetHistogramLength(self.obj, module),
@@ -975,6 +999,11 @@ class RunUtilities:
         -------
         int
             Maximum number of baselines.
+
+        Raises
+        ------
+        PixieError
+            If the read fails.
         """
         return _check_retval(
             _lib.CPixieRunUtilities_GetMaxBaselines(self.obj, module),
@@ -1167,7 +1196,12 @@ class TraceUtilities:
         Returns
         -------
         int
-            Number of samples in the trace or error code if operation fails.
+            Number of samples in the trace.
+
+        Raises
+        ------
+        PixieError
+            If the read fails.
         """
         return _check_retval(
             _lib.CPixieTraceUtilities_GetTraceLength(self.obj, module, channel),

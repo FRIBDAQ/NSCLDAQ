@@ -45,13 +45,13 @@ class AnalogSignal(QWidget):
 
     Methods
     -------
-    configure(mgr, mod):
+    configure(mgr, mod)
         Initialize GUI.
-    update_dsp(mgr, mod):
+    update_dsp(mgr, mod)
         Update DSP from GUI.
-    display_dsp(mgr, mod):
+    display_dsp(mgr, mod)
         Display current DSP in GUI.
-    copy_chan_dsp(mgr, mod):
+    copy_chan_dsp(idx)
         Copy DSP from channel idx in GUI.
     """
 
@@ -60,11 +60,11 @@ class AnalogSignal(QWidget):
 
         Initialize analog signal DSP widget, set parameter validators and
         labels. Channel DSP is displayed on an nchannel x nDSP grid of
-        QLineEdit widgets. Note that the actual DSP parameters are 1-indexed
-        while the DSP grid is 0-indexed.
+        QLineEdit widgets. Note that the actual DSP parameters are 0-indexed
+        while the DSP grid is 1-indexed.
 
         Parameters
-        -----------------
+        ----------
         *args : tuple
             Positional arguments passed to parent QWidget.
         nchannels : int, default=16
@@ -138,9 +138,11 @@ class AnalogSignal(QWidget):
 
         Parameters
         ----------
-            mgr (DSPManager): Manager for internal DSP and interface for
-                              XIA API read/write operations.
-            mod (int): Module number.
+        mgr : DSPManager
+            Manager for internal DSP and interface for XIA API
+            read/write operations.
+        mod : int
+            Module number.
         """
         self.display_dsp(mgr, mod)
 
@@ -149,7 +151,7 @@ class AnalogSignal(QWidget):
 
         Parameters
         ----------
-        mgr : DSP-Manager
+        mgr : DSPManager
             Manager for internal DSP and interface for XIA API
             read/write operations.
         mod : int

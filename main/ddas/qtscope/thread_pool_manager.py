@@ -47,7 +47,7 @@ class Worker(QRunnable):
     -------
     run()
         Executes the code we wish to run from the passed function fn.
-    set_function(function)
+    set_function(new_fn)
         Set function attribute.
     """
 
@@ -60,7 +60,7 @@ class Worker(QRunnable):
 
         Parameters
         ----------
-        fn : QObject
+        fn : callable, optional
             Function attached to this worker thread.
         args : tuple
             Arguments to pass to the callback function.
@@ -115,8 +115,8 @@ class ThreadPoolManager:
     functions connected to the thread's `running`, `finished`, `results`, and
     `error` signals. The `start_thread()` method will create, configure, and
     run an object encapsulating a worker thread in a QRunnable. Note that
-    QThreadPool takes ownership of the runnable and will delete it if it
-    returns true; otherwise ownership remains with the caller. Worker failures
+    QThreadPool takes ownership of the runnable and will delete it if its
+    autoDelete() returns true; otherwise ownership remains with the caller. Worker failures
     are always reported by `_report_worker_error`; the `errors` list adds
     recovery handlers on top of that reporting.
 
@@ -129,7 +129,7 @@ class ThreadPoolManager:
     Methods
     -------
     start_thread(fcn, running, finished, results, errors)
-        Reserve a thread and run its callback, wiring the signal handlers.
+        Queue fcn on the single-thread pool, wiring the signal handlers.
     get_active_thread_count()
         Return the number of active threads.
     wait(time=10000)
@@ -212,7 +212,7 @@ class ThreadPoolManager:
         self.pool.start(worker)
 
     def get_active_thread_count(self):
-        """Return the number of threads from QThreadPool.getActiveThreadCount().
+        """Return the number of threads from QThreadPool.activeThreadCount().
 
         Returns
         -------

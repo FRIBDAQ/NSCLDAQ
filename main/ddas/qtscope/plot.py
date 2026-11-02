@@ -57,7 +57,7 @@ class Plot(QWidget):
     draw_run_data(data, run_type, nrows=1, ncols=1, idx=1)
         Draw single- or multiple-channel energy histogram or baseline data.
     on_begin_run(module, run_type)
-        Draw a blank histogram-style canvas when starting a histogram run.
+        Draw a blank histogram-style canvas when starting a histogram or baseline run.
     get_subplot_data(chan)
         Scrape data from a subplot (e.g., if 'Read all' is checked).
     draw_test_data()
@@ -72,11 +72,11 @@ class Plot(QWidget):
     def __init__(self, mgr, toolbar_factory, fit_factory, *args, **kwargs):
         """Plot class constructor.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         mgr : DSPManager
             DSP manager for calls to XIA API.
-        toolbar_factory : ToolBarFactory
+        toolbar_factory : WidgetFactory
             Factory for implemented toolbars.
         fit_factory : FitFactory
             Factory method for fitting plot data.
@@ -160,7 +160,7 @@ class Plot(QWidget):
         ncols : int
             Number of subplot columns (optional, default=1).
         idx : int
-            Subplot index in [1, nrows*ncols] (optional).
+            Subplot index in [1, nrows*ncols] (optional, default=1).
 
         """
         self.raw_data[idx - 1] = data
@@ -299,8 +299,8 @@ class Plot(QWidget):
         which we assume is our data. It should be impossible for any other
         data to populate the subplot at this stage.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         chan : int
             Subplot/channel number.
 
@@ -507,7 +507,7 @@ class Plot(QWidget):
             _logger.debug(f"Fit limit indices: {idx_min}, {idx_max}")
             _logger.debug(f"Fit panel guess params: {params}")
 
-            # If the current subplot has data, get the fit limits and call the
+            # If the current subplot has data, validate the fit range and call the
             # fit function's start() routine to perform the fit:
             if ax.get_lines():
                 xdata = ax.lines[0].get_xdata()

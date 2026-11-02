@@ -22,7 +22,7 @@ class ChanDSPGUI(QMainWindow):
     pool_mgr : ThreadPoolManager
         Global thread pool manager.
     chan_params : MyTabWidget
-        Tabbed widget of module DSP settings.
+        Tabbed widget of channel DSP settings, one tab per module.
     chan_dsp_factory : WidgetFactory
         Factory for implemented channel DSP widgets.
     toolbar : DSPToolBar
@@ -102,7 +102,7 @@ class ChanDSPGUI(QMainWindow):
 
         # Timing diagram. QLabel has a Pixmap, so we'll use that to display
         # the diagram and add some padding to the edges of the image because
-        # its very tightly cropped:
+        # it's very tightly cropped:
 
         fig_path = os.environ["DAQROOT"] + "/ddas/qtscope/figures/timing_diagram.png"
         fig = QPixmap(fig_path)
@@ -354,7 +354,7 @@ class ChanDSPGUI(QMainWindow):
         self.toolbar.set_visible(name)
 
     def _write_chan_dsp(self, mod, tab):
-        """Write channel parameters to the dataframe for specified module.
+        """Write channel parameters from the dataframe to the specified module.
 
         Parameters
         ----------
@@ -368,7 +368,7 @@ class ChanDSPGUI(QMainWindow):
         self.dsp_mgr.write(mod, tab.param_names)
 
     def _read_chan_dsp(self, mod, tab):
-        """Read channel parameters from the dataframe for a specified module.
+        """Read channel parameters from the specified module into the dataframe.
 
         Parameters
         ----------
@@ -391,7 +391,7 @@ class ChanDSPGUI(QMainWindow):
             Currently selected module.
         tab : QWidget
             Currently selected DSP tab.
-        tab_name : string
+        tab_name : str
             Name of currently selected DSP tab.
         """
         reason = getattr(tab, "unsupported_reason", None)

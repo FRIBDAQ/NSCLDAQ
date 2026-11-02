@@ -19,7 +19,7 @@ class Trace(ChanDSPWidget):
     -------
     configure(mgr, mod)
         Configure the Trace class. Overridden from base class.
-    update(mgr, mod)
+    update_dsp(mgr, mod)
         Update DSP from GUI. Overridden from base class.
     display_dsp(mgr, mod)
         Display DSP from the dataframe. Overridden from base class.
@@ -28,8 +28,8 @@ class Trace(ChanDSPWidget):
     def __init__(self, *args, nchannels=16, **kwargs):
         """Trace class constructor.
 
-         Parameters
-        -----------------
+        Parameters
+        ----------
         *args : tuple
             Positional arguments passed to parent ChanDSPWidget.
         nchannels : int, default=16
@@ -67,7 +67,7 @@ class Trace(ChanDSPWidget):
         self.setLayout(layout)
 
     ##
-    # Overriden class methods
+    # Overridden class methods
     #
 
     def configure(self, mgr, mod):
@@ -82,11 +82,11 @@ class Trace(ChanDSPWidget):
         mod : int
             Module number.
 
-        Raises
-        ------
-        ValueError:
-            If trace enable bits are not consistent for all channels on
-            the module.
+        Notes
+        -----
+        Trace enable bits that are not consistent for all channels on the
+        module are logged and reported to the user; no exception is raised
+        to the caller.
         """
         enb_list = []
         for i in range(self.nchannels):
@@ -110,7 +110,7 @@ class Trace(ChanDSPWidget):
     def update_dsp(self, mgr, mod):
         """Overridden update operations.
 
-        Update DSP storage CSRA from based on the trace enable setting from
+        Update DSP storage CSRA based on the trace enable setting from
         the GUI.
 
         Parameters

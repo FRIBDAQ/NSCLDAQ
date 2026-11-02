@@ -7,7 +7,7 @@ from extensions import MyTabWidget
 class ChanDSPLayout(MyTabWidget):
     """Layout of channel DSP parameters.
 
-    Create the underlying widgets the users interact with the set and read
+    Create the underlying widgets the users interact with to set and read
     channel parameters. The underlying widget is a QWidget wrapped in a
     QScrollArea. Each of these widgets is added as a tab to a module tab in
     the main channel parameter window. This is the lowest level of the nested
@@ -27,7 +27,7 @@ class ChanDSPLayout(MyTabWidget):
         super().__init__(*args, **kwargs)
 
         # Setup tabs for each module from the following list. The factory
-        # method is parameterized by the tab name and raises and exception
+        # method is parameterized by the tab name and raises an exception
         # when an unknown create method is called.
 
         tabs = [

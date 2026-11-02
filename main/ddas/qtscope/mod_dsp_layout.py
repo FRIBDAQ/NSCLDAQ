@@ -25,14 +25,14 @@ class ModDSPLayout(QWidget):
         factory : WidgetFactory
             Factory for implemented module DSP parameters.
         nmodules : int
-            Number of modules from ModDSPManager.
+            Number of installed modules.
         channel_map : list
             List of channels per module.
         """
         super().__init__(*args, **kwargs)
 
         # List of DSP parameter widgets. Unlike the channel DSP tabbed widget,
-        # there is not "easy" method to access the constituent class widgets
+        # there is no "easy" method to access the constituent class widgets
         # for the module parameters using PyQt methods. And I don't really want
         # to parse lists of child widgets.
 

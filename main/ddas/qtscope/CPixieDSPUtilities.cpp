@@ -1,6 +1,6 @@
 /**
  * @file CPixieDSPUtilities.cpp
- * @brief Implementation DSP utilities class.
+ * @brief Implementation of the DSP utilities class.
  */
 
 #include "CPixieDSPUtilities.h"

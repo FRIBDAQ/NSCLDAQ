@@ -131,7 +131,7 @@ class DSPToolBar(QToolBar):
         Parameters
         ----------
         nmodules : int
-        Number of modules in the system.
+            Number of modules in the system.
         """
         self.copy_mod.setRange(0, nmodules - 1)
 
@@ -151,7 +151,7 @@ class DSPToolBarBuilder:
     """Builder method for factory creation."""
 
     def __init__(self, *args, **kwargs):
-        """DSPToolbarBuilder class constructor."""
+        """DSPToolBarBuilder class constructor."""
 
     def __call__(self, *args, **kwargs):
         """Create an instance of the toolbar and return it to the caller.

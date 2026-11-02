@@ -54,7 +54,7 @@ class CSRA(QWidget):
 
         Initialize CSRA widget and set labels. Channel DSP is displayed on an
         nchannel x nDSP grid of QCheckBox widgets. Note that the actual DSP
-        parameters are 1-indexed while the grid is 0-indexed.
+        parameters are 0-indexed while the grid is 1-indexed.
 
         Parameters
         ----------
@@ -71,7 +71,7 @@ class CSRA(QWidget):
 
         # Parameter label dictionary. Key is the CSRA bit number (and column
         # location on x-axis, offset by one for the channel label), values are
-        # dictionary defnining the column label and associated tooltip:
+        # dictionary defining the column label and associated tooltip:
 
         self.param_labels = {
             0: {

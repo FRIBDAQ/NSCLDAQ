@@ -25,7 +25,7 @@ class GaussFit(FitFunction):
             Parameters used to evaluate the function over x.
 
         Returns
-        ------
+        -------
         ndarray
             Array containing the fit values over the range.
         """

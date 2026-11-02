@@ -39,7 +39,7 @@ CPixieSystemUtilities::CPixieSystemUtilities()
  */
 int CPixieSystemUtilities::Boot() {
   // If the settings file path has been overwritten pre system boot, use
-  // the new path. first we grab it, then reset it after initializing
+  // the new path. First we grab it, then reset it after initializing
   // the configuration settings below.
 
   std::string newSetFile;
@@ -131,7 +131,7 @@ int CPixieSystemUtilities::SaveSetFile(char *fileName) {
 /**
  * @details
  * Check and see if the system is booted. If so, load the parameters from
- * the settings file. If not flag that a new settings file path (potentially
+ * the settings file. If not, flag that a new settings file path (potentially
  * different from that in the cfgPixie16.txt) has been set. The flag is
  * checked at boot to load the new settings file.
  */
@@ -229,9 +229,10 @@ int CPixieSystemUtilities::ExitSystem() {
 /**
  * @details
  * Performs bounds checking on the module number. The various
- * DAQ::DDAS::Configuration accessor methods throw but ctypes does not handle
- * C++ exceptions so we catch them here and print the error message to stderr.
- * The return value is an error code that can be checked by the caller.
+ * DAQ::DDAS::Configuration accessor methods throw on an invalid module, but
+ * ctypes does not handle C++ exceptions, so we check the module number here
+ * instead, store the error message and print it to stderr. The return value
+ * is an error code that can be checked by the caller.
  */
 int CPixieSystemUtilities::GetModuleMSPS(int module) {
   if (!m_booted) {
@@ -261,9 +262,10 @@ int CPixieSystemUtilities::GetModuleMSPS(int module) {
 /**
  * @details
  * Performs bounds checking on the module number. The various
- * DAQ::DDAS::Configuration accessor methods throw but ctypes does not handle
- * C++ exceptions so we catch them here and print the error message to stderr.
- * The return value is an error code that can be checked by the caller.
+ * DAQ::DDAS::Configuration accessor methods throw on an invalid module, but
+ * ctypes does not handle C++ exceptions, so we check the module number here
+ * instead, store the error message and print it to stderr. The return value
+ * is an error code that can be checked by the caller.
  */
 int CPixieSystemUtilities::GetModuleChannelCount(int module) {
   if (!m_booted) {

@@ -16,7 +16,7 @@
 
 /**
  * @class CPixieDSPUtilities CPixieDSPUtilities.h
- * @brief Read and writes both channel-level and module-level DSP settings.
+ * @brief Reads and writes both channel-level and module-level DSP settings.
  *
  * @details
  * The class also contains a function to adjust the DC offsets on a single
@@ -61,7 +61,7 @@ public:
   /**
    * @brief Write a module parameter for a single module.
    * @param module    Module number.
-   * @param paramName XIA API channel parameter name.
+   * @param paramName XIA API module parameter name.
    * @param value     Parameter value to write.
    * @return int
    * @retval 0   Success.
@@ -71,7 +71,7 @@ public:
   /**
    * @brief Read a module parameter for a single module.
    * @param[in] module     Module number.
-   * @param[in] paramName  XIA API channel parameter name.
+   * @param[in] paramName  XIA API module parameter name.
    * @param[out] value  Reference to read parameter value.
    * @return int
    * @retval 0   Success.

@@ -17,13 +17,13 @@ class TimingControl(ChanDSPWidget):
         """TimingControl class constructor.
 
         Parameters
-         -----------------
-         *args : tuple
-             Positional arguments passed to parent ChanDSPWidget.
-         nchannels : int, default=16
-             Channel count from factory create method.
-         **kwargs : dict
-             Keyword arguments passed to parent ChanDSPWidget.
+        ----------
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nchannels : int, default=16
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
         """
         # XIA API parameter names:
 
@@ -75,10 +75,13 @@ class TimingControl(ChanDSPWidget):
 
         Display but disable ChanCoincWidth on this tab.
 
-        Arguments:
-            mgr (DSPManager): Manager for internal DSP and interface for
-                              XIA API read/write operations.
-            mod (int): Module number.
+        Parameters
+        ----------
+        mgr : DSPManager
+            Manager for internal DSP and interface for XIA API
+            read/write operations.
+        mod : int
+            Module number.
         """
 
         for i in range(self.nchannels):
@@ -95,7 +98,8 @@ class TimingControlBuilder:
     def __call__(self, *args, **kwargs):
         """Create an instance of the widget and return it to the caller.
 
-        Returns:
+        Returns
+        -------
         TimingControl
             Instance of the DSP class widget.
         """

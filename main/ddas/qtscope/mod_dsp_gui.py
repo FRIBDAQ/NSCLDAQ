@@ -50,8 +50,8 @@ class ModDSPGUI(QMainWindow):
         ----------
         mod_dsp_factory : WidgetFactory
             Factory for implemented module DSP parameters.
-        toolbar_factory : ToolBarFactory
-            Factory for implemented toolbars.
+        toolbar_factory : WidgetFactory
+            Factory for implemented toolbar widgets.
         pool_mgr : ThreadPoolManager
             Management for global thread pool.
         """
@@ -196,13 +196,13 @@ class ModDSPGUI(QMainWindow):
     #
 
     def _write_mod_dsp(self):
-        """Write module parameters to the dataframe for all modules."""
+        """Write module parameters from the dataframe to all modules."""
         for i in range(self.nmodules):
             for w in self.mod_params.param_widgets:
                 self.dsp_mgr.write(i, w.param_names)
 
     def _read_mod_dsp(self):
-        """Read module parameters from the dataframe for all modules."""
+        """Read module parameters from all modules into the dataframe."""
         for i in range(self.nmodules):
             for w in self.mod_params.param_widgets:
                 self.dsp_mgr.read(i, w.param_names)

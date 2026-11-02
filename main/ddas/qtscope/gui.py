@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
     run_utils : RunUtilities
         Interface to XIA API for MCA-mode run control.
     chan_gui : ChanDSPGUI
-       Channel DSP GUI.
+        Channel DSP GUI.
     mod_gui : ModDSPGUI
         Module DSP GUI.
     sys_toolbar : SystemToolBar
@@ -61,10 +61,10 @@ class MainWindow(QMainWindow):
     mplplot : Plot
         matplotlib plotting widget.
     run_active : bool
-         True when an energy histogram or baseline run is active, False
-         otherwise.
+        True when an energy histogram or baseline run is active, False
+        otherwise.
     active_type : Enum member
-         The run type set at run start, INACTIVE when no run is active.
+        The run type set at run start, INACTIVE when no run is active.
     channel_map : list
         Number of channels in each module, indexed by module number.
     trace_info : dict
@@ -123,8 +123,8 @@ class MainWindow(QMainWindow):
         # Set XIA API version. This is needed to support XIA API 3 JSON
         # settings files with a .json extension iff QtScope was compiled
         # against API 3. @todo (ASC 6/9/23): may not be needed after we
-        # fully migrate to API 3, but for now its an option to allow
-        # user's some ability to distinguish between the two formats.
+        # fully migrate to API 3, but for now it's an option to allow
+        # users some ability to distinguish between the two formats.
 
         self.xia_api_version = version
 
@@ -868,7 +868,15 @@ class MainWindow(QMainWindow):
             )
 
     def _warn_stale_trace(self, module, channel):
-        """Tell the user the stored trace does not match the selection."""
+        """Tell the user the stored trace does not match the selection.
+
+        Parameters
+        ----------
+        module : int
+            The currently selected module number.
+        channel : int
+            The currently selected channel number.
+        """
         msg = (
             f"Stored trace data for Mod. {self.trace_info['module']} "
             f"Ch. {self.trace_info['channel']} does not match the current "

@@ -222,7 +222,7 @@ unsigned int *CPixieRunUtilities_GetHistogramData(CPixieRunUtilities *utils);
 unsigned int *CPixieRunUtilities_GetBaselineData(CPixieRunUtilities *utils);
 /** @brief Wrapper to get the run active status. */
 bool CPixieRunUtilities_GetRunActive(CPixieRunUtilities *utils);
-/** @brief Wrapper to setup the offline data generator; no return value. */
+/** @brief Wrapper to set up the offline data generator; no return value. */
 void CPixieRunUtilities_SetUseGenerator(CPixieRunUtilities *utils, bool mode);
 /** @brief Wrapper to get histogram length for a single module. */
 int CPixieRunUtilities_GetHistogramLength(CPixieRunUtilities *utils, int mod);

@@ -5,7 +5,17 @@ class Baseline(ChanDSPWidget):
     """Baseline DSP tab (ChanDSPWidget)."""
 
     def __init__(self, *args, nchannels=16, **kwargs):
-        """Baseline class constructor."""
+        """Baseline class constructor.
+
+        Parameters
+        ----------
+        *args : tuple
+            Positional arguments passed to parent ChanDSPWidget.
+        nchannels : int, default=16
+            Channel count from factory create method.
+        **kwargs : dict
+            Keyword arguments passed to parent ChanDSPWidget.
+        """
         # XIA API parameter names:
 
         param_names = ["BLCUT", "BASELINE_PERCENT"]
