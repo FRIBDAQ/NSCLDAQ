@@ -56,7 +56,7 @@ public:
    * @param nChannels Channels per module.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval <0 XIA API error code.
    */
   int BeginHistogramRun(int module, int nChannels);
   /**
@@ -64,9 +64,9 @@ public:
    * synchronization is OFF __but__ only stops a run in a single module.
    * @param module Module number.
    * @return int
-   * @retval 0   Run end attempted; may return 0 even if the run did not stop
-   * within the retry limit.
-   * @retval !=0 XIA API error code on failure.
+   * @retval 0 Run end attempted.
+   * @retval <0 XIA API error code on failure, or CPIXIEERROR_RUN_ACTIVE if the
+   * run is still active after the module's end run request.
    */
   int EndHistogramRun(int module);
   /**
@@ -74,8 +74,8 @@ public:
    * @param module  Module number.
    * @param channel Channel number on module to read histogram from.
    * @return int
-   * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval 0 Success.
+   * @retval <0 XIA API error code.
    */
   int ReadHistogram(int module, int channel);
   /**
@@ -98,16 +98,16 @@ public:
    * @param module  Module number.
    * @param channel Channel number on the module.
    * @return int
-   * @retval 0   Success.
-   * @retval !=0 XIA API error code on failure.
+   * @retval 0 Success.
+   * @retval <0 XIA API error code.
    */
   int ReadBaseline(int module, int channel);
   /**
    * @brief Read statistics for a single module after a run is ended.
    * @param module Module number.
    * @return int
-   * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval 0 Success.
+   * @retval <0 XIA API error code.
    */
   int ReadModuleStats(int module);
 
@@ -165,26 +165,29 @@ private:
    */
   void UpdateBaselineHistograms(int module);
   /**
-   * @brief Set the histogram length for a module. This is only used for
-   * testing with the generator and should not be used in normal operation.
+   * @brief Set the histogram length for a module.
    * @param module Module number (zero-indexed).
-   * @note Histogram length is assume to be the same for all channels on a
-   * module. This is a private functon since the histogram length is determined
+   * @return int
+   * @retval 0 Success.
+   * @retval <0 XIA API error code; m_lastErrorMessage already stored and
+   * m_histogramLength left unchanged.
+   * @note Histogram length is assumed to be the same for all channels on a
+   * module. This is a private function since the histogram length is determined
    * by the module and should not be set from the outside.
    */
-  void SetHistogramLength(int module) {
-    m_histogramLength = static_cast<unsigned int>(GetHistogramLength(module));
-  };
+  int SetHistogramLength(int module);
   /**
-   * @brief Set the maximum number of baselines for a module
-   * @param module Module number (zero-indexed)
+   * @brief Set the maximum number of baselines for a module.
+   * @param module Module number (zero-indexed).
+   * @return int
+   * @retval 0 Success.
+   * @retval <0 XIA API error code; m_lastErrorMessage already stored and
+   * m_maxBaselines left unchanged.
    * @note Max number of baselines is assumed to be the same for all channels on
    * a module. This is a private method since the max number of baselines is
    * determined by the module and should not be set from the outside.
    */
-  void SetMaxBaselines(int module) {
-    m_maxBaselines = static_cast<unsigned int>(GetMaxBaselines(module));
-  };
+  int SetMaxBaselines(int module);
 };
 
 /** @} */

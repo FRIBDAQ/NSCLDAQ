@@ -33,7 +33,7 @@ public:
    * @param module Module number.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval <0 XIA API error code.
    */
   int AdjustOffsets(int module);
   /**
@@ -44,7 +44,7 @@ public:
    * @param value     Parameter value to write.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval <0 XIA API error code.
    */
   int WriteChanPar(int module, int channel, char *paramName, double value);
   /**
@@ -55,7 +55,7 @@ public:
    * @param[out] value Reference to read parameter value.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval <0 XIA API error code.
    */
   int ReadChanPar(int module, int channel, char *paramName, double &value);
   /**
@@ -65,7 +65,7 @@ public:
    * @param value     Parameter value to write.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval <0 XIA API error code.
    */
   int WriteModPar(int module, char *paramName, unsigned int value);
   /**
@@ -75,7 +75,7 @@ public:
    * @param[out] value  Reference to read parameter value.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code.
+   * @retval <0 XIA API error code.
    */
   int ReadModPar(int module, char *paramName, unsigned int &value);
   /**

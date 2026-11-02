@@ -17,6 +17,7 @@
 #include <config_pixie16api.h>
 
 #include "CDataGenerator.h"
+#include "CPixieErrors.h"
 #include "CPixieShimGuard.h"
 
 /**
@@ -34,9 +35,11 @@ CPixieRunUtilities::~CPixieRunUtilities() {}
  * @todo Disable multiple modules from running in non-sync mode.
  */
 int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
+  int retval = SetHistogramLength(module);
+  if (retval < 0) { // Error message already stored in m_lastErrorMessage.
+    return retval;
+  }
   try {
-    SetHistogramLength(module);
-
     m_genHistograms.assign(nChannels,
                            std::vector<unsigned int>(m_histogramLength, 0));
     if (m_histogram.size() != m_histogramLength) {
@@ -91,8 +94,9 @@ int CPixieRunUtilities::BeginHistogramRun(int module, int nChannels) {
 /**
  * @details
  * If the run cannot be ended on the first attempt, retry 10 times before
- * reporting that the run could not be ended properly. Generally speaking, this
- * is caused when one or more channels has a very high trigger rate.
+ * returning CPIXIEERROR_RUN_ACTIVE with a stored error message. Generally
+ * speaking, this is caused when one or more channels has a very high trigger
+ * rate.
  */
 int CPixieRunUtilities::EndHistogramRun(int module) {
   try {
@@ -108,40 +112,37 @@ int CPixieRunUtilities::EndHistogramRun(int module) {
     std::cerr << m_lastErrorMessage << std::endl;
     return e.ReasonCode();
   }
-
-  bool runEnded = false;
-  int nRetries = 0;
   const int maxRetries = 10;
-  while ((runEnded == false) && (nRetries < maxRetries)) {
-    int retval; // Run ended iff Pixie16CheckRunStatus() returns 0.
+  for (int n = 0; n < maxRetries; n++) {
     try {
-      retval = Pixie16CheckRunStatus(module);
+      int retval = Pixie16CheckRunStatus(module);
       if (retval < 0) {
         std::stringstream msg;
         msg << "CPixieRunUtilities::EndHistogramRun() failed to get"
             << " current run status in module " << module;
         throw CXIAException(msg.str(), "Pixie16CheckRunStatus()", retval);
       }
+      if (retval == 0) {
+        std::cout << "Ended histogram run in Mod. " << module << std::endl;
+        m_runActive = false;
+        return 0;
+      }
     } catch (const CXIAException &e) {
       m_lastErrorMessage = e.ReasonText();
       std::cerr << m_lastErrorMessage << std::endl;
       return e.ReasonCode();
     }
-    runEnded = (retval == 0); // True if run ended.
-    nRetries++;
     // Wait before checking again:
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
-  if (nRetries >= maxRetries) {
-    std::cout << "CPixieRunUtilities::EndHistogramRun() failed to"
-              << " end run in module " << module << std::endl;
-  } else if (runEnded) {
-    std::cout << "Ended histogram run in Mod. " << module << std::endl;
-    m_runActive = false;
-  }
+  std::stringstream msg;
+  msg << "CPixieRunUtilities::EndHistogramRun() run in module " << module
+      << " still active after end-run request";
+  m_lastErrorMessage = msg.str();
+  std::cerr << m_lastErrorMessage << std::endl;
 
-  return 0;
+  return CPIXIEERROR_RUN_ACTIVE;
 }
 
 /**
@@ -197,8 +198,15 @@ int CPixieRunUtilities::ReadHistogram(int module, int channel) {
 int CPixieRunUtilities::BeginBaselineRun(int module, int nChannels) {
   std::cout << "Beginning baseline run in Mod. " << module << std::endl;
 
-  SetHistogramLength(module);
-  SetMaxBaselines(module);
+  // Errors stored in m_lastErrorMessage by these functions if they fail:
+  int retval = SetHistogramLength(module);
+  if (retval < 0) {
+    return retval;
+  }
+  retval = SetMaxBaselines(module);
+  if (retval < 0) {
+    return retval;
+  }
 
   // Reset internal histogram data. We assume all channels on the module have
   // the same maximum baseline length.
@@ -427,6 +435,28 @@ void CPixieRunUtilities::UpdateBaselineHistograms(int module) {
     }
   }
 }
+
+int CPixieRunUtilities::SetHistogramLength(int module) {
+  int len = GetHistogramLength(module); // Sets last error message on failure.
+  if (len < 0) {
+    return len;
+  }
+
+  m_histogramLength = static_cast<unsigned int>(len);
+
+  return 0;
+};
+
+int CPixieRunUtilities::SetMaxBaselines(int module) {
+  int nbl = GetMaxBaselines(module); // Sets last error message on failure.
+  if (nbl < 0) {
+    return nbl;
+  }
+
+  m_maxBaselines = static_cast<unsigned int>(nbl);
+
+  return 0;
+};
 
 extern "C" {
 CPixieRunUtilities *CPixieRunUtilities_new() {

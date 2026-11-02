@@ -44,7 +44,7 @@ public:
    * @retval 0 On successful boot.
    * @retval CPIXIEERROR_INVALID_CONFIG Failed to generate the system
    * configuration.
-   * @retval !=0 XIA API error code on failure.
+   * @retval <0 XIA API error code on failure.
    */
   int Boot();
   /**
@@ -52,7 +52,7 @@ public:
    * @param fileName Name of file to save.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code on failure.
+   * @retval <0 XIA API error code on failure.
    */
   int SaveSetFile(char *fileName);
   /**
@@ -60,7 +60,7 @@ public:
    * @param fileName  Settings file name we are attempting to open.
    * @return int
    * @retval 0   Success.
-   * @retval !=0 XIA API error code on failure.
+   * @retval <0 XIA API error code on failure.
    */
   int LoadSetFile(char *fileName);
   /**

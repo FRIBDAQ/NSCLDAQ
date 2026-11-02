@@ -803,7 +803,8 @@ class RunUtilities:
         Raises
         ------
         PixieError
-            If the underlying end-run call fails.
+            If the underlying end-run call fails, or the run does not stop
+            within the retry limit.
         """
         if run_type == RunType.HISTOGRAM:
             _check_retval(

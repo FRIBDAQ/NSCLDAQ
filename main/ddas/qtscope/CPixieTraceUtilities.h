@@ -51,7 +51,7 @@ public:
    * @param channel Channel number on module for trace read.
    * @return int
    * @retval 0 Success.
-   * @retval < 0 XIA API error code.
+   * @retval <0 XIA API error code.
    * @retval CPIXIEERROR_TRACE_ACQUIRE Other acquisition errors (trace empty,
    * offline generator failures).
    */
@@ -62,7 +62,7 @@ public:
    * @param channel Channel number on module for trace read.
    * @return int
    * @retval 0 Success.
-   * @retval < 0 XIA API error code.
+   * @retval <0 XIA API error code.
    * @retval CPIXIEERROR_TRACE_ACQUIRE Other acquisition errors (trace empty,
    * offline generator failures).
    */
@@ -72,7 +72,7 @@ public:
    * @param module Module number.
    * @param channel Channel number.
    * @return Trace length in samples.
-   * @retval < 0 XIA error code, could not read trace length.
+   * @retval <0 XIA error code, could not read trace length.
    */
   int GetTraceLength(int module, int channel);
   /**
