@@ -246,7 +246,6 @@ class Slave:
             title = ' '.join(words[0])  # {} quoted case.
         else:    
             title = ' '.join(words)     # "" quoted case.
-            print("title", title)
             title = title.strip('"')
         return title
     
@@ -288,7 +287,25 @@ class Slave:
             return 'OK'
         else:
             return f'ERROR - {newState} is not a valid next state.'
+    
+    def _doGet(self, tail) -> str:
+        #  Get information Currently state (the state name) or
+        #  slave 1 or 0 depending on if enslaved.
         
+        if len(tail) != 1:
+            return 'ERROR - there must be only a thing to get for the get operation'
+        
+        what = tail [0]
+        match what:
+            case 'slave':
+                state = 1 if self._isEnslaved else 0
+                return f'OK {state}'
+            case 'state':
+                state = ReadoutStateMachine.instance().state()
+                # quote the state in curlies in case it's e.g. 'Not Ready'
+                return f'OK {{{state}}}'
+                
+            
     def _doSet(self, tail) -> str:
         # Note that anything but set slave requires us to be enslaved.
         
@@ -367,10 +384,12 @@ class Slave:
         #  Note that if we are not a slave but get anything other
         #  than set slave 1 we fail.
         request_words = self._reqToWords(request)
-        print('Request words are:', request_words)
         verb = request_words.pop(0)
         
-        if verb != 'set' and not self._isEnslaved:
+        # IF not enslaved only set slave and any get are allowed, the
+        # restriction on what an be set is enforced by _doSet
+        
+        if verb not in ['set', 'get'] and not self._isEnslaved:
             return f'ERROR - The {verb} request requires enslavement and we are emancipated'
         
         match verb:
