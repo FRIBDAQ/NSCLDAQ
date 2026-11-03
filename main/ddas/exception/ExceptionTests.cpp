@@ -66,9 +66,9 @@ void ExceptionTests::format_terminated() {
   std::string reason("success"); // NUL-terminated by std::string.
   std::string expected(CXIAException::formatReason(
       "This is a test", "myFunction", 0, reason.c_str()));
-  EQ(std::string("This is a test XIA API Error: myFunction returned 0 with "
-                 "reason text 'success'"),
-     expected);
+  EQ(expected,
+     std::string("This is a test XIA API Error: myFunction returned 0 with "
+                 "reason text 'success'"));
 }
 
 /**
@@ -80,17 +80,16 @@ void ExceptionTests::format_embedded_terminator() {
   std::memcpy(buf, "short", 5); // Remaining bytes stay NUL.
   std::string expected(
       CXIAException::formatReason("This is a test", "f", 1, buf));
-  EQ(std::string(
-         "This is a test XIA API Error: f returned 1 with reason text 'short'"),
-     expected);
+  EQ(expected, std::string("This is a test XIA API Error: f returned 1 with "
+                           "reason text 'short'"));
 }
 
 /**
- * @brief Worst case: the XIA API fills every writable byte without terminating.
+ * @brief The longest reason text the constructor permits is reproduced whole.
  * @details
- * The constructor zero-initializes buf and passes kXIABUFSIZE - 1, so the final
- * byte always stays a terminator. Confirm the reason text is exactly size - 1
- * characters with no overrun.
+ * The constructor zero-initializes buf and passes kXIABUFSIZE - 1, so the most
+ * the XIA API can hand back is kXIABUFSIZE - 1 characters. Confirm a reason of
+ * exactly that length comes through in full with nothing lost or appended.
  */
 void ExceptionTests::format_full_buffer() {
   char buf[kXIABUFSIZE] = {};
@@ -98,5 +97,5 @@ void ExceptionTests::format_full_buffer() {
   std::string expected(
       "This is a test XIA API Error: f returned 2 with reason text '" +
       std::string(buf) + "'");
-  EQ(expected, CXIAException::formatReason("This is a test", "f", 2, buf));
+  EQ(CXIAException::formatReason("This is a test", "f", 2, buf), expected);
 }
