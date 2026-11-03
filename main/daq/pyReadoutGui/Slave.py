@@ -37,6 +37,7 @@ import socket
 
 from nscldaq.portmanager.PortManager import PortManager
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
+from nscldaq.readoutgui.StateMachine   import ReadoutStateMachine
 from PyQt6.QtCore import QByteArray, Qt
 from PyQt6.QtNetwork import QTcpServer, QTcpSocket
 
@@ -248,7 +249,19 @@ class Slave:
             print("title", title)
             title = title.strip('"')
         return title
-                        
+    def _doBegin(self, tail) -> str:
+        #  Start a run:
+        # - The tail must be empty.
+        # - The "Active" must be a legal next state.
+        if len(tail) :
+            return 'ERROR - too many parameters in the request.'
+        sm = ReadoutStateMachine.instance()
+        if "Active"  in sm.listTransitions():
+            sm.transition("Active")
+            return "OK"
+        else:
+            return 'ERROR - Current state does not permit a BEGIN to be done.'
+        
     def _doSet(self, tail) -> str:
         # Note that anything but set slave requires us to be enslaved.
         
