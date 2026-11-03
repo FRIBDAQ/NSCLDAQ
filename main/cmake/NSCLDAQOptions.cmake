@@ -66,6 +66,8 @@ set(WITH_EPICS_ROOTDIR "" CACHE PATH "Top level directory of the EPICS install")
 
 option(ENABLE_RUST_TOOLS "Build RUST tools and toys" OFF)
 
+option(ENABLE_PERFTOOLS "Build the DAQ performance/diagnostic tools" OFF)
+
 #  VMUSB firmware workarounds (issue #294) - all enabled by default.
 
 option(ENABLE_VMUSB_PROMPT_BUSY
