@@ -1,10 +1,21 @@
+#  DAQ performance / diagnostic tools. Built only when --enable-perftools.
+#
+#  Most tools build against the in-tree core libraries. fragmaker and
+#  evbfilecheck additionally use the unified format library (@UFMT_*@) for
+#  fragment.h / FragmentIndex.h, which were previously pulled from SpecTcl.
+#
+#  Installed under $(bindir)/perftools to keep them separate from the normal
+#  NSCLDAQ programs.
+
 AM_CPPFLAGS = \
 	-I@top_srcdir@/base/tcpip \
 	-I@top_srcdir@/daq/format \
 	-I@top_srcdir@/daq/IO \
 	-I@top_srcdir@/base/dataflow \
 	-I@top_srcdir@/base/os \
+	-I@top_srcdir@/base/thread \
 	-I@top_srcdir@/base/headers \
+	@THREADCXX_FLAGS@ \
 	@LIBTCLPLUS_CFLAGS@
 
 LDADD = \
@@ -13,14 +24,13 @@ LDADD = \
 	@top_builddir@/daq/IO/libdaqio.la \
 	@top_builddir@/base/dataflow/libDataFlow.la \
 	@top_builddir@/base/os/libdaqshm.la \
+	@top_builddir@/base/thread/libdaqthreads.la \
 	@LIBEXCEPTION_LDFLAGS@ \
 	-lrt
 
 noinst_LTLIBRARIES = libMeterApi.la
 libMeterApi_la_SOURCES = MeterApi.cpp MeterApi.h
 
-# Install under $(bindir)/perftools to keep these separate from the normal
-# NSCLDAQ programs.
 perftoolsdir = $(bindir)/perftools
 perftools_PROGRAMS = \
 	metertest rdoperf fragsrcperf socksend sockperf \
@@ -45,10 +55,10 @@ ritemMaker_SOURCES      = ritemMaker.cpp
 runmaker_SOURCES        = runmaker.cpp
 checkevfiles_SOURCES    = checkevfiles.cpp
 
-# fragmaker and evbfilecheck also need the unified format library. The core
-# include dirs (AM_CPPFLAGS) come first so CRingItem.h, DataFormat.h, etc.
-# resolve to the core headers; @UFMT_CPPFLAGS@ is appended for the unified-only
-# headers fragment.h (fragmaker) and FragmentIndex.h (evbfilecheck).
+# fragmaker and evbfilecheck also need the unified format library. AM_CPPFLAGS
+# (the core include dirs) comes first so CRingItem.h, DataFormat.h, etc. resolve
+# to the core headers; @UFMT_CPPFLAGS@ is appended for the unified-only headers
+# fragment.h (fragmaker) and FragmentIndex.h (evbfilecheck).
 fragmaker_SOURCES       = fragmaker.cpp
 fragmaker_CPPFLAGS      = $(AM_CPPFLAGS) @UFMT_CPPFLAGS@
 fragmaker_LDADD         = $(LDADD) @UFMT_LDFLAGS@

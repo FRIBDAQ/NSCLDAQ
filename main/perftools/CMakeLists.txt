@@ -9,11 +9,12 @@ set(perftools_includes
   ${PROJECT_SOURCE_DIR}/daq/IO
   ${PROJECT_SOURCE_DIR}/base/dataflow
   ${PROJECT_SOURCE_DIR}/base/os
+  ${PROJECT_SOURCE_DIR}/base/thread
   ${PROJECT_SOURCE_DIR}/base/headers)
 
 set(perftools_libs
   Tcp dataformat daqio DataFlow daqshm
-  NSCLDAQ::Exception NSCLDAQ::tclPlusHeaders)
+  NSCLDAQ::Exception NSCLDAQ::tclPlusHeaders NSCLDAQ::Threads)
 
 # MeterApi convenience library shared by several tools.
 nscldaq_add_library(perfmeter NOINST SOURCES MeterApi.cpp MeterApi.h)
