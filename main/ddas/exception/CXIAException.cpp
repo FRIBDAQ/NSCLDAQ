@@ -25,7 +25,6 @@ CXIAException::CXIAException(std::string msg, std::string fcn, int rv)
     : CException(msg), m_reasonCode(rv) {
   char buf[kXIABUFSIZE] = {}; // XIA reason text.
   PixieGetReturnCodeText(m_reasonCode, buf, kXIABUFSIZE - 1);
-  std::ostringstream errmsg;
   m_reason = formatReason(WasDoing(), fcn, m_reasonCode, buf);
 }
 
