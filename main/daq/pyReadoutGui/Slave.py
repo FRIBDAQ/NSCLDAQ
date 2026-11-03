@@ -368,6 +368,15 @@ class Slave:
         
         self._server = self._listener.nextPendingConnection()
         
+        # If the state is Starting or Not Ready, we can't be legally
+        # enslaved.
+        
+        if ReadoutStateMachine.instance().state() in ['Not Ready', 'Starting']:
+            self._sendResponse('ERROR - To be enslaved requires we are at least started')
+            self._lostConnection()
+            return
+            
+        
         # Set the signal handling for the connection.
         
         self._server.disconnected.connect(self._lostConnection)    # Unenslaved on connection lost.
@@ -426,12 +435,19 @@ class Slave:
         lineArray = self._server.readLine()   
         if lineArray:
             line = lineArray.data().decode('utf-8')
-            response = self._doRequest(line) + '\n'
-            qresponse = QByteArray(response.encode('utf-8'))
-            self._server.write(qresponse)
+            self._sendResponse(self._doRequest(line))
+            
         else: 
             # Likely we lost the connection...
             # Eventually _lostConnection will fire so just ignore
             pass
         
-    
+    def _sendResponse(self, response : str) -> None:
+        # Send a response to the client. Note that
+        # QT expects a QByteArray, hence the shenanigans below:
+        
+        responsenl = response + '\n'     # Append the newline.
+        
+        qresponse = QByteArray(responsenl.encode('utf-8'))
+        self._server.write(qresponse)
+        self._server.flush()
