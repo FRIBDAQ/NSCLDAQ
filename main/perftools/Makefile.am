@@ -68,4 +68,7 @@ evbfilecheck_CPPFLAGS   = $(AM_CPPFLAGS) @UFMT_CPPFLAGS@
 evbfilecheck_LDADD      = $(LDADD) @UFMT_LDFLAGS@
 
 noinst_HEADERS = utils.h
-EXTRA_DIST = README meter.tcl meterserver.tcl
+EXTRA_DIST = meter.tcl meterserver.tcl
+
+# Do we install the tcl scripts as well? If yes, replace EXTRA_DIST with:
+# dist_perftools_SCRIPTS = meter.tcl meterserver.tcl
