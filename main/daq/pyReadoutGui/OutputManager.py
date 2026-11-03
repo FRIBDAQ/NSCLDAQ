@@ -18,6 +18,7 @@
 '''
 from nscldaq import OutputWindow
 from PyQt6.QtWidgets import QTabWidget, QWidget
+from PyQt6.QtCore    import pyqtSignal
 
 
 # Exceptions for this module:
@@ -68,6 +69,11 @@ class OutputManager(QTabWidget):
                       This should be used _only_ for really
                       high priority events, like an unexpected program exit.
         setRecording - Turn the recording backgroun on/off for the texts we manage.
+        
+        Signals:
+            output(str, str) - Output is being done. The firs string is the tab
+               it's goint to, the second, the texts being output.  'Main' is used
+               for the initial/main window.
         @note  To support rich text, the clients of the OutputWindow should
                emit the html subset supported by Qt. Note that the output window
                automatically wraps stuff added with addOutput in a <p></p> tag
@@ -77,12 +83,14 @@ class OutputManager(QTabWidget):
               for a client to decide they want to put some arbitrary tab contents
               in it and just addTab to this object and do it.
     '''
+    output = pyqtSignal(str, str)
     def __init__(self, parent : QWidget | None = None):
         super().__init__(parent)
         
         # Now create the 'main' window:
         
         self._main = OutputWindow.OutputWindow(self)
+        self._main.newText.connect(lambda text: self.output.emit('Main', text))
         
         self._nonRecordingStyleSheet = self._main.styleSheet()
         
@@ -111,6 +119,7 @@ class OutputManager(QTabWidget):
         newWindow.setStyleSheet('QTextEdit { font-size : 15pt;}')
         self.addTab(newWindow, name)
         self._outputs[name] = newWindow
+        newWindow.newText.connect(lambda text : self.output.emit(name, text))
         
         return newWindow
         
