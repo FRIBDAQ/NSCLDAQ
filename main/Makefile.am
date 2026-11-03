@@ -39,10 +39,6 @@ if BUILD_PERFTOOLS
 PERFTOOLSDIR=perftools
 endif
 
-if BUILD_PERFTOOLS
-PERFTOOLSDIR=perftools
-endif
-
 
 SRSDIR=srs
 
