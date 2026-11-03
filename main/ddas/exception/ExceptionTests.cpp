@@ -36,39 +36,25 @@ public:
   void setUp(){};
   void tearDown(){};
 
-  void xia_success();
   void format_terminated();
   void format_embedded_terminator();
   void format_full_buffer();
+  void xia_success();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(ExceptionTests);
-
-/**
- * @brief Check the return code and text for CXIAException.
- * @note (ASC 3/12/24): XIA exception tests assume that a return code of 0
- * will result in a context message 'success.'
- */
-void ExceptionTests::xia_success() {
-  CXIAException e("This is a test", "myFunction", 0);
-  EQ(0, e.ReasonCode());
-  std::string expected(
-      "This is a test XIA API Error: myFunction returned 0 with "
-      "reason text 'success'");
-  // Checking with C-style strings is much more annoying...
-  EQ(expected, std::string(e.ReasonText()));
-}
 
 /**
  * @brief A normal, short NUL-terminated buffer formats as expected.
  */
 void ExceptionTests::format_terminated() {
   std::string reason("success"); // NUL-terminated by std::string.
-  std::string expected(CXIAException::formatReason(
-      "This is a test", "myFunction", 0, reason.c_str()));
-  EQ(expected,
-     std::string("This is a test XIA API Error: myFunction returned 0 with "
-                 "reason text 'success'"));
+  std::string expected(
+      "This is a test XIA API Error: myFunction returned 0 with "
+      "reason text 'success'");
+  std::string actual(CXIAException::formatReason("This is a test", "myFunction",
+                                                 0, reason.c_str()));
+  EQ(expected, actual);
 }
 
 /**
@@ -78,10 +64,11 @@ void ExceptionTests::format_terminated() {
 void ExceptionTests::format_embedded_terminator() {
   char buf[kXIABUFSIZE] = {};   // Zero-initialized, as in the constructor.
   std::memcpy(buf, "short", 5); // Remaining bytes stay NUL.
-  std::string expected(
+  std::string expected("This is a test XIA API Error: f returned 1 with "
+                       "reason text 'short'");
+  std::string actual(
       CXIAException::formatReason("This is a test", "f", 1, buf));
-  EQ(expected, std::string("This is a test XIA API Error: f returned 1 with "
-                           "reason text 'short'"));
+  EQ(expected, actual);
 }
 
 /**
@@ -92,10 +79,26 @@ void ExceptionTests::format_embedded_terminator() {
  * exactly that length comes through in full with nothing lost or appended.
  */
 void ExceptionTests::format_full_buffer() {
-  char buf[kXIABUFSIZE] = {};
-  std::memset(buf, 'X', kXIABUFSIZE - 1); // buf[kXIABUFSIZE - 1] stays '\0'.
+  std::string reason(kXIABUFSIZE - 1, 'X'); // Longest reason the ctor allows.
   std::string expected(
-      "This is a test XIA API Error: f returned 2 with reason text '" +
-      std::string(buf) + "'");
-  EQ(CXIAException::formatReason("This is a test", "f", 2, buf), expected);
+      "This is a test XIA API Error: f returned 2 with reason text '" + reason +
+      "'");
+  std::string actual(
+      CXIAException::formatReason("This is a test", "f", 2, reason.c_str()));
+  EQ(expected, actual);
+}
+
+/**
+ * @brief Check the return code and text for full CXIAException.
+ * @note (ASC 3/12/24): XIA exception tests assume that a return code of 0
+ * will result in a context message 'success.'
+ */
+void ExceptionTests::xia_success() {
+  CXIAException e("This is a test", "myFunction", 0);
+  EQ(0, e.ReasonCode());
+  std::string expected(
+      "This is a test XIA API Error: myFunction returned 0 with "
+      "reason text 'success'");
+  std::string actual(e.ReasonText());
+  EQ(expected, actual);
 }
