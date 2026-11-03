@@ -8,7 +8,7 @@ MODULES=$(TESTABLE_MODULES) StateView.py RunTimerView.py RunParamsView.py \
 	DataSourceMenuControllers.py RunConfig.py DataSourceConfig.py \
 	DataSourceController.py \
 	EventLog.py EventLogManager.py EventLogViews.py EventLogControllers.py \
-	Slave.py SlaveController.py
+	Slave.py SlaveController.py OutputServer.py
 
 INTERACTIVE_TESTS=testRunStateController.py
 MODULE_DIR=@prefix@/pythonLibs/nscldaq/readoutgui
