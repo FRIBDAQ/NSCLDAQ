@@ -35,6 +35,14 @@ if BUILD_RUST_TOOLS
 RUSTSUBDIRS=rust_tools
 endif
 
+if BUILD_PERFTOOLS
+PERFTOOLSDIR=perftools
+endif
+
+if BUILD_PERFTOOLS
+PERFTOOLSDIR=perftools
+endif
+
 
 SRSDIR=srs
 
@@ -44,11 +52,11 @@ SUBDIRS = base caenfw-common servers base/dataflow \
 	daq utilities $(DOCDIR) \
 	sbs usb/common/configurableobject $(EPICSDIRS) $(USBDIR) $(DDASDIR) $(CAENSUPPORTDIRS) \
 	$(CAENNGDIR) $(SRSDIR) $(MVLCGENDIR) \
-	examples $(RUSTSUBDIRS)
+	examples $(RUSTSUBDIRS) $(PERFTOOLSDIR)
 
 DIST_SUBDIRS = base caenfw-common servers base/dataflow daq utilities \
 	docbuild docconfig simplesetups sbs epics usb ddas \
-	caendigitizers examples caen-nextgen srs mvlc rust_tools
+	caendigitizers examples caen-nextgen srs mvlc rust_tools perftools
 
 INTROFIGURES = @srcdir@/figures/intro-data-flow-diagram.png \
 	@srcdir@/figures/intro-data-flow-diagram-diagnostics.png
