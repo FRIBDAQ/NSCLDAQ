@@ -249,6 +249,7 @@ class Slave:
             print("title", title)
             title = title.strip('"')
         return title
+    
     def _doBegin(self, tail) -> str:
         #  Start a run:
         # - The tail must be empty.
@@ -261,6 +262,32 @@ class Slave:
             return "OK"
         else:
             return 'ERROR - Current state does not permit a BEGIN to be done.'
+    
+    def _doEnd(self, tail) -> str:
+        # Same sort of checks as begin:
+        if len(tail) :
+            return 'ERROR - Too many parameters in the request'
+        sm = ReadoutStateMachine.instance()
+        if 'Halted' in sm.listTransitions():
+                sm.transition('Halted')
+                return 'OK'
+        else:
+            return 'ERROR - the current state does not permit an END to be done.'
+    
+    def _doTransition(self, tail) -> str:
+        #
+        #   Do an arbitrary transition:
+        # there must be a one element tail that is the 
+        # new desired state.
+        if len(tail) != 1:
+            return 'ERROR - there must be a new state and only a new state in the requrest'
+        sm = ReadoutStateMachine.instance()
+        newState = tail[0]
+        if newState in sm.listTransitions():
+            sm.transition(newState)
+            return 'OK'
+        else:
+            return f'ERROR - {newState} is not a valid next state.'
         
     def _doSet(self, tail) -> str:
         # Note that anything but set slave requires us to be enslaved.
