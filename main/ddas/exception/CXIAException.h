@@ -10,6 +10,8 @@
 
 #include <string>
 
+const size_t kXIABUFSIZE = 1024; //!< XIA API return code max buffer length.
+
 /**
  * @class CXIAException
  * @brief CException wrapper for XIA return codes containing the return code
@@ -29,8 +31,6 @@
  * code can be accessed using the `ReasonCode()` method.
  */
 
-const size_t kXIABUFSIZE = 1024; //!< XIA API return code max buffer length.
-
 class CXIAException : public CException {
 private:
   int m_reasonCode;     //!< XIA API function return value.
@@ -48,18 +48,31 @@ public:
   /** @brief Destructor. Nothing to do here. */
   virtual ~CXIAException(){};
 
+  /**
+   * @brief Format the full CXIAException reason text.
+   * @param doing Context string from CException::WasDoing().
+   * @param fcn   XIA API function name.
+   * @param rv    XIA API function return value.
+   * @param buf   NUL-terminated XIA reason text from PixieGetReturnCodeText().
+   * @return The full formatted reason message.
+   * @note (ASC 11/3/26): Static helper which can be tested to ensure
+   * NUL-terminated messages.
+   */
+  static std::string formatReason(const char *doing, const std::string &fcn,
+                                  int rv, const char *buf);
+
   // Exception interface:
 
   /**
    * @brief Get the reason code.
    * @return The reason code: non-zero return value from the XIA API.
    */
-  virtual int ReasonCode() const;
+  virtual int ReasonCode() const { return m_reasonCode; };
   /**
    * @brief Get the return text.
    * @return Full context message describing the error.
    */
-  virtual const char *ReasonText() const;
+  virtual const char *ReasonText() const { return m_reason.c_str(); };
 };
 
 #endif
