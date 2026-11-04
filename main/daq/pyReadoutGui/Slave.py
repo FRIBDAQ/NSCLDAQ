@@ -286,6 +286,9 @@ class Slave:
             return 'ERROR - there must be a new state and only a new state in the requrest'
         sm = ReadoutStateMachine.instance()
         newState = tail[0]
+        # Map the state of the Tcl readout gui.
+        if newState == 'NotReady':
+            newState = 'Not Ready'
         if newState in sm.listTransitions():
             sm.transition(newState)
             return 'OK'
@@ -305,9 +308,9 @@ class Slave:
                 state = 1 if self._isEnslaved else 0
                 return f'OK {state}'
             case 'state':
-                state = ReadoutStateMachine.instance().state()
-                # quote the state in curlies in case it's e.g. 'Not Ready'
-                return f'OK {{{state}}}'
+                state = ReadoutStateMachine.instance().state()   # Lower case state.
+                state = 'active' if state == 'Active' else 'inactive'  # What Tcl gui expects.
+                return f"OK {state}"
                 
             
     def _doSet(self, tail) -> str:
