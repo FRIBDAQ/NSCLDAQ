@@ -216,6 +216,8 @@ class ReadoutGuiMainWindow(QMainWindow):
     
     slaveConfigure      = pyqtSignal()
     slaveEnable        = pyqtSignal(bool)
+    outputServerConfigure = pyqtSignal()
+    
     
     
     def __init__(self, parent : QWidget | None = None):
@@ -342,7 +344,7 @@ class ReadoutGuiMainWindow(QMainWindow):
         
         # Configure
         
-        self._slaveConfigAction = QAction('Configure...', menu)
+        self._slaveConfigAction = QAction('Configure Slave server...', menu)
         self._slaveConfigAction.triggered.connect(self.slaveConfigure)
         menu.addAction(self._slaveConfigAction)
         
@@ -353,6 +355,14 @@ class ReadoutGuiMainWindow(QMainWindow):
         self._slaveEnableAction = QWidgetAction(menu)
         self._slaveEnableAction.setDefaultWidget(self._slaveEnable)
         menu.addAction(self._slaveEnableAction)
+        
+        menu.addSeparator()
+        
+        self._outputConfigAction  = QAction('Configure Output server..', menu)
+        self._outputConfigAction.triggered.connect(self.outputServerConfigure)
+        menu.addAction(self._outputConfigAction)
+        
+        # the output server.
  
     def _slaveEnableToggled(self) -> None:
         # The slave enable button toggled...figure out its state and emit

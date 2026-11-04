@@ -91,7 +91,7 @@ class SlaveController:
         
         caller = traceback.extract_stack()[-2]
         if caller.filename != __file__:
-            raise RuntimeError('Attempted to contruct singleon SlaveController')
+            raise RuntimeError('Attempted to construct singleon SlaveController')
     
         self._slave : Slave | None = None
         
@@ -177,7 +177,7 @@ class Configuration(Serializer):
         config = controller.configuration()
         destination.write(f'SlaveServerConfiguration =  {config}\n')
         
-    def deserialize(self, mod : types.ModuleType):
+    def deserialize(self, mod : types.ModuleType) -> None:
         '''
         Deserialize - note that it's not a fatal error for the
           configuration not to exist...that'll give us a singleton

@@ -35,9 +35,10 @@ event loggers and that none of them are actually the 'main' logger.
 '''
 import socket
 
-from nscldaq.portmanager.PortManager import PortManager
+import nscldaq.portmanager.PortManager
+from nscldaq.readoutgui.OutputServer import OutputServerController
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
-from nscldaq.readoutgui.StateMachine   import ReadoutStateMachine
+from nscldaq.readoutgui.StateMachine import ReadoutStateMachine
 from PyQt6.QtCore import QByteArray, Qt
 from PyQt6.QtNetwork import QTcpServer, QTcpSocket
 
@@ -147,7 +148,7 @@ class Slave:
         self._enabled     = configuration['enabled']
         self._listener    : QTcpServer | None = QTcpServer() # Will be the listener
         self._server      : QTcpSocket | None = None      # Will be the connection.
-        self._portManager : PortManager | None = None     # The port allocator.
+        self._portManager : nscldaq.portmanager.PortManager.PortManager | None = None     # The port allocator.
         self._port        : int | None  = None            # THe port the manager gave us (persistent).
         self._isEnslaved    : bool  = False
         
@@ -170,11 +171,12 @@ class Slave:
         If the server is being enabled, it starts listening for connections
         and making a server on the first one received.
         '''
-        
+        OutputServerController.instance().listen()    # Start the output server.
         if not self._enabled:
             # Do nothing if already enabled.
             self._enabled = True
             self._startListening()
+            
         
     def disable(self) -> None:
         '''
@@ -197,6 +199,8 @@ class Slave:
             if self._server:
                 self._server.abort()     # Hard stop flushing queues.
                 self._server = None      # Kill it off.
+            
+            OutputServerController.instance().disable()   # Turn off the output server.
     
     def getConfig(self) -> dict[str, object]:
         '''
@@ -215,7 +219,7 @@ class Slave:
         # If I don't have a port yet for my service, get one:
         
         if not self._portManager:
-            self._portManager = PortManager('localhost')     # Need to maintain the connection.
+            self._portManager = nscldaq.portmanager.PortManager.PortManager('localhost')     # Need to maintain the connection.
             self._port        = self._portManager.getPort(self._serviceName) # since a port was allocated.
         
         # Start the server listening.  We are alredy connected.
@@ -440,6 +444,7 @@ class Slave:
         
         self._server.abort()
         self._server = None
+        self._listener.resumeAccepting()   # We can take another connection.
     
     def _enslave(self) -> None:
         # Enslave ourselves:
@@ -461,6 +466,10 @@ class Slave:
         except OSError:
             pass   # If address family not supported.
         mw.setStatusMessage(f'Enslaved by {peer}')
+        
+        # Don't accept any more connections:
+        
+        self._listener.pauseAccepting()
         
         
     def _emancipate(self) -> None:
