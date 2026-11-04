@@ -39,6 +39,10 @@ foreach(t socksend pipesend bufferedoutperf ritemMaker runmaker checkevfiles
   target_link_libraries(${t} PRIVATE ${perftools_libs})
 endforeach()
 
+# Installed binaries find the core NSCLDAQ shared libraries via the global
+# CMAKE_INSTALL_RPATH (cmake/NSCLDAQCompiler.cmake); no per-target -Wl,-rpath
+# is needed here, unlike the autotools AM_LDFLAGS.
+
 foreach(t metertest rdoperf fragsrcperf sockperf pipeperf)
   target_link_libraries(${t} PRIVATE perfmeter)
 endforeach()
@@ -52,3 +56,8 @@ foreach(t fragmaker evbfilecheck)
   target_include_directories(${t} PRIVATE ${perftools_includes})
   target_link_libraries(${t} PRIVATE ${perftools_libs} NSCLDAQ::UFMT)
 endforeach()
+
+# Install the Tcl meter server + widget next to the tools so perftests can be
+# run from an NSCLDAQ installation without the source tree. 0755 via PROGRAMS,
+# matching how the rest of the tree installs Tcl scripts.
+install(PROGRAMS meterserver.tcl meter.tcl DESTINATION bin/perftools)

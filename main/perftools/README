@@ -1,7 +1,0 @@
-This directory contains some tools for doing
-performance testing on bits and pieces of NSCLDAQ.
-The Makefile requires that daqsetup.bash has been
-sourced into your shell for the NSCLDAQ version
-you want to test.
-  These tools are not installed by nscldaq installation.
-

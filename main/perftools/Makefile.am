@@ -28,6 +28,11 @@ LDADD = \
 	@LIBEXCEPTION_LDFLAGS@ \
 	-lrt
 
+# Hardcode the install libdir into the tools so the installed programs find
+# the core NSCLDAQ shared libraries at runtime without LD_LIBRARY_PATH.
+# Matches the rest of the tree (controlpush, tclserver, portmanager, ...).
+AM_LDFLAGS = -Wl,"-rpath=$(libdir)"
+
 noinst_LTLIBRARIES = libMeterApi.la
 libMeterApi_la_SOURCES = MeterApi.cpp MeterApi.h
 
@@ -68,7 +73,8 @@ evbfilecheck_CPPFLAGS   = $(AM_CPPFLAGS) @UFMT_CPPFLAGS@
 evbfilecheck_LDADD      = $(LDADD) @UFMT_LDFLAGS@
 
 noinst_HEADERS = utils.h
-EXTRA_DIST = meter.tcl meterserver.tcl
 
-# Do we install the tcl scripts as well? If yes, replace EXTRA_DIST with:
-# dist_perftools_SCRIPTS = meter.tcl meterserver.tcl
+# Install the Tcl meter server and its widget alongside the tools (in
+# $(bindir)/perftools) so perftests can be run against an NSCLDAQ
+# installation with no source tree. dist_ keeps them in the tarball too.
+dist_perftools_SCRIPTS = meter.tcl meterserver.tcl
