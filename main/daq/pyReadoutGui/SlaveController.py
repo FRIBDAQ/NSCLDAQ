@@ -41,7 +41,7 @@ class SlaveConfigDialog(SaveDialog):
     Attributes:
       service - The value of the service entry from the user.
     '''
-    def __init__(self, initialValue : str = 'ReadoutGuiRemotControlService', parent : QWidget | None = None):
+    def __init__(self, initialValue : str = 'ReadoutGUIRemotControlService', parent : QWidget | None = None):
         
         
         self._form = QWidget()
@@ -101,7 +101,7 @@ class SlaveController:
         mw.slaveConfigure.connect(self._configureSlave)
         mw.slaveEnable.connect(self._toggleEnable)
     
-        self._serviceName = 'ReadoutGuiRemoteControl'
+        self._serviceName = 'ReadoutGUIRemoteControl'
     
     @classmethod
     def instance(cls) -> Self:
