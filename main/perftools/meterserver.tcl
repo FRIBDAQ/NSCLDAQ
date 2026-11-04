@@ -26,7 +26,7 @@ exec tclsh "$0" ${1+"$@"}
 #
 
 package require Tk
-source meter.tcl
+source [file join [file dirname [info script]] meter.tcl]
 
 array set meters [list];     # Meter widgets indexed by name.
 set meterIndex 0;            # uniquifying meter widget index

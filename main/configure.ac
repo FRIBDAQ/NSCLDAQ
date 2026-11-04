@@ -630,6 +630,21 @@ AS_IF([test "x$enable_ddas" = "xyes"], [
 ])
 AM_CONDITIONAL([BUILD_DDAS], [test "x$enable_ddas" = "xyes"])
 
+# The performance/diagnostic tools (perftools) are only built if
+# --enable-perftools was supplied. They depend on the core NSCLDAQ
+# libraries and the unified format library, and are off by default.
+
+AC_ARG_ENABLE([perftools],
+	AS_HELP_STRING([--enable-perftools],
+		[Build the DAQ performance/diagnostic tools (default no)]),
+	[enable_perftools=$enableval],
+	[enable_perftools=no])
+
+AS_IF([test "x$enable_perftools" = "xyes"], [
+	AC_MSG_NOTICE([The DAQ performance tools will be built])
+])
+AM_CONDITIONAL([BUILD_PERFTOOLS], [test "x$enable_perftools" = "xyes"])
+
 # The SBS software will only be built if --enable-sbs was supplied.
 # In that case, the configured kernel source path is set using
 # --with-sbs-kernel-source-dir and that will be used to compile the
@@ -1021,6 +1036,7 @@ AC_CONFIG_FILES([
     srs/sorter/Makefile
 	mvlc/Makefile
     cookbooks/Makefile
+    perftools/Makefile
 	rust_tools/Makefile
 ])
 

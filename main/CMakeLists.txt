@@ -100,6 +100,9 @@ add_subdirectory(examples)
 if(ENABLE_RUST_TOOLS)
   add_subdirectory(rust_tools)
 endif()
+if(ENABLE_PERFTOOLS)
+  add_subdirectory(perftools)
+endif()
 
 # libtool's static libFoo.a beside every installed libFoo.so (needs every
 # library's final settings, so after all subdirectories).  Those targets are
