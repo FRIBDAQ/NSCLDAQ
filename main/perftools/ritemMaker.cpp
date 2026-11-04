@@ -43,12 +43,12 @@
 #include <unistd.h>
 #include <iostream>
 
-uint8_t* buffer[1024*1024];
+uint8_t buffer[1024*1024];
 
 struct descriptor {
     size_t   s_nBytes;                 // Used bytes in data block.
     uint64_t s_lastTimestamp;          // Prior timestamp.
-    int      s_tsdelta;                // Timstamp delta.
+    int      s_tsdelta;                // Timestamp delta.
     void*    s_pData;                  // Pointer to data.
 };
 

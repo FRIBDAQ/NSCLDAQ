@@ -15,16 +15,19 @@
 	     East Lansing, MI 48824-1321
 */
 
-/** @file:  readrings
- *  @brief: cookbook that shows how to read ringbuffers from file or ringbuffers.
+/** @file:  checkevfiles.cpp
+ *  @brief: Check that physics event timestamps increment by one across a run.
  */
 
 
 /**
- *  This program shows how to get data from a source of ring items.
- *  The ring item source can be either a file or a ringbuffer (local or remote).
+ *  Reads the event file segments of a run and verifies that the body-header
+ *  timestamp of each PHYSICS_EVENT increments by one.  A mismatch is reported
+ *  to stderr and timestamp tracking resynchronizes to the value just seen.
  *
- *    The program accepts a single parameter, The URI of the ringbuffer.
+ *    The program accepts a single parameter: the run number.  It opens the
+ *    segments run-NNNN-SS.evt (SS = 00, 01, ...) in the current directory
+ *    until a segment cannot be opened.
  */
 
 // header files:
@@ -71,7 +74,7 @@ usage(std::ostream& o, const char* msg)
 {
     o << msg << std::endl;
     o << "Usage:\n";
-    o << "  readrings run\n";
+    o << "  checkevfiles run\n";
     o << "      run - Number of the run - which must be in the cwd";
     std::exit(EXIT_FAILURE);
 }
@@ -79,13 +82,13 @@ usage(std::ostream& o, const char* msg)
 
 /**
  * The main program:
- *    - Ensures we have a URI parameter (and only a URI parameter).
- *    - Constructs a data source.
- *    - Reads items from the data source until the data source is exhausted.
+ *    - Ensures we have exactly one parameter (the run number).
+ *    - Walks the run's segments (run-NNNN-SS.evt), constructing a data source
+ *      for each in turn.
+ *    - Reads items from each segment, checking PHYSICS_EVENT timestamps, until
+ *      a segment cannot be opened (end of run).
  *
- *  @note Online ringbuffers are never exhausted.  The program will just block
- *        when the ringbuffer is empty until the ring has new data.
- *  @note Because of the note above, this function never exits for online sources.
+ *  @note The timestamp check assumes timestamps increment by one per event.
  */
 
 int

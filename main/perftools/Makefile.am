@@ -72,7 +72,7 @@ evbfilecheck_SOURCES    = evbfilecheck.cpp
 evbfilecheck_CPPFLAGS   = $(AM_CPPFLAGS) @UFMT_CPPFLAGS@
 evbfilecheck_LDADD      = $(LDADD) @UFMT_LDFLAGS@
 
-noinst_HEADERS = utils.h
+noinst_HEADERS = utils.h StatsLog.h
 
 # Install the Tcl meter server and its widget alongside the tools (in
 # $(bindir)/perftools) so perftests can be run against an NSCLDAQ

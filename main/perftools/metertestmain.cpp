@@ -15,7 +15,7 @@
 	     East Lansing, MI 48824-1321
 */
 
-/** @file:  metertest.cpp
+/** @file:  metertestmain.cpp
  *  @brief: test meter server client library.
  */
 

@@ -30,7 +30,7 @@
  * @note - it would be wise to get the performance of this program before
  *         hooking it to glom as it might not match that of pipesend.
  * @note - At start time, the data block is initialized with ringitems
- *         that have a fragment header prepended. Subsequenly, after each
+ *         that have a fragment header prepended. Subsequently, after each
  *         write of the data block, we only alter the timestamps in the
  *         fragment headers.
  * @note - The ring items are also very minimal, just  uint32_size and
@@ -57,7 +57,7 @@ uint8_t data[1024 * 1024]; // Raw data block.
 struct descriptor {
   size_t s_nBytes;          // Used bytes in data block.
   uint64_t s_lastTimestamp; // Prior timestamp.
-  int s_tsdelta;            // Timstamp delta.
+  int s_tsdelta;            // Timestamp delta.
   void *s_pData;            // Pointer to data.
 };
 

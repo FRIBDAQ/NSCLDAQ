@@ -25,7 +25,7 @@
 #include <string.h>
 
 /**
- * construcgor
+ * constructor
  *     open a connection to the meter server and create the meter.
  *
  * @param host - host on which the server is running

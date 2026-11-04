@@ -16,7 +16,7 @@
 */
 
 /** @file:  bufferedoutperf.cpp
- *  @brief: Test performance of the bufered outputter.
+ *  @brief: Test performance of the buffered outputter.
  */
 
 
@@ -40,7 +40,7 @@
  *
  *   -   buffersize - the size of the buffer in Kbytes
  *   -   writesize  - size of the write in bytes.
- *   -   mbytes     - total number of bytes to write.
+ *   -   mbytes     - total number of megabytes (MB) to write.
  *   -   fname      - Filename to write it to.
  */
 
@@ -51,7 +51,7 @@ static void usage()
     std::cerr << "Where\n";
     std::cerr << "   buffersize - the size of the buffer in Kbytes\n";
     std::cerr << "   writesize  - size of the write in bytes.\n";
-    std::cerr << "   mbytes     - total number of bytes to write\n";
+    std::cerr << "   mbytes     - total number of megabytes (MB) to write\n";
     std::cerr << "   fname      - Filename to write it to.\n";
 }
 
