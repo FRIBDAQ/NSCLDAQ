@@ -112,7 +112,7 @@ public:
       os << "  per-pass stdev   : n/a (need >= 2 samples)\n";
     }
 
-    std::cerr << os.str();
+    // std::cerr << os.str();
     if (!path.empty()) {
       std::ofstream f(path.c_str(), std::ios::app);
       if (f)
