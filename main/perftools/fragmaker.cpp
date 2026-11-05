@@ -10,7 +10,8 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-             NSCL
+             Aaron Chester
+             FRIB
              Michigan State University
              East Lansing, MI 48824-1321
 */
@@ -25,7 +26,8 @@
  *   The sourceid of all fragments is 0 and the timestamps increase by
  *   a settable value. for each fragment.
  *
- *   Fragment size is adjustable.  We manage a 1 Mbyte block of fragments.
+ *   Fragment size is adjustable.  We manage a data block whose size is set by
+ *   --bufsize (default 1 MB).
  *
  * @note - it would be wise to get the performance of this program before
  *         hooking it to glom as it might not match that of pipesend.
@@ -37,7 +39,11 @@
  *         PHYSICS_EVENT type.
  *
  * Usage:
- *     fragmaker payload-size   tstamp-delta
+ *     fragmaker --payload-size=BYTES --tsdelta=TICKS [--bufsize=BYTES]
+ *        --payload-size - bytes in each ring item payload (must be >= 8).
+ *        --tsdelta      - timestamp tick increment between fragments.
+ *        --bufsize      - size in bytes of the fragment data block
+ *                         (default 1 MB).
  *
  */
 
@@ -46,13 +52,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <vector>
 
 #include <DataFormat.h>
 #include <fragment.h>
 
-namespace EVB = ufmt::EVB;
+#include "fragmaker_cmdline.h"
 
-uint8_t data[1024 * 1024]; // Raw data block.
+namespace EVB = ufmt::EVB;
 
 struct descriptor {
   size_t s_nBytes;          // Used bytes in data block.
@@ -60,15 +67,6 @@ struct descriptor {
   int s_tsdelta;            // Timestamp delta.
   void *s_pData;            // Pointer to data.
 };
-
-static void usage() {
-  std::cerr << "Usage:\n";
-  std::cerr << "   fragmaker payload-size   tstamp-delta\n";
-  std::cerr << "Where:\n";
-  std::cerr
-      << "  payload-size - number of bytes in each ring item must be >= 8\n";
-  std::cerr << "  tstamp-delta - Tick in timestamp between fragments.\n";
-}
 
 //  initializes the ring items and initial timestamps as well.
 //  desc.s_nBytes  - on entry is the size of the buffer, on exit bytes used.
@@ -142,24 +140,21 @@ static void updateTimestamps(descriptor &desc) {
 
 //
 int main(int argc, char **argv) {
-  argc--;
-  argv++;
-
-  if (argc != 2) {
-    usage();
+  struct gengetopt_args_info args;
+  if (cmdline_parser(argc, argv, &args) != 0) {
     exit(EXIT_FAILURE);
   }
 
-  int payloadSize = atoi(argv[0]);
-  int tsDelta = atoi(argv[1]);
+  int payloadSize = args.payload_size_arg;
+  int tsDelta = args.tsdelta_arg;
 
   if ((payloadSize < 8) || (tsDelta == 0)) {
-    usage();
+    std::cerr << "payload-size must be >= 8 and tsdelta must be non-zero\n";
     exit(EXIT_FAILURE);
   }
 
-  descriptor desc = {sizeof(data), 0, tsDelta, data};
-  ;
+  std::vector<uint8_t> data(args.bufsize_arg); // Raw data block.
+  descriptor desc = {data.size(), 0, tsDelta, data.data()};
   initRingItems(desc, payloadSize); // First initialization.
 
   while (1) {

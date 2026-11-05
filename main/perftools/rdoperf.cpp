@@ -18,9 +18,18 @@
 
 /** @file  rdoperf.cpp
  *  @brief Monitor the rate of data into a ring buffer.
+ *  @details
+ *  Samples the data rate into a ring buffer --nsamples times, --interval-ms
+ *  milliseconds apart, and reports the aggregate rate and per-sample
+ *  statistics.  The rate can also be shown live on a meter server.
+ *
+ * Usage:
+ *    rdoperf --ring=NAME [--nsamples=N] [--interval-ms=MS] \
+ *            [--meter-host=HOST] [--meter-port=PORT] [--logfile=FILE] [--verbose]
  */
 
 #include <iostream>
+#include <memory>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -32,6 +41,7 @@
 
 #include "MeterApi.h"
 #include "StatsLog.h"
+#include "rdoperf_cmdline.h"
 #include "utils.h"
 
 // True if the CLOCK_REALTIME - has 10x the resolution ms or better.
@@ -47,40 +57,17 @@ static bool resolutionOk(int ms) {
   return (resns * 10.0) < ns;
 }
 
-static void usage() {
-  std::cerr << "Usage\n";
-  std::cerr << "   rdoperf ring ms host port [seconds] [logfile]\n";
-  std::cerr << "Where:\n";
-  std::cerr << "   ring - name of the ring being monitored\n";
-  std::cerr << "   ms - milliseconds between measurements\n";
-  std::cerr << "   host, port - specify the host/port on which the meter "
-               "server runs\n";
-  std::cerr
-      << "            (use '-' for host to skip the meter GUI entirely)\n";
-  std::cerr << "   seconds - optional test duration; when given, run that long "
-               "then\n";
-  std::cerr
-      << "            write a summary and exit (0/omitted => run forever)\n";
-  std::cerr << "   logfile - optional file to append the summary block to\n";
-}
-
 /**
  * main
- *    Usage:
- *       rdoperf ring-name ms host port [seconds] [logfile]
+ *    Samples the ring (--ring) --nsamples times, --interval-ms apart, then
+ *    writes a summary (and appends it to --logfile when given).
  *
- *    - ring-name - ring buffer into which data are being put.
- *    - ms        - number of millisecs/sample.
- *    - host      - host running the meter server ('-' skips the meter GUI).
- *    - port      - Port the meter server is listening on.
- *    - seconds   - (optional) test duration; then a summary is written.
- *    - logfile   - (optional) file the summary is appended to.
- * @note -each interval is of the form:
+ * @note - each sample is of the form:
  *        - Empty ring
  *        - sleep
  *        - get bytes in ring
  *        - figure out time difference
- *        - report the rate to the meter server (when enabled).
+ *        - report the rate to the meter server (when --meter-host is given).
  *
  *  Now some caveats:
  *
@@ -92,29 +79,24 @@ static void usage() {
  *         into the ring.
  */
 int main(int argc, char **argv) {
-  argv++;
-  argc--; // Skip the command name string.
-  if (argc < 4 || argc > 6) {
-    usage();
+  gengetopt_args_info args;
+  if (cmdline_parser(argc, argv, &args) != 0)
+    exit(EXIT_FAILURE);
+
+  int ms = args.interval_ms_arg; // ms per sample.
+  if (ms <= 0) {
+    std::cerr << "interval-ms must be > 0\n";
     exit(EXIT_FAILURE);
   }
   try {
-    CRingBuffer ring(argv[0]); // We're timing this ring.
+    CRingBuffer ring(args.ring_arg); // We're timing this ring.
 
-    int ms = atoi(argv[1]); // ms per interval.
-    if (ms <= 0) {
-      usage();
-      exit(EXIT_FAILURE);
-    }
+    std::string logpath = args.logfile_given ? args.logfile_arg : "";
 
-    std::string mhost = argv[2];
-    int mport = atoi(argv[3]);
-    int seconds = (argc >= 5) ? atoi(argv[4]) : 0; // 0 => run forever
-    std::string logpath = (argc >= 6) ? argv[5] : "";
-
-    Meter *meter = 0; // Meter named after ring.
-    if (mhost != "-")
-      meter = new Meter(argv[2], mport, argv[0], 1.0, 1.0e10, true);
+    std::unique_ptr<Meter> pMeter; // Meter named after the ring.
+    if (args.meter_host_given)
+      pMeter.reset(new Meter(args.meter_host_arg, args.meter_port_arg,
+                             args.ring_arg, 1.0, 1.0e10, true));
 
     // Be sure that clocks have needed resolution.
 
@@ -124,11 +106,10 @@ int main(int argc, char **argv) {
                 << "ms measurement interval\n";
       exit(EXIT_FAILURE);
     }
-    StatsLog stats(argv[0]);
-    timespec start, stop, tStart;
+    StatsLog stats(args.ring_arg);
+    timespec start, stop, tStart, tNow;
     clock_gettime(CLOCK_REALTIME, &tStart);
-    double elapsed = 0.0;
-    do {
+    for (long i = 0; i < args.nsamples_arg; ++i) {
       clock_gettime(CLOCK_REALTIME, &start);
       ring.skip(ring.availableData());
       usleep(ms * 1000); // Let data come in.
@@ -137,18 +118,18 @@ int main(int argc, char **argv) {
 
       uint64_t nsDiff = hrDiff(stop, start);
       double rate = (double)(bytesInRing) / (nsDiff)*1.0e9;
-      if (meter)
-        meter->set(rate);
+      if (pMeter)
+        pMeter->set(rate);
       stats.add(bytesInRing, nsDiff);
 
-      std::cout << bytesInRing << " in " << nsDiff << " -> " << rate
-                << "bytes/sec\n";
-
-      elapsed = hrDiff(stop, tStart) / 1.0e9;
-    } while (seconds <= 0 || elapsed < seconds);
+      if (args.verbose_flag)
+        std::cout << bytesInRing << " in " << nsDiff << " -> " << rate
+                  << "bytes/sec\n";
+    }
+    clock_gettime(CLOCK_REALTIME, &tNow);
+    double elapsed = hrDiff(tNow, tStart) / 1.0e9;
 
     stats.writeSummary(logpath, elapsed);
-    delete meter;
   } catch (CException &e) {
     std::cerr << "** ERROR ** " << e.ReasonText() << std::endl;
     exit(EXIT_FAILURE);

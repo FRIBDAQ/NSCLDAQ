@@ -21,6 +21,7 @@
 #ifndef STATSLOG_H
 #define STATSLOG_H
 
+#include <cmath>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
@@ -30,8 +31,9 @@
 #include <string>
 
 // Accumulates per-pass (bytes, nanoseconds) samples for a perftool and writes a
-// summary when a timed test ends: the aggregate rate over the whole test
-// (total bytes / total measured time), plus per-pass mean/min/max.
+// summary when a test ends: the aggregate rate over the whole test
+// (total bytes / total measured time), plus per-pass mean/min/max and the
+// per-pass standard deviation (sample, n-1; undefined for a single sample).
 class StatsLog {
 private:
   std::string m_name;
@@ -39,13 +41,14 @@ private:
   long double m_totalBytes;
   long double m_totalNs;
   long double m_sumRate;
+  long double m_sumRateSq;
   double m_minRate;
   double m_maxRate;
 
 public:
   StatsLog(const char *name)
       : m_name(name), m_samples(0), m_totalBytes(0.0L), m_totalNs(0.0L),
-        m_sumRate(0.0L), m_minRate(0.0), m_maxRate(0.0) {}
+        m_sumRate(0.0L), m_sumRateSq(0.0L), m_minRate(0.0), m_maxRate(0.0) {}
 
   // Record one measurement pass.
   void add(uint64_t bytes, uint64_t ns) {
@@ -62,6 +65,7 @@ public:
     m_totalBytes += bytes;
     m_totalNs += ns;
     m_sumRate += rate;
+    m_sumRateSq += (long double)rate * rate;
   }
 
   uint64_t samples() const { return m_samples; }
@@ -72,6 +76,16 @@ public:
     double agg =
         (m_totalNs > 0) ? double(m_totalBytes / m_totalNs) * 1.0e9 : 0.0;
     double mean = m_samples ? double(m_sumRate / m_samples) : 0.0;
+
+    bool haveStdev = (m_samples >= 2);
+    double stdev = 0.0;
+    if (haveStdev) {
+      long double num =
+          m_sumRateSq - (m_sumRate * m_sumRate) / (long double)m_samples;
+      if (num < 0.0L)
+        num = 0.0L; // guard against FP round-off
+      stdev = std::sqrt((double)(num / (m_samples - 1)));
+    }
 
     char when[64];
     time_t now = time(0);
@@ -90,6 +104,13 @@ public:
     os << "  per-pass mean    : " << mean << " bytes/sec\n";
     os << "  per-pass min/max : " << m_minRate << " / " << m_maxRate
        << " bytes/sec\n";
+    if (haveStdev) {
+      os << "  per-pass stdev   : " << stdev << " bytes/sec";
+      os << std::fixed << std::setprecision(2) << " ("
+         << (mean > 0 ? stdev / mean * 100.0 : 0.0) << " % CV)\n";
+    } else {
+      os << "  per-pass stdev   : n/a (need >= 2 samples)\n";
+    }
 
     std::cerr << os.str();
     if (!path.empty()) {

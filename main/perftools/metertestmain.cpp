@@ -20,6 +20,8 @@
  */
 
 #include "MeterApi.h"
+#include <Exception.h>
+#include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -27,13 +29,18 @@
 int
 main(int argc, char**argv)
 {
-    Meter m("localhost", 2000, "test", 0.0 ,100.0, false);
-    m.set(50.0);         // Start midscale
-    double value = 50.0;
-    
-    while(1) {
-        sleep (1);
-        value += drand48()*10 - 5.0;
-        m.set(value);
+    try {
+        Meter m("localhost", 2000, "test", 0.0 ,100.0, false);
+        m.set(50.0);         // Start midscale
+        double value = 50.0;
+
+        while(1) {
+            sleep (1);
+            value += drand48()*10 - 5.0;
+            m.set(value);
+        }
+    } catch (CException& e) {
+        std::cerr << "metertest: ** ERROR ** " << e.ReasonText() << std::endl;
+        return EXIT_FAILURE;
     }
 }

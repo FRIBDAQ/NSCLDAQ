@@ -34,19 +34,21 @@
  *    be important and we'll think about it later.
  *
  * Usage:
- *    fragsrcperf my-port block-count meter-host meter-port [seconds] [logfile]
- *       my-port - the port on which we accept a connection from the
- *                 ring fragment source (we emulate an event builder).
- *      block-count - number of blocks of data we receive from the source
- *                    per measurement.
- *      meter-host - host running the meter server ('-' skips the meter GUI).
- *      meter-port - port on which the meter server is listening for input.
- *      seconds - (optional) test duration; then a summary is written
- *                (0/omitted => fixed 100 passes).
- *      logfile - (optional) file the summary is appended to.
+ *    fragsrcperf --port=PORT --blocks=N [--nsamples=N] \
+ *                [--meter-host=HOST] [--meter-port=PORT] [--logfile=FILE]
+ *       --port   - the port on which we accept a connection from the
+ *                  ring fragment source (we emulate an event builder).
+ *      --blocks  - number of blocks of data we receive from the source
+ *                  per measurement pass (must be > 1).
+ *      --nsamples - number of measurement passes to run.
+ *      --meter-host, --meter-port - meter server connection (omit --meter-host
+ *                  to disable the meter GUI).
+ *      --logfile - (optional) file the summary is appended to.
+ *      --verbose - print each pass's measurement to stderr (off by default).
  */
 
 #include <iostream>
+#include <memory>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,29 +60,8 @@
 
 #include "MeterApi.h"
 #include "StatsLog.h"
+#include "fragsrcperf_cmdline.h"
 #include "utils.h"
-
-static const int NUM_MEASUREMENTS(100); // Number of measurement blocks.
-
-static void usage() {
-  std::cerr << "Usage\n";
-  std::cerr << "    fragsrcperf my-port block-count meter-host meter-port "
-               "[seconds] [logfile]\n";
-  std::cerr << "Where:\n";
-  std::cerr << "    my-port is the port on which we listen for ringfragsrc "
-               "connections\n";
-  std::cerr
-      << "    block-count is the number of received blocks per measurement\n";
-  std::cerr << "    meter-host, meter-port - specify how to connect to the "
-               "meter server.\n";
-  std::cerr << "            (use '-' for meter-host to skip the meter GUI "
-               "entirely)\n";
-  std::cerr << "    seconds - optional test duration; when given, run that "
-               "long then\n";
-  std::cerr << "            write a summary and exit (0/omitted => fixed 100 "
-               "passes)\n";
-  std::cerr << "    logfile - optional file to append the summary block to\n";
-}
 
 /**
  * since we're not actually processing data;
@@ -149,8 +130,8 @@ static CSocket *acceptConnection(std::string port) {
  *   @param outNs - (out) nanoseconds the measurement took.
  *   @return double - the measured rate in bytes/sec.
  */
-static double timeBlocks(CSocket *pSock, ssize_t blocks, uint64_t &outBytes,
-                         uint64_t &outNs) {
+static double timeBlocks(CSocket *pSock, ssize_t blocks, bool verbose,
+                         uint64_t &outBytes, uint64_t &outNs) {
   timespec start, stop;
   clock_gettime(CLOCK_REALTIME, &start);
   size_t bytes = 0;
@@ -162,8 +143,9 @@ static double timeBlocks(CSocket *pSock, ssize_t blocks, uint64_t &outBytes,
 
   double rate = double(bytes) / nsdiff * 1.0e9;
 
-  std::cerr << bytes << " read in " << nsdiff << "ns -> " << rate
-            << " bytes/sec\n";
+  if (verbose)
+    std::cerr << bytes << " read in " << nsdiff << "ns -> " << rate
+              << " bytes/sec\n";
   outBytes = bytes;
   outNs = nsdiff;
   return rate;
@@ -179,34 +161,21 @@ static double timeBlocks(CSocket *pSock, ssize_t blocks, uint64_t &outBytes,
  *  See file level comments for usage.
  */
 int main(int argc, char **argv) {
-  argc--;
-  argv++; // Skip the program name.
-  if (argc < 4 || argc > 6) {
-    usage();
+  gengetopt_args_info args;
+  if (cmdline_parser(argc, argv, &args) != 0)
     exit(EXIT_FAILURE);
-  }
 
-  int port = atoi(argv[0]);
-  if (port <= 0) {
-    std::cerr << "Bad port number\n";
-    usage();
+  if (args.blocks_arg <= 1) {
+    std::cerr << "blocks must be > 1\n";
     exit(EXIT_FAILURE);
   }
-  std::string strPort = argv[0];
-  ssize_t blocks = atoi(argv[1]);
-  if (blocks <= 1) {
-    std::cerr << "Bad block count\n";
-    usage();
-    exit(EXIT_FAILURE);
-  }
-  std::string mhost = argv[2];
-  int mport = atoi(argv[3]);
-  int seconds = (argc >= 5) ? atoi(argv[4]) : 0; // 0 => fixed 100 passes
-  std::string logpath = (argc >= 6) ? argv[5] : "";
+  std::string strPort = std::to_string(args.port_arg);
+  std::string logpath = args.logfile_given ? args.logfile_arg : "";
   try {
-    Meter *meter = 0;
-    if (mhost != "-")
-      meter = new Meter(mhost.c_str(), mport, "ringfragsrc", 1.0, 1.0e9, true);
+    std::unique_ptr<Meter> pMeter;
+    if (args.meter_host_given)
+      pMeter.reset(new Meter(args.meter_host_arg, args.meter_port_arg,
+                             "ringfragsrc", 1.0, 1.0e9, true));
 
     CSocket *pSock = acceptConnection(strPort);
 
@@ -222,22 +191,17 @@ int main(int argc, char **argv) {
     StatsLog stats("ringfragsrc");
     timespec tStart, tNow;
     clock_gettime(CLOCK_REALTIME, &tStart);
-    double elapsed = 0.0;
-    unsigned i = 0;
-    do {
+    for (long i = 0; i < args.nsamples_arg; ++i) {
       uint64_t bytes, ns;
-      double rate = timeBlocks(pSock, blocks, bytes, ns);
-      if (meter)
-        meter->set(rate);
+      double rate = timeBlocks(pSock, args.blocks_arg, args.verbose_flag, bytes, ns);
+      if (pMeter)
+        pMeter->set(rate);
       stats.add(bytes, ns);
-      clock_gettime(CLOCK_REALTIME, &tNow);
-      elapsed = hrDiff(tNow, tStart) / 1.0e9;
-      i++;
-    } while (seconds > 0 ? (elapsed < seconds) : (i < NUM_MEASUREMENTS));
+    }
+    clock_gettime(CLOCK_REALTIME, &tNow);
+    double elapsed = hrDiff(tNow, tStart) / 1.0e9;
 
-    if (seconds > 0)
-      stats.writeSummary(logpath, elapsed);
-    delete meter;
+    stats.writeSummary(logpath, elapsed);
   } catch (CException &e) {
     std::cerr << e.ReasonText() << std::endl;
     exit(EXIT_FAILURE);

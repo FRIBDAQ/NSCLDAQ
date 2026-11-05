@@ -19,100 +19,131 @@
 /** @file  pipeperf.cpp
  *  @brief Measure performance of pipe data transfers.
  *  @details
- *  Measures the byte/sec through a unix pipe.
+ *  Measures the byte/sec through a unix pipe over a fixed number of passes.
  *
- * Usage:
- *    pipesend | pipeperf nbytes meter-host meter-port [seconds] [logfile]
+ *  Options (see pipeperf.ggo / --help):
+ *    --blocksize  bytes read (and timed) per measurement pass (default 4MB).
+ *    --nsamples   number of passes to run (default 1000); bounds the test.
+ *    --bufsize    largest single read() request in bytes (default 4MB).
+ *    --meter-host meter-server host; omit to disable the meter GUI (log only).
+ *    --meter-port meter-server port (default 2000).
+ *    --logfile    file the run summary is appended to.
+ *    --verbose    print each pass's measurement to stderr (off by default).
+ *
+ *  The --blocksize (4MB) default is tuned for a steady-state throughput test:
+ *  the block is large enough that the fixed per-pass overhead (two clock reads
+ *  and a division, all outside the timed region) is negligible. --bufsize caps
+ *  each read() request and sizes the read buffer (allocated as the smaller of
+ *  bufsize and blocksize). A Unix pipe hands back at most its capacity (~64KiB)
+ *  per read regardless, so a --bufsize at or above that is inert on a pipe; set
+ *  --bufsize below ~64KiB to force small reads and measure syscall-bound
+ *  behavior instead. With the defaults a bare "pipesend | pipeperf" runs a
+ *  steady-state test.
+ *
+ *  Typical use (defaults give a steady-state test):
+ *    pipesend | pipeperf --logfile=run.log
  */
 
+#include <errno.h>
 #include <iostream>
+#include <memory>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string>
 #include <time.h>
 #include <unistd.h>
+#include <vector>
+
+#include <Exception.h>
 
 #include "MeterApi.h"
 #include "StatsLog.h"
+#include "pipeperf_cmdline.h"
 #include "utils.h"
 
-static uint8_t buffer[100 * 1024 * 1024];
-
-static void usage() {
-  std::cerr << "Usage:\n";
-  std::cerr << "    pipesend | pipeperf nbytes meter-host meter-port [seconds] "
-               "[logfile]\n";
-  std::cerr << "Where:\n";
-  std::cerr << "    nbytes is the transfer size measured per pass\n";
-  std::cerr << "    meter-host, meter-port - are connection params to the "
-               "meter server\n";
-  std::cerr << "            (use '-' for meter-host to skip the meter GUI "
-               "entirely)\n";
-  std::cerr << "    seconds - optional test duration; when given, run that "
-               "long then\n";
-  std::cerr
-      << "            write a summary and exit (0/omitted => run forever)\n";
-  std::cerr << "    logfile - optional file to append the summary block to\n";
-}
-
-static double measure(int bytes, uint64_t &outBytes, uint64_t &outNs) {
-  int nread = 0;
-  int readsize = sizeof(buffer) < bytes ? sizeof(buffer) : bytes;
+// Read and time one pass of 'blocksize' bytes from stdin, in chunks of at most
+// 'bufsize'.  Returns true and fills rate/outBytes/outNs on a full pass;
+// returns false on EOF (the sender closed the pipe), leaving the incomplete
+// pass to be discarded by the caller.
+static bool measure(long blocksize, uint8_t *buf, long bufsize, bool verbose,
+                    double &rate, uint64_t &outBytes, uint64_t &outNs) {
+  long nread = 0;
 
   timespec start, stop;
   clock_gettime(CLOCK_REALTIME, &start);
-
-  while (nread < bytes) {
-    nread += read(STDIN_FILENO, buffer, readsize);
+  while (nread < blocksize) {
+    long want = blocksize - nread;
+    if (want > bufsize)
+      want = bufsize; // never read past the buffer or past blocksize.
+    ssize_t n = read(STDIN_FILENO, buf, want);
+    if (n < 0) {
+      if (errno == EINTR)
+        continue; // interrupted by a signal; retry.
+      perror("pipeperf: read");
+      exit(EXIT_FAILURE);
+    }
+    if (n == 0)
+      return false; // EOF: pipe closed before the pass completed.
+    nread += n;
   }
   clock_gettime(CLOCK_REALTIME, &stop);
-
   uint64_t ns = hrDiff(stop, start);
+  rate = double(nread) / ns * 1.0e9;
 
-  double rate = double(nread) / ns * 1.0e9;
-
-  std::cerr << nread << " Bytes read in  " << ns << "ns -> " << rate
-            << " bytes/sec\n";
+  if (verbose)
+    std::cerr << "pipeperf: read " << nread << " bytes in " << ns
+              << "ns for: " << rate << " Bytes/sec\n";
 
   outBytes = nread;
   outNs = ns;
-  return rate;
+
+  return true;
 }
 
 int main(int argc, char **argv) {
-  argc--;
-  argv++;
+  struct gengetopt_args_info args;
+  if (cmdline_parser(argc, argv, &args) != 0)
+    exit(EXIT_FAILURE);
 
-  if (argc < 3 || argc > 5) {
-    usage();
+  // Each read requests at most --bufsize bytes; a pass never needs more than
+  // --blocksize, so the buffer only has to be as large as the smaller of the
+  // two (avoids over-allocating when bufsize > blocksize).
+  long bufbytes = args.bufsize_arg < args.blocksize_arg ? args.bufsize_arg
+                                                        : args.blocksize_arg;
+  std::vector<uint8_t> buffer(bufbytes);
+  std::string logpath = args.logfile_given ? args.logfile_arg : "";
+
+  std::unique_ptr<Meter> pMeter;
+  try {
+    if (args.meter_host_given)
+      pMeter.reset(new Meter(args.meter_host_arg, args.meter_port_arg, "pipe",
+                             1.0, 1.0e10, true));
+  } catch (CException &e) {
+    std::cerr << "pipeperf: cannot connect to meter server: " << e.ReasonText()
+              << std::endl;
     exit(EXIT_FAILURE);
   }
-
-  int nbytes = atoi(argv[0]);
-  std::string mhost = argv[1];
-  int mport = atoi(argv[2]);
-  int seconds = (argc >= 4) ? atoi(argv[3]) : 0; // 0 => run forever
-  std::string logpath = (argc >= 5) ? argv[4] : "";
-
-  Meter *meter = 0;
-  if (mhost != "-")
-    meter = new Meter(mhost.c_str(), mport, "pipe", 1.0, 1.0e10, true);
 
   StatsLog stats("pipe");
   timespec tStart, tNow;
   clock_gettime(CLOCK_REALTIME, &tStart);
-  double elapsed = 0.0;
-  do {
+  for (long i = 0; i < args.nsamples_arg; ++i) {
+    double rate;
     uint64_t bytes, ns;
-    double rate = measure(nbytes, bytes, ns);
-    if (meter)
-      meter->set(rate);
+    if (!measure(args.blocksize_arg, buffer.data(), bufbytes, args.verbose_flag,
+                 rate, bytes, ns)) {
+      std::cerr << "pipeperf: end of input after " << stats.samples()
+                << " sample(s); stopping early.\n";
+      break;
+    }
+    if (pMeter)
+      pMeter->set(rate);
     stats.add(bytes, ns);
-    clock_gettime(CLOCK_REALTIME, &tNow);
-    elapsed = hrDiff(tNow, tStart) / 1.0e9;
-  } while (seconds <= 0 || elapsed < seconds);
+  }
+  clock_gettime(CLOCK_REALTIME, &tNow);
+  double elapsed = hrDiff(tNow, tStart) / 1.0e9;
 
   stats.writeSummary(logpath, elapsed);
-  delete meter;
+
   return 0;
 }

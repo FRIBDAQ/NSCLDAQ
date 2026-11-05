@@ -11,6 +11,8 @@
              Ron Fox
              Giordano Cerriza
              NSCL
+             Aaron Chester
+             FRIB
              Michigan State University
              East Lansing, MI 48824-1321
 */
@@ -31,7 +33,10 @@
  *    - Reports the number of events that don't match that description
  *      which are followed by an event that does follow that description.
  *    -  Writes to file the events  that are like that.
-
+ *
+ *  Usage:
+ *     evbfilecheck --source=URI
+ *  where URI is the file: or tcp: data source to read from.
 */
 
 // standard run time headers:
@@ -55,6 +60,8 @@
 
 #include <FragmentIndex.h> // From ufmt
 
+#include "evbfilecheck_cmdline.h"
+
 using ufmt::FragmentIndex;
 using ufmt::FragmentInfo;
 
@@ -68,25 +75,8 @@ static std::vector<std::string> wrongness;
 static std::ofstream badfile("badItems.txt");
 
 /**
- * Usage:
- *    This outputs an error message that shows how the program should be used
- *     and exits using std::exit().
- *
- * @param o   - references the stream on which the error message is printed.
- * @param msg - Error message that precedes the usage information.
- */
-static void usage(std::ostream &o, const char *msg) {
-  o << msg << std::endl;
-  o << "Usage:\n";
-  o << "  evbfilecheck uri\n";
-  o << "      uri - the file: or tcp: URI that describes where data comes "
-       "from\n";
-  std::exit(EXIT_FAILURE);
-}
-
-/**
  * The main program:
- *    - Ensures we have a URI parameter (and only a URI parameter).
+ *    - Parses the --source option (the data source URI).
  *    - Constructs a data source.
  *    - Reads items from the data source until the data source is exhausted.
  *
@@ -96,10 +86,11 @@ static void usage(std::ostream &o, const char *msg) {
  * sources.
  */
 int main(int argc, char **argv) {
-  // Make sure we have enough command line parameters.
+  // Parse the command line (gengetopt enforces the required --source option).
 
-  if (argc != 2) {
-    usage(std::cerr, "Not enough command line parameters");
+  gengetopt_args_info args;
+  if (cmdline_parser(argc, argv, &args) != 0) {
+    std::exit(EXIT_FAILURE);
   }
   // Create the data source.   Data sources allow us to specify ring item
   // types that will be skipped.  They also allow us to specify types
@@ -109,9 +100,10 @@ int main(int argc, char **argv) {
   std::vector<std::uint16_t> exclude; // Insert the skippable types here.
   CDataSource *pDataSource;
   try {
-    pDataSource = CDataSourceFactory::makeSource(argv[1], sample, exclude);
+    pDataSource = CDataSourceFactory::makeSource(args.source_arg, sample, exclude);
   } catch (CException &e) {
-    usage(std::cerr, "Failed to open ring source");
+    std::cerr << "Failed to open ring source: " << args.source_arg << std::endl;
+    std::exit(EXIT_FAILURE);
   }
 
   // The loop below consumes items from the ring buffer until

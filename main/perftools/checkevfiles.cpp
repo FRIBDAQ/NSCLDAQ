@@ -9,8 +9,10 @@
 
      Authors:
              Ron Fox
-             Jeromy Tompkins 
+             Jeromy Tompkins
 	     NSCL
+	     Aaron Chester
+	     FRIB
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
@@ -25,9 +27,12 @@
  *  timestamp of each PHYSICS_EVENT increments by one.  A mismatch is reported
  *  to stderr and timestamp tracking resynchronizes to the value just seen.
  *
- *    The program accepts a single parameter: the run number.  It opens the
+ *    The run number is given by the --run option.  The program opens the
  *    segments run-NNNN-SS.evt (SS = 00, 01, ...) in the current directory
  *    until a segment cannot be opened.
+ *
+ *  Usage:
+ *     checkevfiles --run=N
  */
 
 // header files:
@@ -46,43 +51,27 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <memory>
+#include <string>
 #include <vector>
 #include <cstdint>
+
+#include "checkevfiles_cmdline.h"
 
 static void
 processRingItem(CRingItem& item);   // Forward definition, see below.
 
-static std::string makeUri(const char* runText, int segment)
+static std::string makeUri(int run, int segment)
 {
     char uri[1000];
-    int run = atoi(runText);
     sprintf(uri, "file://./run-%04d-%02d.evt", run, segment);
     return std::string(uri);
-    
-}
 
-/**
- * Usage:
- *    This outputs an error message that shows how the program should be used
- *     and exits using std::exit().
- *
- * @param o   - references the stream on which the error message is printed.
- * @param msg - Error message that precedes the usage information.
- */
-static void
-usage(std::ostream& o, const char* msg)
-{
-    o << msg << std::endl;
-    o << "Usage:\n";
-    o << "  checkevfiles run\n";
-    o << "      run - Number of the run - which must be in the cwd";
-    std::exit(EXIT_FAILURE);
 }
 
 
 /**
  * The main program:
- *    - Ensures we have exactly one parameter (the run number).
+ *    - Parses the --run option (the run number).
  *    - Walks the run's segments (run-NNNN-SS.evt), constructing a data source
  *      for each in turn.
  *    - Reads items from each segment, checking PHYSICS_EVENT timestamps, until
@@ -94,23 +83,24 @@ usage(std::ostream& o, const char* msg)
 int
 main(int argc, char** argv)
 {
-    // Make sure we have enough command line parameters.
-    
-    if (argc != 2) {
-        usage(std::cerr, "Not enough command line parameters");
+    // Parse the command line (gengetopt enforces the required --run option).
+
+    gengetopt_args_info args;
+    if (cmdline_parser(argc, argv, &args) != 0) {
+        std::exit(EXIT_FAILURE);
     }
     // Create the data source.   Data sources allow us to specify ring item
     // types that will be skipped.  They also allow us to specify types
     // that we may only want to sample (e.g. for online ring items).
-    
+
     std::vector<std::uint16_t> sample;     // Insert the sampled types here.
     std::vector<std::uint16_t> exclude;    // Insert the skippable types here.
     CDataSource* pDataSource;
     std::string uri;
     int segment(0);
-    
+
     while (1) {
-        uri = makeUri(argv[1], segment);
+        uri = makeUri(args.run_arg, segment);
         std::cerr << "Processing segment " << segment << " (" << uri << ")\n";
         try {
             

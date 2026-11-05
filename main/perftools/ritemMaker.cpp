@@ -10,7 +10,8 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
+             Aaron Chester
+             FRIB
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
@@ -22,16 +23,17 @@
  *  Creates a stream of ring items with body headers.  The body headers
  *  have incrementing timestamps, and a fixed sourceid:
  *  The items are output to stdout.
- *  
+ *
  *  Usage:
- *     ritemMaker datasize sid tsincrement
+ *     ritemMaker --datasize=N [--sid=S] [--tsinc=T] [--bufsize=B]
  *
- *  datasize size of the ring item payload (stuff after body  header).
- *  sid      source id given to the ring item body headers.
- *  tsincrement timestamp increment between events.
+ *  --datasize size of the ring item payload (stuff after body  header).
+ *  --sid      source id given to the ring item body headers (default 0).
+ *  --tsinc    timestamp increment between events (default 1).
+ *  --bufsize  size in bytes of the ring-item buffer (default 1 MB).
  *
- * @note  ring items are created in a 1Mbyte buffer which is written to
- *        stdout.
+ * @note  ring items are created in a buffer whose size is set by --bufsize
+ *        (default 1 MB) which is written to stdout.
  * @note  Ring item contents are not initialized.
  * @note  Between passes, only the timestamps are adjusted.
  * @note  All items are PHYSICS_EVENT items.
@@ -42,8 +44,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <iostream>
+#include <vector>
 
-uint8_t buffer[1024*1024];
+#include "ritemMaker_cmdline.h"
 
 struct descriptor {
     size_t   s_nBytes;                 // Used bytes in data block.
@@ -51,16 +54,6 @@ struct descriptor {
     int      s_tsdelta;                // Timestamp delta.
     void*    s_pData;                  // Pointer to data.
 };
-
-static void usage()
-{
-    std::cerr << "Usage:\n";
-    std::cerr << "    ritemMaker datasize sid tsinc\n";
-    std::cerr << "Creates ring items on stdout where:\n";
-    std::cerr << "   datasize - is the size of the data part of the ring item\n";
-    std::cerr << "   sid      - is the source id to put in the body  header\n";
-    std::cerr << "   tsinc    - Timestamp increment between events\n";
-}
 
 // Fully initializes the buffer with ring items.
 
@@ -116,28 +109,27 @@ updateTimestamps(descriptor& desc)
 //
 int main (int argc, char** argv)
 {
-    argc--; argv++;
-    
-    if (argc != 3) {
-        usage();
+    gengetopt_args_info args;
+    if (cmdline_parser(argc, argv, &args) != 0) {
         exit(EXIT_FAILURE);
     }
-    int dataSize = atoi(argv[0]);
-    int sid      = atoi(argv[1]);
-    int tsInc    = atoi(argv[2]);
-    
+    int dataSize = args.datasize_arg;
+    int sid      = args.sid_arg;
+    int tsInc    = args.tsinc_arg;
+
     // datasize and tsinc must be > 0 and sid must be >= 0:
-    
+
     if ((dataSize <= 0) || (sid < 0) || (tsInc <=0)) {
-        usage();
+        std::cerr << "datasize and tsinc must be > 0 and sid must be >= 0\n";
         exit(EXIT_FAILURE);
     }
-    
-    descriptor desc = {sizeof(buffer), 0, tsInc, buffer};
+
+    std::vector<uint8_t> buffer(args.bufsize_arg);
+    descriptor desc = {buffer.size(), 0, tsInc, buffer.data()};
     initRingItems(desc, dataSize, sid);
-    
+
     while(1) {
-        io::writeData(STDOUT_FILENO, buffer, desc.s_nBytes);
+        io::writeData(STDOUT_FILENO, buffer.data(), desc.s_nBytes);
         updateTimestamps(desc);
     }
 }

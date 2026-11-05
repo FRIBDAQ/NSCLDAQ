@@ -10,9 +10,10 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
-	     Michigan State University
-	     East Lansing, MI 48824-1321
+             Aaron Chester
+             FRIB
+             Michigan State University
+             East Lansing, MI 48824-1321
 */
 
 /** @file:  socksend.cpp
@@ -25,42 +26,50 @@
  *  the socket to a performance measuring program.
  *
  * Usage:
- *   socksend host port
+ *   socksend --host=HOST --port=PORT [--bufsize=BYTES] [--sndbuf=BYTES]
+ *      --host, --port - connection parameters of the measuring peer.
+ *      --bufsize      - size in bytes of each write to the socket
+ *                       (default 100 MB).
+ *      --sndbuf       - set the socket send buffer (SO_SNDBUF) in bytes
+ *                       (default: leave kernel autotuning).  Pairs with
+ *                       sockperf's --rcvbuf for tuning large transfers.
  *
- * We'll attempt 100Mbyte sends but experience says those will be chunked
+ * We'll attempt large sends but experience says those will be chunked
  * up...so we'll probably not suceed.
  */
-#include <iostream>
 #include <CSocket.h>
-#include <stdlib.h>
+#include <Exception.h>
+#include <iostream>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string>
+#include <vector>
 
-uint8_t buffer[100*1024*1024];
+#include "socksend_cmdline.h"
 
+int main(int argc, char **argv) {
+  struct gengetopt_args_info args;
+  if (cmdline_parser(argc, argv, &args) != 0) {
+    exit(EXIT_FAILURE);
+  }
 
-static void usage()
-{
-    std::cerr << "Usage:\n";
-    std::cerr << "   socksend host port\n";
-    std::cerr << "Where:\n";
-    std::cerr << "   host,port specify the connection parmeters of our peer\n";
-}
+  std::string host = args.host_arg;
+  std::string port = std::to_string(args.port_arg);
+  std::vector<uint8_t> buffer(args.bufsize_arg);
 
-int
-main(int argc, char** argv)
-{
-    argc--; argv++;                       // Skip the program name.
-    if (argc != 2) {
-        usage();
-        exit(EXIT_FAILURE);
-    }
-    std::string host = argv[0];
-    std::string port = argv[1];
-    
+  try {
     CSocket sock;
+    if (args.sndbuf_given)
+      // Set SO_SNDBUF before Connect so TCP window scaling is negotiated
+      // for the larger buffer at connection time.
+      sock.setSndBufSize(args.sndbuf_arg);
     sock.Connect(host, port);
-    
-    while(1) {
-        sock.Write(buffer, sizeof(buffer));
+
+    while (1) {
+      sock.Write(buffer.data(), buffer.size());
     }
+  } catch (CException &e) {
+    std::cerr << "socksend: ** ERROR ** " << e.ReasonText() << std::endl;
+    return EXIT_FAILURE;
+  }
 }

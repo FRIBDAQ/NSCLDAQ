@@ -10,7 +10,8 @@
      Authors:
              Ron Fox
              Giordano Cerriza
-	     NSCL
+             Aaron Chester
+             FRIB
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
@@ -20,6 +21,15 @@
  *          events.  This is basically ritemMaker preceding its output
  *          with a begin run item running for a fixed number of items
  *          and then ending with an end run item.
+ *
+ *  Usage:
+ *     runmaker --datasize=N --mbytes=M [--sid=S] [--tsinc=T] [--bufsize=B]
+ *
+ *  --datasize size of the ring item payload (stuff after body header).
+ *  --mbytes   megabytes of event data to generate.
+ *  --sid      source id given to the ring item body headers (default 0).
+ *  --tsinc    timestamp increment between events (default 1).
+ *  --bufsize  size in bytes of the ring-item buffer (default 1 MB).
  */
 
 #include <DataFormat.h>
@@ -30,8 +40,9 @@
 #include <iostream>
 #include <time.h>
 #include <string.h>
+#include <vector>
 
-uint8_t buffer[1024*1024];
+#include "runmaker_cmdline.h"
 
 struct descriptor {
     size_t   s_nBytes;                 // Used bytes in data block.
@@ -39,17 +50,6 @@ struct descriptor {
     int      s_tsdelta;                // Timestamp delta.
     void*    s_pData;                  // Pointer to data.
 };
-
-static void usage()
-{
-    std::cerr << "Usage:\n";
-    std::cerr << "    runmaker datasize mbytes sid tsinc\n";
-    std::cerr << "Creates ring items on stdout where:\n";
-    std::cerr << "   datasize - is the size of the data part of the ring item\n";
-    std::cerr << "   mbytes   - Mbytes of data to create.\n";
-    std::cerr << "   sid      - is the source id to put in the body  header\n";
-    std::cerr << "   tsinc    - Timestamp increment between events\n";
-}
 
 // Fully initializes the buffer with ring items.
 
@@ -107,25 +107,24 @@ updateTimestamps(descriptor& desc)
 
 int main(int argc, char** argv)
 {
-    argc--; argv++;
-    
-    if (argc != 4) {
-        usage();
+    gengetopt_args_info args;
+    if (cmdline_parser(argc, argv, &args) != 0) {
         exit(EXIT_FAILURE);
     }
-    int dataSize = atoi(argv[0]);
-    int mBytes   = atoi(argv[1]);
-    int sid      = atoi(argv[2]);
-    int tsDelta  = atoi(argv[3]);
-    
+    int dataSize = args.datasize_arg;
+    int mBytes   = args.mbytes_arg;
+    int sid      = args.sid_arg;
+    int tsDelta  = args.tsinc_arg;
+
     if ((dataSize <= 0) || (mBytes <= 0) || (sid < 0) || (tsDelta <= 0)) {
-        usage();
+        std::cerr << "datasize, mbytes and tsinc must be > 0 and sid must be >= 0\n";
         exit(EXIT_FAILURE);
     }
-    
+
     // set up the ring items.
-    
-    descriptor desc = {sizeof(buffer), 0, tsDelta, buffer};
+
+    std::vector<uint8_t> buffer(args.bufsize_arg);
+    descriptor desc = {buffer.size(), 0, tsDelta, buffer.data()};
     initRingItems(desc, dataSize, sid);
     
     // Write the begin run.
@@ -149,7 +148,7 @@ int main(int argc, char** argv)
     uint64_t nToWrite = (uint64_t)(mBytes) * 1024*1024;
     
     while(nWritten < nToWrite) {
-        io::writeData(STDOUT_FILENO, buffer, desc.s_nBytes);
+        io::writeData(STDOUT_FILENO, buffer.data(), desc.s_nBytes);
         updateTimestamps(desc);
         nWritten +=  desc.s_nBytes;
     }
