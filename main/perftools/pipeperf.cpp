@@ -29,6 +29,8 @@
  *    --meter-port meter-server port (default 2000).
  *    --logfile    file the run summary is appended to.
  *    --verbose    print each pass's measurement to stderr (off by default).
+ *    --pipe-size  resize the stdin pipe (F_SETPIPE_SZ) in bytes (rounded up to
+ *                 a power of two, capped at /proc/sys/fs/pipe-max-size).
  *
  *  The --blocksize (4MB) default is tuned for a steady-state throughput test:
  *  the block is large enough that the fixed per-pass overhead (two clock reads
@@ -37,14 +39,16 @@
  *  bufsize and blocksize). A Unix pipe hands back at most its capacity (~64KiB)
  *  per read regardless, so a --bufsize at or above that is inert on a pipe; set
  *  --bufsize below ~64KiB to force small reads and measure syscall-bound
- *  behavior instead. With the defaults a bare "pipesend | pipeperf" runs a
- *  steady-state test.
+ *  behavior instead; --pipe-size changes that ~64KiB capacity, which moves
+ *  where read-size effects appear. With the defaults a bare
+ *  "pipesend | pipeperf" runs a steady-state test.
  *
  *  Typical use (defaults give a steady-state test):
  *    pipesend | pipeperf --logfile=run.log
  */
 
 #include <errno.h>
+#include <fcntl.h>
 #include <iostream>
 #include <memory>
 #include <stdint.h>
@@ -104,6 +108,18 @@ int main(int argc, char **argv) {
   struct gengetopt_args_info args;
   if (cmdline_parser(argc, argv, &args) != 0)
     exit(EXIT_FAILURE);
+
+  if (args.pipe_size_given) {
+    // Resize the pipe's kernel buffer.  The kernel rounds up to a power of two
+    // and caps at /proc/sys/fs/pipe-max-size; the return value is the actual
+    // capacity set.
+    int actual = fcntl(STDIN_FILENO, F_SETPIPE_SZ, (int)args.pipe_size_arg);
+    if (actual < 0) {
+      perror("pipeperf: F_SETPIPE_SZ");
+      exit(EXIT_FAILURE);
+    }
+    std::cerr << "pipeperf: stdin pipe capacity set to " << actual << " bytes\n";
+  }
 
   // Each read requests at most --bufsize bytes; a pass never needs more than
   // --blocksize, so the buffer only has to be as large as the smaller of the

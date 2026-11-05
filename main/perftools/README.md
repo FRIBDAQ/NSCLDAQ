@@ -110,7 +110,10 @@ the samples collected so far.
 Options (plus the shared options above): `--blocksize=BYTES` (default 4 MiB),
 `--bufsize=BYTES` (default 4 MiB). A Unix pipe hands back at most ~64 KiB per
 `read()`, so a `--bufsize` above that is inert here; lower it below ~64 KiB
-to force small reads.
+to force small reads. `--pipe-size=BYTES` resizes the stdin pipe via
+`F_SETPIPE_SZ` (kernel rounds up to a power of two, capped at
+`/proc/sys/fs/pipe-max-size`, default 1 MiB) — raising it moves the read-size
+knee.
 
 ```
 # log-only, defaults (steady-state)
