@@ -178,7 +178,8 @@ $DAQBIN/perftools/fragsrcperf --port=9000 --blocks=100 --logfile=frag.log
 ### `bufferedoutperf` — buffered file-write throughput (no meter)
 
 Writes `--mbytes` megabytes to `--filename` through `io::CBufferedOutput`
-and prints the achieved rate to stdout. Does not use the meter server.
+and writes a run summary to `--logfile` (same StatsLog format as the other
+tools; no output without it). Does not use the meter server.
 
 | option | meaning | default |
 |--------|---------|---------|
@@ -186,10 +187,18 @@ and prints the achieved rate to stdout. Does not use the meter server.
 | `--writesize=BYTES` | size of each write | `8192` |
 | `--mbytes=M` | total Mbytes to write *(required)* | — |
 | `--filename=FILE` | output file *(required)* | — |
+| `--fsync` | fsync to disk before stopping the timer (durable-write rate, not page cache) | *off* |
+| `--logfile=PATH` | append the run summary to this file (no output without it) | — |
 
 ```
-$DAQBIN/perftools/bufferedoutperf --mbytes=1024 --filename=/path/out.dat
+$DAQBIN/perftools/bufferedoutperf --mbytes=1024 --filename=./out.dat --logfile=bop.log
 ```
+
+Without `--fsync` the data only reaches the **page cache**, so (for `--mbytes`
+below RAM) the rate measures the buffering + page-cache path, not the storage
+media — use `--fsync` and/or write more than RAM for the real device rate. Point
+`--filename` at the target storage: a file under `/tmp` is often **tmpfs (RAM)**,
+which measures memory, not disk.
 
 ## Data generators
 
