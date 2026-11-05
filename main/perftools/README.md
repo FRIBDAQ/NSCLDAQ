@@ -17,6 +17,24 @@ the installed binaries find the core NSCLDAQ libraries via their rpath.
 All tools take GNU-style long options (`--name=value`). Every tool
 supports `--help` (which lists its options and defaults) and `--version`.
 
+## Tools at a glance
+
+| tool | kind | summary |
+|------|------|---------|
+| [`pipeperf`](#pipeperf--unix-pipe-throughput-meter-pipe) | measure | throughput of a Unix pipe |
+| [`sockperf`](#sockperf--tcp-socket-throughput-meter-socket) | measure | throughput of a TCP socket |
+| [`rdoperf`](#rdoperf--ring-buffer-input-rate-meter-the-ring-name) | measure | rate of data arriving into a ring buffer |
+| [`fragsrcperf`](#fragsrcperf--ring-fragment-source-throughput-meter-ringfragsrc) | measure | throughput of a ring fragment source (poses as an event builder) |
+| [`bufferedoutperf`](#bufferedoutperf--buffered-file-write-throughput-no-meter) | measure | throughput of `io::CBufferedOutput` to a file |
+| [`pipesend`](#pipesend--byte-stream-to-stdout-feeds-pipeperf) | generator | byte stream to stdout (feeds `pipeperf`) |
+| [`socksend`](#socksend--byte-stream-over-tcp-feeds-sockperf) | generator | byte stream over TCP (feeds `sockperf`) |
+| [`ritemMaker`](#ritemmaker--ring-item-stream-to-stdout) | generator | stream of `PHYSICS_EVENT` ring items |
+| [`runmaker`](#runmaker--a-complete-run-to-stdout) | generator | a complete run: begin / data / end |
+| [`fragmaker`](#fragmaker--event-builder-fragments-to-stdout-for-glom) | generator | event-builder fragments (to test glom) |
+| [`checkevfiles`](#checkevfiles--physics_event-timestamp-check) | checker | checks `PHYSICS_EVENT` timestamps increment by one |
+| [`evbfilecheck`](#evbfilecheck--event-builder-output-check) | checker | checks event-builder output correctness |
+| [`metertest`](#metertest--meter-server-smoke-test) | test | meter-server smoke test |
+
 ## How monitoring works
 
 Most measuring tools display nothing useful themselves. They push a
@@ -36,76 +54,38 @@ $DAQBIN/perftools/meterserver.tcl listen-port      # e.g. ... 2000
   connects and registers its meter, so an empty window means the server is
   up and waiting — not broken.
 - It prints `Connected to client ...` as tools attach.
-- Each measuring tool also prints its measurements to stderr, so you get
-  numbers even without the GUI.
+- Each measuring tool also writes its summary to stderr, so you get numbers
+  even without the GUI.
 
 A measuring tool talks to the meter server only when you give it
-`--meter-host`, so **start the server first** in that case. Omit
-`--meter-host` and the tool skips the GUI entirely (see *log-only* below).
+`--meter-host`, so **start the server first** in that case.
 
-### Quick smoke test (no data pipeline needed)
+## Shared options (measuring tools)
 
-```
-# terminal 1
-$DAQBIN/perftools/meterserver.tcl 2000
-# terminal 2
-$DAQBIN/perftools/metertest
-```
-
-`metertest` connects to `localhost:2000`, creates a meter named `test`,
-and random-walks it. Use it to confirm the server and GUI work before
-wiring up real data paths.
-
-## Running the measuring tools
-
-The four measuring tools — `pipeperf`, `sockperf`, `rdoperf`,
-`fragsrcperf` — share the same control options and differ only in the
-required options that name what to measure:
+`pipeperf`, `sockperf`, `rdoperf`, and `fragsrcperf` share these control
+options; each tool's own subsection below adds the options that name *what*
+to measure.
 
 | shared option | meaning | default |
 |---------------|---------|---------|
-| `--nsamples=N` | number of measurement passes; the test runs exactly this many then writes a summary and exits | `1000` |
+| `--nsamples=N` | number of measurement passes; the test runs exactly this many, then writes a summary and exits | `1000` |
 | `--meter-host=HOST` | meter server host; **omit to disable the meter GUI** | *(none → no GUI)* |
 | `--meter-port=PORT` | meter server port | `2000` |
 | `--logfile=PATH` | append the run summary to this file (also echoed to stderr) | *(stderr only)* |
 | `--bufsize=BYTES` | largest single read request (`pipeperf`, `sockperf`); lower it to force small reads (syscall-bound test) | pipeperf `4194304` (4 MiB), sockperf `8388608` (8 MiB) |
 | `--verbose` | print each pass's measurement (off by default) | *off* |
 
-Tool-specific options (required unless a default is noted):
+That gives three run modes: **metered** (`--meter-host=HOST`, server
+running), **metered + log** (add `--logfile=PATH`), and **log-only** (omit
+`--meter-host` — no GUI or X display needed).
 
-| tool | options | meter name |
-|------|---------|------------|
-| `pipeperf` | `--blocksize=BYTES` read per pass — *optional, default 4 MiB (steady-state)* | `pipe` |
-| `sockperf` | `--port=PORT` (required); `--blocksize`/`--bufsize` default 8 MiB; `--rcvbuf=BYTES` sets SO_RCVBUF | `socket` |
-| `rdoperf` | `--ring=NAME` (plus `--interval-ms=MS`, default `100`) | *(the ring name)* |
-| `fragsrcperf` | `--port=PORT` (listen), `--blocks=N` (>1, per measurement) | `ringfragsrc` |
+### The summary block
 
-Because the control options are shared, one example covers all three
-run modes; swap `sockperf` and its required options for any other tool:
-
-```
-# sender for the socket test (any mode)
-$DAQBIN/perftools/socksend --host=<sockperf-host> --port=5000
-
-# 1) metered — needs meterserver running on localhost:2000
-$DAQBIN/perftools/sockperf --port=5000 --blocksize=104857600 --meter-host=localhost
-
-# 2) metered + log — same, plus a summary appended to sock.log
-$DAQBIN/perftools/sockperf --port=5000 --blocksize=104857600 \
-    --meter-host=localhost --logfile=sock.log
-
-# 3) log-only — no --meter-host, so no GUI / X display needed
-$DAQBIN/perftools/sockperf --port=5000 --blocksize=104857600 --logfile=sock.log
-```
-
-Shorten or lengthen any run with `--nsamples` (e.g. `--nsamples=5000`).
-
-The headline rate in the summary is the aggregate over the whole test
-(total bytes ÷ total measured time), **not** the mean of the per-pass
-rates; per-pass mean, min/max, and standard deviation (sample, n-1, with
-its coefficient of variation) are included for context. The standard
-deviation needs at least two samples, so with `--nsamples=1` it reads
-`n/a`. A summary block looks like:
+The headline rate is the aggregate over the whole test (total bytes ÷ total
+measured time), **not** the mean of the per-pass rates; per-pass mean,
+min/max, and standard deviation (sample, n-1, with its coefficient of
+variation) are included for context. The standard deviation needs at least
+two samples, so with `--nsamples=1` it reads `n/a`.
 
 ```
 ==== sockperf summary 2026-11-05 10:51:00 ====
@@ -118,90 +98,202 @@ deviation needs at least two samples, so with `--nsamples=1` it reads
   per-pass stdev   : 1.200e+08 bytes/sec (2.70 % CV)
 ```
 
-### Per-tool notes
+## Measuring tools
 
-- **`pipeperf`** — Unix pipe throughput. Reads `--blocksize` bytes from
-  stdin per pass; with the defaults (4 MiB block, 1000 passes) a bare run
-  is a steady-state test. If the sender closes the pipe early, pipeperf
-  stops and writes the summary over the samples collected so far. Feed it
-  with `pipesend`:
+### `pipeperf` — Unix pipe throughput (meter `pipe`)
 
-  ```
-  # defaults: steady-state, log-only
-  $DAQBIN/perftools/pipesend | $DAQBIN/perftools/pipeperf --logfile=run.log
-  # metered (meterserver on localhost:2000)
-  $DAQBIN/perftools/pipesend | \
-      $DAQBIN/perftools/pipeperf --meter-host=localhost
-  ```
+Reads `--blocksize` bytes from stdin per pass and times it. With the
+defaults (4 MiB block × 1000 passes) a bare run is a steady-state test. If
+the sender closes the pipe early, pipeperf stops and writes the summary over
+the samples collected so far.
 
-- **`sockperf`** — TCP socket throughput. Listens on `--port`, accepts one
-  connection, times reads from it; with the defaults (8 MiB block) only
-  `--port` is required. A socket read is ultimately capped by the kernel
-  receive buffer (SO_RCVBUF, which TCP autotunes up to ~6 MiB by default); the
-  8 MiB `--blocksize`/`--bufsize` defaults keep the *request* from being the
-  limiter, and `--rcvbuf=BYTES` raises SO_RCVBUF to read even larger chunks
-  (kernel-capped at `net.core.rmem_max`). Lower `--bufsize` to test small-read
-  overhead. If the sender disconnects mid-run it stops and summarizes what it
-  got. Feed it with `socksend` (above).
+Options (plus the shared options above): `--blocksize=BYTES` (default 4 MiB),
+`--bufsize=BYTES` (default 4 MiB). A Unix pipe hands back at most ~64 KiB per
+`read()`, so a `--bufsize` above that is inert here; lower it below ~64 KiB
+to force small reads.
 
-- **`rdoperf`** — rate of data arriving into a ring buffer. The meter is
-  named after the ring. Each sample empties the ring, sleeps
-  `--interval-ms`, then measures what accumulated; it requires the realtime
-  clock to have at least 10× the resolution of the sampling interval.
+```
+# log-only, defaults (steady-state)
+$DAQBIN/perftools/pipesend | $DAQBIN/perftools/pipeperf --logfile=pipe.log
+# metered (meterserver on localhost:2000)
+$DAQBIN/perftools/pipesend | $DAQBIN/perftools/pipeperf --meter-host=localhost
+```
 
-  ```
-  $DAQBIN/perftools/rdoperf --ring=myring --interval-ms=100 --meter-host=localhost
-  ```
+### `sockperf` — TCP socket throughput (meter `socket`)
 
-- **`fragsrcperf`** — ring fragment source throughput. Poses as an event
-  builder: accepts the connection, acknowledges blocks with `OK\n`, and
-  times the body bytes/sec over `--blocks` blocks per measurement.
+Listens on `--port`, accepts one connection from the sender (`socksend`),
+and times reads from it. Defaults: 8 MiB block × 1000 passes. If the sender
+disconnects mid-run it stops and summarizes what it got. It's a **two-process
+test** — start the receiver, then the sender.
 
-## Standalone perf tool (no meter server)
+Options (plus the shared options above): `--port=PORT` *(required)*;
+`--blocksize=BYTES` (default 8 MiB); `--bufsize=BYTES` (default 8 MiB) caps
+each `read()`; `--rcvbuf=BYTES` raises `SO_RCVBUF` to read larger chunks
+(kernel-capped at `net.core.rmem_max`). A socket read is ultimately bounded
+by `SO_RCVBUF`, which TCP autotunes up to `net.ipv4.tcp_rmem`'s max (~6 MiB);
+the 8 MiB defaults keep the *request* from being the limiter.
 
-### `bufferedoutperf` — `CBufferedOutput` write-to-file throughput
+```
+# receiver (log-only; add --meter-host=localhost to meter it)
+$DAQBIN/perftools/sockperf --port=9000 --logfile=sock.log
+# sender, in another shell
+$DAQBIN/perftools/socksend --host=localhost --port=9000
+```
 
-Prints the result to stdout; does not use a meter.
+### `rdoperf` — ring buffer input rate (meter: the ring name)
+
+Samples the named ring `--nsamples` times, `--interval-ms` apart: empty the
+ring, sleep, then measure what accumulated. Requires the realtime clock to
+have at least 10× the resolution of the sampling interval.
+
+Options (plus the shared options above): `--ring=NAME` *(required)*;
+`--interval-ms=MS` (default `100`). No `--bufsize` (it reads byte counts, not
+data).
+
+```
+# log-only
+$DAQBIN/perftools/rdoperf --ring=myring --logfile=rdo.log
+# metered
+$DAQBIN/perftools/rdoperf --ring=myring --meter-host=localhost
+```
+
+### `fragsrcperf` — ring fragment source throughput (meter `ringfragsrc`)
+
+Poses as an event builder: listens on `--port`, accepts a ring fragment
+source, acknowledges each block with `OK\n`, and times the body bytes/sec
+over `--blocks` blocks per pass. Point a ring fragment source
+(`ringFragmentSource`) at this port.
+
+Options (plus the shared options above): `--port=PORT` *(required)*;
+`--blocks=N` *(required, > 1)* — received blocks per measurement. No
+`--bufsize` (each block is read into a per-block allocation).
+
+```
+$DAQBIN/perftools/fragsrcperf --port=9000 --blocks=100 --logfile=frag.log
+```
+
+### `bufferedoutperf` — buffered file-write throughput (no meter)
+
+Writes `--mbytes` megabytes to `--filename` through `io::CBufferedOutput`
+and prints the achieved rate to stdout. Does not use the meter server.
+
+| option | meaning | default |
+|--------|---------|---------|
+| `--buffersize=K` | output buffer size in Kbytes | `8192` |
+| `--writesize=BYTES` | size of each write | `8192` |
+| `--mbytes=M` | total Mbytes to write *(required)* | — |
+| `--filename=FILE` | output file *(required)* | — |
 
 ```
 $DAQBIN/perftools/bufferedoutperf --mbytes=1024 --filename=/path/out.dat
 ```
 
-| option | meaning | default |
-|--------|---------|---------|
-| `--buffersize=K` | buffer size in Kbytes | `8192` |
-| `--writesize=BYTES` | size of each write | `8192` |
-| `--mbytes=M` | total Mbytes to write *(required)* | — |
-| `--filename=FILE` | output file *(required)* | — |
-
 ## Data generators
 
-Sources to feed the tools above, or other DAQ stages. Each writes to
-stdout (except `socksend`, which connects out over TCP).
+Sources to feed the tools above, or other DAQ stages. Each writes to stdout
+(except `socksend`, which connects out over TCP) and runs until its consumer
+goes away. `--bufsize` sets the in-memory block each one fills and writes;
+the default matches the tool's historical fixed size.
 
-| tool | produces | usage |
-|------|----------|-------|
-| `pipesend` | zero-filled blocks to stdout forever (feeds `pipeperf`) | `pipesend [--bufsize=104857600]` |
-| `socksend` | connects to a host/port and streams (feeds `sockperf`) | `socksend --host=HOST --port=PORT [--bufsize=104857600] [--sndbuf=BYTES]` |
-| `ritemMaker` | endless `PHYSICS_EVENT` ring items with body headers and incrementing timestamps | `ritemMaker --datasize=N [--sid=0] [--tsinc=1] [--bufsize=1048576]` |
-| `runmaker` | a complete run: `BEGIN_RUN`, a fixed amount of event data, then `END_RUN` | `runmaker --datasize=N --mbytes=M [--sid=0] [--tsinc=1] [--bufsize=1048576]` |
-| `fragmaker` | event-builder fragments (fragment header + ring item), to performance-test glom | `fragmaker --payload-size=N --tsdelta=T [--bufsize=1048576]` |
+### `pipesend` — byte stream to stdout (feeds `pipeperf`)
 
-Argument notes:
+Writes zero-filled `--bufsize`-byte blocks to stdout forever.
 
-- `--datasize` = ring item payload size, `--sid` = source id for the body
-  header, `--tsinc` = timestamp increment between events; `runmaker` adds
-  `--mbytes` = Mbytes of event data to generate.
-- `fragmaker`: `--payload-size` = bytes per ring item (≥ 8),
-  `--tsdelta` = timestamp tick between fragments.
-- `--bufsize` sets the in-memory block each generator fills and writes;
-  the default matches each tool's historical fixed size.
+Options: `--bufsize=BYTES` (default `104857600`, 100 MB).
+
+```
+$DAQBIN/perftools/pipesend | $DAQBIN/perftools/pipeperf --logfile=pipe.log
+```
+
+### `socksend` — byte stream over TCP (feeds `sockperf`)
+
+Connects to `--host`/`--port` and streams `--bufsize`-byte writes forever.
+
+Options: `--host=HOST` *(required)*, `--port=PORT` *(required)*,
+`--bufsize=BYTES` (default 100 MB), `--sndbuf=BYTES` sets `SO_SNDBUF` (pairs
+with sockperf's `--rcvbuf` for tuning large transfers over a real link).
+
+```
+$DAQBIN/perftools/socksend --host=localhost --port=9000
+```
+
+### `ritemMaker` — ring-item stream to stdout
+
+Endless `PHYSICS_EVENT` ring items with body headers and incrementing
+timestamps.
+
+Options: `--datasize=N` *(required)* payload bytes per item; `--sid=N`
+(default `0`) source id in the body header; `--tsinc=N` (default `1`)
+timestamp increment between events; `--bufsize=BYTES` (default `1048576`,
+1 MB) buffer filled and written per pass.
+
+```
+$DAQBIN/perftools/ritemMaker --datasize=100 | some-consumer
+```
+
+### `runmaker` — a complete run to stdout
+
+A `BEGIN_RUN`, `--mbytes` megabytes of event data, then an `END_RUN`.
+
+Options: the same item options as `ritemMaker` (`--datasize` *(required)*,
+`--sid`, `--tsinc`, `--bufsize`) plus `--mbytes=M` *(required)*, the Mbytes
+of event data to generate.
+
+```
+$DAQBIN/perftools/runmaker --datasize=100 --mbytes=1024 | some-consumer
+```
+
+### `fragmaker` — event-builder fragments to stdout (for glom)
+
+A stream of event-builder fragments (fragment header + ring item) to
+performance-test glom.
+
+Options: `--payload-size=N` *(required, ≥ 8)* bytes per ring item;
+`--tsdelta=N` *(required)* timestamp tick between fragments;
+`--bufsize=BYTES` (default `1048576`, 1 MB) data block size.
+
+```
+$DAQBIN/perftools/fragmaker --payload-size=100 --tsdelta=1 | glom ...
+```
 
 ## File / correctness checkers (diagnostic, not performance)
 
-| tool | purpose | usage |
-|------|---------|-------|
-| `checkevfiles` | reads `run-NNNN-SS.evt` segments in the cwd via the data-source factory and checks that `PHYSICS_EVENT` timestamps increment by one | `checkevfiles --run=NNNN` |
-| `evbfilecheck` | checks event-builder output under strong assumptions (two sources, timestamp +1 per event, glom dt = 1, all sources in coincidence); reports and dumps events that break the pattern | `evbfilecheck --source=<uri>` |
+### `checkevfiles` — `PHYSICS_EVENT` timestamp check
 
-Run either with `--help` for its exact arguments.
+Reads the `run-NNNN-SS.evt` segments in the current directory via the
+data-source factory and checks that each `PHYSICS_EVENT` body-header
+timestamp increments by one; mismatches are reported to stderr.
+
+Options: `--run=NNNN` *(required)* — the run number (segments must be in the
+cwd).
+
+```
+$DAQBIN/perftools/checkevfiles --run=123
+```
+
+### `evbfilecheck` — event-builder output check
+
+Checks event-builder output under strong assumptions (two sources, timestamp
++1 per event, glom `dt = 1`, all sources in coincidence except at end of
+run); reports mismatches and dumps the offending events to `badItems.txt`.
+
+Options: `--source=URI` *(required)* — the `file:` or `tcp:` URI to read.
+
+```
+$DAQBIN/perftools/evbfilecheck --source=file://./run-0123-00.evt
+```
+
+## Test / helper
+
+### `metertest` — meter-server smoke test
+
+Connects to `localhost:2000`, registers a meter named `test`, and
+random-walks it. No options. Use it to confirm the meter server and GUI work
+before wiring up real data paths.
+
+```
+# terminal 1
+$DAQBIN/perftools/meterserver.tcl 2000
+# terminal 2
+$DAQBIN/perftools/metertest
+```

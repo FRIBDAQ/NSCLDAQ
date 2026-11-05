@@ -91,7 +91,6 @@ static double timeBlock(CSocket *peer, long nbytes, uint8_t *buf, long bufsize,
     bytesRead += peer->Read(buf, want);
   }
   clock_gettime(CLOCK_REALTIME, &stop);
-
   uint64_t ns = hrDiff(stop, start);
   double rate = double(bytesRead) / ns * 1.0e9;
 
