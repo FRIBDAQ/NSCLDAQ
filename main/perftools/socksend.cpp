@@ -34,6 +34,10 @@
  *                       (default: leave kernel autotuning).  Pairs with
  *                       sockperf's --rcvbuf for tuning large transfers.
  *
+ * socksend streams until the consumer closes the connection (e.g. sockperf
+ * finishing its passes); that is reported and treated as a clean exit (0).
+ * Setup failures (bad --sndbuf, connection refused) exit non-zero.
+ *
  * We'll attempt large sends but experience says those will be chunked
  * up...so we'll probably not suceed.
  */
@@ -57,19 +61,32 @@ int main(int argc, char **argv) {
   std::string port = std::to_string(args.port_arg);
   std::vector<uint8_t> buffer(args.bufsize_arg);
 
+  // Setup: a failure here (bad --sndbuf, connection refused, ...) is a real
+  // error.
+  CSocket sock;
   try {
-    CSocket sock;
     if (args.sndbuf_given)
       // Set SO_SNDBUF before Connect so TCP window scaling is negotiated
       // for the larger buffer at connection time.
       sock.setSndBufSize(args.sndbuf_arg);
     sock.Connect(host, port);
+  } catch (CException &e) {
+    std::cerr << "socksend: ** ERROR ** " << e.ReasonText() << std::endl;
+    return EXIT_FAILURE;
+  }
 
+  // Stream until the consumer stops reading and closes the socket.  Once we are
+  // connected, the normal way to finish is the peer going away: a bounded
+  // receiver (e.g. sockperf) reads its fixed amount then exits, which resets or
+  // closes the connection (ECONNRESET -> CErrnoException, EPIPE ->
+  // CTCPConnectionLost).  That is a clean end for a generator, not an error.
+  try {
     while (1) {
       sock.Write(buffer.data(), buffer.size());
     }
   } catch (CException &e) {
-    std::cerr << "socksend: ** ERROR ** " << e.ReasonText() << std::endl;
-    return EXIT_FAILURE;
+    std::cerr << "socksend: peer closed the connection; done (" << e.ReasonText()
+              << ").\n";
+    return EXIT_SUCCESS;
   }
 }

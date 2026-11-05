@@ -207,7 +207,9 @@ $DAQBIN/perftools/pipesend | $DAQBIN/perftools/pipeperf --logfile=pipe.log
 
 ### `socksend` — byte stream over TCP (feeds `sockperf`)
 
-Connects to `--host`/`--port` and streams `--bufsize`-byte writes forever.
+Connects to `--host`/`--port` and streams `--bufsize`-byte writes until the
+consumer closes the connection (e.g. `sockperf` finishing its passes), which
+it reports and treats as a clean exit (`0`); setup failures exit non-zero.
 
 Options: `--host=HOST` *(required)*, `--port=PORT` *(required)*,
 `--bufsize=BYTES` (default 100 MB), `--sndbuf=BYTES` sets `SO_SNDBUF` (pairs
