@@ -29,7 +29,7 @@ from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from PyQt6.QtCore import QIODeviceBase, QObject
 from PyQt6.QtNetwork import QTcpSocket
-from PyQt6.QtWidget import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
 
 DEFAULT_CONTROL_SERVICE : str = 'ReadoutGUIRemoteControl'
 DEFAULT_OUTPUT_SERVICE  : str = 'ReadoutGUIOutput'
@@ -70,7 +70,7 @@ class RemoteDataSource(DataSource):
         parent     - Optional Qt parent object.
         '''
         
-        super().__init__(parameters, parent)
+        super().__init__(parameters = parameters, parent = parent)
         self._validate_configuration()
         self._remoteClient : QTcpSocket | None = None
         self._outputClient : QTcpSocket | None = None
@@ -186,11 +186,11 @@ class RemoteDataSource(DataSource):
         mgr = PortManager(config['host'])
         remcon = mgr.find(service = config['control_service'], user = config['user'])
         if len(remcon) == 0:
-            raise ConnectionRefusedError(f'No service {config['control_service']} advertised by {config['user']}')
+            raise ConnectionRefusedError(f'No service {config["control_service"]} advertised by {config["user"]}')
         
         output = mgr.find(service = config['output_service'], user = config['user'])
         if len(output) == 0:
-            raise ConnectionRefusedError(f'No service {config['control_service']} advertised by {config['user']}')
+            raise ConnectionRefusedError(f'No service {config["control_service"]} advertised by {config["user"]}')
         
         return (remcon[0]['port'], output[0]['port'])
     
@@ -331,7 +331,7 @@ class ConfigurationPrompter(QWidget):
     
         for name,widget in [('host', self._host), 
                             ('control_service', self._rctl), 
-                            ('output_service', self._Output), 
+                            ('output_service', self._output), 
                             ('user', self._user)]:
             text = widget.text().strip()
             if text:
@@ -340,7 +340,7 @@ class ConfigurationPrompter(QWidget):
         if not 'host' in config:
             return 'The host configuration paramter is mandatory'
     
-        return RemoteDataSource(config)
+        return RemoteDataSource(parameters=config)
             
         
         # Host is mandatory.
@@ -365,8 +365,8 @@ DataSourceRegistry.instance().add('Slave GUI', RemoteDataSource, DisplayConfig, 
 
 if __name__ == "__main__":
     import sys
-    from PyQt6.QtWidget import QApplication
-    from nscldaq.configutils import SaveDialog, DismissDialog
+    from PyQt6.QtWidgets import QApplication
+    from nscldaq.mg_configutils import SaveDialog, DismissDialog
     
     app = QApplication(sys.argv)
     
@@ -379,7 +379,7 @@ if __name__ == "__main__":
     if isinstance(src, str):
         print(src)
     else:
-        list = DismissDialog(src)
+        list = DismissDialog(DisplayConfig(source=src))
         list.exec()
         del list
 

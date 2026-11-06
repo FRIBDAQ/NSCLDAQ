@@ -170,6 +170,7 @@ not of {type(value).__name__}'''
         Called when a run is going to end.
         '''
         ...
+
     # Common utilities (protected):
     def _validate_configuration(self):
         config = self.getConfig()
