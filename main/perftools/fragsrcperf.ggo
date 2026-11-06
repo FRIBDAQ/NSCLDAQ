@@ -1,0 +1,11 @@
+package "fragsrcperf"
+version "1.0"
+purpose "Measure byte/sec of a ring fragment source over a fixed number of passes"
+
+option "nsamples"   n "Number of measurement passes"             int    optional default="1000"
+option "port"       p "Port to listen on for the ring fragment source connection" int required
+option "blocks"     b "Number of received blocks per measurement (must be > 1)" int required
+option "meter-host" H "Meter-server host (omit to disable the meter GUI)" string optional
+option "meter-port" P "Meter-server port"                        int    optional default="2000"
+option "logfile"    l "Append the run summary to this file"      string optional
+option "verbose"    v "Print per-pass measurements to stderr"    flag   off

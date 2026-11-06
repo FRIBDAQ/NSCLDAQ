@@ -1,0 +1,9 @@
+package "runmaker"
+version "1.0"
+purpose "Write a begin run, a fixed amount of event data, and an end run to stdout"
+
+option "datasize" d "Size in bytes of each ring item payload"   int  required
+option "mbytes"   m "Megabytes of event data to generate"       int  required
+option "sid"      s "Source id placed in the body headers"      int  optional default="0"
+option "tsinc"    t "Timestamp increment between events"        int  optional default="1"
+option "bufsize"  - "Size in bytes of the ring-item buffer"     long optional default="1048576"

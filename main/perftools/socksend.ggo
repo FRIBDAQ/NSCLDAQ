@@ -1,0 +1,8 @@
+package "socksend"
+version "1.0"
+purpose "Stream data over a TCP socket to a performance-measuring program"
+
+option "host"    H "Host of the measuring peer to connect to"  string required
+option "port"    p "Port of the measuring peer"               int    required
+option "bufsize" - "Size in bytes of each write to the socket" long  optional default="104857600"
+option "sndbuf"  S "Set the socket send buffer (SO_SNDBUF) in bytes" long optional

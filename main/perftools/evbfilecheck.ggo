@@ -1,0 +1,5 @@
+package "evbfilecheck"
+version "1.0"
+purpose "Check event-builder output file correctness (timestamps and fragments)"
+
+option "source" s "The file: or tcp: URI to read data from" string required

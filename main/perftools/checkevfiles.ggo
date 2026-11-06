@@ -1,0 +1,5 @@
+package "checkevfiles"
+version "1.0"
+purpose "Check that physics event timestamps increment by one across a run"
+
+option "run" r "Run number whose run-NNNN-SS.evt segments are checked (in the cwd)" int required

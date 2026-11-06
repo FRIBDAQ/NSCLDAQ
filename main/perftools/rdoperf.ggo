@@ -1,0 +1,11 @@
+package "rdoperf"
+version "1.0"
+purpose "Monitor the rate of data into a ring buffer over a fixed number of samples"
+
+option "nsamples"    n "Number of measurement samples"                int    optional default="1000"
+option "ring"        r "Name of the ring buffer to monitor"           string required
+option "interval-ms" i "Milliseconds between samples"                 int    optional default="100"
+option "meter-host"  H "Meter-server host (omit to disable the meter GUI)" string optional
+option "meter-port"  P "Meter-server port"                            int    optional default="2000"
+option "logfile"     l "Append the run summary to this file"          string optional
+option "verbose"     v "Print per-sample measurements to stdout"      flag   off

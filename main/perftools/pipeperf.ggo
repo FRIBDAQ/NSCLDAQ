@@ -1,0 +1,12 @@
+package "pipeperf"
+version "1.0"
+purpose "Measure byte/sec throughput of a Unix pipe over a fixed number of passes"
+
+option "nsamples"   n "Number of measurement passes"             int    optional default="1000"
+option "blocksize"  b "Bytes read (and timed) per measurement pass" int   optional default="4194304"
+option "bufsize"    B "Largest single read() request in bytes"  long   optional default="4194304"
+option "meter-host" H "Meter-server host (omit to disable the meter GUI)" string optional
+option "meter-port" P "Meter-server port"                        int    optional default="2000"
+option "logfile"    l "Append the run summary to this file"      string optional
+option "verbose"    v "Print per-pass measurements to stderr"    flag   off
+option "pipe-size"  - "Resize the stdin pipe (F_SETPIPE_SZ) in bytes" long optional

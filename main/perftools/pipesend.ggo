@@ -1,0 +1,5 @@
+package "pipesend"
+version "1.0"
+purpose "Write a stream of bytes to stdout for measuring pipe performance"
+
+option "bufsize" - "Size in bytes of each write to stdout" long optional default="104857600"

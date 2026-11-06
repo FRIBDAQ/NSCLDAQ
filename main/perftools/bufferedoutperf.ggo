@@ -1,0 +1,11 @@
+package "bufferedoutperf"
+version "1.0"
+purpose "Measure throughput of the buffered file outputter"
+
+option "buffersize" b "Output buffer size in Kbytes"  int    optional default="8192"
+option "writesize"  w "Size in bytes of each write"   int    optional default="8192"
+option "nsamples"   n "Number of timed passes; stats computed across them" int optional default="1"
+option "mbytes"     m "Total megabytes to write"      int    required
+option "filename"   f "File to write to"              string required
+option "fsync"      F "fsync to disk before stopping the timer (durable-write throughput, not just page cache)" flag off
+option "logfile"    l "Append the run summary to this file" string optional

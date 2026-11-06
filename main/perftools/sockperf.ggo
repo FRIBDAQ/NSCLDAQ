@@ -1,0 +1,13 @@
+package "sockperf"
+version "1.0"
+purpose "Measure byte/sec throughput of a TCP socket over a fixed number of passes"
+
+option "nsamples"   n "Number of measurement passes"             int    optional default="1000"
+option "blocksize"  b "Bytes measured per transfer pass"         int    optional default="8388608"
+option "port"       p "Port to listen on for the sender connection" int  required
+option "bufsize"    B "Largest single read() request in bytes"   long   optional default="8388608"
+option "meter-host" H "Meter-server host (omit to disable the meter GUI)" string optional
+option "meter-port" P "Meter-server port"                        int    optional default="2000"
+option "logfile"    l "Append the run summary to this file"      string optional
+option "verbose"    v "Print per-pass measurements to stderr"    flag   off
+option "rcvbuf"     R "Set the socket receive buffer (SO_RCVBUF) in bytes" long optional

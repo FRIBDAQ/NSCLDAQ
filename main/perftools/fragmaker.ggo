@@ -1,0 +1,7 @@
+package "fragmaker"
+version "1.0"
+purpose "Send whole-cloth event fragments to stdout for glom performance tests"
+
+option "payload-size" s "Bytes in each ring item payload (must be >= 8)" int required
+option "tsdelta"      t "Timestamp tick increment between fragments"      int required
+option "bufsize"      - "Size in bytes of the fragment data block"        long optional default="1048576"
