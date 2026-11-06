@@ -12,6 +12,7 @@
 
 import getpass
 import os
+import time
 import traceback
 from typing import ClassVar
 
@@ -86,6 +87,10 @@ class FRIBDAQSource(DataSource):
         self._outputMsg(f' in {host}')
         self._ssh.spawnRemote(host, command)
         self._make_client()    # Since translation doesn't happen until requests are done.  
+        
+        # Wait a bit for the ReST server to start.
+        
+        time.sleep(1)
 
     def check(self) -> bool: 
         if self._client is None or   (
@@ -232,14 +237,7 @@ class FRIBDAQSource(DataSource):
     
     # Utilities:
         
-    def _validate_configuration(self):
-        for key in self._configuration:
-            if key not in self.parameters():
-                raise KeyError(f'Invalid parameter name: {key}')
-            if type(self._configuration[key]) != self.parameters()[key]:
-                raise TypeError(
-                    f'Invalid type for parameter {key} was {type(self._configuration[key]).__name__} must be {self.parameters()[key].__name__}'
-                )
+    
     def _make_client(self):
         # Mote the program must be running for this to be called, else
         # the service -> port translation will fail.

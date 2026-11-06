@@ -60,7 +60,7 @@ class DataSource(QObject, metaclass=QObjectABCMeta):
         Configures the value of a parameter.
         @param name - the name of the parameter, must be one of the keys returned by the paramters method.
         @param value - new value for that parameter.  Must be of the same type as the parameter.
-        @throws IndexError if there's no matching parameter name.
+        @throws KeyError if there's no matching parameter name.
         @throws TypeError the value is not of the required type.
         '''
         
@@ -170,4 +170,13 @@ not of {type(value).__name__}'''
         Called when a run is going to end.
         '''
         ...
-    
+    # Common utilities (protected):
+    def _validate_configuration(self):
+        config = self.getConfig()
+        for key in config:
+            if key not in self.parameters():
+                raise KeyError(f'Invalid parameter name: {key}')
+            if type(config[key]) != self.parameters()[key]:
+                raise TypeError(
+                    f'Invalid type for parameter {key} was {type(self._configuration[key]).__name__} must be {self.parameters()[key].__name__}'
+                )
