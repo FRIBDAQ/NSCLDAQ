@@ -35,7 +35,7 @@
  *                 media.  O_DIRECT is not offered: CBufferedOutput's buffer is
  *                 malloc'd, not block-aligned, so O_DIRECT writes would fail.
  *    --logfile    append the run summary to this file (StatsLog format);
- * without it there is no output.
+ *                 without it there is no output.
  *
  *  Note: CBufferedOutput uses a background thread, so the timed region is
  * scoped to include its destructor (which drains that thread); with --fsync the
