@@ -87,7 +87,7 @@ class DataSourceController:
                 self._dataSources.pause()
                 
     def _updateState(self, fromState : str, toState: str):
-        print('Update', fromState, toState)
+
         # Set the state to Halted if in starting...presumably
         # If a source died, we'll go back to not ready...
         
