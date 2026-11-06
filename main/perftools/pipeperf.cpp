@@ -118,7 +118,9 @@ int main(int argc, char **argv) {
       perror("pipeperf: F_SETPIPE_SZ");
       exit(EXIT_FAILURE);
     }
-    std::cerr << "pipeperf: stdin pipe capacity set to " << actual << " bytes\n";
+    if (verbose)
+      std::cerr << "pipeperf: stdin pipe capacity set to " << actual
+                << " bytes\n";
   }
 
   // Each read requests at most --bufsize bytes; a pass never needs more than
