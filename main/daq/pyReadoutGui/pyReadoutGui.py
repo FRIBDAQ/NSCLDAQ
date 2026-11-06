@@ -33,6 +33,7 @@ from nscldaq.readoutgui import (
     DataSourceViews,
     DDASDataSource,
     DelaySource,
+    RemoteDataSource,
     EventLog,           # Register the types.
     EventLogControllers,
     EventLogManager,    # EVent log serialization.

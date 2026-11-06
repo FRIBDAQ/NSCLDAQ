@@ -94,7 +94,7 @@ class RemoteDataSource(DataSource):
         '''
         return {
             'canPause'        : False, 
-            'runsHaveTitle'   : True, 
+            'runsHaveTitles'   : True, 
             'runsHaveNumbers' : True
         }
     def canBegin(self) -> bool:
