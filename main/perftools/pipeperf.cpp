@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
       perror("pipeperf: F_SETPIPE_SZ");
       exit(EXIT_FAILURE);
     }
-    if (verbose)
+    if (args.verbose_flag)
       std::cerr << "pipeperf: stdin pipe capacity set to " << actual
                 << " bytes\n";
   }
