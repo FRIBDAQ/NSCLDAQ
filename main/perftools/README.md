@@ -190,14 +190,17 @@ $DAQBIN/perftools/fragsrcperf --port=9000 --blocks=100 --logfile=frag.log
 
 ### `bufferedoutperf` — buffered file-write throughput (no meter)
 
-Writes `--mbytes` megabytes to `--filename` through `io::CBufferedOutput`
-and writes a run summary to `--logfile` (same StatsLog format as the other
-tools; no output without it). Does not use the meter server.
+Writes `--mbytes` megabytes to `--filename` through `io::CBufferedOutput`,
+repeated for `--nsamples` timed passes (each pass truncates and rewrites the
+file), and writes one run summary to `--logfile` (same StatsLog format as the
+other tools — aggregate plus per-pass mean ± σ over the passes; no output
+without it). Does not use the meter server.
 
 | option | meaning | default |
 |--------|---------|---------|
 | `--buffersize=K` | output buffer size in Kbytes | `8192` |
 | `--writesize=BYTES` | size of each write | `8192` |
+| `--nsamples=N` | number of timed passes; per-pass mean ± σ computed over them | `1` |
 | `--mbytes=M` | total Mbytes to write *(required)* | — |
 | `--filename=FILE` | output file *(required)* | — |
 | `--fsync` | fsync to disk before stopping the timer (durable-write rate, not page cache) | *off* |

@@ -26,6 +26,8 @@
  *  Options (see bufferedoutperf.ggo / --help):
  *    --buffersize output buffer size in Kbytes (default 8192).
  *    --writesize  size of each write in bytes (default 8192).
+ *    --nsamples   number of timed passes; mean/stdev are computed across them
+ *                 (default 1).  Each pass truncates and rewrites --mbytes.
  *    --mbytes     (required) total megabytes to write.
  *    --filename   (required) file to write to.
  *    --fsync      fsync to disk before stopping the timer, so the rate reflects
@@ -69,12 +71,14 @@ int main(int argc, char **argv) {
   int bufferK = args.buffersize_arg;
   int writeBytes = args.writesize_arg;
   int mBytesTotal = args.mbytes_arg;
+  long nsamples = args.nsamples_arg;
   std::string file = args.filename_arg;
 
-  // All of the sizes must be > 0:
+  // All of the sizes (and the sample count) must be > 0:
 
-  if ((bufferK <= 0) || (writeBytes <= 0) || (mBytesTotal <= 0)) {
-    std::cerr << "buffersize, writesize and mbytes must all be > 0\n";
+  if ((bufferK <= 0) || (writeBytes <= 0) || (mBytesTotal <= 0) ||
+      (nsamples <= 0)) {
+    std::cerr << "buffersize, writesize, mbytes and nsamples must all be > 0\n";
     exit(EXIT_FAILURE);
   }
 
@@ -89,39 +93,54 @@ int main(int argc, char **argv) {
   std::vector<uint8_t> data(writeBytes);
   uint64_t nToWrite = (uint64_t)mBytesTotal * 1024 * 1024; // 64-bit: mbytes
                                                            // can exceed RAM.
-  uint64_t n = 0;
 
-  timespec start, stop;
-  clock_gettime(CLOCK_REALTIME, &start);
-  {
-    // Scope the outputter so its destructor flushes and drains the output
-    // thread *inside* the timed region -- otherwise the clock would stop
-    // before the asynchronous writes finish.
-    io::CBufferedOutput o(fd, bufferK * 1024);
-    while (n < nToWrite) {
-      o.put(data.data(), writeBytes);
-      n += writeBytes;
-    }
-  }
-  if (args.fsync_flag) {
-    // Force the data to the device so the rate reflects durable-write
-    // throughput rather than just the page cache.
-    if (fsync(fd) < 0) {
-      perror("bufferedoutperf: fsync");
-      exit(EXIT_FAILURE);
-    }
-  }
-  clock_gettime(CLOCK_REALTIME, &stop);
-  close(fd);
-
-  uint64_t ns = hrDiff(stop, start);
-
-  // Report through StatsLog (one sample: the whole-file write) so the output
-  // matches the other tools' --logfile summaries.  The mode is encoded in the
-  // summary name.
-  std::string logpath = args.logfile_given ? args.logfile_arg : "";
   StatsLog stats(args.fsync_flag ? "bufferedoutput (fsync)"
                                  : "bufferedoutput (buffered)");
-  stats.add(n, ns);
-  stats.writeSummary(logpath, ns / 1.0e9);
+
+  timespec tStart, tStop;
+  clock_gettime(CLOCK_REALTIME, &tStart);
+  for (long pass = 0; pass < nsamples; ++pass) {
+    // Rewind/empty the file so every pass writes the same amount without the
+    // file growing by --mbytes each pass (which could exhaust the disk).
+    if (ftruncate(fd, 0) < 0) {
+      perror("bufferedoutperf: ftruncate");
+      exit(EXIT_FAILURE);
+    }
+    if (lseek(fd, 0, SEEK_SET) == (off_t)-1) {
+      perror("bufferedoutperf: lseek");
+      exit(EXIT_FAILURE);
+    }
+
+    uint64_t n = 0;
+    timespec start, stop;
+    clock_gettime(CLOCK_REALTIME, &start);
+    {
+      // Scope the outputter so its destructor flushes and drains the output
+      // thread *inside* the timed region -- otherwise the clock would stop
+      // before the asynchronous writes finish.
+      io::CBufferedOutput o(fd, bufferK * 1024);
+      while (n < nToWrite) {
+        o.put(data.data(), writeBytes);
+        n += writeBytes;
+      }
+    }
+    if (args.fsync_flag) {
+      // Force the data to the device so the rate reflects durable-write
+      // throughput rather than just the page cache.
+      if (fsync(fd) < 0) {
+        perror("bufferedoutperf: fsync");
+        exit(EXIT_FAILURE);
+      }
+    }
+    clock_gettime(CLOCK_REALTIME, &stop);
+
+    stats.add(n, hrDiff(stop, start)); // one sample per pass
+  }
+  clock_gettime(CLOCK_REALTIME, &tStop);
+  close(fd);
+
+  // One summary over all --nsamples passes (aggregate + per-pass mean/stdev),
+  // matching the other tools' --logfile output.
+  std::string logpath = args.logfile_given ? args.logfile_arg : "";
+  stats.writeSummary(logpath, hrDiff(tStop, tStart) / 1.0e9);
 }
