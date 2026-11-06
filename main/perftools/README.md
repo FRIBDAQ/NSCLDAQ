@@ -37,10 +37,26 @@ supports `--help` (which lists its options and defaults) and `--version`.
 
 ## How monitoring works
 
-Most measuring tools display nothing useful themselves. They push a
-bytes/sec number to a **meter server** over a socket. The meter server
-(`meterserver.tcl`) is a Tk GUI that draws one needle gauge per named
-meter.
+A measuring tool reports its results in two independent ways, which serve
+different purposes:
+
+- **The log (`--logfile=PATH`) is the test output.** Each tool writes a full
+  summary block there — sample count, wall time, total bytes, the aggregate
+  rate, and the per-pass mean, min/max and standard deviation (see
+  [The summary block](#the-summary-block)). This is the data you keep and
+  compare across runs, and it needs no GUI or X display. Without `--logfile`
+  a run records nothing, so use it for every real measurement.
+- **The meter server is a live visualization, not a measurement tool.** Given
+  `--meter-host`, a measuring tool also pushes its instantaneous bytes/sec to
+  a meter server over a socket; `meterserver.tcl` is a Tk GUI that draws one
+  needle gauge per named meter. It's useful for watching a run in real time or
+  confirming data is flowing, but it shows only a moving needle — no
+  statistics, nothing recorded. Don't read numbers off it.
+
+The two are independent and combine: pass both `--logfile` and `--meter-host`
+to watch the needle while the log captures the real results.
+
+### The meter server
 
 ```
 $DAQBIN/perftools/meterserver.tcl listen-port      # e.g. ... 2000
@@ -54,11 +70,8 @@ $DAQBIN/perftools/meterserver.tcl listen-port      # e.g. ... 2000
   connects and registers its meter, so an empty window means the server is
   up and waiting — not broken.
 - It prints `Connected to client ...` as tools attach.
-- Each measuring tool also writes its summary to stderr, so you get numbers
-  even without the GUI.
-
-A measuring tool talks to the meter server only when you give it
-`--meter-host`, so **start the server first** in that case.
+- A measuring tool connects only when you give it `--meter-host`, so **start
+  the server first** in that case.
 
 ## Shared options (measuring tools)
 
