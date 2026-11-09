@@ -639,27 +639,32 @@ snit::type ReadoutGuiRemoteControl {
   #       the rest.
   #
   method _begin {} {
+    puts "_begin"
     ::ReadoutGUIPanel::Log RemoteControl output _begin
-    if {![$self _RequireSlaveMode]} {
+      if {![$self _requireSlaveMode]} {
+	  puts "failed require slave mode"
+	  $self _reply ERROR "Must be in slave mode!"
       return
     }
 
     set sm [::RunstateMachineSingleton %AUTO%]
     set currentState [$sm getState]
     if {"Active" in [RunstateMachine listTransitions $currentState]} {
-
+       puts "Legal transitino"
       
       # Perform the precheck and report the results back to us and the
       # master.
       
-      set precheckErrors [$sm precheckTransitionErrors $to]
-
+      set precheckErrors [$sm precheckTransitionForErrors "Active"]
+	puts "Precheck errors: $precheckErrors"
       if {[llength $precheckErrors] > 0} {
         puts "Precheck failed in slave. $precheckErrors"
         $self _reply "ERROR $precheckErrors"
       } else {
-      
-        $sm transition "Active"
+        puts "Requesting transition to active"
+	  $sm transition "Active"
+	  puts "Transitioned"
+	  puts "Replying OK"
         $self _reply OK
       }
     } else {
