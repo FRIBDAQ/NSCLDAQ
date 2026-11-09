@@ -639,10 +639,9 @@ snit::type ReadoutGuiRemoteControl {
   #       the rest.
   #
   method _begin {} {
-    puts "_begin"
+
     ::ReadoutGUIPanel::Log RemoteControl output _begin
       if {![$self _requireSlaveMode]} {
-	  puts "failed require slave mode"
 	  $self _reply ERROR "Must be in slave mode!"
       return
     }
@@ -650,21 +649,16 @@ snit::type ReadoutGuiRemoteControl {
     set sm [::RunstateMachineSingleton %AUTO%]
     set currentState [$sm getState]
     if {"Active" in [RunstateMachine listTransitions $currentState]} {
-       puts "Legal transitino"
+
       
       # Perform the precheck and report the results back to us and the
       # master.
       
       set precheckErrors [$sm precheckTransitionForErrors "Active"]
-	puts "Precheck errors: $precheckErrors"
       if {[llength $precheckErrors] > 0} {
-        puts "Precheck failed in slave. $precheckErrors"
         $self _reply "ERROR $precheckErrors"
       } else {
-        puts "Requesting transition to active"
-	  $sm transition "Active"
-	  puts "Transitioned"
-	  puts "Replying OK"
+	  $sm masterTransition "Active"
         $self _reply OK
       }
     } else {
@@ -688,7 +682,7 @@ snit::type ReadoutGuiRemoteControl {
     set currentState [$sm getState]
 
     if {"Halted" in [RunstateMachine listTransitions $currentState]} {
-      $sm transition "Halted"
+      $sm masterTransition "Halted"
       $self _reply OK
     } else {
       $self _reply ERROR "The current state ($currentState) does not allow the run to be ended"
@@ -1022,7 +1016,6 @@ namespace eval RemoteControlClient {
       return -code error $msg
     }
 
-    puts "redefining end!"
 
     # define a new proc called end that will handle whether to forward or not
     proc ::end {} {
