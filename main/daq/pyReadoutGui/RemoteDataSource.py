@@ -27,8 +27,8 @@ from nscldaq.portmanager.PortManager import PortManager
 from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
-from PyQt6.QtCore import QIODeviceBase, QObject
-from PyQt6.QtNetwork import QTcpSocket, QTcpServer
+from PyQt6.QtCore import QCoreApplication, QIODeviceBase, QObject
+from PyQt6.QtNetwork import QTcpServer, QTcpSocket
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
 
 DEFAULT_CONTROL_SERVICE : str = 'ReadoutGUIRemoteControl'
@@ -180,7 +180,7 @@ class RemoteDataSource(DataSource):
             raise RuntimeError(f'Failed to start remote in {host}')
              
     def end(self) -> None:
-        host = self.getConfig(['host]'])
+        host = self.getConfig()['host']
         if self._transact('end\n') != 'OK':
             raise RuntimeError(f'Failed to end the run in {host}')
         
@@ -230,7 +230,8 @@ class RemoteDataSource(DataSource):
         print("sending", operation)
         self._remoteClient.write(operation.encode('utf-8'))
         self._remoteClient.flush()
-        self._remoteClient.waitForReadyRead(30000)
+        while self._remoteClient.bytesAvailable() == 0:
+            QCoreApplication.processEvents()
         
             
         response = self._remoteClient.readLine()
