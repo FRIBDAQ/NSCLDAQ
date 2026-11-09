@@ -103,7 +103,7 @@ class RemoteDataSource(DataSource):
         '''
         @return bool - True if the remote can start a run.
         '''
-        state = self._getState()    # Returns None if not connected.
+        state = self._getstate()    # Returns None if not connected.
         return state == 'inactive'
     
     def start(self) -> None:
@@ -138,7 +138,6 @@ class RemoteDataSource(DataSource):
         # Just in case connection wasn't enough:
         
         result = self._enslave()  # should not have an error so:
-        
         if result != 'OK':
             raise RuntimeError(f'Expected OK from set slave 1 got {result}')
         
@@ -146,7 +145,8 @@ class RemoteDataSource(DataSource):
         '''
         @return bool - True if the remote is responsive and alive.
         '''
-        response = self._transact('get state')
+        
+        response = self._transact('get state\n')
         status = response.split()[0]
         return status == 'OK'
         
@@ -170,18 +170,18 @@ class RemoteDataSource(DataSource):
         @todo figure out more graceful error handling.
         '''
         host = self.getConfig()['host']
-        if self._transact(f'set title {{{title}}}') != 'OK':
+        if self._transact(f'set title {{{title}}}\n') != 'OK':
             raise RuntimeError(f'Failed to set the remote title in {host}')
         
-        if self._transact(f'set run {run}') != 'OK':
+        if self._transact(f'set run {run}\n') != 'OK':
             raise RuntimeError('Failed to set the remote run number in {host}')
         
-        if self._transact('begin') != 'OK':
+        if self._transact('begin\n') != 'OK':
             raise RuntimeError(f'Failed to start remote in {host}')
              
     def end(self) -> None:
         host = self.getConfig(['host]'])
-        if self._transact('end') != 'OK':
+        if self._transact('end\n') != 'OK':
             raise RuntimeError(f'Failed to end the run in {host}')
         
     # Utilities:
@@ -214,22 +214,33 @@ class RemoteDataSource(DataSource):
     def _enslave(self):
         # Write 'set slave 1\n' and flush to the control port
         
-        self._transact('set slave 1\n')
-        
+        return self._transact('set slave 1\n')
+    
+    def _getstate(self):
+        # Do a get state transaction and, on success, return the state.
+        reply = self._transact('get state\n')
+        words = reply.split(' ')
+        if words[0] != 'OK':
+            raise RuntimeError(f'_getstate expected OK and state got {reply}')
+        return words[1]
     def _transact(self, operation : str) -> str | None:
         # Send and operation to the selave and accept the reply.
         # the response is returned stripped of \n.  None is returned if
         # there was no response (lost connection e.g.)
-        
+        print("sending", operation)
         self._remoteClient.write(operation.encode('utf-8'))
         self._remoteClient.flush()
-        self._remoteClient.waitForReadyRead(-1)
+        self._remoteClient.waitForReadyRead(30000)
+        
+            
         response = self._remoteClient.readLine()
-        if not response:
+        if response.isEmpty():
+            print("transact got an empty reponse!!!")
             return None
         else:
             string = response.data().decode('utf-8')
-            return string.strip('\n')
+            print("Response was: ", string)
+            return string.strip('\r\n')
             
         
     def _relayOutput(self) -> None:
@@ -255,7 +266,7 @@ class RemoteDataSource(DataSource):
         
         request = socket.readLine()
         if request:
-            print(f'Request: {request.data().decode("utf-8")}')
+            print(f's800 Request: {request.data().decode("utf-8")}')
             socket.write(bytearray('OK\n', 'utf-8'))
             socket.flush()
         
