@@ -340,7 +340,9 @@ class DataSourceManager(QObject):
             func = methodcaller(action)
             try:
                 func(self._sources[name])
-            except Exception :  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
+                print(f'{action} failed for {name}: {e}')
+                traceback.print_exc()
                 self.failed.emit(action, name)
                 return False
         return True
