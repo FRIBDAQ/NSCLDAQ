@@ -160,16 +160,21 @@ class RemoteDataSource(DataSource):
         @param title : str - The title of the run.
         @todo figure out more graceful error handling.
         '''
+        
+        # Why starts with... because the event loop runs in the middle of
+        # waiting for the response and this can cause check to interleave.
+        # mostly harmless but....
+        
         host = self.getConfig()['host']
-        if self._transact(f'set title {{{title}}}\n') != 'OK':
+        if not self._transact(f'set title {{{title}}}\n') == 'OK':
             raise RuntimeError(f'Failed to set the remote title in {host}')
         
-        if self._transact(f'set run {run}\n') != 'OK':
+        if not self._transact(f'set run {run}\n') == 'OK':
             raise RuntimeError('Failed to set the remote run number in {host}')
-        
-        if self._transact('begin\n') != 'OK':
+
+        if not self._transact('begin\n') == 'OK':
             raise RuntimeError(f'Failed to start remote in {host}')
-             
+    
     def end(self) -> None:
         host = self.getConfig()['host']
         if self._transact('end\n') != 'OK':
@@ -233,11 +238,11 @@ class RemoteDataSource(DataSource):
         # Send and operation to the selave and accept the reply.
         # the response is returned stripped of \n.  None is returned if
         # there was no response (lost connection e.g.)
+
         self._remoteClient.write(operation.encode('utf-8'))
         self._remoteClient.flush()
         while self._remoteClient.bytesAvailable() == 0:
-            QCoreApplication.processEvents()
-        
+            self._remoteClient.waitForReadyRead(1000)
             
         response = self._remoteClient.readLine()
         if response.isEmpty():
