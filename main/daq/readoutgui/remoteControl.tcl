@@ -250,15 +250,17 @@ snit::type ReadoutGuiRemoteControl {
             set svcport $port
           }
         }
+	  
         if {$foundCount == 1} {
           set requestfd [socket $clientaddr $svcport]
           chan configure $requestfd -blocking 0 -buffering line
           chan event $requestfd readable [mymethod _onRequestReadable]
         } elseif {$foundCount == 0} {
           set msg "ReadoutGUIRemoteControl::_onConnection Unable to locate "
-          append msg "s800rctl service on $clientaddr"
+          append msg "s800rctl service on $clientaddr continuing"
           puts stderr $msg
-          ::ReadoutGUIPanel::Log RemoteControl output $msg
+	    ::ReadoutGUIPanel::Log RemoteControl output $msg
+	   
         } else {
           set msg "ReadoutGUIRemoteControl::_onConnection Multiple s800rctl services"
           append msg " on $clientaddr\n"
@@ -939,10 +941,10 @@ snit::type OutputMonitor {
   #    relay it to all our clients.
   #
   # @param output -the output
-  #
+  # @note that it is possible the client meanwhile exited, hence the catch.
   method _onGuiOutput output {
     foreach fd $clientfds {
-      puts $fd $output
+	catch {puts $fd $output}
     }
   }
   ##
