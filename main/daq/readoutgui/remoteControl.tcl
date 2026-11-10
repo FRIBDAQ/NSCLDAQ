@@ -795,8 +795,10 @@ snit::type ReadoutGuiRemoteControl {
       #  TODO:  This is probably not a sufficient listing of state
       #         but it's all the S800readoutcallouts supports at this time.
       #
-      if {$currentState in [list Active Paused]} {
-        set state active
+      if {$currentState eq "Active"} {
+	  set state active
+      } elseif {$currentState eq "Paused"} {
+	  set state paused
       } else {
         set state inactive
       }
