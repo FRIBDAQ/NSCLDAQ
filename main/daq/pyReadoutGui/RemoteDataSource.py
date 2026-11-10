@@ -28,7 +28,7 @@ from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.DataSourceRegistry import DataSourceRegistry
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from PyQt6.QtCore import QCoreApplication, QIODeviceBase, QObject
-from PyQt6.QtNetwork import QTcpServer, QTcpSocket
+from PyQt6.QtNetwork import QAbstractSocket, QTcpSocket
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
 
 DEFAULT_CONTROL_SERVICE : str = 'ReadoutGUIRemoteControl'
@@ -117,7 +117,8 @@ class RemoteDataSource(DataSource):
         
         self._remoteClient = QTcpSocket(self)
         self._remoteClient.connectToHost(config['host'], remcon )
-
+        if not self._remoteClient.waitForConnected():
+            print(f"Connection to {config['host']} failed!!")
         
         self._outputClient = QTcpSocket(self)
         self._outputClient.connectToHost(
@@ -140,6 +141,8 @@ class RemoteDataSource(DataSource):
         '''
         
         response = self._transact('get state\n')
+        if response is None:
+            return False
         status = response.split()[0]
         return status == 'OK'
         
@@ -147,8 +150,12 @@ class RemoteDataSource(DataSource):
         '''
         Close down the services...
         '''
-        self._remoteClient.disconnectFromHost()
-        self._outputClient.disconnectFromHost()
+
+        if self._remoteClient:
+            self._remoteClient.disconnectFromHost()
+        if self._outputClient:
+            self._outputClient.disconnectFromHost()
+        
         
         self._remoteClient = None
         self._outputClient = None
@@ -243,7 +250,8 @@ class RemoteDataSource(DataSource):
         self._remoteClient.flush()
         while self._remoteClient.bytesAvailable() == 0:
             self._remoteClient.waitForReadyRead(1000)
-            
+            if self._remoteClient.state() != QAbstractSocket.SocketState.ConnectedState:
+                break                   # Connection lost.
         response = self._remoteClient.readLine()
         if response.isEmpty():
             print("transact got an empty reponse!!!")
