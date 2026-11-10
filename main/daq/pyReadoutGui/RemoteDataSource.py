@@ -227,7 +227,6 @@ class RemoteDataSource(DataSource):
         # Send and operation to the selave and accept the reply.
         # the response is returned stripped of \n.  None is returned if
         # there was no response (lost connection e.g.)
-        print("sending", operation)
         self._remoteClient.write(operation.encode('utf-8'))
         self._remoteClient.flush()
         while self._remoteClient.bytesAvailable() == 0:
@@ -240,7 +239,6 @@ class RemoteDataSource(DataSource):
             return None
         else:
             string = response.data().decode('utf-8')
-            print("Response was: ", string)
             return string.strip('\r\n')
             
         
