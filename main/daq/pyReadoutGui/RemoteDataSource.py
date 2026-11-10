@@ -75,9 +75,7 @@ class RemoteDataSource(DataSource):
         self._remoteClient : QTcpSocket | None = None
         self._outputClient : QTcpSocket | None = None
     
-        self._s800rctlListener : QTcpServer | None = None   # Listening for s800rctl connections if not none
-        self._s800rctlClients: list[QTcpSocket]   = []     # Servicing those connections
-    
+        
     @classmethod
     def parameters(cls) -> dict[str, type]:
         '''
@@ -113,7 +111,7 @@ class RemoteDataSource(DataSource):
         Create and connect the client sockets....
         '''
         config = self._applyDefaults()
-        remcon, output, s800 = self._getServices(config)
+        remcon, output = self._getServices(config)
         
         # Destroy any old sockets and connect to the services:
         
@@ -129,13 +127,6 @@ class RemoteDataSource(DataSource):
         
         self._outputClient.readyRead.connect(self._relayOutput)
         
-        #  This may be crufty stuff we need to take out of the
-        #  Tcl readout shell...it seems to want an s800rctl service:
-        
-        self._s800rctlListener = QTcpServer(self)
-        self._s800rctlListener.newConnection.connect(self._s800rctlConnection)
-        self._s800rctlListener.listen(port=s800)
-        self._s800rctlClients  = []
         
         # Just in case connection wasn't enough:
         
@@ -158,12 +149,10 @@ class RemoteDataSource(DataSource):
         '''
         self._remoteClient.disconnectFromHost()
         self._outputClient.disconnectFromHost()
-        self._s800rctlListener   = None
-        self._s800rctlClients    = []
         
         self._remoteClient = None
         self._outputClient = None
-        self._mgr          = None # Drop our s800rctl advertisement.
+        
     def begin(self, run : int, title : str) -> None:
         '''
         Try to start a run in the remote.
@@ -225,9 +214,8 @@ class RemoteDataSource(DataSource):
         
         #  This may be cruft from bygone days we don't need?
         
-        self._mgr = mgr   # Keep the connection alive while offering the s800rctl service.
-        s800rctl = mgr.getPort('s800rctl')
-        return (remcon[0]['port'], output[0]['port'], s800rctl)
+        
+        return (remcon[0]['port'], output[0]['port'])
     
     def _enslave(self):
         # Write 'set slave 1\n' and flush to the control port
@@ -268,36 +256,7 @@ class RemoteDataSource(DataSource):
             output = mainWindow().centralWidget().Outputs().addOutput(tab)
             output.append(text)
         
-    #   This whole section is, hopefully, a pack of cruft we can take out of both the
-    #   Tcl and the Python stuff.  Left over from the old Bazin/Williams s800 thing
-    #   which was backwards.
-    def _s800Disconnect(self, socket : QTcpSocket):
-        # Close the socket and remove it from the list:
-        
-        socket.abort()    # Hard close.
-        try:
-            self._s800rctlClients.remove(socket)  # During shutdown the list might be gone.
-        except Exception:  # noqa: BLE001, S110
-            pass
-        
-    def _s800Read(self, socket):
-        # Remote request of some sort...we'll just print it  out
-        # and reply OK\n:
-        
-        request = socket.readLine()
-        if request:
-            print(f's800 Request: {request.data().decode("utf-8")}')
-            socket.write(bytearray('OK\n', 'utf-8'))
-            socket.flush()
-        
-    def _s800rctlConnection(self):
-        # Handle connection requests from s800rctl clients by forming a QTcpSocket 
-        # and catchting input..and connection lost.
-        
-        socket : QTcpSocket =  self._s800rctlListener.nextPendingConnection()    
-        self._s800rctlClients.append(socket)
-        socket.disconnected.connect(lambda: self._s800Disconnect(socket))
-        socket.readyRead.connect(lambda: self._s800Read(socket))
+    
 
 # Report the data source configuration:
 
