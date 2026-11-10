@@ -130,6 +130,11 @@ proc ::Delay::end id {
     ::Delay::_delayWithFeedback $endDelayTime
   }
 }
+#   Support pause/resume...they do nothing but they do provide
+#   The capability.
+
+proc ::Delay::pause id {}
+proc ::Delay::resume id {}
 
 ##
 # init
