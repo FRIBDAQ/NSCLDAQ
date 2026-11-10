@@ -25,8 +25,9 @@ from collections.abc import KeysView
 from operator import methodcaller
 from typing import Self
 
-
 from nscldaq.readoutgui import DataSource
+from nscldaq.readoutgui.StateMachine import ReadoutStateMachine
+from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from PyQt6.QtCore import QObject, pyqtSignal
 
 # Exceptions this module can raise:
@@ -214,10 +215,18 @@ class DataSourceManager(QObject):
         self.starting.emit()
         
         if self._iterateAction('start'):  # noqa: SIM102
-            #@todo - is a delay appropriate here?
+            
             if self._iterateAction('init'):
                 self.started.emit()
     
+            # If any of the sources can't pause, remove that option from
+            # the state machine and the gui.
+            
+            if not self.mergedCapabilities()['canPause']:
+                ReadoutStateMachine.instance().removePause()
+                controls = mainWindow().centralWidget().StateControls()
+                controls.disablePaused()
+                
     
     def precheck(self) -> bool:
         '''
