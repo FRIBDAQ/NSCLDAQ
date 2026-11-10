@@ -77,6 +77,8 @@ class RemoteDataSource(DataSource):
     
         self._s800rctlListener : QTcpServer | None = None   # Listening for s800rctl connections if not none
         self._s800rctlClients: list[QTcpSocket]   = []     # Servicing those connections
+    def __del__(self) :
+        print("Deleteing remote data source")
     @classmethod
     def parameters(cls) -> dict[str, type]:
         '''
@@ -274,7 +276,10 @@ class RemoteDataSource(DataSource):
         # Close the socket and remove it from the list:
         
         socket.abort()    # Hard close.
-        self._s800rctlClients.remove(socket)
+        try:
+            self._s800rctlClients.remove(socket)  # During shutdown the list might be gone.
+        except Exception:  # noqa: BLE001, S110
+            pass
         
     def _s800Read(self, socket):
         # Remote request of some sort...we'll just print it  out
