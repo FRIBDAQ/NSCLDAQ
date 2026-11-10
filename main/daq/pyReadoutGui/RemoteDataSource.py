@@ -95,7 +95,7 @@ class RemoteDataSource(DataSource):
         @return dict[str, bool]  keys are capabilities, values are True if supported.
         '''
         return {
-            'canPause'        : False, 
+            'canPause'        : True, 
             'runsHaveTitles'   : True, 
             'runsHaveNumbers' : True
         }
@@ -103,8 +103,9 @@ class RemoteDataSource(DataSource):
         '''
         @return bool - True if the remote can start a run.
         '''
+    
         state = self._getstate()    # Returns None if not connected.
-        return state == 'inactive'
+        return state == 'inactive' or state == 'paused'
     
     def start(self) -> None:
         '''
@@ -183,6 +184,22 @@ class RemoteDataSource(DataSource):
         host = self.getConfig()['host']
         if self._transact('end\n') != 'OK':
             raise RuntimeError(f'Failed to end the run in {host}')
+    
+    def pause(self) -> None:
+        # Ask the remote to pause  a run.
+        
+        host = self.getConfig()['host']
+        response = self._transact('masterTransition Paused\n')
+        if response != 'OK':
+            raise RuntimeError(f'Failed to pause the run in {host} : {response}')
+        
+    def resume(self) -> None:
+        # Ask the remote to resume a run (make it active again:)
+        
+        host = self.getConfig()['host']
+        response = self._transact('masterTransition Active\n')
+        if response != 'OK':
+            raise RuntimeError(f'Failed to resume the run in {host} : {response}')
         
     # Utilities:
     
