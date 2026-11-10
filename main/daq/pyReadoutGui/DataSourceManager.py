@@ -1367,4 +1367,6 @@ if __name__ == '__main__':
             
             
     app = QCoreApplication(sys.argv)     # Needed for signal to work I think.
+    print("note that exceptions of 'Not Important' can be ignored. ")
     unittest.main()
+  
