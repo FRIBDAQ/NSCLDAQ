@@ -166,6 +166,22 @@ class DataSourceManager(QObject):
             raise NoSuchSource(name)
 
         return result
+    def replaceSource(self, name : str, newSource : DataSource.DataSource) -> None:
+        '''
+        Replace the named data source with the new one.  The source name
+        _must_ exist.
+        @param name - name of the source to replace.
+        @param newSourcde - new data sourcde to replace it with.
+        @throw NoSuchSource - if 'name' is not a data source.
+        @note  The replacement occurs in place so the order of sources is not modified.
+               the intended use case is that a user has gotten the parameters of a source
+               wrong or needs to reconfigure an existing source.
+        '''
+        if name in self._sources:
+            self._sources[name] = newSource
+        else:
+            raise NoSuchSource(name)
+                
     
     def sourceNames(self) -> KeysView:
         '''

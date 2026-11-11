@@ -18,10 +18,17 @@
 '''
 
 
-from nscldaq.readoutgui import DataSourceManager, DataSource, DataSourceRegistry, DataSourceViews, StateMachine
-from nscldaq.mg_configutils import DismissDialog
+from nscldaq.mg_configutils import DismissDialog, SaveDialog
+from nscldaq.readoutgui import (
+    DataSource,
+    DataSourceManager,
+    DataSourceRegistry,
+    DataSourceViews,
+    StateMachine,
+)
+from PyQt6.QtWidgets import QDialog, QMessageBox, QWidget
 
-from PyQt6.QtWidgets import QWidget
+
 class ListController:
     '''
     This should be instantiated by the Data Source -> List method.
@@ -59,7 +66,7 @@ class ListController:
         
         return DataSourceViews.DataSourceModel(self._getSourceList())
     
-    def _showDetail(self, sourceName):
+    def _showDetail(self, sourceName) -> None:
         # Called to show the details of a data sourcde.
         # this will be wrapped in an DismissDialog
         
@@ -77,6 +84,44 @@ class ListController:
         
         sourceList = [(name, source) for name,source in sourceDict.items()]
         return sourceList
+
+class EditController(ListController):
+    '''
+    Edit controller double clicking a data source brings up its editor wrapped in a save
+    dialog.  If the resulting edits are saved, the old data source is replaced by the new
+    one.  Note this needs a new DataSourceManager.replace method.
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+    
+    #   Internal slots:
+    
+    def _showDetail(self, sourceName : str) -> None:
+        # Replace the base class with an editor:
+        
+        sourceType = sourceName.split(':')[0]
+        source     = DataSourceManager.DataSourceManager.instance().sources()[sourceName]
+        editor     = DataSourceRegistry.DataSourceRegistry.instance().sourceCreator(sourceType)
+        dialog     = SaveDialog(editor(source), self._parent)
+        while dialog.exec() == QDialog.DialogCode.Accepted:
+            newSource = dialog.workarea().makeSource()
+            if isinstance(newSource, str):
+                # newSource is really an error message
+                QMessageBox.warning(dialog, 'Unable to edit Source', newSource)
+            else:
+                # newSource is a new data source:
+                
+                # force to not ready to ensure the old source is shutdown
+                sm = StateMachine.ReadoutStateMachine.instance()
+                if sm.state() != 'Not Ready':
+                    sm.transition('Not Ready')
+                
+                # Replace the one that we clicked.
+                            
+                DataSourceManager.DataSourceManager.instance().replaceSource(sourceName, newSource)
+                self._view.model().load(self._getSourceList())   # Update the list.
+                self._view.hideDelete()               # Keep the trashcan hidden.
+                break      # Done.
         
 class DeleteController(ListController):
     '''
@@ -99,6 +144,7 @@ class DeleteController(ListController):
         # and update the table.
         DataSourceManager.DataSourceManager.instance().removeSource(sourceName)
         self._view.model().load(self._getSourceList())
+        self._view.showDelete()                # Make no assumptions.
         sm = StateMachine.ReadoutStateMachine.instance()
         if sm.state() != 'Not Ready':
             sm.transition('Not Ready')

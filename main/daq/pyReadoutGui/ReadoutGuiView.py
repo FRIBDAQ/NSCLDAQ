@@ -206,6 +206,7 @@ class ReadoutGuiMainWindow(QMainWindow):
     fileExit           = pyqtSignal()
     
     dsAddSource        = pyqtSignal()
+    dsEditSource       = pyqtSignal()
     dsDeleteSource     = pyqtSignal()
     dsListSources      = pyqtSignal()
     
@@ -306,6 +307,9 @@ class ReadoutGuiMainWindow(QMainWindow):
         self._dsAddAction.triggered.connect(self.dsAddSource)
         menu.addAction(self._dsAddAction)
         
+        self._dsEditAction = QAction('Edit...', menu)
+        self._dsEditAction.triggered.connect(self.dsEditSource)
+        menu.addAction(self._dsEditAction)
         
         self._dsDelSourceAction = QAction('Delete...', menu)
         self._dsDelSourceAction.triggered.connect(self.dsDeleteSource)

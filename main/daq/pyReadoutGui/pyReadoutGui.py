@@ -169,7 +169,10 @@ def _addDataSource() -> None:
                 ReadoutStateMachine.instance().removePause()
                 
         
-
+def _editDataSources() -> None:
+    # Respond to the edit data source menu.
+    editor = DataSourceMenuControllers.EditController(mainWindow())
+    editor.exec()
 def _listDataSources() -> None:
     # Bring up a data source lister:
     
@@ -252,6 +255,7 @@ def _setupFileMenu(mainWindow : ReadoutGuiMainWindow) -> None:
  
 def _setupDataSourceMenu(gui : ReadoutGuiMainWindow) -> None:
     gui.dsAddSource.connect(_addDataSource)
+    gui.dsEditSource.connect(_editDataSources)
     gui.dsListSources.connect(_listDataSources)
     gui.dsDeleteSource.connect(_deleteDataSource)
 
