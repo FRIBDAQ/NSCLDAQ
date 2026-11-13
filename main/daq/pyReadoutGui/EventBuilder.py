@@ -108,7 +108,7 @@ class EncapsulatedCommand(QObject):
         The ssh is readable, read a line and signal it:
         '''
         line = self._process.ReadLine()
-        self.line.emit(line)
+        self.outputLine.emit(line)
 
 class FragmentSource(EncapsulatedCommand):
     '''
@@ -495,3 +495,104 @@ class EventBuilderPipeline(EncapsulatedCommand):
                 pipe.WriteLine(f'EVB::config set {paramName} {value}')
                 pipe.flush()
                 
+                
+
+def EventBuilder(QObject):
+    '''
+    This class encapsulates an event builder pipeline and a list of
+    the fragment sources that feed it.  These togehter make up a 
+    complete, operating event builder.
+    
+    Signals:
+    eventBuilderExited   - The pipeline exited.
+    eventBuilderOutput   - Relays output for the event builder.
+    sourceExited         - An event source exited.
+    sourceOutput         - An event source had output.
+    
+    The signals are relays of finished and outputLine from the various enapsulated commands.
+    For the source exits,  the normal parameters are prefixed by the ring from which the source gets
+    data so they can be distinguished.
+    '''
+    eventBuilderExited = pyqtSignal(int, QProcess.ExitStatus)
+    eventBuilderOutput = pyqtSignal(str)
+    
+    # The first str in all of these signals is the URI of the ring from which
+    # the data source takes data.
+    
+    sourceExited       = pyqtSignal(str, int, QProcess.ExitStatus)
+    sourceOutput       = pyqtSignal(str, str)
+    def __init__(
+        self, 
+        sourceConfigs : list[dict[str, object]], pipeConfig : dict[str, object],
+        parent : QObject | None = None) :
+        
+        
+        '''
+        Constructs an event builder object.
+        @param sourceConfigs : list[dict[str, object]] - A list of configurations of FragmentSource objects.
+        @param pipeConfig : dict[str, object]  - The configuration of the Event builder pipeline.
+        @param parent : QObject | None = None - If provided the parent object.
+        '''
+        super().__init__(parent)
+        
+        # For now mostly save the configs and
+        # make some placeholders for the processes we'll start later.
+        
+        self._sourceSpecs = sourceConfigs
+        self._pipeSpecs   = pipeConfig
+
+        #  We'll have a process for the pipeline:
+        
+        self._pipeProcess : EventBuilderPipeline = EventBuilderPipeline(pipeConfig)
+        self._pipeProcess.finished.connect(self.eventBuilderExited)
+        self._pipeProcess.outputLine.connect(self.eventBuilderOutput)
+        
+        self._sourceProcesses : list[FragmentSource]    = []
+        identifier = ""                    
+        for config in sourceConfigs:
+            process = (FragmentSource(config))
+            identifier = config['ring']
+            self._connectSourceSignals(process, identifier)
+            self._sourceProcesses.append(process)
+        
+        
+    def getConfig(self) -> tuple[dict[str, object], list[dict[str, object]]]:
+        '''
+        Gets the configuration of the event builder.
+        @return tuple[dict[str, object], list[dict[str, object]]] The first element of the tuple
+            is the configuration of the event builder pipeline.  The second element is the
+            list of FragmentSource configurations.
+        '''
+        return (self._pipeSpecs, self._sourceSpecss)
+    
+    def start(self) -> None:
+        '''
+        Start up the event bulder. 
+        '''
+        # First the pipeline so that it can be serving connections
+        # by the fragment source, and connect it to the signal relays for it:
+        
+        self._pipeProcess.start()
+        
+        
+        # Start up each event source...
+        
+        for process in self._sourceProcesses:
+            process.start()
+    
+    def stop(self) -> None:   
+        '''
+        Stop all event builder processes:
+        '''
+        # First the sources:
+        
+        self._pipeProcess.stop()
+        for process in self._sourceProcesses:
+            process.stop()
+    
+    # Private utils.
+    
+    def connectSourceSignals(self, process : FragmentSource, id : str) -> None:
+        name = process['ring']
+        process.finished.connect(lambda status, exitcode : self.sourceExited(name, status, exitcode))
+        process.outputLine.connect(lambda line : self.sourceOutput.emit(name, line))
