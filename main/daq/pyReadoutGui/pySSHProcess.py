@@ -163,7 +163,7 @@ class SSHProcess(QProcess):
         
         
         self.setProgram('ssh')
-        self.setArguments([host, command])
+        self.setArguments(['-Y', host, command])   # support X11 clients.
         self.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
         self.start()
         
