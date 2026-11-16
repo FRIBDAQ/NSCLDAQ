@@ -31,6 +31,7 @@ GUI allows itself to be loaded from an existing configuration.
 
 from nscldaq.editablelist6 import EditableList
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -71,6 +72,9 @@ class SourceIdListEditor(QWidget):
         entryLayout = QVBoxLayout()
         entryLayout.addWidget(QLabel('Source id:', parent))
         self._entry = QLineEdit(self)
+        self._entryValidator = QIntValidator(self._entry)
+        self._entryValidator.setBottom(0)
+        self._entry.setValidator(self._entryValidator)
         entryLayout.addWidget(self._entry)
         self.layout().addLayout(entryLayout)
         
@@ -109,6 +113,8 @@ class SourceIdListEditor(QWidget):
     def _validatedAdd(self) -> None:
         #  If the contents of self._entry are a valid source id
         #  and not already in the list, add it to the list.
+        #  Note our validator takes care of this being integer and
+        #  positive.
         id = self._entry.text()
         
         # Must be a positive integer:
@@ -116,10 +122,8 @@ class SourceIdListEditor(QWidget):
         try: 
             intid = int(id)
         except ValueError:
+            # Defensive code that should not be needed.
             return QMessageBox.warning(self, 'Bad Id', f'Source ids must be integers you tried {id}')
-        
-        if intid < 0:
-            return QMessageBox.warning(self, 'Bad Id', f' Source ids must be positive, you tried {intid}')
         
         # Source ids must be unique as well:
         
