@@ -377,7 +377,7 @@ class FragmentSourceListModel(QStandardItemModel):
         @param row :  int - the row number to replace.
         @param config : dict[str, object]- new config for that row.
         '''
-        newconfig = self._config
+        newconfig = self._configs
         newconfig[row] = config
         self.load(newconfig)
                
@@ -421,6 +421,11 @@ if __name__ == '__main__':
 
     from PyQt6.QtWidgets import QApplication, QPushButton
 
+    def update(row, config):
+        print('updating', row, config)
+        config['description'] += ' Edited'
+        model.replaceRow(row, config)
+
     app = QApplication(sys.argv)
     win = FragmentSourceListView()
     model = FragmentSourceListModel()
@@ -443,7 +448,7 @@ if __name__ == '__main__':
     }
     ]
     model.load(configs)
-    win.selected.connect(lambda row, config: print(row, config))
+    win.selected.connect(update)
     
     win.show()
     
