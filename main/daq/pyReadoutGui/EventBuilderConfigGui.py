@@ -30,14 +30,15 @@ GUI allows itself to be loaded from an existing configuration.
 '''
 
 from nscldaq.editablelist6 import EditableList
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIntValidator
+from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject, Qt
+from PyQt6.QtGui import QIntValidator, QStandardItem, QStandardItemModel
 from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
     QSpinBox,
+    QTableView,
     QVBoxLayout,
     QWidget,
 )
@@ -327,6 +328,91 @@ class FragmentSourceEditor(QWidget):
         value = w.text().strip()
         return value if value else None
     
+class FragmentSourceListModel(QStandardItemModel):
+    '''
+    This standard item model provides a model for a list of
+    fragment source configuration dicts.  The model provides
+    a view only the host, and ringbuffer and description for each 
+    configuration.  Given a Model index, however, it is 
+    possible to pull out the entire configuration for that fragment.
+    The idea is that this allows interaction with the view to 
+    initiate a FragmentSourceEditor already loaded with that configuration,
+    for editing.
+    Methods:
+       load - loads the model.
+       getConfig - Given a model index, gets the configuration of that row.
+       
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        self._configs = []
+
+    def load(self, configs : list[dict[str, object]]) -> None:
+        self.clear()
+        self._configs = configs
+        self.setHorizontalHeaderLabels(['Host', 'Ring URI', 'Description'])
+        
+        for config in configs:
+            self._addRow(config)
+
+    def getConfig(self, index :QModelIndex) -> dict[str, object] | None:
+        '''
+        @param index - the model index whose configuration we'll return.
+        @return dict[str, object] - The configuration for that row.
+        @retval None - the row is out of range.
+        '''
+        
+        row = index.row()
+        if len(self._configs) > row:
+            return self._configs[row]
+        else:
+            return None
+    
+    def replaceRow(self, row : int, config : dict[str, object]):
+        '''
+        Repaces  the configuration in a row with a new config and
+        refreshes. 
+        @note we assume there are not that many fragment sources.
+        
+        @param row :  int - the row number to replace.
+        @param config : dict[str, object]- new config for that row.
+        '''
+        newconfig = self._config
+        newconfig[row] = config
+        self.load(newconfig)
+               
+    # Utility methods:
+    
+    def _addRow(self, config : dict[str, object]) -> None:
+        # Appends a row to the model for config.
+        
+        host = QStandardItem(config.get('host', ''))
+        ring = QStandardItem(config.get('ring', ''))
+        desc = QStandardItem(config.get('description', ''))
+    
+        self.appendRow([host, ring, desc])
+
+class FragmentSourceListView(QTableView):
+    '''
+    Intended to be used with a FragmentSourceListModel to list
+    pertinent chunks of a list of fragment sources.  
+    Signals:
+        selected(int, dict[str, object]) - a double click the parameters
+                      are  the  row and configuration of that row.
+    '''
+    selected = pyqtSignal(int, dict)    # Can't give full type hint.
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        self.doubleClicked.connect(self._select)
+    
+    def _select(self, index : QModelIndex) -> None:
+        # Relay the doublie clicked signal to selected:
+        
+        row = index.row()
+        config = self.model().getConfig(index)
+        if config:
+            self.selected.emit(row, config)
+    
     
 # Test code:
 
@@ -336,28 +422,28 @@ if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication, QPushButton
 
     app = QApplication(sys.argv)
+    win = FragmentSourceListView()
+    model = FragmentSourceListModel()
+    win.setModel(model)
     
-    win = QWidget()
-    win.setLayout(QVBoxLayout())
-    editor = FragmentSourceEditor('localhost', 'Orderer:ron', win)
-    win.layout().addWidget(editor)
+    # some stuff:
     
-    editor.load({
+    configs = [{
+        'host' : 'localhost',
+        'evbhost' : 'daqcompute01',
+        'evbservice' : 'Orderer:ron',
+        'ring': 'tcp://localhost/ron',
+        'description' : 'localhost ring'
+    },{
         'host' : 'spdaq32',
         'evbhost' : 'daqcompute01',
-        'description' : 'This comes from spdaq32',
-        'ids' : [1,2,3,4],
-        'default-id' : 1,
-        'ring' : 'tcp://spdaq32/ron',
-        'timeout' : 5,
-        'offset' : 100,
-        'ts-divisor': 2,
-        'end-runs' : 4
-    })
-    
-    get = QPushButton('Get', win)
-    get.clicked.connect(lambda: print(editor.get()))
-    win.layout().addWidget(get)
+        'evbservice' : 'Orderer:ron',
+        'ring': 'tcp://spdaq32/ron',
+        'description' : 'spdaq32 data'
+    }
+    ]
+    model.load(configs)
+    win.selected.connect(lambda row, config: print(row, config))
     
     win.show()
     
