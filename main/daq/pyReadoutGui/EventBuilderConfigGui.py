@@ -28,13 +28,18 @@ Since editing the event builder is a needed operation, each
 GUI allows itself to be loaded from an existing configuration.
 
 '''
+import urllib.parse
 
 from nscldaq.editablelist6 import EditableList
 from nscldaq.mg_configutils import SaveDialog
-from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject, Qt
+from nscldaq.readoutgui import EventBuilder
+from PyQt6.QtCore import QModelIndex, QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QIntValidator, QStandardItem, QStandardItemModel
 from PyQt6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
     QDialog,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -43,6 +48,8 @@ from PyQt6.QtWidgets import (
     QTableView,
     QVBoxLayout,
     QWidget,
+    QWizard,
+    QWizardPage,
 )
 
 
@@ -447,8 +454,6 @@ class FragmentSourceDefiner(QWidget):
     '''
     def __init__(self,  parent : QWidget | None = None):
         '''
-        @param evbhost    :str - where the event builder is running.
-        @param evbservice :str - The service the event builder advertises
         @param parent : QWidget|None - The parent widget if supplied, defaults to None.
         '''
         
@@ -536,6 +541,365 @@ class FragmentSourceDefiner(QWidget):
         if newConfig:
             self._table.model().addRow(newConfig)
     
+# Ok, so here's the event builder wizard pages and the wizard itself.
+# There is conditional branching in the wizard as there are some
+# advanced event builder configuration parameters that are only
+# presented to the user if requested.
+# pages are:
+#    10 - Main EVBPipe page 
+#    20 - EVBPipeAdvanced page [only seen if "Edit Advanced Parameters checkbox set in page 10"]
+#    30 - DataSource page (the last page).
+
+class EvbMainParameters(QWizardPage):
+    '''
+    This page accepts the base event builder parameters which are fields like:
+    'host'  - where the event builder lives.
+    'service_suffix' - The event builder service suffix.
+    'dt'    - The glom build window.
+    'sourceid' - The output source id.
+    'ring'  - The event builder output ring.
+    
+    Thereis a checkbox which, if checked sends us to page 20 as the next page
+    otherwise, the next page is 30.
+    
+    Note that the 'load' method can be called from the wizard's currentIdChanged
+    the first time this page is displayed to pre-load the widgets with
+    values from an event builder configuration.
+    
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        self.setTitle("Event Builder parameters")
+        self.setSubtitle('Main parameters set')
+        self._initialized = False
+        
+    def initializePage(self) -> None:
+        '''
+        Initializes the form for the page, and a few other things.
+        We'll use a grid layout so stuff lines up nicely.
+        '''
+        if not self._initialized:
+            self.setLayout(QGridLayout())
+            
+            # The event builder has a name, since the application can manage
+            #  more than one event builder.  The name is mandatory.
+            
+            self._name = QLineEdit(self)
+            self.layout().addWidget(0,0, self._name)
+            self.layout().addWidget(0,1, QLabel('Event Builder name', self))
+            self.registerField('name*', self._name)
+            
+            # Up at the top, the host
+            # This is a mandatory field named host
+            
+            self._host = QLineEdit(self)
+            self._host.setText('localhost')
+            self.layout().addWidget(1,0, self._host)
+            self.layout().addWidget(1, 1, QLabel('Event Builder host', self))
+            self.registerField('host*', self._host)
+            
+            # Now the service suffix, which is not mandatory.  It allows
+            # multiple event builder pipelines to run in the same host
+            # with unique service advertisements
+            
+            self._suffix = QLineEdit(self)
+            self.layout().addWidget(2,0, self._suffix)
+            self.layout().addWidget(2,1, QLabel('Service suffix (optional)', self))
+            self.registerField('service_suffix', self._suffix)
+            
+            # The event builder coincidence window (glom)
+            
+            self._dt = QSpinBox(self)
+            self._dt.setMinimum(0)
+            self._dt.setMaximum(1 << 31)
+            self._dt.setValue(100)
+            self.layout().addWidget(3,0, self._dt)
+            self.layout().addWidget(3,1, QLabel('Event build window in ticks', self))
+            self.registerField('dt', self._dt)
+            
+            #  The output source id (glom):
+            
+            self._sourceid = QSpinBox(self)
+            self._sourceid.setMinimum(0)
+            self._sourceid.setMaximum(1 << 31)
+            self._sourceid.setValue(0)
+            self.layout().addWidget(4,0, self._sourceid)
+            self.layout().addWidget(4,1, QLabel('Source id of built data'))
+            self.registerField('sourceid', self._sourceid)
+            
+            # Output ring (mandatory):
+            
+            self._ring = QLineEdit(self)
+            self.layout().addWidget(5,0, self._ring)
+            self.layout().addWidget(5,1, QLabel('Output ring buffer for event built data', self))
+            self.registerField('ring*', self._ring)
+            
+            # Checkbox that allows presentation of advanced parameters.
+            
+            self._advanced = QCheckBox(self)
+            self.layout().addWidget(6,0, self._advanced)
+            self.layout().addWidget(6,1, QLabel('Configure advanced parameters', self))
+            
+            self._initialized = True
+        
+    def load(self, config : dict[str, object]) -> None:
+        '''
+        Should be called after initializePage - this can load the
+        values of the input widget from a EventBuilderPipeline configuration.
+        Note that missing configuration items are not loaded.
+        '''
+        
+        # The textual items:
+        for textItem in [('host', self._host), ('service-suffix', self._suffix), ('ring', self._ring)]:
+            value = config.get(textItem[0])
+            if value:
+                textItem[2].setText(value)
+        for intItem in [('dt', self._dt), ('sourceid', self._sourceid)]:
+            value = config.get(intItem[0])
+            if value:
+                intItem[1].setValue(value)
+    
+    def nextId(self) -> int:
+        '''
+        Only present the advanced parameters page if the advanced checkbox
+        is checked.
+        '''
+        return 20 if self._advanced.checkState() == Qt.CheckState.Checked else 30
+        
+    def validatePage(self) -> bool:
+        '''
+        Since changing an initial value with a default might leave empty something mandator:
+        @return bool - True if it's ok to move on to the next page
+        '''
+        if not self.field('name').strip():
+            QMessageBox.warning(self, 'Missing name', 'You must give the event builder a non-empty name')
+            return False
+        
+        if not self.field('host').strip():
+            QMessageBox.warning(self, 'Missing host', 'The host field must not be empty!')
+            return False
+        
+        if not self.field('ring').strip():
+            QMessageBox.warning(self, 'Missing ringbuffer', "The output ring buffer must have a URL")
+            return False
+        
+        # The URL must have the tcp scheme
+        
+        if urllib.parse.urlsplit(self.field('ring')).scheme.tolower() != 'tcp':
+            QMessageBox.warning(self, 'Bad ring URI', 'The ringbuffer URI must have the form tcp://host/ring')
+            return False
+
+        return True
+        
+         
+                
+class EvbAdvancedParameters(QWizardPage):
+    '''
+    Optional page to prompt for advanced event builder parameters.
+    IMPORTANT This must have page id 20, the next page must be page 30.
+    The advanced parameters are:
+    flush_window   - the tick window for which fragments are flushed even if not all queues have data.
+    xoff_threshold - The global backlog fragment threshold at which the orderer stop accepting fragments
+    xon_threshold  - The global backlog fragment threshold at which the orderer is allowed to accept frags.
+    perqxon_threshold - Same but in any queue for that queue.
+    perqxoff_threshold - Same but in any queue for that queue.
+    tspolicy     - Policy used to assign timestamps to the built events.
+    maxfragments - Maximum number of fragments that can build up in glom before it flushes an event.
+    
+    All of these are given default values, which may be overidden by callling load from the 
+    wizard's currentChanged slot.  All are optional.
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        
+        self.setTitle('Event Builder parameters')
+        self.setSubtitle('Advanced parameters')
+        self._initialized = False
+
+    def initializePage(self) -> None:
+        '''
+        Initialize the form... the class comments describe the fields we'll create.
+        I think the most common things modified might be 'maxfragments' and
+        tspolicy so those will be at the top:
+        '''
+        if not self._initialized:
+                
+            self.setLayout(QGridLayout())
+            
+            # The timestamp policy first:
+            
+            self._tspolicy = QComboBox(self)
+            self._tsPolicy.addItems(['latest', 'earliest', 'average'])
+            self._tspolicy.setCurrentText('latest')
+            self.layout().addWidget(0,0, self._tsPolicy)
+            self.layout().addWidget(0,1, QLabel('Timestamp policy', self))
+            self.registerField('tspolicy', self._tspolicy, 'currentText')  # Policy name not index.
+            
+            #  maxfragments next:
+            
+            self._maxFrags = QSpinBox(self)
+            self._maxFrags.setMinimum(100)
+            self._maxFrage.setMaximum(1 << 20)
+            self._maxFrags.setValue(1000)
+            self.layout().addWidget(1,0, self._maxFrags)
+            self.layout().addWidget(1,1, QLabel('Maximum fragments in an event', self))
+            self.registerField('maxfragments', self._maxfrags)
+            
+            #  Flush tick window
+            
+            self._window = QSpinBox(self)
+            self._window.setMinimum(10)
+            self._window.setMaximum(3600)
+            self._window.setValue(30)
+            self.layout().addWidget(2,0, self._window)
+            self.layout().addWidget(2,1, QLabel('Maximum fragment retention in ticks'))
+            self.registerField('window', self._window)
+            
+            # The flow control parameters.
+            #  Global flow control:
+            
+            self._globalxoff = QSpinBox(self)
+            self._globalxoff.setMinimum(200000)    # Pretty arbitrary guesses of 1 million
+            self._globalxoff.setMaximum(100000000) # to 100million fragments
+            self._globalxoff.setValue(4000000)     # this is the current default value.
+            self._globalxoff.setSingleStep(100000) # up/down by 100000 else they'll get bored.
+            self.layout().addWidget(3,0, self._globalxoff)
+            self.layout().addWidget(3,1, QLabel('Global Xoff threshold'))
+            self.registerField('globalxoff', self._globalxoff)
+            
+            self._globalxon = QSpinBox(self)
+            self._globalxon.setMinimum(100000)    # Pretty arbitrary guesses of 1 million
+            self._globalxon.setMaximum(100000000) # to 100million fragments
+            self._globalxon.setValue(3000000)     # this is the current default value.
+            self._globalxon.setSingleStep(100000) # up/down by 100000 else they'll get bored.
+            self.layout().addWidget(4,0, self._globalxon)
+            self.layout().addWidget(4,1, QLabel('Global Xon threshold'))
+            self.regiseterField('globalxon', self._globalxon)
+            
+            #   Per Queue flow control
+            
+            self._perqxoff = QSpinBox(self)
+            self._perqxoff.setMinimum(20000)
+            self._perqxoff.setMaximum(100000000)
+            self._perqxoff.setValue(400000)
+            self._perqxoff.setSingleStep(10000)
+            self.layout().addWidget(5,0, self._perqxoff)
+            self.layout().addWidget(5,1, QLabel('Per Queue Xoff threshold', self))
+            self.registerField('perqxoff', self._perqxoff)
+            
+            self._perqxon = QSpinBox(self)
+            self._perqxon.setMinimum(10000)
+            self._perqxon.setMaximum(100000000)
+            self._perqxon.setValue(50000)
+            self._perqxon.setSingleStep(10000)
+            self.layout().addWidget(6,0, self._perqxoff)
+            self.layout().addWidget(6,1, QLabel('Per queue Xon threshold', self))
+            self.registerField('perqxon', self._perqxon)
+        
+            self._initialized = True
+    def load(self, config : dict[str, object) -> None:
+        '''
+        The wizard can call this to pre-load the form from an event builder pipeline configuratin
+        dict.  Note that this should not be called more than once due to the ability of users to 
+        go backwards through the wizard.
+        '''
+        # set the timestamp policy if that's given
+        
+        tspolicy = config.get('tspolicy')
+        if tspolicy:
+            self._tspolicy.setCurrentText(tspolicy)
+            
+        # The rest are spinboxes and can be set using this clever little loop:
+        
+        for name, widget in [('orderer-window', self._window),
+                             ('maxfragments', self._maxFrags), 
+                             ('XoffThreshold', self._globalxoff),
+                             ('XonThreshold', self._globalxon),
+                             ('perQXoffThreshold', self._perqxoff),
+                             ('perQXonThreshold', self._perqxon)
+                            ]:
+            value = config.get(name)
+            if value:
+                widget.setValue(value)
+
+        # defaultPerQXonLimit (50000)
+    def nextId(self) -> int:
+        '''
+        We unconditionally go to page 30.
+        '''
+        return 30
+    
+    def validatePage(self) -> bool:
+        '''
+        The xoff thresholds _must_ be higher than the xon thresholds, else this makes no
+        sense.  If that's not, the case pop up a message box and return False else True.
+        '''
+        if self.field('globalxoff') <= self.field('globalxon'):
+            QMessageBox.warning(self, 'Bad xon/xoff values', 
+                'The global xoff value must be greater than the global xon value')
+            return False
+        
+        if self.field('perqxoff') <= self.field('perqxon'):
+            QMessageBox.warning(self, 'Bad per queue xon/xoff values',
+                    'The per queue xoff value must be larger than the per queue xon value')
+            return False
+        
+        return True
+    
+class DataSourceParameters(QWizardPage):
+    '''
+    This one is a bit more exciting.  We hae a FragmentSourceDefiner as our sole
+    contents.
+    IMPORTANT NOTE:  this must be page id 30. 
+    
+    This page:
+        Declares no fields. The wizard has to pull the configuration list
+        from us directly.
+
+        In InitializePage, we pull in the event builder host and construct the
+        full service name.  These are from the registered fields:
+        'host' and 'service_suffix'
+
+    '''
+    def __init__(self, parent : QWidget | None = None):
+        super().__init__(parent)
+        self.setTitle('Configure Data Sources')
+        self._initialized = False
+
+    def initializePage(self) -> None:
+        
+        if not self._initialized:
+            self.setLayout(QGridLayout())
+            self._editor = FragmentSourceDefiner(self)
+            self.layout.addWidget(0,0, self._editor)
+            
+            self._initialized = True
+        # Update the host and service, even on subsequent calls
+        
+        evbhost = self.field('host')
+        suffix  = self.field('service_suffix').strip()
+        service = f'Orderer:getpass.getuser()'
+        if suffix:
+            service += f':{suffix}'
+            
+        self._editor.setEvbParameters(evghos, service)
+        
+    def load(self, configs: list[dict[str, object]]) ->None:
+        '''
+        Loads the fragment source configurations into the editor:
+        @param configs - list of fragment source configuration dicts.
+
+        '''
+        self._editor.load(configs)
+    
+    def getConfiguration(self) -> list[dict[str, object]]:
+        '''
+        @return list[dict[str, object]] the configurations of the data sources:
+        '''
+        return self._editor.get()
+
+
+        
 # Test code:
 
 if __name__ == '__main__':
