@@ -30,9 +30,11 @@ GUI allows itself to be loaded from an existing configuration.
 '''
 
 from nscldaq.editablelist6 import EditableList
+from nscldaq.mg_configutils import SaveDialog
 from PyQt6.QtCore import pyqtSignal, QModelIndex, QObject, Qt
 from PyQt6.QtGui import QIntValidator, QStandardItem, QStandardItemModel
 from PyQt6.QtWidgets import (
+    QDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -90,7 +92,7 @@ class SourceIdListEditor(QWidget):
 
         self._list.add.connect(self._validatedAdd)   # Add with validation.
         
-
+        
     
     # Public methods:
     
@@ -345,16 +347,27 @@ class FragmentSourceListModel(QStandardItemModel):
     '''
     def __init__(self, parent : QObject | None = None):
         super().__init__(parent)
-        self._configs = []
+        
+        # Set up the model with an empty list of sources:
+        # We do this to set up the table headers so we don't just have
+        # an initially empty widget.    
+        self.load({})
 
     def load(self, configs : list[dict[str, object]]) -> None:
         self.clear()
-        self._configs = configs
+        self._configs = []
         self.setHorizontalHeaderLabels(['Host', 'Ring URI', 'Description'])
         
         for config in configs:
-            self._addRow(config)
+            self.addRow(config)
 
+    def getConfigs(self) -> list[dict[str, object]]:
+        '''
+        @return list[dict[str, object]] - All of the configurations in the model.
+        '''
+        return self._configs
+        
+    
     def getConfig(self, index :QModelIndex) -> dict[str, object] | None:
         '''
         @param index - the model index whose configuration we'll return.
@@ -381,11 +394,14 @@ class FragmentSourceListModel(QStandardItemModel):
         newconfig[row] = config
         self.load(newconfig)
                
-    # Utility methods:
     
-    def _addRow(self, config : dict[str, object]) -> None:
-        # Appends a row to the model for config.
+    def addRow(self, config : dict[str, object]) -> None:
+        '''
+        Appends a row to the model:
+        @param config : dict[str, object] - the configuraition to add.
+        '''
         
+        self._configs.append(config)
         host = QStandardItem(config.get('host', ''))
         ring = QStandardItem(config.get('ring', ''))
         desc = QStandardItem(config.get('description', ''))
@@ -413,6 +429,112 @@ class FragmentSourceListView(QTableView):
         if config:
             self.selected.emit(row, config)
     
+class FragmentSourceDefiner(QWidget):
+    '''
+    This class provides a fragment source editor.  Given a  list of
+    fragment source descriptions it supports:
+    - Double-clicking a source to edit its definition.
+    - Clicking a + button to create a new source definition and add it to
+      the table.
+    - Fetch the  list of configuration from the table of sources.
+    Methods:
+    load - loads the definitions in to the table.
+    get  - gets the final definitions back out
+    
+    @note the intent is for this to be a page in a wizard that
+          defines or edits event builders and their sources.
+    No signals are emitted from this widget.
+    '''
+    def __init__(self,  parent : QWidget | None = None):
+        '''
+        @param evbhost    :str - where the event builder is running.
+        @param evbservice :str - The service the event builder advertises
+        @param parent : QWidget|None - The parent widget if supplied, defaults to None.
+        '''
+        
+        super().__init__(parent)
+        
+        
+        
+        # We have a table on the left and a + button below it.
+        
+        self.setLayout(QVBoxLayout())
+        
+        self._table = FragmentSourceListView(self)
+        self._table.setModel(FragmentSourceListModel(self))
+        self.layout().addWidget(self._table)
+        
+        self._addButton = QPushButton('Add Source', self)
+        self.layout().addWidget(self._addButton)
+    
+        # Connect the signals to internal slots:
+        
+        self._table.selected.connect(self._editSource)
+        self._addButton.clicked.connect(self._addSource)
+    
+    # In a wizard, we might need to set the evb host and service externally
+    
+    def setEvbParameters(self, evbhost : str, evbservice : str) -> None:
+        '''
+        @param evbhost - where the event buildeer pipeline is running.
+        @param evbservice - the service the orderer is advertising there.
+        '''
+        
+        self._evbhost = evbhost
+        self._evbservice = evbservice
+                
+        
+    def load(self, configurations : list[dict[str, object]]) -> None:
+        '''
+        Load the table with configurations.
+        @param configurations - a list of fragment source definitions.
+            
+        '''
+        self._table.model().load(configurations)
+    
+    def get(self) -> list[dict[str, object]]:
+        '''
+        @return list[dict[str, obect]] - The list of configurations
+                in the table
+        '''
+        return self._table.model().getConfigs()
+    
+    # Utilities:
+    
+    def _configureSource(self, config : dict[str, object] | None = None) -> dict[str, object] | None:
+        # Sets of a fragment source editor in a Save dialog.
+        # - If the dialog is saved, and there's a valid configuration, 
+        #  it is returned to the caller. 
+        # - If the dialog is not saved, None is returned.
+        
+        form = FragmentSourceEditor(self._evbhost, self._evbservice)  # always use _ours_
+        if config:
+            form.load(config)      # IF there is a configuration load it.
+        
+        dialog = SaveDialog(form, self)
+        if dialog.exec() ==  QDialog.DialogCode.Accepted:
+            return form.get()
+        else:
+            return None
+    
+    # The slots below are for editing can existing or new configuration.
+    # They just figure out how to call _configureSource and what to do if
+    # it returns a configuration:
+    
+    def _editSource(self, row, config) -> None:
+        # Edit an existing source:
+        
+        modifiedConfig = self._configureSource(config)
+        if modifiedConfig:
+            self._table.model().replaceRow(row, modifiedConfig)
+    
+    def _addSource(self) -> None:
+        #  Same as _editSource but we have no starting point and
+        # the configuration is appended to the list.
+        
+        newConfig = self._configureSource()
+        if newConfig:
+            self._table.model().addRow(newConfig)
     
 # Test code:
 
@@ -421,15 +543,14 @@ if __name__ == '__main__':
 
     from PyQt6.QtWidgets import QApplication, QPushButton
 
-    def update(row, config):
-        print('updating', row, config)
-        config['description'] += ' Edited'
-        model.replaceRow(row, config)
+    def lister():
+       print(table.get() )
 
     app = QApplication(sys.argv)
-    win = FragmentSourceListView()
-    model = FragmentSourceListModel()
-    win.setModel(model)
+    win = QWidget()
+    win.setLayout(QVBoxLayout())
+    table = FragmentSourceDefiner(win)
+    win.layout().addWidget(table)
     
     # some stuff:
     
@@ -447,8 +568,12 @@ if __name__ == '__main__':
         'description' : 'spdaq32 data'
     }
     ]
-    model.load(configs)
-    win.selected.connect(update)
+    table.setEvbParameters(configs[0]['evbhost'], configs[0]['evbservice'])
+    table.load(configs)
+    
+    button = QPushButton('list', win)
+    win.layout().addWidget(button)
+    button.clicked.connect(lister)
     
     win.show()
     
