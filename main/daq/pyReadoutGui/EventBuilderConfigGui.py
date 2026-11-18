@@ -643,12 +643,16 @@ class EvbMainParameters(QWizardPage):
             
             self._initialized = True
         
-    def load(self, config : dict[str, object]) -> None:
+    def load(self, name: str, config : dict[str, object]) -> None:
         '''
         Should be called after initializePage - this can load the
         values of the input widget from a EventBuilderPipeline configuration.
         Note that missing configuration items are not loaded.
+        @param name : str - the event builder name.
+        @param config : dict[str, object] the event builder configuration.
         '''
+        
+        self._name.setText(name)
         
         # The textual items:
         for textItem in [('host', self._host), ('service-suffix', self._suffix), ('ring', self._ring)]:
@@ -952,12 +956,21 @@ class EVBWizard(QWizard):
         # We need to set up to load pages on their first display if we've been loaded:
         
         self._loadedPages : set[int] = set()                  # Set of pages we've loaded.
+        self._name : str | None = None
         self._evbconfig   : dict[str, object] | None = None   # Loaded event builder configuration
         self._sourceConfigs : list[dict[str, object]] | None = None # loaded fragment source configurations.
         self.currentIdChanged.connect(self._loadPageConfig)
     
-    def load(self, pipeConfig : dict[str, object], sourceConfigs : list[dict[str, object]]) -> None:
+    def load(self, name : str, pipeConfig : dict[str, object], sourceConfigs : list[dict[str, object]]) -> None:
+        '''
+        Load the event builder configuration:
+        @param name - name of the event builder.
+        @param pipeConfig - Configuration of the event builder pipeline
+        @param sourceConfigs - list of fragment source configurations.
+        '''
+        
         print('load')
+        self._name = name
         self._loadedPages = set()        # Reset the pages that have been loaded.
         self._evbconfig   = pipeConfig
         self._sourceConfigs = sourceConfigs
@@ -1035,14 +1048,14 @@ class EVBWizard(QWizard):
             self._evbconfig is not None and self._sourceConfigs is not None:
             
             page = self.page(pageId) 
-            # Pages 10, 20 need the evb pipe confi8g:
-            # page 30 needs the source config... other (pages added later?)
-            # don't get loaded.
-            if pageId in (10,20):
-                page.load(self._evbconfig)
-            elif pageId == 30:
-                page.load(self._sourceConfigs)
-            # of loaded pages.
+            match pageId:
+                case 10:
+                    page.load(self._name, self._evbconfig)
+                case 20:
+                    page.load(self._evbconfig)
+                case 30:
+                    page.load(self._sourceConfigs)
+            
             self._loadedPages.add(pageId)      
         
         
@@ -1063,7 +1076,7 @@ if __name__ == '__main__':
         'ring' : 'ron'
     }
     sourceConfigs = []
-    win.load(pipeconfig, sourceConfigs)
+    win.load('my builder', pipeconfig, sourceConfigs)
     win.show()
     
     if win.exec() == QDialog.DialogCode.Accepted :
