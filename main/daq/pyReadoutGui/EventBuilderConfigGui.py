@@ -518,10 +518,25 @@ class FragmentSourceDefiner(QWidget):
             form.load(config)      # IF there is a configuration load it.
         
         dialog = SaveDialog(form, self)
-        if dialog.exec() ==  QDialog.DialogCode.Accepted:
-            return form.get()
-        else:
-            return None
+        while dialog.exec() ==  QDialog.DialogCode.Accepted:
+            result =  form.get()
+            if not self._validRing(result):
+                QMessageBox.warning(self, 'Bad ring', 
+                    'The ring buffer specification must be a URI  of the form "tcp://host/ringname"')
+            else:
+                return result
+        return None        # Not accepted.
+    
+    def _validRing(self, config : dict[str, object]) -> bool:
+        # Validate a configuration's ring buffer:
+        
+        ring = config['ring'].strip()
+        if not ring:
+            return False
+        # Must have tcp scheme.
+        
+        return urllib.parse.urlsplit(ring).scheme.lower() == 'tcp'
+        
     
     # The slots below are for editing can existing or new configuration.
     # They just figure out how to call _configureSource and what to do if
@@ -891,8 +906,8 @@ class DataSourceParameters(QWizardPage):
         evbservice = self._computeEvbService()
         finalConfigs = configs
         for index, config in enumerate(finalConfigs):
-            finalConfigs['evbhost'] = evbhost
-            finalConfigs['evbservice'] = evbservice
+            finalConfigs[index]['evbhost'] = evbhost
+            finalConfigs[index]['evbservice'] = evbservice
         
         
         self._editor.load(finalConfigs)
@@ -969,7 +984,6 @@ class EVBWizard(QWizard):
         @param sourceConfigs - list of fragment source configurations.
         '''
         
-        print('load')
         self._name = name
         self._loadedPages = set()        # Reset the pages that have been loaded.
         self._evbconfig   = pipeConfig
@@ -1033,7 +1047,7 @@ class EVBWizard(QWizard):
     # Local slots.
     
     def _loadPageConfig(self, pageId : int) -> None:
-        print('load', pageId)
+
         # Called when the page has changed.  If there are configurations,
         # and if the page has not been loaded by us previously,
         # load the page from the configurations.
@@ -1073,9 +1087,20 @@ if __name__ == '__main__':
     pipeconfig = {
         'host' : 'localhost',
         'service-suffix' : 'builder',
-        'ring' : 'ron'
+        'ring' : 'ron',
+        'orderer-window' : 60,
+        'tspolicy' : 'earliest',
+        'maxfragments' : 1000
     }
-    sourceConfigs = []
+    sourceConfigs = [
+        {
+            'host' : 'spdaq30',
+            'description' : 'Test source',
+            'ids' : [1,2,3],
+            'default-id': 1,
+            'ring' : 'tcp://localhost/ron'
+        },
+    ]
     win.load('my builder', pipeconfig, sourceConfigs)
     win.show()
     
