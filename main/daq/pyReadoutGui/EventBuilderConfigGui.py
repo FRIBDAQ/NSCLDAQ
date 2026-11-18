@@ -28,6 +28,7 @@ Since editing the event builder is a needed operation, each
 GUI allows itself to be loaded from an existing configuration.
 
 '''
+import getpass
 import urllib.parse
 
 from nscldaq.editablelist6 import EditableList
@@ -630,12 +631,13 @@ class EvbMainParameters(QWizardPage):
             
             self._ring = QLineEdit(self)
             self.layout().addWidget(self._ring, 5,0, )
-            self.layout().addWidget(QLabel('Output ring buffer for event built data', self), 5,1, )
+            self.layout().addWidget(QLabel('Output ringbuffer name for event built data', self), 5,1, )
             self.registerField('ring', self._ring)
             
             # Checkbox that allows presentation of advanced parameters.
             
             self._advanced = QCheckBox(self)
+            self._advanced.setCheckState(Qt.CheckState.Unchecked)
             self.layout().addWidget(self._advanced, 6,0, )
             self.layout().addWidget(QLabel('Configure advanced parameters', self), 6,1, )
             
@@ -652,7 +654,7 @@ class EvbMainParameters(QWizardPage):
         for textItem in [('host', self._host), ('service-suffix', self._suffix), ('ring', self._ring)]:
             value = config.get(textItem[0])
             if value:
-                textItem[2].setText(value)
+                textItem[1].setText(value)
         for intItem in [('dt', self._dt), ('sourceid', self._sourceid)]:
             value = config.get(intItem[0])
             if value:
@@ -682,11 +684,6 @@ class EvbMainParameters(QWizardPage):
             QMessageBox.warning(self, 'Missing ringbuffer', "The output ring buffer must have a URL")
             return False
         
-        # The URL must have the tcp scheme
-        
-        if urllib.parse.urlsplit(self.field('ring')).scheme.lower() != 'tcp':
-            QMessageBox.warning(self, 'Bad ring URI', 'The ringbuffer URI must have the form tcp://host/ring')
-            return False
 
         return True
         
@@ -728,9 +725,9 @@ class EvbAdvancedParameters(QWizardPage):
             # The timestamp policy first:
             
             self._tspolicy = QComboBox(self)
-            self._tsPolicy.addItems(['latest', 'earliest', 'average'])
+            self._tspolicy.addItems(['latest', 'earliest', 'average'])
             self._tspolicy.setCurrentText('latest')
-            self.layout().addWidget(self._tsPolicy, 0,0, )
+            self.layout().addWidget(self._tspolicy, 0,0, )
             self.layout().addWidget(QLabel('Timestamp policy', self), 0,1, )
             self.registerField('tspolicy', self._tspolicy, 'currentText')  # Policy name not index.
             
@@ -738,11 +735,11 @@ class EvbAdvancedParameters(QWizardPage):
             
             self._maxFrags = QSpinBox(self)
             self._maxFrags.setMinimum(100)
-            self._maxFrage.setMaximum(1 << 20)
+            self._maxFrags.setMaximum(1 << 20)
             self._maxFrags.setValue(1000)
             self.layout().addWidget(self._maxFrags, 1,0, )
             self.layout().addWidget(QLabel('Maximum fragments in an event', self), 1,1, )
-            self.registerField('maxfragments', self._maxfrags)
+            self.registerField('maxfragments', self._maxFrags)
             
             #  Flush tick window
             
@@ -773,7 +770,7 @@ class EvbAdvancedParameters(QWizardPage):
             self._globalxon.setSingleStep(100000) # up/down by 100000 else they'll get bored.
             self.layout().addWidget(self._globalxon, 4,0, )
             self.layout().addWidget(QLabel('Global Xon threshold'), 4,1, )
-            self.regiseterField('globalxon', self._globalxon)
+            self.registerField('globalxon', self._globalxon)
             
             #   Per Queue flow control
             
@@ -791,7 +788,7 @@ class EvbAdvancedParameters(QWizardPage):
             self._perqxon.setMaximum(100000000)
             self._perqxon.setValue(50000)
             self._perqxon.setSingleStep(10000)
-            self.layout().addWidget(self._perqxoff, 6,0, )
+            self.layout().addWidget(self._perqxon, 6,0, )
             self.layout().addWidget(QLabel('Per queue Xon threshold', self), 6,1, )
             self.registerField('perqxon', self._perqxon)
         
@@ -889,7 +886,7 @@ class DataSourceParameters(QWizardPage):
         evbhost = self.field('host')
         evbservice = self._computeEvbService()
         finalConfigs = configs
-        for index, config in finalConfigs.enumerate():
+        for index, config in enumerate(finalConfigs):
             finalConfigs['evbhost'] = evbhost
             finalConfigs['evbservice'] = evbservice
         
@@ -906,12 +903,12 @@ class DataSourceParameters(QWizardPage):
     def _computeEvbService(self) -> str:
         # Compute the event builder full service name:
         
-        result = f'Orderer:getpass.getuser()'
-        service = self.field('service_suffix').strip()
-        if service:
+        result = f'Orderer:{getpass.getuser()}'
+        suffix = self.field('service_suffix').strip()
+        if suffix:
             result += f':{suffix}'
         
-        return service
+        return result
         
         
 class EVBWizard(QWizard):
@@ -960,6 +957,7 @@ class EVBWizard(QWizard):
         self.currentIdChanged.connect(self._loadPageConfig)
     
     def load(self, pipeConfig : dict[str, object], sourceConfigs : list[dict[str, object]]) -> None:
+        print('load')
         self._loadedPages = set()        # Reset the pages that have been loaded.
         self._evbconfig   = pipeConfig
         self._sourceConfigs = sourceConfigs
@@ -1030,13 +1028,18 @@ class EVBWizard(QWizard):
         # the user can modify them, go back and forward with impunity and
         # without their changes being lost...hence this scoreboard
         
-        if pageId not in self._loadedPages and self._evbconfig and self._sourceConfigs:
+        
+        # We need direct comparisons to none in case the configuration
+        # has been laoded but is empty (e.g. no sources).
+        if pageId not in self._loadedPages and \
+            self._evbconfig is not None and self._sourceConfigs is not None:
+            
             page = self.page(pageId) 
             # Pages 10, 20 need the evb pipe confi8g:
             # page 30 needs the source config... other (pages added later?)
             # don't get loaded.
             if pageId in (10,20):
-                page.load(self._evbConfig)
+                page.load(self._evbconfig)
             elif pageId == 30:
                 page.load(self._sourceConfigs)
             # of loaded pages.
@@ -1053,6 +1056,14 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     
     win = EVBWizard()
+    
+    pipeconfig = {
+        'host' : 'localhost',
+        'service-suffix' : 'builder',
+        'ring' : 'ron'
+    }
+    sourceConfigs = []
+    win.load(pipeconfig, sourceConfigs)
     win.show()
     
     if win.exec() == QDialog.DialogCode.Accepted :
