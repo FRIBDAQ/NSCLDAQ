@@ -70,7 +70,7 @@ class EventBuilderManager(QObject):
     _instance : ClassVar[Self | None] = None   # Singleton instance variable.
     evbExited = pyqtSignal(str) 
     def __init__(self):
-        self._init__(None)
+        super().__init__(None)
         '''
         Do not invoke this directly, that will result in a SingletonViolation
         being raised.  Use EventBuilderManager.instance() to get the singleton
@@ -90,7 +90,7 @@ class EventBuilderManager(QObject):
         '''
         @return EventBuilderManager - the singleton instance - constructing if needed
         '''
-        if not cls.instance:
+        if not cls._instance:
             cls._instance = cls()
         
         return cls._instance
@@ -259,7 +259,7 @@ class EventBuilderSaveRestore(Serializer):
         Write the configs to file
         param destination : io.TextIOBase - the text io cofiguration file.
         '''
-        destination.write(f'EventBuilders = {EventBuilderManager.instance().configs()}')
+        destination.write(f'EventBuilders = {EventBuilderManager.instance().configs()}\n')
         
     def deserialize(self, mod : types.ModuleType) -> None:
         '''
