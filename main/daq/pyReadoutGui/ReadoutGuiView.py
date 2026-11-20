@@ -196,6 +196,10 @@ class ReadoutGuiMainWindow(QMainWindow):
         Enslavement Menu:
             slaveConfigure     - Set the configuration of the slave server.
             slaveEnable
+        Event builder menu:
+            evbAdd            - Define a new event builder.
+            evbEdit           - Edit an existing event builder.
+            evbDelete         - Remove an event builder definition 
     '''
     # Signals:
     
@@ -216,7 +220,13 @@ class ReadoutGuiMainWindow(QMainWindow):
     evlogDelete        = pyqtSignal()
     
     slaveConfigure      = pyqtSignal()
-    slaveEnable        = pyqtSignal(bool)
+    slaveEnable         = pyqtSignal(bool)
+    
+    evbAdd              = pyqtSignal()
+    evbEdit             = pyqtSignal()
+    evbDelete           = pyqtSignal()
+    
+    
     outputServerConfigure = pyqtSignal()
     
     
@@ -270,6 +280,9 @@ class ReadoutGuiMainWindow(QMainWindow):
         
         slaveMenu = menubar.addMenu('Slave Server')
         self._createSlaveServerMenu(slaveMenu)
+        
+        evbMenu   = menubar.addMenu('Event Builders')
+        self._createEvbMenu(evbMenu)
     
     
     def _createFileMenu(self, fileMenu : QMenu) -> None:
@@ -367,6 +380,28 @@ class ReadoutGuiMainWindow(QMainWindow):
         menu.addAction(self._outputConfigAction)
         
         # the output server.
+ 
+    def _createEvbMenu(self, menu : QMenu) -> None:
+        
+        # Add an event builder.
+        
+        self._evbAddAction = QAction('Add...', menu)
+        self._evbAddAction.triggered.connect(self.evbAdd)
+        menu.addAction(self._evbAddAction)
+        
+        # Edit an existing event builder:
+        
+        self._evbEditAction = QAction('Edit...', menu)
+        self._evbEditAction.triggered.connect(self.evbEdit)
+        menu.addAction(self._evbEditAction)
+        
+        menu.addSeparator()
+        
+        # Delete an event builder.
+        
+        self._evbDelAction = QAction ('Delete...', menu)
+        self._evbDelAction.triggered.connect(self.evbDelete)
+        menu.addAction(self._evbDelAction)
  
     def _slaveEnableToggled(self) -> None:
         # The slave enable button toggled...figure out its state and emit
