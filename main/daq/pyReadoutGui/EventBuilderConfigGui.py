@@ -33,7 +33,7 @@ import urllib.parse
 
 from nscldaq.editablelist6 import EditableList
 from nscldaq.mg_configutils import SaveDialog
-from nscldaq.readoutgui import EventBuilder
+from nscldaq.readoutgui.ReaduitGuiView import mainWindow
 from PyQt6.QtCore import QModelIndex, QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QIntValidator, QStandardItem, QStandardItemModel
 from PyQt6.QtWidgets import (
@@ -46,6 +46,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QSpinBox,
+    QStyle,
     QTableView,
     QVBoxLayout,
     QWidget,
@@ -1071,6 +1072,116 @@ class EVBWizard(QWizard):
                     page.load(self._sourceConfigs)
             
             self._loadedPages.add(pageId)      
+        
+class EVBTableModel(QStandardItemModel):
+    '''
+    This model gets loaded with a list of named event builder configurations.
+    The items exported to an e.g. QTableView are the event builder
+    name, the host it runs in and the output ringbuffer it creates and a trashcan
+    icon in case the client wants to make a table from which event builders can be
+    deleted.  
+    After instantiating the model, invoking 'load' loads the model with
+    named event builders.
+    '''
+    def __init__(self, parent : QObject | None = None):
+        super().__init__(parent)
+        
+        # This is cleverly designed to be the same as what comes back from 
+        # EventBuilderManager.configs.  Indices of this list will also
+        # match the rows we crate in load.
+        
+        self._buidlers : list[tuple[str, dict[str, object], list[dict[str, object]]]] =  []
+        
+        # For the trash can column.
+        
+        icon_attr = QStyle.StandardPixmap.SP_TrashIcon
+        self._trashIcon = mainWindow().style().standardIcon(icon_attr)
+        
+    
+    def load(self, configs : list[tuple[str, dict[str, object], list[dict[str, object]]]]) -> None:
+        '''
+        Loads the model after clearing it and sets up the model and headers.
+        @param configs :list[tuple[str, dict[str, object], list[dict[str, object]]]] 
+            - The list of configurations from which to stock the model:
+               [0] - Is a name to associate with the event buidler.
+               [1] - Is the pipeline configuration.
+               [2] - Is the list of fragment source configurations.
+        @note This is identical to the list returned by the EventBuilderManaer's singleton
+              configs method.
+        '''
+        self.clear()
+        self.setHorizontalHeaderLabels(['Name', 'Host', 'Output Ring', 'Delete'])
+        
+        self._builders = configs         # Sam struct after all.
+        for config in self._builders:
+            self._addRow(config[0], config[1]['host'], config[1]['ring'])
+    
+    def getDefinition(self, idx: QModelIndex) ->  tuple[str, dict[str, object], list[dict[str, object]]]:
+        '''
+        Given a model index, return the configuration for the row that contains
+        that index
+        @param idx: QModelIndex - The index of the row to return.
+        @return tuple[str, dict[str, object], list[dict[str, object]]]
+            - The information that corresponds to that row. See load for information about
+              the contents of the returned tuple.
+        @throw IndexError  - if the index is not in the model somehow.
+        '''
+        return self._builders(idx.row())
+        
+    
+    #  Utilities
+    
+    def _addRow(self, name : str, host : str, ring : str) -> None:
+        # Add a row to the model.
+        
+        nameItem = QStandardItem(name)
+        hostItem = QStandardItem(host)
+        ringItem = QStandardItem(ring)
+        trashItem = QStandardItem(self._trashIcon, '')
+        
+        self.appendRow([nameItem, hostItem, ringItem, trashItem])
+
+class EVBTable(QTableView):
+    '''
+    Displays the data in an EVBTableModel in a table.  Normally,
+    the trash can (delete) column is displayed, however,
+    the hideDelete and showDelete methods can control
+    the visibility of this column.
+    Signals:
+    
+    delete(QModelIndex)  Trash can was clicked.
+    selected(QModelIndex) An item was selected via double click.
+    '''
+    delete   = pyqtSignal(QModelIndex)
+    selected = pyqtSignal(QModelIndex)
+    def  __init__(self, model : EVBTableModel, parent : QWidget | None = None):
+        super().__init__(parent)
+        self.setModel(model)
+        
+        self.clicked.connect(self._clicked)    # Figure out if we need to emit delete.
+        self.doubleClicked.connect(self.selected)
+        
+    
+    #  Show/hide trash cans:
+    
+    def hideDelete(self) -> None:
+        '''
+        Hide the trashcan column.
+        '''
+        self.hideColumn(3)
+    def showDelete(self) -> None:
+        '''
+        Show the trashcan column.
+        '''
+        self.showColumn(3)
+        
+    # Internal (private) slots.
+    
+    def _clicked(self, index : QModelIndex) -> None:
+        # If the model index indicates the  the trash can icon
+        # was what was clicked signal delete.
+        if index.row() == 3:
+            self.delete.emit(index)
         
         
 # Test code:
