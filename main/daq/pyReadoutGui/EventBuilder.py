@@ -497,7 +497,7 @@ class EventBuilderPipeline(EncapsulatedCommand):
                 
                 
 
-def EventBuilder(QObject):
+class  EventBuilder(QObject):
     '''
     This class encapsulates an event builder pipeline and a list of
     the fragment sources that feed it.  These togehter make up a 
