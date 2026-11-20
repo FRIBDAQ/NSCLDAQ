@@ -29,21 +29,26 @@ from nscldaq.readoutgui.EventBuilderManager import EventBuilderManager, EVBManag
 
 from PyQt6.QtWidgets import QDialog, QMessageBox
 
-class MakeEventBuilderController:
+
+def MakeEventBuilder():
     '''
     Controller to create an event builder.
     - Fires up a wizard and, if the wizard is accepted,
     - Pulls info from the wizard, makes a new event builder
       and stuffs it into the manager.
+      
+    @todo - maybe make failure a bit simpler, since really the only failure
+            is a duplicate name-- could ask if we want to overwrite e.g
+            and, if not, return to the wizard....
     '''
-    def exec(self):
-        wizard = EventBuilderConfigGui.EVBWizard()
-        if wizard.exec() == QDialog.DialogCode.Accepted:
-            evbDefinition = wizard.get()
-            evb = EventBuilder(evbDefinition[2], evbDefinition[1])
-            try:
-                EventBuilderManager.instance().add(evbDefinition[0], evb)
-            except EVBManagerException as e:
-                QMessageBox.warning(wizard, "Can't register", f'Failed to add Event builder {evbDefinition[0]} : {e}')
+
+    wizard = EventBuilderConfigGui.EVBWizard()
+    if wizard.exec() == QDialog.DialogCode.Accepted:
+        evbDefinition = wizard.get()
+        evb = EventBuilder(evbDefinition[2], evbDefinition[1])
+        try:
+            EventBuilderManager.instance().add(evbDefinition[0], evb)
+        except EVBManagerException as e:
+            QMessageBox.warning(wizard, "Can't register", f'Failed to add Event builder {evbDefinition[0]} : {e}')
                 
     
