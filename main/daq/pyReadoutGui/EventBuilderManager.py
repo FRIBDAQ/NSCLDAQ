@@ -26,11 +26,14 @@ they and their sources are restarted on every such transition.
 This also allows event builder definitions (I'm mostly thinking of --dt settings)
 to be modified between runs.
 '''
+import io
 import traceback
+import types
 from typing import ClassVar, Self
 
 from nscldaq.readoutgui.EventBuilder import EventBuilder
 from nscldaq.readoutgui.ReadoutGuiView import mainWindow
+from nscldaq.readoutgui.StateSaveRestore import SerializationManager, Serializer
 from PyQt6.QtCore import QObject, QProcess, pyqtSignal
 
 
@@ -242,3 +245,38 @@ class EventBuilderManager(QObject):
             txt = f'Event builder {name} output: {output}'
             
         self._output(txt)
+        
+
+#  Save/restore the event builder definitions the manager knows about.
+
+class EventBuilderSaveRestore(Serializer):
+    '''
+    Save and restore the state of the event builders. We're going to write
+    EventBuilders = ...and then what we get from the manager's configs method.
+    '''
+    def serialize(self, destination : io.TextIOBase) -> None:
+        '''
+        Write the configs to file
+        param destination : io.TextIOBase - the text io cofiguration file.
+        '''
+        destination.write(f'EventBuilders = {EventBuilderManager.instance().configs()}')
+        
+    def deserialize(self, mod : types.ModuleType) -> None:
+        '''
+        Restore the configuration (if it exists).
+        @param mod - the module the configuration file was read into.
+        '''
+    
+        try:
+            config = mod.EventBuilders
+        except AttributeError:
+            return
+        
+        manager = EventBuilderManager.instance()
+        for builder in config:
+            evb = EventBuilder(builder[2], builder[1])
+            manager.add(builder[0], evb)
+
+# Register an instance of our serializer:
+
+SerializationManager.instance().addSerializer(EventBuilderSaveRestore())
