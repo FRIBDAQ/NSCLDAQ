@@ -45,6 +45,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QPushButton,
     QSpinBox,
     QStyle,
     QTableView,
@@ -100,7 +101,7 @@ class SourceIdListEditor(QWidget):
         # Set up the list box:
 
         self._list.add.connect(self._validatedAdd)   # Add with validation.
-        
+        self._entry.returnPressed.connect(self._validatedAdd) # enter is also add.
         
     
     # Public methods:
@@ -145,6 +146,7 @@ class SourceIdListEditor(QWidget):
         # Finally we can add it:
         
         self._list.appendItem(id)     # Must append the textual item <sigh>
+        self._entry.setText('')       # Clear the  entry for the user.
 
 class FragmentSourceEditor(QWidget):
     '''
