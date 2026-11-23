@@ -227,7 +227,7 @@ class OutputServerController:
             if enabled:
                 self.listen()   # Will update self._running.
                 
-class SaveRestoreConfig(Serializer):
+class OServerSaveRestoreConfig(Serializer):
     '''
     Serializer for the configuration of the output server.
     The configuration is stored as the OutputServer variable which is
@@ -259,4 +259,4 @@ class SaveRestoreConfig(Serializer):
         
 # Register our serializer:
 
-SerializationManager.instance().addSerializer(SaveRestoreConfig())
+SerializationManager.instance().addSerializer(OServerSaveRestoreConfig())

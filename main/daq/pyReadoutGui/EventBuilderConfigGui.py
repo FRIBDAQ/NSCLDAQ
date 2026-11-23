@@ -1182,7 +1182,8 @@ class EVBTable(QTableView):
     def _clicked(self, index : QModelIndex) -> None:
         # If the model index indicates the  the trash can icon
         # was what was clicked signal delete.
-        if index.row() == 3:
+        
+        if index.column() == 3:
             self.delete.emit(index)
         
         

@@ -54,8 +54,23 @@ def MakeEventBuilder():
             EventBuilderManager.instance().add(evbDefinition[0], evb)
         except EVBManagerException as e:
             QMessageBox.warning(wizard, "Can't register", f'Failed to add Event builder {evbDefinition[0]} : {e}')
-                
-class EditBuilders():
+
+class ListBasedEditor():
+    def __init__(self):
+        parent = mainWindow()
+        
+        self._model = nscldaq.readoutgui.EventBuilderConfigGui.EVBTableModel(parent)
+        self._loadModel()
+        view = nscldaq.readoutgui.EventBuilderConfigGui.EVBTable(self._model, parent)
+        self._dialog = DismissDialog(view, parent)        
+        
+    def _loadModel(self)  -> None:    
+        # load Self.model:
+        
+        eventBuilders = EventBuilderManager.instance().configs()
+        self._model.load(eventBuilders)    
+        
+class EditBuilders(ListBasedEditor):
     '''
     This class edits one or more event builders.  When constructed,
     it pops up a dismiss dialog wraapping an EvTable listing the
@@ -67,26 +82,15 @@ class EditBuilders():
     
     '''
     def __init__(self):
-        '''
-        @param parent : QWidget - mandataory parameter - parent widget informs where the dialog
-                  pops up
-        '''
-        # Build the table model:
-        parent = mainWindow()
+        super().__init__()
         
-        self._model = nscldaq.readoutgui.EventBuilderConfigGui.EVBTableModel(parent)
-        self._loadModel()
-        view = nscldaq.readoutgui.EventBuilderConfigGui.EVBTable(self._model, parent)
-        view.hideDelete()
-        view.selected.connect(self._edit)
-        self._dialog = DismissDialog(view, parent)
+        # Build the table model:
+        
+        self._dialog.workarea().selected.connect(self._edit)
+        self._dialog.workarea().hideDelete()
         self._dialog.exec()
         
-    def _loadModel(self)  -> None:    
-        # load Self.model:
-        
-        eventBuilders = EventBuilderManager.instance().configs()
-        self._model.load(eventBuilders)
+    
         
     def _edit(self, index: QModelIndex) -> None:
         # Called when the user selected (via double click) a
@@ -112,3 +116,31 @@ class EditBuilders():
             
             self._loadModel()         # Load the model/table.
             self._dialog.workarea().hideDelete()  # Keep the delete function off.
+
+class DeleteBuilders(ListBasedEditor):
+    '''
+    Instances of this class bring up the event editor list with the
+    trash can and, when the trash can is clicked, deletes the corresponding
+    event builder.  We cheat by overriding the _edit method of our
+    base class to do nothing...and connecting yto the delete  method to do
+    our business.
+    '''
+    def __init__(self):
+        
+        super().__init__()
+        self._dialog.workarea().showDelete()    # show the trashcan.
+        self._dialog.workarea().delete.connect(self._delete)  # connect to the trash can.
+        self._dialog.exec()
+        
+    
+    # Implement the deleter:
+    
+    def _delete(self, index : QModelIndex) -> None:
+
+        name, _pipeconfig, _srconfig = self._model.getDefinition(index)
+        EventBuilderManager.instance().remove(name)
+        
+        #  Update the list.
+        
+        self._loadModel()
+        self._dialog.workarea().showDelete()

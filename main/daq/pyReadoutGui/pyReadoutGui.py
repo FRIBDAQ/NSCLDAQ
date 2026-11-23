@@ -220,6 +220,7 @@ def  _saveConfiguration():
     # Stub function to save the configuration script.
     
     with open('readoutguiconfig.py', 'w', encoding='utf-8') as config:
+        config.truncate()
         SerializationManager.instance().serialize(config)
 
 def _loadOptionalModules() -> None:
@@ -273,6 +274,7 @@ def _setupEvbMenu(gui : ReadoutGuiMainWindow) -> None:
     # Connect the menu signals for the event builder menu.    
     gui.evbAdd.connect(nscldaq.readoutgui.EventBuilderController.MakeEventBuilder)
     gui.evbEdit.connect(nscldaq.readoutgui.EventBuilderController.EditBuilders)
+    gui.evbDelete.connect(nscldaq.readoutgui.EventBuilderController.DeleteBuilders)
 def _setupStateInteractions(central : ReadoutGuiCentralWidget, manager : ReadoutStateMachine) -> None:
     #  Set up the signals so that the state machine will undertake the transitions requested
     #  by the gui buttons.

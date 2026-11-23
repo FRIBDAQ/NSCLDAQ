@@ -91,6 +91,7 @@ class EventBuilderManager(QObject):
         @return EventBuilderManager - the singleton instance - constructing if needed
         '''
         if not cls._instance:
+            print("New instance")
             cls._instance = cls()
         
         return cls._instance
@@ -259,7 +260,10 @@ class EventBuilderSaveRestore(Serializer):
         Write the configs to file
         param destination : io.TextIOBase - the text io cofiguration file.
         '''
-        destination.write(f'EventBuilders = {EventBuilderManager.instance().configs()}\n')
+        
+        # Not sure why I need this shit but I seem to:
+        
+        destination.write(f'EventBuilders = {EventBuilderManager.instance().configs()} \n')
         
     def deserialize(self, mod : types.ModuleType) -> None:
         '''
