@@ -42,7 +42,7 @@ def MakeEventBuilder():
             and, if not, return to the wizard....
     '''
 
-    wizard = EventBuilderConfigGui.EVBWizard()
+    wizard = nscldaq.readoutgui.EventBuilderConfigGui.EVBWizard()
     if wizard.exec() == QDialog.DialogCode.Accepted:
         evbDefinition = wizard.get()
         evb = EventBuilder(evbDefinition[2], evbDefinition[1])
