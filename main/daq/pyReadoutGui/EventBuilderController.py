@@ -22,7 +22,7 @@ Readout gui.  What we can do is
 *  Delete a selected event builder.
 
 '''
-from  nscldaq.readoutgui import EventBuilderConfigGui  # The management views.
+import nscldaq.readoutgui.EventBuilderConfigGui  # The management views.
 from nscldaq.readoutgui.EventBuilder        import EventBuilder
 from nscldaq.readoutgui.EventBuilderManager import EventBuilderManager, EVBManagerException
 

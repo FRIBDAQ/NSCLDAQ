@@ -33,7 +33,7 @@ import urllib.parse
 
 from nscldaq.editablelist6 import EditableList
 from nscldaq.mg_configutils import SaveDialog
-from nscldaq.readoutgui.ReaduitGuiView import mainWindow
+from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from PyQt6.QtCore import QModelIndex, QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QIntValidator, QStandardItem, QStandardItemModel
 from PyQt6.QtWidgets import (

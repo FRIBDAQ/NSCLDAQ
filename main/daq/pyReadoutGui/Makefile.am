@@ -10,7 +10,8 @@ MODULES=$(TESTABLE_MODULES) StateView.py RunTimerView.py RunParamsView.py \
 	EventLog.py EventLogManager.py EventLogViews.py EventLogControllers.py \
 	Slave.py SlaveController.py OutputServer.py \
 	RemoteDataSource.py \
-	EventBuilder.py EventBuilderConfigGui.py EventBuilderManager.py 
+	EventBuilder.py EventBuilderConfigGui.py EventBuilderManager.py \
+	EventBuilderController.py
 
 
 INTERACTIVE_TESTS=testRunStateController.py
