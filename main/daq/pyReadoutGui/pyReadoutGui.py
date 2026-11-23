@@ -272,7 +272,7 @@ def _setupLoggerMenu(gui : ReadoutGuiMainWindow) -> None:
 def _setupEvbMenu(gui : ReadoutGuiMainWindow) -> None:
     # Connect the menu signals for the event builder menu.    
     gui.evbAdd.connect(nscldaq.readoutgui.EventBuilderController.MakeEventBuilder)
-    gui.evbEdit.connect(nscldaq.readoutgui.EditBuilder)
+    gui.evbEdit.connect(nscldaq.readoutgui.EventBuilderController.EditBuilders)
 def _setupStateInteractions(central : ReadoutGuiCentralWidget, manager : ReadoutStateMachine) -> None:
     #  Set up the signals so that the state machine will undertake the transitions requested
     #  by the gui buttons.

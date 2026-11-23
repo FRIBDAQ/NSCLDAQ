@@ -23,13 +23,13 @@ Readout gui.  What we can do is
 
 '''
 import nscldaq.readoutgui.EventBuilderConfigGui  # The management views.
+from nscldaq.mg_configutils import DismissDialog
 from nscldaq.readoutgui.EventBuilder import EventBuilder
 from nscldaq.readoutgui.EventBuilderManager import (
     EVBManagerException,
     EventBuilderManager,
 )
-from nscldaq.reaedoutgui.ReadoutGuiView import mainWindow
-from nscldaq.mg_configutils import DismissDialog
+from nscldaq.readoutgui.ReadoutGuiView import mainWindow
 from PyQt6.QtCore import QModelIndex
 from PyQt6.QtWidgets import QDialog, QMessageBox, QWidget
 
@@ -74,26 +74,27 @@ class EditBuilders():
         # Build the table model:
         parent = mainWindow()
         
-        self._model = nscldaq.readoutgui.EventBuilderGui.EvbTableModel(parent)
-        view = nscldaq.readoutGui.EventBuilderGui.EVBTable(self._model, parent)
+        self._model = nscldaq.readoutgui.EventBuilderConfigGui.EVBTableModel(parent)
+        self._loadModel()
+        view = nscldaq.readoutgui.EventBuilderConfigGui.EVBTable(self._model, parent)
         view.hideDelete()
         view.selected.connect(self._edit)
         self._dialog = DismissDialog(view, parent)
-        self._editdialog.exec()
+        self._dialog.exec()
         
     def _loadModel(self)  -> None:    
         # load Self.model:
         
-        eventBuilders = self.EventBuilderManager.instance().configs()
+        eventBuilders = EventBuilderManager.instance().configs()
         self._model.load(eventBuilders)
         
     def _edit(self, index: QModelIndex) -> None:
         # Called when the user selected (via double click) a
         # builder to edit.
         
-        builder = self._model.getDefinition(index)
-        wizard  = nscldaq.readoutGui.EventBuilderGui.EVBWizard(self._dialog)
-        wizard.load(builder)
+        name, pipeconfig, srcconfig = self._model.getDefinition(index)
+        wizard  = nscldaq.readoutgui.EventBuilderConfigGui.EVBWizard(self._dialog)
+        wizard.load(name, pipeconfig, srcconfig)
         if wizard.exec() == QDialog.DialogCode.Accepted:
             definition = wizard.get()
             builder = EventBuilder(definition[2], definition[1])  # We may toss this but...
@@ -103,9 +104,11 @@ class EditBuilders():
                     f'You changed the name of the event builder to {definition[0]}, make a new event builder?'
                 )
                 # Only make a new one if they say so.
-                if accept == QDialog.DialogCode.Accepted:
+                
+                if accept == QMessageBox.StandardButton.Yes:
                     EventBuilderManager.instance().add(definition[0], builder)
             else:
                 EventBuilderManager.instance().replace(definition[0], builder)
             
             self._loadModel()         # Load the model/table.
+            self._dialog.workarea().hideDelete()  # Keep the delete function off.

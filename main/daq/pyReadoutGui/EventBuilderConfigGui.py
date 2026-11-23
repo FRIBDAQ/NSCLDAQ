@@ -1128,7 +1128,7 @@ class EVBTableModel(QStandardItemModel):
               the contents of the returned tuple.
         @throw IndexError  - if the index is not in the model somehow.
         '''
-        return self._builders(idx.row())
+        return self._builders[idx.row()]
         
     
     #  Utilities
