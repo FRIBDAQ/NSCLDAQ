@@ -26,6 +26,7 @@ import traceback
 import uuid
 
 import nscldaq.readoutgui.DataSourceConfig  # Loads/registers the serializer for data sources.
+import nscldaq.readoutgui.EventBuilderController
 import nscldaq.readoutgui.RunConfig  # Loads/registers the serializer for run config.
 from nscldaq.mg_configutils import SaveDialog
 from nscldaq.readoutgui import (
@@ -33,15 +34,15 @@ from nscldaq.readoutgui import (
     DataSourceViews,
     DDASDataSource,
     DelaySource,
-    RemoteDataSource,
-    EventLog,           # Register the types.
+    EventBuilderManager,
+    EventLog,  # Register the types.
     EventLogControllers,
-    EventLogManager,    # EVent log serialization.
+    EventLogManager,  # EVent log serialization.
     FRIBDAQDataSource,  # This import also registers
-    MVLCDataSource,     # the sources with the source  # noqa: F401
-    VMUSBDataSource,    # registry.
-    SlaveController,  
-    EventBuilderManager
+    MVLCDataSource,  # the sources with the source  # noqa: F401
+    RemoteDataSource,
+    SlaveController,
+    VMUSBDataSource,  # registry.
 )
 from nscldaq.readoutgui.DataSource import DataSource
 from nscldaq.readoutgui.DataSourceController import DataSourceController
@@ -267,7 +268,11 @@ def _setupLoggerMenu(gui : ReadoutGuiMainWindow) -> None:
     gui.evlogList.connect(_listLoggers)
     gui.evlogDelete.connect(_deleteLoggers)
     gui.evlogEnable.connect(_enableLoggers)
-    
+
+def _setupEvbMenu(gui : ReadoutGuiMainWindow) -> None:
+    # Connect the menu signals for the event builder menu.    
+    gui.evbAdd.connect(nscldaq.readoutgui.EventBuilderController.MakeEventBuilder)
+    gui.evbEdit.connect(nscldaq.readoutgui.EditBuilder)
 def _setupStateInteractions(central : ReadoutGuiCentralWidget, manager : ReadoutStateMachine) -> None:
     #  Set up the signals so that the state machine will undertake the transitions requested
     #  by the gui buttons.
@@ -295,6 +300,7 @@ def main() -> int:
     _setupFileMenu(main_window)
     _setupDataSourceMenu(main_window)
     _setupLoggerMenu(main_window)
+    _setupEvbMenu(main_window)
     
     # Set up auto save.  Every second we'll save the configuration:
     

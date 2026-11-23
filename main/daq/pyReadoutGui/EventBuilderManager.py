@@ -113,7 +113,7 @@ class EventBuilderManager(QObject):
         
         builder.eventBuilderExited.connect(lambda _exitst, _procstate: self.evbExited.emit(name))
         builder.eventBuilderExited.connect(lambda _exitst, _procstate: self._reportBuilderExit(name))
-        builder.eventBuilder.sourceExited(lambda srcname, exitstat, procstate: self._reportSrcExit(name, srcname, exitstat, procstate))
+        builder.sourceExited.connect(lambda srcname, exitstat, procstate: self._reportSrcExit(name, srcname, exitstat, procstate))
         
         builder.eventBuilderOutput.connect(lambda output : self._outputRelay(name, None, output))
         builder.sourceOutput.connect(lambda srcname, output : self._outputRelay(name, srcname, output))

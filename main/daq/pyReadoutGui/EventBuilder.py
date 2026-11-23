@@ -151,7 +151,7 @@ class FragmentSource(EncapsulatedCommand):
             'evbhost' : str,
             'evbservice' : str,
             'description' : str,
-            'ids' : list[int],
+            'ids' : list,     # Can't check against parameterized types.
             'default-id' : int,
             'ring' : str,
             'timeout' : int,
@@ -181,6 +181,8 @@ class FragmentSource(EncapsulatedCommand):
         result['offset']     = config.get('offset', 0)
         result['ts-divisor'] = config.get('ts-divisor', 1)
         result['end-runs']   = config.get('end-runs', 1)
+        
+        return result
     
     @classmethod
     def checkConfig(cls, config : dict[str, object]) -> str | None:
@@ -199,7 +201,7 @@ class FragmentSource(EncapsulatedCommand):
         
         typedict = cls.configTypes()
         for name,t in typedict.items():
-            if not isinstance(config[name],t):
+            if not isinstance(config[name], t):
                 return f'Configuration param {name} must by of type {t.__name__} was {type(config[name]).__name__}'
         
         return None                        # Be explicit.
@@ -218,7 +220,7 @@ class FragmentSource(EncapsulatedCommand):
         # IF there is a problem with the configuration, after the
         # defaults are applied, that's a ValueError
         
-        finalConfig = self.applyDefaults()
+        finalConfig = self.applyDefaults(config)
         errorMsg    = self.checkConfig(finalConfig)
         if isinstance(errorMsg, str):
             raise ValueError(f'Error in FragmentSource configuration: {errorMsg}')
@@ -306,7 +308,7 @@ class EventBuilderPipeline(EncapsulatedCommand):
             'perQXonThreshold'  : int | None,
             'dt'              : int,
             'tspolicy'        : str,
-            'sourceid'        : 0,
+            'sourceid'        : int | None,
             'maxfragments'    : int | None,
             'ring'            : str
         }
@@ -545,7 +547,7 @@ class  EventBuilder(QObject):
         
         self._pipeProcess : EventBuilderPipeline = EventBuilderPipeline(pipeConfig)
         self._pipeProcess.finished.connect(self.eventBuilderExited)
-        self._pipeProcess.outputLine.connect(self.eventBuilderOutput)
+        self._pipeProcess.line.connect(self.eventBuilderOutput)
         
         self._sourceProcesses : list[FragmentSource]    = []
         identifier = ""                    
@@ -563,7 +565,7 @@ class  EventBuilder(QObject):
             is the configuration of the event builder pipeline.  The second element is the
             list of FragmentSource configurations.
         '''
-        return (self._pipeSpecs, self._sourceSpecss)
+        return (self._pipeSpecs, self._sourceSpecs)
     
     def start(self) -> None:
         '''
@@ -592,7 +594,7 @@ class  EventBuilder(QObject):
     
     # Private utils.
     
-    def connectSourceSignals(self, process : FragmentSource, id : str) -> None:
-        name = process['ring']
+    def _connectSourceSignals(self, process : FragmentSource, id : str) -> None:
+        name = process.getConfig()['ring']
         process.finished.connect(lambda status, exitcode : self.sourceExited(name, status, exitcode))
-        process.outputLine.connect(lambda line : self.sourceOutput.emit(name, line))
+        process.line.connect(lambda line : self.sourceOutput.emit(name, line))
