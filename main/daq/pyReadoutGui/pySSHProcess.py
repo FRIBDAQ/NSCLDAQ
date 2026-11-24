@@ -103,7 +103,6 @@ class SSHProcess(QProcess):
         '''
         
         fullcommand = self._reconstructContainer() + '"' + command + '"'
-        print("Running: ", fullcommand)
         self._ssh(remote, fullcommand)
 
     

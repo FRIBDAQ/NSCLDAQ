@@ -270,7 +270,7 @@ class FragmentSource(EncapsulatedCommand):
         command += f" --info='{self._config['''description''']}'"   # " for when join is done.
         
         # one --ids for each id:
-        print("ids:", self._config['ids'])
+
         for id in self._config['ids']:
             command += f' --ids={id}'
         
