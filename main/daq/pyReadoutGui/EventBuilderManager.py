@@ -91,7 +91,6 @@ class EventBuilderManager(QObject):
         @return EventBuilderManager - the singleton instance - constructing if needed
         '''
         if not cls._instance:
-            print("New instance")
             cls._instance = cls()
         
         return cls._instance
@@ -206,7 +205,7 @@ class EventBuilderManager(QObject):
         # Nos start it.
         
         self._stopped = False
-        for evb in self._eventBuilders:
+        for evb in self._eventBuilders.values():
             evb.start()
             
     def stop(self) -> None:
@@ -216,15 +215,15 @@ class EventBuilderManager(QObject):
         crash (Active |  Paused -> NotReady)
         '''
         self._stopped = True
-        for evb in self._eventBuilders:
+        for evb in self._eventBuilders.values():
             evb.stop()
         
     # Utilities:
     
-    def _ouptut(self, txt : str) -> None:
+    def _output(self, txt : str) -> None:
         # Output text to our window:
         
-        output = mainWindow().centralWidget.Output().addOutput('EVB')
+        output = mainWindow().centralWidget().Outputs().addOutput('EVB')
         output.append(txt + '\n')
         
     # Internal (private) slots  

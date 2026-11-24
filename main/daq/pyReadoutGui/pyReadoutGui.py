@@ -280,6 +280,12 @@ def _setupStateInteractions(central : ReadoutGuiCentralWidget, manager : Readout
     #  by the gui buttons.
     
     buttons = central.StateControls()
+    
+    # We want the event builder starts to happen even before the 
+    # state machine transitions so their ready to go.
+    
+    buttons.begin.connect(EventBuilderManager.EventBuilderManager.instance().start)
+    
     buttons.start.connect(lambda: manager.transition('Starting'))
     buttons.begin.connect(lambda: manager.transition('Active'))
     buttons.end.connect(lambda: manager.transition('Halted'))

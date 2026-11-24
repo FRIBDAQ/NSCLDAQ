@@ -31,10 +31,25 @@ Note:  Unlike the Tcl readout GUI, the fragment sources and event builder piplin
         that participates in the experiment.
 '''
 import getpass
+import os
+import sys
+import time
 from abc import abstractmethod
-
+from nscldaq.portmanager.PortManager import PortManager
 from PyQt6.QtCore import QObject, QProcess, pyqtSignal
 from pySSHProcess import SSHProcess
+
+
+def _daqbin() -> str:
+    #  Local function to return the DAQBIN value.
+    #  If it does not exist, the program 
+    #  will exit with a message:
+    
+    try:
+        return os.environ['DAQBIN']
+    except KeyError:
+        print('You must setup a version of FRIB/NSCLDAQ using its daqsetup.bash script!', file=sys.stderr)
+        sys.exit(-1)
 
 class EncapsulatedCommand(QObject):
     '''
@@ -67,10 +82,10 @@ class EncapsulatedCommand(QObject):
         host    = self._getHost()
         self._process    = SSHProcess()
         self._process.finished.connect(self.finished)
-        self._process.finished.connect(self._exited)
-        self._process.readyReadStandardInput.connect(self._relayOutput)
+        self._process.readyReadStandardError.connect(self._relayOutput)
         self._process.readyReadStandardOutput.connect(self._relayOutput)
         self._process.spawnRemote(host, command)
+
     
     def process(self) -> SSHProcess | None:
         '''
@@ -97,18 +112,13 @@ class EncapsulatedCommand(QObject):
     
     # Internal slots:
     
-    def _exited(self, status : int, reason : QProcess.ExitStatus) -> None:
-        # The process exited, destroy the ssh process:
-        # anyone else who cares can catch the signal as well.
-        
-        self._process = None   # Eventually gets garbage collected.
 
     def _relayOutput(self) -> None:
         '''
         The ssh is readable, read a line and signal it:
         '''
-        line = self._process.ReadLine()
-        self.outputLine.emit(line)
+        txtline = self._process.ReadLine()
+        self.line.emit(txtline)
 
 class FragmentSource(EncapsulatedCommand):
     '''
@@ -135,7 +145,7 @@ class FragmentSource(EncapsulatedCommand):
     
     Signals:
     finished   - Relay of the finished signal from QProcess that runs the source.
-    line(str)  - A line of ouptut/error has been captured.
+    line(str)  - A line of output/error has been captured.
     
     '''
     finished = pyqtSignal(int, QProcess.ExitStatus)
@@ -241,31 +251,38 @@ class FragmentSource(EncapsulatedCommand):
     def _getHost(self) -> str:
         # Return the host torun in:
         
-        return self.config['host']
+        return self._config['host']
     def _generateCommand(self) -> str:
         # Based on the configuration, gernerates and
         # returns the command to run
         
-        command = ['$DAQBIN/ringFragmentSource', ]
-        command += f'--evbhost={self._config["evbhost"]}'
-        command += f'--evbname={self._config["evbservice"]}'
-        command += f'--info="{self._config["description"]}"'   # " for when join is done.
+        command = f'{_daqbin()}/ringFragmentSource'
+        command += f' --evbhost={self._config["evbhost"]}'
+        #
+        #  EVBservice is either
+        #   ORDERER:username in which this option is not needed or:
+        #   ORDERER:username:somethign in which --evbname is 'something.
+        #
+        service = self._config['evbservice'].split(':')
+        if len(service) > 2:
+            name = ':'.join(service[2:])   # In case the name has colons too.
+            command += f' --evbname={name}'
+        command += f" --info='{self._config['''description''']}'"   # " for when join is done.
         
         # one --ids for each id:
-        
+        print("ids:", self._config['ids'])
         for id in self._config['ids']:
-            command += f'--ids={id}'
+            command += f' --ids={id}'
         
-        command += f'--default-id={self._config["default-id"]}'
-        command += f'--ring={self._config["ring"]}'
-        command += '--expectbodyheaders'
-        command += f'--oneshot={self._config["end-runs"]}'
-        command += f'--timeout={self._config["timeout"]}'
-        command += f'--offset={self._config["offset"]}'
-        command += f'-ts-divisor={self._config["ts-divisor"]}'
+        command += f' --default-id={self._config["default-id"]}'
+        command += f' --ring={self._config["ring"]}'
+        command += ' --expectbodyheaders'
+        command += f' --oneshot={self._config["end-runs"]}'
+        command += f' --timeout={self._config["timeout"]}'
+        command += f' --offset={self._config["offset"]}'
+        command += f' --ts-divisor={self._config["ts-divisor"]}'
 
-
-        return command
+        return (command)
     
         
 class EventBuilderPipeline(EncapsulatedCommand):
@@ -434,7 +451,6 @@ class EventBuilderPipeline(EncapsulatedCommand):
         orderer = self._generateOrderer()
         glom    = self._generateGlom()
         stdinToRing = self._generateStdinToRing()
-        
         return f'{orderer} | {glom} | {stdinToRing}'
     
     def _generateOrderer(self) -> str:
@@ -443,24 +459,24 @@ class EventBuilderPipeline(EncapsulatedCommand):
         # The remainder of the configuration is pushed through the
         # orderer's stdin.
         
-        command = '$DAQBIN/startOrderer'
+        command = f'{_daqbin()}/startOrderer {self._config["ring"]}'  # Always pass the ring.
         suffix = self._config['service-suffix']
         if suffix:
-            command += f' {suffix}'
+            command += f' {suffix}'                     # Pass a suffix if it's there.
         
         return command
     
     def _generateGlom(self) -> str:
         # Generate the glomc command fromt he configuration.
         
-        command = '$DAQBIN/glom '
+        command = f'{_daqbin()}/glom '
         
         # Map of option to glom switches:
         # Yes,  I know that the mapping just pre-pends '--' but maybe
         # later we'll do things like 'timestamp-policy' instead of 'tspolicy'.
         glomOptionMap = {
             'dt' : '--dt',
-            'tspolicy' : '--tspolicy',
+            'tspolicy' : '--timestamp-policy',
             'sourceid' : '--sourceid',
             'maxfragments' : '--maxfragments'
         }
@@ -474,7 +490,7 @@ class EventBuilderPipeline(EncapsulatedCommand):
     def _generateStdinToRing(self) -> str:
         # Generate the StdinToRing command:
         
-        return f'$DAQBIN/stdintoring {self._config["ring"]}'
+        return f'{_daqbin()}/stdintoring {self._config["ring"]}'
         
     def _setOrdererParms(self) -> None:
         # Some orderer commands get pushed down into the stdin of 
@@ -575,29 +591,81 @@ class  EventBuilder(QObject):
         # by the fragment source, and connect it to the signal relays for it:
         
         self._pipeProcess.start()
-        
+        self._waitForAdvertisement()    # Wait for the orderer to advertise its service.
         
         # Start up each event source...
         
         for process in self._sourceProcesses:
             process.start()
+            
+        # Wait a bit for the sources to get established before starting the runl
+        
+        time.sleep(2)
     
     def stop(self) -> None:   
         '''
         Stop all event builder processes:
         '''
-        # First the sources:
+        # If we're already stopped just return.
         
-        self._pipeProcess.process().WriteLine('exit')
-        self._pipeProcess.stop()
-        self._pipeProcess.process().waitForFinished()
-        for process in self._sourceProcesses:
-            process.stop()
-            process.process().waitForFinished()
-    
+        if self._pipeProcess.process():
+            
+            # First the sources:
+            
+            self._pipeProcess.process().WriteLine('exit')
+            self._pipeProcess.process().kill()
+            self._waitPipeGone()
+            for process in self._sourceProcesses:
+                proc = process.process()
+                if proc:
+                    proc.kill()
+                    proc.waitForFinished()
+        
     # Private utils.
     
     def _connectSourceSignals(self, process : FragmentSource, id : str) -> None:
         name = process.getConfig()['ring']
-        process.finished.connect(lambda status, exitcode : self.sourceExited(name, status, exitcode))
+        process.finished.connect(lambda status, exitcode : self.sourceExited.emit(name, status, exitcode))
         process.line.connect(lambda line : self.sourceOutput.emit(name, line))
+        
+    def _evbService(self) -> str:
+        # Return the fulll event builder service:'
+        user = getpass.getuser()
+                
+        # Construct the servicename
+        
+        service = f'ORDERER:{user}'
+        suffix = self._pipeSpecs.get('service-suffix')
+        if suffix:
+            service += f':{suffix}'
+        
+        return service
+    def _waitForAdvertisement(self) -> None:
+        # Wait until the orderer advertises its service.
+        # for maximum of 10 seconds in 1 second intervals.
+        pm = PortManager(self._pipeSpecs['host'])  
+        service = self._evbService()
+        user    = getpass.getuser()
+        
+        
+        # @todo - make all this parameterized:
+        for tries in range(0,10):
+            if len(pm.find(service=service, user=user)) == 1:
+                return
+            time.sleep(1)
+        
+        raise RuntimeError(f'timed out waiting for event building pipline to advertise {service}!!')
+    
+    def _waitPipeGone(self) -> None:
+        # Wait for up to 10 seconds for the event builder to die:
+        
+        pm = PortManager(self._pipeSpecs['host'])
+        service = self._evbService()
+        user    = getpass.getuser()
+        
+        for tries in range(0,10):
+            if len(pm.find(service=service, user=user)) == 0:
+                return
+            time.sleep(1)
+        
+        raise RuntimeError(f'Timed out waiting for the event builder pipe to exit and stop advertising {service}')
