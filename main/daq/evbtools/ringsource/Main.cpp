@@ -61,15 +61,15 @@ main(int argc, char** argv)
     
     uint16_t port;
     try  {
+        const char* evbname;
         if (evbport == "managed") {
             if (!args.evbname_given) {
-                std::cerr <<
-                    "To lookup a managed port --evbname is required\n";
-                exit(EXIT_FAILURE);
+                evbname = nullptr;
+            } else {
+                evbname = args.evbname_arg;
             }
-            std::string evbname = args.evbname_arg;
             port = CEventOrderClient::Lookup(
-                evbHost, evbname.c_str()
+                evbHost, evbname
             );
         } else {
             port = atoi(evbport.c_str());
