@@ -588,9 +588,12 @@ class  EventBuilder(QObject):
         '''
         # First the sources:
         
+        self._pipeProcess.process().WriteLine('exit')
         self._pipeProcess.stop()
+        self._pipeProcess.process().waitForFinished()
         for process in self._sourceProcesses:
             process.stop()
+            process.process().waitForFinished()
     
     # Private utils.
     

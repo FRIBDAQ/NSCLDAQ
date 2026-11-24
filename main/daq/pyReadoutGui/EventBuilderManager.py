@@ -198,7 +198,13 @@ class EventBuilderManager(QObject):
     def start(self)  -> None:
         '''
         Start all the event builders.  Call this at begin run.
+        @note we don't support persistent event builders.  This will stop any
+            running event builders.
         '''
+        self.stop()   # Event builder stops do waitForFinished.
+        
+        # Nos start it.
+        
         self._stopped = False
         for evb in self._eventBuilders:
             evb.start()
