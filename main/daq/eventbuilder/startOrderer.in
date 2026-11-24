@@ -44,7 +44,7 @@ if {$frame == 1} {
   } else {
     return -code error {User must provide name of output ring as first argument}
 }
-  start 
+  start [lrange $argv 1 end]
 }
 
 #  If our parent exits, we exit too:
