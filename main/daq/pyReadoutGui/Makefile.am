@@ -27,4 +27,4 @@ install-exec-local:
 TESTS_ENVIRONMENT=PYTHONPATH=@prefix@/pythonLibs
 TESTS=$(TESTABLE_MODULES)
 
-EXTRA_DIST=pyReadoutGui.py $(MODULES) $(INTERActive_TESTS)
+EXTRA_DIST=pyReadoutGui.py $(MODULES) $(INTERActive_TESTS) pyReadoutGui.xml

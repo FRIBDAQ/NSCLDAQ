@@ -11,8 +11,9 @@ TOHTML = @DOCBOOK2HTML@
 UPDATEMAN = @MANDB@
 
 MANSECTS = 1compatibility.xml 1daq.xml 1epics.xml 1evb.xml 1tcl.xml 1utilities.xml \
-	3ccusb.xml 3daq.xml 3evb.xml 3provider.xml 3python.xml 3rdogui.xml 3sbsReadout.xml 3tcl.xml 3vmusb.xml 3mvlcgen.xml \
-	5daq.xml 5tcl.xml 5vmusb.xml
+	3ccusb.xml 3daq.xml 3evb.xml 3provider.xml 3python.xml \
+	3rdogui.xml 3pyreadoutogui.xml 3sbsReadout.xml 3tcl.xml 3vmusb.xml \
+	3mvlcgen.xml 5daq.xml 5tcl.xml 5vmusb.xml
 
 install-exec-local: daq.html daq.mans tutorial.pdf tutorial.html
 	$(mkinstalldirs) @prefix@/share
@@ -60,6 +61,7 @@ BOOKDIRS =@top_srcdir@ \
 	@top_srcdir@/usb/ccusb \
 	@top_srcdir@/usb/vmusb/SIS3316Readout \
 	@top_srcdir@/daq/readoutgui \
+	@top_srcdir@/daq/pyReadoutGui \
 	@top_srcdir@/utilities/logbook \
 	@top_srcdir@/daq/eventbuilder \
 	@top_srcdir@/daq/evbtools/glom \

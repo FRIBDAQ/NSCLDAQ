@@ -1,0 +1,73 @@
+<!-- chapter user-guide -->
+<chapter>
+    <title>pyReadoutGui user guide</title>
+    <section>
+        <title>Introduction and Motivation</title>
+        <para>
+            pyReadoutGui is a graphical user interface for controlling experiments
+            that run on FRIB/NSCLDAQ.  It can be used instead of or along with the
+            <literal>ReadoutShell</literal> program.
+        </para>
+        <para>
+            Why a new control GUI?  The ReadoutShell has been used for some decades
+            now.  Isn't it good enough?  I think the  answer is yes but:
+        </para>
+        <itemizedlist>
+            <listitem>
+                <para>
+                    The ReadoutShell is a large set of Tcl/Tk scripts.  There is some concern amongst
+                    the DAQ programming group about the long term outlook of the Tcl/Tk scripting language.
+                    pyReadoutGui is part of a long term program to replace Tcl/Tk usage in FRIB/NSCLDAQ with
+                    Python components using PyQt for the graphical user interface components.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    When FRIB/NCLDAQ was initiall written, experimental scientists were beginning a transition
+                    from FORTRAN to C/C++ based tools.  It was thought that burdening scientists with learning
+                    two object oriented programming languages would be too much of a reach.  The simple
+                    struture and grammar of Tcl/Tk was considered to be much less of a stretch.
+                    At that time, as well, Python was in its infancy and 
+                    the only GUI components availalble 
+                    were based on pytk, which, an embedding of Tk widgets into Python, so there was not
+                    much user interface value added by using Python.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    In the decades that ReadoutShell has been in use I hope we've learned some lessons that can be
+                    incorporated into pyReadoutGui.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    A rethink/rewrite of the controlling GUI allows us to incorporate into the main
+                    program capabilities that, previously, required plugins, these include an expanded
+                    capability for event logging, the master/slave capability and event builder configuration.
+                </para>
+            </listitem>
+        </itemizedlist>
+        <para>
+            The remainer of this chapter is divided into two sections.  The first of these describes, in some detail,
+            how to run and use <literal>pyReadoutGui</literal>. The second describes how to extend <literal>pyReadoutGui</literal>
+            to support experiment specific needs.  Finally, see the <literal>3pyreadoutgui</literal> and the <literal>1daq pyReadoutGui</literal>
+            reference pages for detailed reference information.
+        </para>
+    </section>
+    <section>
+        <title>Using pyReadoutGui</title>
+        <para />
+    </section>
+    <section>
+        <title>Extending pyReadoutGui</title>
+        <para />
+    </section>
+</chapter>
+
+<!-- /chapter -->
+
+<!-- manpage 1daq -->
+<!-- /manpage -->
+
+<!-- manpage 3pyreadoutgui -->
+<!-- /manpage -->
