@@ -180,7 +180,7 @@ class ConfigureSource(QWidget):
     values, it's not actually possible to  not have
     a properly configured delay.  
     '''
-    def __init__(self, parent : QWidget | None = None):
+    def __init__(self, source : DelaySource | None, parent : QWidget | None = None):
         super().__init__(parent)
         
         self.setLayout(QVBoxLayout())
@@ -206,6 +206,11 @@ class ConfigureSource(QWidget):
         self._end.setSingleStep(1000)
         
         self.layout().addLayout(endlayout)
+        
+        if source:
+            config = source.getConfig()
+            self._begin.setValue(config['delay'])
+            self._end.setValue(config['enddelay'])
 
     def makeSource(self) -> DelaySource | str:
         '''  
