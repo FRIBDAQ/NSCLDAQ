@@ -56,11 +56,473 @@
     </section>
     <section>
         <title>Using pyReadoutGui</title>
+        <para>
+            This section is a user guide for pyReadoutGui.  In this section we'll show how to run the
+            program and some assumptions the program makes.   Files it creates and can use are
+            also described.  Subsections will describe:
+            <itemizedlist>
+                <listitem>
+                    <para>
+                        The controls and displays that are present on the GUI and how to user them.  
+                        For users of the <literal>ReadoutShell</literal> these controls will be fairly
+                        familiar.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        How to use the file menu to set up logging.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        How to manage data sources with the <guimenu>Data Source</guimenu> menu. 
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        How to set up event logging with the <guimenu>Event Loggers</guimenu> so that
+                        your event data are saved.  
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        Using the <guimenu>Slave Server</guimenu> menu to set up pyReadoutGui
+                        to accept remote controls from a master. Note the master can be either
+                        another pyReadoutGui or, since the user level network protocols are the
+                        same, a <literal>ReadoutShell</literal>
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        Set up any event builders  you need.
+                    </para>
+                </listitem>
+            </itemizedlist>
+        </para>
+        <para>
+            To start the program, simply execute the <command/>
+            <command>$DAQBIN/pyReadoutGui</command>.   The program will look for a python script named
+            <filename>readoutguinit.py</filename> in its working directory.  If that script exists, it will
+            load it as amodule.  Next it will look for a script named <filename>readoutguiconfig.py</filename>
+            in its working directory and, after loading that script it will ask the registered deserializers
+            to load the program's configuration from that scrdipt. 
+        </para>
+        <para>
+            In <link linkend='sec.extendingpyreadoutgui' endterm='sec.extendingpyreadoutgui.title' />, we will
+            describe how to extend the set of things that are stored to and read from the <filename>readoutguiconfig.py</filename>
+            configuration file.  This allows you to add configuration information for your own custom extensions.
+            Every second, <command>pyReadoutGui</command> will write the <filename>readoutguiconfig.py</filename>,
+            updating the configuration to capture changes that you have made.
+        </para>
+        <para>
+            It is important that if you run several instances of <filename>pyReadoutGui</filename> they run with
+            differing current working directories.  Otherwise, each instance will overwrite the configuration
+            of other instances.  If you want to use a common set of extensions, you can make a symbolic
+            link from <filename>readouguiinit.py</filename> to the common initializer, or, extend the
+            import path and import a common set of libraries:
+        </para>
+        <informalexample>
+            <programlisting>
+PYTHONPATH={$PYTHONPATH}/my/library pyReadoutGui
+            </programlisting>
+        </informalexample>
+        <para>
+            THe example above shows how to extend the valueof PYTHONPATH created by <filename>daqsetup.bash</filename> to
+            incorporate a module in <filename>/my/library</filename>  If you have several extensions, separate them with
+            colons (<literal>:</literal>)
+        </para>
+        <section>
+            <title>Running pyReadoutGui and controlling runs.</title>
+            <para>
+                For the most part the controls should be self explanatory.  At the top is a block
+                of controls that allow you to set the title of the next run, the run number of the next
+                run, select that the next run be timed and its duration.
+            </para>
+            <para>
+                At the lower right of this block of controls, one or two buttons will be displayed depending on the
+                state of the system.  When <literal>pyReadoutGui</literal> first starts, it will display a 
+                <guibutton>Start</guibutton>.  Clicking that will boot up the configuration the
+                program has read from its configuration file.  This will
+                transition the program from the <literal>Not Ready</literal> state to the <literal>Starting</literal>
+                state.  If everything starts correctly, the system will transition transparently to the <literal>Halted</literal>
+                state.
+            </para>
+            <para>
+                Each state will have its own set of buttons:
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><literal>Not Ready</literal></term>
+                        <listitem>
+                            <para>
+                                The program starts in this state and, if something crashes will return to this state.
+                                Nothing is running and the only button displayed is <guibutton>Start</guibutton> which
+                                transitions to <literal>Starting</literal> and, if everything starts correctly,
+                                transitions to <literal>Halted</literal>
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>Halted</literal></term>
+                        <listitem>
+                            <para>
+                                The system is booted but not taking data.  The
+                                <guibutton>Begin</guibutton> is displayed. Clicking that button
+                                will transition to <literal>Active</literal> once all data sources have
+                                started taking data.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>Active</literal></term>
+                        <listitem>
+                            <para>
+                                Data taking is ongoing.  If the <guibutton>Recording</guibutton> checkbutton
+                                is checked, the data taken will be recorded by the event loggers that have
+                                been configured. The <guibutton>End</guibutton> will be displayed and, if clicked,
+                                will transition back to <literal>Halted</literal>  If all data sources
+                                support pausing runs, the <literal>Pause</literal> button will also be displayed and,
+                                if clicked, trnasion to the <literal>Paused</literal> state.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>Paused</literal></term>
+                        <listitem>
+                            <para>
+                                Data taking is temporarily paused.   The <guibutton>End</guibutton> is displayed, if clicked,
+                                ends the run and transitions to <literal>Halted</literal>.  The <guibutton>Resume</guibutton>
+                                is displayed and clicking it will resume data taking, transitioning to <literal>Active</literal>
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                Below the run controls are a tabbed widget of output windows.  A main tab will show common information and
+                emergency messages.  Each data source will have its own tab as will each event logger.  The event builders share
+                a common tab. If logging is enabled, messages can also be output to the log file.
+            </para>
+            <para>
+                More about each tab in the sections that describe what can be configured.  We will also see in 
+                <link linkend='sec.extendingpyreadoutgui' endterm='sec.extendingpyreadoutgui.title' /> how to 
+                add controls to the GUI.  These will typically show up at the below the standard set of the 
+                standard controls.
+            </para>
+        </section>
+        <section>
+            <title>The <guimenu>File</guimenu> menu</title>
+            <para>
+                The <guimenu>File</guimenu> menu is mostly intended to configure logging.  Logging allows messages to go to 
+                file.  Note that the logging configuration is <emphasis>not</emphasis> saved.
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><guimenu>File</guimenu>&rarr;<guimenuitem>Log...</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                This menu entry pops up a file browser.  You can select an existing file or
+                                specify a new file.  Once the file is specified, logging is enabled and log output
+                                will be appended to that file.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><guimenu>File</guimenu>&rarr;<guimenuitem>Disable Logging</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                When selected logging is turned off.  To re-enable it, simply select the
+                                same log file via <guimenu>File</guimenu>&rarr;<guimenuitem>Log...</guimenuitem>.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                The file menu also allows for the execution of arbitrary Python code within the <command>pyReadoutGui</command>
+                program:
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><guimenu>File</guimenu>&rarr;<guimenuitem>Load...</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                The Python script selected from the file selector that is popped up
+                                is loaded into <command>pyReadoutGui</command>. Any code at level zero of the
+                                file is executed.  Note that the module name assigned to this code is
+                                a unique value and therefore it's difficult to use the loaded
+                                module in any other code.  For things you want
+                                visibly availalble, use <filename>readoutguiinit.py</filename> which generates
+                                the module <literal>readoutguiinit</literal>.
+                            </para>
+                            <para>
+                                Since the modle is given a unique name, it can be loaded over and over again
+                                to get the level zero code execute.
+                            </para>
+                        </listitem>
+                        
+                </varlistentry>
+                <varlistentry>
+                        <term><guimenu>File</guimenu>&rarr;<guimenuitem>Add Library...</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                Pops up a directory selector.  The selected directory is added to the module search
+                                path.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                Finally the <guimenu>File</guimenu>&rarr;<guimenuitem>Exit...</guimenuitem> menu entry
+                prompts for confirmation and, if it's received, exits the program.  Note that exited in this way,
+                <filename>readoutguiconfig.py</filename> is writtne before exiting.  Exiting by clicking the window
+                controls does not gaurantee that, which is why that file is written every second.
+            </para>
+        </section>
+        <section>
+            <title>The <guimenu>Data Source</guimenu> menu.</title>
+            <para>
+                First a bit on data sources;  A data source is something that participates in state transitions.
+                When the state is active, it is presumed to contribute data to the experiment.  Normally this means
+                responding to the electronics and inserting events, or event fragments into Ringbuffers.  
+                The user interface for managing data sources is the <guimenu>Data Source</guimenu> menu. The
+                GUI for data sources is quite a bit friendlier than the data source management tools in
+                <command>ReadoutShell</command>.  This section will describe the <guimenu>Data Source</guimenu>
+                menu.  The data source configuration <emphasis>is</emphasis> saved to <filename>readoutguiconfig.py</filename>
+                and restored when the program starts.
+            </para>
+            <para>
+                In the ReadoutShell, data sources were assigned numbers that looked a lot like, but were not
+                event builder source ids.  In <command>pyReadoutGui</command> this is not done.  Furthermore,
+                data sources have a much more granular type, which makes it much easier to properly configure them.
+                The data source types that are baked into <command>pyReadoutGui</command> are:
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><literal>Generic</literal></term>
+                        <listitem>
+                            <para>
+                                These are data sources based directly on the SBS readout framework.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>XIA/DDAS</literal></term>
+                        <listitem>
+                            <para>
+                                This is the Readout and hit sorter pair used to readout XIA Pixie16 crates.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>MVLC</literal></term>
+                        <listitem>
+                            <para>
+                                This is the readout system for the Mesytec MVLC controller.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>VMUSB</literal></term>
+                        <listitem>
+                            <para>
+                                This is the readout system for the Wiener/Jtec VMUSB controller.  Note that
+                                the CCUSB is not supported directly. If you need it you can add a data source
+                                for it or use a ReadoutShell as a slave GUI.  Use of CAMAC is being phased out
+                                of the FRIB/NSCLDAQ system.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>DELAY</literal></term>
+                        <listitem>
+                            <para>
+                                This data source is a programmable delay on begin and end run.  It is sometimes
+                                needed in large systems between other data sources.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><literal>Slave Gui</literal></term>
+                        <listitem>
+                            <para>
+                                Support for enslaving/remote controlling another Readout GUI (either
+                                <command>pyReadoutGui</command> or <command>ReadoutShell</command>).
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+            <para>
+                Extending the set of data source types is fully supported in a way that allows them to be
+                managed via this menu.  See <link linkend='sec.extendingpyreadoutgui' endterm='sec.extendingpyreadoutgui.title'/>
+                for documentation about this.
+            </para>
+            <para>
+                With this in mind, let's dive in to the <guimenu>Data Source</guimenu> menu.
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><guimenu>Data Source</guimenu>&rarr;<guimenuitem>Add...</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                Adding a new data source is a two port process.  First the menu pops up a
+                                dialog with  a drop down list of data source types known to <command>pyReadoutGui</command>.
+                                Once you selectd a data source type from that list and click <guibutton>Save</guibutton>,
+                                A configuration dialog for that data source type is displayed. Fill out the form in that dialog
+                                and click <guibutton>Save</guibutton> to create the data source.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><guimenu>Data Source</guimenu>&rarr;<guimenuitem>Edit...</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                Supports editing the configuration of an existing data source, unlike <command>ReadoutShell</command>
+                                which required you to delete and re-create a data source to modify it, you can modify an existing data
+                                source.  The menu pops up a list of data sources.  Each data source type is displayed and, where appropriate,
+                                the host it runs in, the program that generate the data, and the ringbuffer in which those data are written.
+                                If you double click a data source, the configuration dialog for that data source type is popped up
+                                pre-loaded with the configuration of the data source you double clicked.
+                            </para>
+                            <para>
+                                Make whatever modifications you need to make, click <guibutton>Save</guibutton> and the data source
+                                will be replaced by one with the updated definition.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><guimenu>Data Source</guimenu>&rarr;<guimenuitem>Delete...</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                Pops up a list of data sources.  Double clicking on a source provides the
+                                complete detailed configuration of that source. Clicking on the trash can icon
+                                in a list entry, deletes that source.  Click <guibutton>Ok</guibutton> when you 
+                                are finished deleting data sources.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><guimenu>Data Source</guimenu>&rarr;<guimenuitem>List</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                Pops up a table of data sources.  Double clicking a source provides the
+                                detailed configuration of that source.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </section>
+        <section>
+            <title>The <guimenu>Event Loggers</guimenu> menu.</title>
+            <para>
+                In the <command>ReadoutShell</command>, there was a main event logger, that supported maintaining a file system
+                with both run and event file views.  Later the multilogger package supported additional event loggers that
+                just created a soup of event files for diagnostic purposes in a directory.  <command>pyReadoutGui</command>
+                supports an arbitrary number of both types of event loggers.  Furthermore, it allows you to distribute the work
+                of event loggers to ther hosts, while all <command>ReadoutShell</command> event loggers ran in the same host as 
+                <command>ReadoutShell</command>.  Loggers that mimic the function of the <command>ReadoutShell</command> main logger
+                are referred to a <firstterm>Full logger</firstterm>s.
+            </para>
+            <para>
+                The <guimenu>Event Loggers</guimenu> allows you to manage the event loggers controlled by a
+                an instance of <command>pyReadoutGui</command>.  The configuration of event loggers is saved in the
+                <filename>readoutguiconfig.py</filename> configuration file.   
+            </para> 
+            <para>
+                Let's dive into the entries on the <guimenu>Event Loggers</guimenu> menu.
+            </para>
+            <variablelist>
+                <varlistentry>
+                        <term><guimenu>Event Loggers</guimenu>&rarr;<guimenuitem>Add...</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                Takes you through the process of creating an event logger.  This happens in two steps.
+                                The first step prompts for a name for the event logger, and an event logger type.  Event loggers must be given unique
+                                names.  Enter the name of your logger and select the logger type from the pull down.
+                                Click the <guibutton>Save</guibutton> to advance to the step of configuring the logger itself.
+                            </para>
+                            <para>
+                                The dialog that follows is common between the two loggers, the only difference is whether or not
+                                the <guibutton>Full logger</guibutton> checkbox is checked.  In fact you can change you mind about
+                                the type of logger by checking or unchecking that box.
+                            </para>
+                            <para>
+                                For the most part the contents of that dialog are self-explanatory.  A few additions you
+                                may not be used to:  The <literal>Run in host:</literal> text entry allows you to distribute event
+                                logging into other hosts.  The Logging directory means slightly different thing, depending on the
+                                logger type. For multiloggers, this is where the soup of event files is stored.  For full loggers,
+                                this is the top directory in the tree maintained by the logger.
+                            </para>
+                            <para>
+                                The <literal>Number of event sources</literal> should be modified for data from event builders
+                                to indicate the number of Begin/End run pairs that are expected for that ring. data.
+                            </para>
+                            <para>
+                                Note that when you create the first event logger, the tabbed output windows
+                                get a tab labeled <literal>Event Loggers</literal> which captures the output
+                                from event loggers.
+                            </para>
+                        </listitem>
+
+                </varlistentry>
+                <varlistentry>
+                        <term><guimenu>Event Loggers</guimenu>&rarr;<guimenuitem>Delete...</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                Lets you remove event loggers.  This displays a list of loggers.  Double clicking a logger
+                                pops up a confirmation dialog.  If you confirm, the logger you double clicked is deleted.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><guimenu>Event Loggers</guimenu>&rarr;<guimenuitem>List...</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                Provides a list of the event loggers and their main properties.  Double clicking
+                                any event logger in the list bring up its full definition.
+                            </para>
+                        </listitem>
+                </varlistentry>
+                <varlistentry>
+                        <term><guimenu>Event Loggers</guimenu>&rarr;<guimenuitem>Enable/Disable...</guimenuitem></term>
+                        <listitem>
+                            <para>
+                                Loggers can be disabled.   A disabled logger is defined but does not log data.
+                                Clicking this menu item brings up a list of loggers.  Each logger has an 
+                                <guibutton>enabled</guibutton> checkbutton on its line.  Click on them to toggle
+                                a logger between enabled or disabled.  When you are done, click <guibutton>Ok</guibutton>
+                                to dismiss the dialog.
+                            </para>
+                        </listitem>
+                </varlistentry>
+            </variablelist>
+        </section>
+        <section >
+            <title>The <guimenu>Slave Server</guimenu> menu.</title>
+            <para>
+                TEXT
+            </para>
+        </section>
+        <section>
+            <title>The <guimenu>Event Builders</guimenu> menu</title>
+            <para>
+                TEXT
+            </para>
+        </section>
+
+    </section>
+
+
+
+
+    <!-- end of user guide -->
+    <section id='sec.extendingpyreadoutgui'>
+        <title id='sec.extendingpyreadoutgui.title'>Extending pyReadoutGui</title>
         <para />
     </section>
     <section>
-        <title>Extending pyReadoutGui</title>
-        <para />
+        <title>Full event logger directory structure.</title>
+        <para>
+            TEXT
+        </para>
     </section>
 </chapter>
 
