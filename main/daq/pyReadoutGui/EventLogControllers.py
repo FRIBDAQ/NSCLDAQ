@@ -176,7 +176,7 @@ class EnableController(BaseController):
     manager.
     '''
     def  __init__(self, parent  : QWidget | None = None):
-        super().__init__(SaveDialog, True, parent)
+        super().__init__(DismissDialog, True, parent)
         self.view.enableToggled.connect(self._setEnable)
         self.dialog.exec()
         
