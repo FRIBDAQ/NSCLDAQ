@@ -34,6 +34,7 @@ from nscldaq.readoutgui import (
     DataSourceViews,
     DDASDataSource,
     DelaySource,
+    VMUSBDataSource,
     EventBuilderManager,
     EventLog,  # Register the types.
     EventLogControllers,
